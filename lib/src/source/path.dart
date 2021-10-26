@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -65,8 +63,12 @@ class PathSource extends Source {
   /// original path but resolved relative to the containing path. The
   /// "relative" key will be `true` if the original path was relative.
   @override
-  PackageRef parseRef(String name, description,
-      {String containingPath, LanguageVersion languageVersion}) {
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingPath,
+    LanguageVersion? languageVersion,
+  }) {
     if (description is! String) {
       throw FormatException('The description must be a path string.');
     }
@@ -92,7 +94,7 @@ class PathSource extends Source {
 
   @override
   PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
+      {String? containingPath}) {
     if (description is! Map) {
       throw FormatException('The description must be a map.');
     }
@@ -167,7 +169,8 @@ class BoundPathSource extends BoundSource {
   BoundPathSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge) async {
     // There's only one package ID for a given path. We just need to find the
     // version.
     var pubspec = _loadPubspec(ref);
@@ -185,10 +188,10 @@ class BoundPathSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id, {String relativeFrom}) {
+  String getDirectory(PackageId id, {String? relativeFrom}) {
     return id.description['relative']
         ? p.relative(id.description['path'], from: relativeFrom)
-        : id.description['path'];
+        : id.description['path']!;
   }
 
   /// Ensures that [description] is a valid path description and returns a

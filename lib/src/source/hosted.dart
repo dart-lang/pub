@@ -2,13 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:collection/collection.dart' show maxBy;
+import 'package:collection/collection.dart'
+    show maxBy, IterableNullableExtension;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pedantic/pedantic.dart';
@@ -98,6 +97,8 @@ class HostedSource extends Source {
           ? _OfflineHostedSource(this, systemCache)
           : BoundHostedSource(this, systemCache);
 
+  static String pubDevUrl = 'https://pub.dartlang.org';
+
   /// Gets the default URL for the package server for hosted dependencies.
   Uri get defaultUrl {
     // Changing this to pub.dev raises the following concerns:
@@ -121,14 +122,14 @@ class HostedSource extends Source {
     }
   }
 
-  Uri _defaultUrl;
+  Uri? _defaultUrl;
 
   /// Returns a reference to a hosted package named [name].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
-  PackageRef refFor(String name, {Uri url}) =>
+  PackageRef refFor(String name, {Uri? url}) =>
       PackageRef(name, this, _HostedDescription(name, url ?? defaultUrl));
 
   /// Returns an ID for a hosted package named [name] at [version].
@@ -136,12 +137,12 @@ class HostedSource extends Source {
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
-  PackageId idFor(String name, Version version, {Uri url}) => PackageId(
+  PackageId idFor(String name, Version version, {Uri? url}) => PackageId(
       name, this, version, _HostedDescription(name, url ?? defaultUrl));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
-  dynamic _serializedDescriptionFor(String name, [Uri url]) {
+  dynamic _serializedDescriptionFor(String name, [Uri? url]) {
     if (url == null) {
       return name;
     }
@@ -183,14 +184,14 @@ class HostedSource extends Source {
   ///  2. With a direct url: `hosted: <url>`
   @override
   PackageRef parseRef(String name, description,
-      {String containingPath, LanguageVersion languageVersion}) {
+      {String? containingPath, required LanguageVersion languageVersion}) {
     return PackageRef(
         name, this, _parseDescription(name, description, languageVersion));
   }
 
   @override
   PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
+      {String? containingPath}) {
     // Old pub versions only wrote `description: <pkg>` into the lock file.
     if (description is String) {
       if (description != name) {
@@ -206,8 +207,8 @@ class HostedSource extends Source {
       name,
       this,
       version,
-      _HostedDescription(serializedDescription['name'],
-          Uri.parse(serializedDescription['url'])),
+      _HostedDescription(serializedDescription['name']!,
+          Uri.parse(serializedDescription['url']!)),
     );
   }
 
@@ -218,13 +219,16 @@ class HostedSource extends Source {
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
   _HostedDescription _parseDescription(
-      String packageName, description, LanguageVersion languageVersion) {
+    String packageName,
+    description,
+    LanguageVersion languageVersion,
+  ) {
     if (description == null) {
       // Simple dependency without a `hosted` block, use the default server.
       return _HostedDescription(packageName, defaultUrl);
     }
 
-    final canUseShorthandSyntax = languageVersion == null ||
+    final canUseShorthandSyntax =
         languageVersion >= _minVersionForShorterHostedSyntax;
 
     if (description is String) {
@@ -335,7 +339,8 @@ class BoundHostedSource extends CachedSource {
 
   @override
   final SystemCache systemCache;
-  RateLimitedScheduler<PackageRef, Map<PackageId, _VersionInfo>> _scheduler;
+  late RateLimitedScheduler<PackageRef, Map<PackageId, _VersionInfo>?>
+      _scheduler;
 
   BoundHostedSource(this.source, this.systemCache) {
     _scheduler = RateLimitedScheduler(
@@ -358,9 +363,9 @@ class BoundHostedSource extends CachedSource {
           var archiveUrl = map['archive_url'];
           if (archiveUrl is String) {
             final status = PackageStatus(
-                isDiscontinued: body['isDiscontinued'] as bool ?? false,
-                discontinuedReplacedBy: body['replacedBy'] as String,
-                isRetracted: map['retracted'] as bool ?? false);
+                isDiscontinued: body['isDiscontinued'] ?? false,
+                discontinuedReplacedBy: body['replacedBy'],
+                isRetracted: map['retracted'] ?? false);
             return MapEntry(
                 id, _VersionInfo(pubspec, Uri.parse(archiveUrl), status));
           }
@@ -372,15 +377,15 @@ class BoundHostedSource extends CachedSource {
     throw FormatException('versions must be a list');
   }
 
-  Future<Map<PackageId, _VersionInfo>> _fetchVersionsNoPrefetching(
+  Future<Map<PackageId, _VersionInfo>?> _fetchVersionsNoPrefetching(
       PackageRef ref) async {
     final serverUrl = _hostedUrl(ref.description);
     final url = _listVersionsUrl(ref.description);
     log.io('Get versions from $url.');
 
-    String bodyText;
-    Map body;
-    Map<PackageId, _VersionInfo> result;
+    late final String bodyText;
+    late final dynamic body;
+    late final Map<PackageId, _VersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
@@ -389,39 +394,44 @@ class BoundHostedSource extends CachedSource {
         serverUrl,
         (client) => client.read(url, headers: pubApiHeaders),
       );
-      body = jsonDecode(bodyText);
+      final decoded = jsonDecode(bodyText);
+      if (decoded is! Map<String, dynamic>) {
+        throw FormatException('version listing must be a mapping');
+      }
+      body = decoded;
       result = _versionInfoFromPackageListing(body, ref, url);
-    } catch (error, stackTrace) {
+    } on Exception catch (error, stackTrace) {
       var parsed = source._asDescription(ref.description);
       _throwFriendlyError(error, stackTrace, parsed.packageName, parsed.uri);
     }
 
     // Cache the response on disk.
     // Don't cache overly big responses.
-    if (body.length < 100 * 1024) {
+    if (bodyText.length < 100 * 1024) {
       await _cacheVersionListingResponse(body, ref);
     }
     return result;
   }
 
-  Future<Map<PackageId, _VersionInfo>> _fetchVersions(PackageRef ref) async {
+  Future<Map<PackageId, _VersionInfo>?> _fetchVersions(PackageRef ref) async {
     final preschedule =
-        Zone.current[_prefetchingKey] as void Function(PackageRef);
+        Zone.current[_prefetchingKey] as void Function(PackageRef)?;
 
     /// Prefetch the dependencies of the latest version, we are likely to need
     /// them later.
-    void prescheduleDependenciesOfLatest(Map<PackageId, _VersionInfo> listing) {
+    void prescheduleDependenciesOfLatest(
+        Map<PackageId, _VersionInfo>? listing) {
       if (listing == null) return;
       final latestVersion =
-          maxBy(listing.keys.map((id) => id.version), (e) => e);
+          maxBy(listing.keys.map((id) => id.version), (e) => e)!;
       final latestVersionId =
           PackageId(ref.name, source, latestVersion, ref.description);
       final dependencies =
-          listing[latestVersionId]?.pubspec?.dependencies?.values ?? [];
+          listing[latestVersionId]?.pubspec.dependencies.values ?? [];
       unawaited(withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
           if (packageRange.source is HostedSource) {
-            preschedule(packageRange.toRef());
+            preschedule!(packageRange.toRef());
           }
         }
       }));
@@ -444,6 +454,15 @@ class BoundHostedSource extends CachedSource {
     return result;
   }
 
+  /// An in-memory cache to store the cached version listing loaded from
+  /// [_versionListingCachePath].
+  ///
+  /// Invariant: Entries in this cache are the parsed version of the exact same
+  ///  information cached on disk. I.e. if the entry is present in this cache,
+  /// there will not be a newer version on disk.
+  final Map<PackageRef, Pair<DateTime, Map<PackageId, _VersionInfo>>>
+      _responseCache = {};
+
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
   ///
@@ -451,29 +470,38 @@ class BoundHostedSource extends CachedSource {
   ///
   /// If [maxAge] is not given, we will try to get the cached version no matter
   /// how old it is.
-  Future<Map<PackageId, _VersionInfo>> _cachedVersionListingResponse(
+  Future<Map<PackageId, _VersionInfo>?> _cachedVersionListingResponse(
       PackageRef ref,
-      {Duration maxAge}) async {
+      {Duration? maxAge}) async {
+    if (_responseCache.containsKey(ref)) {
+      final cacheAge = DateTime.now().difference(_responseCache[ref]!.first);
+      if (maxAge == null || maxAge > cacheAge) {
+        // The cached value is not too old.
+        return _responseCache[ref]!.last;
+      }
+    }
     final cachePath = _versionListingCachePath(ref);
-    final stat = await io.File(cachePath).stat();
+    final stat = io.File(cachePath).statSync();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
       if (maxAge == null || now.difference(stat.modified) < maxAge) {
         try {
-          final cachedDoc = jsonDecode(await readTextFileAsync(cachePath));
+          final cachedDoc = jsonDecode(readTextFile(cachePath));
           final timestamp = cachedDoc['_fetchedAt'];
           if (timestamp is String) {
-            final cacheAge =
-                DateTime.now().difference(DateTime.parse(timestamp));
+            final parsedTimestamp = DateTime.parse(timestamp);
+            final cacheAge = DateTime.now().difference(parsedTimestamp);
             if (maxAge != null && cacheAge > maxAge) {
               // Too old according to internal timestamp - delete.
               tryDeleteEntry(cachePath);
             } else {
-              return _versionInfoFromPackageListing(
+              var res = _versionInfoFromPackageListing(
                 cachedDoc,
                 ref,
                 Uri.file(cachePath),
               );
+              _responseCache[ref] = Pair(parsedTimestamp, res);
+              return res;
             }
           }
         } on io.IOException {
@@ -492,7 +520,8 @@ class BoundHostedSource extends CachedSource {
   }
 
   /// Saves the (decoded) response from package-listing of [ref].
-  Future<void> _cacheVersionListingResponse(Map body, PackageRef ref) async {
+  Future<void> _cacheVersionListingResponse(
+      Map<String, dynamic> body, PackageRef ref) async {
     final path = _versionListingCachePath(ref);
     try {
       ensureDir(p.dirname(path));
@@ -505,6 +534,9 @@ class BoundHostedSource extends CachedSource {
           },
         ),
       );
+      // Delete the entry in the in-memory cache to maintain the invariant that
+      // cached information in memory is the same as that on the disk.
+      _responseCache.remove(ref);
     } on io.IOException catch (e) {
       // Not being able to write this cache is not fatal. Just move on...
       log.fine('Failed writing cache file. $e');
@@ -512,7 +544,7 @@ class BoundHostedSource extends CachedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async {
+  Future<PackageStatus> status(PackageId id, {Duration? maxAge}) async {
     final ref = id.toRef();
     // Did we already get info for this package?
     var versionListing = _scheduler.peek(ref);
@@ -530,7 +562,7 @@ class BoundHostedSource extends CachedSource {
           test: (error) => error is Exception,
         );
 
-    final listing = versionListing[id];
+    final listing = versionListing![id];
     // If we don't have the specific version we return the empty response, since
     // it is more or less harmless..
     //
@@ -557,7 +589,8 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge) async {
     var versionListing = _scheduler.peek(ref);
     if (maxAge != null) {
       // Do we have a cached version response on disk?
@@ -565,7 +598,7 @@ class BoundHostedSource extends CachedSource {
           await _cachedVersionListingResponse(ref, maxAge: maxAge);
     }
     versionListing ??= await _scheduler.schedule(ref);
-    return versionListing.keys.toList();
+    return versionListing!.keys.toList();
   }
 
   /// Parses [description] into its server and package name components, then
@@ -589,7 +622,7 @@ class BoundHostedSource extends CachedSource {
   Future<Pubspec> describeUncached(PackageId id) async {
     final versions = await _scheduler.schedule(id.toRef());
     final url = _listVersionsUrl(id.description);
-    return versions[id]?.pubspec ??
+    return versions![id]?.pubspec ??
         (throw PackageNotFoundException('Could not find package $id at $url'));
   }
 
@@ -687,7 +720,7 @@ class BoundHostedSource extends CachedSource {
 
   /// Returns the best-guess package ID for [basename], which should be a
   /// subdirectory in a hosted cache.
-  PackageId _idForBasename(String basename, {Uri url}) {
+  PackageId _idForBasename(String basename, {Uri? url}) {
     var components = split1(basename, '-');
     var version = Version.none;
     if (components.length > 1) {
@@ -724,7 +757,7 @@ class BoundHostedSource extends CachedSource {
             return null;
           }
         })
-        .where((e) => e != null)
+        .whereNotNull()
         .toList();
   }
 
@@ -735,8 +768,17 @@ class BoundHostedSource extends CachedSource {
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   Future _download(PackageId id, String destPath) async {
+    // We never want to use a cached `archive_url`, so we never attempt to load
+    // the version listing from cache. Besides in most cases we already have
+    // downloaded a fresh copy of the version listing response in the in-memory
+    // cache, so looking in the file-system is pointless.
+    //
+    // We avoid using cached `archive_url` values because the `archive_url` for
+    // a custom package server may include a temporary signature in the
+    // query-string as is the case with signed S3 URLs. And we wish to allow for
+    // such URLs to be used.
     final versions = await _scheduler.schedule(id.toRef());
-    final versionInfo = versions[id];
+    final versionInfo = versions![id];
     final packageName = id.name;
     final version = id.version;
     if (versionInfo == null) {
@@ -747,9 +789,6 @@ class BoundHostedSource extends CachedSource {
     final server = parsedDescription.uri;
 
     var url = versionInfo.archiveUrl;
-    // To support old servers that has no archive_url we fall back to the
-    // hard-coded path.
-    url ??= Uri.parse('$server/packages/$packageName/versions/$version.tar.gz');
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
@@ -784,7 +823,7 @@ class BoundHostedSource extends CachedSource {
   /// this tries to translate into a more user friendly error message.
   ///
   /// Always throws an error, either the original one or a better one.
-  void _throwFriendlyError(
+  Never _throwFriendlyError(
     error,
     StackTrace stackTrace,
     String package,
@@ -849,7 +888,7 @@ class BoundHostedSource extends CachedSource {
     return replace(
       url,
       RegExp(r'[<>:"\\/|?*%]'),
-      (match) => '%${match[0].codeUnitAt(0)}',
+      (match) => '%${match[0]!.codeUnitAt(0)}',
     );
   }
 
@@ -906,7 +945,10 @@ class _OfflineHostedSource extends BoundHostedSource {
 
   /// Gets the list of all versions of [ref] that are in the system cache.
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+  Future<List<PackageId>> doGetVersions(
+    PackageRef ref,
+    Duration? maxAge,
+  ) async {
     var parsed = source._asDescription(ref.description);
     var server = parsed.uri;
     log.io('Finding versions of ${ref.name} in '
@@ -948,14 +990,13 @@ class _OfflineHostedSource extends BoundHostedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async {
+  Future<PackageStatus> status(PackageId id, {Duration? maxAge}) async {
     // Do we have a cached version response on disk?
     final versionListing = await _cachedVersionListingResponse(id.toRef());
 
     if (versionListing == null) {
       return PackageStatus();
     }
-    final listing = versionListing[id];
     // If we don't have the specific version we return the empty response.
     //
     // This should not happen. But in production we want to avoid a crash, since
@@ -963,7 +1004,6 @@ class _OfflineHostedSource extends BoundHostedSource {
     //
     // TODO(sigurdm): Consider representing the non-existence of the
     // package-version in the return value.
-    assert(listing != null);
     return versionListing[id]?.status ?? PackageStatus();
   }
 }

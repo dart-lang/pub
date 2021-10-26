@@ -2,15 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// A library for compiling Dart code and manipulating analyzer parse trees.
 import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart';
-import 'package:analyzer/dart/analysis/context_builder.dart';
-import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -19,7 +16,6 @@ import 'package:analyzer/file_system/overlay_file_system.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
@@ -36,7 +32,7 @@ bool isEntrypoint(CompilationUnit dart) {
   return dart.declarations.any((node) {
     return node is FunctionDeclaration &&
         node.name.name == 'main' &&
-        node.functionExpression.parameters.parameters.length <= 2;
+        (node.functionExpression.parameters?.parameters.length ?? 0) <= 2;
   });
 }
 
@@ -70,21 +66,22 @@ class AnalysisContextManager {
       modificationStamp: 0,
     );
 
+    var contextCollection = AnalysisContextCollection(
+      includedPaths: [path],
+      resourceProvider: resourceProvider,
+      sdkPath: getSdkPath(),
+    );
+
     // Add new contexts for the given path.
-    var contextLocator = ContextLocator(resourceProvider: resourceProvider);
-    var roots = contextLocator.locateRoots(includedPaths: [path]);
-    for (var root in roots) {
-      var contextRootPath = root.root.path;
+    for (var analysisContext in contextCollection.contexts) {
+      var contextRootPath = analysisContext.contextRoot.root.path;
 
       // If there is already a context for this context root path, keep it.
       if (_contexts.containsKey(contextRootPath)) {
         continue;
       }
 
-      var contextBuilder = ContextBuilder();
-      var context = contextBuilder.createContext(
-          contextRoot: root, sdkPath: getSdkPath());
-      _contexts[contextRootPath] = context;
+      _contexts[contextRootPath] = analysisContext;
     }
   }
 
@@ -97,7 +94,7 @@ class AnalysisContextManager {
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
     path = p.normalize(p.absolute(path));
-    var parseResult = _getExistingSession(path).getParsedUnit2(path);
+    var parseResult = _getExistingSession(path).getParsedUnit(path);
     if (parseResult is ParsedUnitResult) {
       if (parseResult.errors.isNotEmpty) {
         throw AnalyzerErrorGroup(parseResult.errors);
@@ -160,11 +157,11 @@ class AnalyzerErrorGroup implements Exception {
 ///
 /// The [name] is used to describe the executable in logs and error messages.
 Future<void> precompile({
-  @required String executablePath,
-  @required String incrementalDillOutputPath,
-  @required String name,
-  @required String outputPath,
-  @required String packageConfigPath,
+  required String executablePath,
+  required String incrementalDillOutputPath,
+  required String name,
+  required String outputPath,
+  required String packageConfigPath,
 }) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillOutputPath));
@@ -191,7 +188,7 @@ Future<void> precompile({
 
       throw ApplicationException(
           log.yellow('Failed to build $highlightedName:\n') +
-              (result?.compilerOutputLines?.join('\n') ?? ''));
+              (result?.compilerOutputLines.join('\n') ?? ''));
     }
   } finally {
     client.kill();

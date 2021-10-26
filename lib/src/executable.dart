@@ -2,14 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
@@ -19,12 +16,12 @@ import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
+import 'pub_embeddable_command.dart';
 import 'solver/type.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
-/// Code shared between `run` `global run` and `run --dartdev` for extracting
-/// vm arguments from arguments.
+/// Extracting vm arguments from arguments.
 List<String> vmArgsFromArgResults(ArgResults argResults) {
   final experiments = argResults['enable-experiment'] as List;
   return [
@@ -50,11 +47,11 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
-    Entrypoint entrypoint, Executable executable, Iterable<String> args,
+    Entrypoint entrypoint, Executable executable, List<String> args,
     {bool enableAsserts = false,
-    Future<void> Function(Executable) recompile,
+    required Future<void> Function(Executable) recompile,
     List<String> vmArgs = const [],
-    @required bool alwaysUseSubprocess}) async {
+    required bool alwaysUseSubprocess}) async {
   final package = executable.package;
 
   // Make sure the package is an immediate dependency of the entrypoint or the
@@ -103,18 +100,7 @@ Future<int> runExecutable(
       await recompile(executable);
     }
     executablePath = snapshotPath;
-  } else {
-    if (executablePath == null) {
-      var message =
-          'Could not find ${log.bold(p.normalize(executable.relativePath))}';
-      if (entrypoint.isGlobal || package != entrypoint.root.name) {
-        message += ' in package ${log.bold(package)}';
-      }
-      log.error('$message.');
-      return exit_codes.NO_INPUT;
-    }
   }
-
   // We use an absolute path here not because the VM insists but because it's
   // helpful for the subprocess to be able to spawn Dart with
   // Platform.executableArguments and have that work regardless of the working
@@ -124,7 +110,7 @@ Future<int> runExecutable(
   try {
     return await _runDartProgram(
       executablePath,
-      args,
+      args.toList(),
       packageConfigAbsolute,
       enableAsserts: enableAsserts,
       vmArgs: vmArgs,
@@ -140,7 +126,7 @@ Future<int> runExecutable(
     await recompile(executable);
     return await _runDartProgram(
       executablePath,
-      args,
+      args.toList(),
       packageConfigAbsolute,
       enableAsserts: enableAsserts,
       vmArgs: vmArgs,
@@ -165,9 +151,9 @@ Future<int> runExecutable(
 /// a new process will always be started.
 Future<int> _runDartProgram(
     String path, List<String> args, String packageConfig,
-    {bool enableAsserts,
-    List<String> vmArgs,
-    @required bool alwaysUseSubprocess}) async {
+    {bool enableAsserts = false,
+    List<String> vmArgs = const <String>[],
+    required bool alwaysUseSubprocess}) async {
   path = p.absolute(path);
   packageConfig = p.absolute(packageConfig);
 
@@ -175,10 +161,8 @@ Future<int> _runDartProgram(
   // That provides better signal handling, and possibly faster startup.
   if ((!alwaysUseSubprocess) && vmArgs.isEmpty) {
     var argList = args.toList();
-    return await isolate.runUri(p.toUri(path), argList, null,
-        enableAsserts: enableAsserts,
-        automaticPackageResolution: packageConfig == null,
-        packageConfig: p.toUri(packageConfig));
+    return await isolate.runUri(p.toUri(path), argList, '',
+        enableAsserts: enableAsserts, packageConfig: p.toUri(packageConfig));
   } else {
     // By ignoring sigint, only the child process will get it when
     // they are sent to the current process group. That is what happens when
@@ -236,7 +220,9 @@ Future<int> _runDartProgram(
 ///  [CommandResolutionFailedException].
 ///
 /// * Otherwise if the current package resolution is outdated do an implicit
-/// `pub get`, if that fails, throw a [CommandResolutionFailedException].
+///   `pub get`, if that fails, throw a [CommandResolutionFailedException].
+///
+///   This pub get will send analytics events to [analytics] if provided.
 ///
 /// * Otherwise let  `<current>` be the name of the package at [root], and
 ///   interpret [descriptor] as `[<package>][:<command>]`.
@@ -267,8 +253,9 @@ Future<int> _runDartProgram(
 Future<String> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
-  String root,
-  String pubCacheDir,
+  String? root,
+  String? pubCacheDir,
+  PubAnalytics? analytics,
 }) async {
   root ??= p.current;
   var asPath = descriptor;
@@ -294,7 +281,11 @@ Future<String> getExecutableForCommand(
       entrypoint.assertUpToDate();
     } on DataException {
       await warningsOnlyUnlessTerminal(
-          () => entrypoint.acquireDependencies(SolveType.GET));
+        () => entrypoint.acquireDependencies(
+          SolveType.GET,
+          analytics: analytics,
+        ),
+      );
     }
 
     String command;

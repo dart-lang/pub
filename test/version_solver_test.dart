@@ -31,6 +31,8 @@ void main() {
   group('override', override);
   group('downgrade', downgrade);
   group('features', features, skip: true);
+
+  group('regressions', regressions);
 }
 
 void basicGraph() {
@@ -636,12 +638,12 @@ void badSource() {
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because foo <1.0.1 depends on bar from unknown source "bad", foo <1.0.1 is
         forbidden.
-      And because foo >=1.0.1 <1.0.2 depends on baz any from bad, foo <1.0.2
-        requires baz any from bad.
+      And because foo >=1.0.1 <1.0.2 depends on baz from bad, foo <1.0.2
+        requires baz from bad.
       And because baz comes from unknown source "bad" and foo >=1.0.2 depends on
-        bang any from bad, every version of foo requires bang any from bad.
-      So, because bang comes from unknown source "bad" and myapp depends on foo
-        any, version solving failed.
+        bang from bad, every version of foo requires bang from bad.
+      So, because bang comes from unknown source "bad" and myapp depends on foo any,
+        version solving failed.
     '''), tries: 3);
   });
 
@@ -3014,4 +3016,23 @@ Future expectResolves(
   }
 
   expect(ids, isEmpty, reason: 'Expected no additional packages.');
+}
+
+void regressions() {
+  test('reformatRanges with a build', () async {
+    await servePackages((b) {
+      b.serve('integration_test', '1.0.1',
+          deps: {'vm_service': '>= 4.2.0 <6.0.0'});
+      b.serve('integration_test', '1.0.2+2',
+          deps: {'vm_service': '>= 4.2.0 <7.0.0'});
+
+      b.serve('vm_service', '7.3.0');
+    });
+    await d.appDir({'integration_test': '^1.0.2'}).create();
+    await expectResolves(
+      error: contains(
+        'Because no versions of integration_test match >=1.0.2 <1.0.2+2',
+      ),
+    );
+  });
 }

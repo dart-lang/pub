@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.11
-
 import 'dart:async';
+import 'dart:io';
 
 import '../authentication/credential.dart';
 import '../command.dart';
@@ -25,6 +24,14 @@ class TokenAddCommand extends PubCommand {
   @override
   String get argumentsDescription => '[hosted-url]';
 
+  String? get envVar => argResults['env-var'];
+
+  TokenAddCommand() {
+    argParser.addOption('env-var',
+        help: 'Read the secret token from this environment variable when '
+            'making requests.');
+  }
+
   @override
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
@@ -33,32 +40,84 @@ class TokenAddCommand extends PubCommand {
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }
+    final rawHostedUrl = argResults.rest.first;
 
     try {
-      var hostedUrl = validateAndNormalizeHostedUrl(argResults.rest.first);
-      if (hostedUrl.isScheme('HTTP')) {
-        throw DataException('Insecure package repository could not be added.');
+      var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
+      if (!hostedUrl.isScheme('HTTPS')) {
+        throw FormatException('url must be https://, '
+            'insecure repositories cannot use authentication.');
       }
 
-      final token = await stdinPrompt('Enter secret token:', echoMode: false)
-          .timeout(const Duration(minutes: 15));
-      if (token.isEmpty) {
-        usageException('Token is not provided.');
+      if (envVar == null) {
+        await _addTokenFromStdin(hostedUrl);
+      } else {
+        await _addEnvVarToken(hostedUrl, envVar!);
       }
-
-      tokenStore.addCredential(Credential.token(hostedUrl, token));
-      log.message(
-        'Requests to $hostedUrl will now be authenticated using the secret '
-        'token.',
-      );
     } on FormatException catch (e) {
-      usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
+      usageException('Invalid [hosted-url]: "$rawHostedUrl"\n'
           '${e.message}');
     } on TimeoutException catch (_) {
       // Timeout is added to readLine call to make sure automated jobs doesn't
       // get stuck on noop state if user forget to pipe token to the 'token add'
       // command. This behavior might be removed.
       throw ApplicationException('Token is not provided within 15 minutes.');
+    }
+  }
+
+  Future<void> _addTokenFromStdin(Uri hostedUrl) async {
+    final token = await stdinPrompt('Enter secret token:', echoMode: false)
+        .timeout(const Duration(minutes: 15));
+    if (token.isEmpty) {
+      usageException('Token is not provided.');
+    }
+
+    tokenStore.addCredential(Credential.token(hostedUrl, token));
+    log.message(
+      'Requests to "$hostedUrl" will now be authenticated using the secret '
+      'token.',
+    );
+  }
+
+  Future<void> _addEnvVarToken(Uri hostedUrl, String envVar) async {
+    if (envVar.isEmpty) {
+      usageException('Cannot use the empty string as --env-var');
+    }
+
+    // Environment variable names on Windows [1] and UNIX [2] cannot contain
+    // equal signs.
+    // [1] https://docs.microsoft.com/en-us/windows/win32/procthread/environment-variables
+    // [2] https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html
+    if (envVar.contains('=')) {
+      throw DataException(
+        'Environment variable name --env-var="$envVar" cannot contain "=", the '
+        'equals sign is not allowed in environment variable names.',
+      );
+    }
+
+    // Help the user if they typed something that is unlikely to be correct.
+    // This could happen if you include $, whitespace, quotes or accidentally
+    // dereference the environment variable instead.
+    if (!RegExp(r'^[A-Z_][A-Z0-9_]*$').hasMatch(envVar)) {
+      log.warning(
+        'The environment variable name --env-var="$envVar" does not use '
+        'uppercase characters A-Z, 0-9 and underscore. This is unusual for '
+        'environment variable names.\n'
+        'Check that you meant to use the environment variable name: "$envVar".',
+      );
+    }
+
+    tokenStore.addCredential(Credential.env(hostedUrl, envVar));
+    log.message(
+      'Requests to "$hostedUrl" will now be authenticated using the secret '
+      'token stored in the environment variable "$envVar".',
+    );
+
+    if (!Platform.environment.containsKey(envVar)) {
+      // If environment variable doesn't exist when
+      // pub token add <hosted-url> --env-var <ENV_VAR> is called, we should
+      // print a warning.
+      log.warning('Environment variable "$envVar" is not defined.');
     }
   }
 }

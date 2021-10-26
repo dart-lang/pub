@@ -2,12 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:collection/collection.dart' hide mapMap;
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -19,23 +16,18 @@ import 'io.dart';
 import 'language_version.dart';
 import 'log.dart';
 import 'package_name.dart';
+import 'pubspec_parse.dart';
 import 'sdk.dart';
 import 'source_registry.dart';
 import 'utils.dart';
 
-/// A regular expression matching allowed package names.
-///
-/// This allows dot-separated valid Dart identifiers. The dots are there for
-/// compatibility with Google's internal Dart packages, but they may not be used
-/// when publishing a package to pub.dartlang.org.
-final _packageName =
-    RegExp('^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$');
+export 'pubspec_parse.dart' hide PubspecBase;
 
 /// The default SDK upper bound constraint for packages that don't declare one.
 ///
 /// This provides a sane default for packages that don't have an upper bound.
 final VersionRange _defaultUpperBoundSdkConstraint =
-    VersionConstraint.parse('<2.0.0');
+    VersionConstraint.parse('<2.0.0') as VersionRange;
 
 /// Whether or not to allow the pre-release SDK for packages that have an
 /// upper bound Dart SDK constraint of <2.0.0.
@@ -72,7 +64,7 @@ bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
 /// accessed. This allows a partially-invalid pubspec to be used if only the
 /// valid portions are relevant. To get a list of all errors in the pubspec, use
 /// [allErrors].
-class Pubspec {
+class Pubspec extends PubspecBase {
   // If a new lazily-initialized field is added to this class and the
   // initialization can throw a [PubspecException], that error should also be
   // exposed through [allErrors].
@@ -82,145 +74,64 @@ class Pubspec {
   ///
   /// This will be null if this was created using [new Pubspec] or [new
   /// Pubspec.empty].
-  final SourceRegistry _sources;
+  final SourceRegistry? _sources;
 
   /// The location from which the pubspec was loaded.
   ///
   /// This can be null if the pubspec was created in-memory or if its location
   /// is unknown.
-  Uri get _location => fields.span.sourceUrl;
-
-  /// All pubspec fields.
-  ///
-  /// This includes the fields from which other properties are derived.
-  final YamlMap fields;
-
-  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
-  /// pubspec.
-  final bool _includeDefaultSdkConstraint;
-
-  /// Whether or not the SDK version was overridden from <2.0.0 to
-  /// <2.0.0-dev.infinity.
-  bool get dartSdkWasOverridden => _dartSdkWasOverridden;
-  bool _dartSdkWasOverridden = false;
-
-  /// The package's name.
-  String get name {
-    if (_name != null) return _name;
-
-    var name = fields['name'];
-    if (name == null) {
-      throw PubspecException('Missing the required "name" field.', fields.span);
-    } else if (name is! String) {
-      throw PubspecException(
-          '"name" field must be a string.', fields.nodes['name'].span);
-    } else if (!_packageName.hasMatch(name)) {
-      throw PubspecException('"name" field must be a valid Dart identifier.',
-          fields.nodes['name'].span);
-    } else if (reservedWords.contains(name)) {
-      throw PubspecException('"name" field may not be a Dart reserved word.',
-          fields.nodes['name'].span);
-    }
-
-    _name = name;
-    return _name;
-  }
-
-  String _name;
-
-  /// The package's version.
-  Version get version {
-    if (_version != null) return _version;
-
-    var version = fields['version'];
-    if (version == null) {
-      _version = Version.none;
-      return _version;
-    }
-
-    var span = fields.nodes['version'].span;
-    if (version is num) {
-      var fixed = '$version.0';
-      if (version is int) {
-        fixed = '$fixed.0';
-      }
-      _error(
-          '"version" field must have three numeric components: major, '
-          'minor, and patch. Instead of "$version", consider "$fixed".',
-          span);
-    }
-    if (version is! String) {
-      _error('"version" field must be a string.', span);
-    }
-
-    _version = _wrapFormatException(
-        'version number', span, () => Version.parse(version));
-    return _version;
-  }
-
-  Version _version;
+  Uri? get _location => fields.span.sourceUrl;
 
   /// The additional packages this package depends on.
-  Map<String, PackageRange> get dependencies {
-    if (_dependencies != null) return _dependencies;
-    _dependencies =
-        _parseDependencies('dependencies', fields.nodes['dependencies']);
-    return _dependencies;
-  }
+  Map<String, PackageRange> get dependencies => _dependencies ??=
+      _parseDependencies('dependencies', fields.nodes['dependencies']);
 
-  Map<String, PackageRange> _dependencies;
+  Map<String, PackageRange>? _dependencies;
 
   /// The packages this package depends on when it is the root package.
-  Map<String, PackageRange> get devDependencies {
-    if (_devDependencies != null) return _devDependencies;
-    _devDependencies = _parseDependencies(
-        'dev_dependencies', fields.nodes['dev_dependencies']);
-    return _devDependencies;
-  }
+  Map<String, PackageRange> get devDependencies => _devDependencies ??=
+      _parseDependencies('dev_dependencies', fields.nodes['dev_dependencies']);
 
-  Map<String, PackageRange> _devDependencies;
+  Map<String, PackageRange>? _devDependencies;
 
   /// The dependency constraints that this package overrides when it is the
   /// root package.
   ///
   /// Dependencies here will replace any dependency on a package with the same
   /// name anywhere in the dependency graph.
-  Map<String, PackageRange> get dependencyOverrides {
-    if (_dependencyOverrides != null) return _dependencyOverrides;
-    _dependencyOverrides = _parseDependencies(
-        'dependency_overrides', fields.nodes['dependency_overrides']);
-    return _dependencyOverrides;
-  }
+  Map<String, PackageRange> get dependencyOverrides =>
+      _dependencyOverrides ??= _parseDependencies(
+          'dependency_overrides', fields.nodes['dependency_overrides']);
 
-  Map<String, PackageRange> _dependencyOverrides;
+  Map<String, PackageRange>? _dependencyOverrides;
 
-  Map<String, Feature> get features {
-    if (_features != null) return _features;
-    var features = fields['features'];
+  late final Map<String, Feature> features = _computeFeatures();
+
+  Map<String, Feature> _computeFeatures() {
+    final features = fields['features'];
     if (features == null) {
-      _features = const {};
-      return _features;
+      return const {};
     }
 
-    if (features is! Map) {
-      _error('"features" field must be a map.', fields.nodes['features'].span);
+    if (features is! YamlMap) {
+      _error('"features" field must be a map.', fields.nodes['features']!.span);
     }
 
-    _features = mapMap(features.nodes,
-        key: (nameNode, _) => _validateFeatureName(nameNode),
-        value: (nameNode, specNode) {
+    return mapMap(features.nodes,
+        key: (dynamic nameNode, dynamic _) => _validateFeatureName(nameNode),
+        value: (dynamic nameNode, dynamic specNode) {
           if (specNode.value == null) {
             return Feature(nameNode.value, const []);
           }
 
-          if (specNode is! Map) {
+          if (specNode is! YamlMap) {
             _error('A feature specification must be a map.', specNode.span);
           }
 
           var onByDefault = specNode['default'] ?? true;
           if (onByDefault is! bool) {
             _error('Default must be true or false.',
-                specNode.nodes['default'].span);
+                specNode.nodes['default']!.span);
           }
 
           var requires = _parseStringList(specNode.nodes['requires'],
@@ -238,18 +149,24 @@ class Pubspec {
               sdkConstraints: sdkConstraints,
               onByDefault: onByDefault);
         });
-    return _features;
   }
-
-  Map<String, Feature> _features;
 
   /// A map from SDK identifiers to constraints on those SDK versions.
   Map<String, VersionConstraint> get sdkConstraints {
     _ensureEnvironment();
-    return _sdkConstraints;
+    return _sdkConstraints!;
   }
 
-  Map<String, VersionConstraint> _sdkConstraints;
+  Map<String, VersionConstraint>? _sdkConstraints;
+
+  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
+  /// pubspec.
+  final bool _includeDefaultSdkConstraint;
+
+  /// Whether or not the SDK version was overridden from <2.0.0 to
+  /// <2.0.0-dev.infinity.
+  bool get dartSdkWasOverridden => _dartSdkWasOverridden;
+  bool _dartSdkWasOverridden = false;
 
   /// The original Dart SDK constraint as written in the pubspec.
   ///
@@ -257,10 +174,10 @@ class Pubspec {
   /// `sdkConstraints["dart"]`.
   VersionConstraint get originalDartSdkConstraint {
     _ensureEnvironment();
-    return _originalDartSdkConstraint ?? sdkConstraints['dart'];
+    return _originalDartSdkConstraint ?? sdkConstraints['dart']!;
   }
 
-  VersionConstraint _originalDartSdkConstraint;
+  VersionConstraint? _originalDartSdkConstraint;
 
   /// Ensures that the top-level "environment" field has been parsed and
   /// [_sdkConstraints] is set accordingly.
@@ -300,17 +217,19 @@ class Pubspec {
     if (!_allowPreReleaseSdk) return false;
     if (!sdk.version.isPreRelease) return false;
     if (sdkConstraint.includeMax) return false;
-    if (sdkConstraint.min != null &&
-        sdkConstraint.min.isPreRelease &&
-        equalsIgnoringPreRelease(sdkConstraint.min, sdk.version)) {
+    var minSdkConstraint = sdkConstraint.min;
+    if (minSdkConstraint != null &&
+        minSdkConstraint.isPreRelease &&
+        equalsIgnoringPreRelease(sdkConstraint.min!, sdk.version)) {
       return false;
     }
-    if (sdkConstraint.max == null) return false;
-    if (sdkConstraint.max.isPreRelease &&
-        !sdkConstraint.max.isFirstPreRelease) {
+    var maxSdkConstraint = sdkConstraint.max;
+    if (maxSdkConstraint == null) return false;
+    if (maxSdkConstraint.max.isPreRelease &&
+        !maxSdkConstraint.isFirstPreRelease) {
       return false;
     }
-    return equalsIgnoringPreRelease(sdkConstraint.max, sdk.version);
+    return equalsIgnoringPreRelease(maxSdkConstraint, sdk.version);
   }
 
   /// Parses the "environment" field in [parent] and returns a map from SDK
@@ -325,9 +244,9 @@ class Pubspec {
       };
     }
 
-    if (yaml is! Map) {
+    if (yaml is! YamlMap) {
       _error('"environment" field must be a map.',
-          parent.nodes['environment'].span);
+          parent.nodes['environment']!.span);
     }
 
     var constraints = {
@@ -353,141 +272,6 @@ class Pubspec {
     return constraints;
   }
 
-  /// The URL of the server that the package should default to being published
-  /// to, "none" if the package should not be published, or `null` if it should
-  /// be published to the default server.
-  ///
-  /// If this does return a URL string, it will be a valid parseable URL.
-  String get publishTo {
-    if (_parsedPublishTo) return _publishTo;
-
-    var publishTo = fields['publish_to'];
-    if (publishTo != null) {
-      var span = fields.nodes['publish_to'].span;
-
-      if (publishTo is! String) {
-        _error('"publish_to" field must be a string.', span);
-      }
-
-      // It must be "none" or a valid URL.
-      if (publishTo != 'none') {
-        _wrapFormatException('"publish_to" field', span, () {
-          var url = Uri.parse(publishTo);
-          if (url.scheme.isEmpty) {
-            throw FormatException('must be an absolute URL.');
-          }
-        });
-      }
-    }
-
-    _parsedPublishTo = true;
-    _publishTo = publishTo;
-    return _publishTo;
-  }
-
-  bool _parsedPublishTo = false;
-  String _publishTo;
-
-  /// The list of patterns covering _false-positive secrets_ in the package.
-  ///
-  /// This is a list of git-ignore style patterns for files that should be
-  /// ignored when trying to detect possible leaks of secrets during
-  /// package publication.
-  List<String> get falseSecrets {
-    if (_falseSecrets == null) {
-      final falseSecrets = <String>[];
-
-      // Throws a [PubspecException]
-      void _falseSecretsError(SourceSpan span) => _error(
-            '"false_secrets" field must be a list of git-ignore style patterns',
-            span,
-          );
-
-      final falseSecretsNode = fields.nodes['false_secrets'];
-      if (falseSecretsNode != null) {
-        if (falseSecretsNode is YamlList) {
-          for (final node in falseSecretsNode.nodes) {
-            final value = node.value;
-            if (value is! String) {
-              _falseSecretsError(node.span);
-            }
-            falseSecrets.add(value);
-          }
-        } else {
-          _falseSecretsError(falseSecretsNode.span);
-        }
-      }
-
-      _falseSecrets = List.unmodifiable(falseSecrets);
-    }
-    return _falseSecrets;
-  }
-
-  List<String> _falseSecrets;
-
-  /// The executables that should be placed on the user's PATH when this
-  /// package is globally activated.
-  ///
-  /// It is a map of strings to string. Each key is the name of the command
-  /// that will be placed on the user's PATH. The value is the name of the
-  /// .dart script (without extension) in the package's `bin` directory that
-  /// should be run for that command. Both key and value must be "simple"
-  /// strings: alphanumerics, underscores and hypens only. If a value is
-  /// omitted, it is inferred to use the same name as the key.
-  Map<String, String> get executables {
-    if (_executables != null) return _executables;
-
-    _executables = {};
-    var yaml = fields['executables'];
-    if (yaml == null) return _executables;
-
-    if (yaml is! Map) {
-      _error('"executables" field must be a map.',
-          fields.nodes['executables'].span);
-    }
-
-    yaml.nodes.forEach((key, value) {
-      if (key.value is! String) {
-        _error('"executables" keys must be strings.', key.span);
-      }
-
-      final keyPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
-      if (!keyPattern.hasMatch(key.value)) {
-        _error(
-            '"executables" keys may only contain letters, '
-            'numbers, hyphens and underscores.',
-            key.span);
-      }
-
-      if (value.value == null) {
-        value = key;
-      } else if (value.value is! String) {
-        _error('"executables" values must be strings or null.', value.span);
-      }
-
-      final valuePattern = RegExp(r'[/\\]');
-      if (valuePattern.hasMatch(value.value)) {
-        _error('"executables" values may not contain path separators.',
-            value.span);
-      }
-
-      _executables[key.value] = value.value;
-    });
-
-    return _executables;
-  }
-
-  Map<String, String> _executables;
-
-  /// Whether the package is private and cannot be published.
-  ///
-  /// This is specified in the pubspec by setting "publish_to" to "none".
-  bool get isPrivate => publishTo == 'none';
-
-  /// Whether or not the pubspec has no contents.
-  bool get isEmpty =>
-      name == null && version == Version.none && dependencies.isEmpty;
-
   /// The language version implied by the sdk constraint.
   LanguageVersion get languageVersion =>
       LanguageVersion.fromSdkConstraint(originalDartSdkConstraint);
@@ -497,7 +281,7 @@ class Pubspec {
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecException].
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String expectedName}) {
+      {String? expectedName}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -513,16 +297,15 @@ class Pubspec {
         expectedName: expectedName, location: pubspecUri);
   }
 
-  Pubspec(this._name,
-      {Version version,
-      Iterable<PackageRange> dependencies,
-      Iterable<PackageRange> devDependencies,
-      Iterable<PackageRange> dependencyOverrides,
-      Map fields,
-      SourceRegistry sources,
-      Map<String, VersionConstraint> sdkConstraints})
-      : _version = version,
-        _dependencies = dependencies == null
+  Pubspec(String name,
+      {Version? version,
+      Iterable<PackageRange>? dependencies,
+      Iterable<PackageRange>? devDependencies,
+      Iterable<PackageRange>? dependencyOverrides,
+      Map? fields,
+      SourceRegistry? sources,
+      Map<String, VersionConstraint>? sdkConstraints})
+      : _dependencies = dependencies == null
             ? null
             : Map.fromIterable(dependencies, key: (range) => range.name),
         _devDependencies = devDependencies == null
@@ -534,18 +317,22 @@ class Pubspec {
         _sdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
-        fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
-        _sources = sources;
-
+        _sources = sources,
+        super(
+          fields == null ? YamlMap() : YamlMap.wrap(fields),
+          name: name,
+          version: version,
+        );
   Pubspec.empty()
       : _sources = null,
-        _name = null,
-        _version = Version.none,
         _dependencies = {},
         _devDependencies = {},
         _sdkConstraints = {'dart': VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
-        fields = YamlMap();
+        super(
+          YamlMap(),
+          version: Version.none,
+        );
 
   /// Returns a Pubspec object for an already-parsed map representing its
   /// contents.
@@ -555,11 +342,11 @@ class Pubspec {
   ///
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(Map fields, this._sources,
-      {String expectedName, Uri location})
-      : fields = fields is YamlMap
+      {String? expectedName, Uri? location})
+      : _includeDefaultSdkConstraint = true,
+        super(fields is YamlMap
             ? fields
-            : YamlMap.wrap(fields, sourceUrl: location),
-        _includeDefaultSdkConstraint = true {
+            : YamlMap.wrap(fields, sourceUrl: location)) {
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -568,7 +355,7 @@ class Pubspec {
     throw PubspecException(
         '"name" field doesn\'t match expected name '
         '"$expectedName".',
-        this.fields.nodes['name'].span);
+        this.fields.nodes['name']!.span);
   }
 
   /// Parses the pubspec stored at [filePath] whose text is [contents].
@@ -576,7 +363,7 @@ class Pubspec {
   /// If the pubspec doesn't define a version for itself, it defaults to
   /// [Version.none].
   factory Pubspec.parse(String contents, SourceRegistry sources,
-      {String expectedName, Uri location}) {
+      {String? expectedName, Uri? location}) {
     YamlNode pubspecNode;
     try {
       pubspecNode = loadYamlNode(contents, sourceUrl: location);
@@ -625,7 +412,7 @@ class Pubspec {
 
   /// Parses the dependency field named [field], and returns the corresponding
   /// map of dependency names to dependencies.
-  Map<String, PackageRange> _parseDependencies(String field, YamlNode node) {
+  Map<String, PackageRange> _parseDependencies(String field, YamlNode? node) {
     var dependencies = <String, PackageRange>{};
 
     // Allow an empty dependencies key.
@@ -635,29 +422,28 @@ class Pubspec {
       _error('"$field" field must be a map.', node.span);
     }
 
-    var map = node as YamlMap;
-    var nonStringNode = map.nodes.keys
+    var nonStringNode = node.nodes.keys
         .firstWhere((e) => e.value is! String, orElse: () => null);
     if (nonStringNode != null) {
       _error('A dependency name must be a string.', nonStringNode.span);
     }
 
-    map.nodes.forEach((nameNode, specNode) {
+    node.nodes.forEach((nameNode, specNode) {
       var name = nameNode.value;
       var spec = specNode.value;
       if (fields['name'] != null && name == this.name) {
         _error('A package may not list itself as a dependency.', nameNode.span);
       }
 
-      YamlNode descriptionNode;
-      String sourceName;
+      YamlNode? descriptionNode;
+      String? sourceName;
 
       VersionConstraint versionConstraint = VersionRange();
       var features = const <String, FeatureDependency>{};
       if (spec == null) {
-        sourceName = _sources.defaultSource.name;
+        sourceName = _sources!.defaultSource.name;
       } else if (spec is String) {
-        sourceName = _sources.defaultSource.name;
+        sourceName = _sources!.defaultSource.name;
         versionConstraint = _parseVersionConstraint(specNode);
       } else if (spec is Map) {
         // Don't write to the immutable YAML map.
@@ -696,13 +482,18 @@ class Pubspec {
 
       // Let the source validate the description.
       var ref = _wrapFormatException('description', descriptionNode?.span, () {
-        String pubspecPath;
-        if (_location != null && _isFileUri(_location)) {
+        String? pubspecPath;
+        var location = _location;
+        if (location != null && _isFileUri(location)) {
           pubspecPath = path.fromUri(_location);
         }
 
-        return _sources[sourceName].parseRef(name, descriptionNode?.value,
-            containingPath: pubspecPath, languageVersion: languageVersion);
+        return _sources![sourceName]!.parseRef(
+          name,
+          descriptionNode?.value,
+          containingPath: pubspecPath,
+          languageVersion: languageVersion,
+        );
       }, targetPackage: name);
 
       dependencies[name] =
@@ -719,13 +510,13 @@ class Pubspec {
   /// bound and it is compatible with [defaultUpperBoundConstraint].
   ///
   /// If [ignoreUpperBound] the max constraint is ignored.
-  VersionConstraint _parseVersionConstraint(YamlNode node,
-      {VersionConstraint defaultUpperBoundConstraint,
+  VersionConstraint _parseVersionConstraint(YamlNode? node,
+      {VersionConstraint? defaultUpperBoundConstraint,
       bool ignoreUpperBound = false}) {
     if (node?.value == null) {
       return defaultUpperBoundConstraint ?? VersionConstraint.any;
     }
-    if (node.value is! String) {
+    if (node!.value is! String) {
       _error('A version constraint must be a string.', node.span);
     }
 
@@ -748,13 +539,13 @@ class Pubspec {
 
   /// Parses [node] to a map from feature names to whether those features are
   /// enabled.
-  Map<String, FeatureDependency> _parseDependencyFeatures(YamlNode node) {
+  Map<String, FeatureDependency> _parseDependencyFeatures(YamlNode? node) {
     if (node?.value == null) return const {};
-    if (node is! YamlMap) _error('Features must be a map.', node.span);
+    if (node is! YamlMap) _error('Features must be a map.', node!.span);
 
-    return mapMap((node as YamlMap).nodes,
-        key: (nameNode, _) => _validateFeatureName(nameNode),
-        value: (_, valueNode) {
+    return mapMap(node.nodes,
+        key: (dynamic nameNode, dynamic _) => _validateFeatureName(nameNode),
+        value: (dynamic _, dynamic valueNode) {
           var value = valueNode.value;
           if (value is bool) {
             return value
@@ -775,7 +566,7 @@ class Pubspec {
     var name = node.value;
     if (name is! String) {
       _error('A feature name must be a string.', node.span);
-    } else if (!_packageName.hasMatch(name)) {
+    } else if (!packageNameRegExp.hasMatch(name)) {
       _error('A feature name must be a valid Dart identifier.', node.span);
     }
 
@@ -785,8 +576,8 @@ class Pubspec {
   /// Verifies that [node] is a list of strings and returns it.
   ///
   /// If [validate] is passed, it's called for each string in [node].
-  List<String> _parseStringList(YamlNode node,
-      {void Function(String value, SourceSpan) validate}) {
+  List<String> _parseStringList(YamlNode? node,
+      {void Function(String value, SourceSpan)? validate}) {
     var list = _parseList(node);
     for (var element in list.nodes) {
       var value = element.value;
@@ -800,7 +591,7 @@ class Pubspec {
   }
 
   /// Verifies that [node] is a list and returns it.
-  YamlList _parseList(YamlNode node) {
+  YamlList _parseList(YamlNode? node) {
     if (node == null || node.value == null) return YamlList();
     if (node is YamlList) return node;
     _error('Must be a list.', node.span);
@@ -816,8 +607,8 @@ class Pubspec {
   /// If [targetPackage] is provided, the value is used to describe the
   /// dependency that caused the problem.
   T _wrapFormatException<T>(
-      String description, SourceSpan span, T Function() fn,
-      {String targetPackage}) {
+      String description, SourceSpan? span, T Function() fn,
+      {String? targetPackage}) {
     try {
       return fn();
     } on FormatException catch (e) {
@@ -834,18 +625,9 @@ class Pubspec {
   }
 
   /// Throws a [PubspecException] with the given message.
-  @alwaysThrows
-  void _error(String message, SourceSpan span) {
+  Never _error(String message, SourceSpan? span) {
     throw PubspecException(message, span);
   }
-}
-
-/// An exception thrown when parsing a pubspec.
-///
-/// These exceptions are often thrown lazily while accessing pubspec properties.
-class PubspecException extends SourceSpanFormatException
-    implements ApplicationException {
-  PubspecException(String message, SourceSpan span) : super(message, span);
 }
 
 /// Returns whether [uri] is a file URI.

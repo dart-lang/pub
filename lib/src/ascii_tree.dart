@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// A simple library for rendering tree-like structures in ASCII.
 import 'package:path/path.dart' as path;
 
@@ -60,7 +58,11 @@ import 'utils.dart';
 ///
 /// If [showAllChildren] is `false`, then directories with more than ten items
 /// will have their contents truncated. Defaults to `false`.
-String fromFiles(List<String> files, {String baseDir, bool showAllChildren}) {
+String fromFiles(
+  List<String> files, {
+  String? baseDir,
+  bool showAllChildren = false,
+}) {
   // Parse out the files into a tree of nested maps.
   var root = <String, Map>{};
   for (var file in files) {
@@ -100,14 +102,18 @@ String fromFiles(List<String> files, {String baseDir, bool showAllChildren}) {
 ///
 /// If [showAllChildren] is `false`, then directories with more than ten items
 /// will have their contents truncated. Defaults to `false`.
-String fromMap(Map<String, Map> map, {bool showAllChildren}) {
+String fromMap(Map<String, Map> map, {bool showAllChildren = false}) {
   var buffer = StringBuffer();
   _draw(buffer, '', null, map, showAllChildren: showAllChildren);
   return buffer.toString();
 }
 
 void _drawLine(
-    StringBuffer buffer, String prefix, bool isLastChild, String name) {
+  StringBuffer buffer,
+  String prefix,
+  bool isLastChild,
+  String? name,
+) {
   // Print lines.
   buffer.write(prefix);
   if (name != null) {
@@ -129,10 +135,13 @@ String _getPrefix(bool isRoot, bool isLast) {
 }
 
 void _draw(
-    StringBuffer buffer, String prefix, String name, Map<String, Map> children,
-    {bool showAllChildren, bool isLast = false}) {
-  showAllChildren ??= false;
-
+  StringBuffer buffer,
+  String prefix,
+  String? name,
+  Map<String, Map> children, {
+  bool showAllChildren = false,
+  bool isLast = false,
+}) {
   // Don't draw a line for the root node.
   if (name != null) _drawLine(buffer, prefix, isLast, name);
 
@@ -159,7 +168,7 @@ void _draw(
 
     // Elide the middle ones.
     buffer.write(prefix);
-    buffer.write(_getPrefix(name == null, isLast));
+    buffer.write(_getPrefix(false, isLast));
     buffer.writeln(log.gray('| (${childNames.length - 6} more...)'));
 
     // Show the last few.

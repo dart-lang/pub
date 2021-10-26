@@ -2,10 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
+import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
@@ -93,8 +92,12 @@ abstract class Source {
   /// the original user-provided description.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageRef parseRef(String name, description,
-      {String containingPath, LanguageVersion languageVersion});
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingPath,
+    required LanguageVersion languageVersion,
+  });
 
   /// Parses a [PackageId] from a name and a serialized description.
   ///
@@ -107,7 +110,7 @@ abstract class Source {
   ///
   /// Throws a [FormatException] if the description is not valid.
   PackageId parseId(String name, Version version, description,
-      {String containingPath});
+      {String? containingPath});
 
   /// When a [LockFile] is serialized, it uses this method to get the
   /// [description] in the right format.
@@ -174,7 +177,7 @@ abstract class BoundSource {
   /// selected even if it is marked as retracted. Otherwise, all the returned
   /// IDs correspond to non-retracted versions.
   Future<List<PackageId>> getVersions(PackageRef ref,
-      {Duration maxAge, Version allowedRetractedVersion}) async {
+      {Duration? maxAge, Version? allowedRetractedVersion}) async {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
@@ -191,7 +194,7 @@ abstract class BoundSource {
       }
       return null;
     })))
-        .where((element) => element != null)
+        .whereNotNull()
         .toList();
 
     return versions;
@@ -209,7 +212,7 @@ abstract class BoundSource {
   ///
   /// This method is effectively protected: subclasses must implement it, but
   /// external code should not call this. Instead, call [getVersions].
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge);
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration? maxAge);
 
   /// A cache of pubspecs described by [describe].
   final _pubspecs = <PackageId, Pubspec>{};
@@ -264,7 +267,7 @@ abstract class BoundSource {
   ///
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
-  String getDirectory(PackageId id, {String relativeFrom});
+  String getDirectory(PackageId id, {String? relativeFrom});
 
   /// Returns metadata about a given package.
   ///
@@ -273,7 +276,7 @@ abstract class BoundSource {
   ///
   /// In the case of offline sources, [maxAge] is not used, since information is
   /// per definiton cached.
-  Future<PackageStatus> status(PackageId id, {Duration maxAge}) async =>
+  Future<PackageStatus> status(PackageId id, {Duration? maxAge}) async =>
       // Default implementation has no metadata.
       PackageStatus();
 
@@ -290,10 +293,11 @@ class PackageStatus {
   /// `null` if not [isDiscontinued]. Otherwise contains the
   /// replacement string provided by the host or `null` if there is no
   /// replacement.
-  final String discontinuedReplacedBy;
+  final String? discontinuedReplacedBy;
   final bool isDiscontinued;
   final bool isRetracted;
-  PackageStatus({isDiscontinued, this.discontinuedReplacedBy, isRetracted})
-      : isDiscontinued = isDiscontinued ?? false,
-        isRetracted = isRetracted ?? false;
+  PackageStatus(
+      {this.isDiscontinued = false,
+      this.discontinuedReplacedBy,
+      this.isRetracted = false});
 }
