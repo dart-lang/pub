@@ -142,6 +142,21 @@ Future<void> main() async {
     );
   });
 
+  test('Reports parse failure', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+      }),
+    ]).create();
+    await testGetExecutable(
+      '::',
+      d.path(appPath),
+      errorMessage: contains(r'cannot contain multiple ":"'),
+      issue: CommandResolutionIssue.parseError,
+    );
+  });
+
   test('Reports compilation failure', () async {
     await d.dir(appPath, [
       d.pubspec({
