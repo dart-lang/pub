@@ -204,6 +204,7 @@ Future<int> _runDartProgram(
 }
 
 /// The result of a `getExecutableForCommand` command resolution.
+@sealed
 class DartExecutableWithPackageConfig {
   /// Can be a .dart file or a incremental snapshot.
   final String executable;
@@ -293,7 +294,8 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     );
   }
   if (!fileExists(p.join(root, 'pubspec.yaml'))) {
-    throw CommandResolutionFailedException('Could not find file `$descriptor`',
+    throw CommandResolutionFailedException._(
+        'Could not find file `$descriptor`',
         CommandResolutionIssue.fileNotFound);
   }
   final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
@@ -309,7 +311,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
         ),
       );
     } on ApplicationException catch (e) {
-      throw CommandResolutionFailedException(
+      throw CommandResolutionFailedException._(
           e.toString(), CommandResolutionIssue.pubGetFailed);
     }
   }
@@ -319,7 +321,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   if (descriptor.contains(':')) {
     final parts = descriptor.split(':');
     if (parts.length > 2) {
-      throw CommandResolutionFailedException(
+      throw CommandResolutionFailedException._(
         '[<package>[:command]] cannot contain multiple ":"',
         CommandResolutionIssue.parseError,
       );
@@ -334,7 +336,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
 
   if (!entrypoint.packageGraph.packages.containsKey(package)) {
-    throw CommandResolutionFailedException(
+    throw CommandResolutionFailedException._(
       'Could not find package `$package` or file `$descriptor`',
       CommandResolutionIssue.packageNotFound,
     );
@@ -344,7 +346,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
 
   final path = entrypoint.resolveExecutable(executable);
   if (!fileExists(path)) {
-    throw CommandResolutionFailedException(
+    throw CommandResolutionFailedException._(
       'Could not find `bin${p.separator}$command.dart` in package `$package`.',
       CommandResolutionIssue.noBinaryFound,
     );
@@ -363,7 +365,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
           () => entrypoint.precompileExecutable(executable),
         );
       } on ApplicationException catch (e) {
-        throw CommandResolutionFailedException(
+        throw CommandResolutionFailedException._(
           e.toString(),
           CommandResolutionIssue.compilationFailed,
         );
@@ -405,7 +407,7 @@ enum CommandResolutionIssue {
 class CommandResolutionFailedException implements Exception {
   final String message;
   final CommandResolutionIssue issue;
-  CommandResolutionFailedException(this.message, this.issue);
+  CommandResolutionFailedException._(this.message, this.issue);
 
   @override
   String toString() {
