@@ -134,31 +134,39 @@ class SolveResult {
     final analytics = pubAnalytics.analytics;
     if (analytics == null) return;
 
+    final dependenciesForAnalytics = <PackageId>[];
     for (final package in packages) {
       final source = package.source;
       // Only send analytics for packages from pub.dev.
       if (source is HostedSource &&
           (runningFromTest ||
               package.description['url'] == HostedSource.pubDevUrl)) {
-        final dependencyKind = const {
-          DependencyType.dev: 'dev',
-          DependencyType.direct: 'direct',
-          DependencyType.none: 'transitive'
-        }[_root.dependencyType(package.name)]!;
-        analytics.sendEvent(
-          'pub-get',
-          package.name,
-          label: package.version.canonicalizedVersion,
-          value: 1,
-          parameters: {
-            'ni': '1', // We consider a pub-get a non-interactive event.
-            pubAnalytics.dependencyKindCustomDimensionName: dependencyKind,
-          },
-        );
-        log.fine(
-            'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
+        dependenciesForAnalytics.add(package);
       }
     }
+    // Randomize the dependencies, such that even if some analytics events don't
+    // get sent, the results will still be representative.
+    shuffle(dependenciesForAnalytics);
+    for (final package in dependenciesForAnalytics) {
+      final dependencyKind = const {
+        DependencyType.dev: 'dev',
+        DependencyType.direct: 'direct',
+        DependencyType.none: 'transitive'
+      }[_root.dependencyType(package.name)]!;
+      analytics.sendEvent(
+        'pub-get',
+        package.name,
+        label: package.version.canonicalizedVersion,
+        value: 1,
+        parameters: {
+          'ni': '1', // We consider a pub-get a non-interactive event.
+          pubAnalytics.dependencyKindCustomDimensionName: dependencyKind,
+        },
+      );
+      log.fine(
+          'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
+    }
+
     analytics.sendTiming(
       'resolution',
       resolutionTime.inMilliseconds,
