@@ -8,7 +8,7 @@ Downgrade the current package's dependencies to oldest versions.
 
 Usage: pub downgrade [dependencies...]
 -h, --help               Print this usage information.
-    --[no-]offline       Use cached packages instead of accessing the network.
+    --offline            Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
 -C, --directory=<dir>    Run this in the directory<dir>.

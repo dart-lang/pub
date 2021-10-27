@@ -6,7 +6,7 @@ Get the current package's dependencies.
 
 Usage: pub get <subcommand> [arguments...]
 -h, --help               Print this usage information.
-    --[no-]offline       Use cached packages instead of accessing the network.
+    --offline            Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
     --[no-]precompile    Build executables in immediate dependencies.

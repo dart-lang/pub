@@ -39,6 +39,7 @@ class UpgradeCommand extends PubCommand {
 
   UpgradeCommand() {
     argParser.addFlag('offline',
+        negatable: false,
         help: 'Use cached packages instead of accessing the network.');
 
     argParser.addFlag('dry-run',

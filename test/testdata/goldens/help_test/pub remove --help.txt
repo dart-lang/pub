@@ -6,7 +6,7 @@ Removes a dependency from the current package.
 
 Usage: pub remove <package>
 -h, --help               Print this usage information.
-    --[no-]offline       Use cached packages instead of accessing the network.
+    --offline            Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
     --[no-]precompile    Precompile executables in immediate dependencies.

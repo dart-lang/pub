@@ -13,7 +13,7 @@ Usage: pub add <package>[:<constraint>] [options]
     --hosted-url         URL of package host server
     --path               Local path
     --sdk                SDK source for package
-    --[no-]offline       Use cached packages instead of accessing the network.
+    --offline            Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
     --[no-]precompile    Build executables in immediate dependencies.
