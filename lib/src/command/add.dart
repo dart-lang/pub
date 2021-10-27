@@ -73,9 +73,7 @@ class AddCommand extends PubCommand {
       hide: true,
     );
 
-    argParser.addFlag('offline',
-        negatable: false,
-        help: 'Use cached packages instead of accessing the network.');
+    addOfflineFlag();
 
     argParser.addFlag('dry-run',
         abbr: 'n',

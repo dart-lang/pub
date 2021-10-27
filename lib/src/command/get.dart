@@ -20,10 +20,7 @@ class GetCommand extends PubCommand {
   bool get isOffline => argResults['offline'];
 
   GetCommand() {
-    argParser.addFlag('offline',
-        negatable: false,
-        help: 'Use cached packages instead of accessing the network.');
-
+    addOfflineFlag();
     argParser.addFlag('dry-run',
         abbr: 'n',
         negatable: false,

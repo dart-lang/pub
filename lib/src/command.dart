@@ -84,6 +84,43 @@ abstract class PubCommand extends Command<int> {
   late final ArgParser argParser = ArgParser(
       allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
 
+  /// Add the `--offline` flag and the deprecated `--no-offline` flag.
+  ///
+  /// The `--no-offline` flag was accidentally introduced, because
+  /// [argParser.addFlag] defaults to `negatable: true`.
+  ///
+  /// Removing the `--no-offline` flag is breaking, so instead we:
+  ///
+  ///  * Deprecated the --no-offline flag,
+  ///  * Hide the --no-offline flag, and,
+  ///  * Report conflicts if --offline and --no-offline is specified.
+  ///
+  /// See [_checkOfflineFlagConsistency].
+  @protected
+  void addOfflineFlag() {
+    argParser.addFlag('offline',
+        negatable: false,
+        help: 'Use cached packages instead of accessing the network.');
+    argParser.addFlag('no-offline', hide: true);
+  }
+
+  /// Check the consistency of the `--offline` and `--no-offline` flags.
+  ///
+  /// See [addOfflineFlag].
+  void _checkOfflineFlagConsistency() {
+    // Not all commands define the --no-offline and --offline flags.
+    // We only check consisntency for commands that do!
+    if (argParser.options.containsKey('no-offline') &&
+        argParser.options.containsKey('offline') &&
+        argResults['no-offline'] == true) {
+      log.warning('Flag --no-offline is deprecated!');
+
+      if (argResults['offline'] == true) {
+        usageException('Flags --offline and --no-offline are conflicting!');
+      }
+    }
+  }
+
   /// Override this to use offline-only sources instead of hitting the network.
   ///
   /// This will only be called before the [SystemCache] is created. After that,
@@ -177,8 +214,10 @@ abstract class PubCommand extends Command<int> {
     log.fine('Pub ${sdk.version}');
 
     try {
-      await captureErrors<void>(() async => runProtected(),
-          captureStackChains: _pubTopLevel.captureStackChains);
+      await captureErrors<void>(() async {
+        _checkOfflineFlagConsistency();
+        await runProtected();
+      }, captureStackChains: _pubTopLevel.captureStackChains);
       if (_exitCodeOverride != null) {
         return _exitCodeOverride!;
       }

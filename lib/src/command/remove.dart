@@ -31,9 +31,7 @@ class RemoveCommand extends PubCommand {
   bool get isDryRun => argResults['dry-run'];
 
   RemoveCommand() {
-    argParser.addFlag('offline',
-        negatable: false,
-        help: 'Use cached packages instead of accessing the network.');
+    addOfflineFlag();
 
     argParser.addFlag('dry-run',
         abbr: 'n',

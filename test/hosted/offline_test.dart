@@ -175,5 +175,40 @@ void main() {
 
       await d.appPackagesFile({'foo': '1.2.2'}).validate();
     });
+
+    test('flag --no-offline is deprecated', () async {
+      // See [Entrypoint.addOfflineFlag] for details around `--no-offline` flag.
+
+      await servePackages((builder) {
+        builder.serve('foo', '1.0.0');
+      });
+
+      await d.appDir({'foo': '1.0.0'}).create();
+
+      await pubCommand(
+        command,
+        args: ['--no-offline'],
+        warning: contains('Flag --no-offline is deprecated'),
+      );
+    });
+
+    test('flags --offline and --no-offline are conflicting', () async {
+      // See [Entrypoint.addOfflineFlag] for details around `--no-offline` flag.
+
+      // Run the server so that we know what URL to use in the system cache.
+      await serveErrors();
+
+      await d.appDir({'foo': '>2.0.0'}).create();
+
+      await pubCommand(
+        command,
+        args: ['--offline', '--no-offline'],
+        error: allOf(
+          contains('Flags --offline and --no-offline are conflicting'),
+          contains('Flag --no-offline is deprecated'),
+        ),
+        exitCode: exit_codes.USAGE,
+      );
+    });
   });
 }
