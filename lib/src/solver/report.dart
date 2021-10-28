@@ -151,7 +151,10 @@ class SolveReport {
       if (id.source == null) continue;
       final status =
           await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
-      if (status.isDiscontinued) numDiscontinued++;
+      if (status.isDiscontinued &&
+          _root.dependencyType(id.name) == DependencyType.direct) {
+        numDiscontinued++;
+      }
     }
     if (numDiscontinued > 0) {
       if (numDiscontinued == 1) {
@@ -268,7 +271,8 @@ class SolveReport {
         } else {
           message = '(retracted)';
         }
-      } else if (status.isDiscontinued) {
+      } else if (status.isDiscontinued &&
+          _root.dependencyType(name) == DependencyType.direct) {
         if (status.discontinuedReplacedBy == null) {
           message = '(discontinued)';
         } else {

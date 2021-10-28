@@ -40,7 +40,6 @@ void main() {
     await pubGet(output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued)
-  transitive 1.0.0 (discontinued)
 Got dependencies!
 ''');
     expect(fileExists(fooVersionsCache), isTrue);
@@ -54,7 +53,6 @@ Got dependencies!
     await pubGet(output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0 (discontinued)
 Got dependencies!''');
     final c2 = json.decode(readTextFile(fooVersionsCache));
     // Make a bad cached value to test that responses are actually from cache.
@@ -62,14 +60,12 @@ Got dependencies!''');
     writeTextFile(fooVersionsCache, json.encode(c2));
     await pubGet(output: '''
 Resolving dependencies...
-  transitive 1.0.0 (discontinued)
 Got dependencies!''');
     // Repairing the cache should reset the package listing caches.
     await runPub(args: ['cache', 'repair']);
     await pubGet(output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0 (discontinued)
 Got dependencies!''');
     // Test that --offline won't try to access the server for retrieving the
     // status.
@@ -77,7 +73,6 @@ Got dependencies!''');
     await pubGet(args: ['--offline'], output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0 (discontinued)
 Got dependencies!''');
     deleteEntry(fooVersionsCache);
     deleteEntry(transitiveVersionsCache);
