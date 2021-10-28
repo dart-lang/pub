@@ -27,4 +27,26 @@ void main() {
           exitCode: exit_codes.UNAVAILABLE);
     });
   });
+
+  forBothPubGetAndUpgrade((command) {
+    test('fails gracefully if transitive dependencies does not exist',
+        () async {
+      await servePackages(
+        (builder) => builder.serve('foo', '1.2.3', deps: {'bar': '^1.0.0'}),
+      );
+
+      await d.appDir({'foo': '1.2.3'}).create();
+
+      await pubCommand(command,
+          error: allOf(
+            contains('Because every version of foo depends on bar any which '
+                'doesn\'t exist (could not find package bar at '
+                'http://localhost:'),
+            contains('), foo is forbidden.\n'
+                'So, because myapp depends on foo 1.2.3, '
+                'version solving failed.'),
+          ),
+          exitCode: exit_codes.UNAVAILABLE);
+    });
+  });
 }
