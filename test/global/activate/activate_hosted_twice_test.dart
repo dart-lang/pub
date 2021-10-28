@@ -39,7 +39,7 @@ Activated foo 1.0.0.''');
 Package foo is currently active at version 1.0.0.
 Resolving dependencies...
 The package foo is already activated at newest available version.
-To recompile executables, first run `pub global deactivate foo`.
+To recompile executables, first run `dart pub global deactivate foo`.
 Activated foo 1.0.0.''');
 
     var pub = await pubRun(global: true, args: ['foo']);
