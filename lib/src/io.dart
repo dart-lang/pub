@@ -562,8 +562,8 @@ final String dartRepoRoot = (() {
 })();
 
 /// A line-by-line stream of standard input.
-final Stream<String> _stdinLines =
-    ByteStream(stdin).toStringStream().transform(const LineSplitter());
+final StreamIterator<String> _stdinLines = StreamIterator(
+    ByteStream(stdin).toStringStream().transform(const LineSplitter()));
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
@@ -580,7 +580,7 @@ Future<bool> confirm(String message) {
 }
 
 /// Writes [prompt] and reads a line from stdin.
-Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
+Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
   if (runningFromTest) {
     log.message(prompt);
   } else {
@@ -588,12 +588,17 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
   }
   if (echoMode != null && stdin.hasTerminal) {
     final previousEchoMode = stdin.echoMode;
-    stdin.echoMode = echoMode;
-    return _stdinLines.first.whenComplete(() {
+    try {
+      stdin.echoMode = echoMode;
+      await _stdinLines.moveNext();
+      stdout.write('\n');
+      return _stdinLines.current;
+    } finally {
       stdin.echoMode = previousEchoMode;
-    });
+    }
   } else {
-    return _stdinLines.first;
+    await _stdinLines.moveNext();
+    return _stdinLines.current;
   }
 }
 
