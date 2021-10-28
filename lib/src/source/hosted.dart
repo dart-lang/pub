@@ -99,6 +99,11 @@ class HostedSource extends Source {
 
   static String pubDevUrl = 'https://pub.dartlang.org';
 
+  static bool isFromPubDev(PackageId id) {
+    return id.source is HostedSource &&
+        (id.description as _HostedDescription).uri.toString() == pubDevUrl;
+  }
+
   /// Gets the default URL for the package server for hosted dependencies.
   Uri get defaultUrl {
     // Changing this to pub.dev raises the following concerns:
