@@ -563,7 +563,7 @@ final String dartRepoRoot = (() {
 
 /// A line-by-line stream of standard input.
 final Stream<String> _stdinLines =
-    ByteStream(stdin).toStringStream().transform(const LineSplitter());
+    ByteStream(stdin).toStringStream().transform(const LineSplitter()).asBroadcastStream();
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
@@ -589,12 +589,10 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
   if (echoMode != null && stdin.hasTerminal) {
     final previousEchoMode = stdin.echoMode;
     stdin.echoMode = echoMode;
-    return _stdinLines.first.whenComplete(() {
-      stdin.echoMode = previousEchoMode;
-    });
-  } else {
+    _stdinLines.listen((value) => stdin.echoMode = previousEchoMode);
     return _stdinLines.first;
   }
+  return _stdinLines.first;
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given
