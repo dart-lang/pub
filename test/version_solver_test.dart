@@ -3003,8 +3003,9 @@ Future expectResolves(
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
     var id = ids.remove(dep.name);
+    final source = dep.source;
 
-    if (dep.source is HostedSource && dep.description is String) {
+    if (source is HostedSource && (dep.description.uri == source.defaultUrl)) {
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
       dep = registry.hosted

@@ -11,13 +11,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('fails if no package was given', () {
-    return runPub(args: ['global', 'deactivate'], error: '''
-            No package to deactivate given.
-
-            Usage: pub global deactivate <package>
-            -h, --help    Print this usage information.
-
-            Run "pub help" to see global options.
-            ''', exitCode: exit_codes.USAGE);
+    return runPub(
+      args: ['global', 'deactivate'],
+      error: contains('No package to deactivate given.'),
+      exitCode: exit_codes.USAGE,
+    );
   });
 }

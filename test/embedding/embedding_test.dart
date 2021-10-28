@@ -19,10 +19,13 @@ const _command_runner = 'tool/test-bin/pub_command_runner.dart';
 String snapshot;
 
 /// Runs `dart tool/test-bin/pub_command_runner.dart [args]` and appends the output to [buffer].
-Future<void> runEmbedding(List<String> args, StringBuffer buffer,
-    {String workingDirextory,
-    Map<String, String> environment,
-    dynamic exitCode = 0}) async {
+Future<void> runEmbeddingToBuffer(
+  List<String> args,
+  StringBuffer buffer, {
+  String workingDirextory,
+  Map<String, String> environment,
+  dynamic exitCode = 0,
+}) async {
   final process = await TestProcess.start(
     Platform.resolvedExecutable,
     ['--enable-asserts', snapshot, ...args],
@@ -45,6 +48,28 @@ Future<void> runEmbedding(List<String> args, StringBuffer buffer,
   buffer.write('\n');
 }
 
+extension on GoldenTestContext {
+  /// Runs `dart tool/test-bin/pub_command_runner.dart [args]` and compare to
+  /// next section in golden file.
+  Future<void> runEmbedding(
+    List<String> args, {
+    String workingDirextory,
+    Map<String, String> environment,
+    dynamic exitCode = 0,
+  }) async {
+    final buffer = StringBuffer();
+    await runEmbeddingToBuffer(
+      args,
+      buffer,
+      workingDirextory: workingDirextory,
+      environment: environment,
+      exitCode: exitCode,
+    );
+
+    expectNextSection(buffer.toString());
+  }
+}
+
 Future<void> main() async {
   setUpAll(() async {
     final tempDir = Directory.systemTemp.createTempSync();
@@ -57,20 +82,8 @@ Future<void> main() async {
   tearDownAll(() {
     File(snapshot).parent.deleteSync(recursive: true);
   });
-  test('help text', () async {
-    final buffer = StringBuffer();
-    await runEmbedding([''], buffer, exitCode: 64);
-    await runEmbedding(['--help'], buffer);
-    await runEmbedding(['pub'], buffer, exitCode: 64);
-    await runEmbedding(['pub', '--help'], buffer);
-    await runEmbedding(['pub', 'get', '--help'], buffer);
-    await runEmbedding(['pub', 'global'], buffer, exitCode: 64);
-    expectMatchesGoldenFile(
-        buffer.toString(), 'test/embedding/goldens/helptext.txt');
-  });
 
-  test('run works, though hidden', () async {
-    final buffer = StringBuffer();
+  testWithGolden('run works, though hidden', (ctx) async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -88,20 +101,14 @@ main() {
 ''')
       ]),
     ]).create();
-    await runEmbedding(
+    await ctx.runEmbedding(
       ['pub', 'get'],
-      buffer,
       workingDirextory: d.path(appPath),
     );
-    await runEmbedding(
+    await ctx.runEmbedding(
       ['pub', 'run', 'bin/main.dart'],
-      buffer,
       exitCode: 123,
       workingDirextory: d.path(appPath),
-    );
-    expectMatchesGoldenFile(
-      buffer.toString(),
-      'test/embedding/goldens/run.txt',
     );
   });
 
@@ -126,7 +133,7 @@ main() {
 
     final buffer = StringBuffer();
 
-    await runEmbedding(
+    await runEmbeddingToBuffer(
       ['pub', 'get'],
       buffer,
       workingDirextory: app.io.path,

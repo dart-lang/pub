@@ -4,6 +4,7 @@
 
 // @dart=2.10
 
+import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/sdk.dart';
@@ -22,7 +23,8 @@ class FakeSource extends Source {
       throw UnsupportedError('Cannot download fake packages.');
 
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
+  PackageRef parseRef(String name, description,
+      {String containingPath, LanguageVersion languageVersion}) {
     if (description != 'ok') throw FormatException('Bad');
     return PackageRef(name, this, description);
   }
@@ -292,6 +294,170 @@ dependencies:
           'Invalid description in the "pkg" pubspec on the "from_path" '
               'dependency: "non_local_path" is a relative path, but this isn\'t a '
               'local pubspec.');
+    });
+
+    group('source dependencies', () {
+      test('with url and name', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+dependencies:
+  foo:
+    hosted:
+      url: https://example.org/pub/
+      name: bar
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source.name, 'hosted');
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://example.org/pub/',
+          'name': 'bar',
+        });
+      });
+
+      test('with url only', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+environment:
+  sdk: ^2.15.0
+dependencies:
+  foo:
+    hosted:
+      url: https://example.org/pub/
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source.name, 'hosted');
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://example.org/pub/',
+          'name': 'foo',
+        });
+      });
+
+      test('with url as string', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+environment:
+  sdk: ^2.15.0
+dependencies:
+  foo:
+    hosted: https://example.org/pub/
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source.name, 'hosted');
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://example.org/pub/',
+          'name': 'foo',
+        });
+      });
+
+      test('interprets string description as name for older versions', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+environment:
+  sdk: ^2.14.0
+dependencies:
+  foo:
+    hosted: bar
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source.name, 'hosted');
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://pub.dartlang.org',
+          'name': 'bar',
+        });
+      });
+
+      test(
+        'reports helpful span when using new syntax with invalid environment',
+        () {
+          var pubspec = Pubspec.parse('''
+name: pkg
+environment:
+  sdk: invalid value
+dependencies:
+  foo:
+    hosted: https://example.org/pub/
+''', sources);
+
+          expect(
+            () => pubspec.dependencies,
+            throwsA(
+              isA<PubspecException>()
+                  .having((e) => e.span.text, 'span.text', 'invalid value'),
+            ),
+          );
+        },
+      );
+
+      test('without a description', () {
+        var pubspec = Pubspec.parse(
+          '''
+name: pkg
+dependencies:
+  foo:
+''',
+          sources,
+        );
+
+        var foo = pubspec.dependencies['foo'];
+        expect(foo.name, equals('foo'));
+        expect(foo.source.name, 'hosted');
+        expect(foo.source.serializeDescription(null, foo.description), {
+          'url': 'https://pub.dartlang.org',
+          'name': 'foo',
+        });
+      });
+
+      group('throws without a min SDK constraint', () {
+        test('and without a name', () {
+          expectPubspecException(
+              '''
+name: pkg
+dependencies:
+  foo:
+    hosted:
+      url: https://example.org/pub/
+''',
+              (pubspec) => pubspec.dependencies,
+              "The 'name' key must have a string value without a minimum Dart "
+                  'SDK constraint of 2.15.');
+        });
+
+        test(
+          'and a hosted: <value> syntax that looks like an URI was meant',
+          () {
+            expectPubspecException(
+              '''
+name: pkg
+dependencies:
+  foo:
+    hosted: http://pub.example.org
+''',
+              (pubspec) => pubspec.dependencies,
+              'Using `hosted: <url>` is only supported with a minimum SDK constraint of 2.15.',
+            );
+          },
+        );
+      });
     });
 
     group('git dependencies', () {

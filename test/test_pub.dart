@@ -933,15 +933,24 @@ Future<void> runPubIntoBuffer(
   );
   final exitCode = await process.exitCode;
 
+  // TODO(jonasfj): Clean out temporary directory names from env vars...
+  // if (workingDirectory != null) {
+  //   buffer.writeln('\$ cd $workingDirectory');
+  // }
+  // if (environment != null && environment.isNotEmpty) {
+  //   buffer.writeln(environment.entries
+  //       .map((e) => '\$ export ${e.key}=${e.value}')
+  //       .join('\n'));
+  // }
   buffer.writeln(_filter([
     '\$ pub ${args.join(' ')}',
     ...await process.stdout.rest.toList(),
   ]).join('\n'));
   for (final line in _filter(await process.stderr.rest.toList())) {
-    buffer.writeln('[ERR] $line');
+    buffer.writeln('[STDERR] $line');
   }
   if (exitCode != 0) {
-    buffer.writeln('[Exit code] $exitCode');
+    buffer.writeln('[EXIT CODE] $exitCode');
   }
   buffer.write('\n');
 }

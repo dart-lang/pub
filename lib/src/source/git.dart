@@ -12,6 +12,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../git.dart' as git;
 import '../io.dart';
+import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -43,7 +44,12 @@ class GitSource extends Source {
   }
 
   @override
-  PackageRef parseRef(String name, description, {String? containingPath}) {
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingPath,
+    LanguageVersion? languageVersion,
+  }) {
     dynamic url;
     dynamic ref;
     dynamic path;
