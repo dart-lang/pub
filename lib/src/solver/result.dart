@@ -140,7 +140,8 @@ class SolveResult {
       // Only send analytics for packages from pub.dev.
       if (source is HostedSource &&
           (runningFromTest ||
-              package.description['url'] == HostedSource.pubDevUrl)) {
+              (package.description as HostedDescription).uri.toString() ==
+                  HostedSource.pubDevUrl)) {
         dependenciesForAnalytics.add(package);
       }
     }

@@ -130,7 +130,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageRef refFor(String name, {Uri? url}) =>
-      PackageRef(name, this, _HostedDescription(name, url ?? defaultUrl));
+      PackageRef(name, this, HostedDescription(name, url ?? defaultUrl));
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
@@ -138,7 +138,7 @@ class HostedSource extends Source {
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
   PackageId idFor(String name, Version version, {Uri? url}) => PackageId(
-      name, this, version, _HostedDescription(name, url ?? defaultUrl));
+      name, this, version, HostedDescription(name, url ?? defaultUrl));
 
   /// Returns the description for a hosted package named [name] with the
   /// given package server [url].
@@ -198,7 +198,7 @@ class HostedSource extends Source {
         throw FormatException('The description should be the same as the name');
       }
       return PackageId(
-          name, this, version, _HostedDescription(name, defaultUrl));
+          name, this, version, HostedDescription(name, defaultUrl));
     }
 
     final serializedDescription = (description as Map).cast<String, String>();
@@ -207,25 +207,25 @@ class HostedSource extends Source {
       name,
       this,
       version,
-      _HostedDescription(serializedDescription['name']!,
+      HostedDescription(serializedDescription['name']!,
           Uri.parse(serializedDescription['url']!)),
     );
   }
 
-  _HostedDescription _asDescription(desc) => desc as _HostedDescription;
+  HostedDescription _asDescription(desc) => desc as HostedDescription;
 
   /// Parses the description for a package.
   ///
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
-  _HostedDescription _parseDescription(
+  HostedDescription _parseDescription(
     String packageName,
     description,
     LanguageVersion languageVersion,
   ) {
     if (description == null) {
       // Simple dependency without a `hosted` block, use the default server.
-      return _HostedDescription(packageName, defaultUrl);
+      return HostedDescription(packageName, defaultUrl);
     }
 
     final canUseShorthandSyntax =
@@ -242,13 +242,13 @@ class HostedSource extends Source {
       // environment, we throw an error if something that looks like a URI is
       // used as a package name.
       if (canUseShorthandSyntax) {
-        return _HostedDescription(
+        return HostedDescription(
             packageName, validateAndNormalizeHostedUrl(description));
       } else {
         if (_looksLikePackageName.hasMatch(description)) {
           // Valid use of `hosted: package` dependency with an old SDK
           // environment.
-          return _HostedDescription(description, defaultUrl);
+          return HostedDescription(description, defaultUrl);
         } else {
           throw FormatException(
             'Using `hosted: <url>` is only supported with a minimum SDK '
@@ -279,7 +279,7 @@ class HostedSource extends Source {
       url = validateAndNormalizeHostedUrl(u);
     }
 
-    return _HostedDescription(name, url);
+    return HostedDescription(name, url);
   }
 
   /// Minimum language version at which short hosted syntax is supported.
@@ -312,11 +312,11 @@ class _VersionInfo {
 
 /// The [PackageName.description] for a [HostedSource], storing the package name
 /// and resolved URI of the package server.
-class _HostedDescription {
+class HostedDescription {
   final String packageName;
   final Uri uri;
 
-  _HostedDescription(this.packageName, this.uri) {
+  HostedDescription(this.packageName, this.uri) {
     ArgumentError.checkNotNull(packageName, 'packageName');
     ArgumentError.checkNotNull(uri, 'uri');
   }
@@ -326,7 +326,7 @@ class _HostedDescription {
 
   @override
   bool operator ==(Object other) {
-    return other is _HostedDescription &&
+    return other is HostedDescription &&
         other.packageName == packageName &&
         other.uri == uri;
   }
