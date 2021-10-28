@@ -137,7 +137,8 @@ class SolveResult {
     final dependenciesForAnalytics = <PackageId>[];
     for (final package in packages) {
       // Only send analytics for packages from pub.dev.
-      if (runningFromTest || HostedSource.isFromPubDev(package)) {
+      if (HostedSource.isFromPubDev(package) ||
+          (package.source is HostedSource && runningFromTest)) {
         dependenciesForAnalytics.add(package);
       }
     }
