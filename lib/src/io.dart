@@ -8,6 +8,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
     show EnvironmentNotFoundException, applicationConfigHome;
 import 'package:http/http.dart' show ByteStream;
@@ -562,7 +563,7 @@ final String dartRepoRoot = (() {
 })();
 
 /// A line-by-line stream of standard input.
-final StreamIterator<String> _stdinLines = StreamIterator(
+final StreamQueue<String> _stdinLines = StreamQueue(
     ByteStream(stdin).toStringStream().transform(const LineSplitter()));
 
 /// Displays a message and reads a yes/no confirmation from the user.
@@ -590,15 +591,14 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
     final previousEchoMode = stdin.echoMode;
     try {
       stdin.echoMode = echoMode;
-      await _stdinLines.moveNext();
+      final result = await _stdinLines.next;
       stdout.write('\n');
-      return _stdinLines.current;
+      return result;
     } finally {
       stdin.echoMode = previousEchoMode;
     }
   } else {
-    await _stdinLines.moveNext();
-    return _stdinLines.current;
+    return await _stdinLines.next;
   }
 }
 
