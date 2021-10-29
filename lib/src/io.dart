@@ -8,6 +8,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
     show EnvironmentNotFoundException, applicationConfigHome;
 import 'package:http/http.dart' show ByteStream;
@@ -562,8 +563,8 @@ final String dartRepoRoot = (() {
 })();
 
 /// A line-by-line stream of standard input.
-final Stream<String> _stdinLines =
-    ByteStream(stdin).toStringStream().transform(const LineSplitter());
+final StreamQueue<String> _stdinLines = StreamQueue(
+    ByteStream(stdin).toStringStream().transform(const LineSplitter()));
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
@@ -580,7 +581,7 @@ Future<bool> confirm(String message) {
 }
 
 /// Writes [prompt] and reads a line from stdin.
-Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
+Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
   if (runningFromTest) {
     log.message(prompt);
   } else {
@@ -588,12 +589,16 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
   }
   if (echoMode != null && stdin.hasTerminal) {
     final previousEchoMode = stdin.echoMode;
-    stdin.echoMode = echoMode;
-    return _stdinLines.first.whenComplete(() {
+    try {
+      stdin.echoMode = echoMode;
+      final result = await _stdinLines.next;
+      stdout.write('\n');
+      return result;
+    } finally {
       stdin.echoMode = previousEchoMode;
-    });
+    }
   } else {
-    return _stdinLines.first;
+    return await _stdinLines.next;
   }
 }
 
