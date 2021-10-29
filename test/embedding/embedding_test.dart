@@ -172,7 +172,7 @@ main() {
         'message': {
           'variableName': 'resolution',
           'time': isA<int>(),
-          'category': 'pub-get',
+          'category': 'pubget',
           'label': null
         }
       },
