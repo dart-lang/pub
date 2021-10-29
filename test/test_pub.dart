@@ -621,9 +621,8 @@ Future<void> createLockFile(String package,
   var lockFile = _createLockFile(cache.sources,
       sandbox: dependenciesInSandBox, hosted: hosted);
 
-  print('SANDBOX: ${d.sandbox}');
   await d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(p.absolute(d.sandbox, package))),
+    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package))),
     d.file(
       '.packages',
       lockFile.packagesFile(
@@ -675,7 +674,9 @@ LockFile _createLockFile(SourceRegistry sources,
 
   var packages = dependencies.keys.map((name) {
     var dependencyPath = dependencies[name];
-    return sources.path.idFor(name, Version(0, 0, 0), dependencyPath);
+    return sources.path.parseId(
+        name, Version(0, 0, 0), {'path': dependencyPath, 'relative': true},
+        containingPath: p.join(d.sandbox, appPath));
   }).toList();
 
   if (hosted != null) {
