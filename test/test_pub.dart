@@ -621,8 +621,9 @@ Future<void> createLockFile(String package,
   var lockFile = _createLockFile(cache.sources,
       sandbox: dependenciesInSandBox, hosted: hosted);
 
+  print(d.sandbox);
   await d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package))),
+    d.file('pubspec.lock', lockFile.serialize(p.absolute(d.sandbox, package))),
     d.file(
       '.packages',
       lockFile.packagesFile(
