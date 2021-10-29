@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
@@ -18,11 +16,11 @@ void main() {
 
       await d.appDir({
         'foo': {
-          'hosted': {'name': 'foo', 'url': globalPackageServer.url}
+          'hosted': {'name': 'foo', 'url': globalPackageServer!.url}
         }
       }).create();
 
-      globalPackageServer.expect('GET', '/api/packages/foo', (request) {
+      globalPackageServer!.expect('GET', '/api/packages/foo', (request) {
         expect(
             request.headers['accept'], equals('application/vnd.pub.v2+json'));
         return shelf.Response(404);
@@ -37,14 +35,14 @@ void main() {
 
       await d.appDir({
         'foo': {
-          'hosted': {'name': 'foo', 'url': globalPackageServer.url}
+          'hosted': {'name': 'foo', 'url': globalPackageServer!.url}
         }
       }).create();
 
       var pub = await startPub(args: [command.name]);
 
-      globalPackageServer.expect(
-          'GET', '/api/packages/foo', (request) => shelf.Response(406));
+      globalPackageServer!
+          .expect('GET', '/api/packages/foo', (request) => shelf.Response(406));
 
       await pub.shouldExit(1);
 

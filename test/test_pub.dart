@@ -128,10 +128,10 @@ void forBothPubGetAndUpgrade(void Function(RunCommand) callback) {
 Future<void> pubCommand(
   RunCommand command, {
   Iterable<String>? args,
-  output,
-  error,
-  silent,
-  warning,
+  Object? output,
+  Object? error,
+  Object? silent,
+  Object? warning,
   int? exitCode,
   Map<String, String>? environment,
   String? workingDirectory,
@@ -165,9 +165,9 @@ Future<void> pubCommand(
 
 Future<void> pubAdd({
   Iterable<String>? args,
-  output,
-  error,
-  warning,
+  Object? output,
+  Object? error,
+  Object? warning,
   int? exitCode,
   Map<String, String>? environment,
   String? workingDirectory,
@@ -185,9 +185,9 @@ Future<void> pubAdd({
 
 Future<void> pubGet({
   Iterable<String>? args,
-  output,
-  error,
-  warning,
+  Object? output,
+  Object? error,
+  Object? warning,
   int? exitCode,
   Map<String, String>? environment,
   String? workingDirectory,
@@ -207,9 +207,9 @@ Future<void> pubGet({
 
 Future<void> pubUpgrade(
         {Iterable<String>? args,
-        output,
-        error,
-        warning,
+        Object? output,
+        Object? error,
+        Object? warning,
         int? exitCode,
         Map<String, String>? environment,
         String? workingDirectory}) async =>
@@ -226,9 +226,9 @@ Future<void> pubUpgrade(
 
 Future<void> pubDowngrade({
   Iterable<String>? args,
-  output,
-  error,
-  warning,
+  Object? output,
+  Object? error,
+  Object? warning,
   int? exitCode,
   Map<String, String>? environment,
   String? workingDirectory,
@@ -246,9 +246,9 @@ Future<void> pubDowngrade({
 
 Future<void> pubRemove({
   Iterable<String>? args,
-  output,
-  error,
-  warning,
+  Object? output,
+  Object? error,
+  Object? warning,
   int? exitCode,
   Map<String, String>? environment,
   String? workingDirectory,
@@ -319,10 +319,10 @@ void symlinkInSandbox(String target, String symlink) {
 /// variables passed to the spawned process.
 Future<void> runPub(
     {List<String>? args,
-    output,
-    error,
-    outputJson,
-    silent,
+    Object? output,
+    Object? error,
+    Object? outputJson,
+    Object? silent,
     int? exitCode,
     String? workingDirectory,
     Map<String, String?>? environment,
