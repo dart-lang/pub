@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -38,7 +36,7 @@ void main() {
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet(
-      environment: {'PUB_HOSTED_URL': '${globalPackageServer.url}/'},
+      environment: {'PUB_HOSTED_URL': '${globalPackageServer!.url}/'},
     );
   });
 }

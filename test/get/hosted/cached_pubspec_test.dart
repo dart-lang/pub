@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -20,7 +18,7 @@ void main() {
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    globalServer.requestedPaths.clear();
+    globalServer!.requestedPaths.clear();
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
     await d.appPackagesFile({'foo': '1.2.3'}).validate();
@@ -29,7 +27,7 @@ void main() {
     await pubGet();
 
     // The get should not have requested the pubspec since it's local already.
-    expect(globalServer.requestedPaths,
+    expect(globalServer!.requestedPaths,
         isNot(contains('packages/foo/versions/1.2.3.yaml')));
   });
 }
