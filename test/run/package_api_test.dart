@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -76,7 +74,7 @@ void main() {
     expect(pub.stdout,
         emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
     var fooResourcePath = p.join(
-        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+        globalPackageServer!.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });
