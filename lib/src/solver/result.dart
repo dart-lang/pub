@@ -168,10 +168,10 @@ class SolveResult {
     analytics.sendTiming(
       'resolution',
       resolutionTime.inMilliseconds,
-      category: 'pub-get',
+      category: 'pubget',
     );
     log.fine(
-        'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds');
+        'Sending analytics timing "pub get" took ${resolutionTime.inMilliseconds} miliseconds');
   }
 
   @override
