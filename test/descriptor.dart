@@ -279,8 +279,9 @@ Descriptor packagesFile([Map<String, String> dependencies]) =>
 Descriptor packageConfigFile(
   List<PackageConfigEntry> packages, {
   String generatorVersion = '0.1.2+3',
+  String generator = 'pub',
 }) =>
-    PackageConfigFileDescriptor(packages, generatorVersion);
+    PackageConfigFileDescriptor(packages, generatorVersion, generator);
 
 /// Create a [PackageConfigEntry] which assumes package with [name] is either
 /// a cached package with given [version] or a path dependency at given [path].

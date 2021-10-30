@@ -25,6 +25,8 @@ class RunCommand extends PubCommand {
   bool get allowTrailingOptions => false;
   @override
   bool get hidden => deprecated;
+  @override
+  bool get allowThirdPartyTool => true;
 
   final bool deprecated;
   final bool alwaysUseSubprocess;

@@ -106,6 +106,7 @@ class PackagesFileDescriptor extends Descriptor {
 /// Describes a `.dart_tools/package_config.json` file and its contents.
 class PackageConfigFileDescriptor extends Descriptor {
   final String _generatorVersion;
+  final String _generator;
 
   /// A map describing the packages in this `package_config.json` file.
   final List<PackageConfigEntry> _packages;
@@ -115,7 +116,7 @@ class PackageConfigFileDescriptor extends Descriptor {
       configVersion: 2,
       packages: _packages,
       generatorVersion: Version.parse(_generatorVersion),
-      generator: 'pub',
+      generator: _generator,
       generated: DateTime.now().toUtc(),
     );
   }
@@ -124,7 +125,8 @@ class PackageConfigFileDescriptor extends Descriptor {
   ///
   /// [dependencies] maps package names to strings describing where the packages
   /// are located on disk.
-  PackageConfigFileDescriptor(this._packages, this._generatorVersion)
+  PackageConfigFileDescriptor(
+      this._packages, this._generatorVersion, this._generator)
       : super('.dart_tool/package_config.json');
 
   @override

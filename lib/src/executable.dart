@@ -92,10 +92,6 @@ Future<int> runExecutable(
   }
 
   if (useSnapshot) {
-    // Since we don't access the package graph, this doesn't happen
-    // automatically.
-    entrypoint.assertUpToDate();
-
     if (!fileExists(snapshotPath) ||
         entrypoint.packageGraph.isPackageMutable(package)) {
       await recompile(executable);
@@ -298,7 +294,11 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
         'Could not find file `$descriptor`',
         CommandResolutionIssue.fileNotFound);
   }
-  final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
+  final entrypoint = Entrypoint(
+    root,
+    SystemCache(rootDir: pubCacheDir),
+    allowThirdPartyTool: true,
+  );
   try {
     // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
     entrypoint.assertUpToDate();
