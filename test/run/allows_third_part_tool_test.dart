@@ -28,10 +28,10 @@ void main() {
       d.libDir('myapp'),
     ]).create();
 
-    // Run pub.get to generate the in
+    // Run pub.get to generate the dependency files.
     await pubGet();
 
-    // Simulate a third party tool, modifying `package_config.json`. 
+    // Simulate a third party tool, modifying `package_config.json`.
     var thirdPartyToolFile = d.dir(appPath, [
       d.packageConfigFile([], generator: 'not-pub'),
     ]);
