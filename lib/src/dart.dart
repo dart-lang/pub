@@ -7,8 +7,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart';
-import 'package:analyzer/dart/analysis/context_builder.dart';
-import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -67,21 +66,22 @@ class AnalysisContextManager {
       modificationStamp: 0,
     );
 
+    var contextCollection = AnalysisContextCollection(
+      includedPaths: [path],
+      resourceProvider: resourceProvider,
+      sdkPath: getSdkPath(),
+    );
+
     // Add new contexts for the given path.
-    var contextLocator = ContextLocator(resourceProvider: resourceProvider);
-    var roots = contextLocator.locateRoots(includedPaths: [path]);
-    for (var root in roots) {
-      var contextRootPath = root.root.path;
+    for (var analysisContext in contextCollection.contexts) {
+      var contextRootPath = analysisContext.contextRoot.root.path;
 
       // If there is already a context for this context root path, keep it.
       if (_contexts.containsKey(contextRootPath)) {
         continue;
       }
 
-      var contextBuilder = ContextBuilder();
-      var context = contextBuilder.createContext(
-          contextRoot: root, sdkPath: getSdkPath());
-      _contexts[contextRootPath] = context;
+      _contexts[contextRootPath] = analysisContext;
     }
   }
 
@@ -94,7 +94,7 @@ class AnalysisContextManager {
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
     path = p.normalize(p.absolute(path));
-    var parseResult = _getExistingSession(path).getParsedUnit2(path);
+    var parseResult = _getExistingSession(path).getParsedUnit(path);
     if (parseResult is ParsedUnitResult) {
       if (parseResult.errors.isNotEmpty) {
         throw AnalyzerErrorGroup(parseResult.errors);

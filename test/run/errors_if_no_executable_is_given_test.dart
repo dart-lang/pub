@@ -14,22 +14,10 @@ void main() {
   test('Errors if the executable does not exist.', () async {
     await d.dir(appPath, [d.appPubspec()]).create();
 
-    await runPub(args: ['run'], error: '''
-Must specify an executable to run.
-
-Usage: pub run <executable> [arguments...]
--h, --help                              Print this usage information.
-    --[no-]enable-asserts               Enable assert statements.
-    --enable-experiment=<experiment>    Runs the executable in a VM with the
-                                        given experiments enabled.
-                                        (Will disable snapshotting, resulting in
-                                        slower startup).
-    --[no-]sound-null-safety            Override the default null safety
-                                        execution mode.
--C, --directory=<dir>                   Run this in the directory<dir>.
-
-Run "pub help" to see global options.
-See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.
-''', exitCode: exit_codes.USAGE);
+    await runPub(
+      args: ['run'],
+      error: contains('Must specify an executable to run.'),
+      exitCode: exit_codes.USAGE,
+    );
   });
 }

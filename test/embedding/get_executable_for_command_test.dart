@@ -9,15 +9,26 @@ import 'dart:io';
 import 'package:path/path.dart' show separator;
 import 'package:path/path.dart' as p;
 import 'package:pub/pub.dart';
+import 'package:pub/src/log.dart' as log;
+
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-Future<void> testGetExecutable(String command, String root,
-    {allowSnapshot = true, result, errorMessage}) async {
+Future<void> testGetExecutable(
+  String command,
+  String root, {
+  allowSnapshot = true,
+  executable,
+  packageConfig,
+  errorMessage,
+  CommandResolutionIssue issue,
+}) async {
   final _cachePath = getPubTestEnvironment()['PUB_CACHE'];
-  if (result == null) {
+  final oldVerbosity = log.verbosity;
+  log.verbosity = log.Verbosity.NONE;
+  if (executable == null) {
     expect(
       () => getExecutableForCommand(
         command,
@@ -27,18 +38,25 @@ Future<void> testGetExecutable(String command, String root,
       ),
       throwsA(
         isA<CommandResolutionFailedException>()
-            .having((e) => e.message, 'message', errorMessage),
+            .having((e) => e.message, 'message', errorMessage)
+            .having((e) => e.issue, 'issue', issue),
       ),
     );
   } else {
-    final path = await getExecutableForCommand(
+    final e = await getExecutableForCommand(
       command,
       root: root,
       pubCacheDir: _cachePath,
       allowSnapshot: allowSnapshot,
     );
-    expect(path, result);
-    expect(File(p.join(root, path)).existsSync(), true);
+    expect(
+      e,
+      isA<DartExecutableWithPackageConfig>()
+          .having((e) => e.executable, 'executable', executable)
+          .having((e) => e.packageConfig, 'packageConfig', packageConfig),
+    );
+    expect(File(p.join(root, e.executable)).existsSync(), true);
+    log.verbosity = oldVerbosity;
   }
 }
 
@@ -50,13 +68,13 @@ Future<void> main() async {
     final dir = d.path('foo');
 
     await testGetExecutable('bar/bar.dart', dir,
-        result: p.join('bar', 'bar.dart'));
+        executable: p.join('bar', 'bar.dart'));
 
     await testGetExecutable(p.join('bar', 'bar.dart'), dir,
-        result: p.join('bar', 'bar.dart'));
+        executable: p.join('bar', 'bar.dart'));
 
     await testGetExecutable('${p.toUri(dir)}/bar/bar.dart', dir,
-        result: p.join('bar', 'bar.dart'));
+        executable: p.join('bar', 'bar.dart'));
   });
 
   test('Looks for file when no pubspec.yaml', () async {
@@ -66,9 +84,11 @@ Future<void> main() async {
     final dir = d.path('foo');
 
     await testGetExecutable('bar/m.dart', dir,
-        errorMessage: contains('Could not find file `bar/m.dart`'));
+        errorMessage: contains('Could not find file `bar/m.dart`'),
+        issue: CommandResolutionIssue.fileNotFound);
     await testGetExecutable(p.join('bar', 'm.dart'), dir,
-        errorMessage: contains('Could not find file `bar${separator}m.dart`'));
+        errorMessage: contains('Could not find file `bar${separator}m.dart`'),
+        issue: CommandResolutionIssue.fileNotFound);
   });
 
   test('Error message when pubspec is broken', () async {
@@ -95,13 +115,15 @@ Future<void> main() async {
             contains(
                 'Error on line 1, column 9 of ${d.sandbox}${p.separator}foo${p.separator}pubspec.yaml: "name" field must be a valid Dart identifier.'),
             contains(
-                '{"name":"broken name","environment":{"sdk":">=0.1.2 <1.0.0"}}')));
+                '{"name":"broken name","environment":{"sdk":">=0.1.2 <1.0.0"}}')),
+        issue: CommandResolutionIssue.pubGetFailed);
   });
 
   test('Does `pub get` if there is a pubspec.yaml', () async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
+        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
         'dependencies': {'foo': '^1.0.0'}
       }),
       d.dir('bin', [
@@ -112,8 +134,49 @@ Future<void> main() async {
     await serveNoPackages();
     // The solver uses word-wrapping in its error message, so we use \s to
     // accomodate.
-    await testGetExecutable('bar/m.dart', d.path(appPath),
-        errorMessage: matches(r'version\s+solving\s+failed'));
+    await testGetExecutable(
+      'bar/m.dart',
+      d.path(appPath),
+      errorMessage: matches(r'version\s+solving\s+failed'),
+      issue: CommandResolutionIssue.pubGetFailed,
+    );
+  });
+
+  test('Reports parse failure', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+      }),
+    ]).create();
+    await testGetExecutable(
+      '::',
+      d.path(appPath),
+      errorMessage: contains(r'cannot contain multiple ":"'),
+      issue: CommandResolutionIssue.parseError,
+    );
+  });
+
+  test('Reports compilation failure', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+      }),
+      d.dir('bin', [
+        d.file('foo.dart', 'main() {'),
+      ])
+    ]).create();
+
+    await serveNoPackages();
+    // The solver uses word-wrapping in its error message, so we use \s to
+    // accomodate.
+    await testGetExecutable(
+      ':foo',
+      d.path(appPath),
+      errorMessage: matches(r'foo.dart:1:8:'),
+      issue: CommandResolutionIssue.compilationFailed,
+    );
   });
 
   test('Finds files', () async {
@@ -148,46 +211,81 @@ Future<void> main() async {
     ]).create();
     final dir = d.path(appPath);
 
-    await testGetExecutable('myapp', dir,
-        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
-            'myapp.dart-$_currentVersion.snapshot'));
-    await testGetExecutable('myapp:myapp', dir,
-        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
-            'myapp.dart-$_currentVersion.snapshot'));
-    await testGetExecutable(':myapp', dir,
-        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
-            'myapp.dart-$_currentVersion.snapshot'));
-    await testGetExecutable(':tool', dir,
-        result: p.join('.dart_tool', 'pub', 'bin', 'myapp',
-            'tool.dart-$_currentVersion.snapshot'));
-    await testGetExecutable('foo', dir,
-        allowSnapshot: false,
-        result: endsWith('foo-1.0.0${separator}bin${separator}foo.dart'));
-    await testGetExecutable('foo', dir,
-        result:
-            '.dart_tool${separator}pub${separator}bin${separator}foo${separator}foo.dart-$_currentVersion.snapshot');
-    await testGetExecutable('foo:tool', dir,
-        allowSnapshot: false,
-        result: endsWith('foo-1.0.0${separator}bin${separator}tool.dart'));
-    await testGetExecutable('foo:tool', dir,
-        result:
-            '.dart_tool${separator}pub${separator}bin${separator}foo${separator}tool.dart-$_currentVersion.snapshot');
+    await testGetExecutable(
+      'myapp',
+      dir,
+      executable: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+          'myapp.dart-$_currentVersion.snapshot'),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'myapp:myapp',
+      dir,
+      executable: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+          'myapp.dart-$_currentVersion.snapshot'),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      ':myapp',
+      dir,
+      executable: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+          'myapp.dart-$_currentVersion.snapshot'),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      ':tool',
+      dir,
+      executable: p.join('.dart_tool', 'pub', 'bin', 'myapp',
+          'tool.dart-$_currentVersion.snapshot'),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'foo',
+      dir,
+      allowSnapshot: false,
+      executable: endsWith('foo-1.0.0${separator}bin${separator}foo.dart'),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'foo',
+      dir,
+      executable:
+          '.dart_tool${separator}pub${separator}bin${separator}foo${separator}foo.dart-$_currentVersion.snapshot',
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'foo:tool',
+      dir,
+      allowSnapshot: false,
+      executable: endsWith('foo-1.0.0${separator}bin${separator}tool.dart'),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'foo:tool',
+      dir,
+      executable:
+          '.dart_tool${separator}pub${separator}bin${separator}foo${separator}tool.dart-$_currentVersion.snapshot',
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
     await testGetExecutable(
       'unknown:tool',
       dir,
       errorMessage: 'Could not find package `unknown` or file `unknown:tool`',
+      issue: CommandResolutionIssue.packageNotFound,
     );
     await testGetExecutable(
       'foo:unknown',
       dir,
       errorMessage:
           'Could not find `bin${separator}unknown.dart` in package `foo`.',
+      issue: CommandResolutionIssue.noBinaryFound,
     );
     await testGetExecutable(
       'unknownTool',
       dir,
       errorMessage:
           'Could not find package `unknownTool` or file `unknownTool`',
+      issue: CommandResolutionIssue.packageNotFound,
     );
   });
 }

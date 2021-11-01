@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:collection';
 import 'dart:convert';
 
@@ -37,7 +35,8 @@ class DepsCommand extends PubCommand {
       AnalysisContextManager();
 
   /// The [StringBuffer] used to accumulate the output.
-  StringBuffer _buffer;
+  // TODO(sigurdm): use a local variable for this.
+  final _buffer = StringBuffer();
 
   /// Whether to include dev dependencies.
   bool get _includeDev => argResults['dev'];
@@ -67,8 +66,7 @@ class DepsCommand extends PubCommand {
   Future<void> runProtected() async {
     // Explicitly Run this in the directorycase we don't access `entrypoint.packageGraph`.
     entrypoint.assertUpToDate();
-
-    _buffer = StringBuffer();
+    _buffer.clear();
 
     if (argResults['json']) {
       if (argResults.wasParsed('dev')) {
@@ -89,7 +87,7 @@ class DepsCommand extends PubCommand {
         final current = toVisit.removeLast();
         if (visited.contains(current)) continue;
         visited.add(current);
-        final currentPackage = entrypoint.packageGraph.packages[current];
+        final currentPackage = entrypoint.packageGraph.packages[current]!;
         final next = (current == entrypoint.root.name
                 ? entrypoint.root.immediateDependencies
                 : currentPackage.dependencies)
@@ -121,7 +119,7 @@ class DepsCommand extends PubCommand {
           ...entrypoint.root.immediateDependencies.keys
               .map((name) => entrypoint.packageGraph.packages[name])
         ])
-          ...package.executableNames.map((name) => package == entrypoint.root
+          ...package!.executableNames.map((name) => package == entrypoint.root
               ? ':$name'
               : (package.name == name ? name : '${package.name}:$name'))
       ];
@@ -331,7 +329,6 @@ class DepsCommand extends PubCommand {
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
         'was generated, please run "$topLevelProgram pub get" again.');
-    return null;
   }
 
   /// Outputs all executables reachable from [entrypoint].
@@ -342,7 +339,7 @@ class DepsCommand extends PubCommand {
               ? entrypoint.root.immediateDependencies
               : entrypoint.root.dependencies)
           .keys
-          .map((name) => entrypoint.packageGraph.packages[name])
+          .map((name) => entrypoint.packageGraph.packages[name]!)
     ];
 
     for (var package in packages) {

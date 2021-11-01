@@ -2,10 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -17,26 +16,27 @@ import 'descriptor.dart' as d;
 ///
 /// `null` if there's no global server in use. This can be set to replace the
 /// existing global server.
-DescriptorServer get globalServer => _globalServer;
-set globalServer(DescriptorServer value) {
-  if (_globalServer == null) {
+DescriptorServer? get globalServer => _globalServer;
+set globalServer(DescriptorServer? value) {
+  var server = _globalServer;
+  if (server == null) {
     addTearDown(() {
       _globalServer = null;
     });
   } else {
-    expect(_globalServer.close(), completes);
+    expect(server.close(), completes);
   }
 
   _globalServer = value;
 }
 
-DescriptorServer _globalServer;
+DescriptorServer? _globalServer;
 
 /// Creates a global [DescriptorServer] to serve [contents] as static files.
 ///
 /// This server will exist only for the duration of the pub run. It's accessible
 /// via [server]. Subsequent calls to [serve] replace the previous server.
-Future serve([List<d.Descriptor> contents]) async {
+Future serve([List<d.Descriptor> contents = const []]) async {
   globalServer = (await DescriptorServer.start())..contents.addAll(contents);
 }
 
@@ -75,11 +75,11 @@ class DescriptorServer {
   DescriptorServer._(this._server) : _baseDir = d.dir('serve-dir', []) {
     _server.mount((request) async {
       final pathWithInitialSlash = '/${request.url.path}';
-      final key = extraHandlers.keys.firstWhere((pattern) {
+      final key = extraHandlers.keys.firstWhereOrNull((pattern) {
         final match = pattern.matchAsPrefix(pathWithInitialSlash);
         return match != null && match.end == pathWithInitialSlash.length;
-      }, orElse: () => null);
-      if (key != null) return extraHandlers[key](request);
+      });
+      if (key != null) return extraHandlers[key]!(request);
 
       var path = p.posix.fromUri(request.url.path);
       requestedPaths.add(path);
@@ -114,12 +114,12 @@ Future<Stream<T>> _validateStream<T>(Stream<T> stream) {
   var completer = Completer<Stream<T>>();
   var controller = StreamController<T>(sync: true);
 
-  StreamSubscription subscription;
+  late StreamSubscription subscription;
   subscription = stream.listen((value) {
     // We got a value, so the stream is valid.
     if (!completer.isCompleted) completer.complete(controller.stream);
     controller.add(value);
-  }, onError: (error, [StackTrace stackTrace]) {
+  }, onError: (error, [StackTrace? stackTrace]) {
     // If the error came after values, it's OK.
     if (completer.isCompleted) {
       controller.addError(error, stackTrace);

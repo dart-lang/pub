@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -68,45 +66,46 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
 
 /// Returns the new minimum version to use for [range], or `null` if it doesn't
 /// need to be reformatted.
-Version _reformatMin(List<PackageId> versions, VersionRange range) {
-  if (range.min == null) return null;
+Version? _reformatMin(List<PackageId> versions, VersionRange range) {
+  var min = range.min;
+  if (min == null) return null;
   if (!range.includeMin) return null;
-  if (!range.min.isFirstPreRelease) return null;
+  if (!min.isFirstPreRelease) return null;
 
-  var index = _lowerBound(versions, range.min);
+  var index = _lowerBound(versions, min);
   var next = index == versions.length ? null : versions[index].version;
 
   // If there's a real pre-release version of [range.min], use that as the min.
   // Otherwise, use the release version.
-  return next != null && equalsIgnoringPreRelease(range.min, next)
+  return next != null && equalsIgnoringPreRelease(min, next)
       ? next
-      : Version(range.min.major, range.min.minor, range.min.patch);
+      : Version(min.major, min.minor, min.patch);
 }
 
 /// Returns the new maximum version to use for [range] and whether that maximum
 /// is inclusive, or `null` if it doesn't need to be reformatted.
 @visibleForTesting
-Pair<Version, bool> reformatMax(List<PackageId> versions, VersionRange range) {
+Pair<Version, bool>? reformatMax(List<PackageId> versions, VersionRange range) {
   // This corresponds to the logic in the constructor of [VersionRange] with
   // `alwaysIncludeMaxPreRelease = false` for discovering when a max-bound
   // should not include prereleases.
 
-  if (range.max == null) return null;
+  var max = range.max;
+  var min = range.min;
+  if (max == null) return null;
   if (range.includeMax) return null;
-  if (range.max.isPreRelease) return null;
-  if (range.max.build.isNotEmpty) return null;
-  if (range.min != null &&
-      range.min.isPreRelease &&
-      equalsIgnoringPreRelease(range.min, range.max)) {
+  if (max.isPreRelease) return null;
+  if (max.build.isNotEmpty) return null;
+  if (min != null && min.isPreRelease && equalsIgnoringPreRelease(min, max)) {
     return null;
   }
 
-  var index = _lowerBound(versions, range.max);
+  var index = _lowerBound(versions, max);
   var previous = index == 0 ? null : versions[index - 1].version;
 
-  return previous != null && equalsIgnoringPreRelease(previous, range.max)
+  return previous != null && equalsIgnoringPreRelease(previous, max)
       ? Pair(previous, true)
-      : Pair(range.max.firstPreRelease, false);
+      : Pair(max.firstPreRelease, false);
 }
 
 /// Returns the first index in [ids] (which is sorted by version) whose version

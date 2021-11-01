@@ -2,15 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// Test infrastructure for testing pub.
 ///
 /// Unlike typical unit tests, most pub tests are integration tests that stage
 /// some stuff on the file system, run pub, and then validate the results. This
 /// library provides an API to build tests like that.
-import 'dart:async';
 import 'dart:convert';
+import 'dart:core';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
@@ -28,7 +26,6 @@ import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
-import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source_registry.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
@@ -82,7 +79,7 @@ Map<String, dynamic> packageSpec(String packageName) => json
         orElse: () => null) as Map<String, dynamic>;
 
 /// The suffix appended to a built snapshot.
-final versionSuffix = testVersion ?? sdk.version;
+final versionSuffix = testVersion;
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
@@ -130,14 +127,15 @@ void forBothPubGetAndUpgrade(void Function(RunCommand) callback) {
 // TODO(rnystrom): Clean up other tests to call this when possible.
 Future<void> pubCommand(
   RunCommand command, {
-  Iterable<String> args,
+  Iterable<String>? args,
   output,
   error,
   silent,
   warning,
-  int exitCode,
-  Map<String, String> environment,
-  String workingDirectory,
+  int? exitCode,
+  Map<String, String>? environment,
+  String? workingDirectory,
+  includeParentEnvironment = true,
 }) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
@@ -161,17 +159,18 @@ Future<void> pubCommand(
       silent: silent,
       exitCode: exitCode,
       environment: environment,
-      workingDirectory: workingDirectory);
+      workingDirectory: workingDirectory,
+      includeParentEnvironment: includeParentEnvironment);
 }
 
 Future<void> pubAdd({
-  Iterable<String> args,
+  Iterable<String>? args,
   output,
   error,
   warning,
-  int exitCode,
-  Map<String, String> environment,
-  String workingDirectory,
+  int? exitCode,
+  Map<String, String>? environment,
+  String? workingDirectory,
 }) async =>
     await pubCommand(
       RunCommand.add,
@@ -185,13 +184,14 @@ Future<void> pubAdd({
     );
 
 Future<void> pubGet({
-  Iterable<String> args,
+  Iterable<String>? args,
   output,
   error,
   warning,
-  int exitCode,
-  Map<String, String> environment,
-  String workingDirectory,
+  int? exitCode,
+  Map<String, String>? environment,
+  String? workingDirectory,
+  bool includeParentEnvironment = true,
 }) async =>
     await pubCommand(
       RunCommand.get,
@@ -202,16 +202,17 @@ Future<void> pubGet({
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
+      includeParentEnvironment: includeParentEnvironment,
     );
 
 Future<void> pubUpgrade(
-        {Iterable<String> args,
+        {Iterable<String>? args,
         output,
         error,
         warning,
-        int exitCode,
-        Map<String, String> environment,
-        String workingDirectory}) async =>
+        int? exitCode,
+        Map<String, String>? environment,
+        String? workingDirectory}) async =>
     await pubCommand(
       RunCommand.upgrade,
       args: args,
@@ -224,13 +225,13 @@ Future<void> pubUpgrade(
     );
 
 Future<void> pubDowngrade({
-  Iterable<String> args,
+  Iterable<String>? args,
   output,
   error,
   warning,
-  int exitCode,
-  Map<String, String> environment,
-  String workingDirectory,
+  int? exitCode,
+  Map<String, String>? environment,
+  String? workingDirectory,
 }) async =>
     await pubCommand(
       RunCommand.downgrade,
@@ -244,13 +245,13 @@ Future<void> pubDowngrade({
     );
 
 Future<void> pubRemove({
-  Iterable<String> args,
+  Iterable<String>? args,
   output,
   error,
   warning,
-  int exitCode,
-  Map<String, String> environment,
-  String workingDirectory,
+  int? exitCode,
+  Map<String, String>? environment,
+  String? workingDirectory,
 }) async =>
     await pubCommand(
       RunCommand.remove,
@@ -272,8 +273,8 @@ Future<void> pubRemove({
 /// Returns the `pub run` process.
 Future<PubProcess> pubRun(
     {bool global = false,
-    Iterable<String> args,
-    Map<String, String> environment,
+    required Iterable<String> args,
+    Map<String, String>? environment,
     bool verbose = true}) async {
   var pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
@@ -282,20 +283,6 @@ Future<PubProcess> pubRun(
     environment: environment,
     verbose: verbose,
   );
-
-  // Loading sources and transformers isn't normally printed, but the pub test
-  // infrastructure runs pub in verbose mode, which enables this.
-  expect(pub.stdout, mayEmitMultiple(startsWith('Loading')));
-
-  return pub;
-}
-
-/// Schedules starting the "pub run --v2" process and validates the
-/// expected startup output.
-///
-/// Returns the `pub run` process.
-Future<PubProcess> pubRunFromDartDev({Iterable<String> args}) async {
-  final pub = await startPub(args: ['run', '--dart-dev-run', ...args]);
 
   // Loading sources and transformers isn't normally printed, but the pub test
   // infrastructure runs pub in verbose mode, which enables this.
@@ -330,23 +317,27 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future<void> runPub({
-  List<String> args,
-  output,
-  error,
-  outputJson,
-  silent,
-  int exitCode,
-  String workingDirectory,
-  Map<String, String> environment,
-  List<String> input,
-}) async {
+Future<void> runPub(
+    {List<String>? args,
+    output,
+    error,
+    outputJson,
+    silent,
+    int? exitCode,
+    String? workingDirectory,
+    Map<String, String?>? environment,
+    List<String>? input,
+    includeParentEnvironment = true}) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
   var pub = await startPub(
-      args: args, workingDirectory: workingDirectory, environment: environment);
+    args: args,
+    workingDirectory: workingDirectory,
+    environment: environment,
+    includeParentEnvironment: includeParentEnvironment,
+  );
 
   if (input != null) {
     input.forEach(pub.stdin.writeln);
@@ -379,14 +370,19 @@ Future<void> runPub({
 /// package server.
 ///
 /// Any futures in [args] will be resolved before the process is started.
-Future<PubProcess> startPublish(PackageServer server,
-    {List<String> args}) async {
+Future<PubProcess> startPublish(
+  PackageServer server, {
+  List<String>? args,
+  String authMethod = 'oauth2',
+  Map<String, String>? environment,
+}) async {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
-  return await startPub(
-      args: args,
-      tokenEndpoint: tokenEndpoint,
-      environment: {'PUB_HOSTED_URL': server.url});
+  return await startPub(args: args, tokenEndpoint: tokenEndpoint, environment: {
+    'PUB_HOSTED_URL': server.url,
+    '_PUB_TEST_AUTH_METHOD': authMethod,
+    if (environment != null) ...environment,
+  });
 }
 
 /// Handles the beginning confirmation process for uploading a packages.
@@ -416,7 +412,7 @@ String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 String testVersion = '0.1.2+3';
 
 /// Gets the environment variables used to run pub in a test context.
-Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
+Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) {
   var environment = {
     'CI': 'false', // unless explicitly given tests don't run pub in CI mode
     '_PUB_TESTING': 'true',
@@ -432,8 +428,9 @@ Map<String, String> getPubTestEnvironment([String tokenEndpoint]) {
     environment['_PUB_TEST_TOKEN_ENDPOINT'] = tokenEndpoint;
   }
 
-  if (globalServer != null) {
-    environment['PUB_HOSTED_URL'] = 'http://localhost:${globalServer.port}';
+  var server = globalServer;
+  if (server != null) {
+    environment['PUB_HOSTED_URL'] = 'http://localhost:${server.port}';
   }
 
   return environment;
@@ -456,24 +453,15 @@ final String _pubRoot = (() {
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
 Future<PubProcess> startPub(
-    {Iterable<String> args,
-    String tokenEndpoint,
-    String workingDirectory,
-    Map<String, String> environment,
-    bool verbose = true}) async {
+    {Iterable<String>? args,
+    String? tokenEndpoint,
+    String? workingDirectory,
+    Map<String, String?>? environment,
+    bool verbose = true,
+    includeParentEnvironment = true}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
-
-  // Find a Dart executable we can use to spawn. Use the same one that was
-  // used to run this script itself.
-  var dartBin = Platform.executable;
-
-  // If the executable looks like a path, get its full path. That way we
-  // can still find it when we spawn it with a different working directory.
-  if (dartBin.contains(Platform.pathSeparator)) {
-    dartBin = p.absolute(dartBin);
-  }
 
   // If there's a snapshot for "pub" available we use it. If the snapshot is
   // out-of-date local source the tests will be useless, therefore it is
@@ -492,34 +480,44 @@ Future<PubProcess> startPub(
     ..addAll([pubPath, if (verbose) '--verbose'])
     ..addAll(args);
 
-  return await PubProcess.start(dartBin, dartArgs,
-      environment: getPubTestEnvironment(tokenEndpoint)
-        ..addAll(environment ?? {}),
+  final mergedEnvironment = getPubTestEnvironment(tokenEndpoint);
+  for (final e in (environment ?? {}).entries) {
+    var value = e.value;
+    if (value == null) {
+      mergedEnvironment.remove(e.key);
+    } else {
+      mergedEnvironment[e.key] = value;
+    }
+  }
+
+  return await PubProcess.start(Platform.resolvedExecutable, dartArgs,
+      environment: mergedEnvironment,
       workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
-      description: args.isEmpty ? 'pub' : 'pub ${args.first}');
+      description: args.isEmpty ? 'pub' : 'pub ${args.first}',
+      includeParentEnvironment: includeParentEnvironment);
 }
 
 /// A subclass of [TestProcess] that parses pub's verbose logging output and
 /// makes [stdout] and [stderr] work as though pub weren't running in verbose
 /// mode.
 class PubProcess extends TestProcess {
-  StreamSplitter<Pair<log.Level, String>> get _logSplitter {
-    __logSplitter ??= StreamSplitter(StreamGroup.merge([
+  late final StreamSplitter<Pair<log.Level, String>> _logSplitter =
+      createLogSplitter();
+
+  StreamSplitter<Pair<log.Level, String>> createLogSplitter() {
+    return StreamSplitter(StreamGroup.merge([
       _outputToLog(super.stdoutStream(), log.Level.MESSAGE),
       _outputToLog(super.stderrStream(), log.Level.ERROR)
     ]));
-    return __logSplitter;
   }
 
-  StreamSplitter<Pair<log.Level, String>> __logSplitter;
-
   static Future<PubProcess> start(String executable, Iterable<String> arguments,
-      {String workingDirectory,
-      Map<String, String> environment,
+      {String? workingDirectory,
+      Map<String, String>? environment,
       bool includeParentEnvironment = true,
       bool runInShell = false,
-      String description,
-      Encoding encoding,
+      String? description,
+      Encoding encoding = utf8,
       bool forwardStdio = false}) async {
     var process = await Process.start(executable, arguments.toList(),
         workingDirectory: workingDirectory,
@@ -534,14 +532,13 @@ class PubProcess extends TestProcess {
       description = '$humanExecutable ${arguments.join(' ')}';
     }
 
-    encoding ??= utf8;
     return PubProcess(process, description,
         encoding: encoding, forwardStdio: forwardStdio);
   }
 
   /// This is protected.
   PubProcess(process, description,
-      {Encoding encoding, bool forwardStdio = false})
+      {Encoding encoding = utf8, bool forwardStdio = false})
       : super(process, description,
             encoding: encoding, forwardStdio: forwardStdio);
 
@@ -560,14 +557,14 @@ class PubProcess extends TestProcess {
 
   Stream<Pair<log.Level, String>> _outputToLog(
       Stream<String> stream, log.Level defaultLevel) {
-    log.Level lastLevel;
+    late log.Level lastLevel;
     return stream.map((line) {
       var match = _logLineRegExp.firstMatch(line);
       if (match == null) return Pair<log.Level, String>(defaultLevel, line);
 
       var level = _logLevels[match[1]] ?? lastLevel;
       lastLevel = level;
-      return Pair<log.Level, String>(level, match[2]);
+      return Pair<log.Level, String>(level, match[2]!);
     });
   }
 
@@ -617,15 +614,15 @@ void ensureGit() {
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
 Future<void> createLockFile(String package,
-    {Iterable<String> dependenciesInSandBox,
-    Map<String, String> hosted}) async {
+    {Iterable<String>? dependenciesInSandBox,
+    Map<String, String>? hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
   var lockFile = _createLockFile(cache.sources,
       sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(null)),
+    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package))),
     d.file(
       '.packages',
       lockFile.packagesFile(
@@ -640,8 +637,8 @@ Future<void> createLockFile(String package,
 /// Like [createLockFile], but creates only a `.packages` file without a
 /// lockfile.
 Future<void> createPackagesFile(String package,
-    {Iterable<String> dependenciesInSandBox,
-    Map<String, String> hosted}) async {
+    {Iterable<String>? dependenciesInSandBox,
+    Map<String, String>? hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   var lockFile = _createLockFile(cache.sources,
       sandbox: dependenciesInSandBox, hosted: hosted);
@@ -666,7 +663,7 @@ Future<void> createPackagesFile(String package,
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
 LockFile _createLockFile(SourceRegistry sources,
-    {Iterable<String> sandbox, Map<String, String> hosted}) {
+    {Iterable<String>? sandbox, Map<String, String>? hosted}) {
   var dependencies = {};
 
   if (sandbox != null) {
@@ -677,7 +674,9 @@ LockFile _createLockFile(SourceRegistry sources,
 
   var packages = dependencies.keys.map((name) {
     var dependencyPath = dependencies[name];
-    return sources.path.idFor(name, Version(0, 0, 0), dependencyPath);
+    return sources.path.parseId(
+        name, Version(0, 0, 0), {'path': dependencyPath, 'relative': true},
+        containingPath: p.join(d.sandbox, appPath));
   }).toList();
 
   if (hosted != null) {
@@ -704,14 +703,14 @@ void useMockClient(MockClient client) {
 
 /// Describes a map representing a library package with the given [name],
 /// [version], and [dependencies].
-Map packageMap(
+Map<String, Object> packageMap(
   String name,
   String version, [
-  Map dependencies,
-  Map devDependencies,
-  Map environment,
+  Map? dependencies,
+  Map? devDependencies,
+  Map? environment,
 ]) {
-  var package = <String, dynamic>{
+  var package = <String, Object>{
     'name': name,
     'version': version,
     'homepage': 'http://pub.dartlang.org',
@@ -833,7 +832,7 @@ void _validateOutputString(
 /// which may be a literal JSON object, or any other [Matcher].
 void _validateOutputJson(
     List<String> failures, String pipe, expected, String actualText) {
-  Map actual;
+  late Map actual;
   try {
     actual = jsonDecode(actualText);
   } on FormatException {
@@ -914,8 +913,9 @@ Iterable<String> _filter(List<String> input) {
     line = line
         .replaceAll(d.sandbox, r'$SANDBOX')
         .replaceAll(Platform.pathSeparator, '/');
-    if (globalPackageServer != null) {
-      line = line.replaceAll(globalPackageServer.port.toString(), '\$PORT');
+    var packageServer = globalPackageServer;
+    if (packageServer != null) {
+      line = line.replaceAll(packageServer.port.toString(), '\$PORT');
     }
     return line;
   });
@@ -925,8 +925,8 @@ Iterable<String> _filter(List<String> input) {
 Future<void> runPubIntoBuffer(
   List<String> args,
   StringBuffer buffer, {
-  Map<String, String> environment,
-  String workingDirectory,
+  Map<String, String>? environment,
+  String? workingDirectory,
 }) async {
   final process = await startPub(
     args: args,
@@ -935,15 +935,24 @@ Future<void> runPubIntoBuffer(
   );
   final exitCode = await process.exitCode;
 
+  // TODO(jonasfj): Clean out temporary directory names from env vars...
+  // if (workingDirectory != null) {
+  //   buffer.writeln('\$ cd $workingDirectory');
+  // }
+  // if (environment != null && environment.isNotEmpty) {
+  //   buffer.writeln(environment.entries
+  //       .map((e) => '\$ export ${e.key}=${e.value}')
+  //       .join('\n'));
+  // }
   buffer.writeln(_filter([
     '\$ pub ${args.join(' ')}',
     ...await process.stdout.rest.toList(),
   ]).join('\n'));
   for (final line in _filter(await process.stderr.rest.toList())) {
-    buffer.writeln('[ERR] $line');
+    buffer.writeln('[STDERR] $line');
   }
   if (exitCode != 0) {
-    buffer.writeln('[Exit code] $exitCode');
+    buffer.writeln('[EXIT CODE] $exitCode');
   }
   buffer.write('\n');
 }
