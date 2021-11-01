@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:http/http.dart' as http;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart';
@@ -20,19 +18,19 @@ void main() {
       // will be on the form:
       //   http://localhost:<port>
       // In particular, that it doesn't contain anything path segment.
-      expect(Uri.parse(globalPackageServer.url).path, isEmpty);
+      expect(Uri.parse(globalPackageServer!.url).path, isEmpty);
 
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalPackageServer.url},
+            'hosted': {'name': 'foo', 'url': globalPackageServer!.url},
           },
         }),
       ]).create();
 
       await pubCommand(
         command,
-        silent: contains('${globalPackageServer.url}/api/packages/foo'),
+        silent: contains('${globalPackageServer!.url}/api/packages/foo'),
       );
     });
 
@@ -42,20 +40,20 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalPackageServer.url + '/'},
+            'hosted': {'name': 'foo', 'url': globalPackageServer!.url + '/'},
           },
         }),
       ]).create();
 
       await pubCommand(
         command,
-        silent: contains('${globalPackageServer.url}/api/packages/foo'),
+        silent: contains('${globalPackageServer!.url}/api/packages/foo'),
       );
     });
 
     test('cannot normalize double slash', () async {
       await servePackages((b) => b..serve('foo', '1.2.3'));
-      globalPackageServer.expect(
+      globalPackageServer!.expect(
         'GET',
         '//api/packages/foo',
         (request) => Response.notFound(''),
@@ -64,7 +62,7 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalPackageServer.url + '//'},
+            'hosted': {'name': 'foo', 'url': globalPackageServer!.url + '//'},
           },
         }),
       ]).create();
@@ -72,7 +70,7 @@ void main() {
       await pubCommand(
         command,
         error: contains(
-            'could not find package foo at ${globalPackageServer.url}//'),
+            'could not find package foo at ${globalPackageServer!.url}//'),
         exitCode: exit_codes.UNAVAILABLE,
       );
     });
@@ -82,16 +80,16 @@ void main() {
     /// This is a bit of a hack, to easily test if hosted pub URLs with a path
     /// segment works and if the slashes are normalized.
     void _proxyMyFolderToRoot() {
-      globalPackageServer.extraHandlers[RegExp('/my-folder/.*')] = (r) async {
+      globalPackageServer!.extraHandlers[RegExp('/my-folder/.*')] = (r) async {
         if (r.method != 'GET' && r.method != 'HEAD') {
           return Response.forbidden(null);
         }
         final path = r.requestedUri.path.substring('/my-folder/'.length);
         final res = await http.get(
-          Uri.parse(globalPackageServer.url + '/$path'),
+          Uri.parse(globalPackageServer!.url + '/$path'),
         );
         return Response(res.statusCode, body: res.bodyBytes, headers: {
-          'Content-Type': res.headers['Content-Type'],
+          'content-type': res.headers['content-type']!,
         });
       };
     }
@@ -101,8 +99,8 @@ void main() {
       _proxyMyFolderToRoot();
 
       // testing with a normalized URL
-      final testUrl = globalPackageServer.url + '/my-folder/';
-      final normalizedUrl = globalPackageServer.url + '/my-folder/';
+      final testUrl = globalPackageServer!.url + '/my-folder/';
+      final normalizedUrl = globalPackageServer!.url + '/my-folder/';
 
       await d.dir(appPath, [
         d.appPubspec({
@@ -124,8 +122,8 @@ void main() {
       _proxyMyFolderToRoot();
 
       // Testing with a URL that is missing the slash.
-      final testUrl = globalPackageServer.url + '/my-folder';
-      final normalizedUrl = globalPackageServer.url + '/my-folder/';
+      final testUrl = globalPackageServer!.url + '/my-folder';
+      final normalizedUrl = globalPackageServer!.url + '/my-folder/';
 
       await d.dir(appPath, [
         d.appPubspec({

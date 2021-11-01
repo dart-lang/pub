@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -44,19 +42,19 @@ void main() {
         'source': 'hosted',
         'description': {
           'name': 'foo',
-          'url': globalPackageServer.url,
+          'url': globalPackageServer!.url,
         },
         'version': '1.2.3',
       });
     }
 
     test('supports hosted: <url> syntax', () async {
-      return testWith({'hosted': globalPackageServer.url});
+      return testWith({'hosted': globalPackageServer!.url});
     });
 
     test('supports hosted map without name', () {
       return testWith({
-        'hosted': {'url': globalPackageServer.url},
+        'hosted': {'url': globalPackageServer!.url},
       });
     });
 
@@ -83,7 +81,7 @@ void main() {
       );
 
       expect(lockFile['packages']['foo']['description']['url'],
-          globalPackageServer.url);
+          globalPackageServer!.url);
     });
   });
 }
