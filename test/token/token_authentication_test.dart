@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -18,14 +16,14 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer.url, 'env': 'TOKEN'},
+        {'url': globalPackageServer!.url, 'env': 'TOKEN'},
       ]
     }).create();
-    var pub = await startPublish(globalPackageServer,
+    var pub = await startPublish(globalPackageServer!,
         authMethod: 'token', environment: {'TOKEN': 'access token'});
     await confirmPublish(pub);
 
-    handleUploadForm(globalPackageServer);
+    handleUploadForm(globalPackageServer!);
 
     await pub.shouldExit(1);
   });
@@ -35,13 +33,13 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer.url, 'token': 'access token'},
+        {'url': globalPackageServer!.url, 'token': 'access token'},
       ]
     }).create();
-    var pub = await startPublish(globalPackageServer, authMethod: 'token');
+    var pub = await startPublish(globalPackageServer!, authMethod: 'token');
     await confirmPublish(pub);
 
-    handleUploadForm(globalPackageServer);
+    handleUploadForm(globalPackageServer!);
 
     await pub.shouldExit(1);
   });

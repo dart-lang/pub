@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
@@ -20,15 +18,15 @@ void main() {
 
     await servePackages();
     await d
-        .credentialsFile(globalPackageServer, 'access token',
+        .credentialsFile(globalPackageServer!, 'access token',
             refreshToken: 'refresh token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(globalPackageServer);
+    var pub = await startPublish(globalPackageServer!);
     await confirmPublish(pub);
 
-    globalPackageServer.expect('POST', '/token', (request) {
+    globalPackageServer!.expect('POST', '/token', (request) {
       return request.readAsString().then((body) {
         expect(
             body, matches(RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
@@ -40,7 +38,7 @@ void main() {
       });
     });
 
-    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -50,7 +48,7 @@ void main() {
     await pub.shouldExit();
 
     await d
-        .credentialsFile(globalPackageServer, 'new access token',
+        .credentialsFile(globalPackageServer!, 'new access token',
             refreshToken: 'refresh token')
         .validate();
   });
