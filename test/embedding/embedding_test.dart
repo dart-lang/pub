@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -16,14 +14,14 @@ import '../test_pub.dart';
 
 const _command_runner = 'tool/test-bin/pub_command_runner.dart';
 
-String snapshot;
+late String snapshot;
 
 /// Runs `dart tool/test-bin/pub_command_runner.dart [args]` and appends the output to [buffer].
 Future<void> runEmbeddingToBuffer(
   List<String> args,
   StringBuffer buffer, {
-  String workingDirextory,
-  Map<String, String> environment,
+  String? workingDirectory,
+  Map<String, String>? environment,
   dynamic exitCode = 0,
 }) async {
   final process = await TestProcess.start(
@@ -33,7 +31,7 @@ Future<void> runEmbeddingToBuffer(
       ...getPubTestEnvironment(),
       ...?environment,
     },
-    workingDirectory: workingDirextory,
+    workingDirectory: workingDirectory,
   );
   await process.shouldExit(exitCode);
 
@@ -53,15 +51,15 @@ extension on GoldenTestContext {
   /// next section in golden file.
   Future<void> runEmbedding(
     List<String> args, {
-    String workingDirextory,
-    Map<String, String> environment,
+    String? workingDirextory,
+    Map<String, String>? environment,
     dynamic exitCode = 0,
   }) async {
     final buffer = StringBuffer();
     await runEmbeddingToBuffer(
       args,
       buffer,
-      workingDirextory: workingDirextory,
+      workingDirectory: workingDirextory,
       environment: environment,
       exitCode: exitCode,
     );
@@ -136,7 +134,7 @@ main() {
     await runEmbeddingToBuffer(
       ['pub', 'get'],
       buffer,
-      workingDirextory: app.io.path,
+      workingDirectory: app.io.path,
       environment: {...getPubTestEnvironment(), '_PUB_LOG_ANALYTICS': 'true'},
     );
     final analytics = buffer

@@ -133,7 +133,7 @@ Future<void> pubCommand(
   Object? silent,
   Object? warning,
   int? exitCode,
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   String? workingDirectory,
   includeParentEnvironment = true,
 }) async {
@@ -189,7 +189,7 @@ Future<void> pubGet({
   Object? error,
   Object? warning,
   int? exitCode,
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   String? workingDirectory,
   bool includeParentEnvironment = true,
 }) async =>
