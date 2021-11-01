@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -26,7 +24,7 @@ void main() {
     /// foo's package creator releases a newer version of foo, and we
     /// want to test that this is what the user gets when they run
     /// pub add foo.
-    globalPackageServer.add((builder) {
+    globalPackageServer!.add((builder) {
       builder.serve('foo', '3.5.0');
       builder.serve('foo', '3.1.0');
       builder.serve('foo', '2.5.0');
@@ -51,7 +49,7 @@ void main() {
     await d.appDir({'bar': '1.0.0'}).create();
     await pubGet();
 
-    globalPackageServer.add((builder) {
+    globalPackageServer!.add((builder) {
       builder.serve('foo', '4.0.0');
       builder.serve('foo', '2.0.0');
     });
@@ -75,7 +73,7 @@ void main() {
     await d.appDir({'bar': '^1.0.0'}).create();
     await pubGet();
 
-    globalPackageServer.add((builder) {
+    globalPackageServer!.add((builder) {
       builder.serve('foo', '5.0.0');
       builder.serve('foo', '4.0.0');
       builder.serve('foo', '2.0.0');
