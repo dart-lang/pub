@@ -4,6 +4,8 @@
 
 // @dart=2.10
 
+import 'dart:io';
+
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -15,8 +17,12 @@ void main() {
 
     await d.appDir({'foo': 'any'}).create();
 
-    await pubGet(
-        environment: {'_PUB_TEST_CONFIG_DIR': null},
-        includeParentEnvironment: false);
+    await pubGet(environment: {
+      '_PUB_TEST_CONFIG_DIR': null,
+      if (Platform.isWindows) ...{
+        'SYSTEMROOT': Platform.environment['SYSTEMROOT'],
+        'TMP': Platform.environment['TMP'],
+      },
+    }, includeParentEnvironment: false);
   });
 }
