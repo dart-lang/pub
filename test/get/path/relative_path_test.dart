@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/source_registry.dart';
@@ -93,7 +91,7 @@ void main() {
 
     var lockfilePath = path.join(d.sandbox, appPath, 'pubspec.lock');
     var lockfile = LockFile.load(lockfilePath, SourceRegistry());
-    var description = lockfile.packages['foo'].description;
+    var description = lockfile.packages['foo']!.description;
 
     expect(description['relative'], isTrue);
     expect(description['path'], path.join(d.sandbox, 'foo'));

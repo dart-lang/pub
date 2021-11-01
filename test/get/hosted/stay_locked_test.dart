@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -28,7 +26,7 @@ void main() {
     deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     // Start serving a newer package as well.
-    globalPackageServer.add((builder) => builder.serve('foo', '1.0.1'));
+    globalPackageServer!.add((builder) => builder.serve('foo', '1.0.1'));
 
     // This shouldn't upgrade the foo dependency due to the lockfile.
     await pubGet();
