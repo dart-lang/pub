@@ -14,7 +14,7 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('does not require slash on bare domain', () async {
       await servePackages((b) => b..serve('foo', '1.2.3'));
-      // All the tests in this file assumes that [globalPackageServer!.url]
+      // All the tests in this file assumes that [globalPackageServer.url]
       // will be on the form:
       //   http://localhost:<port>
       // In particular, that it doesn't contain anything path segment.
