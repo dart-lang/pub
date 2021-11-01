@@ -89,7 +89,7 @@ void main() {
           Uri.parse(globalPackageServer!.url + '/$path'),
         );
         return Response(res.statusCode, body: res.bodyBytes, headers: {
-          'Content-Type': res.headers['Content-Type']!,
+          'content-type': res.headers['content-type']!,
         });
       };
     }
