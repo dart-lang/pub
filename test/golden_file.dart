@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -40,14 +38,14 @@ class GoldenTestContext {
       ' END OF OUTPUT '
       '---------------------------------\n\n';
 
-  final String _currentTestFile;
-  final String _testName;
+  late final String _currentTestFile;
+  late final String _testName;
 
-  String _goldenFilePath;
-  File _goldenFile;
-  String _header;
+  late String _goldenFilePath;
+  late File _goldenFile;
+  late String _header;
   final _results = <String>[];
-  bool _goldenFileExists;
+  late bool _goldenFileExists;
   bool _generatedNewData = false; // track if new data is generated
   int _nextSectionIndex = 0;
 
@@ -151,8 +149,8 @@ class GoldenTestContext {
   /// log stdout/stderr and exitcode to golden file.
   Future<void> run(
     List<String> args, {
-    Map<String, String> environment,
-    String workingDirectory,
+    Map<String, String>? environment,
+    String? workingDirectory,
   }) async {
     // Create new section index number (before doing anything async)
     final sectionIndex = _nextSectionIndex++;
@@ -169,7 +167,7 @@ class GoldenTestContext {
   }
 
   /// Log directory tree structure under [directory] to golden file.
-  Future<void> tree([String directory]) async {
+  Future<void> tree([String? directory]) async {
     // Create new section index number (before doing anything async)
     final sectionIndex = _nextSectionIndex++;
 
