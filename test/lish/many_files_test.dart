@@ -33,10 +33,10 @@ void main() {
       'the command line', () async {
     await d.validPackage.create();
 
-    num argMax;
+    int argMax;
     if (Platform.isWindows) {
       // On Windows, the maximum argument list length is 8^5 bytes.
-      argMax = math.pow(8, 5);
+      argMax = 32768; // 8^5
     } else {
       // On POSIX, the maximum argument list length can be retrieved
       // automatically.
