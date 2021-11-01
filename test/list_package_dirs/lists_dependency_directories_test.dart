@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
 
@@ -39,7 +37,7 @@ void main() {
       'packages': {
         'foo': path.join(d.sandbox, 'foo', 'lib'),
         'bar': path.join(d.sandbox, cachePath, 'hosted',
-            'localhost%58${globalServer.port}', 'bar-1.0.0', 'lib'),
+            'localhost%58${globalServer!.port}', 'bar-1.0.0', 'lib'),
         'myapp': canonicalize(path.join(d.sandbox, appPath, 'lib'))
       },
       'input_files': [
