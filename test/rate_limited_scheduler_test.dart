@@ -164,7 +164,6 @@ void main() {
       await isBeingProcessed['b']!.future;
       expect(isBeingProcessed['c']!.isCompleted, isFalse);
       unawaited(completers['c']!.future.catchError((_) {}));
-
       completers['c']!.completeError('errorC');
       completers['a']!.completeError('errorA');
       await isBeingProcessed['c']!.future;

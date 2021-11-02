@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/package_name.dart';
@@ -12,8 +11,6 @@ import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
-
-// import 'descriptor.dart' as d;
 
 class FakeSource extends Source {
   @override
