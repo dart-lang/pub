@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -2974,11 +2972,11 @@ void features() {
 ///
 /// If [downgrade] is `true`, this runs "pub downgrade" instead of "pub get".
 Future expectResolves(
-    {Map result,
+    {Map? result,
     error,
     output,
-    int tries,
-    Map<String, String> environment,
+    int? tries,
+    Map<String, String>? environment,
     bool downgrade = false}) async {
   await runPub(
       args: [downgrade ? 'downgrade' : 'get'],
@@ -3009,7 +3007,7 @@ Future expectResolves(
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
       dep = registry.hosted
-          .refFor(dep.name, url: Uri.parse(globalPackageServer.url))
+          .refFor(dep.name, url: Uri.parse(globalPackageServer!.url))
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');
