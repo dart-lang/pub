@@ -30,7 +30,7 @@ Future<List<String>> versionArchiveUrls(String packageName) async {
 }
 
 Future<void> main() async {
-  var alreadyDonePackages = <String?>{};
+  var alreadyDonePackages = <String>{};
   var failures = <Map<String, dynamic>?>[];
   if (fileExists(statusFilename)) {
     final json = jsonDecode(readTextFile(statusFilename));
