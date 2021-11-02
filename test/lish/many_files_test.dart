@@ -2,11 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -38,7 +35,7 @@ void main() {
     int argMax;
     if (Platform.isWindows) {
       // On Windows, the maximum argument list length is 8^5 bytes.
-      argMax = math.pow(8, 5);
+      argMax = 32768; // 8^5
     } else {
       // On POSIX, the maximum argument list length can be retrieved
       // automatically.
@@ -76,14 +73,14 @@ void main() {
     }
 
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer);
-    handleUpload(globalPackageServer);
+    handleUploadForm(globalPackageServer!);
+    handleUpload(globalPackageServer!);
 
-    globalPackageServer.expect('GET', '/create', (request) {
+    globalPackageServer!.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -20,11 +18,11 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer
+    globalPackageServer!
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(output: contains('bar 1.0.0 (retracted)'));
@@ -40,11 +38,11 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer
+    globalPackageServer!
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(output: contains('bar 1.0.0 (retracted, 2.0.0 available)'));
@@ -60,11 +58,11 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer
+    globalPackageServer!
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0-pre'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(

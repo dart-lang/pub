@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -22,7 +20,7 @@ void main() {
 
     deleteEntry(p.join(d.sandbox, cachePath));
 
-    globalPackageServer.replace((builder) => builder.serve('foo', '1.0.1'));
+    globalPackageServer!.replace((builder) => builder.serve('foo', '1.0.1'));
     await pubGet();
     await d.appPackagesFile({'foo': '1.0.1'}).validate();
   });

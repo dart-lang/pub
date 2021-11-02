@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -24,7 +22,7 @@ void main() {
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    globalServer.requestedPaths.clear();
+    globalServer!.requestedPaths.clear();
 
     // Run the solver again now that it's cached.
     await pubGet();
@@ -34,6 +32,6 @@ void main() {
 
     // The get should not have done any network requests since the lock file is
     // up to date.
-    expect(globalServer.requestedPaths, isEmpty);
+    expect(globalServer!.requestedPaths, isEmpty);
   });
 }

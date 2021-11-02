@@ -2,74 +2,65 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
-import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-/// Try running 'pub outdated' with a number of different sets of arguments.
-///
-/// Compare the stdout and stderr output to the file in goldens/$[name].
-Future<void> variations(String name, {Map<String, String> environment}) async {
-  final buffer = StringBuffer();
-  for (final args in [
-    ['outdated', '--json'],
-    ['outdated', '--no-color'],
-    ['outdated', '--no-color', '--no-transitive'],
-    ['outdated', '--no-color', '--up-to-date'],
-    ['outdated', '--no-color', '--prereleases'],
-    ['outdated', '--no-color', '--no-dev-dependencies'],
-    ['outdated', '--no-color', '--no-dependency-overrides'],
-    ['outdated', '--no-color', '--mode=null-safety'],
-    ['outdated', '--no-color', '--mode=null-safety', '--transitive'],
-    ['outdated', '--no-color', '--mode=null-safety', '--no-prereleases'],
-    ['outdated', '--json', '--mode=null-safety'],
-    ['outdated', '--json', '--no-dev-dependencies'],
-  ]) {
-    await runPubIntoBuffer(args, buffer, environment: environment);
+extension on GoldenTestContext {
+  /// Try running 'pub outdated' with a number of different sets of arguments.
+  /// And compare to results from test/testdata/goldens/...
+  Future<void> runOutdatedTests({
+    Map<String, String>? environment,
+    String? workingDirectory,
+  }) async {
+    const commands = [
+      ['outdated', '--json'],
+      ['outdated', '--no-color'],
+      ['outdated', '--no-color', '--no-transitive'],
+      ['outdated', '--no-color', '--up-to-date'],
+      ['outdated', '--no-color', '--prereleases'],
+      ['outdated', '--no-color', '--no-dev-dependencies'],
+      ['outdated', '--no-color', '--no-dependency-overrides'],
+      ['outdated', '--no-color', '--mode=null-safety'],
+      ['outdated', '--no-color', '--mode=null-safety', '--transitive'],
+      ['outdated', '--no-color', '--mode=null-safety', '--no-prereleases'],
+      ['outdated', '--json', '--mode=null-safety'],
+      ['outdated', '--json', '--no-dev-dependencies'],
+    ];
+    for (final args in commands) {
+      await run(
+        args,
+        environment: environment,
+        workingDirectory: workingDirectory,
+      );
+    }
   }
-  // The easiest way to update the golden files is to delete them and rerun the
-  // test.
-  expectMatchesGoldenFile(buffer.toString(), 'test/outdated/goldens/$name.txt');
 }
 
 Future<void> main() async {
-  test('help text', () async {
-    final buffer = StringBuffer();
-    await runPubIntoBuffer(
-      ['outdated', '--help'],
-      buffer,
-    );
-    expectMatchesGoldenFile(
-        buffer.toString(), 'test/outdated/goldens/helptext.txt');
-  });
-
-  test('no pubspec', () async {
+  testWithGolden('no pubspec', (ctx) async {
     await d.dir(appPath, []).create();
-    final buffer = StringBuffer();
-    await runPubIntoBuffer(['outdated'], buffer);
-    expectMatchesGoldenFile(
-        buffer.toString(), 'test/outdated/goldens/no_pubspec.txt');
+    await ctx.run(['outdated']);
   });
 
-  test('no lockfile', () async {
+  testWithGolden('no lockfile', (ctx) async {
     await d.appDir({'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
     await servePackages((builder) => builder
       ..serve('foo', '1.2.3')
       ..serve('bar', '1.2.3')
       ..serve('bar', '2.0.0'));
-    await variations('no_lockfile');
+
+    await ctx.runOutdatedTests();
   });
 
-  test('no dependencies', () async {
+  testWithGolden('no dependencies', (ctx) async {
     await d.appDir().create();
     await pubGet();
-    await variations('no_dependencies');
+
+    await ctx.runOutdatedTests();
   });
 
-  test('newer versions available', () async {
+  testWithGolden('newer versions available', (ctx) async {
     await servePackages((builder) => builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.0.0')
@@ -97,7 +88,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    globalPackageServer.add((builder) => builder
+    globalPackageServer!.add((builder) => builder
       ..serve('foo', '1.3.0', deps: {'transitive': '>=1.0.0<3.0.0'})
       ..serve('foo', '2.0.0',
           deps: {'transitive': '>=1.0.0<3.0.0', 'transitive2': '^1.0.0'})
@@ -114,10 +105,11 @@ Future<void> main() async {
       ..serve('transitive2', '1.0.0')
       ..serve('transitive3', '1.0.0')
       ..serve('dev_trans', '2.0.0'));
-    await variations('newer_versions');
+
+    await ctx.runOutdatedTests();
   });
 
-  test('circular dependency on root', () async {
+  testWithGolden('circular dependency on root', (ctx) async {
     await servePackages(
       (builder) => builder..serve('foo', '1.2.3', deps: {'app': '^1.0.0'}),
     );
@@ -134,13 +126,14 @@ Future<void> main() async {
 
     await pubGet();
 
-    globalPackageServer.add(
+    globalPackageServer!.add(
       (builder) => builder..serve('foo', '1.3.0', deps: {'app': '^1.0.1'}),
     );
-    await variations('circular_dependencies');
+
+    await ctx.runOutdatedTests();
   });
 
-  test('mutually incompatible newer versions', () async {
+  testWithGolden('mutually incompatible newer versions', (ctx) async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
@@ -159,10 +152,10 @@ Future<void> main() async {
       ..serve('bar', '2.0.0', deps: {'foo': '^1.0.0'}));
     await pubGet();
 
-    await variations('mutually_incompatible');
+    await ctx.runOutdatedTests();
   });
 
-  test('null safety compliance', () async {
+  testWithGolden('null safety compliance', (ctx) async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
@@ -237,11 +230,12 @@ Future<void> main() async {
     );
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
 
-    await variations('null_safety',
-        environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+    await ctx.runOutdatedTests(environment: {
+      '_PUB_TEST_SDK_VERSION': '2.13.0',
+    });
   });
 
-  test('null-safety no resolution', () async {
+  testWithGolden('null-safety no resolution', (ctx) async {
     await servePackages((builder) => builder
       ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.9.0 < 3.0.0'}
@@ -274,11 +268,12 @@ Future<void> main() async {
 
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
 
-    await variations('null_safety_no_resolution',
-        environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+    await ctx.runOutdatedTests(environment: {
+      '_PUB_TEST_SDK_VERSION': '2.13.0',
+    });
   });
 
-  test('null-safety already migrated', () async {
+  testWithGolden('null-safety already migrated', (ctx) async {
     await servePackages((builder) => builder
       ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.9.0 < 3.0.0'}
@@ -314,11 +309,12 @@ Future<void> main() async {
 
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
 
-    await variations('null_safety_already_migrated',
-        environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+    await ctx.runOutdatedTests(environment: {
+      '_PUB_TEST_SDK_VERSION': '2.13.0',
+    });
   });
 
-  test('overridden dependencies', () async {
+  testWithGolden('overridden dependencies', (ctx) async {
     ensureGit();
     await servePackages(
       (builder) => builder
@@ -359,10 +355,10 @@ Future<void> main() async {
 
     await pubGet();
 
-    await variations('dependency_overrides');
+    await ctx.runOutdatedTests();
   });
 
-  test('overridden dependencies - no resolution', () async {
+  testWithGolden('overridden dependencies - no resolution', (ctx) async {
     ensureGit();
     await servePackages(
       (builder) => builder
@@ -389,12 +385,12 @@ Future<void> main() async {
 
     await pubGet();
 
-    await variations('dependency_overrides_no_solution');
+    await ctx.runOutdatedTests();
   });
 
-  test(
+  testWithGolden(
       'latest version reported while locked on a prerelease can be a prerelease',
-      () async {
+      (ctx) async {
     await servePackages((builder) => builder
       ..serve('foo', '0.9.0')
       ..serve('foo', '1.0.0-dev.1')
@@ -419,10 +415,10 @@ Future<void> main() async {
 
     await pubGet();
 
-    await variations('prereleases');
+    await ctx.runOutdatedTests();
   });
 
-  test('Handles SDK dependencies', () async {
+  testWithGolden('Handles SDK dependencies', (ctx) async {
     await servePackages((builder) => builder
       ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.10.0 <3.0.0'}
@@ -471,7 +467,7 @@ Future<void> main() async {
       '_PUB_TEST_SDK_VERSION': '2.13.0'
     });
 
-    await variations('handles_sdk_dependencies', environment: {
+    await ctx.runOutdatedTests(environment: {
       'FLUTTER_ROOT': d.path('flutter-root'),
       '_PUB_TEST_SDK_VERSION': '2.13.0',
       // To test that the reproduction command is reflected correctly.
@@ -479,11 +475,8 @@ Future<void> main() async {
     });
   });
 
-  test("doesn't allow arguments. Handles bad flags", () async {
-    final sb = StringBuffer();
-    await runPubIntoBuffer(['outdated', 'random_argument'], sb);
-    await runPubIntoBuffer(['outdated', '--bad_flag'], sb);
-    expectMatchesGoldenFile(
-        sb.toString(), 'test/outdated/goldens/bad_arguments.txt');
+  testWithGolden('does not allow arguments - handles bad flags', (ctx) async {
+    await ctx.run(['outdated', 'random_argument']);
+    await ctx.run(['outdated', '--bad_flag']);
   });
 }

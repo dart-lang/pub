@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -39,7 +37,7 @@ Activated foo 1.0.0.''');
 Package foo is currently active at version 1.0.0.
 Resolving dependencies...
 The package foo is already activated at newest available version.
-To recompile executables, first run `global deactivate foo`.
+To recompile executables, first run `dart pub global deactivate foo`.
 Activated foo 1.0.0.''');
 
     var pub = await pubRun(global: true, args: ['foo']);
@@ -48,7 +46,7 @@ Activated foo 1.0.0.''');
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    globalPackageServer
+    globalPackageServer!
         .add((builder) => builder.serve('bar', '2.0.0', contents: [
               d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')])
             ]));

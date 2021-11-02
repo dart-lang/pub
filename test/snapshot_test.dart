@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -107,7 +105,7 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
-        globalPackageServer.add((builder) {
+        globalPackageServer!.add((builder) {
           builder.serve('foo', '1.2.4', contents: [
             d.dir('bin',
                 [d.file('hello.dart', "void main() => print('hello 2!');")])
@@ -153,7 +151,7 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
-        globalPackageServer.add((builder) {
+        globalPackageServer!.add((builder) {
           builder.serve('bar', '1.2.4', contents: [
             d.dir('lib', [d.file('bar.dart', "final message = 'hello 2!';")]),
           ]);

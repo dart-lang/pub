@@ -2,12 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -21,8 +18,10 @@ import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
+import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
+import 'sdk/dart.dart';
 import 'solver.dart';
 import 'solver/incompatibility_cause.dart';
 import 'source/cached.dart';
@@ -85,8 +84,9 @@ class GlobalPackages {
   /// If [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future<void> activateGit(String repo, List<String> executables,
-      {Map<String, FeatureDependency> features, bool overwriteBinStubs}) async {
+  Future<void> activateGit(String repo, List<String>? executables,
+      {Map<String, FeatureDependency>? features,
+      required bool overwriteBinStubs}) async {
     var name = await cache.git.getPackageNameFromRepo(repo);
 
     // TODO(nweiz): Add some special handling for git repos that contain path
@@ -121,10 +121,10 @@ class GlobalPackages {
   /// [url] is an optional custom pub server URL. If not null, the package to be
   /// activated will be fetched from this URL instead of the default pub URL.
   Future<void> activateHosted(
-      String name, VersionConstraint constraint, List<String> executables,
-      {Map<String, FeatureDependency> features,
-      bool overwriteBinStubs,
-      Uri url}) async {
+      String name, VersionConstraint constraint, List<String>? executables,
+      {Map<String, FeatureDependency>? features,
+      required bool overwriteBinStubs,
+      Uri? url}) async {
     await _installInCache(
         cache.hosted.source
             .refFor(name, url: url)
@@ -143,12 +143,13 @@ class GlobalPackages {
   /// if [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future<void> activatePath(String path, List<String> executables,
-      {bool overwriteBinStubs}) async {
+  Future<void> activatePath(String path, List<String>? executables,
+      {required bool overwriteBinStubs,
+      required PubAnalytics? analytics}) async {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(SolveType.GET);
+    await entrypoint.acquireDependencies(SolveType.GET, analytics: analytics);
     var name = entrypoint.root.name;
 
     try {
@@ -177,9 +178,9 @@ class GlobalPackages {
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
-  Future<void> _installInCache(PackageRange dep, List<String> executables,
-      {bool overwriteBinStubs}) async {
-    LockFile originalLockFile;
+  Future<void> _installInCache(PackageRange dep, List<String>? executables,
+      {required bool overwriteBinStubs}) async {
+    LockFile? originalLockFile;
     try {
       originalLockFile =
           LockFile.load(_getLockFilePath(dep.name), cache.sources);
@@ -217,7 +218,7 @@ class GlobalPackages {
     if (sameVersions) {
       log.message('''
 The package ${dep.name} is already activated at newest available version.
-To recompile executables, first run `global deactivate ${dep.name}`.
+To recompile executables, first run `$topLevelProgram pub global deactivate ${dep.name}`.
 ''');
     } else {
       await result.showReport(SolveType.GET, cache);
@@ -240,12 +241,12 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     // We want the entrypoint to be rooted at 'dep' not the dummy-package.
     result.packages.removeWhere((id) => id.name == 'pub global activate');
 
-    var id = lockFile.packages[dep.name];
+    var id = lockFile.packages[dep.name]!;
     // Load the package graph from [result] so we don't need to re-parse all
     // the pubspecs.
     final entrypoint = Entrypoint.global(
       Package(
-        result.pubspecs[dep.name],
+        result.pubspecs[dep.name]!,
         (cache.source(dep.source) as CachedSource).getDirectoryInCache(id),
       ),
       lockFile,
@@ -259,7 +260,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
 
     _updateBinStubs(
       entrypoint,
-      cache.load(entrypoint.lockFile.packages[dep.name]),
+      cache.load(entrypoint.lockFile.packages[dep.name]!),
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
@@ -295,8 +296,8 @@ To recompile executables, first run `global deactivate ${dep.name}`.
   }
 
   /// Shows the user the currently active package with [name], if any.
-  void _describeActive(LockFile lockFile, String name) {
-    var id = lockFile.packages[name];
+  void _describeActive(LockFile lockFile, String? name) {
+    var id = lockFile.packages[name]!;
 
     var source = id.source;
     if (source is GitSource) {
@@ -323,7 +324,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     _deleteBinStubs(name);
 
     var lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
-    var id = lockFile.packages[name];
+    var id = lockFile.packages[name]!;
     log.message('Deactivated package ${_formatPackage(id)}.');
 
     deleteEntry(dir);
@@ -336,7 +337,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
   /// Returns an [Entrypoint] loaded with the active package if found.
   Future<Entrypoint> find(String name) async {
     var lockFilePath = _getLockFilePath(name);
-    LockFile lockFile;
+    late LockFile lockFile;
     try {
       lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
@@ -361,7 +362,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     // Remove the package itself from the lockfile. We put it in there so we
     // could find and load the [Package] object, but normally an entrypoint
     // doesn't expect to be in its own lockfile.
-    var id = lockFile.packages[name];
+    var id = lockFile.packages[name]!;
     lockFile = lockFile.removePackage(name);
 
     var source = cache.source(id.source);
@@ -383,7 +384,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
         dataError('${log.bold(name)} ${entrypoint.root.version} requires '
             'unknown SDK "$name".');
       } else if (sdkName == 'dart') {
-        if (constraint.allows(sdk.version)) return;
+        if (constraint.allows((sdk as DartSdk).version)) return;
         dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
             'support Dart ${sdk.version}.');
       } else {
@@ -399,7 +400,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
         dataError('${log.bold(name)} as globally activated requires '
             'unknown SDK "$name".');
       } else if (sdkName == 'dart') {
-        if (constraint.allows(sdk.version)) return;
+        if (constraint.allows((sdk as DartSdk).version)) return;
         dataError("${log.bold(name)} as globally activated doesn't "
             'support Dart ${sdk.version}, try: $topLevelProgram pub global activate $name');
       } else {
@@ -421,11 +422,11 @@ To recompile executables, first run `global deactivate ${dep.name}`.
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
-      Entrypoint entrypoint, exec.Executable executable, Iterable<String> args,
+      Entrypoint entrypoint, exec.Executable executable, List<String> args,
       {bool enableAsserts = false,
-      Future<void> Function(exec.Executable) recompile,
+      required Future<void> Function(exec.Executable) recompile,
       List<String> vmArgs = const [],
-      @required bool alwaysUseSubprocess}) async {
+      required bool alwaysUseSubprocess}) async {
     return await exec.runExecutable(
       entrypoint,
       executable,
@@ -535,7 +536,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     var failures = <String>[];
     if (dirExists(_directory)) {
       for (var entry in listDir(_directory)) {
-        PackageId id;
+        PackageId? id;
         try {
           id = _loadPackageId(entry);
           log.message('Reactivating ${log.bold(id.name)} ${id.version}...');
@@ -631,8 +632,8 @@ To recompile executables, first run `global deactivate ${dep.name}`.
   /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user if
   /// the bin directory isn't on their path.
   void _updateBinStubs(
-      Entrypoint entrypoint, Package package, List<String> executables,
-      {bool overwriteBinStubs, bool suggestIfNotOnPath = true}) {
+      Entrypoint entrypoint, Package package, List<String>? executables,
+      {required bool overwriteBinStubs, bool suggestIfNotOnPath = true}) {
     // Remove any previously activated binstubs for this package, in case the
     // list of executables has changed.
     _deleteBinStubs(package.name);
@@ -650,7 +651,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     for (var executable in allExecutables) {
       if (executables != null && !executables.contains(executable)) continue;
 
-      var script = package.pubspec.executables[executable];
+      var script = package.pubspec.executables[executable]!;
 
       var previousPackage = _createBinStub(
         package,
@@ -734,19 +735,19 @@ To recompile executables, first run `global deactivate ${dep.name}`.
   ///
   /// If a collision occurs, returns the name of the package that owns the
   /// existing binstub. Otherwise returns `null`.
-  String _createBinStub(
+  String? _createBinStub(
     Package package,
     String executable,
     String script, {
-    @required bool overwrite,
-    @required String snapshot,
+    required bool overwrite,
+    required String snapshot,
   }) {
     var binStubPath = p.join(_binStubDir, executable);
     if (Platform.isWindows) binStubPath += '.bat';
 
     // See if the binstub already exists. If so, it's for another package
     // since we already deleted all of this package's binstubs.
-    String previousPackage;
+    String? previousPackage;
     if (fileExists(binStubPath)) {
       var contents = readTextFile(binStubPath);
       previousPackage = _binStubProperty(contents, 'Package');
@@ -761,7 +762,7 @@ To recompile executables, first run `global deactivate ${dep.name}`.
     // directly and skip pub global run entirely.
     String invocation;
     if (Platform.isWindows) {
-      if (snapshot != null && fileExists(snapshot)) {
+      if (fileExists(snapshot)) {
         // We expect absolute paths from the precompiler since relative ones
         // won't be relative to the right directory when the user runs this.
         assert(p.isAbsolute(snapshot));
@@ -796,7 +797,7 @@ $invocation
 ''';
       writeTextFile(binStubPath, batch);
     } else {
-      if (snapshot != null && fileExists(snapshot)) {
+      if (fileExists(snapshot)) {
         // We expect absolute paths from the precompiler since relative ones
         // won't be relative to the right directory when the user runs this.
         assert(p.isAbsolute(snapshot));
@@ -896,7 +897,7 @@ $invocation
       if (result.exitCode == 0) return;
 
       var binDir = _binStubDir;
-      if (binDir.startsWith(Platform.environment['HOME'])) {
+      if (binDir.startsWith(Platform.environment['HOME']!)) {
         binDir = p.join(
             r'$HOME', p.relative(binDir, from: Platform.environment['HOME']));
       }
@@ -913,7 +914,7 @@ $invocation
 
   /// Returns the value of the property named [name] in the bin stub script
   /// [source].
-  String _binStubProperty(String source, String name) {
+  String? _binStubProperty(String source, String name) {
     var pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
     var match = pattern.firstMatch(source);
     return match == null ? null : match[1];

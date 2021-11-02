@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -27,7 +25,7 @@ void main() {
     // Set up a cache with some broken packages.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('localhost%58${globalServer.port}', [
+        d.dir('localhost%58${globalServer!.port}', [
           d.dir('foo-1.2.3',
               [d.libPubspec('foo', '1.2.3'), d.file('broken.txt')]),
           d.dir('foo-1.2.5',
@@ -66,7 +64,7 @@ void main() {
     // Set up a cache with some broken packages.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('localhost%58${globalServer.port}', [
+        d.dir('localhost%58${globalServer!.port}', [
           d.dir('bar-1.2.4', [d.file('broken.txt')]),
           d.dir('foo-1.2.3', [d.file('broken.txt')]),
           d.dir('foo-1.2.5', [d.file('broken.txt')]),
@@ -102,7 +100,7 @@ void main() {
     // Set up a cache with some broken packages.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('localhost%58${globalServer.port}', [
+        d.dir('localhost%58${globalServer!.port}', [
           d.dir('bar-1.2.4', [d.file('pubspec.yaml', '{')]),
           d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')]),
           d.dir('foo-1.2.5', [d.file('pubspec.yaml', '{')]),

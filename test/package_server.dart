@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -17,17 +15,17 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 /// The current global [PackageServer].
-PackageServer get globalPackageServer => _globalPackageServer;
-PackageServer _globalPackageServer;
+PackageServer? get globalPackageServer => _globalPackageServer;
+PackageServer? _globalPackageServer;
 
 /// Creates an HTTP server that replicates the structure of pub.dartlang.org and
 /// makes it the current [globalServer].
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
-Future servePackages([void Function(PackageServerBuilder) callback]) async {
+Future servePackages([void Function(PackageServerBuilder)? callback]) async {
   _globalPackageServer = await PackageServer.start(callback ?? (_) {});
-  globalServer = _globalPackageServer._inner;
+  globalServer = _globalPackageServer!._inner;
 
   addTearDown(() {
     _globalPackageServer = null;
@@ -44,10 +42,12 @@ Future serveNoPackages() => servePackages((_) {});
 ///
 /// If no server has been set up, an empty server will be started.
 Future serveErrors() async {
-  if (globalPackageServer == null) {
+  var packageServer = globalPackageServer;
+  if (packageServer == null) {
     await serveNoPackages();
+  } else {
+    packageServer.serveErrors();
   }
-  globalPackageServer.serveErrors();
 }
 
 class PackageServer {
@@ -72,7 +72,7 @@ class PackageServer {
   /// package to serve.
   ///
   /// This is preserved so that additional packages can be added.
-  PackageServerBuilder _builder;
+  late final PackageServerBuilder _builder;
 
   /// The port used for the server.
   int get port => _inner.port;
@@ -197,9 +197,9 @@ class PackageServerBuilder {
   /// If [contents] is passed, it's used as the contents of the package. By
   /// default, a package just contains a dummy lib directory.
   void serve(String name, String version,
-      {Map<String, dynamic> deps,
-      Map<String, dynamic> pubspec,
-      Iterable<d.Descriptor> contents}) {
+      {Map<String, dynamic>? deps,
+      Map<String, dynamic>? pubspec,
+      List<d.Descriptor>? contents}) {
     var pubspecFields = <String, dynamic>{'name': name, 'version': version};
     if (pubspec != null) pubspecFields.addAll(pubspec);
     if (deps != null) pubspecFields['dependencies'] = deps;
@@ -213,8 +213,8 @@ class PackageServerBuilder {
 
   // Mark a package discontinued.
   void discontinue(String name,
-      {bool isDiscontinued = true, String replacementText}) {
-    _packages[name]
+      {bool isDiscontinued = true, String? replacementText}) {
+    _packages[name]!
       ..isDiscontinued = isDiscontinued
       ..discontinuedReplacementText = replacementText;
   }
@@ -225,14 +225,14 @@ class PackageServerBuilder {
   }
 
   void retractPackageVersion(String name, String version) {
-    _packages[name].versions[version].isRetracted = true;
+    _packages[name]!.versions[version]!.isRetracted = true;
   }
 }
 
 class _ServedPackage {
   final versions = <String, _ServedPackageVersion>{};
   bool isDiscontinued = false;
-  String discontinuedReplacementText;
+  String? discontinuedReplacementText;
 }
 
 /// A package that's intended to be served.

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
@@ -21,11 +19,11 @@ void main() {
     await d.dir(
         configPath, [d.file('pub-credentials.json', '{bad json')]).create();
 
-    var pub = await startPublish(globalPackageServer);
+    var pub = await startPublish(globalPackageServer!);
     await confirmPublish(pub);
-    await authorizePub(pub, globalPackageServer, 'new access token');
+    await authorizePub(pub, globalPackageServer!, 'new access token');
 
-    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -36,6 +34,8 @@ void main() {
     // do so rather than killing it so it'll write out the credentials file.
     await pub.shouldExit(1);
 
-    await d.credentialsFile(globalPackageServer, 'new access token').validate();
+    await d
+        .credentialsFile(globalPackageServer!, 'new access token')
+        .validate();
   });
 }

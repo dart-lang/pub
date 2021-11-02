@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.11
-
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -31,7 +29,7 @@ class _AuthenticatedClient extends http.BaseClient {
   final http.BaseClient _inner;
 
   /// Authentication scheme that could be used for authenticating requests.
-  final Credential credential;
+  final Credential? credential;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -43,9 +41,9 @@ class _AuthenticatedClient extends http.BaseClient {
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
     if (credential != null &&
-        credential.canAuthenticate(request.url.toString())) {
+        credential!.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
-          await credential.getAuthorizationHeaderValue();
+          await credential!.getAuthorizationHeaderValue();
     }
 
     try {
@@ -55,7 +53,7 @@ class _AuthenticatedClient extends http.BaseClient {
       }
       return response;
     } on PubHttpException catch (e) {
-      if (e.response?.statusCode == 403) {
+      if (e.response.statusCode == 403) {
         _throwAuthException(e.response);
       }
       rethrow;
@@ -68,16 +66,18 @@ class _AuthenticatedClient extends http.BaseClient {
   ///
   /// [RFC]: https://datatracker.ietf.org/doc/html/rfc7235#section-4.1
   void _throwAuthException(http.BaseResponse response) {
-    String serverMessage;
+    String? serverMessage;
     if (response.headers.containsKey(HttpHeaders.wwwAuthenticateHeader)) {
       try {
-        final header = response.headers[HttpHeaders.wwwAuthenticateHeader];
+        final header = response.headers[HttpHeaders.wwwAuthenticateHeader]!;
         final challenge = AuthenticationChallenge.parseHeader(header)
             .firstWhereOrNull((challenge) =>
                 challenge.scheme == 'bearer' &&
                 challenge.parameters['realm'] == 'pub' &&
                 challenge.parameters['message'] != null);
-        serverMessage = challenge?.parameters['message'];
+        if (challenge != null) {
+          serverMessage = challenge.parameters['message'];
+        }
       } on FormatException {
         // Ignore errors might be caused when parsing invalid header values
       }
@@ -101,7 +101,7 @@ class AuthenticationException implements Exception {
   const AuthenticationException(this.statusCode, this.serverMessage);
 
   final int statusCode;
-  final String serverMessage;
+  final String? serverMessage;
 
   @override
   String toString() {
@@ -129,7 +129,7 @@ Future<T> withAuthenticatedClient<T>(
   try {
     return await fn(client);
   } on AuthenticationException catch (error) {
-    String message;
+    var message = '';
 
     if (error.statusCode == 401) {
       if (systemCache.tokenStore.removeCredential(hostedUrl)) {

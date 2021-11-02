@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/relative_version_numbering.dart';
@@ -15,10 +13,10 @@ import 'utils.dart';
 
 Validator validator(Entrypoint entrypoint) => RelativeVersionNumberingValidator(
       entrypoint,
-      Uri.parse(globalPackageServer.url),
+      Uri.parse(globalPackageServer!.url),
     );
 
-Future<void> setup({String sdkConstraint}) async {
+Future<void> setup({required String sdkConstraint}) async {
   await d.validPackage.create();
   await d.dir(appPath, [
     d.pubspec({

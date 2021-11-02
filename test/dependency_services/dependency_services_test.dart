@@ -2,54 +2,31 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
-import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-Future<void> pipeline(String name, List<_PackageVersion> upgrades) async {
-  final buffer = StringBuffer();
-  await runPubIntoBuffer([
-    '__experimental-dependency-services',
-    'list',
-  ], buffer);
-  await runPubIntoBuffer([
-    '__experimental-dependency-services',
-    'report',
-  ], buffer);
+Future<void> pipeline(
+  GoldenTestContext context,
+  List<_PackageVersion> upgrades,
+) async {
+  await context.run(['__experimental-dependency-services', 'list']);
+  await context.run(['__experimental-dependency-services', 'report']);
 
   final input = json.encode({
-    'changes': upgrades,
+    'dependencyChanges': upgrades,
   });
 
-  await runPubIntoBuffer([
-    '__experimental-dependency-services',
-    'apply',
-  ], buffer, stdin: input);
-  void catIntoBuffer(String path) {
-    buffer.writeln('$path:');
-    buffer.writeln(File(p.join(d.sandbox, path)).readAsStringSync());
-  }
-
-  catIntoBuffer(p.join(appPath, 'pubspec.yaml'));
-  catIntoBuffer(p.join(appPath, 'pubspec.lock'));
-  expectMatchesGoldenFile(
-    // TODO: Consider if expectMatchesGoldenFile should replace localhost:<port>
-    buffer.toString().replaceAll(RegExp('localhost:\d+'), 'localhost:<port>'),
-    'test/dependency_services/goldens/dependency_report_$name.txt',
-  );
+  await context
+      .run(['__experimental-dependency-services', 'apply'], stdin: input);
 }
 
 Future<void> main() async {
-  test('Removing transitive', () async {
+  testWithGolden('Removing transitive', (context) async {
     await servePackages((builder) => builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('foo', '2.2.3')
@@ -64,13 +41,13 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    await pipeline('removing_transitive', [
+    await pipeline(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', null)
     ]);
   });
 
-  test('Adding transitive', () async {
+  testWithGolden('Adding transitive', (context) async {
     await servePackages((builder) => builder
       ..serve('foo', '1.2.3')
       ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
@@ -85,7 +62,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    await pipeline('adding_transitive', [
+    await pipeline(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', Version.parse('1.0.0'))
     ]);
@@ -94,10 +71,10 @@ Future<void> main() async {
 
 class _PackageVersion {
   String name;
-  Version version;
+  Version? version;
   _PackageVersion(this.name, this.version);
 
-  Map<String, Object> toJson() => {
+  Map<String, Object?> toJson() => {
         'name': name,
         'version': version?.toString(),
       };

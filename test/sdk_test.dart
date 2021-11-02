@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
@@ -120,7 +118,7 @@ void main() {
           'foo': {'sdk': 'unknown'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
-              Because myapp depends on foo any from sdk which doesn't exist
+              Because myapp depends on foo from sdk which doesn't exist
                 (unknown SDK "unknown"), version solving failed.
             """), exitCode: exit_codes.UNAVAILABLE);
       });
@@ -130,7 +128,7 @@ void main() {
           'foo': {'sdk': 'flutter'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
-              Because myapp depends on foo any from sdk which doesn't exist (the
+              Because myapp depends on foo from sdk which doesn't exist (the
                 Flutter SDK is not available), version solving failed.
 
               Flutter users should run `flutter pub get` instead of `dart pub
@@ -145,7 +143,7 @@ void main() {
         await pubCommand(command,
             environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
             error: equalsIgnoringWhitespace("""
-              Because myapp depends on bar any from sdk which doesn't exist
+              Because myapp depends on bar from sdk which doesn't exist
                 (could not find package bar in the Flutter SDK), version solving
                 failed.
             """),
@@ -157,7 +155,7 @@ void main() {
           'bar': {'sdk': 'dart'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
-              Because myapp depends on bar any from sdk which doesn't exist
+              Because myapp depends on bar from sdk which doesn't exist
                 (could not find package bar in the Dart SDK), version solving
                 failed.
             """), exitCode: exit_codes.UNAVAILABLE);

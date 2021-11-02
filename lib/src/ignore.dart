@@ -94,7 +94,7 @@ class Ignore {
   /// [1]: https://git-scm.com/docs/gitignore
   /// [2]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase
   Ignore(
-    Iterable<String> patterns, {
+    List<String> patterns, {
     bool ignoreCase = false,
     void Function(String pattern, FormatException exception)? onInvalidPattern,
   }) : _rules = _parseIgnorePatterns(

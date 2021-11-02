@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:pub/src/ignore.dart';
@@ -41,10 +39,10 @@ void main() {
           return [path.substring(0, nextSlash == -1 ? path.length : nextSlash)];
         }
 
-        Ignore ignoreForDir(String dir) => c.patterns[dir] == null
+        Ignore? ignoreForDir(String dir) => c.patterns[dir] == null
             ? null
             : Ignore(
-                c.patterns[dir],
+                c.patterns[dir]!,
                 onInvalidPattern: (_, __) => hasWarning = true,
                 ignoreCase: ignoreCase,
               );
@@ -87,17 +85,18 @@ void main() {
 
     for (final c in testData) {
       c.paths.forEach((path, expected) {
-        if (c.ignoreCase == null) {
+        var ignoreCase = c.ignoreCase;
+        if (ignoreCase == null) {
           _testIgnorePath(c, path, expected, false);
           _testIgnorePath(c, path, expected, true);
         } else {
-          _testIgnorePath(c, path, expected, c.ignoreCase);
+          _testIgnorePath(c, path, expected, ignoreCase);
         }
       });
     }
   });
 
-  ProcessResult runGit(List<String> args, {String workingDirectory}) {
+  ProcessResult runGit(List<String> args, {String? workingDirectory}) {
     final executable = Platform.isWindows ? 'cmd' : 'git';
     args = Platform.isWindows ? ['/c', 'git', ...args] : args;
     return Process.runSync(executable, args,
@@ -105,24 +104,24 @@ void main() {
   }
 
   group('git', () {
-    Directory tmp;
+    Directory? tmp;
 
     setUpAll(() async {
       tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
 
-      final ret = runGit(['init'], workingDirectory: tmp.path);
+      final ret = runGit(['init'], workingDirectory: tmp!.path);
       expect(ret.exitCode, equals(0),
           reason:
               'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}');
     });
 
     tearDownAll(() async {
-      await tmp.delete(recursive: true);
+      await tmp!.delete(recursive: true);
       tmp = null;
     });
 
     tearDown(() async {
-      runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp.path);
+      runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp!.path);
     });
 
     void _testIgnorePath(
@@ -137,7 +136,7 @@ void main() {
         expect(
           runGit(
             ['config', '--local', 'core.ignoreCase', ignoreCase.toString()],
-            workingDirectory: tmp.path,
+            workingDirectory: tmp!.path,
           ).exitCode,
           anyOf(0, 1),
           reason: 'Running "git config --local core.ignoreCase ..." failed',
@@ -145,17 +144,17 @@ void main() {
 
         for (final directory in c.patterns.keys) {
           final resolvedDirectory =
-              directory == '' ? tmp.uri : tmp.uri.resolve(directory + '/');
+              directory == '' ? tmp!.uri : tmp!.uri.resolve(directory + '/');
           Directory.fromUri(resolvedDirectory).createSync(recursive: true);
           final gitIgnore =
               File.fromUri(resolvedDirectory.resolve('.gitignore'));
           gitIgnore.writeAsStringSync(
-            c.patterns[directory].join('\n') + '\n',
+            c.patterns[directory]!.join('\n') + '\n',
           );
         }
         final process = runGit(
-            ['-C', tmp.path, 'check-ignore', '--no-index', path],
-            workingDirectory: tmp.path);
+            ['-C', tmp!.path, 'check-ignore', '--no-index', path],
+            workingDirectory: tmp!.path);
         expect(process.exitCode, anyOf(0, 1),
             reason: 'Running "git check-ignore" failed');
         final ignored = process.exitCode == 0;
@@ -172,11 +171,12 @@ void main() {
 
     for (final c in testData) {
       c.paths.forEach((path, expected) {
-        if (c.ignoreCase == null) {
+        var ignoreCase = c.ignoreCase;
+        if (ignoreCase == null) {
           _testIgnorePath(c, path, expected, false);
           _testIgnorePath(c, path, expected, true);
         } else {
-          _testIgnorePath(c, path, expected, c.ignoreCase);
+          _testIgnorePath(c, path, expected, ignoreCase);
         }
       });
     }
@@ -200,7 +200,7 @@ class TestData {
   final bool skipOnWindows;
 
   /// Test with `core.ignoreCase` set to `true`, `false` or both (if `null`).
-  final bool ignoreCase;
+  final bool? ignoreCase;
 
   TestData(
     this.name,

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub_semver/pub_semver.dart';
 
 import '../package_name.dart';
@@ -67,14 +65,12 @@ class Incompatibility {
       var byRef = byName.putIfAbsent(term.package.name, () => {});
       var ref = term.package.toRef();
       if (byRef.containsKey(ref)) {
-        byRef[ref] = byRef[ref].intersect(term);
-
         // If we have two terms that refer to the same package but have a null
         // intersection, they're mutually exclusive, making this incompatibility
         // irrelevant, since we already know that mutually exclusive version
         // ranges are incompatible. We should never derive an irrelevant
         // incompatibility.
-        assert(byRef[ref] != null);
+        byRef[ref] = byRef[ref]!.intersect(term)!;
       } else {
         byRef[ref] = term;
       }
@@ -100,7 +96,7 @@ class Incompatibility {
   /// If [details] is passed, it controls the amount of detail that's written
   /// for packages with the given names.
   @override
-  String toString([Map<String, PackageDetail> details]) {
+  String toString([Map<String, PackageDetail>? details]) {
     if (cause == IncompatibilityCause.dependency) {
       assert(terms.length == 2);
 
@@ -223,7 +219,7 @@ class Incompatibility {
   /// If [thisLine] and/or [otherLine] are passed, they indicate line numbers
   /// that should be associated with [this] and [other], respectively.
   String andToString(Incompatibility other,
-      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
+      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
     var requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
     if (requiresBoth != null) return requiresBoth;
 
@@ -246,8 +242,8 @@ class Incompatibility {
   /// and Y", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String _tryRequiresBoth(Incompatibility other,
-      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
+  String? _tryRequiresBoth(Incompatibility other,
+      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
     var thisPositive = _singleTermWhere((term) => term.isPositive);
@@ -281,8 +277,8 @@ class Incompatibility {
   /// Z", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String _tryRequiresThrough(Incompatibility other,
-      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
+  String? _tryRequiresThrough(Incompatibility other,
+      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
     var thisNegative = _singleTermWhere((term) => !term.isPositive);
@@ -294,9 +290,9 @@ class Incompatibility {
 
     Incompatibility prior;
     Term priorNegative;
-    int priorLine;
+    int? priorLine;
     Incompatibility latter;
-    int latterLine;
+    int? latterLine;
     if (thisNegative != null &&
         otherPositive != null &&
         thisNegative.package.name == otherPositive.package.name &&
@@ -358,14 +354,14 @@ class Incompatibility {
   /// forbidden", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String _tryRequiresForbidden(Incompatibility other,
-      [Map<String, PackageDetail> details, int thisLine, int otherLine]) {
+  String? _tryRequiresForbidden(Incompatibility other,
+      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
     if (terms.length != 1 && other.terms.length != 1) return null;
 
     Incompatibility prior;
     Incompatibility latter;
-    int priorLine;
-    int latterLine;
+    int? priorLine;
+    int? latterLine;
     if (terms.length == 1) {
       prior = other;
       latter = this;
@@ -439,8 +435,8 @@ class Incompatibility {
   /// term.
   ///
   /// Otherwise, returns `null`.
-  Term _singleTermWhere(bool Function(Term) filter) {
-    Term found;
+  Term? _singleTermWhere(bool Function(Term) filter) {
+    Term? found;
     for (var term in terms) {
       if (!filter(term)) continue;
       if (found != null) return null;
@@ -450,7 +446,7 @@ class Incompatibility {
   }
 
   /// Returns a terse representation of [term]'s package ref.
-  String _terseRef(Term term, Map<String, PackageDetail> details) =>
+  String _terseRef(Term term, Map<String, PackageDetail>? details) =>
       term.package
           .toRef()
           .toString(details == null ? null : details[term.package.name]);
@@ -459,12 +455,12 @@ class Incompatibility {
   ///
   /// If [allowEvery] is `true`, this will return "every version of foo" instead
   /// of "foo any".
-  String _terse(Term term, Map<String, PackageDetail> details,
+  String _terse(Term? term, Map<String, PackageDetail>? details,
       {bool allowEvery = false}) {
-    if (allowEvery && term.constraint.isAny) {
+    if (allowEvery && term!.constraint.isAny) {
       return 'every version of ${_terseRef(term, details)}';
     } else {
-      return term.package
+      return term!.package
           .toString(details == null ? null : details[term.package.name]);
     }
   }

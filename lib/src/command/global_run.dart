@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -19,8 +17,7 @@ class GlobalRunCommand extends PubCommand {
   String get name => 'run';
   @override
   String get description =>
-      'Run an executable from a globally activated package.\n'
-      "NOTE: We are currently optimizing this command's startup time.";
+      'Run an executable from a globally activated package.';
   @override
   String get argumentsDescription => '<package>:<executable> [args...]';
   @override

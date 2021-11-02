@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:meta/meta.dart';
@@ -123,8 +121,10 @@ abstract class Validator {
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
   static Future<void> runAll(
-      Entrypoint entrypoint, Future<int> packageSize, Uri serverUrl,
-      {List<String> hints, List<String> warnings, List<String> errors}) {
+      Entrypoint entrypoint, Future<int> packageSize, Uri? serverUrl,
+      {required List<String> hints,
+      required List<String> warnings,
+      required List<String> errors}) {
     var validators = [
       GitignoreValidator(entrypoint),
       PubspecValidator(entrypoint),
@@ -149,9 +149,7 @@ abstract class Validator {
       PubspecTypoValidator(entrypoint),
       LeakDetectionValidator(entrypoint),
     ];
-    if (packageSize != null) {
-      validators.add(SizeValidator(entrypoint, packageSize));
-    }
+    validators.add(SizeValidator(entrypoint, packageSize));
 
     return Future.wait(validators.map((validator) => validator.validate()))
         .then((_) {

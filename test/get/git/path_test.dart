@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
@@ -80,7 +78,7 @@ void main() {
     final lockFile = LockFile.load(
         p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
 
-    expect(lockFile.packages['sub'].description['path'], 'sub/dir%25',
+    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
   });
 
@@ -124,7 +122,7 @@ void main() {
     final lockFile = LockFile.load(
         p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
 
-    expect(lockFile.packages['sub'].description['path'], 'sub/dir%25',
+    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
   });
 

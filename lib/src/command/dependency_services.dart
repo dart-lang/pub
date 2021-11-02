@@ -2,20 +2,20 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// This implements support for dependency-bot style automated upgrades.
 /// It is still work in progress - do not rely on the current output.
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart' show collectBytes;
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
+import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -69,20 +69,27 @@ class DependencyServicesReportCommand extends PubCommand {
 
     final breakingPackagesResult = await _tryResolve(breakingPubspec, cache);
 
-    // This list will be empty if there is no lock file.
-    final currentPackages = fileExists(entrypoint.lockFilePath)
-        ? Map<String, PackageId>.from(entrypoint.lockFile.packages)
-        : Map<String, PackageId>.fromIterable(
-            await _tryResolve(entrypoint.root.pubspec, cache),
-            key: (e) => e.name);
+    // The packages in the current lockfile or resolved from current pubspec.yaml.
+    late Map<String, PackageId> currentPackages;
+
+    if (fileExists(entrypoint.lockFilePath)) {
+      currentPackages =
+          Map<String, PackageId>.from(entrypoint.lockFile.packages);
+    } else {
+      final resolution = await _tryResolve(entrypoint.root.pubspec, cache) ??
+          (throw DataException('Failed to resolve pubspec'));
+      currentPackages =
+          Map<String, PackageId>.fromIterable(resolution, key: (e) => e.name);
+    }
     currentPackages.remove(entrypoint.root.name);
 
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
 
     Future<List<Object>> _computeUpgradeSet(
-        Pubspec rootPubspec, PackageId package,
-        {UpgradeType upgradeType}) async {
+        Pubspec rootPubspec, PackageId? package,
+        {required UpgradeType upgradeType}) async {
+      if (package == null) return [];
       final lockFile = entrypoint.lockFile;
       final pubspec = upgradeType == UpgradeType.multiBreaking
           ? stripVersionUpperBounds(rootPubspec)
@@ -105,6 +112,11 @@ class DependencyServicesReportCommand extends PubCommand {
         Package.inMemory(pubspec),
         lockFile: lockFile,
       );
+
+      // TODO(sigurdm): improve error messages.
+      if (resolution == null) {
+        throw DataException('Failed resolving');
+      }
 
       return [
         ...resolution.packages.where((r) {
@@ -132,12 +144,10 @@ class DependencyServicesReportCommand extends PubCommand {
     }
 
     for (final package in currentPackages.values) {
-      final compatibleVersion = compatiblePackagesResult.firstWhere(
-          (element) => element.name == package.name,
-          orElse: () => null);
-      final multiBreakingVersion = breakingPackagesResult.firstWhere(
-          (element) => element.name == package.name,
-          orElse: () => null);
+      final compatibleVersion = compatiblePackagesResult
+          ?.firstWhereOrNull((element) => element.name == package.name);
+      final multiBreakingVersion = breakingPackagesResult
+          ?.firstWhereOrNull((element) => element.name == package.name);
       final singleBreakingPubspec = Pubspec(
         compatiblePubspec.name,
         version: compatiblePubspec.version,
@@ -150,15 +160,14 @@ class DependencyServicesReportCommand extends PubCommand {
           .withConstraint(stripUpperBound(package.toRange().constraint));
       final singleBreakingPackagesResult =
           await _tryResolve(singleBreakingPubspec, cache);
-      final singleBreakingVersion = singleBreakingPackagesResult.firstWhere(
-          (element) => element.name == package.name,
-          orElse: () => null);
+      final singleBreakingVersion = singleBreakingPackagesResult
+          ?.firstWhereOrNull((element) => element.name == package.name);
 
       dependencies.add({
         'name': package.name,
         'version': package.version.toString(),
         'kind': _kindString(compatiblePubspec, package.name),
-        'latest': (await cache.getLatest(package)).version.toString(),
+        'latest': (await cache.getLatest(package))?.version.toString(),
         'constraint': _constraintOf(compatiblePubspec, package.name).toString(),
         if (compatibleVersion != null)
           'compatible': await _computeUpgradeSet(
@@ -177,7 +186,7 @@ class DependencyServicesReportCommand extends PubCommand {
   }
 }
 
-VersionConstraint _constraintOf(Pubspec pubspec, String packageName) {
+VersionConstraint? _constraintOf(Pubspec pubspec, String packageName) {
   return (pubspec.dependencies[packageName] ??
           pubspec.devDependencies[packageName])
       ?.constraint;
@@ -193,7 +202,7 @@ String _kindString(Pubspec pubspec, String packageName) {
 
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
 /// resolution was found.
-Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
+Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
     SolveType.UPGRADE,
     cache,
@@ -310,7 +319,7 @@ class DependencyServicesApplyCommand extends PubCommand {
       () => () async {
         // This will fail if the new configuration does not resolve.
         await Entrypoint(directory, cache)
-            .acquireDependencies(SolveType.GET, dryRun: true);
+            .acquireDependencies(SolveType.GET, dryRun: true, analytics: null);
       },
     );
     // Dummy message.
@@ -320,6 +329,6 @@ class DependencyServicesApplyCommand extends PubCommand {
 
 class _PackageVersion {
   String name;
-  Version version;
+  Version? version;
   _PackageVersion(this.name, this.version);
 }

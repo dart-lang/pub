@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -48,18 +46,18 @@ bool _isrunningInsideFlutter =
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String get directory => _argResults['directory'];
+  String? get directory => argResults['directory'];
 
   @override
   bool get captureStackChains {
-    return _argResults['trace'] ||
-        _argResults['verbose'] ||
-        _argResults['verbosity'] == 'all';
+    return argResults['trace'] ||
+        argResults['verbose'] ||
+        argResults['verbosity'] == 'all';
   }
 
   @override
   Verbosity get verbosity {
-    switch (_argResults['verbosity']) {
+    switch (argResults['verbosity']) {
       case 'error':
         return log.Verbosity.ERROR;
       case 'warning':
@@ -74,19 +72,26 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
         return log.Verbosity.ALL;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (_argResults['verbose']) return log.Verbosity.ALL;
+        if (argResults['verbose']) return log.Verbosity.ALL;
         return log.Verbosity.NORMAL;
     }
   }
 
   @override
-  bool get trace => _argResults['trace'];
+  bool get trace => argResults['trace'];
 
-  ArgResults _argResults;
+  ArgResults? _argResults;
 
   /// The top-level options parsed by the command runner.
   @override
-  ArgResults get argResults => _argResults;
+  ArgResults get argResults {
+    final a = _argResults;
+    if (a == null) {
+      throw StateError(
+          'argResults cannot be used before Command.run is called.');
+    }
+    return a;
+  }
 
   @override
   String get usageFooter =>
@@ -152,7 +157,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Future<int> run(Iterable<String> args) async {
     try {
       _argResults = parse(args);
-      return await runCommand(_argResults) ?? exit_codes.SUCCESS;
+      return await runCommand(argResults) ?? exit_codes.SUCCESS;
     } on UsageException catch (error) {
       log.exception(error);
       return exit_codes.USAGE;
@@ -160,7 +165,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   }
 
   @override
-  Future<int> runCommand(ArgResults topLevelResults) async {
+  Future<int?> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
     if (topLevelResults['version']) {

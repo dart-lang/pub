@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
+import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
@@ -42,7 +42,7 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     Pubspec original, SystemCache cache) async {
   /// Get the first version of [package] opting in to null-safety.
-  Future<VersionRange> constrainToFirstWithNullSafety(
+  Future<VersionConstraint> constrainToFirstWithNullSafety(
       PackageRange packageRange) async {
     final ref = packageRange.toRef();
     final available = await cache.source(ref.source).getVersions(ref);
@@ -65,7 +65,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     Map<String, PackageRange> constrained,
   ) async {
     final result = await Future.wait(constrained.keys.map((name) async {
-      final packageRange = constrained[name];
+      final packageRange = constrained[name]!;
       var unconstrainedRange = packageRange;
 
       /// We only need to remove the upper bound if it is a hosted package.
@@ -106,7 +106,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
 /// not specified or empty, then all packages will have their upper bounds
 /// removed.
 Pubspec stripVersionUpperBounds(Pubspec original,
-    {Iterable<String> stripOnly}) {
+    {Iterable<String>? stripOnly}) {
   ArgumentError.checkNotNull(original, 'original');
   stripOnly ??= [];
 
@@ -116,12 +116,12 @@ Pubspec stripVersionUpperBounds(Pubspec original,
     final result = <PackageRange>[];
 
     for (final name in constrained.keys) {
-      final packageRange = constrained[name];
+      final packageRange = constrained[name]!;
       var unconstrainedRange = packageRange;
 
       /// We only need to remove the upper bound if it is a hosted package.
       if (packageRange.source is HostedSource &&
-          (stripOnly.isEmpty || stripOnly.contains(packageRange.name))) {
+          (stripOnly!.isEmpty || stripOnly.contains(packageRange.name))) {
         unconstrainedRange = PackageRange(
             packageRange.name,
             packageRange.source,

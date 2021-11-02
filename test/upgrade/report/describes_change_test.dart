@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -15,7 +13,7 @@ void main() {
       builder.serve('foo', '2.0.0');
     });
 
-    globalPackageServer.add((builder) => builder..discontinue('foo'));
+    globalPackageServer!.add((builder) => builder..discontinue('foo'));
 
     // Create the first lockfile.
     await d.appDir({'foo': '2.0.0'}).create();
