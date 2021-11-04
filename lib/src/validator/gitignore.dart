@@ -47,7 +47,7 @@ class GitignoreValidator extends Validator {
         listDir: (dir) {
           var contents = Directory(resolve(dir)).listSync();
           return contents
-              .where((e) => !(e is Link && dirExists(e.targetSync())))
+              .where((e) => !(linkExists(e.path) && dirExists(e.path)))
               .map((entity) => p.posix
                   .joinAll(p.split(p.relative(entity.path, from: root))));
         },
