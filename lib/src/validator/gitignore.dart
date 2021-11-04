@@ -46,8 +46,10 @@ class GitignoreValidator extends Validator {
         beneath: beneath,
         listDir: (dir) {
           var contents = Directory(resolve(dir)).listSync();
-          return contents.map((entity) =>
-              p.posix.joinAll(p.split(p.relative(entity.path, from: root))));
+          return contents
+              .where((e) => !(e is Link && dirExists(e.targetSync())))
+              .map((entity) => p.posix
+                  .joinAll(p.split(p.relative(entity.path, from: root))));
         },
         ignoreForDir: (dir) {
           final gitIgnore = resolve('$dir/.gitignore');

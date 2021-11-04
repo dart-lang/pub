@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
@@ -80,6 +82,24 @@ void main() {
               'Consider adjusting your `.gitignore` files to not ignore those files'),
         ]),
         exit_codes.DATA,
+        workingDirectory: packageRoot);
+  });
+
+  test('Should not follow symlinks', () async {
+    await d.git('myapp', [
+      ...d.validPackage.contents,
+    ]).create();
+    final packageRoot = p.join(d.sandbox, 'myapp');
+    await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
+        workingDirectory: packageRoot);
+
+    Link(p.join(packageRoot, '.abc', 'itself')).createSync(
+      packageRoot,
+      recursive: true,
+    );
+
+    await expectValidation(contains('Package has 0 warnings.'), 0,
         workingDirectory: packageRoot);
   });
 }
