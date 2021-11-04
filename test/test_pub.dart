@@ -950,8 +950,9 @@ Future<void> runPubIntoBuffer(
   //       .map((e) => '\$ export ${e.key}=${e.value}')
   //       .join('\n'));
   // }
+  final pipe = stdin == null ? '' : 'echo ${protectArgument(stdin)} |';
   buffer.writeln(_filter([
-    '\$ pub ${args.join(' ')}',
+    '\$$pipe pub ${args.map(protectArgument).join(' ')}',
     ...await process.stdout.rest.toList(),
   ]).join('\n'));
   for (final line in _filter(await process.stderr.rest.toList())) {

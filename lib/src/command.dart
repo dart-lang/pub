@@ -19,6 +19,7 @@ import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
 import 'global_packages.dart';
 import 'http.dart';
+import 'io.dart';
 import 'log.dart' as log;
 import 'pub_embeddable_command.dart';
 import 'sdk.dart';
@@ -189,13 +190,6 @@ abstract class PubCommand extends Command<int> {
       if (_pubTopLevel.trace) {
         log.dumpTranscript();
       } else if (!isUserFacingException(error)) {
-        // Escape the argument for users to copy-paste in bash.
-        // Wrap with single quotation, and use '\'' to insert single quote, as
-        // long as we have no spaces this doesn't create a new argument.
-        String protectArgument(String x) =>
-            RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
-                ? "'${x.replaceAll("'", r"'\''")}'"
-                : x;
         log.error("""
 This is an unexpected error. Please run
 

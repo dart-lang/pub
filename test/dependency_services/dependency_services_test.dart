@@ -3,17 +3,29 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-Future<void> pipeline(
+Future<void> manifestAndLockfile(GoldenTestContext context) async {
+  context.expectNextSection('''
+\$ cat pubspec.yaml
+${File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync()}
+\$ cat pubspec.lock
+${File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync()}
+''');
+}
+
+Future<void> listReportApply(
   GoldenTestContext context,
   List<_PackageVersion> upgrades,
 ) async {
+  await manifestAndLockfile(context);
   await context.run(['__experimental-dependency-services', 'list']);
   await context.run(['__experimental-dependency-services', 'report']);
 
@@ -23,6 +35,7 @@ Future<void> pipeline(
 
   await context
       .run(['__experimental-dependency-services', 'apply'], stdin: input);
+  await manifestAndLockfile(context);
 }
 
 Future<void> main() async {
@@ -41,7 +54,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    await pipeline(context, [
+    await listReportApply(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', null)
     ]);
@@ -62,7 +75,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    await pipeline(context, [
+    await listReportApply(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', Version.parse('1.0.0'))
     ]);
