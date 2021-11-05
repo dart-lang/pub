@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
-import 'package:pub/src/command/dependency_services.dart';
 
 import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
@@ -150,7 +149,6 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(LogoutCommand());
     addCommand(VersionCommand());
     addCommand(TokenCommand());
-    addCommand(DependencyServicesCommand());
   }
 
   @override

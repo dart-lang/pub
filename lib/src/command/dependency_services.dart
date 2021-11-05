@@ -7,6 +7,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:args/command_runner.dart';
 import 'package:async/async.dart' show collectBytes;
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -24,22 +25,6 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../system_cache.dart';
-
-class DependencyServicesCommand extends PubCommand {
-  @override
-  String get name => '__experimental-dependency-services';
-  @override
-  bool get hidden => true;
-
-  @override
-  String get description => 'Provide support for dependabot-like services.';
-
-  DependencyServicesCommand() {
-    addSubcommand(DependencyServicesReportCommand());
-    addSubcommand(DependencyServicesListCommand());
-    addSubcommand(DependencyServicesApplyCommand());
-  }
-}
 
 class DependencyServicesReportCommand extends PubCommand {
   @override
