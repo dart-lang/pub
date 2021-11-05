@@ -147,9 +147,15 @@ class GitSource extends Source {
     return {'relative': relative, 'url': url};
   }
 
-  /// Returns [path] normalized.
+  /// Normalizes [path].
   ///
-  /// Throws a [FormatException] if [path] isn't a relative url or null.
+  /// Throws a [FormatException] if [path] isn't a String parsing as arelative
+  /// url or null.
+  ///
+  /// A relative url here has:
+  /// - non-absolute path
+  /// - no scheme
+  /// - no authority
   String _validatedPath(dynamic path) {
     path ??= '.';
     if (path is! String) {
@@ -159,9 +165,13 @@ class GitSource extends Source {
 
     // Use Dart's URL parser to validate the URL.
     final parsed = Uri.parse(path);
-    if (parsed.isAbsolute) {
+    if (parsed.hasAbsolutePath ||
+        parsed.hasScheme ||
+        parsed.hasAuthority ||
+        parsed.hasFragment ||
+        parsed.hasQuery) {
       throw FormatException(
-          "The 'path' field of the description must be relative.");
+          "The 'path' field of the description must be a relative path url.");
     }
     if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
       throw FormatException(

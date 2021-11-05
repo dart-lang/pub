@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/source_registry.dart';
@@ -80,6 +81,84 @@ void main() {
 
     expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
+  });
+
+  group('requires path to be absolute', () {
+    test('absolute path', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': '/subdir'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path url.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+    test('scheme', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'https://subdir'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path url.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+    test('fragment', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'subdir/dir#fragment'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path url.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+
+    test('query', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'subdir/dir?query'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path url.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+
+    test('authority', () async {
+      await d.appDir({
+        'sub': {
+          'git': {
+            'url': '../foo.git',
+            'path': 'bob:pwd@somewhere.example.com/subdir'
+          }
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path url.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
   });
 
   test('depends on a package in a deep subdirectory, non-relative uri',
