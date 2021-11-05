@@ -323,10 +323,10 @@ class DependencyServicesApplyCommand extends PubCommand {
       writeTextFile(entrypoint.lockFilePath, lockFileEditor.toString());
     }
     await log.warningsOnlyUnlessTerminal(
-      () => () async {
+      () async {
         // This will fail if the new configuration does not resolve.
         await Entrypoint(directory, cache)
-            .acquireDependencies(SolveType.GET, dryRun: true, analytics: null);
+            .acquireDependencies(SolveType.GET, analytics: null);
       },
     );
     // Dummy message.

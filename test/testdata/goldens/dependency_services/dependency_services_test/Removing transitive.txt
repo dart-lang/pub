@@ -118,13 +118,6 @@ packages:
       name: foo
       url: "http://localhost:$PORT"
     source: hosted
-    version: 2.2.3
-  transitive:
-    dependency: transitive
-    description:
-      name: transitive
-      url: "http://localhost:$PORT"
-    source: hosted
-    version: "1.0.0"
+    version: "2.2.3"
 sdks:
   dart: ">=0.1.2 <1.0.0"
