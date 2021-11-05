@@ -10,23 +10,22 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      url: "http://localhost:54870"
+      url: "http://localhost:$PORT"
     source: hosted
     version: "1.2.3"
   transitive:
     dependency: transitive
     description:
       name: transitive
-      url: "http://localhost:54870"
+      url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
 sdks:
   dart: ">=0.1.2 <1.0.0"
-
 -------------------------------- END OF OUTPUT ---------------------------------
 
-## Section 1
-$ pub __experimental-dependency-services list
+## Section list
+$ dependency_services list
 {
   "dependencies": [
     {
@@ -46,8 +45,8 @@ $ pub __experimental-dependency-services list
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
-## Section 2
-$ pub __experimental-dependency-services report
+## Section report
+$ dependency_services report
 {
   "dependencies": [
     {
@@ -62,7 +61,7 @@ $ pub __experimental-dependency-services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": null
+          "constraint": "^2.2.3"
         },
         {
           "name": "transitive",
@@ -76,7 +75,7 @@ $ pub __experimental-dependency-services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": null
+          "constraint": "^2.2.3"
         },
         {
           "name": "transitive",
@@ -93,15 +92,16 @@ $ pub __experimental-dependency-services report
       "latest": "1.0.0",
       "constraint": "null",
       "compatible": [],
-      "single-breaking": []
+      "single-breaking": [],
+      "multi-breaking": []
     }
   ]
 }
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
-## Section 3
-$echo '{"dependencyChanges":[{"name":"foo","version":"2.2.3"},{"name":"transitive","version":null}]}' | pub __experimental-dependency-services apply
+## Section apply
+$ echo '{"dependencyChanges":[{"name":"foo","version":"2.2.3"},{"name":"transitive","version":null}]}' | dependency_services apply
 {"dependencies":[]}
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -116,16 +116,15 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      url: "http://localhost:54870"
+      url: "http://localhost:$PORT"
     source: hosted
     version: 2.2.3
   transitive:
     dependency: transitive
     description:
       name: transitive
-      url: "http://localhost:54870"
+      url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
 sdks:
   dart: ">=0.1.2 <1.0.0"
-

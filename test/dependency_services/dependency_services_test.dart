@@ -6,36 +6,95 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/dart.dart';
+import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-Future<void> manifestAndLockfile(GoldenTestContext context) async {
+void manifestAndLockfile(GoldenTestContext context) {
+  String catFile(String filename) {
+    final contents = filterUnstableLines(
+        File(p.join(d.sandbox, appPath, filename)).readAsLinesSync());
+
+    return '''
+\$ cat $filename
+${contents.join('\n')}''';
+  }
+
   context.expectNextSection('''
-\$ cat pubspec.yaml
-${File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync()}
-\$ cat pubspec.lock
-${File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync()}
+${catFile('pubspec.yaml')}
+${catFile('pubspec.lock')}
 ''');
+}
+
+final snapshot = () async {
+  final snapshotFilename = p.absolute(
+      p.join('.dart_tool', '_pub', 'dependency_services.dart.snapshot.dart2'));
+  final snapshotIncrementalFilename = '$snapshotFilename.incremental';
+  await precompile(
+      executablePath: p.join('bin', 'dependency_services.dart'),
+      outputPath: snapshotFilename,
+      incrementalDillOutputPath: snapshotIncrementalFilename,
+      name: 'bin/pub.dart',
+      packageConfigPath: p.join('.dart_tool', 'package_config.json'));
+  return snapshotFilename;
+}();
+
+extension on GoldenTestContext {
+  Future<void> runDependencyServices(List<String> args, {String? stdin}) async {
+    final buffer = StringBuffer();
+    buffer.writeln('## Section ${args.join(' ')}');
+    final process = await Process.start(
+      Platform.resolvedExecutable,
+      [
+        await snapshot,
+        ...args,
+      ],
+      environment: getPubTestEnvironment(),
+      workingDirectory: p.join(d.sandbox, appPath),
+    );
+    if (stdin != null) {
+      process.stdin.write(stdin);
+      await process.stdin.flush();
+      await process.stdin.close();
+    }
+    final exitCode = await process.exitCode;
+
+    final pipe = stdin == null ? '' : ' echo ${protectArgument(stdin)} |';
+    buffer.writeln([
+      '\$$pipe dependency_services ${args.map(protectArgument).join(' ')}',
+      ...await outputLines(process.stdout),
+      ...(await outputLines(process.stderr)).map((e) => '[STDERR] $e'),
+      if (exitCode != 0) '[EXIT CODE] $exitCode',
+    ].join('\n'));
+
+    expectNextSection(buffer.toString());
+  }
+}
+
+Future<Iterable<String>> outputLines(Stream<List<int>> stream) async {
+  final s = await utf8.decodeStream(stream);
+  if (s.isEmpty) return [];
+  return filterUnstableLines(s.split('\n'));
 }
 
 Future<void> listReportApply(
   GoldenTestContext context,
   List<_PackageVersion> upgrades,
 ) async {
-  await manifestAndLockfile(context);
-  await context.run(['__experimental-dependency-services', 'list']);
-  await context.run(['__experimental-dependency-services', 'report']);
+  manifestAndLockfile(context);
+  await context.runDependencyServices(['list']);
+  await context.runDependencyServices(['report']);
 
   final input = json.encode({
     'dependencyChanges': upgrades,
   });
 
-  await context
-      .run(['__experimental-dependency-services', 'apply'], stdin: input);
-  await manifestAndLockfile(context);
+  await context.runDependencyServices(['apply'], stdin: input);
+  manifestAndLockfile(context);
 }
 
 Future<void> main() async {
@@ -78,6 +137,33 @@ Future<void> main() async {
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', Version.parse('1.0.0'))
+    ]);
+  });
+
+  testWithGolden('multibreaking', (context) async {
+    await servePackages((builder) => builder
+      ..serve('foo', '1.0.0')
+      ..serve('bar', '1.0.0'));
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+        },
+      })
+    ]).create();
+    await pubGet();
+    globalPackageServer!.add((builder) => builder
+      ..serve('foo', '1.5.0') // compatible
+      ..serve('foo', '2.0.0') // single breaking
+      ..serve('foo', '3.0.0', deps: {'bar': '^2.0.0'}) // multi breaking
+      ..serve('bar', '2.0.0', deps: {'foo': '^3.0.0'})
+      ..serve('transitive', '1.0.0'));
+    await listReportApply(context, [
+      _PackageVersion('foo', Version.parse('3.0.0')),
+      _PackageVersion('bar', Version.parse('2.0.0'))
     ]);
   });
 }

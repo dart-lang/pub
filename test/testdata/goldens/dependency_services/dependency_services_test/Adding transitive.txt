@@ -10,16 +10,15 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      url: "http://localhost:54877"
+      url: "http://localhost:$PORT"
     source: hosted
     version: "1.2.3"
 sdks:
   dart: ">=0.1.2 <1.0.0"
-
 -------------------------------- END OF OUTPUT ---------------------------------
 
-## Section 1
-$ pub __experimental-dependency-services list
+## Section list
+$ dependency_services list
 {
   "dependencies": [
     {
@@ -33,8 +32,8 @@ $ pub __experimental-dependency-services list
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
-## Section 2
-$ pub __experimental-dependency-services report
+## Section report
+$ dependency_services report
 {
   "dependencies": [
     {
@@ -49,7 +48,7 @@ $ pub __experimental-dependency-services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": null
+          "constraint": "^2.2.3"
         },
         {
           "name": "transitive",
@@ -63,7 +62,7 @@ $ pub __experimental-dependency-services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": null
+          "constraint": "^2.2.3"
         },
         {
           "name": "transitive",
@@ -78,8 +77,8 @@ $ pub __experimental-dependency-services report
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
-## Section 3
-$echo '{"dependencyChanges":[{"name":"foo","version":"2.2.3"},{"name":"transitive","version":"1.0.0"}]}' | pub __experimental-dependency-services apply
+## Section apply
+$ echo '{"dependencyChanges":[{"name":"foo","version":"2.2.3"},{"name":"transitive","version":"1.0.0"}]}' | dependency_services apply
 {"dependencies":[]}
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -94,9 +93,8 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      url: "http://localhost:54877"
+      url: "http://localhost:$PORT"
     source: hosted
     version: 2.2.3
 sdks:
   dart: ">=0.1.2 <1.0.0"
-

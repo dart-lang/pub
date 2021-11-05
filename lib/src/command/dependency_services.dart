@@ -7,8 +7,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
-import 'package:async/async.dart' show collectBytes;
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
@@ -72,23 +70,27 @@ class DependencyServicesReportCommand extends PubCommand {
     final result = <String, Object>{'dependencies': dependencies};
 
     Future<List<Object>> _computeUpgradeSet(
-        Pubspec rootPubspec, PackageId? package,
-        {required UpgradeType upgradeType}) async {
+      Pubspec rootPubspec,
+      PackageId? package, {
+      required UpgradeType upgradeType,
+    }) async {
       if (package == null) return [];
       final lockFile = entrypoint.lockFile;
       final pubspec = upgradeType == UpgradeType.multiBreaking
           ? stripVersionUpperBounds(rootPubspec)
-          : Pubspec(rootPubspec.name,
+          : Pubspec(
+              rootPubspec.name,
               dependencies: rootPubspec.dependencies.values,
               devDependencies: rootPubspec.devDependencies.values,
-              sdkConstraints: rootPubspec.sdkConstraints);
+              sdkConstraints: rootPubspec.sdkConstraints,
+            );
 
-      if (upgradeType == UpgradeType.singleBreaking) {
-        pubspec.dependencies[package.name] = package
+      final dependencySet = dependencySetOfPackage(pubspec, package);
+      if (dependencySet != null) {
+        // Force the version to be the new version.
+        dependencySet[package.name] = package
             .toRange()
             .withConstraint(stripUpperBound(package.toRange().constraint));
-      } else {
-        pubspec.dependencies[package.name] = package.toRange();
       }
 
       final resolution = await tryResolveVersions(
@@ -109,12 +111,20 @@ class DependencyServicesReportCommand extends PubCommand {
           final originalVersion = currentPackages[r.name];
           return originalVersion == null ||
               r.version != originalVersion.version;
-        }).map((p) => {
-              'name': p.name,
-              'version': p.version.toString(),
-              'kind': _kindString(pubspec, p.name),
-              'constraint': null // TODO: compute new constraint
-            }),
+        }).map((p) {
+          final depset = dependencySetOfPackage(rootPubspec, p);
+          final constraint = depset?[p.name];
+          return {
+            'name': p.name,
+            'version': p.version.toString(),
+            'kind': _kindString(pubspec, p.name),
+            'constraint': constraint == null
+                ? null
+                : upgradeType == UpgradeType.compatible
+                    ? constraint.constraint.toString()
+                    : VersionConstraint.compatibleWith(p.version).toString(),
+          };
+        }),
         for (final oldPackageName in lockFile.packages.keys)
           if (!resolution.packages
               .any((newPackage) => newPackage.name == oldPackageName))
@@ -140,31 +150,37 @@ class DependencyServicesReportCommand extends PubCommand {
         dependencies: compatiblePubspec.dependencies.values,
         devDependencies: compatiblePubspec.devDependencies.values,
       );
-      singleBreakingPubspec.dependencies[package.name] = package
-          .toRange()
-          .withConstraint(stripUpperBound(package.toRange().constraint));
-      final singleBreakingPackagesResult =
-          await _tryResolve(singleBreakingPubspec, cache);
-      final singleBreakingVersion = singleBreakingPackagesResult
-          ?.firstWhereOrNull((element) => element.name == package.name);
-
+      final dependencySet =
+          dependencySetOfPackage(singleBreakingPubspec, package);
+      final kind = _kindString(compatiblePubspec, package.name);
+      PackageId? singleBreakingVersion;
+      if (dependencySet != null) {
+        dependencySet[package.name] = package
+            .toRange()
+            .withConstraint(stripUpperBound(package.toRange().constraint));
+        final singleBreakingPackagesResult =
+            await _tryResolve(singleBreakingPubspec, cache);
+        singleBreakingVersion = singleBreakingPackagesResult
+            ?.firstWhereOrNull((element) => element.name == package.name);
+      }
       dependencies.add({
         'name': package.name,
         'version': package.version.toString(),
-        'kind': _kindString(compatiblePubspec, package.name),
+        'kind': kind,
         'latest': (await cache.getLatest(package))?.version.toString(),
         'constraint': _constraintOf(compatiblePubspec, package.name).toString(),
         if (compatibleVersion != null)
           'compatible': await _computeUpgradeSet(
               compatiblePubspec, compatibleVersion,
               upgradeType: UpgradeType.compatible),
-        'single-breaking': await _computeUpgradeSet(
-            singleBreakingPubspec, singleBreakingVersion,
-            upgradeType: UpgradeType.singleBreaking),
-        if (multiBreakingVersion != null)
-          'multi-breaking': await _computeUpgradeSet(
-              breakingPubspec, multiBreakingVersion,
-              upgradeType: UpgradeType.multiBreaking),
+        'single-breaking': kind != 'transitive' && singleBreakingVersion == null
+            ? []
+            : await _computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
+                upgradeType: UpgradeType.singleBreaking),
+        'multi-breaking': kind != 'transitive' && multiBreakingVersion != null
+            ? await _computeUpgradeSet(compatiblePubspec, multiBreakingVersion,
+                upgradeType: UpgradeType.multiBreaking)
+            : [],
       });
     }
     log.message(JsonEncoder.withIndent('  ').convert(result));
@@ -236,8 +252,14 @@ class DependencyServicesListCommand extends PubCommand {
 }
 
 enum UpgradeType {
+  /// Only upgrade pubspec.lock
   compatible,
+
+  /// Unlock at most one dependency in pubspec.yaml
   singleBreaking,
+
+  /// Unlock any dependencies in pubspec.yaml needed for getting the
+  /// latest resolvable version.
   multiBreaking,
 }
 
@@ -261,7 +283,7 @@ class DependencyServicesApplyCommand extends PubCommand {
   Future<void> runProtected() async {
     YamlEditor(readTextFile(entrypoint.pubspecPath));
     final toApply = <_PackageVersion>[];
-    final input = json.decode(utf8.decode(await collectBytes(stdin)));
+    final input = json.decode(await utf8.decodeStream(stdin));
     for (final change in input['dependencyChanges']) {
       toApply.add(_PackageVersion(
         change['name'],
@@ -316,4 +338,13 @@ class _PackageVersion {
   String name;
   Version? version;
   _PackageVersion(this.name, this.version);
+}
+
+Map<String, PackageRange>? dependencySetOfPackage(
+    Pubspec pubspec, PackageName package) {
+  return pubspec.dependencies.containsKey(package.name)
+      ? pubspec.dependencies
+      : pubspec.devDependencies.containsKey(package.name)
+          ? pubspec.devDependencies
+          : null;
 }
