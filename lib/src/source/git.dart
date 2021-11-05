@@ -149,8 +149,8 @@ class GitSource extends Source {
 
   /// Normalizes [path].
   ///
-  /// Throws a [FormatException] if [path] isn't a String parsing as arelative
-  /// url or null.
+  /// Throws a [FormatException] if [path] isn't a [String] parsing as a
+  /// relative URL or `null`.
   ///
   /// A relative url here has:
   /// - non-absolute path
@@ -171,7 +171,7 @@ class GitSource extends Source {
         parsed.hasFragment ||
         parsed.hasQuery) {
       throw FormatException(
-          "The 'path' field of the description must be a relative path url.");
+          "The 'path' field of the description must be a relative path URL.");
     }
     if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
       throw FormatException(
