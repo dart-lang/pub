@@ -186,7 +186,7 @@ dependencies:
       expect(foo.source, equals(sources['hosted']));
     });
 
-    test('throws if it dependes on itself', () {
+    test('throws if it depends on itself', () {
       expectPubspecException('''
 name: myapp
 dependencies:
@@ -815,6 +815,147 @@ features:
           expectPubspecException('features: {foobar: {requires: [baz]}}',
               (pubspec) => pubspec.features);
         });
+      });
+    });
+
+    group('overrides', () {
+      var defaultPubspecLocation = Uri.parse('file:///pubspec.yaml');
+      var defaultOverridesLocation =
+          Uri.parse('file:///pubspec_overrides.yaml');
+
+      Pubspec parseWithOverrides(String contents, String overrides,
+          {Uri? location, Uri? overridesLocation}) {
+        return Pubspec.parse(contents, sources,
+            overridesContents: overrides,
+            location: location ?? defaultPubspecLocation,
+            overridesLocation: overridesLocation ?? defaultOverridesLocation);
+      }
+
+      void expectPubspecExceptionWithOverrides(
+        String contents,
+        String overrides,
+        void Function(Pubspec) fn, [
+        String? expectedContains,
+      ]) {
+        var expectation = const TypeMatcher<PubspecException>();
+        if (expectedContains != null) {
+          expectation = expectation.having((error) => error.toString(),
+              'toString()', contains(expectedContains));
+        }
+
+        var pubspec = parseWithOverrides(contents, overrides);
+        expect(() => fn(pubspec), throwsA(expectation));
+      }
+
+      test('allows empty overrides file', () {
+        parseWithOverrides('''
+name: a
+''', '''
+''');
+      });
+
+      test('ignores properties which cannot be overridden', () {
+        var pubspec = parseWithOverrides('''
+name: a
+version: 1.0.0
+publish_to: https://pub.dev
+executables:
+  a:
+environment:
+  sdk: 1.0.0
+''', '''
+name: b
+version: 2.0.0
+publish_to: none
+executables:
+  b:
+environment:
+  sdk: 2.0.0
+''');
+        expect(pubspec.name, 'a');
+        expect(pubspec.version, Version(1, 0, 0));
+        expect(pubspec.publishTo, 'https://pub.dev');
+        expect(pubspec.executables.keys, ['a']);
+        expect(pubspec.sdkConstraints['dart'], Version(1, 0, 0));
+      });
+
+      test('allows empty dependency section', () {
+        var pubspec = parseWithOverrides('''
+name: a
+''', '''
+dependencies:
+dev_dependencies:
+dependency_overrides:
+''');
+        expect(pubspec.dependencies.keys, isEmpty);
+        expect(pubspec.devDependencies.keys, isEmpty);
+        expect(pubspec.dependencyOverrides.keys, isEmpty);
+      });
+
+      test('allows adding new dependency section', () {
+        var pubspec = parseWithOverrides('''
+name: a
+''', '''
+dependencies:
+  b: 1.0.0
+dev_dependencies:
+  b: 1.0.0
+dependency_overrides:
+  b: 1.0.0
+''');
+        expect(pubspec.dependencies.keys, ['b']);
+        expect(pubspec.devDependencies.keys, ['b']);
+        expect(pubspec.dependencyOverrides.keys, ['b']);
+      });
+
+      test('allows overriding existing dependencies', () {
+        var pubspec = parseWithOverrides('''
+name: a
+dependencies:
+  b: 1.0.0
+dev_dependencies:
+  b: 1.0.0
+dependency_overrides:
+  b: 1.0.0
+''', '''
+dependencies:
+  b: 2.0.0
+dev_dependencies:
+  b: 2.0.0
+dependency_overrides:
+  b: 2.0.0
+''');
+        expect(pubspec.dependencies['b']?.constraint, Version(2, 0, 0));
+        expect(pubspec.devDependencies['b']?.constraint, Version(2, 0, 0));
+        expect(pubspec.dependencyOverrides['b']?.constraint, Version(2, 0, 0));
+      });
+
+      test('throws exception with correct source references', () {
+        expectPubspecExceptionWithOverrides('''
+name: a
+''', '''
+dependencies:
+  b:
+    fake: bad
+''', (pubspec) => pubspec.dependencies,
+            'Error on line 3, column 11 of /pubspec_overrides.yaml');
+
+        expectPubspecExceptionWithOverrides('''
+name: a
+dependencies:
+  b:
+    fake: bad
+''', '''
+''', (pubspec) => pubspec.dependencies,
+            'Error on line 4, column 11 of /pubspec.yaml');
+      });
+
+      test('throws if overrides contain invalid dependency section', () {
+        expectPubspecExceptionWithOverrides('''
+name: a
+''', '''
+dependencies: false
+''', (pubspec) => pubspec.dependencies);
       });
     });
   });

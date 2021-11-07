@@ -107,6 +107,19 @@ Descriptor libPubspec(String name, String version,
   return pubspec(map);
 }
 
+/// Describes a file named `pubspec_overrides.yaml` by default, with the given
+/// YAML-serialized [contents], which should be a serializable object.
+///
+/// [contents] may contain [Future]s that resolve to serializable objects,
+/// which may in turn contain [Future]s recursively.
+///
+/// If [name] is provided the default name is replaced with it.
+Descriptor pubspecOverrides(Map<String, Object> contents, {String? name}) =>
+    YamlDescriptor(
+      name ?? 'pubspec_overrides.yaml',
+      yaml(contents),
+    );
+
 /// Describes a directory named `lib` containing a single dart file named
 /// `<name>.dart` that contains a line of Dart code.
 Descriptor libDir(String name, [String? code]) {

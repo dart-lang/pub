@@ -6,6 +6,8 @@ import 'dart:async';
 
 import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 void main() {
   group('yamlToString()', () {
@@ -84,6 +86,85 @@ true: bool'''));
       expect(yamlToString({'a': {}, 'b': {}}), equals('''
 a: {}
 b: {}'''));
+    });
+  });
+
+  group('OverrideYamlMap', () {
+    YamlNode pickOverride(key, original, override) => override;
+    YamlNode Function(Object, YamlNode, YamlNode) replace(YamlNode value) =>
+        (key, original, override) => value;
+
+    test('empty', () {
+      var originalSource = Uri.parse('original');
+      var original = YamlMap(sourceUrl: originalSource);
+      var overrides = YamlMap();
+      var result = OverrideYamlMap(original, overrides, pickOverride);
+
+      expect(result['a'], isNull);
+      expect(result.nodes, hasLength(0));
+      expect(result.span.sourceUrl, originalSource);
+    });
+
+    test('empty overrides', () {
+      var originalSource = Uri.parse('original');
+      var original = YamlMap.wrap({'a': true}, sourceUrl: originalSource);
+      var overrides = YamlMap();
+      var result = OverrideYamlMap(original, overrides, pickOverride);
+
+      expect(result['a'], isTrue);
+      var entry = result.nodes.entries.first;
+      expect(entry.key.span.sourceUrl, originalSource);
+      expect(entry.value.span.sourceUrl, originalSource);
+      expect(result.nodes, hasLength(1));
+    });
+
+    test('empty original', () {
+      var overridesSource = Uri.parse('overrides');
+      var original = YamlMap();
+      var overrides = YamlMap.wrap({'a': true}, sourceUrl: overridesSource);
+      var result = OverrideYamlMap(original, overrides, pickOverride);
+
+      expect(result['a'], isTrue);
+      var entry = result.nodes.entries.first;
+      expect(entry.key.span.sourceUrl, overridesSource);
+      expect(entry.value.span.sourceUrl, overridesSource);
+      expect(result.nodes, hasLength(1));
+    });
+
+    test('merged entry', () {
+      var originalSource = Uri.parse('original');
+      var overridesSource = Uri.parse('overrides');
+      var original = YamlMap.wrap({'a': true}, sourceUrl: originalSource);
+      var overrides = YamlMap.wrap({'a': false}, sourceUrl: overridesSource);
+      var result = OverrideYamlMap(original, overrides, pickOverride);
+
+      expect(result['a'], false);
+      var entry = result.nodes.entries.first;
+      expect(entry.key.span.sourceUrl, originalSource);
+      expect(entry.value.span.sourceUrl, overridesSource);
+      expect(result.nodes, hasLength(1));
+    });
+
+    test('replace value completely in merge function', () {
+      var original = YamlMap.wrap({'a': true});
+      var overrides = YamlMap.wrap({'a': false});
+      var result =
+          OverrideYamlMap(original, overrides, replace(wrapAsYamlNode(42)));
+
+      expect(result['a'], 42);
+    });
+
+    test('get value/node by YamlNode', () {
+      var original = YamlMap.wrap({'a': true});
+      var overrides = YamlMap.wrap({'b': false});
+      var result = OverrideYamlMap(original, overrides, pickOverride);
+
+      var aKey = result.nodes.keys.firstWhere((node) => node.value == 'a');
+      var bKey = result.nodes.keys.firstWhere((node) => node.value == 'b');
+      expect(result[aKey], isTrue);
+      expect(result[bKey], isFalse);
+      expect(result.nodes[aKey], result.nodes['a']);
+      expect(result.nodes[bKey], result.nodes['b']);
     });
   });
 

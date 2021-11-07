@@ -69,7 +69,9 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  late final Entrypoint entrypoint = Entrypoint(directory, cache);
+  late final Entrypoint entrypoint = Entrypoint(directory, cache,
+      enablePubspecOverrides: _enablePubspecOverrides,
+      pubspecOverridesPath: _pubspecOverridesPath);
 
   /// The URL for web documentation for this command.
   String? get docUrl => null;
@@ -288,6 +290,34 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     }
     _command = list.join(' ');
   }
+
+  /// Enables the pubspec override feature for this command.
+  ///
+  /// This adds the `--pubspec-overrides` option to the command and enables
+  /// the pubspec override feature for the package for which the command
+  /// is being executed.
+  void allowPubspecOverrides() {
+    assert(!_allowPubspecOverrides);
+    _allowPubspecOverrides = true;
+
+    argParser.addOption(
+      'pubspec-overrides',
+      help: 'Use <file> to override pubspec.yaml instead of '
+          'the default pubspec_overrides.yaml file. The special value `none` '
+          'disables all overrides, including pubspec_overrides.yaml.',
+      valueHelp: 'file',
+    );
+  }
+
+  var _allowPubspecOverrides = false;
+
+  bool get _enablePubspecOverrides {
+    if (!_allowPubspecOverrides) return false;
+    return argResults['pubspec-overrides'] != 'none';
+  }
+
+  String? get _pubspecOverridesPath =>
+      _enablePubspecOverrides ? argResults['pubspec-overrides'] : null;
 }
 
 abstract class PubTopLevel {

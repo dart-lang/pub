@@ -139,6 +139,16 @@ class Entrypoint {
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
 
+  /// Whether the entrypoint package's pubspec contains overrides from an
+  /// overrides files.
+  ///
+  /// If this is `true`, [pubspecOverridesPath] contains the path to the
+  /// overrides file.
+  bool get hasPubspecOverrides => pubspecOverridesPath != null;
+
+  /// The path to the entrypoint package's pubspec overrides file.
+  String? get pubspecOverridesPath => root.pubspec.overridesLocation?.path;
+
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => p.normalize(p.join(_configRoot!, 'pubspec.lock'));
 
@@ -173,8 +183,16 @@ class Entrypoint {
   String get _incrementalDillsPath => p.join(cachePath, 'incremental');
 
   /// Loads the entrypoint from a package at [rootDir].
-  Entrypoint(String rootDir, this.cache)
-      : root = Package.load(null, rootDir, cache.sources),
+  ///
+  /// If [enablePubspecOverrides] is true the pubspec overrides features is
+  /// enabled for the entrypoint. If provided, [pubspecOverridesPath] replaces
+  /// the default location (`$PGK_DIR/pubspec_overrides.yaml`) of the overrides
+  /// file.
+  Entrypoint(String rootDir, this.cache,
+      {bool enablePubspecOverrides = false, String? pubspecOverridesPath})
+      : root = Package.load(null, rootDir, cache.sources,
+            enablePubspecOverrides: enablePubspecOverrides,
+            pubspecOverridesPath: pubspecOverridesPath),
         isGlobal = false;
 
   /// Creates an entrypoint given package and lockfile objects.
@@ -246,6 +264,12 @@ class Entrypoint {
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
+    if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
+      // Log about pubspec being overridden.
+      var overridesPath = root.relative(pubspecOverridesPath!);
+      log.warning('Warning: pubspec.yaml has overrides from $overridesPath');
+    }
+
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
@@ -514,11 +538,24 @@ class Entrypoint {
     var pubspecModified = File(pubspecPath).lastModifiedSync();
     var lockFileModified = File(lockFilePath).lastModifiedSync();
 
+    var pubspecChanged = lockFileModified.isBefore(pubspecModified);
+    var pubspecOverridesChanged = false;
+
+    if (hasPubspecOverrides) {
+      var pubspecOverridesFile = File(pubspecOverridesPath!);
+      if (pubspecOverridesFile.existsSync()) {
+        var pubspecOverridesModified = pubspecOverridesFile.lastModifiedSync();
+        pubspecOverridesChanged =
+            lockFileModified.isBefore(pubspecOverridesModified);
+      }
+    }
+
     var touchedLockFile = false;
-    if (lockFileModified.isBefore(pubspecModified) || hasPathDependencies) {
-      // If `pubspec.lock` is newer than `pubspec.yaml` or we have path
-      // dependencies, then we check that `pubspec.lock` is a correct solution
-      // for the requirements in `pubspec.yaml`. This aims to:
+    if (pubspecChanged || pubspecOverridesChanged || hasPathDependencies) {
+      // If `pubspec.lock` is older than `pubspec.yaml` or
+      // `pubspec_overrides.yaml`, or we have path dependencies, then we check
+      // that `pubspec.lock` is a correct solution for the requirements in
+      // `pubspec.yaml` and `pubspec_overrides.yaml`. This aims to:
       //  * Prevent missing packages when `pubspec.lock` is checked into git.
       //  * Mitigate missing transitive dependencies when the `pubspec.yaml` in
       //    a path dependency is changed.
@@ -527,7 +564,8 @@ class Entrypoint {
         touchedLockFile = true;
         touch(lockFilePath);
       } else {
-        dataError('The $pubspecPath file has changed since the $lockFilePath '
+        var filePath = pubspecChanged ? pubspecPath : pubspecOverridesPath;
+        dataError('The $filePath file has changed since the $lockFilePath '
             'file was generated, please run "$topLevelProgram pub get" again.');
       }
     }
@@ -545,11 +583,11 @@ class Entrypoint {
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
     if (packageConfigModified.isBefore(lockFileModified) ||
         hasPathDependencies) {
-      // If `package_config.json` is newer than `pubspec.lock` or we have
+      // If `package_config.json` is older than `pubspec.lock` or we have
       // path dependencies, then we check that `package_config.json` is a
       // correct configuration on the local machine. This aims to:
       //  * Mitigate issues when copying a folder from one machine to another.
-      //  * Force `pub get` if a path dependency has changed language verison.
+      //  * Force `pub get` if a path dependency has changed language version.
       _checkPackageConfigUpToDate();
       touch(packageConfigFile);
     } else if (touchedLockFile) {
