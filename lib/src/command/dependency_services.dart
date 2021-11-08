@@ -168,7 +168,8 @@ class DependencyServicesReportCommand extends PubCommand {
         'version': package.version.toString(),
         'kind': kind,
         'latest': (await cache.getLatest(package))?.version.toString(),
-        'constraint': _constraintOf(compatiblePubspec, package.name).toString(),
+        'constraint':
+            _constraintOf(compatiblePubspec, package.name)?.toString(),
         if (compatibleVersion != null)
           'compatible': await _computeUpgradeSet(
               compatiblePubspec, compatibleVersion,
