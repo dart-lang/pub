@@ -970,7 +970,9 @@ class _OfflineHostedSource extends BoundHostedSource {
     // If there are no versions in the cache, report a clearer error.
     if (versions.isEmpty) {
       throw PackageNotFoundException(
-          'could not find package ${ref.name} in cache');
+        'could not find package ${ref.name} in cache',
+        hint: 'Try again without --offline!',
+      );
     }
 
     return versions;
@@ -986,7 +988,9 @@ class _OfflineHostedSource extends BoundHostedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id) {
     throw PackageNotFoundException(
-        '${id.name} ${id.version} is not available in your system cache');
+      '${id.name} ${id.version} is not available in cache',
+      hint: 'Try again without --offline!',
+    );
   }
 
   @override

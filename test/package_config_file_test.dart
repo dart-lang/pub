@@ -119,6 +119,8 @@ void main() {
           args: ['--offline'], error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
+
+            Try again without --offline!
           """), exitCode: exit_codes.UNAVAILABLE);
 
       await d.dir(appPath, [

@@ -11,7 +11,6 @@ import 'package:stack_trace/stack_trace.dart';
 import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
-import 'sdk.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///
@@ -89,14 +88,16 @@ class ConfigException extends ApplicationException {
 /// that other code in pub can use this to show a more detailed explanation of
 /// why the package was being requested.
 class PackageNotFoundException extends WrappedException {
-  /// If this failure was caused by an SDK being unavailable, this is that SDK.
-  final Sdk? missingSdk;
+  /// A hint indicating an action the user could take to resolve this problem.
+  ///
+  /// This will be printed after the package resolution conflict.
+  final String? hint;
 
   PackageNotFoundException(
     String message, {
     Object? innerError,
     StackTrace? innerTrace,
-    this.missingSdk,
+    this.hint,
   }) : super(message, innerError, innerTrace);
 
   @override
