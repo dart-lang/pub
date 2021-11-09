@@ -69,6 +69,12 @@ class GoldenTestContext {
   }
 
   void _readGoldenFile() {
+    if (RegExp(r'^1|(?:true)$', caseSensitive: false)
+        .hasMatch(Platform.environment['_PUB_TEST_WRITE_GOLDEN'] ?? '')) {
+      _goldenFileExists = false;
+      return;
+    }
+
     _goldenFileExists = _goldenFile.existsSync();
 
     // Read the golden file for this test
