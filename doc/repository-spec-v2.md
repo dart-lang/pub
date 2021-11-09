@@ -371,7 +371,9 @@ This can be used to forbid git-dependencies in published packages, limit the
 archive size, or enforce any other repository specific constraints.
 
 This upload flow allows for archives to be uploaded directly to a signed POST
-URL for S3, GCS or similar blob storage service. Both the
+URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
+[GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
+similar blob storage service. Both the
 `<multipart-upload-url>` and `<finalize-upload-url>` is allowed to contain
 query-string parameters, and both of these URLs need only be temporary.
 
