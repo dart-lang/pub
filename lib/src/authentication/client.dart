@@ -129,26 +129,29 @@ Future<T> withAuthenticatedClient<T>(
   try {
     return await fn(client);
   } on AuthenticationException catch (error) {
-    var message = '';
+    var hint = '';
+    var message = 'authentication failed';
 
+    assert(error.statusCode == 401 || error.statusCode == 403);
     if (error.statusCode == 401) {
       if (systemCache.tokenStore.removeCredential(hostedUrl)) {
         log.warning('Invalid token for $hostedUrl deleted.');
       }
-      message = '$hostedUrl package repository requested authentication! '
+      hint = '$hostedUrl package repository requested authentication!\n'
           'You can provide credential using:\n'
           '    pub token add $hostedUrl';
     }
     if (error.statusCode == 403) {
-      message = 'Insufficient permissions to the resource in $hostedUrl '
-          'package repository. You can modify credential using:\n'
+      hint = 'Insufficient permissions to the resource in $hostedUrl '
+          'package repository.\nYou can modify credential using:\n'
           '    pub token add $hostedUrl';
+      message = 'authorization failed';
     }
 
     if (error.serverMessage?.isNotEmpty == true) {
-      message += '\n${error.serverMessage}';
+      hint += '\n${error.serverMessage}';
     }
 
-    throw DataException(message);
+    throw PackageNotFoundException(message, hint: hint);
   }
 }

@@ -850,9 +850,11 @@ class BoundHostedSource extends CachedSource {
           stackTrace);
     } else if (error is FormatException) {
       throw PackageNotFoundException(
-          'Got badly formatted response trying to find package $package at $url',
-          innerError: error,
-          innerTrace: stackTrace);
+        'Got badly formatted response trying to find package $package at $url',
+        innerError: error,
+        innerTrace: stackTrace,
+        hint: 'Check that "$url" is a valid package repository.',
+      );
     } else {
       // Otherwise re-throw the original exception.
       throw error;
