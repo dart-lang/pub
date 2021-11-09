@@ -12,21 +12,21 @@ import 'test_pub.dart';
 
 void main() {
   forBothPubGetAndUpgrade((command) {
-    test('overrides in default location',
+    test('pubspec overrides in default location',
         () => pubspecOverridesTest(command, PubspecOverridesLocation.default_));
 
     test(
-        'overrides in default location, but disabled',
+        'pubspec overrides in default location, but disabled',
         () => pubspecOverridesTest(
             command, PubspecOverridesLocation.defaultDisabled));
 
     test(
-        'overrides in custom relative location',
+        'pubspec overrides in custom relative location',
         () => pubspecOverridesTest(
             command, PubspecOverridesLocation.customRelative));
 
     test(
-        'overrides in custom absolute location',
+        'pubspec overrides in custom absolute location',
         () => pubspecOverridesTest(
             command, PubspecOverridesLocation.customAbsolute));
   });
@@ -107,7 +107,8 @@ Future<void> pubspecOverridesTest(
       break;
     case PubspecOverridesLocation.customRelative:
     case PubspecOverridesLocation.customAbsolute:
-      warning = 'Warning: pubspec.yaml has overrides from ../overrides/a.yaml';
+      warning = 'Warning: pubspec.yaml has overrides from '
+          '${p.join('..', 'overrides', 'a.yaml')}';
       break;
   }
 
