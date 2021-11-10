@@ -88,7 +88,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    globalPackageServer!.add((builder) => builder
+    globalPackageServer.add((builder) => builder
       ..serve('foo', '1.3.0', deps: {'transitive': '>=1.0.0<3.0.0'})
       ..serve('foo', '2.0.0',
           deps: {'transitive': '>=1.0.0<3.0.0', 'transitive2': '^1.0.0'})
@@ -126,7 +126,7 @@ Future<void> main() async {
 
     await pubGet();
 
-    globalPackageServer!.add(
+    globalPackageServer.add(
       (builder) => builder..serve('foo', '1.3.0', deps: {'app': '^1.0.1'}),
     );
 

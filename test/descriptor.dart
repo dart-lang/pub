@@ -295,7 +295,7 @@ PackageConfigEntry packageConfigEntry({
   }
   Uri rootUri;
   if (version != null) {
-    rootUri = p.toUri(globalPackageServer!.pathInCache(name, version));
+    rootUri = p.toUri(globalPackageServer.pathInCache(name, version));
   } else {
     rootUri = p.toUri(p.join('..', path));
   }

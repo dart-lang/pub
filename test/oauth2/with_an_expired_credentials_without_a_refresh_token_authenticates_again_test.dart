@@ -17,20 +17,20 @@ void main() {
 
     await servePackages();
     await d
-        .credentialsFile(globalPackageServer!, 'access token',
+        .credentialsFile(globalPackageServer, 'access token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(globalPackageServer!);
+    var pub = await startPublish(globalPackageServer);
     await confirmPublish(pub);
 
     await expectLater(
         pub.stderr,
         emits("Pub's authorization to upload packages has expired and "
             "can't be automatically refreshed."));
-    await authorizePub(pub, globalPackageServer!, 'new access token');
+    await authorizePub(pub, globalPackageServer, 'new access token');
 
-    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -42,7 +42,7 @@ void main() {
     await pub.shouldExit(1);
 
     await d
-        .credentialsFile(globalPackageServer!, 'new access token')
+        .credentialsFile(globalPackageServer, 'new access token')
         .validate();
   });
 }

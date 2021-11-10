@@ -105,7 +105,7 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
-        globalPackageServer!.add((builder) {
+        globalPackageServer.add((builder) {
           builder.serve('foo', '1.2.4', contents: [
             d.dir('bin',
                 [d.file('hello.dart', "void main() => print('hello 2!');")])
@@ -151,7 +151,7 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
-        globalPackageServer!.add((builder) {
+        globalPackageServer.add((builder) {
           builder.serve('bar', '1.2.4', contents: [
             d.dir('lib', [d.file('bar.dart', "final message = 'hello 2!';")]),
           ]);

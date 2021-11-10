@@ -46,8 +46,7 @@ Activated foo 1.0.0.''');
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    globalPackageServer!
-        .add((builder) => builder.serve('bar', '2.0.0', contents: [
+    globalPackageServer.add((builder) => builder.serve('bar', '2.0.0', contents: [
               d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')])
             ]));
 

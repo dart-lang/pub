@@ -15,12 +15,12 @@ void main() {
 
   test('upload form provides an error', () async {
     await servePackages((_) {});
-    await d.credentialsFile(globalPackageServer!, 'access token').create();
-    var pub = await startPublish(globalPackageServer!);
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer);
 
     await confirmPublish(pub);
 
-    globalPackageServer!.extraHandlers['/api/packages/versions/new'] =
+    globalPackageServer.extraHandlers['/api/packages/versions/new'] =
         expectAsync1((request) {
       expect(request.method, 'GET');
       return shelf.Response.notFound(jsonEncode({

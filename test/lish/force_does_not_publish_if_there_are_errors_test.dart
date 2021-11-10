@@ -21,7 +21,7 @@ void main() {
     ]).create();
 
     await servePackages();
-    var pub = await startPublish(globalPackageServer!, args: ['--force']);
+    var pub = await startPublish(globalPackageServer, args: ['--force']);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(

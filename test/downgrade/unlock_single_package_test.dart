@@ -19,7 +19,7 @@ void main() {
     await pubGet();
     await d.appPackagesFile({'foo': '2.1.0', 'bar': '2.1.0'}).validate();
 
-    globalPackageServer!.add((builder) {
+    globalPackageServer.add((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
       builder.serve('bar', '1.0.0');
     });
@@ -27,7 +27,7 @@ void main() {
     await pubDowngrade(args: ['bar']);
     await d.appPackagesFile({'foo': '2.1.0', 'bar': '2.1.0'}).validate();
 
-    globalPackageServer!.add((builder) {
+    globalPackageServer.add((builder) {
       builder.serve('foo', '2.0.0', deps: {'bar': 'any'});
       builder.serve('bar', '2.0.0');
     });

@@ -16,13 +16,13 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer!.url, 'token': 'access token'},
+        {'url': globalPackageServer.url, 'token': 'access token'},
       ]
     }).create();
-    var pub = await startPublish(globalPackageServer!, authMethod: 'token');
+    var pub = await startPublish(globalPackageServer, authMethod: 'token');
     await confirmPublish(pub);
 
-    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
       return shelf.Response(401);
     });
 
