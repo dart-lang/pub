@@ -125,7 +125,8 @@ void main() {
     var pub = await startPubUploader(
         globalPackageServer, ['--package', 'pkg', 'remove', 'e/mail']);
 
-    globalPackageServer.expect('DELETE', '/api/packages/pkg/uploaders/e%2Fmail', (request) {
+    globalPackageServer.expect('DELETE', '/api/packages/pkg/uploaders/e%2Fmail',
+        (request) {
       return shelf.Response(400,
           body: jsonEncode({
             'error': {'message': 'Bad job!'}

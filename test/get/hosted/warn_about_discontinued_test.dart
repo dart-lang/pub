@@ -46,7 +46,8 @@ Got dependencies!
     c['_fetchedAt'] =
         DateTime.now().subtract(Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
-    globalPackageServer.add((builder) => builder.discontinue('foo', replacementText: 'bar'));
+    globalPackageServer
+        .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     await pubGet(output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
@@ -119,7 +120,8 @@ Got dependencies!
     c['_fetchedAt'] =
         DateTime.now().subtract(Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
-    globalPackageServer.add((builder) => builder.discontinue('foo', replacementText: 'bar'));
+    globalPackageServer
+        .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     await pubGet(output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)

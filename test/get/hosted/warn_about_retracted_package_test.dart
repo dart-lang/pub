@@ -18,7 +18,8 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer.add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
         p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
@@ -37,7 +38,8 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer.add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
         p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
@@ -56,7 +58,8 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer.add((builder) => builder..retractPackageVersion('bar', '1.0.0-pre'));
+    globalPackageServer
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0-pre'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
         p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');

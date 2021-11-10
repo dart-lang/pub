@@ -41,7 +41,8 @@ void main() {
 
       var pub = await startPub(args: [command.name]);
 
-      globalPackageServer.expect('GET', '/api/packages/foo', (request) => shelf.Response(406));
+      globalPackageServer.expect(
+          'GET', '/api/packages/foo', (request) => shelf.Response(406));
 
       await pub.shouldExit(1);
 

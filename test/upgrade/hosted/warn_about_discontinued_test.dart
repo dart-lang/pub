@@ -26,7 +26,8 @@ Resolving dependencies...
   No dependencies changed.
   1 package is discontinued.
 ''');
-    globalPackageServer.add((builder) => builder.discontinue('foo', replacementText: 'bar'));
+    globalPackageServer
+        .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''
 Resolving dependencies...
@@ -67,7 +68,8 @@ Resolving dependencies...
   No dependencies changed.
   1 package is discontinued.
 ''');
-    globalPackageServer.add((builder) => builder.discontinue('foo', replacementText: 'bar'));
+    globalPackageServer
+        .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''
 Resolving dependencies...
