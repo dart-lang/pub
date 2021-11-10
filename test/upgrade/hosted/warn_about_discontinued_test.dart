@@ -15,7 +15,7 @@ void main() {
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
-    globalPackageServer!.add((builder) => builder
+    globalPackageServer.add((builder) => builder
       ..discontinue('foo')
       ..discontinue('transitive'));
     // We warn only about the direct dependency here:
@@ -26,7 +26,7 @@ Resolving dependencies...
   No dependencies changed.
   1 package is discontinued.
 ''');
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''
@@ -56,7 +56,7 @@ environment:
     ]).create();
     await pubGet();
 
-    globalPackageServer!.add((builder) => builder
+    globalPackageServer.add((builder) => builder
       ..discontinue('foo')
       ..discontinue('transitive'));
 
@@ -68,7 +68,7 @@ Resolving dependencies...
   No dependencies changed.
   1 package is discontinued.
 ''');
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''

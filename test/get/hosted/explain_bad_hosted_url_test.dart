@@ -36,7 +36,7 @@ void main() {
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet(
-      environment: {'PUB_HOSTED_URL': '${globalPackageServer!.url}/'},
+      environment: {'PUB_HOSTED_URL': '${globalPackageServer.url}/'},
     );
   });
 }

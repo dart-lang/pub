@@ -26,7 +26,7 @@ void main() {
     deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     // Start serving a newer package as well.
-    globalPackageServer!.add((builder) => builder.serve('foo', '1.0.1'));
+    globalPackageServer.add((builder) => builder.serve('foo', '1.0.1'));
 
     // This shouldn't upgrade the foo dependency due to the lockfile.
     await pubGet();

@@ -109,7 +109,7 @@ class NullSafetyAnalysis {
     SolveResult result;
     try {
       result = await resolveVersions(
-        SolveType.GET,
+        SolveType.get,
         _systemCache,
         fakeRoot,
       );

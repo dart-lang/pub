@@ -3007,7 +3007,7 @@ Future expectResolves(
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
       dep = registry.hosted
-          .refFor(dep.name, url: Uri.parse(globalPackageServer!.url))
+          .refFor(dep.name, url: Uri.parse(globalPackageServer.url))
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');

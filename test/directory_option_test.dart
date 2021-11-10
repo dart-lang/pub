@@ -18,8 +18,8 @@ Future<void> main() async {
       ..serve('foo', '1.0.0')
       ..serve('foo', '0.1.2')
       ..serve('bar', '1.2.3'));
-    await credentialsFile(globalPackageServer!, 'access token').create();
-    globalPackageServer!
+    await credentialsFile(globalPackageServer, 'access token').create();
+    globalPackageServer
         .extraHandlers[RegExp('/api/packages/test_pkg/uploaders')] = (request) {
       return shelf.Response.ok(
         jsonEncode({

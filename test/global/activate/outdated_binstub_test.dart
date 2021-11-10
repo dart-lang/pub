@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-const _OUTDATED_BINSTUB = '''
+const _outdatedBinstub = '''
 #!/usr/bin/env sh
 # This file was created by pub v0.1.2-3.
 # Package: foo
@@ -31,7 +31,7 @@ void main() {
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)])
+      d.dir('bin', [d.file(binStubName('foo-script'), _outdatedBinstub)])
     ]).create();
 
     await runPub(args: ['global', 'activate', 'foo']);

@@ -44,11 +44,11 @@ main() async {
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
     var fooResourcePath = p.join(
-        globalPackageServer!.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
 
     var barResourcePath = p.join(
-        globalPackageServer!.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
+        globalPackageServer.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(barResourcePath).toString()));
     await pub.shouldExit(0);
   });

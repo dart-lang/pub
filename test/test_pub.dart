@@ -506,8 +506,8 @@ class PubProcess extends TestProcess {
 
   StreamSplitter<Pair<log.Level, String>> createLogSplitter() {
     return StreamSplitter(StreamGroup.merge([
-      _outputToLog(super.stdoutStream(), log.Level.MESSAGE),
-      _outputToLog(super.stderrStream(), log.Level.ERROR)
+      _outputToLog(super.stdoutStream(), log.Level.message),
+      _outputToLog(super.stderrStream(), log.Level.error)
     ]));
   }
 
@@ -544,12 +544,12 @@ class PubProcess extends TestProcess {
 
   final _logLineRegExp = RegExp(r'^([A-Z ]{4})[:|] (.*)$');
   final Map<String, log.Level> _logLevels = [
-    log.Level.ERROR,
-    log.Level.WARNING,
-    log.Level.MESSAGE,
-    log.Level.IO,
-    log.Level.SOLVER,
-    log.Level.FINE
+    log.Level.error,
+    log.Level.warning,
+    log.Level.message,
+    log.Level.io,
+    log.Level.solver,
+    log.Level.fine
   ].fold({}, (levels, level) {
     levels[level.name] = level;
     return levels;
@@ -571,7 +571,7 @@ class PubProcess extends TestProcess {
   @override
   Stream<String> stdoutStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.MESSAGE) return [];
+      if (entry.first != log.Level.message) return [];
       return [entry.last];
     });
   }
@@ -579,7 +579,7 @@ class PubProcess extends TestProcess {
   @override
   Stream<String> stderrStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.ERROR && entry.first != log.Level.WARNING) {
+      if (entry.first != log.Level.error && entry.first != log.Level.warning) {
         return [];
       }
       return [entry.last];
@@ -589,9 +589,9 @@ class PubProcess extends TestProcess {
   /// A stream of log messages that are silent by default.
   Stream<String> silentStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first == log.Level.MESSAGE) return [];
-      if (entry.first == log.Level.ERROR) return [];
-      if (entry.first == log.Level.WARNING) return [];
+      if (entry.first == log.Level.message) return [];
+      if (entry.first == log.Level.error) return [];
+      if (entry.first == log.Level.warning) return [];
       return [entry.last];
     });
   }
@@ -913,9 +913,9 @@ Iterable<String> _filter(List<String> input) {
     line = line
         .replaceAll(d.sandbox, r'$SANDBOX')
         .replaceAll(Platform.pathSeparator, '/');
-    var packageServer = globalPackageServer;
-    if (packageServer != null) {
-      line = line.replaceAll(packageServer.port.toString(), '\$PORT');
+    var port = globalPackageServerPort;
+    if (port != null) {
+      line = line.replaceAll(port.toString(), '\$PORT');
     }
     return line;
   });

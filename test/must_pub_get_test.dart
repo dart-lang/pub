@@ -332,7 +332,7 @@ foo:http://example.com/
       setUp(() async {
         // Avoid using a path dependency because it triggers the full validation
         // logic. We want to be sure SDK-validation works without that logic.
-        globalPackageServer!.add((builder) {
+        globalPackageServer.add((builder) {
           builder.serve('foo', '3.0.0', pubspec: {
             'environment': {'sdk': '>=1.0.0 <2.0.0'}
           });
@@ -360,7 +360,7 @@ foo:http://example.com/
         'current Flutter SDK', () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      globalPackageServer!.add((builder) {
+      globalPackageServer.add((builder) {
         builder.serve('foo', '3.0.0', pubspec: {
           'environment': {'flutter': '>=1.0.0 <2.0.0'}
         });
@@ -522,7 +522,7 @@ foo:http://example.com/
 
     group("an overridden dependency's SDK constraint is unmatched", () {
       setUp(() async {
-        globalPackageServer!.add((builder) {
+        globalPackageServer.add((builder) {
           builder.serve('bar', '1.0.0', pubspec: {
             'environment': {'sdk': '0.0.0-fake'}
           });
@@ -547,7 +547,7 @@ foo:http://example.com/
         () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      globalPackageServer!.add((builder) {
+      globalPackageServer.add((builder) {
         builder.serve('foo', '3.0.0', pubspec: {
           'environment': {'flutter': '>=1.0.0 <2.0.0'}
         });

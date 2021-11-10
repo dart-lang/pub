@@ -19,7 +19,7 @@ void main() {
       ..serve('bar', '1.1.0'));
     await d.appDir({'foo': '1.0.0'}).create();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.1.0'));
     await pubGet();
 
@@ -33,7 +33,7 @@ void main() {
       ..serve('bar', '1.0.0'));
     await d.appDir({'foo': '1.0.0'}).create();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     await pubGet(
         error:
@@ -57,18 +57,18 @@ void main() {
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.1.0'));
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
-    globalPackageServer!.add((builder) => builder..serve('bar', '2.0.0'));
+    globalPackageServer.add((builder) => builder..serve('bar', '2.0.0'));
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
-    globalPackageServer!.add((builder) => builder..serve('bar', '1.2.0'));
+    globalPackageServer.add((builder) => builder..serve('bar', '1.2.0'));
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
@@ -87,11 +87,11 @@ void main() {
     }).validate();
 
     final barVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.1.0'));
     await pubGet();
 
@@ -131,7 +131,7 @@ void main() {
       })
     ]).create();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('foo', '2.0.0'));
 
     await pubGet();
@@ -149,9 +149,9 @@ void main() {
     await d.appDir({'foo': 'any'}).create();
     await pubGet();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('foo', '2.0.0'));
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('foo', '3.0.0'));
 
     await pubUpgrade();

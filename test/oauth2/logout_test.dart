@@ -11,7 +11,7 @@ void main() {
   test('with an existing credentials file, deletes it.', () async {
     await servePackages();
     await d
-        .credentialsFile(globalPackageServer!, 'access token',
+        .credentialsFile(globalPackageServer, 'access token',
             refreshToken: 'refresh token',
             expiration: DateTime.now().add(Duration(hours: 1)))
         .create();
@@ -28,7 +28,7 @@ void main() {
     await servePackages();
     await d
         .credentialsFile(
-          globalPackageServer!,
+          globalPackageServer,
           'access token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),
@@ -37,7 +37,7 @@ void main() {
 
     await d
         .legacyCredentialsFile(
-          globalPackageServer!,
+          globalPackageServer,
           'access token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),

@@ -20,16 +20,16 @@ void main() {
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
-    globalPackageServer!.add((builder) => builder
+    globalPackageServer.add((builder) => builder
       ..discontinue('foo')
       ..discontinue('transitive'));
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
     final fooVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'foo-versions.json');
+        p.join(globalPackageServer.cachingPath, '.cache', 'foo-versions.json');
     final transitiveVersionsCache = p.join(
-        globalPackageServer!.cachingPath, '.cache', 'transitive-versions.json');
+        globalPackageServer.cachingPath, '.cache', 'transitive-versions.json');
     expect(fileExists(fooVersionsCache), isTrue);
     expect(fileExists(transitiveVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
@@ -46,7 +46,7 @@ Got dependencies!
     c['_fetchedAt'] =
         DateTime.now().subtract(Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     await pubGet(output: '''
 Resolving dependencies...
@@ -98,14 +98,14 @@ environment:
     ]).create();
     await pubGet();
 
-    globalPackageServer!.add((builder) => builder
+    globalPackageServer.add((builder) => builder
       ..discontinue('foo')
       ..discontinue('transitive'));
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
     final fooVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'foo-versions.json');
+        p.join(globalPackageServer.cachingPath, '.cache', 'foo-versions.json');
     expect(fileExists(fooVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
     // We warn only about the direct dependency here:
@@ -120,7 +120,7 @@ Got dependencies!
     c['_fetchedAt'] =
         DateTime.now().subtract(Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
     await pubGet(output: '''
 Resolving dependencies...
@@ -158,11 +158,11 @@ Got dependencies!
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
     final fooVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'foo-versions.json');
+        p.join(globalPackageServer.cachingPath, '.cache', 'foo-versions.json');
     expect(fileExists(fooVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
     // Serve 400 on all requests.
-    globalPackageServer!.extraHandlers
+    globalPackageServer.extraHandlers
       ..clear()
       ..[RegExp('.*')] = (request) async => Response(400);
 

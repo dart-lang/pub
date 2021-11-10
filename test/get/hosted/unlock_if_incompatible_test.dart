@@ -18,7 +18,7 @@ void main() {
     await pubGet();
 
     await d.appPackagesFile({'foo': '1.0.0'}).validate();
-    globalPackageServer!.add((builder) => builder.serve('foo', '1.0.1'));
+    globalPackageServer.add((builder) => builder.serve('foo', '1.0.1'));
     await d.appDir({'foo': '>1.0.0'}).create();
 
     await pubGet();

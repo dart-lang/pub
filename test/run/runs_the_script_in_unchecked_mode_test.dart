@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SCRIPT = '''
+const _script = '''
 main() {
   assert(false);
   print("no checks");
@@ -18,7 +18,7 @@ void main() {
   test('runs the script without assertions by default', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('script.dart', SCRIPT)])
+      d.dir('bin', [d.file('script.dart', _script)])
     ]).create();
 
     await pubGet();
