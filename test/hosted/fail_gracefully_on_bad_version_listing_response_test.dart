@@ -40,7 +40,7 @@ void main() {
 
   testWithGolden('bad_json', (ctx) async {
     await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
+    globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
         expectAsync1((request) {
       expect(request.method, 'GET');
       return Response(200,
@@ -55,7 +55,7 @@ void main() {
 
   testWithGolden('403', (ctx) async {
     await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
+    globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
         expectAsync1((request) {
       expect(request.method, 'GET');
       return Response(403,
@@ -70,7 +70,7 @@ void main() {
 
   testWithGolden('401', (ctx) async {
     await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
+    globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
         expectAsync1((request) {
       expect(request.method, 'GET');
       return Response(401,
@@ -85,7 +85,7 @@ void main() {
 
   testWithGolden('403-with-message', (ctx) async {
     await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
+    globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
         expectAsync1((request) {
       expect(request.method, 'GET');
       return Response(403,
@@ -103,7 +103,7 @@ void main() {
 
   testWithGolden('401-with-message', (ctx) async {
     await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
+    globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
         expectAsync1((request) {
       expect(request.method, 'GET');
       return Response(401,
