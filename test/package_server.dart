@@ -15,8 +15,27 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 /// The current global [PackageServer].
-PackageServer? get globalPackageServer => _globalPackageServer;
+PackageServer get globalPackageServer {
+  final packageServer = _globalPackageServer;
+  if (packageServer != null) {
+    return packageServer;
+  }
+  throw StateError(
+    'globalPackageServer is not running yet, '
+    'try calling servicePackages() or serveNoPackages() first!',
+  );
+}
+
 PackageServer? _globalPackageServer;
+
+/// Get port of the global [PackageServer].
+int? get globalPackageServerPort {
+  final packageServer = _globalPackageServer;
+  if (packageServer != null) {
+    return packageServer.port;
+  }
+  return null;
+}
 
 /// Creates an HTTP server that replicates the structure of pub.dartlang.org and
 /// makes it the current [globalServer].
@@ -42,11 +61,10 @@ Future serveNoPackages() => servePackages((_) {});
 ///
 /// If no server has been set up, an empty server will be started.
 Future serveErrors() async {
-  var packageServer = globalPackageServer;
-  if (packageServer == null) {
+  if (_globalPackageServer == null) {
     await serveNoPackages();
   } else {
-    packageServer.serveErrors();
+    globalPackageServer.serveErrors();
   }
 }
 
