@@ -212,15 +212,20 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
 
   /// Returns the appropriate exit code for [exception], falling back on 1 if no
   /// appropriate exit code could be found.
-  int _chooseExitCode(exception) {
+  int _chooseExitCode(Object exception) {
     if (exception is SolveFailure) {
       var packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
     while (exception is WrappedException && exception.innerError is Exception) {
-      exception = exception.innerError;
+      exception = exception.innerError!;
     }
 
+    /* if (exception is PackageNotFoundException && exception.hint != null) {
+      // If there was a hint, then there is some actionable information for
+      // the user, and then it must be a problem with DATA (or CONFIG).
+      return exit_codes.DATA;
+    } else */
     if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
