@@ -89,7 +89,7 @@ class SolveReport {
       }
     } else {
       if (numChanged == 0) {
-        if (_type == SolveType.GET) {
+        if (_type == SolveType.get) {
           log.message('Got dependencies$suffix!');
         } else {
           log.message('No dependencies changed$suffix.');
@@ -245,7 +245,7 @@ class SolveReport {
     String? message;
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
-    if (newId != null && _type != SolveType.DOWNGRADE) {
+    if (newId != null && _type != SolveType.downgrade) {
       var versions = _result.availableVersions[newId.name]!;
 
       var newerStable = false;
@@ -292,7 +292,7 @@ class SolveReport {
       }
     }
 
-    if (_type == SolveType.GET &&
+    if (_type == SolveType.get &&
         !(alwaysShow || changed || addedOrRemoved || message != null)) {
       return;
     }
