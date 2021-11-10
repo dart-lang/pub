@@ -18,6 +18,8 @@ import 'progress.dart';
 import 'transcript.dart';
 import 'utils.dart';
 
+// ignore_for_file: constant_identifier_names
+
 /// The singleton instance so that we can have a nice api like:
 ///
 ///     log.json.error(...);

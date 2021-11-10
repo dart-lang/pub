@@ -57,6 +57,10 @@ abstract class PackageName {
   }
 
   @override
+  bool operator ==(Object other) =>
+      throw UnimplementedError('Subclass should implement ==');
+
+  @override
   int get hashCode {
     var thisSource = source;
     if (thisSource == null) return name.hashCode;
@@ -104,6 +108,9 @@ class PackageRef extends PackageName {
 
   @override
   bool operator ==(other) => other is PackageRef && samePackage(other);
+
+  @override
+  int get hashCode => Object.hash(super, 'PackageRef');
 }
 
 /// A reference to a specific version of a package.
@@ -137,7 +144,7 @@ class PackageId extends PackageName {
         super._(package.name, null, package.name);
 
   @override
-  int get hashCode => super.hashCode ^ version.hashCode;
+  int get hashCode => Object.hash(super, version);
 
   @override
   bool operator ==(other) =>
@@ -280,7 +287,7 @@ class PackageRange extends PackageName {
 
   @override
   int get hashCode =>
-      super.hashCode ^ constraint.hashCode ^ _featureEquality.hash(features);
+      Object.hash(super, constraint, _featureEquality.hash(features));
 
   @override
   bool operator ==(other) =>

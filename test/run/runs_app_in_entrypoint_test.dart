@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SCRIPT = """
+const _script = """
 import 'dart:io';
 
 main() {
@@ -21,7 +21,7 @@ void main() {
   test('runs a Dart application in the entrypoint package', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('script.dart', SCRIPT)])
+      d.dir('bin', [d.file('script.dart', _script)])
     ]).create();
 
     await pubGet();

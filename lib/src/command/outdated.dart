@@ -833,6 +833,9 @@ class _VersionDetails {
           _overridden == other._overridden &&
           _id.source == other._id.source &&
           _pubspec.version == other._pubspec.version;
+
+  @override
+  int get hashCode => Object.hash(_pubspec.version, _id.source, _overridden);
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
