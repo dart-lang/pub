@@ -13,7 +13,7 @@ void main() {
       builder.serve('foo', '2.0.0');
     });
 
-    globalPackageServer!.add((builder) => builder..discontinue('foo'));
+    globalPackageServer.add((builder) => builder..discontinue('foo'));
 
     // Create the first lockfile.
     await d.appDir({'foo': '2.0.0'}).create();

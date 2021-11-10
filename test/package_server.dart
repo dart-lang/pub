@@ -15,15 +15,35 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 /// The current global [PackageServer].
-PackageServer? get globalPackageServer => _globalPackageServer;
+PackageServer get globalPackageServer {
+  final packageServer = _globalPackageServer;
+  if (packageServer != null) {
+    return packageServer;
+  }
+  throw StateError(
+    'globalPackageServer is not running yet, '
+    'try calling servicePackages() or serveNoPackages() first!',
+  );
+}
+
 PackageServer? _globalPackageServer;
+
+/// Get port of the global [PackageServer].
+int? get globalPackageServerPort {
+  final packageServer = _globalPackageServer;
+  if (packageServer != null) {
+    return packageServer.port;
+  }
+  return null;
+}
 
 /// Creates an HTTP server that replicates the structure of pub.dartlang.org and
 /// makes it the current [globalServer].
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
-Future servePackages([void Function(PackageServerBuilder)? callback]) async {
+Future<void> servePackages(
+    [void Function(PackageServerBuilder)? callback]) async {
   _globalPackageServer = await PackageServer.start(callback ?? (_) {});
   globalServer = _globalPackageServer!._inner;
 
@@ -36,17 +56,16 @@ Future servePackages([void Function(PackageServerBuilder)? callback]) async {
 /// registered.
 ///
 /// This will always replace a previous server.
-Future serveNoPackages() => servePackages((_) {});
+Future<void> serveNoPackages() => servePackages((_) {});
 
 /// Sets up the global package server to report an error on any request.
 ///
 /// If no server has been set up, an empty server will be started.
-Future serveErrors() async {
-  var packageServer = globalPackageServer;
-  if (packageServer == null) {
+Future<void> serveErrors() async {
+  if (_globalPackageServer == null) {
     await serveNoPackages();
   } else {
-    packageServer.serveErrors();
+    globalPackageServer.serveErrors();
   }
 }
 

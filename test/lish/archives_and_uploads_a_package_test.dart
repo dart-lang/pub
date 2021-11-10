@@ -19,14 +19,14 @@ void main() {
 
   test('archives and uploads a package', () async {
     await servePackages();
-    await d.credentialsFile(globalPackageServer!, 'access token').create();
-    var pub = await startPublish(globalPackageServer!);
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer!);
-    handleUpload(globalPackageServer!);
+    handleUploadForm(globalPackageServer);
+    handleUpload(globalPackageServer);
 
-    globalPackageServer!.expect('GET', '/create', (request) {
+    globalPackageServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
@@ -53,14 +53,14 @@ void main() {
     await d.dir(p.join(appPath, 'empty')).create();
 
     await servePackages();
-    await d.credentialsFile(globalPackageServer!, 'access token').create();
-    var pub = await startPublish(globalPackageServer!);
+    await d.credentialsFile(globalPackageServer, 'access token').create();
+    var pub = await startPublish(globalPackageServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer!);
-    handleUpload(globalPackageServer!);
+    handleUploadForm(globalPackageServer);
+    handleUpload(globalPackageServer);
 
-    globalPackageServer!.expect('GET', '/create', (request) {
+    globalPackageServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

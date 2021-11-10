@@ -18,11 +18,11 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(output: contains('bar 1.0.0 (retracted)'));
@@ -38,11 +38,11 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(output: contains('bar 1.0.0 (retracted, 2.0.0 available)'));
@@ -58,11 +58,11 @@ void main() {
 
     await pubGet();
 
-    globalPackageServer!
+    globalPackageServer
         .add((builder) => builder..retractPackageVersion('bar', '1.0.0-pre'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(

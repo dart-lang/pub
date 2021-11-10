@@ -913,9 +913,9 @@ Iterable<String> _filter(List<String> input) {
     line = line
         .replaceAll(d.sandbox, r'$SANDBOX')
         .replaceAll(Platform.pathSeparator, '/');
-    var packageServer = globalPackageServer;
-    if (packageServer != null) {
-      line = line.replaceAll(packageServer.port.toString(), '\$PORT');
+    var port = globalPackageServerPort;
+    if (port != null) {
+      line = line.replaceAll(port.toString(), '\$PORT');
     }
     return line;
   });

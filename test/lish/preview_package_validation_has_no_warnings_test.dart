@@ -18,7 +18,7 @@ void main() {
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     await servePackages((_) {});
-    var pub = await startPublish(globalPackageServer!, args: ['--dry-run']);
+    var pub = await startPublish(globalPackageServer, args: ['--dry-run']);
 
     await pub.shouldExit(exit_codes.SUCCESS);
     expect(pub.stderr, emitsThrough('Package has 0 warnings.'));

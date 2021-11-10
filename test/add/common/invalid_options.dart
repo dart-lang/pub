@@ -40,7 +40,7 @@ void main() {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     await serveNoPackages();
-    globalPackageServer!.serveErrors();
+    globalPackageServer.serveErrors();
 
     final server = await PackageServer.start((builder) {
       builder.serve('foo', '1.2.3');
@@ -77,7 +77,7 @@ void main() {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     await serveNoPackages();
-    globalPackageServer!.serveErrors();
+    globalPackageServer.serveErrors();
 
     final server = await PackageServer.start((builder) {
       builder.serve('foo', '1.2.3');

@@ -20,7 +20,7 @@ void main() {
 
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
 
-    globalPackageServer!.add((builder) {
+    globalPackageServer.add((builder) {
       builder.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
       builder.serve('bar', '2.0.0');
     });
@@ -31,7 +31,7 @@ void main() {
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
 
     // Introducing foo and bar 1.1.0, to show that only 'bar' will be upgraded
-    globalPackageServer!.add((builder) {
+    globalPackageServer.add((builder) {
       builder.serve('foo', '1.1.0', deps: {'bar': '<2.0.0'});
       builder.serve('bar', '1.1.0');
     });

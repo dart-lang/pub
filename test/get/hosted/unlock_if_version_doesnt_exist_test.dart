@@ -20,7 +20,7 @@ void main() {
 
     deleteEntry(p.join(d.sandbox, cachePath));
 
-    globalPackageServer!.replace((builder) => builder.serve('foo', '1.0.1'));
+    globalPackageServer.replace((builder) => builder.serve('foo', '1.0.1'));
     await pubGet();
     await d.appPackagesFile({'foo': '1.0.1'}).validate();
   });

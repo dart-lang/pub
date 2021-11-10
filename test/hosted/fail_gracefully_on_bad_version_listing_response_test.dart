@@ -17,7 +17,7 @@ void main() {
         'fails gracefully if the package server responds with broken package listings',
         () async {
       await servePackages((b) => b..serve('foo', '1.2.3'));
-      globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
+      globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
           expectAsync1((request) {
         expect(request.method, 'GET');
         return Response(200,
