@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -463,14 +461,14 @@ void main() {
 }
 
 void testExistencePredicate(String name, bool Function(String path) predicate,
-    {bool forFile,
-    bool forFileSymlink,
-    bool forMultiLevelFileSymlink,
-    bool forDirectory,
-    bool forDirectorySymlink,
-    bool forMultiLevelDirectorySymlink,
-    bool forBrokenSymlink,
-    bool forMultiLevelBrokenSymlink}) {
+    {required bool forFile,
+    required bool forFileSymlink,
+    required bool forMultiLevelFileSymlink,
+    required bool forDirectory,
+    required bool forDirectorySymlink,
+    required bool forMultiLevelDirectorySymlink,
+    required bool forBrokenSymlink,
+    required bool forMultiLevelBrokenSymlink}) {
   group(name, () {
     test('returns $forFile for a file', () {
       expect(withTempDir((temp) {

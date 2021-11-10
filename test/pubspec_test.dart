@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
@@ -24,14 +22,14 @@ class FakeSource extends Source {
 
   @override
   PackageRef parseRef(String name, description,
-      {String containingPath, LanguageVersion languageVersion}) {
+      {String? containingPath, LanguageVersion? languageVersion}) {
     if (description != 'ok') throw FormatException('Bad');
     return PackageRef(name, this, description);
   }
 
   @override
   PackageId parseId(String name, Version version, description,
-          {String containingPath}) =>
+          {String? containingPath}) =>
       PackageId(name, this, version, description);
 
   @override
@@ -52,7 +50,7 @@ void main() {
     var throwsPubspecException = throwsA(const TypeMatcher<PubspecException>());
 
     void expectPubspecException(String contents, void Function(Pubspec) fn,
-        [String expectedContains]) {
+        [String? expectedContains]) {
       var expectation = const TypeMatcher<PubspecException>();
       if (expectedContains != null) {
         expectation = expectation.having(
@@ -90,7 +88,7 @@ dependencies:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.dependencies['foo'];
+      var foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -105,7 +103,7 @@ dependencies:
     version: ">=1.2.3 <0.0.0"
 ''', sources);
 
-      var foo = pubspec.dependencies['foo'];
+      var foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.isEmpty, isTrue);
     });
@@ -126,7 +124,7 @@ dev_dependencies:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.devDependencies['foo'];
+      var foo = pubspec.devDependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -149,7 +147,7 @@ dependency_overrides:
     version: ">=1.2.3 <3.4.5"
 ''', sources);
 
-      var foo = pubspec.dependencyOverrides['foo'];
+      var foo = pubspec.dependencyOverrides['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -171,7 +169,7 @@ dependencies:
     unknown: blah
 ''', sources);
 
-      var foo = pubspec.dependencies['foo'];
+      var foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources['unknown']));
     });
@@ -183,7 +181,7 @@ dependencies:
     version: 1.2.3
 ''', sources);
 
-      var foo = pubspec.dependencies['foo'];
+      var foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources['hosted']));
     });
@@ -310,10 +308,10 @@ dependencies:
           sources,
         );
 
-        var foo = pubspec.dependencies['foo'];
+        var foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
-        expect(foo.source.name, 'hosted');
-        expect(foo.source.serializeDescription(null, foo.description), {
+        expect(foo.source!.name, 'hosted');
+        expect(foo.source!.serializeDescription('', foo.description), {
           'url': 'https://example.org/pub/',
           'name': 'bar',
         });
@@ -333,10 +331,10 @@ dependencies:
           sources,
         );
 
-        var foo = pubspec.dependencies['foo'];
+        var foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
-        expect(foo.source.name, 'hosted');
-        expect(foo.source.serializeDescription(null, foo.description), {
+        expect(foo.source!.name, 'hosted');
+        expect(foo.source!.serializeDescription('', foo.description), {
           'url': 'https://example.org/pub/',
           'name': 'foo',
         });
@@ -355,10 +353,10 @@ dependencies:
           sources,
         );
 
-        var foo = pubspec.dependencies['foo'];
+        var foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
-        expect(foo.source.name, 'hosted');
-        expect(foo.source.serializeDescription(null, foo.description), {
+        expect(foo.source!.name, 'hosted');
+        expect(foo.source!.serializeDescription('', foo.description), {
           'url': 'https://example.org/pub/',
           'name': 'foo',
         });
@@ -377,10 +375,10 @@ dependencies:
           sources,
         );
 
-        var foo = pubspec.dependencies['foo'];
+        var foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
-        expect(foo.source.name, 'hosted');
-        expect(foo.source.serializeDescription(null, foo.description), {
+        expect(foo.source!.name, 'hosted');
+        expect(foo.source!.serializeDescription('', foo.description), {
           'url': 'https://pub.dartlang.org',
           'name': 'bar',
         });
@@ -402,7 +400,7 @@ dependencies:
             () => pubspec.dependencies,
             throwsA(
               isA<PubspecException>()
-                  .having((e) => e.span.text, 'span.text', 'invalid value'),
+                  .having((e) => e.span!.text, 'span.text', 'invalid value'),
             ),
           );
         },
@@ -418,10 +416,10 @@ dependencies:
           sources,
         );
 
-        var foo = pubspec.dependencies['foo'];
+        var foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
-        expect(foo.source.name, 'hosted');
-        expect(foo.source.serializeDescription(null, foo.description), {
+        expect(foo.source!.name, 'hosted');
+        expect(foo.source!.serializeDescription('', foo.description), {
           'url': 'https://pub.dartlang.org',
           'name': 'foo',
         });
@@ -714,7 +712,7 @@ features:
 ''', sources);
         expect(pubspec.features, contains('foobar'));
 
-        var feature = pubspec.features['foobar'];
+        var feature = pubspec.features['foobar']!;
         expect(feature.name, equals('foobar'));
         expect(feature.onByDefault, isTrue);
         expect(feature.dependencies, isEmpty);
@@ -751,7 +749,7 @@ features:
 
         expect(pubspec.features, contains('foobar'));
 
-        var feature = pubspec.features['foobar'];
+        var feature = pubspec.features['foobar']!;
         expect(feature.sdkConstraints,
             containsPair('dart', VersionConstraint.parse('^1.0.0')));
         expect(feature.sdkConstraints,
@@ -770,7 +768,7 @@ features:
             Pubspec.parse('features: {foobar: {default: false}}', sources);
 
         expect(pubspec.features, contains('foobar'));
-        expect(pubspec.features['foobar'].onByDefault, isFalse);
+        expect(pubspec.features['foobar']!.onByDefault, isFalse);
       });
 
       test('parses valid dependency specifications', () {
@@ -784,7 +782,7 @@ features:
 
         expect(pubspec.features, contains('foobar'));
 
-        var feature = pubspec.features['foobar'];
+        var feature = pubspec.features['foobar']!;
         expect(feature.name, equals('foobar'));
         expect(feature.onByDefault, isTrue);
         expect(feature.dependencies, hasLength(2));
@@ -800,7 +798,7 @@ features:
         test('can be null', () {
           var pubspec =
               Pubspec.parse('features: {foobar: {requires: null}}', sources);
-          expect(pubspec.features['foobar'].requires, isEmpty);
+          expect(pubspec.features['foobar']!.requires, isEmpty);
         });
 
         test('must be a list', () {

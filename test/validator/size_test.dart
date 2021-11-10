@@ -2,10 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:pub/src/validator/size.dart';
 import 'package:test/test.dart';
@@ -20,7 +17,7 @@ ValidatorCreator size(int size) {
 
 Future<void> expectSizeValidationError(Matcher matcher) async {
   await expectValidation(
-    size(100 * math.pow(2, 20) + 1),
+    size(100 * 1048577 /*2^20 +1*/),
     errors: contains(matcher),
   );
 }
@@ -30,7 +27,7 @@ void main() {
     await d.validPackage.create();
 
     await expectValidation(size(100));
-    await expectValidation(size(100 * math.pow(2, 20)));
+    await expectValidation(size(100 * 1048576 /*2^20*/));
   });
 
   group('considers a package invalid if it is more than 100 MB', () {

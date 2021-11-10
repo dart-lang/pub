@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
@@ -20,8 +18,8 @@ Future<void> main() async {
       ..serve('foo', '1.0.0')
       ..serve('foo', '0.1.2')
       ..serve('bar', '1.2.3'));
-    await credentialsFile(globalPackageServer, 'access token').create();
-    globalPackageServer
+    await credentialsFile(globalPackageServer!, 'access token').create();
+    globalPackageServer!
         .extraHandlers[RegExp('/api/packages/test_pkg/uploaders')] = (request) {
       return shelf.Response.ok(
         jsonEncode({

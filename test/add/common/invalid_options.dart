@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -42,7 +40,7 @@ void main() {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     await serveNoPackages();
-    globalPackageServer.serveErrors();
+    globalPackageServer!.serveErrors();
 
     final server = await PackageServer.start((builder) {
       builder.serve('foo', '1.2.3');
@@ -79,7 +77,7 @@ void main() {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     await serveNoPackages();
-    globalPackageServer.serveErrors();
+    globalPackageServer!.serveErrors();
 
     final server = await PackageServer.start((builder) {
       builder.serve('foo', '1.2.3');

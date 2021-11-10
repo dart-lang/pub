@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -29,7 +27,7 @@ Future<void> expectDependencyValidationWarning(String substring) =>
 
 /// Sets up a test package with dependency [dep] and mocks a server with
 /// [hostedVersions] of the package available.
-Future setUpDependency(Map dep, {List<String> hostedVersions}) {
+Future setUpDependency(Map dep, {List<String>? hostedVersions}) {
   useMockClient(MockClient((request) {
     expect(request.method, equals('GET'));
     expect(request.url.path, equals('/api/packages/foo'));

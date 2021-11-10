@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -15,7 +13,7 @@ import '../../test_pub.dart';
 import 'utils.dart';
 
 /// The contents of the binstub for [executable], or `null` if it doesn't exist.
-String binStub(String executable) {
+String? binStub(String executable) {
   final f = File(p.join(d.sandbox, cachePath, 'bin', binStubName(executable)));
   if (f.existsSync()) {
     return f.readAsStringSync();

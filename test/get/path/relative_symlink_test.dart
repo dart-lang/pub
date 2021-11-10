@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 // Pub uses NTFS junction points to create links in the packages directory.
 // These (unlike the symlinks that are supported in Vista and later) do not
 // support relative paths. So this test, by design, will not pass on Windows.

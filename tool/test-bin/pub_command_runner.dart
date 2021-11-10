@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A trivial embedding of the pub command. Used from tests.
-// @dart = 2.11
 import 'dart:convert';
 import 'dart:io';
 
@@ -17,7 +16,7 @@ import 'package:usage/usage.dart';
 final _LoggingAnalytics loggingAnalytics = _LoggingAnalytics();
 
 class Runner extends CommandRunner<int> {
-  ArgResults _options;
+  late ArgResults _options;
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
@@ -60,7 +59,7 @@ class _LoggingAnalytics extends AnalyticsMock {
   bool get firstRun => false;
 
   @override
-  Future sendScreenView(String viewName, {Map<String, String> parameters}) {
+  Future sendScreenView(String viewName, {Map<String, String>? parameters}) {
     parameters ??= <String, String>{};
     parameters['viewName'] = viewName;
     return _log('screenView', parameters);
@@ -68,7 +67,7 @@ class _LoggingAnalytics extends AnalyticsMock {
 
   @override
   Future sendEvent(String category, String action,
-      {String label, int value, Map<String, String> parameters}) {
+      {String? label, int? value, Map<String, String>? parameters}) {
     parameters ??= <String, String>{};
     return _log(
         'event',
@@ -82,7 +81,7 @@ class _LoggingAnalytics extends AnalyticsMock {
 
   @override
   Future sendTiming(String variableName, int time,
-      {String category, String label}) {
+      {String? category, String? label}) {
     return _log('timing', {
       'variableName': variableName,
       'time': time,

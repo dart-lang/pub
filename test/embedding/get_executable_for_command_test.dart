@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' show separator;
@@ -23,7 +21,7 @@ Future<void> testGetExecutable(
   executable,
   packageConfig,
   errorMessage,
-  CommandResolutionIssue issue,
+  CommandResolutionIssue? issue,
 }) async {
   final _cachePath = getPubTestEnvironment()['PUB_CACHE'];
   final oldVerbosity = log.verbosity;

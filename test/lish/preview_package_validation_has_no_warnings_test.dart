@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import 'package:test/test.dart';
@@ -20,7 +18,7 @@ void main() {
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     await servePackages((_) {});
-    var pub = await startPublish(globalPackageServer, args: ['--dry-run']);
+    var pub = await startPublish(globalPackageServer!, args: ['--dry-run']);
 
     await pub.shouldExit(exit_codes.SUCCESS);
     expect(pub.stderr, emitsThrough('Package has 0 warnings.'));

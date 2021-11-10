@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -39,7 +37,7 @@ void main() {
 
       await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
-      String warning;
+      String? warning;
       if (command == RunCommand.upgrade) {
         warning = 'Warning: Upgrading when offline may not update you '
             'to the latest versions of your dependencies.';
@@ -59,7 +57,7 @@ void main() {
 
       await d.appDir({'foo': 'any'}).create();
 
-      String warning;
+      String? warning;
       if (command == RunCommand.upgrade) {
         warning = 'Warning: Upgrading when offline may not update you '
             'to the latest versions of your dependencies.';

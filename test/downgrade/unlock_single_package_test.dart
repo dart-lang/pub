@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -21,7 +19,7 @@ void main() {
     await pubGet();
     await d.appPackagesFile({'foo': '2.1.0', 'bar': '2.1.0'}).validate();
 
-    globalPackageServer.add((builder) {
+    globalPackageServer!.add((builder) {
       builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
       builder.serve('bar', '1.0.0');
     });
@@ -29,7 +27,7 @@ void main() {
     await pubDowngrade(args: ['bar']);
     await d.appPackagesFile({'foo': '2.1.0', 'bar': '2.1.0'}).validate();
 
-    globalPackageServer.add((builder) {
+    globalPackageServer!.add((builder) {
       builder.serve('foo', '2.0.0', deps: {'bar': 'any'});
       builder.serve('bar', '2.0.0');
     });

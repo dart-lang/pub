@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/package_name.dart';
@@ -24,14 +22,14 @@ class FakeSource extends Source {
 
   @override
   PackageRef parseRef(String name, description,
-      {String containingPath, LanguageVersion languageVersion}) {
+      {String? containingPath, LanguageVersion? languageVersion}) {
     if (!description.endsWith(' desc')) throw FormatException('Bad');
     return PackageRef(name, this, description);
   }
 
   @override
   PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
+      {String? containingPath}) {
     if (!description.endsWith(' desc')) throw FormatException('Bad');
     return PackageId(name, this, version, description);
   }
@@ -81,13 +79,13 @@ packages:
 
         expect(lockFile.packages.length, equals(2));
 
-        var bar = lockFile.packages['bar'];
+        var bar = lockFile.packages['bar']!;
         expect(bar.name, equals('bar'));
         expect(bar.version, equals(Version(1, 2, 3)));
         expect(bar.source, equals(fakeSource));
         expect(bar.description, equals('bar desc'));
 
-        var foo = lockFile.packages['foo'];
+        var foo = lockFile.packages['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.version, equals(Version(2, 3, 4)));
         expect(foo.source, equals(fakeSource));
@@ -102,7 +100,7 @@ packages:
     version: 1.2.3
     description: foo desc
 ''', sources);
-        var foo = lockFile.packages['foo'];
+        var foo = lockFile.packages['foo']!;
         expect(foo.source, equals(sources['bad']));
       });
 
@@ -263,7 +261,7 @@ packages:
       });
 
       expect(
-          loadYaml(lockfile.serialize(null)),
+          loadYaml(lockfile.serialize('')),
           equals({
             'sdks': {'dart': 'any'},
             'packages': {

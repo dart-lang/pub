@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -20,7 +18,7 @@ void main() {
         'fails gracefully if the package server responds with broken package listings',
         () async {
       await servePackages((b) => b..serve('foo', '1.2.3'));
-      globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
+      globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
           expectAsync1((request) {
         expect(request.method, 'GET');
         return Response(200,
