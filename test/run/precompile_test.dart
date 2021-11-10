@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SCRIPT = r'''
+const _script = r'''
 import 'dart:io';
 
 main(List<String> args) {
@@ -59,7 +59,7 @@ void main() {
 
     await servePackages((server) => server
       ..serve('test', '1.0.0', contents: [
-        d.dir('bin', [d.file('test.dart', SCRIPT)])
+        d.dir('bin', [d.file('test.dart', _script)])
       ]));
 
     await pubGet(
@@ -82,7 +82,7 @@ void main() {
 
     await servePackages((server) => server
       ..serve('test', '1.0.0', contents: [
-        d.dir('bin', [d.file('test.dart', SCRIPT)])
+        d.dir('bin', [d.file('test.dart', _script)])
       ]));
 
     await pubGet(
@@ -106,7 +106,7 @@ void main() {
 
     await servePackages((server) => server
       ..serve('test', '1.0.0', contents: [
-        d.dir('bin', [d.file('test.dart', SCRIPT)])
+        d.dir('bin', [d.file('test.dart', _script)])
       ]));
 
     await pubGet(

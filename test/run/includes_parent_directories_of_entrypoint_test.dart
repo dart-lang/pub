@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SCRIPT = r"""
+const _script = r"""
 import '../../a.dart';
 import '../b.dart';
 main() {
@@ -26,7 +26,7 @@ void main() {
         d.file('a.dart', "var a = 'a';"),
         d.dir('a', [
           d.file('b.dart', "var b = 'b';"),
-          d.dir('b', [d.file('app.dart', SCRIPT)])
+          d.dir('b', [d.file('app.dart', _script)])
         ])
       ])
     ]).create();
