@@ -42,7 +42,8 @@ int? get globalPackageServerPort {
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
-Future servePackages([void Function(PackageServerBuilder)? callback]) async {
+Future<void> servePackages(
+    [void Function(PackageServerBuilder)? callback]) async {
   _globalPackageServer = await PackageServer.start(callback ?? (_) {});
   globalServer = _globalPackageServer!._inner;
 
@@ -55,12 +56,12 @@ Future servePackages([void Function(PackageServerBuilder)? callback]) async {
 /// registered.
 ///
 /// This will always replace a previous server.
-Future serveNoPackages() => servePackages((_) {});
+Future<void> serveNoPackages() => servePackages((_) {});
 
 /// Sets up the global package server to report an error on any request.
 ///
 /// If no server has been set up, an empty server will be started.
-Future serveErrors() async {
+Future<void> serveErrors() async {
   if (_globalPackageServer == null) {
     await serveNoPackages();
   } else {
