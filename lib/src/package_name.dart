@@ -110,7 +110,7 @@ class PackageRef extends PackageName {
   bool operator ==(other) => other is PackageRef && samePackage(other);
 
   @override
-  int get hashCode => Object.hash(super, 'PackageRef');
+  int get hashCode => super.hashCode ^ 'PackageRef'.hashCode;
 }
 
 /// A reference to a specific version of a package.
@@ -144,7 +144,7 @@ class PackageId extends PackageName {
         super._(package.name, null, package.name);
 
   @override
-  int get hashCode => Object.hash(super, version);
+  int get hashCode => super.hashCode ^ version.hashCode;
 
   @override
   bool operator ==(other) =>
@@ -287,7 +287,7 @@ class PackageRange extends PackageName {
 
   @override
   int get hashCode =>
-      Object.hash(super, constraint, _featureEquality.hash(features));
+      super.hashCode ^ constraint.hashCode ^ _featureEquality.hash(features);
 
   @override
   bool operator ==(other) =>
