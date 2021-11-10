@@ -27,6 +27,7 @@ linter:
     - prefer_asserts_in_initializer_lists
     - prefer_const_declarations
     - prefer_relative_imports
+    - prefer_single_quotes
     - sort_pub_dependencies
     - test_types_in_equals
     - throw_in_finally
