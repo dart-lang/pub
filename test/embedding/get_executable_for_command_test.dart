@@ -25,7 +25,7 @@ Future<void> testGetExecutable(
 }) async {
   final _cachePath = getPubTestEnvironment()['PUB_CACHE'];
   final oldVerbosity = log.verbosity;
-  log.verbosity = log.Verbosity.NONE;
+  log.verbosity = log.Verbosity.none;
   if (executable == null) {
     expect(
       () => getExecutableForCommand(
