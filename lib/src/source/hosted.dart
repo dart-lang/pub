@@ -859,12 +859,12 @@ class BoundHostedSource extends CachedSource {
       assert(error.statusCode == 401 || error.statusCode == 403);
       if (error.statusCode == 401) {
         hint = '$hostedUrl package repository requested authentication!\n'
-            'You can provide credential using:\n'
+            'You can provide credentials using:\n'
             '    pub token add $hostedUrl';
       }
       if (error.statusCode == 403) {
-        hint = 'Insufficient permissions to the resource in $hostedUrl '
-            'package repository.\nYou can modify credential using:\n'
+        hint = 'Insufficient permissions to the resource at the $hostedUrl '
+            'package repository.\nYou can modify credentials using:\n'
             '    pub token add $hostedUrl';
         message = 'authorization failed';
       }

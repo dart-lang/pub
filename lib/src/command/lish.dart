@@ -124,12 +124,12 @@ class LishCommand extends PubCommand {
       var msg = '';
       if (error.statusCode == 401) {
         msg += '$server package repository requested authentication!\n'
-            'You can provide credential using:\n'
+            'You can provide credentials using:\n'
             '    pub token add $server\n';
       }
       if (error.statusCode == 403) {
-        msg += 'Insufficient permissions to the resource in $server '
-            'package repository.\nYou can modify credential using:\n'
+        msg += 'Insufficient permissions to the resource at the $server '
+            'package repository.\nYou can modify credentials using:\n'
             '    pub token add $server\n';
       }
       if (error.serverMessage != null) {

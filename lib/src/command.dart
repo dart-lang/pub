@@ -221,11 +221,6 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
       exception = exception.innerError!;
     }
 
-    /* if (exception is PackageNotFoundException && exception.hint != null) {
-      // If there was a hint, then there is some actionable information for
-      // the user, and then it must be a problem with DATA (or CONFIG).
-      return exit_codes.DATA;
-    } else */
     if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
