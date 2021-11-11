@@ -80,6 +80,8 @@ void main() {
           error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
+
+            Try again without --offline!
           """));
     });
 
@@ -116,6 +118,8 @@ void main() {
           error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
+
+            Try again without --offline!
           """));
     });
 

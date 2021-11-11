@@ -120,6 +120,22 @@ class LishCommand extends PubCommand {
         handleJsonSuccess(
             await client.get(Uri.parse(location), headers: pubApiHeaders));
       });
+    } on AuthenticationException catch (error) {
+      var msg = '';
+      if (error.statusCode == 401) {
+        msg += '$server package repository requested authentication!\n'
+            'You can provide credentials using:\n'
+            '    pub token add $server\n';
+      }
+      if (error.statusCode == 403) {
+        msg += 'Insufficient permissions to the resource at the $server '
+            'package repository.\nYou can modify credentials using:\n'
+            '    pub token add $server\n';
+      }
+      if (error.serverMessage != null) {
+        msg += '\n' + error.serverMessage! + '\n';
+      }
+      dataError(msg + log.red('Authentication failed!'));
     } on PubHttpException catch (error) {
       var url = error.response.request!.url;
       if (url == cloudStorageUrl) {

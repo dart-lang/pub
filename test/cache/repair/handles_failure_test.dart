@@ -39,7 +39,7 @@ void main() {
     expect(pub.stderr, emits(startsWith('Failed to repair foo 1.2.4. Error:')));
     expect(
         pub.stderr,
-        emits('Package doesn\'t exist '
+        emits('Package not available '
             '(Package foo has no version 1.2.4).'));
 
     expect(pub.stdout, emits('Reinstalled 2 packages.'));
