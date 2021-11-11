@@ -92,18 +92,17 @@ class _Writer {
   String write() {
     var buffer = StringBuffer();
 
-    // If the failure was caused in part by unsatisfied SDK constraints,
-    // indicate the actual versions so we don't have to list them (possibly
-    // multiple times) in the main body of the error message.
-    //
-    // Iterate through [sdks] to ensure that SDKs versions are printed in a
-    // consistent order
+    // Find all notices from incompatibility causes. This allows an
+    // [IncompatibilityCause] to provide a notice that is printed before the
+    // explanation of the conflict.
+    // Notably, this is used for stating which SDK version is currently
+    // installed, if an SDK is incompatible with a dependency.
     final notices = _root.externalIncompatibilities
         .where((c) => c.cause.notice != null)
         .map((c) => c.cause.notice)
         .whereNotNull()
-        .toSet()
-        .sortedBy((n) => n);
+        .toSet() // Avoid duplicates
+        .sortedBy((n) => n); // sort for consistency
     for (final n in notices) {
       buffer.writeln(n);
     }
@@ -151,7 +150,7 @@ class _Writer {
         .where((c) => c.cause.hint != null)
         .map((c) => c.cause.hint)
         .whereNotNull()
-        .toSet()
+        .toSet() // avoid duplicates
         .sortedBy((hint) => hint) // sort hints for consistent ordering.
         .forEach((hint) {
       buffer.writeln();

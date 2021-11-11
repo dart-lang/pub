@@ -5,8 +5,8 @@ $ pub get
 Resolving dependencies...
 [STDERR] Because myapp depends on foo any which doesn't exist (authorization failed), version solving failed.
 [STDERR] 
-[STDERR] Insufficient permissions to the resource in http://localhost:$PORT package repository.
-[STDERR] You can modify credential using:
+[STDERR] Insufficient permissions to the resource at the http://localhost:$PORT package repository.
+[STDERR] You can modify credentials using:
 [STDERR]     pub token add http://localhost:$PORT
 [EXIT CODE] 69
 
