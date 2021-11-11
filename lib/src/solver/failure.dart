@@ -98,7 +98,6 @@ class _Writer {
     // Notably, this is used for stating which SDK version is currently
     // installed, if an SDK is incompatible with a dependency.
     final notices = _root.externalIncompatibilities
-        .where((c) => c.cause.notice != null)
         .map((c) => c.cause.notice)
         .whereNotNull()
         .toSet() // Avoid duplicates
@@ -147,7 +146,6 @@ class _Writer {
     // user will ideally see these before reading the actual conflict and
     // understand how to fix the issue.
     _root.externalIncompatibilities
-        .where((c) => c.cause.hint != null)
         .map((c) => c.cause.hint)
         .whereNotNull()
         .toSet() // avoid duplicates
