@@ -9,7 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test('activating a hosted package twice will not precompile', () async {
-    await servePackages((builder) => builder
+    final builder = await servePackages();
+    builder
       ..serve('foo', '1.0.0', deps: {
         'bar': 'any'
       }, contents: [
@@ -21,7 +22,7 @@ main(args) => print('bar $version');''')
       ])
       ..serve('bar', '1.0.0', contents: [
         d.dir('lib', [d.file('bar.dart', 'final version = "1.0.0";')])
-      ]));
+      ]);
 
     await runPub(args: ['global', 'activate', 'foo'], output: '''
 Resolving dependencies...
@@ -46,10 +47,9 @@ Activated foo 1.0.0.''');
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    globalPackageServer
-        .add((builder) => builder.serve('bar', '2.0.0', contents: [
-              d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')])
-            ]));
+    builder.serve('bar', '2.0.0', contents: [
+      d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')])
+    ]);
 
     await runPub(args: ['global', 'activate', 'foo'], output: '''
 Package foo is currently active at version 1.0.0.

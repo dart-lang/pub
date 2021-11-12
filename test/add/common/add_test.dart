@@ -13,7 +13,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('URL encodes the package name', () async {
-    await serveNoPackages();
+    await servePackages();
 
     await d.appDir({}).create();
 

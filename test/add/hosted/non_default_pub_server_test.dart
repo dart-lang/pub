@@ -12,13 +12,12 @@ void main() {
   test('adds a package from a non-default pub server', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
+    (await servePackages()).serveErrors();
 
-    var server = await PackageServer.start((builder) {
-      builder.serve('foo', '0.2.5');
-      builder.serve('foo', '1.1.0');
-      builder.serve('foo', '1.2.3');
-    });
+    final server = await servePackages();
+    server.serve('foo', '0.2.5');
+    server.serve('foo', '1.1.0');
+    server.serve('foo', '1.2.3');
 
     await d.appDir({}).create();
 
@@ -64,13 +63,12 @@ void main() {
       () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
+    (await servePackages()).serveErrors();
 
-    var server = await PackageServer.start((builder) {
-      builder.serve('foo', '0.2.5');
-      builder.serve('foo', '1.1.0');
-      builder.serve('foo', '1.2.3');
-    });
+    final server = await servePackages();
+    server.serve('foo', '0.2.5');
+    server.serve('foo', '1.1.0');
+    server.serve('foo', '1.2.3');
 
     await d.appDir({}).create();
 
@@ -92,13 +90,12 @@ void main() {
       () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
+    (await servePackages()).serveErrors();
 
-    var server = await PackageServer.start((builder) {
-      builder.serve('foo', '0.2.5');
-      builder.serve('foo', '1.1.0');
-      builder.serve('foo', '1.2.3');
-    });
+    final server = await servePackages();
+    server.serve('foo', '0.2.5');
+    server.serve('foo', '1.1.0');
+    server.serve('foo', '1.2.3');
 
     await d.appDir({}).create();
 
@@ -121,13 +118,11 @@ void main() {
       'constraint', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
-
-    var server = await PackageServer.start((builder) {
-      builder.serve('foo', '0.2.5');
-      builder.serve('foo', '1.1.0');
-      builder.serve('foo', '1.2.3');
-    });
+    (await servePackages()).serveErrors();
+    final server = await servePackages();
+    server.serve('foo', '0.2.5');
+    server.serve('foo', '1.1.0');
+    server.serve('foo', '1.2.3');
 
     await d.appDir({}).create();
 

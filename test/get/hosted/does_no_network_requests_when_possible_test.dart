@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('does not request versions if the lockfile is up to date', () async {
-    await servePackages((builder) {
+    final server = await servePackages((builder) {
       builder.serve('foo', '1.0.0');
       builder.serve('foo', '1.1.0');
       builder.serve('foo', '1.2.0');
@@ -22,7 +22,7 @@ void main() {
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    globalServer!.requestedPaths.clear();
+    server.requestedPaths.clear();
 
     // Run the solver again now that it's cached.
     await pubGet();
@@ -32,6 +32,6 @@ void main() {
 
     // The get should not have done any network requests since the lock file is
     // up to date.
-    expect(globalServer!.requestedPaths, isEmpty);
+    expect(server.requestedPaths, isEmpty);
   });
 }

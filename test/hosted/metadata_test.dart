@@ -82,9 +82,8 @@ void main() {
     });
 
     test("doesn't send metadata headers to a foreign server", () async {
-      var server = await PackageServer.start((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      var server = await startPackageServer()
+        ..serve('foo', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -97,9 +96,7 @@ void main() {
     });
 
     test("doesn't send metadata headers when CI=true", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      (await servePackages()).serve('foo', '1.0.0');
 
       await d.appDir({'foo': '1.0.0'}).create();
 

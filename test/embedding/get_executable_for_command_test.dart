@@ -129,7 +129,7 @@ Future<void> main() async {
       ])
     ]).create();
 
-    await serveNoPackages();
+    await servePackages();
     // The solver uses word-wrapping in its error message, so we use \s to
     // accomodate.
     await testGetExecutable(
@@ -166,7 +166,7 @@ Future<void> main() async {
       ])
     ]).create();
 
-    await serveNoPackages();
+    await servePackages();
     // The solver uses word-wrapping in its error message, so we use \s to
     // accomodate.
     await testGetExecutable(

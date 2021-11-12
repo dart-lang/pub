@@ -42,19 +42,19 @@ void main() {
         'source': 'hosted',
         'description': {
           'name': 'foo',
-          'url': globalPackageServer.url,
+          'url': globalServer.url,
         },
         'version': '1.2.3',
       });
     }
 
     test('supports hosted: <url> syntax', () async {
-      return testWith({'hosted': globalPackageServer.url});
+      return testWith({'hosted': globalServer.url});
     });
 
     test('supports hosted map without name', () {
       return testWith({
-        'hosted': {'url': globalPackageServer.url},
+        'hosted': {'url': globalServer.url},
       });
     });
 
@@ -80,8 +80,8 @@ void main() {
         await File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsString(),
       );
 
-      expect(lockFile['packages']['foo']['description']['url'],
-          globalPackageServer.url);
+      expect(
+          lockFile['packages']['foo']['description']['url'], globalServer.url);
     });
   });
 }

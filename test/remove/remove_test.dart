@@ -192,9 +192,8 @@ environment:
   test('removes hosted dependencies', () async {
     await servePackages((builder) => builder.serve('bar', '2.0.1'));
 
-    var server = await PackageServer.start((builder) {
-      builder.serve('foo', '1.2.3');
-    });
+    var server = await startPackageServer();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({
       'foo': {

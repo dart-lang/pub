@@ -12,7 +12,7 @@ import '../test_pub.dart';
 void main() {
   testWithGolden('hint: try without --offline', (ctx) async {
     // Run the server so that we know what URL to use in the system cache.
-    await serveErrors();
+    (await servePackages()).serveErrors();
 
     await d.appDir({'foo': 'any'}).create();
 
@@ -25,7 +25,7 @@ void main() {
 
   testWithGolden('supports two hints', (ctx) async {
     // Run the server so that we know what URL to use in the system cache.
-    await serveErrors();
+    (await servePackages()).serveErrors();
 
     await d.hostedCache([
       d.dir('foo-1.2.3', [

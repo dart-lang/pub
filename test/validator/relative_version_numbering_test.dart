@@ -13,7 +13,7 @@ import 'utils.dart';
 
 Validator validator(Entrypoint entrypoint) => RelativeVersionNumberingValidator(
       entrypoint,
-      Uri.parse(globalPackageServer.url),
+      Uri.parse(globalServer.url),
     );
 
 Future<void> setup({required String sdkConstraint}) async {

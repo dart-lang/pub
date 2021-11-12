@@ -9,15 +9,15 @@ import '../../test_pub.dart';
 
 void main() {
   test('Warns about discontinued dependencies', () async {
-    await servePackages((builder) => builder
+    final server = await servePackages()
       ..serve('foo', '1.2.3', deps: {'transitive': 'any'})
-      ..serve('transitive', '1.0.0'));
+      ..serve('transitive', '1.0.0');
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
-    globalPackageServer.add((builder) => builder
+    server
       ..discontinue('foo')
-      ..discontinue('transitive'));
+      ..discontinue('transitive');
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''
 Resolving dependencies...
@@ -26,8 +26,7 @@ Resolving dependencies...
   No dependencies changed.
   1 package is discontinued.
 ''');
-    globalPackageServer
-        .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
+    server.discontinue('foo', replacementText: 'bar');
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''
 Resolving dependencies...
@@ -39,9 +38,9 @@ Resolving dependencies...
   });
 
   test('Warns about discontinued dev_dependencies', () async {
-    await servePackages((builder) => builder
+    final server = await servePackages()
       ..serve('foo', '1.2.3', deps: {'transitive': 'any'})
-      ..serve('transitive', '1.0.0'));
+      ..serve('transitive', '1.0.0');
 
     await d.dir(appPath, [
       d.file('pubspec.yaml', '''
@@ -56,9 +55,9 @@ environment:
     ]).create();
     await pubGet();
 
-    globalPackageServer.add((builder) => builder
+    server
       ..discontinue('foo')
-      ..discontinue('transitive'));
+      ..discontinue('transitive');
 
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''
@@ -68,8 +67,7 @@ Resolving dependencies...
   No dependencies changed.
   1 package is discontinued.
 ''');
-    globalPackageServer
-        .add((builder) => builder.discontinue('foo', replacementText: 'bar'));
+    server.discontinue('foo', replacementText: 'bar');
     // We warn only about the direct dependency here:
     await pubUpgrade(output: '''
 Resolving dependencies...

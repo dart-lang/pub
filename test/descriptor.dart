@@ -179,7 +179,7 @@ Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
 /// that this cache represents. It defaults to [globalServer.port].
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(cachePath, [
-    dir('hosted', [dir('localhost%58${port ?? globalServer?.port}', contents)])
+    dir('hosted', [dir('localhost%58${port ?? globalServer.port}', contents)])
   ]);
 }
 
@@ -295,7 +295,7 @@ PackageConfigEntry packageConfigEntry({
   }
   Uri rootUri;
   if (version != null) {
-    rootUri = p.toUri(globalPackageServer.pathInCache(name, version));
+    rootUri = p.toUri(globalServer.pathInCache(name, version));
   } else {
     rootUri = p.toUri(p.join('..', path));
   }

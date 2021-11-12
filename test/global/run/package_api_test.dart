@@ -43,12 +43,12 @@ main() async {
         'global_packages/foo/.dart_tool/package_config.json');
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
-    var fooResourcePath = p.join(
-        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+    var fooResourcePath =
+        p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
 
-    var barResourcePath = p.join(
-        globalPackageServer.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
+    var barResourcePath =
+        p.join(globalServer.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(barResourcePath).toString()));
     await pub.shouldExit(0);
   });

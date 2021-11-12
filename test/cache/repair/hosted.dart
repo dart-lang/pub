@@ -11,8 +11,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  setUp(() {
-    return servePackages((builder) {
+  setUp(() async {
+    await servePackages((builder) {
       builder.serve('foo', '1.2.3');
       builder.serve('foo', '1.2.4');
       builder.serve('foo', '1.2.5');
@@ -25,7 +25,7 @@ void main() {
     // Set up a cache with some broken packages.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('localhost%58${globalServer!.port}', [
+        d.dir('localhost%58${globalServer.port}', [
           d.dir('foo-1.2.3',
               [d.libPubspec('foo', '1.2.3'), d.file('broken.txt')]),
           d.dir('foo-1.2.5',
@@ -64,7 +64,7 @@ void main() {
     // Set up a cache with some broken packages.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('localhost%58${globalServer!.port}', [
+        d.dir('localhost%58${globalServer.port}', [
           d.dir('bar-1.2.4', [d.file('broken.txt')]),
           d.dir('foo-1.2.3', [d.file('broken.txt')]),
           d.dir('foo-1.2.5', [d.file('broken.txt')]),
@@ -100,7 +100,7 @@ void main() {
     // Set up a cache with some broken packages.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('localhost%58${globalServer!.port}', [
+        d.dir('localhost%58${globalServer.port}', [
           d.dir('bar-1.2.4', [d.file('pubspec.yaml', '{')]),
           d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')]),
           d.dir('foo-1.2.5', [d.file('pubspec.yaml', '{')]),

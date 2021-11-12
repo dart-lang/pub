@@ -9,11 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('Shows count of discontinued packages', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '2.0.0');
-    });
+    final builder = await servePackages();
 
-    globalPackageServer.add((builder) => builder..discontinue('foo'));
+    builder.serve('foo', '2.0.0');
+
+    builder.discontinue('foo');
 
     // Create the first lockfile.
     await d.appDir({'foo': '2.0.0'}).create();

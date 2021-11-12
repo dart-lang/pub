@@ -17,15 +17,17 @@ void main() {
     test(
         'fails gracefully if the package server responds with broken package listings',
         () async {
-      await servePackages((b) => b..serve('foo', '1.2.3'));
-      globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
-          expectAsync1((request) {
-        expect(request.method, 'GET');
-        return Response(200,
-            body: jsonEncode({
-              'notTheRight': {'response': 'type'}
-            }));
-      });
+      final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+      server.expect(
+        'GET',
+        RegExp('/api/packages/.*'),
+        expectAsync1((request) {
+          return Response(200,
+              body: jsonEncode({
+                'notTheRight': {'response': 'type'}
+              }));
+        }),
+      );
       await d.appDir({'foo': '1.2.3'}).create();
 
       await pubCommand(command,
@@ -39,10 +41,8 @@ void main() {
   });
 
   testWithGolden('bad_json', (ctx) async {
-    await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
-        expectAsync1((request) {
-      expect(request.method, 'GET');
+    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(200,
           body: jsonEncode({
             'notTheRight': {'response': 'type'}
@@ -54,10 +54,8 @@ void main() {
   });
 
   testWithGolden('403', (ctx) async {
-    await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
-        expectAsync1((request) {
-      expect(request.method, 'GET');
+    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(403,
           body: jsonEncode({
             'notTheRight': {'response': 'type'}
@@ -69,10 +67,8 @@ void main() {
   });
 
   testWithGolden('401', (ctx) async {
-    await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
-        expectAsync1((request) {
-      expect(request.method, 'GET');
+    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(401,
           body: jsonEncode({
             'notTheRight': {'response': 'type'}
@@ -84,10 +80,8 @@ void main() {
   });
 
   testWithGolden('403-with-message', (ctx) async {
-    await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
-        expectAsync1((request) {
-      expect(request.method, 'GET');
+    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(403,
           headers: {
             'www-authenticate': 'Bearer realm="pub", message="<message>"',
@@ -102,10 +96,8 @@ void main() {
   });
 
   testWithGolden('401-with-message', (ctx) async {
-    await servePackages((b) => b..serve('foo', '1.2.3'));
-    globalPackageServer.extraHandlers[RegExp('/api/packages/.*')] =
-        expectAsync1((request) {
-      expect(request.method, 'GET');
+    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(401,
           headers: {
             'www-authenticate': 'Bearer realm="pub", message="<message>"',

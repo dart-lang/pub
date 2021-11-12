@@ -483,9 +483,8 @@ void unsolvable() {
   });
 
   test('mismatched descriptions', () async {
-    var otherServer = await PackageServer.start((builder) {
-      builder.serve('shared', '1.0.0');
-    });
+    var otherServer = await startPackageServer();
+    otherServer.serve('shared', '1.0.0');
 
     await servePackages((builder) {
       builder.serve('foo', '1.0.0', deps: {'shared': '1.0.0'});
@@ -858,9 +857,8 @@ void backtracking() {
 
   // Like the above test, but for a conflicting description.
   test('successful backjump to conflicting description', () async {
-    var otherServer = await PackageServer.start((builder) {
-      builder.serve('a', '1.0.0');
-    });
+    var otherServer = await startPackageServer();
+    otherServer.serve('a', '1.0.0');
 
     await servePackages((builder) {
       builder.serve('a', '1.0.0');
@@ -907,9 +905,8 @@ void backtracking() {
   });
 
   test('failing backjump to conflicting description', () async {
-    var otherServer = await PackageServer.start((builder) {
-      builder.serve('a', '1.0.0');
-    });
+    var otherServer = await startPackageServer();
+    otherServer.serve('a', '1.0.0');
 
     await servePackages((builder) {
       builder.serve('a', '1.0.0');
@@ -3007,7 +3004,7 @@ Future expectResolves(
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
       dep = registry.hosted
-          .refFor(dep.name, url: Uri.parse(globalPackageServer.url))
+          .refFor(dep.name, url: Uri.parse(globalServer.url))
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');

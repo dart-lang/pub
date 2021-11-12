@@ -61,7 +61,8 @@ Future<void> main() async {
   });
 
   testWithGolden('newer versions available', (ctx) async {
-    await servePackages((builder) => builder
+    final builder = await servePackages();
+    builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.0.0')
       ..serve('builder', '1.2.3', deps: {
@@ -69,7 +70,7 @@ Future<void> main() async {
         'dev_trans': '^1.0.0',
       })
       ..serve('transitive', '1.2.3')
-      ..serve('dev_trans', '1.0.0'));
+      ..serve('dev_trans', '1.0.0');
 
     await d.dir('local_package', [
       d.libDir('local_package'),
@@ -88,7 +89,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    globalPackageServer.add((builder) => builder
+    builder
       ..serve('foo', '1.3.0', deps: {'transitive': '>=1.0.0<3.0.0'})
       ..serve('foo', '2.0.0',
           deps: {'transitive': '>=1.0.0<3.0.0', 'transitive2': '^1.0.0'})
@@ -104,15 +105,13 @@ Future<void> main() async {
       ..serve('transitive', '2.0.0')
       ..serve('transitive2', '1.0.0')
       ..serve('transitive3', '1.0.0')
-      ..serve('dev_trans', '2.0.0'));
-
+      ..serve('dev_trans', '2.0.0');
     await ctx.runOutdatedTests();
   });
 
   testWithGolden('circular dependency on root', (ctx) async {
-    await servePackages(
-      (builder) => builder..serve('foo', '1.2.3', deps: {'app': '^1.0.0'}),
-    );
+    final builder = await servePackages();
+    builder.serve('foo', '1.2.3', deps: {'app': '^1.0.0'});
 
     await d.dir(appPath, [
       d.pubspec({
@@ -126,10 +125,7 @@ Future<void> main() async {
 
     await pubGet();
 
-    globalPackageServer.add(
-      (builder) => builder..serve('foo', '1.3.0', deps: {'app': '^1.0.1'}),
-    );
-
+    builder.serve('foo', '1.3.0', deps: {'app': '^1.0.1'});
     await ctx.runOutdatedTests();
   });
 

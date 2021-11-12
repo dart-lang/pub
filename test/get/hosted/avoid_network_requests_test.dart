@@ -25,7 +25,7 @@ void main() {
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    globalServer!.requestedPaths.clear();
+    globalServer.requestedPaths.clear();
 
     // Add "bar" to the dependencies.
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
@@ -38,7 +38,7 @@ void main() {
     // The get should not have done any network requests since the lock file is
     // up to date.
     expect(
-        globalServer!.requestedPaths,
+        globalServer.requestedPaths,
         unorderedEquals([
           // Bar should be requested because it's new, but not foo.
           'api/packages/bar',
