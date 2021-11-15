@@ -13,9 +13,8 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     setUp(() async {
-      await servePackages((builder) {
-        builder.serve('bar', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
 
       await d.dir('flutter', [
         d.dir('packages', [

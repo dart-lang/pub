@@ -10,9 +10,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('errors if the script does not exist.', () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0', pubspec: {
-          'dev_dependencies': {'bar': '1.0.0'}
-        }));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'dev_dependencies': {'bar': '1.0.0'}
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 

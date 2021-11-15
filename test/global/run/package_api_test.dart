@@ -10,10 +10,9 @@ import '../../test_pub.dart';
 
 void main() {
   test('an immutable application sees a file: package config', () async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0');
-
-      builder.serve('foo', '1.0.0', deps: {
+    await servePackages()
+      ..serve('bar', '1.0.0')
+      ..serve('foo', '1.0.0', deps: {
         'bar': '1.0.0'
       }, contents: [
         d.dir('bin', [
@@ -31,7 +30,6 @@ main() async {
 """)
         ])
       ]);
-    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 

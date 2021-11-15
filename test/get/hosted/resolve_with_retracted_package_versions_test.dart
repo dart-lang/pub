@@ -114,11 +114,10 @@ void main() {
   });
 
   test('Allow retracted version when pinned in dependency_overrides', () async {
-    final server = await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '3.0.0');
-    });
+    final server = await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '3.0.0');
 
     await d.dir(appPath, [
       d.pubspec({

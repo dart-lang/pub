@@ -12,8 +12,8 @@ import '../../test_pub.dart';
 void main() {
   test('upgrades a locked pub server package with a nonexistent version',
       () async {
-    final builder = await servePackages();
-    builder.serve('foo', '1.0.0');
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
     await pubGet();
@@ -21,8 +21,8 @@ void main() {
 
     deleteEntry(p.join(d.sandbox, cachePath));
 
-    builder.clear();
-    builder.serve('foo', '1.0.1');
+    server.clearPackages();
+    server.serve('foo', '1.0.1');
 
     await pubGet();
     await d.appPackagesFile({'foo': '1.0.1'}).validate();

@@ -14,7 +14,7 @@ void main() {
   setUp(d.validPackage.create);
 
   test('upload form provides an error', () async {
-    await servePackages((_) {});
+    await servePackages();
     await d.credentialsFile(globalServer, 'access token').create();
     var pub = await startPublish(globalServer);
 

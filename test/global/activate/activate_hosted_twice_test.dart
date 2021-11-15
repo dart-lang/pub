@@ -9,8 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test('activating a hosted package twice will not precompile', () async {
-    final builder = await servePackages();
-    builder
+    final server = await servePackages();
+    server
       ..serve('foo', '1.0.0', deps: {
         'bar': 'any'
       }, contents: [
@@ -47,7 +47,7 @@ Activated foo 1.0.0.''');
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    builder.serve('bar', '2.0.0', contents: [
+    server.serve('bar', '2.0.0', contents: [
       d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')])
     ]);
 

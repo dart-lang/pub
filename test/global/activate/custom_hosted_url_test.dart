@@ -9,9 +9,8 @@ import '../../test_pub.dart';
 void main() {
   test('activating a package from a custom pub server', () async {
     // The default pub server (i.e. pub.dartlang.org).
-    await servePackages((builder) {
-      builder.serve('baz', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('baz', '1.0.0');
 
     // The custom pub server.
     final customServer = await startPackageServer();

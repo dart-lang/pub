@@ -48,10 +48,10 @@ void main() {
 
   test('Report retracted packages with newer prerelease version available',
       () async {
-    final server = await servePackages((builder) => builder
+    final server = await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0-pre'})
       ..serve('bar', '1.0.0-pre')
-      ..serve('bar', '2.0.1-pre'));
+      ..serve('bar', '2.0.1-pre');
     await d.appDir({'foo': '1.0.0'}).create();
 
     await pubGet();

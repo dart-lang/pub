@@ -13,10 +13,10 @@ void main() {
   test('unlocks transitive dependencies', () async {
     /// The server used to only have the foo v3.2.1 as the latest,
     /// so pub get will create a pubspec.lock to foo 3.2.1
-    final builder = await servePackages();
+    final server = await servePackages();
 
-    builder.serve('foo', '3.2.1');
-    builder.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
+    server.serve('foo', '3.2.1');
+    server.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
 
     await d.appDir({'bar': '1.0.0'}).create();
     await pubGet();
@@ -24,9 +24,9 @@ void main() {
     /// foo's package creator releases a newer version of foo, and we
     /// want to test that this is what the user gets when they run
     /// pub add foo.
-    builder.serve('foo', '3.5.0');
-    builder.serve('foo', '3.1.0');
-    builder.serve('foo', '2.5.0');
+    server.serve('foo', '3.5.0');
+    server.serve('foo', '3.1.0');
+    server.serve('foo', '2.5.0');
 
     await pubAdd(args: ['foo']);
 
@@ -39,16 +39,16 @@ void main() {
       () async {
     /// The server used to only have the foo v3.2.1 as the latest,
     /// so pub get will create a pubspec.lock to foo 3.2.1
-    final builder = await servePackages();
+    final server = await servePackages();
 
-    builder.serve('foo', '3.2.1');
-    builder.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
+    server.serve('foo', '3.2.1');
+    server.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
 
     await d.appDir({'bar': '1.0.0'}).create();
     await pubGet();
 
-    builder.serve('foo', '4.0.0');
-    builder.serve('foo', '2.0.0');
+    server.serve('foo', '4.0.0');
+    server.serve('foo', '2.0.0');
 
     await pubAdd(args: ['foo']);
 
@@ -61,18 +61,18 @@ void main() {
       () async {
     /// The server used to only have the foo v3.2.1 as the latest,
     /// so pub get will create a pubspec.lock to foo 3.2.1
-    final builder = await servePackages();
+    final server = await servePackages();
 
-    builder.serve('foo', '3.2.1');
-    builder.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
+    server.serve('foo', '3.2.1');
+    server.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
 
     await d.appDir({'bar': '^1.0.0'}).create();
     await pubGet();
 
-    builder.serve('foo', '5.0.0');
-    builder.serve('foo', '4.0.0');
-    builder.serve('foo', '2.0.0');
-    builder.serve('bar', '1.5.0', deps: {'foo': '^4.0.0'});
+    server.serve('foo', '5.0.0');
+    server.serve('foo', '4.0.0');
+    server.serve('foo', '2.0.0');
+    server.serve('bar', '1.5.0', deps: {'foo': '^4.0.0'});
 
     await pubAdd(args: ['foo']);
 

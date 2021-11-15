@@ -14,13 +14,13 @@ import '../../test_pub.dart';
 
 void main() {
   test('Warns about discontinued dependencies', () async {
-    final builder = await servePackages();
-    builder.serve('foo', '1.2.3', deps: {'transitive': 'any'});
-    builder.serve('transitive', '1.0.0');
+    final server = await servePackages();
+    server.serve('foo', '1.2.3', deps: {'transitive': 'any'});
+    server.serve('transitive', '1.0.0');
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
 
-    builder
+    server
       ..discontinue('foo')
       ..discontinue('transitive');
     // A pub get straight away will not trigger the warning, as we cache
@@ -47,7 +47,7 @@ Got dependencies!
         DateTime.now().subtract(Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
 
-    builder.discontinue('foo', replacementText: 'bar');
+    server.discontinue('foo', replacementText: 'bar');
 
     await pubGet(output: '''
 Resolving dependencies...
@@ -68,7 +68,7 @@ Resolving dependencies...
 Got dependencies!''');
     // Test that --offline won't try to access the server for retrieving the
     // status.
-    builder.serveErrors();
+    server.serveErrors();
     await pubGet(args: ['--offline'], output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
@@ -155,7 +155,8 @@ Got dependencies!
   });
 
   test('get does not fail when status listing fails', () async {
-    await servePackages((builder) => builder..serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
     await d.appDir({'foo': '1.2.3'}).create();
     await pubGet();
     final fooVersionsCache =

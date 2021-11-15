@@ -12,10 +12,12 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(() => servePackages((b) => b.serve('foo', '1.2.3', pubspec: {
-        'environment': {'sdk': '^2.0.0'}
-      })));
-
+  setUp(() async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3', pubspec: {
+      'environment': {'sdk': '^2.0.0'}
+    });
+  });
   forBothPubGetAndUpgrade((command) {
     Future<void> testWith(dynamic dependency) async {
       await d.dir(appPath, [

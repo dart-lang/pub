@@ -17,7 +17,8 @@ void main() {
     test(
         'fails gracefully if the package server responds with broken package listings',
         () async {
-      final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
       server.expect(
         'GET',
         RegExp('/api/packages/.*'),
@@ -41,7 +42,8 @@ void main() {
   });
 
   testWithGolden('bad_json', (ctx) async {
-    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(200,
           body: jsonEncode({
@@ -54,7 +56,8 @@ void main() {
   });
 
   testWithGolden('403', (ctx) async {
-    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(403,
           body: jsonEncode({
@@ -67,7 +70,8 @@ void main() {
   });
 
   testWithGolden('401', (ctx) async {
-    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(401,
           body: jsonEncode({
@@ -80,7 +84,8 @@ void main() {
   });
 
   testWithGolden('403-with-message', (ctx) async {
-    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(403,
           headers: {
@@ -96,7 +101,8 @@ void main() {
   });
 
   testWithGolden('401-with-message', (ctx) async {
-    final server = await servePackages((b) => b..serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
       return Response(401,
           headers: {

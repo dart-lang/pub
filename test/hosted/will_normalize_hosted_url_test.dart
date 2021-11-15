@@ -13,7 +13,8 @@ import '../test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('does not require slash on bare domain', () async {
-      await servePackages((b) => b..serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
       // All the tests in this file assumes that [globalServer.url]
       // will be on the form:
       //   http://localhost:<port>
@@ -35,7 +36,8 @@ void main() {
     });
 
     test('normalizes extra slash', () async {
-      await servePackages((b) => b..serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
         d.appPubspec({
@@ -52,7 +54,8 @@ void main() {
     });
 
     test('cannot normalize double slash', () async {
-      await servePackages((b) => b..serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
       globalServer.expect(
         'GET',
         '//api/packages/foo',
@@ -97,7 +100,8 @@ void main() {
     }
 
     test('will use normalized url with path', () async {
-      await servePackages((b) => b..serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
       _proxyMyFolderToRoot();
 
       // testing with a normalized URL
@@ -120,7 +124,8 @@ void main() {
     });
 
     test('will normalize url with path by adding slash', () async {
-      await servePackages((b) => b..serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
       _proxyMyFolderToRoot();
 
       // Testing with a URL that is missing the slash.

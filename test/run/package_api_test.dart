@@ -49,11 +49,10 @@ void main() {
   });
 
   test('a snapshotted application sees a file: package root', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('script.dart', _script)])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('script.dart', _script)])
+    ]);
 
     await d.dir(appPath, [
       d.appPubspec({'foo': 'any'})

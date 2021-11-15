@@ -954,11 +954,9 @@ PackageServer? _globalServer;
 ///
 /// Calls [callback] with a [PackageServerBuilder] that's used to specify
 /// which packages to serve.
-Future<PackageServer> servePackages(
-    [void Function(PackageServer)? builderCallback]) async {
+Future<PackageServer> servePackages() async {
   final server = await startPackageServer();
   _globalServer = server;
-  builderCallback?.call(server);
 
   addTearDown(() {
     _globalServer = null;

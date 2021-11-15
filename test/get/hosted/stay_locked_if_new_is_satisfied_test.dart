@@ -11,10 +11,10 @@ void main() {
   test(
       "doesn't unlock dependencies if a new dependency is already "
       'satisfied', () async {
-    final builder = await servePackages();
-    builder.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
-    builder.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
-    builder.serve('baz', '1.0.0');
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
+    server.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
+    server.serve('baz', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
 
@@ -23,10 +23,10 @@ void main() {
     await d.appPackagesFile(
         {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'}).validate();
 
-    builder.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
-    builder.serve('bar', '2.0.0', deps: {'baz': '<3.0.0'});
-    builder.serve('baz', '2.0.0');
-    builder.serve('newdep', '2.0.0', deps: {'baz': '>=1.0.0'});
+    server.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
+    server.serve('bar', '2.0.0', deps: {'baz': '<3.0.0'});
+    server.serve('baz', '2.0.0');
+    server.serve('newdep', '2.0.0', deps: {'baz': '>=1.0.0'});
 
     await d.appDir({'foo': 'any', 'newdep': 'any'}).create();
 

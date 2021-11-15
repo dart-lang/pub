@@ -11,10 +11,9 @@ import '../../test_pub.dart';
 void main() {
   test('handles failure to reinstall some packages', () async {
     // Only serve two packages so repairing will have a failure.
-    final server = await servePackages((builder) {
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '1.2.5');
-    });
+    final server = await servePackages()
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '1.2.5');
 
     // Set up a cache with some packages.
     await d.dir(cachePath, [

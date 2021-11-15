@@ -13,7 +13,8 @@ import '../../test_pub.dart';
 
 void main() {
   test('gets a package from a pub server', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({'foo': '1.2.3'}).create();
 
@@ -60,14 +61,15 @@ void main() {
   });
 
   group('categorizes dependency types in the lockfile', () {
-    setUp(() => servePackages((builder) {
-          builder.serve('foo', '1.2.3', deps: {'bar': 'any'});
-          builder.serve('bar', '1.2.3');
-          builder.serve('baz', '1.2.3', deps: {'qux': 'any'});
-          builder.serve('qux', '1.2.3');
-          builder.serve('zip', '1.2.3', deps: {'zap': 'any'});
-          builder.serve('zap', '1.2.3');
-        }));
+    setUp(() async {
+      await servePackages()
+        ..serve('foo', '1.2.3', deps: {'bar': 'any'})
+        ..serve('bar', '1.2.3')
+        ..serve('baz', '1.2.3', deps: {'qux': 'any'})
+        ..serve('qux', '1.2.3')
+        ..serve('zip', '1.2.3', deps: {'zap': 'any'})
+        ..serve('zap', '1.2.3');
+    });
 
     test('for main, dev, and overridden dependencies', () async {
       await d.dir(appPath, [

@@ -9,8 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test('does not request a pubspec for a cached package', () async {
-    final server =
-        await servePackages((builder) => builder.serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({'foo': '1.2.3'}).create();
 

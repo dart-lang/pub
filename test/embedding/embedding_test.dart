@@ -111,9 +111,9 @@ main() {
   });
 
   test('analytics', () async {
-    await servePackages((b) => b
+    await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
-      ..serve('bar', '1.0.0'));
+      ..serve('bar', '1.0.0');
     await d.dir('dep', [
       d.pubspec({
         'name': 'dep',

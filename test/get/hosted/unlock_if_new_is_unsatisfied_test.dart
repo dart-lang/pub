@@ -11,12 +11,12 @@ void main() {
   test(
       'unlocks dependencies if necessary to ensure that a new '
       'dependency is satisfied', () async {
-    final builder = await servePackages();
+    final server = await servePackages();
 
-    builder.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
-    builder.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
-    builder.serve('baz', '1.0.0', deps: {'qux': '<2.0.0'});
-    builder.serve('qux', '1.0.0');
+    server.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
+    server.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
+    server.serve('baz', '1.0.0', deps: {'qux': '<2.0.0'});
+    server.serve('qux', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
 
@@ -29,11 +29,11 @@ void main() {
       'qux': '1.0.0'
     }).validate();
 
-    builder.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
-    builder.serve('bar', '2.0.0', deps: {'baz': '<3.0.0'});
-    builder.serve('baz', '2.0.0', deps: {'qux': '<3.0.0'});
-    builder.serve('qux', '2.0.0');
-    builder.serve('newdep', '2.0.0', deps: {'baz': '>=1.5.0'});
+    server.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
+    server.serve('bar', '2.0.0', deps: {'baz': '<3.0.0'});
+    server.serve('baz', '2.0.0', deps: {'qux': '<3.0.0'});
+    server.serve('qux', '2.0.0');
+    server.serve('newdep', '2.0.0', deps: {'baz': '>=1.5.0'});
 
     await d.appDir({'foo': 'any', 'newdep': 'any'}).create();
 
