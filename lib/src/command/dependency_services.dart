@@ -239,8 +239,9 @@ class DependencyServicesListCommand extends PubCommand {
   Future<void> runProtected() async {
     final pubspec = entrypoint.root.pubspec;
 
-    // This list will be empty if there is no lock file.
-    final currentPackages = entrypoint.lockFile.packages.values;
+    final currentPackages = fileExists(entrypoint.lockFilePath)
+        ? entrypoint.lockFile.packages.values.toList()
+        : (await _tryResolve(pubspec, cache) ?? <PackageId>[]);
 
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
