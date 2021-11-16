@@ -113,16 +113,18 @@ class DependencyServicesReportCommand extends PubCommand {
               r.version != originalVersion.version;
         }).map((p) {
           final depset = dependencySetOfPackage(rootPubspec, p);
-          final constraint = depset?[p.name];
+          final originalConstraint = depset?[p.name]?.constraint;
           return {
             'name': p.name,
             'version': p.version.toString(),
             'kind': _kindString(pubspec, p.name),
-            'constraint': constraint == null
+            'constraint': originalConstraint == null
                 ? null
                 : upgradeType == UpgradeType.compatible
-                    ? constraint.constraint.toString()
+                    ? originalConstraint.toString()
                     : VersionConstraint.compatibleWith(p.version).toString(),
+            'previousVersion': currentPackages[p.name]?.version.toString(),
+            'previousConstraint': originalConstraint?.toString(),
           };
         }),
         for (final oldPackageName in lockFile.packages.keys)
@@ -134,6 +136,9 @@ class DependencyServicesReportCommand extends PubCommand {
               'kind':
                   'transitive', // Only transitive constraints can be removed.
               'constraint': null,
+              'previousVersion':
+                  currentPackages[oldPackageName]?.version.toString(),
+              'previousConstraint': null,
             },
       ];
     }
