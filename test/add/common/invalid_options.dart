@@ -76,7 +76,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await PackageServer.start();
+    final server = await startPackageServer();
     server.serve('foo', '1.2.3');
 
     ensureGit();

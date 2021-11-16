@@ -15,6 +15,7 @@ import 'descriptor/git.dart';
 import 'descriptor/packages.dart';
 import 'descriptor/tar.dart';
 import 'descriptor/yaml.dart';
+import 'package_server.dart';
 import 'test_pub.dart';
 
 export 'package:test_descriptor/test_descriptor.dart';
