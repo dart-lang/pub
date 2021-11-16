@@ -56,19 +56,23 @@ $ dependency_services report
       "latest": "2.0.0",
       "constraint": "^1.0.0",
       "compatible": [],
-      "single-breaking": [],
-      "multi-breaking": [
+      "singleBreaking": [],
+      "multiBreaking": [
         {
           "name": "bar",
           "version": "2.0.0",
           "kind": "direct",
-          "constraint": "^2.0.0"
+          "constraint": "^2.0.0",
+          "previousVersion": "1.0.0",
+          "previousConstraint": "^1.0.0"
         },
         {
           "name": "foo",
           "version": "3.0.0",
           "kind": "direct",
-          "constraint": "^3.0.0"
+          "constraint": "^3.0.0",
+          "previousVersion": "1.0.0",
+          "previousConstraint": "^1.0.0"
         }
       ]
     },
@@ -83,29 +87,37 @@ $ dependency_services report
           "name": "foo",
           "version": "2.0.0",
           "kind": "direct",
-          "constraint": "^1.0.0"
+          "constraint": "^1.0.0",
+          "previousVersion": "1.0.0",
+          "previousConstraint": "^1.0.0"
         }
       ],
-      "single-breaking": [
+      "singleBreaking": [
         {
           "name": "foo",
           "version": "2.0.0",
           "kind": "direct",
-          "constraint": "^2.0.0"
+          "constraint": "^2.0.0",
+          "previousVersion": "1.0.0",
+          "previousConstraint": "^1.0.0"
         }
       ],
-      "multi-breaking": [
+      "multiBreaking": [
         {
           "name": "foo",
           "version": "3.0.0",
           "kind": "direct",
-          "constraint": "^3.0.0"
+          "constraint": "^3.0.0",
+          "previousVersion": "1.0.0",
+          "previousConstraint": "^1.0.0"
         },
         {
           "name": "bar",
           "version": "2.0.0",
           "kind": "direct",
-          "constraint": "^2.0.0"
+          "constraint": "^2.0.0",
+          "previousVersion": "1.0.0",
+          "previousConstraint": "^1.0.0"
         }
       ]
     }

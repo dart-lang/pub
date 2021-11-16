@@ -43,32 +43,40 @@ $ dependency_services report
       "latest": "2.2.3",
       "constraint": "^1.0.0",
       "compatible": [],
-      "single-breaking": [
+      "singleBreaking": [
         {
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": "^2.2.3"
+          "constraint": "^2.2.3",
+          "previousVersion": "1.2.3",
+          "previousConstraint": "^1.0.0"
         },
         {
           "name": "transitive",
           "version": "1.0.0",
           "kind": "transitive",
-          "constraint": null
+          "constraint": null,
+          "previousVersion": null,
+          "previousConstraint": null
         }
       ],
-      "multi-breaking": [
+      "multiBreaking": [
         {
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": "^2.2.3"
+          "constraint": "^2.2.3",
+          "previousVersion": "1.2.3",
+          "previousConstraint": "^1.0.0"
         },
         {
           "name": "transitive",
           "version": "1.0.0",
           "kind": "transitive",
-          "constraint": null
+          "constraint": null,
+          "previousVersion": null,
+          "previousConstraint": null
         }
       ]
     }

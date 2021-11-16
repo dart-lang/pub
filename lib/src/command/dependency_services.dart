@@ -179,11 +179,11 @@ class DependencyServicesReportCommand extends PubCommand {
           'compatible': await _computeUpgradeSet(
               compatiblePubspec, compatibleVersion,
               upgradeType: UpgradeType.compatible),
-        'single-breaking': kind != 'transitive' && singleBreakingVersion == null
+        'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
             ? []
             : await _computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
                 upgradeType: UpgradeType.singleBreaking),
-        'multi-breaking': kind != 'transitive' && multiBreakingVersion != null
+        'multiBreaking': kind != 'transitive' && multiBreakingVersion != null
             ? await _computeUpgradeSet(compatiblePubspec, multiBreakingVersion,
                 upgradeType: UpgradeType.multiBreaking)
             : [],
