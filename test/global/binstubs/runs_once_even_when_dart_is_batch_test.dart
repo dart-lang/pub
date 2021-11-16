@@ -14,18 +14,17 @@ void main() {
   test(
       'runs only once even when dart on path is a batch file (as in flutter/bin)',
       () async {
-    await servePackages((builder) {
-      builder.serve(
-        'foo',
-        '1.0.0',
-        contents: [
-          d.dir('bin', [d.file('script.dart', 'main(args) => print(args);')]),
-        ],
-        pubspec: {
-          'executables': {'script': 'script'},
-        },
-      );
-    });
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('script.dart', 'main(args) => print(args);')]),
+      ],
+      pubspec: {
+        'executables': {'script': 'script'},
+      },
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 

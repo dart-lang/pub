@@ -13,7 +13,8 @@ void main() {
   test(
       'keeps a hosted package locked to the version in the '
       'lockfile', () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
 
@@ -26,7 +27,7 @@ void main() {
     deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     // Start serving a newer package as well.
-    globalPackageServer.add((builder) => builder.serve('foo', '1.0.1'));
+    server.serve('foo', '1.0.1');
 
     // This shouldn't upgrade the foo dependency due to the lockfile.
     await pubGet();

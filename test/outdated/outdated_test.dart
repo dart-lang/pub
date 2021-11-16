@@ -45,10 +45,10 @@ Future<void> main() async {
 
   testWithGolden('no lockfile', (ctx) async {
     await d.appDir({'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
-    await servePackages((builder) => builder
+    await servePackages()
       ..serve('foo', '1.2.3')
       ..serve('bar', '1.2.3')
-      ..serve('bar', '2.0.0'));
+      ..serve('bar', '2.0.0');
 
     await ctx.runOutdatedTests();
   });
@@ -61,7 +61,8 @@ Future<void> main() async {
   });
 
   testWithGolden('newer versions available', (ctx) async {
-    await servePackages((builder) => builder
+    final builder = await servePackages();
+    builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.0.0')
       ..serve('builder', '1.2.3', deps: {
@@ -69,7 +70,7 @@ Future<void> main() async {
         'dev_trans': '^1.0.0',
       })
       ..serve('transitive', '1.2.3')
-      ..serve('dev_trans', '1.0.0'));
+      ..serve('dev_trans', '1.0.0');
 
     await d.dir('local_package', [
       d.libDir('local_package'),
@@ -88,7 +89,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    globalPackageServer.add((builder) => builder
+    builder
       ..serve('foo', '1.3.0', deps: {'transitive': '>=1.0.0<3.0.0'})
       ..serve('foo', '2.0.0',
           deps: {'transitive': '>=1.0.0<3.0.0', 'transitive2': '^1.0.0'})
@@ -104,15 +105,13 @@ Future<void> main() async {
       ..serve('transitive', '2.0.0')
       ..serve('transitive2', '1.0.0')
       ..serve('transitive3', '1.0.0')
-      ..serve('dev_trans', '2.0.0'));
-
+      ..serve('dev_trans', '2.0.0');
     await ctx.runOutdatedTests();
   });
 
   testWithGolden('circular dependency on root', (ctx) async {
-    await servePackages(
-      (builder) => builder..serve('foo', '1.2.3', deps: {'app': '^1.0.0'}),
-    );
+    final server = await servePackages();
+    server.serve('foo', '1.2.3', deps: {'app': '^1.0.0'});
 
     await d.dir(appPath, [
       d.pubspec({
@@ -126,10 +125,7 @@ Future<void> main() async {
 
     await pubGet();
 
-    globalPackageServer.add(
-      (builder) => builder..serve('foo', '1.3.0', deps: {'app': '^1.0.1'}),
-    );
-
+    server.serve('foo', '1.3.0', deps: {'app': '^1.0.1'});
     await ctx.runOutdatedTests();
   });
 
@@ -145,11 +141,11 @@ Future<void> main() async {
       })
     ]).create();
 
-    await servePackages((builder) => builder
+    await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
       ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
-      ..serve('bar', '2.0.0', deps: {'foo': '^1.0.0'}));
+      ..serve('bar', '2.0.0', deps: {'foo': '^1.0.0'});
     await pubGet();
 
     await ctx.runOutdatedTests();
@@ -172,62 +168,60 @@ Future<void> main() async {
       }),
     ]).create();
 
-    await servePackages(
-      (builder) => builder
-        ..serve('foo', '1.0.0', deps: {
-          'bar': '^1.0.0'
-        }, pubspec: {
-          'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-        })
-        ..serve('bar', '1.0.0', pubspec: {
-          'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-        })
-        ..serve('foo', '2.0.0-nullsafety.0', deps: {
-          'bar': '^2.0.0'
-        }, pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-        })
-        ..serve('foo', '2.0.0', deps: {
-          'bar': '^1.0.0'
-        }, pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-        })
-        ..serve('bar', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.13.0 < 3.0.0'}
-        })
-        ..serve('file_opts_out', '1.0.0', pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        }, contents: [
-          d.dir('lib', [d.file('main.dart', '// @dart = 2.9\n')])
-        ])
-        ..serve('file_opts_out', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        })
-        ..serve('fails_analysis', '1.0.0', pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        }, contents: [
-          d.dir('lib', [d.file('main.dart', 'syntax error\n')])
-        ])
-        ..serve('fails_analysis', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        })
-        ..serve('file_in_dependency_opts_out', '1.0.0', deps: {
-          'file_opts_out': '^1.0.0'
-        }, pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        })
-        ..serve('file_in_dependency_opts_out', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        })
-        ..serve('fails_analysis_in_dependency', '1.0.0', deps: {
-          'fails_analysis': '^1.0.0'
-        }, pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        })
-        ..serve('fails_analysis_in_dependency', '2.0.0', pubspec: {
-          'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-        }),
-    );
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {
+        'bar': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('bar', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+      })
+      ..serve('foo', '2.0.0-nullsafety.0', deps: {
+        'bar': '^2.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      })
+      ..serve('foo', '2.0.0', deps: {
+        'bar': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
+      })
+      ..serve('bar', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.13.0 < 3.0.0'}
+      })
+      ..serve('file_opts_out', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      }, contents: [
+        d.dir('lib', [d.file('main.dart', '// @dart = 2.9\n')])
+      ])
+      ..serve('file_opts_out', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      })
+      ..serve('fails_analysis', '1.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      }, contents: [
+        d.dir('lib', [d.file('main.dart', 'syntax error\n')])
+      ])
+      ..serve('fails_analysis', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      })
+      ..serve('file_in_dependency_opts_out', '1.0.0', deps: {
+        'file_opts_out': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      })
+      ..serve('file_in_dependency_opts_out', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      })
+      ..serve('fails_analysis_in_dependency', '1.0.0', deps: {
+        'fails_analysis': '^1.0.0'
+      }, pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      })
+      ..serve('fails_analysis_in_dependency', '2.0.0', pubspec: {
+        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+      });
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
 
     await ctx.runOutdatedTests(environment: {
@@ -236,7 +230,7 @@ Future<void> main() async {
   });
 
   testWithGolden('null-safety no resolution', (ctx) async {
-    await servePackages((builder) => builder
+    await servePackages()
       ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.9.0 < 3.0.0'}
       })
@@ -252,7 +246,7 @@ Future<void> main() async {
         'foo': '^1.0.0'
       }, pubspec: {
         'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-      }));
+      });
 
     await d.dir(appPath, [
       d.pubspec({
@@ -274,7 +268,7 @@ Future<void> main() async {
   });
 
   testWithGolden('null-safety already migrated', (ctx) async {
-    await servePackages((builder) => builder
+    await servePackages()
       ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.9.0 < 3.0.0'}
       })
@@ -291,7 +285,7 @@ Future<void> main() async {
       })
       ..serve('devTransitive', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-      }));
+      });
 
     await d.dir(appPath, [
       d.pubspec({
@@ -316,15 +310,13 @@ Future<void> main() async {
 
   testWithGolden('overridden dependencies', (ctx) async {
     ensureGit();
-    await servePackages(
-      (builder) => builder
-        ..serve('foo', '1.0.0')
-        ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
-        ..serve('bar', '1.0.0')
-        ..serve('bar', '2.0.0')
-        ..serve('baz', '1.0.0')
-        ..serve('baz', '2.0.0'),
-    );
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '2.0.0')
+      ..serve('baz', '1.0.0')
+      ..serve('baz', '2.0.0');
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.1'),
@@ -360,13 +352,11 @@ Future<void> main() async {
 
   testWithGolden('overridden dependencies - no resolution', (ctx) async {
     ensureGit();
-    await servePackages(
-      (builder) => builder
-        ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
-        ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
-        ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
-        ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'}),
-    );
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
+      ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
+      ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
+      ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'});
 
     await d.dir(appPath, [
       d.pubspec({
@@ -391,7 +381,7 @@ Future<void> main() async {
   testWithGolden(
       'latest version reported while locked on a prerelease can be a prerelease',
       (ctx) async {
-    await servePackages((builder) => builder
+    await servePackages()
       ..serve('foo', '0.9.0')
       ..serve('foo', '1.0.0-dev.1')
       ..serve('foo', '1.0.0-dev.2')
@@ -400,7 +390,7 @@ Future<void> main() async {
       ..serve('bar', '1.0.0-dev.2')
       ..serve('mop', '0.10.0-dev')
       ..serve('mop', '0.10.0')
-      ..serve('mop', '1.0.0-dev'));
+      ..serve('mop', '1.0.0-dev');
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
@@ -419,7 +409,7 @@ Future<void> main() async {
   });
 
   testWithGolden('Handles SDK dependencies', (ctx) async {
-    await servePackages((builder) => builder
+    await servePackages()
       ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.10.0 <3.0.0'}
       })
@@ -428,7 +418,7 @@ Future<void> main() async {
       })
       ..serve('foo', '2.0.0', pubspec: {
         'environment': {'sdk': '>=2.12.0 <3.0.0'}
-      }));
+      });
 
     await d.dir('flutter-root', [
       d.file('version', '1.2.3'),

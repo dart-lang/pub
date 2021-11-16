@@ -12,13 +12,12 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('.packages file is created', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])]);
-        builder.serve('bar', '3.2.1', contents: [d.dir('lib', [])]);
-        builder.serve('baz', '2.2.2',
+      await servePackages()
+        ..serve('foo', '1.2.3',
+            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
+        ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
+        ..serve('baz', '2.2.2',
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
-      });
 
       await d.dir(appPath, [
         d.appPubspec({'foo': '1.2.3'}),
@@ -34,13 +33,12 @@ void main() {
     });
 
     test('.packages file is overwritten', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])]);
-        builder.serve('bar', '3.2.1', contents: [d.dir('lib', [])]);
-        builder.serve('baz', '2.2.2',
+      await servePackages()
+        ..serve('foo', '1.2.3',
+            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
+        ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
+        ..serve('baz', '2.2.2',
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
-      });
 
       await d.dir(appPath, [
         d.appPubspec({'foo': '1.2.3'}),
@@ -79,11 +77,10 @@ void main() {
     });
 
     test('.packages file has relative path to path dependency', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3',
-            deps: {'baz': 'any'}, contents: [d.dir('lib', [])]);
-        builder.serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
-      });
+      await servePackages()
+        ..serve('foo', '1.2.3',
+            deps: {'baz': 'any'}, contents: [d.dir('lib', [])])
+        ..serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
 
       await d.dir('local_baz', [
         d.libDir('baz', 'baz 3.2.1'),

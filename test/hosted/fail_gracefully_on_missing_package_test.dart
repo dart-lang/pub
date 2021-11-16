@@ -11,7 +11,7 @@ import '../test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully if the package does not exist', () async {
-      await serveNoPackages();
+      await servePackages();
 
       await d.appDir({'foo': '1.2.3'}).create();
 

@@ -8,10 +8,9 @@ import '../test_pub.dart';
 
 void main() {
   test('The upgrade report handles a package becoming root', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'myapp': 'any'});
-      builder.serve('myapp', '1.0.0', deps: {'foo': 'any'});
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'myapp': 'any'})
+      ..serve('myapp', '1.0.0', deps: {'foo': 'any'});
 
     await d.dir(appPath, [
       d.pubspec({

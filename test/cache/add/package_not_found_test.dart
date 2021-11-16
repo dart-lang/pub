@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('fails if the package cound not be found on the source', () async {
-    await serveNoPackages();
+    await servePackages();
 
     await runPub(
         args: ['cache', 'add', 'foo'],

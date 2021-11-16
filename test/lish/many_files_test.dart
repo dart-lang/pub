@@ -73,14 +73,14 @@ void main() {
     }
 
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer);
-    handleUpload(globalPackageServer);
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
 
-    globalPackageServer.expect('GET', '/create', (request) {
+    globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
