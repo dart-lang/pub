@@ -951,9 +951,6 @@ PackageServer? _globalServer;
 
 /// Creates an HTTP server that replicates the structure of pub.dartlang.org and
 /// makes it the current [globalServer].
-///
-/// Calls [callback] with a [PackageServerBuilder] that's used to specify
-/// which packages to serve.
 Future<PackageServer> servePackages() async {
   final server = await startPackageServer();
   _globalServer = server;
