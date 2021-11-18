@@ -11,7 +11,6 @@ void main() {
   test('the character before each package describes the change', () async {
     await servePackages()
       ..serve('added', '1.0.0')
-      ..serve('added', '1.0.0')
       ..serve('downgraded', '1.0.0')
       ..serve('downgraded', '2.0.0')
       ..serve('overridden', '1.0.0')
