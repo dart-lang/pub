@@ -13,7 +13,6 @@ void main() {
       () async {
     await servePackages()
       ..serve('not_upgraded', '1.0.0')
-      ..serve('not_upgraded', '1.0.0')
       ..serve('not_upgraded', '2.0.0')
       ..serve('not_upgraded', '3.0.0-dev')
       ..serve('upgraded', '1.0.0')
