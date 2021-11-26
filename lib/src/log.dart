@@ -170,6 +170,16 @@ class Verbosity {
     Level.fine: _logToStderrWithLabel
   });
 
+  /// Shows all logs.
+  static const testing = Verbosity._('testing', {
+    Level.error: _logToStderrWithLabel,
+    Level.warning: _logToStderrWithLabel,
+    Level.message: _logToStdoutWithLabel,
+    Level.io: _logToStderrWithLabel,
+    Level.solver: _logToStderrWithLabel,
+    Level.fine: _logToStderrWithLabel
+  });
+
   const Verbosity._(this.name, this._loggers);
 
   final String name;

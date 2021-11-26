@@ -72,6 +72,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
       default:
         // No specific verbosity given, so check for the shortcut.
         if (argResults['verbose']) return log.Verbosity.all;
+        if (runningFromTest) return log.Verbosity.testing;
         return log.Verbosity.normal;
     }
   }
