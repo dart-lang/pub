@@ -131,9 +131,10 @@ main() {
         File(logFile).readAsStringSync(),
       ),
     );
+    await d.dir('empty').create();
     await context.runEmbedding(
       ['pub', 'fail'],
-      workingDirectory: d.path(appPath),
+      workingDirectory: d.path('empty'),
       exitCode: 1,
     );
     context.expectNextSection(
