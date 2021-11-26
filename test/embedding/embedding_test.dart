@@ -55,7 +55,7 @@ extension on GoldenTestContext {
   /// next section in golden file.
   Future<void> runEmbedding(
     List<String> args, {
-    String? workingDirextory,
+    String? workingDirectory,
     Map<String, String>? environment,
     dynamic exitCode = 0,
   }) async {
@@ -63,7 +63,7 @@ extension on GoldenTestContext {
     await runEmbeddingToBuffer(
       args,
       buffer,
-      workingDirectory: workingDirextory,
+      workingDirectory: workingDirectory,
       environment: environment,
       exitCode: exitCode,
     );
@@ -106,12 +106,12 @@ main() {
     ]).create();
     await ctx.runEmbedding(
       ['pub', 'get'],
-      workingDirextory: d.path(appPath),
+      workingDirectory: d.path(appPath),
     );
     await ctx.runEmbedding(
       ['pub', 'run', 'bin/main.dart'],
       exitCode: 123,
-      workingDirextory: d.path(appPath),
+      workingDirectory: d.path(appPath),
     );
   });
 
@@ -124,14 +124,18 @@ main() {
 
     await context.runEmbedding(
       ['pub', '--verbose', 'get'],
-      workingDirextory: d.path(appPath),
+      workingDirectory: d.path(appPath),
     );
     context.expectNextSection(
       _filter(
         File(logFile).readAsStringSync(),
       ),
     );
-    await context.runEmbedding(['pub', 'fail'], exitCode: 1);
+    await context.runEmbedding(
+      ['pub', 'fail'],
+      workingDirectory: app.io.path,
+      exitCode: 1,
+    );
     context.expectNextSection(
       _filter(
         File(logFile).readAsStringSync(),
