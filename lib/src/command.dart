@@ -226,7 +226,7 @@ and attaching the relevant parts of that log file.
           e,
         );
 
-        if (verbose) {
+        if (!crashed) {
           log.message('Logs written to $transcriptPath.');
         }
       }
