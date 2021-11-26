@@ -291,5 +291,10 @@ String _filter(String input) {
       .replaceAll(
         RegExp(r'"generated": "(.*)",$', multiLine: true),
         r'"generated": "$TIME",',
+      )
+      .replaceAll(
+        RegExp(r' /(.*)tool/test-bin/pub_command_runner.dart ',
+            multiLine: true),
+        r' tool/test-bin/pub_command_runner.dart ',
       );
 }
