@@ -14,7 +14,7 @@ import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-const _command_runner = 'tool/test-bin/pub_command_runner.dart';
+const _commandRunner = 'tool/test-bin/pub_command_runner.dart';
 
 late String snapshot;
 
@@ -38,7 +38,7 @@ Future<void> runEmbeddingToBuffer(
   await process.shouldExit(exitCode);
 
   buffer.writeln([
-    '\$ $_command_runner ${args.join(' ')}',
+    '\$ $_commandRunner ${args.join(' ')}',
     ...await process.stdout.rest.toList(),
   ].join('\n'));
   final stdErr = await process.stderr.rest.toList();
@@ -75,7 +75,7 @@ Future<void> main() async {
     final tempDir = Directory.systemTemp.createTempSync();
     snapshot = path.join(tempDir.path, 'command_runner.dart.snapshot');
     final r = Process.runSync(
-        Platform.resolvedExecutable, ['--snapshot=$snapshot', _command_runner]);
+        Platform.resolvedExecutable, ['--snapshot=$snapshot', _commandRunner]);
     expect(r.exitCode, 0, reason: r.stderr);
   });
 
@@ -124,9 +124,9 @@ main() {
   });
 
   test('analytics', () async {
-    await servePackages((b) => b
+    await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
-      ..serve('bar', '1.0.0'));
+      ..serve('bar', '1.0.0');
     await d.dir('dep', [
       d.pubspec({
         'name': 'dep',

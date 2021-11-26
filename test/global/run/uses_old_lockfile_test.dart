@@ -9,9 +9,9 @@ import '../../test_pub.dart';
 
 void main() {
   test('uses the 1.6-style lockfile if necessary', () async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0');
-      builder.serve('foo', '1.0.0', deps: {
+    await servePackages()
+      ..serve('bar', '1.0.0')
+      ..serve('foo', '1.0.0', deps: {
         'bar': 'any'
       }, contents: [
         d.dir('bin', [
@@ -21,7 +21,6 @@ void main() {
               main(args) => print(bar.main());""")
         ])
       ]);
-    });
 
     await runPub(args: ['cache', 'add', 'foo']);
     await runPub(args: ['cache', 'add', 'bar']);

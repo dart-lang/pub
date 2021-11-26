@@ -9,11 +9,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('activating a hosted package deactivates the Git one', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '2.0.0', contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '2.0.0', contents: [
+      d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+    ]);
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),

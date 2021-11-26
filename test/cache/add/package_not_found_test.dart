@@ -9,12 +9,13 @@ import '../../test_pub.dart';
 
 void main() {
   test('fails if the package cound not be found on the source', () async {
-    await serveNoPackages();
+    await servePackages();
 
     await runPub(
         args: ['cache', 'add', 'foo'],
-        error: RegExp(r"Package doesn't exist \(could not find package foo at "
-            r'http://.*\)\.'),
+        error: RegExp(
+          r'Package not available \(could not find package foo at http://.*\)\.',
+        ),
         exitCode: exit_codes.UNAVAILABLE);
   });
 }

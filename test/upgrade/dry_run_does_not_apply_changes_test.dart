@@ -11,10 +11,9 @@ import '../test_pub.dart';
 
 void main() {
   test('--dry-run: shows report, changes nothing', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0');
 
     // Create the first lockfile.
     await d.appDir({'foo': '1.0.0'}).create();
@@ -50,10 +49,9 @@ void main() {
   });
 
   test('--dry-run --major-versions: shows report, changes nothing', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0');
 
     await d.appDir({'foo': '^1.0.0'}).create();
 

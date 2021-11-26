@@ -111,7 +111,7 @@ class AddCommand extends PubCommand {
       /// that a resolution exists before we update pubspec.yaml.
       // TODO(sigurdm): We should really use a spinner here.
       solveResult = await resolveVersions(
-          SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec));
+          SolveType.upgrade, cache, Package.inMemory(updatedPubSpec));
     } on GitException {
       dataError('Unable to resolve package "${package.name}" with the given '
           'git parameters.');
@@ -149,7 +149,7 @@ class AddCommand extends PubCommand {
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
               solveResult: solveResult)
-          .acquireDependencies(SolveType.GET,
+          .acquireDependencies(SolveType.get,
               dryRun: true,
               precompile: argResults['precompile'],
               analytics: analytics);
@@ -164,14 +164,14 @@ class AddCommand extends PubCommand {
       /// pubspec file.
       final updatedEntrypoint = Entrypoint(directory, cache);
       await updatedEntrypoint.acquireDependencies(
-        SolveType.GET,
+        SolveType.get,
         precompile: argResults['precompile'],
         analytics: analytics,
       );
 
       if (argResults['example'] && entrypoint.example != null) {
         await entrypoint.example!.acquireDependencies(
-          SolveType.GET,
+          SolveType.get,
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
           analytics: analytics,

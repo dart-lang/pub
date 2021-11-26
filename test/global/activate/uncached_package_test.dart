@@ -9,17 +9,16 @@ import '../../test_pub.dart';
 
 void main() {
   test('installs and activates the best version of a package', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+    await servePackages()
+      ..serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi");')])
+      ])
+      ..serve('foo', '1.2.3', contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi 1.2.3");')])
+      ])
+      ..serve('foo', '2.0.0-wildly.unstable', contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi unstable");')])
       ]);
-      builder.serve('foo', '1.2.3', contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi 1.2.3"); ')])
-      ]);
-      builder.serve('foo', '2.0.0-wildly.unstable', contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi unstable"); ')])
-      ]);
-    });
 
     await runPub(args: ['global', 'activate', 'foo'], output: '''
         Resolving dependencies...

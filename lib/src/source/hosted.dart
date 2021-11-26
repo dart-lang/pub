@@ -10,7 +10,6 @@ import 'package:collection/collection.dart'
     show maxBy, IterableNullableExtension;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -406,8 +405,8 @@ class BoundHostedSource extends CachedSource {
       body = decoded;
       result = _versionInfoFromPackageListing(body, ref, url);
     } on Exception catch (error, stackTrace) {
-      var parsed = source._asDescription(ref.description);
-      _throwFriendlyError(error, stackTrace, parsed.packageName, parsed.uri);
+      final packageName = source._asDescription(ref.description).packageName;
+      _throwFriendlyError(error, stackTrace, packageName, serverUrl);
     }
 
     // Cache the response on disk.
@@ -824,40 +823,64 @@ class BoundHostedSource extends CachedSource {
     });
   }
 
-  /// When an error occurs trying to read something about [package] from [url],
+  /// When an error occurs trying to read something about [package] from [hostedUrl],
   /// this tries to translate into a more user friendly error message.
   ///
   /// Always throws an error, either the original one or a better one.
   Never _throwFriendlyError(
-    error,
+    Exception error,
     StackTrace stackTrace,
     String package,
-    Uri url,
+    Uri hostedUrl,
   ) {
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
         throw PackageNotFoundException(
-            'could not find package $package at $url',
+            'could not find package $package at $hostedUrl',
             innerError: error,
             innerTrace: stackTrace);
       }
 
       fail(
           '${error.response.statusCode} ${error.response.reasonPhrase} trying '
-          'to find package $package at $url.',
+          'to find package $package at $hostedUrl.',
           error,
           stackTrace);
     } else if (error is io.SocketException) {
-      fail('Got socket error trying to find package $package at $url.', error,
-          stackTrace);
+      fail('Got socket error trying to find package $package at $hostedUrl.',
+          error, stackTrace);
     } else if (error is io.TlsException) {
-      fail('Got TLS error trying to find package $package at $url.', error,
-          stackTrace);
+      fail('Got TLS error trying to find package $package at $hostedUrl.',
+          error, stackTrace);
+    } else if (error is AuthenticationException) {
+      String? hint;
+      var message = 'authentication failed';
+
+      assert(error.statusCode == 401 || error.statusCode == 403);
+      if (error.statusCode == 401) {
+        hint = '$hostedUrl package repository requested authentication!\n'
+            'You can provide credentials using:\n'
+            '    pub token add $hostedUrl';
+      }
+      if (error.statusCode == 403) {
+        hint = 'Insufficient permissions to the resource at the $hostedUrl '
+            'package repository.\nYou can modify credentials using:\n'
+            '    pub token add $hostedUrl';
+        message = 'authorization failed';
+      }
+
+      if (error.serverMessage?.isNotEmpty == true && hint != null) {
+        hint += '\n${error.serverMessage}';
+      }
+
+      throw PackageNotFoundException(message, hint: hint);
     } else if (error is FormatException) {
       throw PackageNotFoundException(
-          'Got badly formatted response trying to find package $package at $url',
-          innerError: error,
-          innerTrace: stackTrace);
+        'Got badly formatted response trying to find package $package at $hostedUrl',
+        innerError: error,
+        innerTrace: stackTrace,
+        hint: 'Check that "$hostedUrl" is a valid package repository.',
+      );
     } else {
       // Otherwise re-throw the original exception.
       throw error;
@@ -975,7 +998,9 @@ class _OfflineHostedSource extends BoundHostedSource {
     // If there are no versions in the cache, report a clearer error.
     if (versions.isEmpty) {
       throw PackageNotFoundException(
-          'could not find package ${ref.name} in cache');
+        'could not find package ${ref.name} in cache',
+        hint: 'Try again without --offline!',
+      );
     }
 
     return versions;
@@ -991,7 +1016,9 @@ class _OfflineHostedSource extends BoundHostedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id) {
     throw PackageNotFoundException(
-        '${id.name} ${id.version} is not available in your system cache');
+      '${id.name} ${id.version} is not available in cache',
+      hint: 'Try again without --offline!',
+    );
   }
 
   @override

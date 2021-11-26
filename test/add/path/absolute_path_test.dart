@@ -88,9 +88,8 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.2');
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 

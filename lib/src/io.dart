@@ -8,14 +8,12 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
     show EnvironmentNotFoundException, applicationConfigHome;
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
-import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -562,10 +560,6 @@ final String dartRepoRoot = (() {
   return path.fromUri(url);
 })();
 
-/// A line-by-line stream of standard input.
-final StreamQueue<String> _stdinLines = StreamQueue(
-    ByteStream(stdin).toStringStream().transform(const LineSplitter()));
-
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
 /// Returns a [Future] that completes to `true` if the user confirms or `false`
@@ -591,14 +585,14 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
     final previousEchoMode = stdin.echoMode;
     try {
       stdin.echoMode = echoMode;
-      final result = await _stdinLines.next;
+      final result = stdin.readLineSync() ?? '';
       stdout.write('\n');
       return result;
     } finally {
       stdin.echoMode = previousEchoMode;
     }
   } else {
-    return await _stdinLines.next;
+    return stdin.readLineSync() ?? '';
   }
 }
 

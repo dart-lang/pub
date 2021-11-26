@@ -9,12 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('gets more than 16 packages from a pub server', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.3');
-      for (var i = 0; i < 20; i++) {
-        builder.serve('pkg$i', '1.$i.0');
-      }
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+    for (var i = 0; i < 20; i++) {
+      server.serve('pkg$i', '1.$i.0');
+    }
 
     await d.appDir({
       'foo': '1.2.3',

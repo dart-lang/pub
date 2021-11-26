@@ -213,13 +213,13 @@ and attach the transcript in an issue on https://github.com/dart-lang/pub/issues
 
   /// Returns the appropriate exit code for [exception], falling back on 1 if no
   /// appropriate exit code could be found.
-  int _chooseExitCode(exception) {
+  int _chooseExitCode(Object exception) {
     if (exception is SolveFailure) {
       var packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
     while (exception is WrappedException && exception.innerError is Exception) {
-      exception = exception.innerError;
+      exception = exception.innerError!;
     }
 
     if (exception is HttpException ||

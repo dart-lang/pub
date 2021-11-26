@@ -24,23 +24,22 @@ String? binStub(String executable) {
 void main() {
   test("an outdated binstub runs 'pub global run', which replaces old binstub",
       () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'executables': {
-          'foo-script': 'script',
-          'foo-script2': 'script',
-          'foo-script-not-installed': 'script',
-          'foo-another-script': 'another-script',
-          'foo-another-script-not-installed': 'another-script'
-        }
-      }, contents: [
-        d.dir('bin', [
-          d.file('script.dart', r"main(args) => print('ok $args');"),
-          d.file('another-script.dart',
-              r"main(args) => print('not so good $args');")
-        ])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'executables': {
+        'foo-script': 'script',
+        'foo-script2': 'script',
+        'foo-script-not-installed': 'script',
+        'foo-another-script': 'another-script',
+        'foo-another-script-not-installed': 'another-script'
+      }
+    }, contents: [
+      d.dir('bin', [
+        d.file('script.dart', r"main(args) => print('ok $args');"),
+        d.file(
+            'another-script.dart', r"main(args) => print('not so good $args');")
+      ])
+    ]);
 
     await runPub(args: [
       'global',

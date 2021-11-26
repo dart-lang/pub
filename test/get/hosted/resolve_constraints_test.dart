@@ -9,13 +9,12 @@ import '../../test_pub.dart';
 
 void main() {
   test('resolves version constraints from a pub server', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.3', deps: {'baz': '>=2.0.0'});
-      builder.serve('bar', '2.3.4', deps: {'baz': '<3.0.0'});
-      builder.serve('baz', '2.0.3');
-      builder.serve('baz', '2.0.4');
-      builder.serve('baz', '3.0.1');
-    });
+    await servePackages()
+      ..serve('foo', '1.2.3', deps: {'baz': '>=2.0.0'})
+      ..serve('bar', '2.3.4', deps: {'baz': '<3.0.0'})
+      ..serve('baz', '2.0.3')
+      ..serve('baz', '2.0.4')
+      ..serve('baz', '3.0.1');
 
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 

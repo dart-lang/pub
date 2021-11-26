@@ -9,10 +9,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('can unlock a single package only in upgrade', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
-      builder.serve('bar', '1.0.0');
-    });
+    final server = await servePackages();
+
+    server.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
+    server.serve('bar', '1.0.0');
 
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
@@ -20,10 +20,8 @@ void main() {
 
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
 
-    globalPackageServer!.add((builder) {
-      builder.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
-      builder.serve('bar', '2.0.0');
-    });
+    server.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
+    server.serve('bar', '2.0.0');
 
     // This can't upgrade 'bar'
     await pubUpgrade(args: ['bar']);
@@ -31,10 +29,8 @@ void main() {
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
 
     // Introducing foo and bar 1.1.0, to show that only 'bar' will be upgraded
-    globalPackageServer!.add((builder) {
-      builder.serve('foo', '1.1.0', deps: {'bar': '<2.0.0'});
-      builder.serve('bar', '1.1.0');
-    });
+    server.serve('foo', '1.1.0', deps: {'bar': '<2.0.0'});
+    server.serve('bar', '1.1.0');
 
     await pubUpgrade(args: ['bar']);
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
