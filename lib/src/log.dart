@@ -351,7 +351,7 @@ void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
 Information about the latest pub run.
 
 If you believe something is not working right, you can go to 
-https://github.com/pub/issues/new to post a new issue and attach this file.
+https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
 
 Before making this file public, make sure to remove any sensitive information!
 

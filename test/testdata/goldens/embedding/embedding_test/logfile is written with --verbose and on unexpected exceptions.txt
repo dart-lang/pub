@@ -113,14 +113,14 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]     |   "generator": "pub",
 [E]     |   "generatorVersion": "0.1.2+3"
 [E]     | }
-[E] IO  : Writing 5753 characters to text file $SANDBOX/cache/log/pub_log.txt.
+[E] IO  : Writing 5760 characters to text file $SANDBOX/cache/log/pub_log.txt.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 Information about the latest pub run.
 
 If you believe something is not working right, you can go to 
-https://github.com/pub/issues/new to post a new issue and attach this file.
+https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
 
 Before making this file public, make sure to remove any sensitive information!
 
@@ -291,7 +291,7 @@ $ tool/test-bin/pub_command_runner.dart pub fail
 Information about the latest pub run.
 
 If you believe something is not working right, you can go to 
-https://github.com/pub/issues/new to post a new issue and attach this file.
+https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
 
 Before making this file public, make sure to remove any sensitive information!
 
