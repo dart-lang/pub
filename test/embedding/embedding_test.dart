@@ -133,7 +133,7 @@ main() {
     );
     await context.runEmbedding(
       ['pub', 'fail'],
-      workingDirectory: app.io.path,
+      workingDirectory: d.path(appPath),
       exitCode: 1,
     );
     context.expectNextSection(
