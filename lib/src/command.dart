@@ -217,9 +217,12 @@ and attaching the relevant parts of that log file.
                 ? "'${x.replaceAll("'", r"'\''")}'"
                 : x;
 
-        Entrypoint? e;
-        e = entrypoint;
-
+        late final Entrypoint? e;
+        try {
+          e = entrypoint;
+        } on ApplicationException {
+          e = null;
+        }
         log.dumpTranscriptToFile(
           transcriptPath,
           'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
