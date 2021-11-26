@@ -6,8 +6,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
+
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
@@ -110,6 +112,17 @@ main() {
     );
   });
 
+  testWithGolden('unexpected exception writes the right message',
+      (context) async {
+    await context.runEmbedding(['pub', 'fail'], exitCode: 1);
+    context.expectNextSection(
+      _filter(
+        File(p.join(d.sandbox, cachePath, 'log', 'pub_log.txt'))
+            .readAsStringSync(),
+      ),
+    );
+  });
+
   test('analytics', () async {
     await servePackages((b) => b
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
@@ -176,4 +189,11 @@ main() {
       },
     });
   });
+}
+
+String _filter(String input) {
+  return input
+      .replaceAll(d.sandbox, r'$SANDBOX')
+      .replaceAll(Platform.pathSeparator, '/')
+      .replaceAll(Platform.operatingSystem, r'$OS');
 }

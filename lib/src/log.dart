@@ -12,9 +12,11 @@ import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'progress.dart';
+import 'sdk.dart';
 import 'transcript.dart';
 import 'utils.dart';
 
@@ -36,7 +38,7 @@ const _MAX_TRANSCRIPT = 10000;
 
 /// The list of recorded log messages. Will only be recorded if
 /// [recordTranscript()] is called.
-Transcript<_Entry>? _transcript;
+final Transcript<_Entry> _transcript = Transcript(_MAX_TRANSCRIPT);
 
 /// The currently-animated progress indicator, if any.
 ///
@@ -233,7 +235,7 @@ void write(Level level, message) {
   var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
-  if (_transcript != null) _transcript!.add(entry);
+  _transcript.add(entry);
 }
 
 /// Logs the spawning of an [executable] process with [arguments] at [IO]
@@ -313,23 +315,70 @@ void exception(exception, [StackTrace? trace]) {
   }
 }
 
-/// Enables recording of log entries.
-void recordTranscript() {
-  _transcript = Transcript<_Entry>(_MAX_TRANSCRIPT);
-}
-
-/// If [recordTranscript()] was called, then prints the previously recorded log
-/// transcript to stderr.
-void dumpTranscript() {
-  if (_transcript == null) return;
-
+/// Prints the recorded log transcript to stderr.
+void dumpTranscriptToStdErr() {
   stderr.writeln('---- Log transcript ----');
-  _transcript!.forEach((entry) {
+  _transcript.forEach((entry) {
     _printToStream(stderr, entry, showLabel: true);
   }, (discarded) {
     stderr.writeln('---- ($discarded discarded) ----');
   });
   stderr.writeln('---- End log transcript ----');
+}
+
+String _limit(String input, int limit) {
+  const snip = '[...]';
+  if (input.length < limit - snip.length) return input;
+  return '${input.substring(0, limit ~/ 2 - snip.length)}'
+      '$snip'
+      '${input.substring(limit)}';
+}
+
+/// Prints the previously recorded log transcript to stderr.
+void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
+  final buffer = StringBuffer();
+  buffer.writeln('File containing information about the latest pub run.');
+  buffer.writeln(
+      'Before making this file public, make sure to remove any sensitive information!');
+  buffer.writeln();
+  buffer.writeln('Pub version: ${sdk.version}');
+  buffer.writeln(
+      'FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set>'}');
+  buffer.writeln('Command: $command');
+  buffer.writeln('Platform: ${Platform.operatingSystem}');
+
+  if (entrypoint != null) {
+    buffer.writeln('---- pubspec.yaml ----');
+    if (fileExists(entrypoint.pubspecPath)) {
+      buffer.writeln(_limit(readTextFile(entrypoint.pubspecPath), 5000));
+    } else {
+      buffer.writeln('<No pubspec.yaml>');
+    }
+    buffer.writeln('---- End pubspec.yaml ----');
+    buffer.writeln('---- pubspec.lock ----');
+    if (fileExists(entrypoint.lockFilePath)) {
+      buffer.writeln(_limit(readTextFile(entrypoint.lockFilePath), 5000));
+    } else {
+      buffer.writeln('<No pubspec.lock>');
+    }
+    buffer.writeln('---- End pubspec.lock ----');
+  }
+
+  buffer.writeln('---- Log transcript ----');
+
+  _transcript.forEach((entry) {
+    _printToStream(buffer, entry, showLabel: true);
+  }, (discarded) {
+    buffer.writeln('---- ($discarded entries discarded) ----');
+  });
+  buffer.writeln('---- End log transcript ----');
+  ensureDir(p.dirname(path));
+  try {
+    writeTextFile(path, buffer.toString(), dontLogContents: true);
+  } on IOException catch (e) {
+    stderr.writeln('Failed writing log to `$path` ($e), writing it to stderr:');
+    dumpTranscriptToStdErr();
+  }
 }
 
 /// Filter out normal pub output when not attached to a terminal
@@ -492,7 +541,7 @@ void _logToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
   _printToStream(sink, entry, showLabel: showLabel);
 }
 
-void _printToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
+void _printToStream(StringSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
 
   var firstLine = true;
