@@ -104,6 +104,16 @@ abstract class PubCommand extends Command<int> {
   @override
   List<String> get aliases => pubCommandAliases[name] ?? const [];
 
+  /// The first command in the command chain.
+  Command get _topCommand {
+    Command current = this;
+    while (true) {
+      var parent = current.parent;
+      if (parent == null) return current;
+      current = parent;
+    }
+  }
+
   PubEmbeddableCommand? get _pubEmbeddableCommand {
     Command? command = this;
     while (command is! PubEmbeddableCommand) {
@@ -169,6 +179,7 @@ abstract class PubCommand extends Command<int> {
     log.verbosity = _pubTopLevel.verbosity;
     log.fine('Pub ${sdk.version}');
 
+    var crashed = false;
     try {
       await captureErrors<void>(() async => runProtected(),
           captureStackChains: _pubTopLevel.captureStackChains);
@@ -183,30 +194,42 @@ abstract class PubCommand extends Command<int> {
         log.dumpTranscriptToStdErr();
       } else if (!isUserFacingException(error)) {
         log.error('''
-This is an unexpected error. See the full transcript in
+This is an unexpected error. The full log and other details are collected in:
 
     $transcriptPath
 
-and attach the transcript in an issue on https://github.com/dart-lang/pub/issues/new
+Consider creating an issue on https://github.com/dart-lang/pub/issues/new
+and attaching the relevant parts of that log file.
 ''');
+        crashed = true;
       }
       return _chooseExitCode(error);
     } finally {
-      // Escape the argument for users to copy-paste in bash.
-      // Wrap with single quotation, and use '\'' to insert single quote, as
-      // long as we have no spaces this doesn't create a new argument.
-      String protectArgument(String x) =>
-          RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
-              ? "'${x.replaceAll("'", r"'\''")}'"
-              : x;
+      final verbose = _pubTopLevel.verbosity == log.Verbosity.all;
 
-      Entrypoint? e;
-      e = entrypoint;
+      // Write the whole log transcript to file.
+      if (verbose || crashed) {
+        // Escape the argument for users to copy-paste in bash.
+        // Wrap with single quotation, and use '\'' to insert single quote, as
+        // long as we have no spaces this doesn't create a new argument.
+        String protectArgument(String x) =>
+            RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
+                ? "'${x.replaceAll("'", r"'\''")}'"
+                : x;
 
-      log.dumpTranscriptToFile(
+        Entrypoint? e;
+        e = entrypoint;
+
+        log.dumpTranscriptToFile(
           transcriptPath,
-          '${Platform.executable}${argResults.arguments.map(protectArgument).join(' ')}',
-          e);
+          'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
+          e,
+        );
+
+        if (verbose) {
+          log.message('Logs written to ${transcriptPath}.');
+        }
+      }
       httpClient.close();
     }
   }

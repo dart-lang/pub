@@ -334,28 +334,35 @@ String _limit(String input, int limit) {
       '${input.substring(limit)}';
 }
 
-/// Prints the previously recorded log transcript to stderr.
+/// Prints relevant system information and the log transcript to [path].
 void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
   final buffer = StringBuffer();
-  buffer.writeln('File containing information about the latest pub run.');
-  buffer.writeln(
-      'Before making this file public, make sure to remove any sensitive information!');
-  buffer.writeln();
-  buffer.writeln('Pub version: ${sdk.version}');
-  buffer.writeln(
-      'FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set>'}');
-  buffer.writeln('Command: $command');
-  buffer.writeln('Platform: ${Platform.operatingSystem}');
+  buffer.writeln('''
+Information about the latest pub run.
+
+If you believe something is not working right, you can go to 
+https://github.com/pub/issues/new to post a new issue and attach this file.
+
+Before making this file public, make sure to remove any sensitive information!
+
+Pub version: ${sdk.version}
+Created: ${DateTime.now().toIso8601String()}
+FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set>'}
+PUB_HOSTED_URL: ${Platform.environment['PUB_HOSTED_URL'] ?? '<not set>'}
+PUB_CACHE: "${Platform.environment['PUB_CACHE'] ?? '<not set>'}"
+Command: $command
+Platform: ${Platform.operatingSystem}
+''');
 
   if (entrypoint != null) {
-    buffer.writeln('---- pubspec.yaml ----');
+    buffer.writeln('---- ${p.absolute(entrypoint.pubspecPath)} ----');
     if (fileExists(entrypoint.pubspecPath)) {
       buffer.writeln(_limit(readTextFile(entrypoint.pubspecPath), 5000));
     } else {
       buffer.writeln('<No pubspec.yaml>');
     }
     buffer.writeln('---- End pubspec.yaml ----');
-    buffer.writeln('---- pubspec.lock ----');
+    buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
     if (fileExists(entrypoint.lockFilePath)) {
       buffer.writeln(_limit(readTextFile(entrypoint.lockFilePath), 5000));
     } else {
