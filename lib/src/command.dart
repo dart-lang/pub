@@ -227,7 +227,7 @@ and attaching the relevant parts of that log file.
         );
 
         if (verbose) {
-          log.message('Logs written to ${transcriptPath}.');
+          log.message('Logs written to $transcriptPath.');
         }
       }
       httpClient.close();

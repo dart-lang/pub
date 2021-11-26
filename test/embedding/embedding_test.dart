@@ -118,8 +118,8 @@ main() {
   testWithGolden(
       'logfile is written with --verbose and on unexpected exceptions',
       (context) async {
-    await servePackages()
-      ..serve('foo', '1.0.0');
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
     await d.appDir({'foo': 'any'}).create();
 
     await context.runEmbedding(
