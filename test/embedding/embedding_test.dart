@@ -297,5 +297,9 @@ String _filter(String input) {
         RegExp(r' /(.*)tool/test-bin/pub_command_runner.dart ',
             multiLine: true),
         r' tool/test-bin/pub_command_runner.dart ',
+      )
+      .replaceAll(
+        RegExp(r'Writing \d+ characters', multiLine: true),
+        r'Writing $N characters',
       );
 }
