@@ -42,11 +42,8 @@ Future<void> runEmbeddingToBuffer(
   buffer.writeln([
     '\$ $_commandRunner ${args.join(' ')}',
     ...await process.stdout.rest.map(_filter).toList(),
+    ...await process.stderr.rest.map((e) => '[E] ${_filter(e)}').toList(),
   ].join('\n'));
-  final stdErr = await process.stderr.rest.toList();
-  if (stdErr.isNotEmpty) {
-    buffer.writeln(stdErr.map(_filter).map((e) => '[E] $e').join('\n'));
-  }
   buffer.write('\n');
 }
 
@@ -294,7 +291,8 @@ String _filter(String input) {
         r'"generated": "$TIME",',
       )
       .replaceAll(
-        RegExp(r' /(.*)tool/test-bin/pub_command_runner.dart ',
+        RegExp(
+            r'( |^)/usr/local/google/home/sigurdm/projects/pub_logging_to_file/tool/test-bin/pub_command_runner.dart ',
             multiLine: true),
         r' tool/test-bin/pub_command_runner.dart ',
       )
