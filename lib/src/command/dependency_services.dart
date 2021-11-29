@@ -88,9 +88,8 @@ class DependencyServicesReportCommand extends PubCommand {
       final dependencySet = dependencySetOfPackage(pubspec, package);
       if (dependencySet != null) {
         // Force the version to be the new version.
-        dependencySet[package.name] = package
-            .toRange()
-            .withConstraint(stripUpperBound(package.toRange().constraint));
+        dependencySet[package.name] =
+            package.toRange().withConstraint(package.toRange().constraint);
       }
 
       final resolution = await tryResolveVersions(

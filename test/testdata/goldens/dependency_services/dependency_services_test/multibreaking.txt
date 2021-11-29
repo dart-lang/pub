@@ -85,7 +85,7 @@ $ dependency_services report
       "compatible": [
         {
           "name": "foo",
-          "version": "2.0.0",
+          "version": "1.5.0",
           "kind": "direct",
           "constraint": "^1.0.0",
           "previousVersion": "1.0.0",
