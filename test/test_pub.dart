@@ -378,11 +378,12 @@ Future<PubProcess> startPublish(
   List<String> args,
   String authMethod = 'oauth2',
   Map<String, String> environment,
+  String path = '',
 }) async {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
   return await startPub(args: args, tokenEndpoint: tokenEndpoint, environment: {
-    'PUB_HOSTED_URL': server.url,
+    'PUB_HOSTED_URL': server.url + path,
     '_PUB_TEST_AUTH_METHOD': authMethod,
     if (environment != null) ...environment,
   });

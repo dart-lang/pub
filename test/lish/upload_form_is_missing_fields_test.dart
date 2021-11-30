@@ -23,7 +23,7 @@ void main() {
     await confirmPublish(pub);
 
     var body = {'url': 'http://example.com/upload'};
-    handleUploadForm(globalPackageServer, body);
+    handleUploadForm(globalPackageServer, body: body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));
     await pub.shouldExit(1);
