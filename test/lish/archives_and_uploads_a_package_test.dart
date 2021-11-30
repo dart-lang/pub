@@ -37,6 +37,36 @@ void main() {
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 
+  test('publishes to hosted-url with path', () async {
+    await servePackages();
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': globalServer.url + '/sub/folder', 'env': 'TOKEN'},
+      ]
+    }).create();
+    var pub = await startPublish(
+      globalServer,
+      path: '/sub/folder',
+      authMethod: 'token',
+      environment: {'TOKEN': 'access token'},
+    );
+
+    await confirmPublish(pub);
+    handleUploadForm(globalServer, path: '/sub/folder');
+    handleUpload(globalServer);
+
+    globalServer.expect('GET', '/create', (request) {
+      return shelf.Response.ok(jsonEncode({
+        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+      }));
+    });
+
+    expect(pub.stdout, emits(startsWith('Uploading...')));
+    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    await pub.shouldExit(exit_codes.SUCCESS);
+  });
+
   // This is a regression test for #1679. We create a submodule that's not
   // checked out to ensure that file listing doesn't choke on the empty
   // directory.

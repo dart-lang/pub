@@ -91,7 +91,7 @@ class LishCommand extends PubCommand {
 
     try {
       await log.progress('Uploading', () async {
-        var newUri = server.resolve('/api/packages/versions/new');
+        var newUri = server.resolve('api/packages/versions/new');
         var response = await client.get(newUri, headers: pubApiHeaders);
         var parameters = parseJsonResponse(response);
 
