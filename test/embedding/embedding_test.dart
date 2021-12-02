@@ -313,6 +313,10 @@ String _filter(String input) {
         r'   ',
       )
       .replaceAll(
+        RegExp(r' [\d]+:[\d]+ ', multiLine: true),
+        r' $LINE:$COL ',
+      )
+      .replaceAll(
         RegExp(r'Writing \d+ characters', multiLine: true),
         r'Writing $N characters',
       );

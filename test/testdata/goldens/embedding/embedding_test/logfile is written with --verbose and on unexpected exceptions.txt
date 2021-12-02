@@ -267,18 +267,18 @@ FINE: Contents:
 
 $ tool/test-bin/pub_command_runner.dart pub fail
 [E] Bad state: Pub has crashed
-[E]  tool/test-bin/pub_command_runner.dart 32:5   ThrowingCommand.runProtected
-[E] package:pub/src/command.dart 184:45   PubCommand.run.<fn>
-[E] package:pub/src/command.dart 184:33   PubCommand.run.<fn>
+[E]  tool/test-bin/pub_command_runner.dart $LINE:$COL   ThrowingCommand.runProtected
+[E] package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
+[E] package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
 [E] dart:async   new Future.sync
-[E] package:pub/src/utils.dart 109:12   captureErrors.wrappedCallback
+[E] package:pub/src/utils.dart $LINE:$COL   captureErrors.wrappedCallback
 [E] dart:async   runZonedGuarded
-[E] package:pub/src/utils.dart 126:5   captureErrors
-[E] package:pub/src/command.dart 184:13   PubCommand.run
-[E] package:args/command_runner.dart 209:27   CommandRunner.runCommand
-[E]  tool/test-bin/pub_command_runner.dart 62:24  Runner.runCommand
-[E]  tool/test-bin/pub_command_runner.dart 53:20  Runner.run
-[E]  tool/test-bin/pub_command_runner.dart 67:29  main
+[E] package:pub/src/utils.dart $LINE:$COL   captureErrors
+[E] package:pub/src/command.dart $LINE:$COL   PubCommand.run
+[E] package:args/command_runner.dart $LINE:$COL   CommandRunner.runCommand
+[E]  tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.runCommand
+[E]  tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.run
+[E]  tool/test-bin/pub_command_runner.dart $LINE:$COL  main
 [E] This is an unexpected error. The full log and other details are collected in:
 [E] 
 [E]    $SANDBOX/cache/log/pub_log.txt
@@ -307,18 +307,18 @@ Platform: $OS
 FINE: Pub 0.1.2+3
 ERR : Bad state: Pub has crashed
 FINE: Exception type: StateError
-ERR : tool/test-bin/pub_command_runner.dart 32:5   ThrowingCommand.runProtected
-   | package:pub/src/command.dart 184:45   PubCommand.run.<fn>
-   | package:pub/src/command.dart 184:33   PubCommand.run.<fn>
+ERR : tool/test-bin/pub_command_runner.dart $LINE:$COL   ThrowingCommand.runProtected
+   | package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
+   | package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
    | dart:async   new Future.sync
-   | package:pub/src/utils.dart 109:12   captureErrors.wrappedCallback
+   | package:pub/src/utils.dart $LINE:$COL   captureErrors.wrappedCallback
    | dart:async   runZonedGuarded
-   | package:pub/src/utils.dart 126:5   captureErrors
-   | package:pub/src/command.dart 184:13   PubCommand.run
-   | package:args/command_runner.dart 209:27   CommandRunner.runCommand
-   | tool/test-bin/pub_command_runner.dart 62:24  Runner.runCommand
-   | tool/test-bin/pub_command_runner.dart 53:20  Runner.run
-   | tool/test-bin/pub_command_runner.dart 67:29  main
+   | package:pub/src/utils.dart $LINE:$COL   captureErrors
+   | package:pub/src/command.dart $LINE:$COL   PubCommand.run
+   | package:args/command_runner.dart $LINE:$COL   CommandRunner.runCommand
+   | tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.runCommand
+   | tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.run
+   | tool/test-bin/pub_command_runner.dart $LINE:$COL  main
 ERR : This is an unexpected error. The full log and other details are collected in:
    | 
    |   $SANDBOX/cache/log/pub_log.txt
