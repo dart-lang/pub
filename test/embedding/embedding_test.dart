@@ -291,10 +291,13 @@ String _filter(String input) {
         r'"generated": "$TIME",',
       )
       .replaceAll(
-        RegExp(
-            r'( |^)/(.*)/tool/test-bin/pub_command_runner.dart [\d]+:[\d]+[ ]+',
+        RegExp(r'( |^)/(.*)/tool/test-bin/pub_command_runner.dart',
             multiLine: true),
-        r' tool/test-bin/pub_command_runner.dart $LINE:$COL ',
+        r' tool/test-bin/pub_command_runner.dart',
+      )
+      .replaceAll(
+        RegExp(r'[ ]{4,}', multiLine: true),
+        r'   ',
       )
       .replaceAll(
         RegExp(r'Writing \d+ characters', multiLine: true),
