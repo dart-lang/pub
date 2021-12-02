@@ -292,7 +292,7 @@ String _filter(String input) {
         r'"generated": "$TIME",',
       )
       .replaceAll(
-        RegExp(r'( |^)/(.*)/tool/test-bin/pub_command_runner.dart',
+        RegExp(r'( |^)(/|[A-Z]:)(.*)/tool/test-bin/pub_command_runner.dart',
             multiLine: true),
         r' tool/test-bin/pub_command_runner.dart',
       )
