@@ -213,6 +213,7 @@ main() {
 
 String _filter(String input) {
   return input
+      .replaceAll(p.toUri(d.sandbox).toString(), r'file://$SANDBOX')
       .replaceAll(d.sandbox, r'$SANDBOX')
       .replaceAll(Platform.pathSeparator, '/')
       .replaceAll(Platform.operatingSystem, r'$OS')
