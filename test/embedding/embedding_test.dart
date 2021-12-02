@@ -119,6 +119,18 @@ main() {
     server.serve('foo', '1.0.0');
     await d.appDir({'foo': 'any'}).create();
 
+    // TODO(sigurdm) This logs the entire verbose trace to a golden file.
+    //
+    // This is fragile, and can break for all sorts of small reasons. We think
+    // this might be worth while having to have at least minimal testing of the
+    // verbose stack trace.
+    //
+    // But if you, future contributor, think this test is annoying: feel free to
+    // remove it, or rewrite it to filter out the stack-trace itself, only
+    // testing for creation of the file.
+    //
+    //  It is a fragile test, and we acknowledge that it's usefulness can be
+    //  debated...
     await context.runEmbedding(
       ['pub', '--verbose', 'get'],
       workingDirectory: d.path(appPath),
