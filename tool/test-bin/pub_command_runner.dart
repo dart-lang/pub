@@ -9,11 +9,29 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:pub/pub.dart';
+import 'package:pub/src/command.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
 import 'package:usage/usage.dart';
 
 final _LoggingAnalytics loggingAnalytics = _LoggingAnalytics();
+
+// A command for explicitly throwing an exception, to test the handling of
+// unexpected eceptions.
+class ThrowingCommand extends PubCommand {
+  @override
+  String get name => 'fail';
+
+  @override
+  String get description => 'Throws an exception';
+
+  bool get hide => true;
+
+  @override
+  Future<int> runProtected() async {
+    throw StateError('Pub has crashed');
+  }
+}
 
 class Runner extends CommandRunner<int> {
   late ArgResults _options;
@@ -23,7 +41,8 @@ class Runner extends CommandRunner<int> {
         ? PubAnalytics(() => loggingAnalytics,
             dependencyKindCustomDimensionName: 'cd1')
         : null;
-    addCommand(pubCommand(analytics: analytics));
+    addCommand(
+        pubCommand(analytics: analytics)..addSubcommand(ThrowingCommand()));
   }
 
   @override

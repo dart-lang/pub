@@ -10,6 +10,7 @@ import 'package:args/command_runner.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 import 'authentication/token_store.dart';
 import 'command_runner.dart';
@@ -55,7 +56,11 @@ abstract class PubCommand extends Command<int> {
     return a;
   }
 
-  String get directory => argResults['directory'] ?? _pubTopLevel.directory;
+  String get directory =>
+      (argResults.options.contains('directory')
+          ? argResults['directory']
+          : null) ??
+      _pubTopLevel.directory;
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
@@ -170,12 +175,11 @@ abstract class PubCommand extends Command<int> {
   @nonVirtual
   FutureOr<int> run() async {
     computeCommand(_pubTopLevel.argResults);
-    if (_pubTopLevel.trace) {
-      log.recordTranscript();
-    }
+
     log.verbosity = _pubTopLevel.verbosity;
     log.fine('Pub ${sdk.version}');
 
+    var crashed = false;
     try {
       await captureErrors<void>(() async => runProtected(),
           captureStackChains: _pubTopLevel.captureStackChains);
@@ -187,8 +191,24 @@ abstract class PubCommand extends Command<int> {
       log.exception(error, chain);
 
       if (_pubTopLevel.trace) {
-        log.dumpTranscript();
+        log.dumpTranscriptToStdErr();
       } else if (!isUserFacingException(error)) {
+        log.error('''
+This is an unexpected error. The full log and other details are collected in:
+
+    $transcriptPath
+
+Consider creating an issue on https://github.com/dart-lang/pub/issues/new
+and attaching the relevant parts of that log file.
+''');
+        crashed = true;
+      }
+      return _chooseExitCode(error);
+    } finally {
+      final verbose = _pubTopLevel.verbosity == log.Verbosity.all;
+
+      // Write the whole log transcript to file.
+      if (verbose || crashed) {
         // Escape the argument for users to copy-paste in bash.
         // Wrap with single quotation, and use '\'' to insert single quote, as
         // long as we have no spaces this doesn't create a new argument.
@@ -196,16 +216,23 @@ abstract class PubCommand extends Command<int> {
             RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
                 ? "'${x.replaceAll("'", r"'\''")}'"
                 : x;
-        log.error("""
-This is an unexpected error. Please run
 
-    dart pub --trace ${_topCommand.name} ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}
+        late final Entrypoint? e;
+        try {
+          e = entrypoint;
+        } on ApplicationException {
+          e = null;
+        }
+        log.dumpTranscriptToFile(
+          transcriptPath,
+          'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
+          e,
+        );
 
-and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
-""");
+        if (!crashed) {
+          log.message('Logs written to $transcriptPath.');
+        }
       }
-      return _chooseExitCode(error);
-    } finally {
       httpClient.close();
     }
   }
@@ -287,6 +314,10 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
       list.add(commandName);
     }
     _command = list.join(' ');
+  }
+
+  String get transcriptPath {
+    return p.join(cache.rootDir, 'log', 'pub_log.txt');
   }
 }
 

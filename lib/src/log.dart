@@ -12,9 +12,11 @@ import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'progress.dart';
+import 'sdk.dart';
 import 'transcript.dart';
 import 'utils.dart';
 
@@ -36,7 +38,7 @@ const _maxTranscript = 10000;
 
 /// The list of recorded log messages. Will only be recorded if
 /// [recordTranscript()] is called.
-Transcript<_Entry>? _transcript;
+final Transcript<_Entry> _transcript = Transcript(_maxTranscript);
 
 /// The currently-animated progress indicator, if any.
 ///
@@ -168,6 +170,16 @@ class Verbosity {
     Level.fine: _logToStderrWithLabel
   });
 
+  /// Shows all logs.
+  static const testing = Verbosity._('testing', {
+    Level.error: _logToStderrWithLabel,
+    Level.warning: _logToStderrWithLabel,
+    Level.message: _logToStdoutWithLabel,
+    Level.io: _logToStderrWithLabel,
+    Level.solver: _logToStderrWithLabel,
+    Level.fine: _logToStderrWithLabel
+  });
+
   const Verbosity._(this.name, this._loggers);
 
   final String name;
@@ -233,7 +245,7 @@ void write(Level level, message) {
   var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
-  if (_transcript != null) _transcript!.add(entry);
+  _transcript.add(entry);
 }
 
 /// Logs the spawning of an [executable] process with [arguments] at [io]
@@ -313,23 +325,77 @@ void exception(exception, [StackTrace? trace]) {
   }
 }
 
-/// Enables recording of log entries.
-void recordTranscript() {
-  _transcript = Transcript<_Entry>(_maxTranscript);
-}
-
-/// If [recordTranscript()] was called, then prints the previously recorded log
-/// transcript to stderr.
-void dumpTranscript() {
-  if (_transcript == null) return;
-
+/// Prints the recorded log transcript to stderr.
+void dumpTranscriptToStdErr() {
   stderr.writeln('---- Log transcript ----');
-  _transcript!.forEach((entry) {
+  _transcript.forEach((entry) {
     _printToStream(stderr, entry, showLabel: true);
   }, (discarded) {
     stderr.writeln('---- ($discarded discarded) ----');
   });
   stderr.writeln('---- End log transcript ----');
+}
+
+String _limit(String input, int limit) {
+  const snip = '[...]';
+  if (input.length < limit - snip.length) return input;
+  return '${input.substring(0, limit ~/ 2 - snip.length)}'
+      '$snip'
+      '${input.substring(limit)}';
+}
+
+/// Prints relevant system information and the log transcript to [path].
+void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
+  final buffer = StringBuffer();
+  buffer.writeln('''
+Information about the latest pub run.
+
+If you believe something is not working right, you can go to 
+https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
+
+Before making this file public, make sure to remove any sensitive information!
+
+Pub version: ${sdk.version}
+Created: ${DateTime.now().toIso8601String()}
+FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set>'}
+PUB_HOSTED_URL: ${Platform.environment['PUB_HOSTED_URL'] ?? '<not set>'}
+PUB_CACHE: "${Platform.environment['PUB_CACHE'] ?? '<not set>'}"
+Command: $command
+Platform: ${Platform.operatingSystem}
+''');
+
+  if (entrypoint != null) {
+    buffer.writeln('---- ${p.absolute(entrypoint.pubspecPath)} ----');
+    if (fileExists(entrypoint.pubspecPath)) {
+      buffer.writeln(_limit(readTextFile(entrypoint.pubspecPath), 5000));
+    } else {
+      buffer.writeln('<No pubspec.yaml>');
+    }
+    buffer.writeln('---- End pubspec.yaml ----');
+    buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
+    if (fileExists(entrypoint.lockFilePath)) {
+      buffer.writeln(_limit(readTextFile(entrypoint.lockFilePath), 5000));
+    } else {
+      buffer.writeln('<No pubspec.lock>');
+    }
+    buffer.writeln('---- End pubspec.lock ----');
+  }
+
+  buffer.writeln('---- Log transcript ----');
+
+  _transcript.forEach((entry) {
+    _printToStream(buffer, entry, showLabel: true);
+  }, (discarded) {
+    buffer.writeln('---- ($discarded entries discarded) ----');
+  });
+  buffer.writeln('---- End log transcript ----');
+  ensureDir(p.dirname(path));
+  try {
+    writeTextFile(path, buffer.toString(), dontLogContents: true);
+  } on IOException catch (e) {
+    stderr.writeln('Failed writing log to `$path` ($e), writing it to stderr:');
+    dumpTranscriptToStdErr();
+  }
 }
 
 /// Filter out normal pub output when not attached to a terminal
@@ -492,7 +558,7 @@ void _logToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
   _printToStream(sink, entry, showLabel: showLabel);
 }
 
-void _printToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
+void _printToStream(StringSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
 
   var firstLine = true;

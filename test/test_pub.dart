@@ -466,7 +466,7 @@ Future<PubProcess> startPub(
 
   var dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
   dartArgs
-    ..addAll([pubPath, if (verbose) '--verbose'])
+    ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
     ..addAll(args);
 
   final mergedEnvironment = getPubTestEnvironment(tokenEndpoint);
