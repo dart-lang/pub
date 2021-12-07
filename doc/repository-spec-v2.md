@@ -227,7 +227,7 @@ server, this could work in many different ways.
   "replacedBy": "<package>", /* optional field, if isDiscontinued == true */
   "latest": {
     "version": "<version>",
-    "isRetracted": true || false, /* optional field, false if omitted */
+    "retracted": true || false, /* optional field, false if omitted */
     "archive_url": "https://.../archive.tar.gz",
     "pubspec": {
       /* pubspec contents as JSON object */
@@ -236,7 +236,7 @@ server, this could work in many different ways.
   "versions": [
     {
       "version": "<package>",
-      "isRetracted": true || false, /* optional field, false if omitted */
+      "retracted": true || false, /* optional field, false if omitted */
       "archive_url": "https://.../archive.tar.gz",
       "pubspec": {
         /* pubspec contents as JSON object */
