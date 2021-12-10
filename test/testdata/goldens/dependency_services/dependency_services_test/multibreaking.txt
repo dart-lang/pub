@@ -68,9 +68,9 @@ $ dependency_services report
         },
         {
           "name": "foo",
-          "version": "3.0.0",
+          "version": "3.0.1",
           "kind": "direct",
-          "constraint": "^3.0.0",
+          "constraint": "^3.0.1",
           "previousVersion": "1.0.0",
           "previousConstraint": "^1.0.0"
         }
@@ -80,7 +80,7 @@ $ dependency_services report
       "name": "foo",
       "version": "1.0.0",
       "kind": "direct",
-      "latest": "3.0.0",
+      "latest": "3.0.1",
       "constraint": "^1.0.0",
       "compatible": [
         {
@@ -105,9 +105,9 @@ $ dependency_services report
       "multiBreaking": [
         {
           "name": "foo",
-          "version": "3.0.0",
+          "version": "3.0.1",
           "kind": "direct",
-          "constraint": "^3.0.0",
+          "constraint": "^3.0.1",
           "previousVersion": "1.0.0",
           "previousConstraint": "^1.0.0"
         },
@@ -127,7 +127,7 @@ $ dependency_services report
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section apply
-$ echo '{"dependencyChanges":[{"name":"foo","version":"3.0.0"},{"name":"bar","version":"2.0.0"}]}' | dependency_services apply
+$ echo '{"dependencyChanges":[{"name":"foo","version":"3.0.1","constraint":"^3.0.0"},{"name":"bar","version":"2.0.0"}]}' | dependency_services apply
 {"dependencies":[]}
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -151,6 +151,6 @@ packages:
       name: foo
       url: "http://localhost:$PORT"
     source: hosted
-    version: "3.0.0"
+    version: "3.0.1"
 sdks:
   dart: ">=0.1.2 <1.0.0"

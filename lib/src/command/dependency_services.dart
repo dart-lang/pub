@@ -291,10 +291,15 @@ class DependencyServicesApplyCommand extends PubCommand {
     final toApply = <_PackageVersion>[];
     final input = json.decode(await utf8.decodeStream(stdin));
     for (final change in input['dependencyChanges']) {
-      toApply.add(_PackageVersion(
-        change['name'],
-        change['version'] != null ? Version.parse(change['version']) : null,
-      ));
+      toApply.add(
+        _PackageVersion(
+          change['name'],
+          change['version'] != null ? Version.parse(change['version']) : null,
+          change['constraint'] != null
+              ? VersionConstraint.parse(change['constraint'])
+              : null,
+        ),
+      );
     }
 
     final pubspec = entrypoint.root.pubspec;
@@ -307,8 +312,15 @@ class DependencyServicesApplyCommand extends PubCommand {
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
+      final targetConstraint = p.constraint;
 
-      if (targetVersion != null) {
+      if (targetConstraint != null) {
+        final section = pubspec.dependencies[targetPackage] != null
+            ? 'dependencies'
+            : 'dev_dependencies';
+        pubspecEditor
+            .update([section, targetPackage], targetConstraint.toString());
+      } else if (targetVersion != null) {
         final constraint = _constraintOf(pubspec, targetPackage);
         if (constraint != null && !constraint.allows(targetVersion)) {
           final section = pubspec.dependencies[targetPackage] != null
@@ -317,12 +329,12 @@ class DependencyServicesApplyCommand extends PubCommand {
           pubspecEditor.update([section, targetPackage],
               VersionConstraint.compatibleWith(targetVersion).toString());
         }
-
-        if (lockFileEditor != null &&
-            lockFileYaml['packages'].containsKey(targetPackage)) {
-          lockFileEditor.update(
-              ['packages', targetPackage, 'version'], targetVersion.toString());
-        }
+      }
+      if (targetVersion != null &&
+          lockFileEditor != null &&
+          lockFileYaml['packages'].containsKey(targetPackage)) {
+        lockFileEditor.update(
+            ['packages', targetPackage, 'version'], targetVersion.toString());
       }
     }
     if (pubspecEditor.edits.isNotEmpty) {
@@ -346,7 +358,8 @@ class DependencyServicesApplyCommand extends PubCommand {
 class _PackageVersion {
   String name;
   Version? version;
-  _PackageVersion(this.name, this.version);
+  VersionConstraint? constraint;
+  _PackageVersion(this.name, this.version, this.constraint);
 }
 
 Map<String, PackageRange>? dependencySetOfPackage(
