@@ -182,10 +182,12 @@ Future<void> main() async {
       ..serve('foo', '1.5.0') // compatible
       ..serve('foo', '2.0.0') // single breaking
       ..serve('foo', '3.0.0', deps: {'bar': '^2.0.0'}) // multi breaking
+      ..serve('foo', '3.0.1', deps: {'bar': '^2.0.0'})
       ..serve('bar', '2.0.0', deps: {'foo': '^3.0.0'})
       ..serve('transitive', '1.0.0'));
     await listReportApply(context, [
-      _PackageVersion('foo', Version.parse('3.0.0')),
+      _PackageVersion('foo', Version.parse('3.0.1'),
+          constraint: VersionConstraint.parse('^3.0.0')),
       _PackageVersion('bar', Version.parse('2.0.0'))
     ]);
   });
@@ -194,10 +196,12 @@ Future<void> main() async {
 class _PackageVersion {
   String name;
   Version? version;
-  _PackageVersion(this.name, this.version);
+  VersionConstraint? constraint;
+  _PackageVersion(this.name, this.version, {this.constraint});
 
   Map<String, Object?> toJson() => {
         'name': name,
         'version': version?.toString(),
+        if (constraint != null) 'constraint': constraint.toString()
       };
 }
