@@ -448,8 +448,7 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
     if (nextChar == null) break;
     current++;
     if (nextChar == '*') {
-      final peek = peekChar();
-      if (peek == '*') {
+      if (peekChar() == '*') {
         // Handle '**'
         current++;
         if (peekChar() == '/') {
@@ -465,7 +464,7 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         } else {
           expr += '.*';
         }
-      } else if (peek == '/' || peek == null) {
+      } else if (peekChar() == '/' || peekChar() == null) {
         // /a/* should not match '/a/'
         expr += '[^/]+';
       } else {
