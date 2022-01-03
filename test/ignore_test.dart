@@ -977,6 +977,13 @@ final testData = [
     'folder/a.txt': true,
   }),
 
+  TestData('folder/* does not ignore `folder` itself', {
+    '.': ['folder/*', '!folder/a.txt'],
+  }, {
+    'folder/a.txt': false,
+    'folder/b.txt': true,
+  }),
+
   // Case sensitivity
   TestData(
     'simple',

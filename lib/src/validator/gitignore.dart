@@ -71,7 +71,7 @@ class GitignoreValidator extends Validator {
 
       if (ignoredFilesCheckedIn.isNotEmpty) {
         warnings.add('''
-${ignoredFilesCheckedIn.length} checked in ${pluralize('file', ignoredFilesCheckedIn.length)} ${ignoredFilesCheckedIn.length == 1 ? 'is' : 'are'} ignored by a `.gitignore`.
+${ignoredFilesCheckedIn.length} checked-in ${pluralize('file', ignoredFilesCheckedIn.length)} ${ignoredFilesCheckedIn.length == 1 ? 'is' : 'are'} ignored by a `.gitignore`.
 Previous versions of Pub would include those in the published package.
 
 Consider adjusting your `.gitignore` files to not ignore those files, and if you do not wish to
