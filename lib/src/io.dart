@@ -966,10 +966,10 @@ ByteStream createTarGz(
   log.fine(buffer.toString());
 
   ArgumentError.checkNotNull(baseDir, 'baseDir');
-  baseDir = path.absolute(baseDir);
+  baseDir = path.normalize(path.absolute(baseDir));
 
   final tarContents = Stream.fromIterable(contents.map((entry) {
-    entry = path.absolute(entry);
+    entry = path.normalize(path.absolute(entry));
     if (!path.isWithin(baseDir, entry)) {
       throw ArgumentError('Entry $entry is not inside $baseDir.');
     }
