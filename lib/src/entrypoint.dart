@@ -183,16 +183,8 @@ class Entrypoint {
   String get _incrementalDillsPath => p.join(cachePath, 'incremental');
 
   /// Loads the entrypoint from a package at [rootDir].
-  ///
-  /// If [enablePubspecOverrides] is true the pubspec overrides features is
-  /// enabled for the entrypoint. If provided, [pubspecOverridesPath] replaces
-  /// the default location (`$PGK_DIR/pubspec_overrides.yaml`) of the overrides
-  /// file.
-  Entrypoint(String rootDir, this.cache,
-      {bool enablePubspecOverrides = false, String? pubspecOverridesPath})
-      : root = Package.load(null, rootDir, cache.sources,
-            enablePubspecOverrides: enablePubspecOverrides,
-            pubspecOverridesPath: pubspecOverridesPath),
+  Entrypoint(String rootDir, this.cache)
+      : root = Package.load(null, rootDir, cache.sources),
         isGlobal = false;
 
   /// Creates an entrypoint given package and lockfile objects.
@@ -265,9 +257,8 @@ class Entrypoint {
     bool onlyReportSuccessOrFailure = false,
   }) async {
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
-      // Log about pubspec being overridden.
-      var overridesPath = root.relative(pubspecOverridesPath!);
-      log.warning('Warning: pubspec.yaml has overrides from $overridesPath');
+      log.warning(
+          'Warning: pubspec.yaml has overrides from pubspec_overrides.yaml');
     }
 
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';

@@ -145,17 +145,8 @@ class Package {
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  ///
-  /// If [enablePubspecOverrides] is true the pubspec overrides features is
-  /// enabled for the package. If provided, [pubspecOverridesPath] replaces
-  /// the default location (`$PGK_DIR/pubspec_overrides.yaml`) of the overrides
-  /// file.
-  Package.load(String? name, String this._dir, SourceRegistry sources,
-      {bool enablePubspecOverrides = false, String? pubspecOverridesPath})
-      : pubspec = Pubspec.load(_dir, sources,
-            expectedName: name,
-            enableOverrides: enablePubspecOverrides,
-            overridesPath: pubspecOverridesPath);
+  Package.load(String? name, String this._dir, SourceRegistry sources)
+      : pubspec = Pubspec.load(_dir, sources, expectedName: name);
 
   /// Constructs a package with the given pubspec.
   ///

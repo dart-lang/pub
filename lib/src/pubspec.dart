@@ -285,16 +285,8 @@ class Pubspec extends PubspecBase {
   ///
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecException].
-  ///
-  /// If [enableOverrides] is true the pubspec overrides features is enabled for
-  /// the pubspec. If provided, [overridesPath] replaces the default location
-  /// (`$PGK_DIR/pubspec_overrides.yaml`) of the overrides file.
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String? expectedName,
-      bool enableOverrides = false,
-      String? overridesPath}) {
-    assert(overridesPath == null || enableOverrides);
-
+      {String? expectedName}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -307,21 +299,17 @@ class Pubspec extends PubspecBase {
     }
 
     String? overridesContents;
-    Uri? overridesLocation;
-    if (enableOverrides) {
-      overridesPath ??= path.join(packageDir, 'pubspec_overrides.yaml');
-      var overridesUri = path.toUri(overridesPath);
-      if (fileExists(overridesPath)) {
-        overridesContents = readTextFile(overridesPath);
-        overridesLocation = overridesUri;
-      }
+    final overridesPath = path.join(packageDir, 'pubspec_overrides.yaml');
+    final overridesUri = path.toUri(overridesPath);
+    if (fileExists(overridesPath)) {
+      overridesContents = readTextFile(overridesPath);
     }
 
     return Pubspec.parse(readTextFile(pubspecPath), sources,
         expectedName: expectedName,
         location: pubspecUri,
         overridesContents: overridesContents,
-        overridesLocation: overridesLocation);
+        overridesLocation: overridesUri);
   }
 
   Pubspec(String name,

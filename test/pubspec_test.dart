@@ -819,16 +819,14 @@ features:
     });
 
     group('overrides', () {
-      var defaultPubspecLocation = Uri.parse('file:///pubspec.yaml');
-      var defaultOverridesLocation =
-          Uri.parse('file:///pubspec_overrides.yaml');
-
-      Pubspec parseWithOverrides(String contents, String overrides,
-          {Uri? location, Uri? overridesLocation}) {
-        return Pubspec.parse(contents, sources,
-            overridesContents: overrides,
-            location: location ?? defaultPubspecLocation,
-            overridesLocation: overridesLocation ?? defaultOverridesLocation);
+      Pubspec parseWithOverrides(String contents, String overrides) {
+        return Pubspec.parse(
+          contents,
+          sources,
+          overridesContents: overrides,
+          location: Uri.parse('file:///pubspec.yaml'),
+          overridesLocation: Uri.parse('file:///pubspec_overrides.yaml'),
+        );
       }
 
       void expectPubspecExceptionWithOverrides(
