@@ -10,6 +10,7 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml/yaml.dart';
 
 import 'command_runner.dart';
 import 'dart.dart' as dart;
@@ -250,8 +251,7 @@ class Entrypoint {
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
-        // We require an SDK constraint lower-bound as of Dart 2.12.0
-        _checkSdkConstraintIsDefined(root.pubspec);
+        _checkSdkConstraint(root.pubspec);
         return resolveVersions(
           type,
           cache,
@@ -872,7 +872,9 @@ class Entrypoint {
   }
 
   /// We require an SDK constraint lower-bound as of Dart 2.12.0
-  void _checkSdkConstraintIsDefined(Pubspec pubspec) {
+  ///
+  /// We don't allow unknown sdks.
+  void _checkSdkConstraint(Pubspec pubspec) {
     final dartSdkConstraint = pubspec.sdkConstraints['dart'];
     if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
       // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
@@ -901,6 +903,24 @@ environment:
 
 See https://dart.dev/go/sdk-constraint
 ''');
+    }
+    for (final sdk in pubspec.sdkConstraints.keys) {
+      if (!sdks.containsKey(sdk)) {
+        final environment = pubspec.fields.nodes['environment'] as YamlMap;
+        final keyNode = environment.nodes.entries
+            .firstWhere((e) => (e.key as YamlNode).value == sdk)
+            .key as YamlNode;
+        throw PubspecException('''
+$pubspecPath refers to an unknown sdk '$sdk'.
+
+Did you mean to add it as a dependency?
+
+Either remove the constraint, or upgrade to a version of pub that supports the
+given sdk.
+
+See https://dart.dev/go/sdk-constraint
+''', keyNode.span);
+      }
     }
   }
 }
