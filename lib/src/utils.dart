@@ -503,39 +503,37 @@ String yamlToString(data) {
   return buffer.toString();
 }
 
-/// [YamlMap] which overrides entries in the [original] map with entries from
-/// the [overrides] map.
+/// [YamlMap] which overrides entries in a base map with entries from
+/// an overrides map.
 ///
 /// This map is useful to apply overrides from one yaml file to another, while
 /// keeping source references intact.
 ///
-/// The map contains entries for all of the keys of [original]. If both
-/// [original] and [overrides] contain an entry for a given key, [mergeEntry]
-/// is called to merge the values. Otherwise, the entry from [original] is taken
+/// This map contains entries for all of the keys of the base. If both the base
+/// map and overrides map contain an entry for a given key, [mergeEntry]
+/// is called to merge the values. Otherwise, the entry from base map is taken
 /// over as is.
 ///
-/// Entries that only exist in [overrides] are taken over as is.
+/// Entries that only exist in the overrides map are taken over as is.
 ///
-/// The [YamlNode]s of keys of merged entries always come from [original].
+/// The [YamlNode]s of keys of merged entries always come from base map.
 class OverrideYamlMap with MapMixin, UnmodifiableMapMixin implements YamlMap {
-  OverrideYamlMap(this.original, this.overrides, this.mergeEntry);
+  OverrideYamlMap(this._base, this._overrides, this.mergeEntry);
 
-  /// The original map which is being overridden.
-  final YamlMap original;
+  final YamlMap _base;
 
-  /// The map containing the overrides.
-  final YamlMap overrides;
+  final YamlMap _overrides;
 
-  /// The function used to merge entries from [overrides] into [original].
+  /// The function used to merge entries from overrides map into the base map.
   ///
   /// The function receives the [key] for wich both maps have values and the
   /// corresponding [YamlNode]s from both maps. The returned [YamlNode] is used
   /// as the effective value for the entry.
-  final YamlNode Function(Object key, YamlNode original, YamlNode override)
+  final YamlNode Function(Object key, YamlNode base, YamlNode override)
       mergeEntry;
 
   @override
-  SourceSpan get span => original.span;
+  SourceSpan get span => _base.span;
 
   @override
   late Map<dynamic, YamlNode> nodes = _buildNodes();
@@ -556,31 +554,31 @@ class OverrideYamlMap with MapMixin, UnmodifiableMapMixin implements YamlMap {
     MapEntry<dynamic, YamlNode> getEntryByKey(YamlMap map, Object key) =>
         map.nodes.entries.firstWhere((entry) => entry.key.value == key);
 
-    final nodes = {...original.nodes};
+    final nodes = {..._base.nodes};
 
-    final originalKeys = original.keys.toSet();
-    final overridesKeys = overrides.keys.toSet();
+    final baseKeys = _base.keys.toSet();
+    final overridesKeys = _overrides.keys.toSet();
 
     // Handle overridden keys.
-    for (final key in overridesKeys.intersection(originalKeys)) {
-      final originalEntry = getEntryByKey(original, key);
-      final overrideEntry = getEntryByKey(overrides, key);
+    for (final key in overridesKeys.intersection(baseKeys)) {
+      final baseEntry = getEntryByKey(_base, key);
+      final overrideEntry = getEntryByKey(_overrides, key);
 
       // YamlNodes don't work as keys in maps, in the way one might expect.
       // Instead, we use the underlying value of the node to remove the old
       // entry before adding the new one.
       nodes.removeWhere((nodeKey, _) => nodeKey.value == key);
 
-      nodes[originalEntry.key] = mergeEntry(
+      nodes[baseEntry.key] = mergeEntry(
         key,
-        originalEntry.value,
+        baseEntry.value,
         overrideEntry.value,
       );
     }
 
     // Handle new keys.
-    for (final key in overridesKeys.difference(originalKeys)) {
-      final entry = getEntryByKey(overrides, key);
+    for (final key in overridesKeys.difference(baseKeys)) {
+      final entry = getEntryByKey(_overrides, key);
       nodes[entry.key] = entry.value;
     }
 

@@ -869,7 +869,7 @@ dependency_overrides:
         expect(pubspec.dependencyOverrides.keys, isEmpty);
       });
 
-      test('allows adding new dependencyOverrides section', () {
+      test('allows adding new dependency_overrides section', () {
         var pubspec = parseWithOverrides('''
 name: a
 ''', '''
@@ -879,15 +879,16 @@ dependency_overrides:
         expect(pubspec.dependencyOverrides.keys, ['b']);
       });
 
-      test('allows overriding existing dependencyOverrides', () {
+      test('replaces existing dependency_overrides section', () {
         var pubspec = parseWithOverrides('''
 name: a
 dependency_overrides:
-  b: 1.0.0
+  a: 1.0.0
 ''', '''
 dependency_overrides:
   b: 2.0.0
 ''');
+        expect(pubspec.dependencyOverrides, hasLength(1));
         expect(pubspec.dependencyOverrides['b']?.constraint, Version(2, 0, 0));
       });
 

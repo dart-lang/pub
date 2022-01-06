@@ -140,10 +140,12 @@ class Entrypoint {
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
 
   /// Whether the entrypoint package contains a `pubspec_overrides.yaml` file.
-  bool get hasPubspecOverrides => fileExists(pubspecOverridesPath);
+  bool get hasPubspecOverrides =>
+      !root.isInMemory && fileExists(pubspecOverridesPath);
 
   /// The path to the entrypoint package's pubspec overrides file.
-  String get pubspecOverridesPath => p.normalize(root.path('pubspec.yaml'));
+  String get pubspecOverridesPath =>
+      p.normalize(root.path('pubspec_overrides.yaml'));
 
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => p.normalize(p.join(_configRoot!, 'pubspec.lock'));
@@ -255,7 +257,7 @@ class Entrypoint {
   }) async {
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
       log.warning(
-          'Warning: pubspec.yaml has overrides from pubspec_overrides.yaml');
+          'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
     }
 
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';

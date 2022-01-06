@@ -692,48 +692,17 @@ bool _isFileUri(Uri uri) => uri.scheme == 'file' || uri.scheme == '';
 /// have both been parsed into [YamlMap]s. Source references of [YamlNode]s are
 /// preserved, so that error messages will point to the correct source location.
 ///
-/// Only the the following top-level fields of a pubspec are merged:
+/// Only the following top-level fields of a pubspec are merged:
 ///
 /// - `dependency_overrides`
 ///
-/// All other fields of an overrides file are ignored.
+/// All other fields of an overrides file are rejected.
 YamlMap _mergePubspecOverrides(YamlMap pubspec, YamlMap overrides) =>
     OverrideYamlMap(pubspec, overrides, (key, pubspecField, overridesField) {
       if (key == 'dependency_overrides') {
-        return _mergeDependencyOverrides(pubspecField, overridesField);
+        return overridesField;
       }
 
       throw PubspecException(
           '"$key" is not an overridable field.', overridesField.span);
     });
-
-/// Merges a dependency section form an overrides file into an existing section
-/// of a pubspec file.
-YamlNode _mergeDependencyOverrides(
-    YamlNode pubspecDependencies, YamlNode overridesDependencies) {
-  if (pubspecDependencies is! YamlMap) {
-    // The pubspec value is invalid since its not a map.
-    // But since it is being overridden, we can just replace it with an empty
-    // map.
-    pubspecDependencies = YamlMap();
-  }
-
-  if (overridesDependencies is YamlScalar &&
-      overridesDependencies.value == null) {
-    // Dependency section in overrides is empty.
-    return pubspecDependencies;
-  }
-
-  if (overridesDependencies is! YamlMap) {
-    // The overrides value is invalid since its not a map.
-    // We let it replace the original so it gets caught in validation.
-    return overridesDependencies;
-  }
-
-  return OverrideYamlMap(pubspecDependencies, overridesDependencies,
-      (key, pubspecSpec, overridesSpec) {
-    // Dependency overrides replace the complete dependency spec.
-    // No further merging is necessary.
-    return overridesSpec;
-  });
-}
