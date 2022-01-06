@@ -139,15 +139,11 @@ class Entrypoint {
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
 
-  /// Whether the entrypoint package's pubspec contains overrides from an
-  /// overrides files.
-  ///
-  /// If this is `true`, [pubspecOverridesPath] contains the path to the
-  /// overrides file.
-  bool get hasPubspecOverrides => pubspecOverridesPath != null;
+  /// Whether the entrypoint package contains a `pubspec_overrides.yaml` file.
+  bool get hasPubspecOverrides => fileExists(pubspecOverridesPath);
 
   /// The path to the entrypoint package's pubspec overrides file.
-  String? get pubspecOverridesPath => root.pubspec.overridesLocation?.path;
+  String get pubspecOverridesPath => p.normalize(root.path('pubspec.yaml'));
 
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => p.normalize(p.join(_configRoot!, 'pubspec.lock'));
@@ -184,7 +180,8 @@ class Entrypoint {
 
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(String rootDir, this.cache)
-      : root = Package.load(null, rootDir, cache.sources),
+      : root = Package.load(null, rootDir, cache.sources,
+            withPubspecOverrides: true),
         isGlobal = false;
 
   /// Creates an entrypoint given package and lockfile objects.
@@ -533,12 +530,10 @@ class Entrypoint {
     var pubspecOverridesChanged = false;
 
     if (hasPubspecOverrides) {
-      var pubspecOverridesFile = File(pubspecOverridesPath!);
-      if (pubspecOverridesFile.existsSync()) {
-        var pubspecOverridesModified = pubspecOverridesFile.lastModifiedSync();
-        pubspecOverridesChanged =
-            lockFileModified.isBefore(pubspecOverridesModified);
-      }
+      var pubspecOverridesModified =
+          File(pubspecOverridesPath).lastModifiedSync();
+      pubspecOverridesChanged =
+          lockFileModified.isBefore(pubspecOverridesModified);
     }
 
     var touchedLockFile = false;

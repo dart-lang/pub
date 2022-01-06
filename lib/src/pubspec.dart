@@ -70,10 +70,6 @@ class Pubspec extends PubspecBase {
   // initialization can throw a [PubspecException], that error should also be
   // exposed through [allErrors].
 
-  /// The location of the overrides file, if this pubspec file is incorporating
-  /// overrides from an overrides file.
-  final Uri? overridesLocation;
-
   /// The registry of sources to use when parsing [dependencies] and
   /// [devDependencies].
   ///
@@ -285,8 +281,11 @@ class Pubspec extends PubspecBase {
   ///
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecException].
+  ///
+  /// Only if [withPubspecOverrides] is `true`, will overrides be loaded from
+  /// `pubspec_overrides.yaml`.
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String? expectedName}) {
+      {String? expectedName, bool withPubspecOverrides = false}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -299,10 +298,13 @@ class Pubspec extends PubspecBase {
     }
 
     String? overridesContents;
-    final overridesPath = path.join(packageDir, 'pubspec_overrides.yaml');
-    final overridesUri = path.toUri(overridesPath);
-    if (fileExists(overridesPath)) {
-      overridesContents = readTextFile(overridesPath);
+    Uri? overridesUri;
+    if (withPubspecOverrides) {
+      final overridesPath = path.join(packageDir, 'pubspec_overrides.yaml');
+      overridesUri = path.toUri(overridesPath);
+      if (fileExists(overridesPath)) {
+        overridesContents = readTextFile(overridesPath);
+      }
     }
 
     return Pubspec.parse(readTextFile(pubspecPath), sources,
@@ -319,8 +321,7 @@ class Pubspec extends PubspecBase {
       Iterable<PackageRange>? dependencyOverrides,
       Map? fields,
       SourceRegistry? sources,
-      Map<String, VersionConstraint>? sdkConstraints,
-      this.overridesLocation})
+      Map<String, VersionConstraint>? sdkConstraints})
       : _dependencies = dependencies == null
             ? null
             : Map.fromIterable(dependencies, key: (range) => range.name),
@@ -345,7 +346,6 @@ class Pubspec extends PubspecBase {
         _devDependencies = {},
         _sdkConstraints = {'dart': VersionConstraint.any},
         _includeDefaultSdkConstraint = false,
-        overridesLocation = null,
         super(
           YamlMap(),
           version: Version.none,
@@ -358,11 +358,8 @@ class Pubspec extends PubspecBase {
   /// field, this will throw a [PubspecError].
   ///
   /// [location] is the location from which this pubspec was loaded.
-  ///
-  /// [overridesLocation] is the location from which overrides have been loaded,
-  /// and merged into the [fields] of the pubspec.
   Pubspec.fromMap(Map fields, this._sources,
-      {String? expectedName, Uri? location, this.overridesLocation})
+      {String? expectedName, Uri? location})
       : _includeDefaultSdkConstraint = true,
         super(fields is YamlMap
             ? fields
@@ -435,9 +432,7 @@ class Pubspec extends PubspecBase {
     }
 
     return Pubspec.fromMap(pubspecMap, sources,
-        expectedName: expectedName,
-        location: location,
-        overridesLocation: overridesLocation);
+        expectedName: expectedName, location: location);
   }
 
   /// Returns a list of most errors in this pubspec.
@@ -699,25 +694,17 @@ bool _isFileUri(Uri uri) => uri.scheme == 'file' || uri.scheme == '';
 ///
 /// Only the the following top-level fields of a pubspec are merged:
 ///
-/// - `dependencies`
-/// - `dev_dependencies`
 /// - `dependency_overrides`
 ///
 /// All other fields of an overrides file are ignored.
 YamlMap _mergePubspecOverrides(YamlMap pubspec, YamlMap overrides) =>
     OverrideYamlMap(pubspec, overrides, (key, pubspecField, overridesField) {
-      const dependencyKeys = [
-        'dependencies',
-        'dev_dependencies',
-        'dependency_overrides'
-      ];
-
-      if (!dependencyKeys.contains(key)) {
-        // Only dependencies can be overridden, currently.
-        return pubspecField;
+      if (key == 'dependency_overrides') {
+        return _mergeDependencyOverrides(pubspecField, overridesField);
       }
 
-      return _mergeDependencyOverrides(pubspecField, overridesField);
+      throw PubspecException(
+          '"$key" is not an overridable field.', overridesField.span);
     });
 
 /// Merges a dependency section form an overrides file into an existing section

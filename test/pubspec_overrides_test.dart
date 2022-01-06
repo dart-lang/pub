@@ -21,14 +21,16 @@ void main() {
         d.appPubspec({'lib': '1.0.0'}),
         d.dir('lib'),
         d.pubspecOverrides({
-          'dependencies': {'lib': '2.0.0'}
+          'dependency_overrides': {'lib': '2.0.0'}
         }),
       ]).create();
 
       await pubCommand(
         command,
         warning:
-            'Warning: pubspec.yaml has overrides from pubspec_overrides.yaml',
+            'Warning: pubspec.yaml has overrides from pubspec_overrides.yaml\n'
+            'Warning: You are using these overridden dependencies:\n'
+            '! lib 2.0.0',
       );
 
       await d.dir(appPath, [

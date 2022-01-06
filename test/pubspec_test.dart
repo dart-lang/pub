@@ -852,79 +852,42 @@ name: a
 ''');
       });
 
-      test('ignores properties which cannot be overridden', () {
-        var pubspec = parseWithOverrides('''
+      test('throws exception for fields which cannot be overridden', () {
+        expectPubspecExceptionWithOverrides('''
 name: a
-version: 1.0.0
-publish_to: https://pub.dev
-executables:
-  a:
-environment:
-  sdk: 1.0.0
 ''', '''
 name: b
-version: 2.0.0
-publish_to: none
-executables:
-  b:
-environment:
-  sdk: 2.0.0
-''');
-        expect(pubspec.name, 'a');
-        expect(pubspec.version, Version(1, 0, 0));
-        expect(pubspec.publishTo, 'https://pub.dev');
-        expect(pubspec.executables.keys, ['a']);
-        expect(pubspec.sdkConstraints['dart'], Version(1, 0, 0));
+''', (pubspec) => pubspec.name, '"name" is not an overridable field.');
       });
 
-      test('allows empty dependency section', () {
+      test('allows empty dependency_overrides section', () {
         var pubspec = parseWithOverrides('''
 name: a
 ''', '''
-dependencies:
-dev_dependencies:
 dependency_overrides:
 ''');
-        expect(pubspec.dependencies.keys, isEmpty);
-        expect(pubspec.devDependencies.keys, isEmpty);
         expect(pubspec.dependencyOverrides.keys, isEmpty);
       });
 
-      test('allows adding new dependency section', () {
+      test('allows adding new dependencyOverrides section', () {
         var pubspec = parseWithOverrides('''
 name: a
 ''', '''
-dependencies:
-  b: 1.0.0
-dev_dependencies:
-  b: 1.0.0
 dependency_overrides:
   b: 1.0.0
 ''');
-        expect(pubspec.dependencies.keys, ['b']);
-        expect(pubspec.devDependencies.keys, ['b']);
         expect(pubspec.dependencyOverrides.keys, ['b']);
       });
 
-      test('allows overriding existing dependencies', () {
+      test('allows overriding existing dependencyOverrides', () {
         var pubspec = parseWithOverrides('''
 name: a
-dependencies:
-  b: 1.0.0
-dev_dependencies:
-  b: 1.0.0
 dependency_overrides:
   b: 1.0.0
 ''', '''
-dependencies:
-  b: 2.0.0
-dev_dependencies:
-  b: 2.0.0
 dependency_overrides:
   b: 2.0.0
 ''');
-        expect(pubspec.dependencies['b']?.constraint, Version(2, 0, 0));
-        expect(pubspec.devDependencies['b']?.constraint, Version(2, 0, 0));
         expect(pubspec.dependencyOverrides['b']?.constraint, Version(2, 0, 0));
       });
 
@@ -932,19 +895,19 @@ dependency_overrides:
         expectPubspecExceptionWithOverrides('''
 name: a
 ''', '''
-dependencies:
+dependency_overrides:
   b:
     fake: bad
-''', (pubspec) => pubspec.dependencies,
+''', (pubspec) => pubspec.dependencyOverrides,
             'Error on line 3, column 11 of /pubspec_overrides.yaml');
 
         expectPubspecExceptionWithOverrides('''
 name: a
-dependencies:
+dependency_overrides:
   b:
     fake: bad
 ''', '''
-''', (pubspec) => pubspec.dependencies,
+''', (pubspec) => pubspec.dependencyOverrides,
             'Error on line 4, column 11 of /pubspec.yaml');
       });
 
@@ -952,8 +915,8 @@ dependencies:
         expectPubspecExceptionWithOverrides('''
 name: a
 ''', '''
-dependencies: false
-''', (pubspec) => pubspec.dependencies);
+dependency_overrides: false
+''', (pubspec) => pubspec.dependencyOverrides);
       });
     });
   });
