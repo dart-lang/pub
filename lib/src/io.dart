@@ -383,7 +383,7 @@ void _attempt(String description, void Function() operation,
     }
 
     // ERROR_DIR_NOT_EMPTY
-    if (!ignoreEmptyDir && error.osError?.errorCode == 145) {
+    if (!ignoreEmptyDir && isDirectoryNotEmptyException(error)) {
       return 'of dart-lang/sdk#25353';
     }
 
