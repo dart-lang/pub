@@ -363,7 +363,7 @@ bool dirExists(String dir) => Directory(dir).existsSync();
 /// fails.
 ///
 /// For some operations it makes sense to handle ERROR_DIR_NOT_EMPTY
-/// differently. They can passe [ignoreEmptyDir] = `true`.
+/// differently. They can pass [ignoreEmptyDir] = `true`.
 void _attempt(String description, void Function() operation,
     {bool ignoreEmptyDir = false}) {
   if (!Platform.isWindows) {
