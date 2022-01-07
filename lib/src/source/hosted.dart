@@ -821,7 +821,7 @@ class BoundHostedSource extends CachedSource {
       try {
         renameDir(tempDir, destPath);
       } on io.FileSystemException catch (e) {
-        deleteEntry(tempDir);
+        tryDeleteEntry(tempDir);
         if (!isDirectoryNotEmptyException(e)) {
           rethrow;
         }
