@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';
@@ -821,6 +822,8 @@ class BoundHostedSource extends CachedSource {
       try {
         renameDir(tempDir, destPath);
       } on io.FileSystemException catch (e) {
+        log.error(// Do not land.
+            '!!!pub cache: ${tree.fromFiles(listDir(systemCache.rootDir, recursive: true, includeHidden: true), showAllChildren: true)}');
         tryDeleteEntry(tempDir);
         if (!isDirectoryNotEmptyException(e)) {
           rethrow;
