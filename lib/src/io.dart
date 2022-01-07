@@ -393,6 +393,7 @@ void _attempt(String description, void Function() operation,
   for (var i = 0; i < 3; i++) {
     try {
       operation();
+      break;
     } on FileSystemException catch (error) {
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
