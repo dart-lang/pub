@@ -704,6 +704,7 @@ class BoundHostedSource extends CachedSource {
           packages.map((package) async {
             var id = source.idFor(package.name, package.version, url: url);
             try {
+              deleteEntry(package.dir);
               await _download(id, package.dir);
               return RepairResult(id, success: true);
             } catch (error, stackTrace) {
@@ -812,14 +813,23 @@ class BoundHostedSource extends CachedSource {
       var tempDir = systemCache.createTempDir();
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
-      // Remove the existing directory if it exists. This will happen if
-      // we're forcing a download to repair the cache.
-      if (dirExists(destPath)) deleteEntry(destPath);
-
       // Now that the get has succeeded, move it to the real location in the
-      // cache. This ensures that we don't leave half-busted ghost
-      // directories in the user's pub cache if a get fails.
-      renameDir(tempDir, destPath);
+      // cache.
+      //
+      // If this fails with a "directory not empty" exception we assume that
+      // another pub process has installed the same package version while we
+      // downloaded.
+      try {
+        renameDir(tempDir, destPath);
+      } on io.FileSystemException catch (e) {
+        tryDeleteEntry(tempDir);
+        if (!isDirectoryNotEmptyException(e)) {
+          rethrow;
+        }
+        log.fine('''
+Destination directory $destPath already existed.
+Assuming a concurrent pub invocation installed it.''');
+      }
     });
   }
 

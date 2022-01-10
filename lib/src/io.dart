@@ -361,51 +361,53 @@ bool dirExists(String dir) => Directory(dir).existsSync();
 /// when we try to delete or move something while it's being scanned. To
 /// mitigate that, on Windows, this will retry the operation a few times if it
 /// fails.
-void _attempt(String description, void Function() operation) {
+///
+/// For some operations it makes sense to handle ERROR_DIR_NOT_EMPTY
+/// differently. They can pass [ignoreEmptyDir] = `true`.
+void _attempt(String description, void Function() operation,
+    {bool ignoreEmptyDir = false}) {
   if (!Platform.isWindows) {
     operation();
     return;
   }
 
   String? getErrorReason(FileSystemException error) {
+    // ERROR_ACCESS_DENIED
     if (error.osError?.errorCode == 5) {
       return 'access was denied';
     }
 
+    // ERROR_SHARING_VIOLATION
     if (error.osError?.errorCode == 32) {
       return 'it was in use by another process';
     }
 
-    if (error.osError?.errorCode == 145) {
+    // ERROR_DIR_NOT_EMPTY
+    if (!ignoreEmptyDir && isDirectoryNotEmptyException(error)) {
       return 'of dart-lang/sdk#25353';
     }
 
     return null;
   }
 
-  for (var i = 0; i < 2; i++) {
+  for (var i = 0; i < 3; i++) {
     try {
       operation();
-      return;
+      break;
     } on FileSystemException catch (error) {
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      log.io('Pub failed to $description because $reason. '
-          'Retrying in 50ms.');
-      sleep(Duration(milliseconds: 50));
+      if (i < 2) {
+        log.io('Pub failed to $description because $reason. '
+            'Retrying in 50ms.');
+        sleep(Duration(milliseconds: 50));
+      } else {
+        fail('Pub failed to $description because $reason.\n'
+            'This may be caused by a virus scanner or having a file\n'
+            'in the directory open in another application.');
+      }
     }
-  }
-
-  try {
-    operation();
-  } on FileSystemException catch (error) {
-    var reason = getErrorReason(error);
-    if (reason == null) rethrow;
-
-    fail('Pub failed to $description because $reason.\n'
-        'This may be caused by a virus scanner or having a file\n'
-        'in the directory open in another application.');
   }
 }
 
@@ -451,14 +453,25 @@ void cleanDir(String dir) {
 void renameDir(String from, String to) {
   _attempt('rename directory', () {
     log.io('Renaming directory $from to $to.');
-    try {
-      Directory(from).renameSync(to);
-    } on IOException {
-      // Ensure that [to] isn't left in an inconsistent state. See issue 12436.
-      if (entryExists(to)) deleteEntry(to);
-      rethrow;
-    }
-  });
+    Directory(from).renameSync(to);
+  }, ignoreEmptyDir: true);
+}
+
+bool isDirectoryNotEmptyException(FileSystemException e) {
+  final errorCode = e.osError?.errorCode;
+  return
+      // On Linux rename will fail with ENOTEMPTY if directory exists:
+      // https://man7.org/linux/man-pages/man2/rename.2.html
+      // #define	ENOTEMPTY	39	/* Directory not empty */
+      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
+      (Platform.isLinux && errorCode == 39) ||
+          // On Windows this may fail with ERROR_DIR_NOT_EMPTY
+          // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+          (Platform.isWindows && errorCode == 145) ||
+          // On MacOS rename will fail with ENOTEMPTY if directory exists.
+          // #define ENOTEMPTY       66              /* Directory not empty */
+          // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
+          (Platform.isMacOS && errorCode == 66);
 }
 
 /// Creates a new symlink at path [symlink] that points to [target].
