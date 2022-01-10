@@ -13,7 +13,6 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';
