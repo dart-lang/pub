@@ -705,6 +705,7 @@ class BoundHostedSource extends CachedSource {
           packages.map((package) async {
             var id = source.idFor(package.name, package.version, url: url);
             try {
+              deleteEntry(package.dir);
               await _download(id, package.dir);
               return RepairResult(id, success: true);
             } catch (error, stackTrace) {
@@ -820,9 +821,6 @@ class BoundHostedSource extends CachedSource {
       // another pub process has installed the same package version while we
       // downloaded.
       try {
-        log.fine(// Do not land.
-            '!!!pub cache: ${tree.fromFiles(io.Directory(systemCache.rootDir).listSync(recursive: true).map((e) => e.path).toList(), showAllChildren: true)}');
-
         renameDir(tempDir, destPath);
       } on io.FileSystemException catch (e) {
         tryDeleteEntry(tempDir);
