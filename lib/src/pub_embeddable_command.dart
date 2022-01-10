@@ -58,11 +58,13 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   final PubAnalytics? analytics;
 
-  PubEmbeddableCommand(this.analytics) : super() {
+  final bool Function() isVerbose;
+
+  PubEmbeddableCommand(this.analytics, this.isVerbose) : super() {
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+        abbr: 'v', negatable: false, help: 'Print detailed logging.');
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -101,12 +103,15 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   }
 
   @override
-  bool get captureStackChains => argResults['verbose'];
+  bool get captureStackChains => _isVerbose;
 
   @override
-  Verbosity get verbosity =>
-      argResults['verbose'] ? Verbosity.all : Verbosity.normal;
+  Verbosity get verbosity => _isVerbose ? Verbosity.all : Verbosity.normal;
 
   @override
-  bool get trace => argResults['verbose'];
+  bool get trace => _isVerbose;
+
+  bool get _isVerbose {
+    return argResults['verbose'] || isVerbose();
+  }
 }

@@ -221,6 +221,13 @@ main() {
     // Don't write the logs to file on a normal run.
     expect(File(logFile).existsSync(), isFalse);
   });
+
+  test('`embedding --verbose pub` is verbose', () async {
+    await servePackages();
+    final buffer = StringBuffer();
+    await runEmbeddingToBuffer(['--verbose', 'pub', 'logout'], buffer);
+    expect(buffer.toString(), contains('FINE: Pub 0.1.2+3'));
+  });
 }
 
 String _filter(String input) {
