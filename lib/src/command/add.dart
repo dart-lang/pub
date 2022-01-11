@@ -146,9 +146,8 @@ class AddCommand extends PubCommand {
       /// to this new dependency.
       final newRoot = Package.inMemory(updatedPubSpec);
 
-      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
-              solveResult: solveResult)
+      await Entrypoint.inMemory(newRoot, cache,
+              solveResult: solveResult, lockFile: entrypoint.lockFile)
           .acquireDependencies(SolveType.get,
               dryRun: true,
               precompile: argResults['precompile'],

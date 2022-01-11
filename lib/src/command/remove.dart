@@ -65,7 +65,7 @@ class RemoveCommand extends PubCommand {
       final newPubspec = _removePackagesFromPubspec(rootPubspec, packages);
       final newRoot = Package.inMemory(newPubspec);
 
-      await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
+      await Entrypoint.inMemory(newRoot, cache, lockFile: entrypoint.lockFile)
           .acquireDependencies(SolveType.get,
               precompile: argResults['precompile'],
               dryRun: true,

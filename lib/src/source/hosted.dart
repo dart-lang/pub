@@ -159,7 +159,7 @@ class HostedSource extends Source {
   }
 
   @override
-  dynamic serializeDescription(String containingPath, description) {
+  dynamic serializeDescription(String? containingPath, description) {
     final desc = _asDescription(description);
     return _serializedDescriptionFor(desc.packageName, desc.uri);
   }
@@ -819,17 +819,7 @@ class BoundHostedSource extends CachedSource {
       // If this fails with a "directory not empty" exception we assume that
       // another pub process has installed the same package version while we
       // downloaded.
-      try {
-        renameDir(tempDir, destPath);
-      } on io.FileSystemException catch (e) {
-        tryDeleteEntry(tempDir);
-        if (!isDirectoryNotEmptyException(e)) {
-          rethrow;
-        }
-        log.fine('''
-Destination directory $destPath already existed.
-Assuming a concurrent pub invocation installed it.''');
-      }
+      tryRenameDir(tempDir, destPath);
     });
   }
 
