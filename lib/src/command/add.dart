@@ -91,16 +91,18 @@ class AddCommand extends PubCommand {
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
-    } else if (argResults.rest.length > 1) {
-      usageException('Takes only a single argument.');
+    } else if (argResults.rest.length > 1 && gitUrl != null) {
+      usageException('Only one package per git repository');
     }
+    var packageInformation, package;
+    Pubspec updatedPubSpec = entrypoint.root.pubspec;
+    for (var givenPackage in argResults.rest) {
+      packageInformation = _parsePackage(givenPackage);
+      package = packageInformation.first;
 
-    final packageInformation = _parsePackage(argResults.rest.first);
-    final package = packageInformation.first;
-
-    /// Perform version resolution in-memory.
-    final updatedPubSpec =
-        await _addPackageToPubspec(entrypoint.root.pubspec, package);
+      /// Perform version resolution in-memory.
+      updatedPubSpec = await _addPackageToPubspec(updatedPubSpec, package);
+    }
 
     late SolveResult solveResult;
 
@@ -122,24 +124,6 @@ class AddCommand extends PubCommand {
       dataError(e.message);
     }
 
-    final resultPackage = solveResult.packages
-        .firstWhere((packageId) => packageId.name == package.name);
-
-    /// Assert that [resultPackage] is within the original user's expectations.
-    var constraint = package.constraint;
-    if (!constraint.allows(resultPackage.version)) {
-      var dependencyOverrides = updatedPubSpec.dependencyOverrides;
-      if (dependencyOverrides.isNotEmpty) {
-        dataError(
-            '"${package.name}" resolved to "${resultPackage.version}" which '
-            'does not satisfy constraint "${package.constraint}". This could be '
-            'caused by "dependency_overrides".');
-      }
-      dataError(
-          '"${package.name}" resolved to "${resultPackage.version}" which '
-          'does not satisfy constraint "${package.constraint}".');
-    }
-
     if (isDryRun) {
       /// Even if it is a dry run, run `acquireDependencies` so that the user
       /// gets a report on the other packages that might change version due
@@ -154,11 +138,33 @@ class AddCommand extends PubCommand {
               precompile: argResults['precompile'],
               analytics: analytics);
     } else {
-      /// Update the `pubspec.yaml` before calling [acquireDependencies] to
-      /// ensure that the modification timestamp on `pubspec.lock` and
-      /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
-      /// ensuring that [entrypoint.assertUptoDate] will pass.
-      _updatePubspec(resultPackage, packageInformation, isDev);
+      /// Verify the results and update the pubspec for each package.
+      for (var givenPackage in argResults.rest) {
+        packageInformation = _parsePackage(givenPackage);
+        package = packageInformation.first;
+        final resultPackage = solveResult.packages
+            .firstWhere((packageId) => packageId.name == package.name);
+
+        /// Assert that [resultPackage] is within the original user's expectations.
+        var constraint = package.constraint;
+        if (!constraint.allows(resultPackage.version)) {
+          var dependencyOverrides = updatedPubSpec.dependencyOverrides;
+          if (dependencyOverrides.isNotEmpty) {
+            dataError(
+                '"${package.name}" resolved to "${resultPackage.version}" which '
+                'does not satisfy constraint "${package.constraint}". This could be '
+                'caused by "dependency_overrides".');
+          }
+          dataError(
+              '"${package.name}" resolved to "${resultPackage.version}" which '
+              'does not satisfy constraint "${package.constraint}".');
+        }
+        /// Update the `pubspec.yaml` before calling [acquireDependencies] to
+        /// ensure that the modification timestamp on `pubspec.lock` and
+        /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
+        /// ensuring that [entrypoint.assertUptoDate] will pass.
+        _updatePubspec(resultPackage, packageInformation, isDev);
+      }
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
