@@ -23,6 +23,6 @@ void main() {
     await runPub(
         args: ['global', 'deactivate', 'foo'],
         output:
-            'Deactivated package foo 1.0.0 from Git repository "${locationUri}".');
+            'Deactivated package foo 1.0.0 from Git repository "$locationUri".');
   });
 }

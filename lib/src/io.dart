@@ -475,6 +475,16 @@ Assuming a concurrent pub invocation installed it.''');
   }
 }
 
+void copyFile(String from, String to) {
+  log.io('Copying "$from" to "$to".');
+  File(from).copySync(to);
+}
+
+void renameFile(String from, String to) {
+  log.io('Renaming "$from" to "$to".');
+  File(from).renameSync(to);
+}
+
 bool _isDirectoryNotEmptyException(FileSystemException e) {
   final errorCode = e.osError?.errorCode;
   return
