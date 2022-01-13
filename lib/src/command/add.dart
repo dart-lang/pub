@@ -92,13 +92,13 @@ class AddCommand extends PubCommand {
     if (argResults.rest.isEmpty) {
       usageException('Must specify a package to be added.');
     } else if (argResults.rest.length > 1 && gitUrl != null) {
-      usageException('Only one package per git repository');
+      usageException('Can only add a single git package at a time.');
+    } else if (argResults.rest.length > 1 && path != null) {
+      usageException('Can only add a single local package at a time.');
     }
-    var packageInformation, package;
-    Pubspec updatedPubSpec = entrypoint.root.pubspec;
-    for (var givenPackage in argResults.rest) {
-      packageInformation = _parsePackage(givenPackage);
-      package = packageInformation.first;
+    var updatedPubSpec = entrypoint.root.pubspec;
+    for (final givenPackage in argResults.rest) {
+      final package = _parsePackage(givenPackage).first;
 
       /// Perform version resolution in-memory.
       updatedPubSpec = await _addPackageToPubspec(updatedPubSpec, package);
@@ -115,6 +115,7 @@ class AddCommand extends PubCommand {
       solveResult = await resolveVersions(
           SolveType.upgrade, cache, Package.inMemory(updatedPubSpec));
     } on GitException {
+      final package = _parsePackage(argResults.rest.first).first;
       dataError('Unable to resolve package "${package.name}" with the given '
           'git parameters.');
     } on SolveFailure catch (e) {
@@ -125,23 +126,9 @@ class AddCommand extends PubCommand {
     }
 
     if (isDryRun) {
-      /// Even if it is a dry run, run `acquireDependencies` so that the user
-      /// gets a report on the other packages that might change version due
-      /// to this new dependency.
-      final newRoot = Package.inMemory(updatedPubSpec);
-
-      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
-              solveResult: solveResult)
-          .acquireDependencies(SolveType.get,
-              dryRun: true,
-              precompile: argResults['precompile'],
-              analytics: analytics);
-    } else {
-      /// Verify the results and update the pubspec for each package.
-      for (var givenPackage in argResults.rest) {
-        packageInformation = _parsePackage(givenPackage);
-        package = packageInformation.first;
+      /// Verify the results for each package.
+      for (final givenPackage in argResults.rest) {
+        final package = _parsePackage(givenPackage).first;
         final resultPackage = solveResult.packages
             .firstWhere((packageId) => packageId.name == package.name);
 
@@ -159,6 +146,43 @@ class AddCommand extends PubCommand {
               '"${package.name}" resolved to "${resultPackage.version}" which '
               'does not satisfy constraint "${package.constraint}".');
         }
+      }
+
+      /// Even if it is a dry run, run `acquireDependencies` so that the user
+      /// gets a report on the other packages that might change version due
+      /// to this new dependency.
+      final newRoot = Package.inMemory(updatedPubSpec);
+
+      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
+      await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
+              solveResult: solveResult)
+          .acquireDependencies(SolveType.get,
+              dryRun: true,
+              precompile: argResults['precompile'],
+              analytics: analytics);
+    } else {
+      /// Verify the results and update the pubspec for each package.
+      for (final givenPackage in argResults.rest) {
+        final packageInformation = _parsePackage(givenPackage);
+        final package = packageInformation.first;
+        final resultPackage = solveResult.packages
+            .firstWhere((packageId) => packageId.name == package.name);
+
+        /// Assert that [resultPackage] is within the original user's expectations.
+        var constraint = package.constraint;
+        if (!constraint.allows(resultPackage.version)) {
+          var dependencyOverrides = updatedPubSpec.dependencyOverrides;
+          if (dependencyOverrides.isNotEmpty) {
+            dataError(
+                '"${package.name}" resolved to "${resultPackage.version}" which '
+                'does not satisfy constraint "${package.constraint}". This could be '
+                'caused by "dependency_overrides".');
+          }
+          dataError(
+              '"${package.name}" resolved to "${resultPackage.version}" which '
+              'does not satisfy constraint "${package.constraint}".');
+        }
+
         /// Update the `pubspec.yaml` before calling [acquireDependencies] to
         /// ensure that the modification timestamp on `pubspec.lock` and
         /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
