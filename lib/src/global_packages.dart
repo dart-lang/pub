@@ -784,31 +784,31 @@ fi
 # Script: $script
 $invocation
 ''';
+    }
 
-      // Write the binstub to a temporary location, make it executable and move
-      // it into place afterwards to avoid races.
-      final tempDir = cache.createTempDir();
-      try {
-        final tmpPath = p.join(tempDir, binStubPath);
+    // Write the binstub to a temporary location, make it executable and move
+    // it into place afterwards to avoid races.
+    final tempDir = cache.createTempDir();
+    try {
+      final tmpPath = p.join(tempDir, binStubPath);
 
-        // Write this as the system encoding since the system is going to
-        // execute it and it might contain non-ASCII characters in the
-        // pathnames.
-        writeTextFile(tmpPath, binstub, encoding: const SystemEncoding());
+      // Write this as the system encoding since the system is going to
+      // execute it and it might contain non-ASCII characters in the
+      // pathnames.
+      writeTextFile(tmpPath, binstub, encoding: const SystemEncoding());
 
-        if (Platform.isLinux || Platform.isMacOS) {
-          // Make it executable.
-          var result = Process.runSync('chmod', ['+x', tmpPath]);
-          if (result.exitCode != 0) {
-            // Couldn't make it executable so don't leave it laying around.
-            fail('Could not make "$tmpPath" executable (exit code '
-                '${result.exitCode}):\n${result.stderr}');
-          }
+      if (Platform.isLinux || Platform.isMacOS) {
+        // Make it executable.
+        var result = Process.runSync('chmod', ['+x', tmpPath]);
+        if (result.exitCode != 0) {
+          // Couldn't make it executable so don't leave it laying around.
+          fail('Could not make "$tmpPath" executable (exit code '
+              '${result.exitCode}):\n${result.stderr}');
         }
-        File(tmpPath).renameSync(binStubPath);
-      } finally {
-        deleteEntry(tempDir);
       }
+      File(tmpPath).renameSync(binStubPath);
+    } finally {
+      deleteEntry(tempDir);
     }
 
     return previousPackage;
