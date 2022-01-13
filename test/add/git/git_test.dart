@@ -196,6 +196,6 @@ void main() {
     await pubAdd(
         args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
         exitCode: exit_codes.USAGE,
-        error: contains('Only one package per git repository'));
+        error: contains('Can only add a single git package at a time.'));
   });
 }
