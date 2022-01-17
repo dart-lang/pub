@@ -16,20 +16,31 @@ import '../source/hosted.dart';
 class TokenAddCommand extends PubCommand {
   @override
   String get name => 'add';
+
   @override
   String get description =>
       'Add authentication tokens for a package repository.';
+
   @override
   String get invocation => 'pub token add';
+
   @override
   String get argumentsDescription => '[hosted-url]';
 
   String? get envVar => argResults['env-var'];
 
+  String? get verifyTls => argResults['tls-verify'];
+
   TokenAddCommand() {
     argParser.addOption('env-var',
         help: 'Read the secret token from this environment variable when '
             'making requests.');
+
+    argParser.addOption('tls-verify',
+        help:
+            'WARNING: this option is used to remove security checks for tests cases, '
+            'using it for real repositories may lead to a credential leak. '
+            'Allows storing token for http connections');
   }
 
   @override
@@ -44,7 +55,7 @@ class TokenAddCommand extends PubCommand {
 
     try {
       var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
-      if (!hostedUrl.isScheme('HTTPS')) {
+      if (verifyTls != 'false' && !hostedUrl.isScheme('HTTPS')) {
         throw FormatException('url must be https://, '
             'insecure repositories cannot use authentication.');
       }
