@@ -112,11 +112,8 @@ Descriptor libPubspec(String name, String version,
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-///
-/// If [name] is provided the default name is replaced with it.
-Descriptor pubspecOverrides(Map<String, Object> contents, {String? name}) =>
-    YamlDescriptor(
-      name ?? 'pubspec_overrides.yaml',
+Descriptor pubspecOverrides(Map<String, Object> contents) => YamlDescriptor(
+      'pubspec_overrides.yaml',
       yaml(contents),
     );
 

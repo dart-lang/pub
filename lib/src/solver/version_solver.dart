@@ -80,7 +80,7 @@ class VersionSolver {
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> unlock)
-      : _dependencyOverrides = _root.pubspec.dependencyOverrides,
+      : _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or

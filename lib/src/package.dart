@@ -62,15 +62,22 @@ class Package {
   /// The parsed pubspec associated with this package.
   final Pubspec pubspec;
 
+  /// The parsed pubspec overrides associated with this package.
+  ///
+  /// If this package has been loaded without overrides or
+  /// `pubspec_overrides.yaml` does not exist, this will be `null`.
+  late final PubspecOverrides? pubspecOverrides;
+
   /// The immediate dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get dependencies => pubspec.dependencies;
 
   /// The immediate dev dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get devDependencies => pubspec.devDependencies;
 
-  /// The dependency overrides this package specifies in its pubspec.
+  /// The dependency overrides this package specifies in its pubspec or pubspec
+  /// overrides.
   Map<String, PackageRange> get dependencyOverrides =>
-      pubspec.dependencyOverrides;
+      pubspecOverrides?.dependencyOverrides ?? pubspec.dependencyOverrides;
 
   /// All immediate dependencies this package specifies.
   ///
@@ -146,12 +153,18 @@ class Package {
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
   ///
-  /// Only if [withPubspecOverrides] is `true`, will overrides be loaded from
-  /// `pubspec_overrides.yaml`.
+  /// Only if [withPubspecOverrides] is `true`, will [pubspecOverrides] be
+  /// loaded from `pubspec_overrides.yaml`.
   Package.load(String? name, String this._dir, SourceRegistry sources,
       {bool withPubspecOverrides = false})
-      : pubspec = Pubspec.load(_dir, sources,
-            expectedName: name, withPubspecOverrides: withPubspecOverrides);
+      : pubspec = Pubspec.load(_dir, sources, expectedName: name) {
+    if (withPubspecOverrides && fileExists(path('pubspec_overrides.yaml'))) {
+      pubspecOverrides = PubspecOverrides.load(
+          _dir!, sources, pubspec.name, pubspec.languageVersion);
+    } else {
+      pubspecOverrides = null;
+    }
+  }
 
   /// Constructs a package with the given pubspec.
   ///

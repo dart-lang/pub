@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:collection';
 import 'dart:io';
 
 import 'package:collection/collection.dart' hide mapMap;
@@ -65,22 +64,30 @@ bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
 /// accessed. This allows a partially-invalid pubspec to be used if only the
 /// valid portions are relevant. To get a list of all errors in the pubspec, use
 /// [allErrors].
-class Pubspec extends PubspecBase {
+class Pubspec extends PubspecBase with _PubspecParsingMixin {
   // If a new lazily-initialized field is added to this class and the
   // initialization can throw a [PubspecException], that error should also be
   // exposed through [allErrors].
+
+  @override
+  String get _fileType => 'pubspec';
+
+  @override
+  String? get _packageName => fields['name'] != null ? name : null;
 
   /// The registry of sources to use when parsing [dependencies] and
   /// [devDependencies].
   ///
   /// This will be null if this was created using [new Pubspec] or [new
   /// Pubspec.empty].
+  @override
   final SourceRegistry? _sources;
 
   /// The location from which the pubspec was loaded.
   ///
   /// This can be null if the pubspec was created in-memory or if its location
   /// is unknown.
+  @override
   Uri? get _location => fields.span.sourceUrl;
 
   /// The additional packages this package depends on.
@@ -277,15 +284,15 @@ class Pubspec extends PubspecBase {
   LanguageVersion get languageVersion =>
       LanguageVersion.fromSdkConstraint(originalDartSdkConstraint);
 
+  @override
+  LanguageVersion get _languageVersion => languageVersion;
+
   /// Loads the pubspec for a package located in [packageDir].
   ///
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
   /// field, this will throw a [PubspecException].
-  ///
-  /// Only if [withPubspecOverrides] is `true`, will overrides be loaded from
-  /// `pubspec_overrides.yaml`.
   factory Pubspec.load(String packageDir, SourceRegistry sources,
-      {String? expectedName, bool withPubspecOverrides = false}) {
+      {String? expectedName}) {
     var pubspecPath = path.join(packageDir, 'pubspec.yaml');
     var pubspecUri = path.toUri(pubspecPath);
     if (!fileExists(pubspecPath)) {
@@ -297,21 +304,8 @@ class Pubspec extends PubspecBase {
           pubspecPath);
     }
 
-    String? overridesContents;
-    Uri? overridesUri;
-    if (withPubspecOverrides) {
-      final overridesPath = path.join(packageDir, 'pubspec_overrides.yaml');
-      overridesUri = path.toUri(overridesPath);
-      if (fileExists(overridesPath)) {
-        overridesContents = readTextFile(overridesPath);
-      }
-    }
-
     return Pubspec.parse(readTextFile(pubspecPath), sources,
-        expectedName: expectedName,
-        location: pubspecUri,
-        overridesContents: overridesContents,
-        overridesLocation: overridesUri);
+        expectedName: expectedName, location: pubspecUri);
   }
 
   Pubspec(String name,
@@ -379,14 +373,8 @@ class Pubspec extends PubspecBase {
   ///
   /// If the pubspec doesn't define a version for itself, it defaults to
   /// [Version.none].
-  ///
-  /// If provided, applies the overrides stored at [overridesLocation]
-  /// whose text is [overridesContents].
   factory Pubspec.parse(String contents, SourceRegistry sources,
-      {String? expectedName,
-      Uri? location,
-      String? overridesContents,
-      Uri? overridesLocation}) {
+      {String? expectedName, Uri? location}) {
     YamlNode pubspecNode;
     try {
       pubspecNode = loadYamlNode(contents, sourceUrl: location);
@@ -394,7 +382,7 @@ class Pubspec extends PubspecBase {
       throw PubspecException(error.message, error.span);
     }
 
-    YamlMap pubspecMap;
+    Map pubspecMap;
     if (pubspecNode is YamlScalar && pubspecNode.value == null) {
       pubspecMap = YamlMap(sourceUrl: location);
     } else if (pubspecNode is YamlMap) {
@@ -402,33 +390,6 @@ class Pubspec extends PubspecBase {
     } else {
       throw PubspecException(
           'The pubspec must be a YAML mapping.', pubspecNode.span);
-    }
-
-    if (overridesContents != null) {
-      if (overridesLocation == null) {
-        throw ArgumentError('overridesLocation must be provided if '
-            'overridesContents is provided.');
-      }
-
-      YamlNode overridesNode;
-      try {
-        overridesNode =
-            loadYamlNode(overridesContents, sourceUrl: overridesLocation);
-      } on YamlException catch (error) {
-        throw PubspecException(error.message, error.span);
-      }
-
-      YamlMap overridesMap;
-      if (overridesNode is YamlScalar && overridesNode.value == null) {
-        overridesMap = YamlMap(sourceUrl: overridesLocation);
-      } else if (overridesNode is YamlMap) {
-        overridesMap = overridesNode;
-      } else {
-        throw PubspecException('The pubspec_overrides must be a YAML mapping.',
-            overridesNode.span);
-      }
-
-      pubspecMap = _mergePubspecOverrides(pubspecMap, overridesMap);
     }
 
     return Pubspec.fromMap(pubspecMap, sources,
@@ -459,6 +420,25 @@ class Pubspec extends PubspecBase {
     _collectError(_ensureEnvironment);
     return errors;
   }
+}
+
+/// A mixin that contains the shared logic for parsing of [Pubspec] and
+/// [PubspecOverrides].
+mixin _PubspecParsingMixin {
+  /// The type of file that is being parsed.
+  String get _fileType;
+
+  /// The registry of sources to use when parsing dependencies.
+  SourceRegistry? get _sources;
+
+  /// The location of the file that is being parsed.
+  Uri? get _location;
+
+  /// The name of the package for which dependencies are being parsed.
+  String? get _packageName;
+
+  /// The [LanguageVersion] to use for parsing of dependency descriptions.
+  LanguageVersion get _languageVersion;
 
   /// Parses the dependency field named [field], and returns the corresponding
   /// map of dependency names to dependencies.
@@ -481,7 +461,7 @@ class Pubspec extends PubspecBase {
     node.nodes.forEach((nameNode, specNode) {
       var name = nameNode.value;
       var spec = specNode.value;
-      if (fields['name'] != null && name == this.name) {
+      if (_packageName != null && name == _packageName) {
         _error('A package may not list itself as a dependency.', nameNode.span);
       }
 
@@ -542,7 +522,7 @@ class Pubspec extends PubspecBase {
           name,
           descriptionNode?.value,
           containingPath: pubspecPath,
-          languageVersion: languageVersion,
+          languageVersion: _languageVersion,
         );
       }, targetPackage: name);
 
@@ -667,7 +647,8 @@ class Pubspec extends PubspecBase {
 
       var msg = 'Invalid $description';
       if (targetPackage != null) {
-        msg = '$msg in the "$name" pubspec on the "$targetPackage" dependency';
+        msg = '$msg in the "$_packageName" $_fileType on the "$targetPackage" '
+            'dependency';
       }
       msg = '$msg: ${e.message}';
       _error(msg, span);
@@ -686,23 +667,120 @@ class Pubspec extends PubspecBase {
 /// 'file', since relative URIs also refer to the filesystem on the VM.
 bool _isFileUri(Uri uri) => uri.scheme == 'file' || uri.scheme == '';
 
-/// Merges [overrides] from an overrides file into a [pubspec] file.
+/// The parsed contents of a pubspec overrides file.
 ///
-/// The merging is performed at the stage where the pubspec and overrides files
-/// have both been parsed into [YamlMap]s. Source references of [YamlNode]s are
-/// preserved, so that error messages will point to the correct source location.
+/// A pubspec overrides file overrides aspects of a pubspec file and is only
+/// taken into account for a root package.
 ///
-/// Only the following top-level fields of a pubspec are merged:
+/// Overrides are stored in a `pubspec_overrides.yaml` file next to the
+/// `pubspec.yaml` file that is being overridden.
 ///
-/// - `dependency_overrides`
-///
-/// All other fields of an overrides file are rejected.
-YamlMap _mergePubspecOverrides(YamlMap pubspec, YamlMap overrides) =>
-    OverrideYamlMap(pubspec, overrides, (key, pubspecField, overridesField) {
-      if (key == 'dependency_overrides') {
-        return overridesField;
-      }
+/// A [PubspecOverrides] needs to be loaded after the corresponding [Pubspec],
+/// since it requires the name and [LanguageVersion] of the package to be
+/// able to parse its own contents.
+class PubspecOverrides with _PubspecParsingMixin {
+  /// The parsed YAML contents of this overrides file.
+  final YamlMap _fields;
 
-      throw PubspecException(
-          '"$key" is not an overridable field.', overridesField.span);
-    });
+  @override
+  String get _fileType => 'pubspec overrides';
+
+  @override
+  final String? _packageName;
+
+  @override
+  final LanguageVersion _languageVersion;
+
+  @override
+  Uri? get _location => _fields.span.sourceUrl;
+
+  @override
+  final SourceRegistry? _sources;
+
+  /// The overrides for [Pubspec.dependencyOverrides] in this overrides file.
+  ///
+  /// If specified, they completely replace the [Pubspec.dependencyOverrides] in
+  /// the pubspec.
+  ///
+  /// This is `null` if there is no `dependency_overrides` section in this file.
+  Map<String, PackageRange>? get dependencyOverrides {
+    if (!_fields.containsKey('dependency_overrides')) {
+      return null;
+    }
+
+    return _dependencyOverrides ??= _parseDependencies(
+        'dependency_overrides', _fields.nodes['dependency_overrides']);
+  }
+
+  Map<String, PackageRange>? _dependencyOverrides;
+
+  /// Loads the pubspec overrides for a package located in [packageDir].
+  factory PubspecOverrides.load(
+    String packageDir,
+    SourceRegistry sources,
+    String? packageName,
+    LanguageVersion languageVersion,
+  ) {
+    var pubspecOverridesPath = path.join(packageDir, 'pubspec_overrides.yaml');
+    var pubspecOverridesUri = path.toUri(pubspecOverridesPath);
+
+    return PubspecOverrides.parse(readTextFile(pubspecOverridesPath), sources,
+        packageName, languageVersion,
+        location: pubspecOverridesUri);
+  }
+
+  PubspecOverrides({
+    String? packageName,
+    required LanguageVersion languageVersion,
+    Iterable<PackageRange>? dependencyOverrides,
+    Map? fields,
+    SourceRegistry? sources,
+  })  : _packageName = packageName,
+        _languageVersion = languageVersion,
+        _dependencyOverrides = dependencyOverrides == null
+            ? null
+            : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
+        _fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
+        _sources = sources;
+
+  /// Returns a [PubspecOverrides] object for an already-parsed map representing
+  /// its contents.
+  ///
+  /// [location] is the location from which this pubspec overrides file was
+  /// loaded.
+  PubspecOverrides.fromMap(
+      Map map, this._sources, this._packageName, this._languageVersion,
+      {Uri? location})
+      : _fields = map is YamlMap ? map : YamlMap.wrap(map, sourceUrl: location);
+
+  /// Parses the pubspec overrides stored at [location] whose text is
+  /// [contents].
+  factory PubspecOverrides.parse(
+    String contents,
+    SourceRegistry sources,
+    String? packageName,
+    LanguageVersion languageVersion, {
+    Uri? location,
+  }) {
+    YamlNode pubspecOverridesNode;
+    try {
+      pubspecOverridesNode = loadYamlNode(contents, sourceUrl: location);
+    } on YamlException catch (error) {
+      throw PubspecException(error.message, error.span);
+    }
+
+    Map pubspecOverridesMap;
+    if (pubspecOverridesNode is YamlScalar &&
+        pubspecOverridesNode.value == null) {
+      pubspecOverridesMap = YamlMap(sourceUrl: location);
+    } else if (pubspecOverridesNode is YamlMap) {
+      pubspecOverridesMap = pubspecOverridesNode;
+    } else {
+      throw PubspecException('The pubspec overrides must be a YAML mapping.',
+          pubspecOverridesNode.span);
+    }
+
+    return PubspecOverrides.fromMap(
+        pubspecOverridesMap, sources, packageName, languageVersion);
+  }
+}

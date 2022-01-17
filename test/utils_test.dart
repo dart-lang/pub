@@ -6,8 +6,6 @@ import 'dart:async';
 
 import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
-import 'package:yaml/yaml.dart';
-import 'package:yaml_edit/yaml_edit.dart';
 
 void main() {
   group('yamlToString()', () {
@@ -86,85 +84,6 @@ true: bool'''));
       expect(yamlToString({'a': {}, 'b': {}}), equals('''
 a: {}
 b: {}'''));
-    });
-  });
-
-  group('OverrideYamlMap', () {
-    YamlNode pickOverride(key, base, override) => override;
-    YamlNode Function(Object, YamlNode, YamlNode) replace(YamlNode value) =>
-        (key, base, override) => value;
-
-    test('empty', () {
-      var baseSource = Uri.parse('base');
-      var base = YamlMap(sourceUrl: baseSource);
-      var overrides = YamlMap();
-      var result = OverrideYamlMap(base, overrides, pickOverride);
-
-      expect(result['a'], isNull);
-      expect(result.nodes, hasLength(0));
-      expect(result.span.sourceUrl, baseSource);
-    });
-
-    test('empty overrides', () {
-      var baseSource = Uri.parse('base');
-      var base = YamlMap.wrap({'a': true}, sourceUrl: baseSource);
-      var overrides = YamlMap();
-      var result = OverrideYamlMap(base, overrides, pickOverride);
-
-      expect(result['a'], isTrue);
-      var entry = result.nodes.entries.first;
-      expect(entry.key.span.sourceUrl, baseSource);
-      expect(entry.value.span.sourceUrl, baseSource);
-      expect(result.nodes, hasLength(1));
-    });
-
-    test('empty base', () {
-      var overridesSource = Uri.parse('overrides');
-      var base = YamlMap();
-      var overrides = YamlMap.wrap({'a': true}, sourceUrl: overridesSource);
-      var result = OverrideYamlMap(base, overrides, pickOverride);
-
-      expect(result['a'], isTrue);
-      var entry = result.nodes.entries.first;
-      expect(entry.key.span.sourceUrl, overridesSource);
-      expect(entry.value.span.sourceUrl, overridesSource);
-      expect(result.nodes, hasLength(1));
-    });
-
-    test('merged entry', () {
-      var baseSource = Uri.parse('base');
-      var overridesSource = Uri.parse('overrides');
-      var base = YamlMap.wrap({'a': true}, sourceUrl: baseSource);
-      var overrides = YamlMap.wrap({'a': false}, sourceUrl: overridesSource);
-      var result = OverrideYamlMap(base, overrides, pickOverride);
-
-      expect(result['a'], false);
-      var entry = result.nodes.entries.first;
-      expect(entry.key.span.sourceUrl, baseSource);
-      expect(entry.value.span.sourceUrl, overridesSource);
-      expect(result.nodes, hasLength(1));
-    });
-
-    test('replace value completely in merge function', () {
-      var base = YamlMap.wrap({'a': true});
-      var overrides = YamlMap.wrap({'a': false});
-      var result =
-          OverrideYamlMap(base, overrides, replace(wrapAsYamlNode(42)));
-
-      expect(result['a'], 42);
-    });
-
-    test('get value/node by YamlNode', () {
-      var base = YamlMap.wrap({'a': true});
-      var overrides = YamlMap.wrap({'b': false});
-      var result = OverrideYamlMap(base, overrides, pickOverride);
-
-      var aKey = result.nodes.keys.firstWhere((node) => node.value == 'a');
-      var bKey = result.nodes.keys.firstWhere((node) => node.value == 'b');
-      expect(result[aKey], isTrue);
-      expect(result[bKey], isFalse);
-      expect(result.nodes[aKey], result.nodes['a']);
-      expect(result.nodes[bKey], result.nodes['b']);
     });
   });
 

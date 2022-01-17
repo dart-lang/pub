@@ -4,17 +4,13 @@
 
 /// Generic utility functions. Stuff that should possibly be in core.
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
-import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
-import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
 import 'io.dart';
@@ -501,111 +497,6 @@ String yamlToString(data) {
 
   _stringify(false, '', data);
   return buffer.toString();
-}
-
-/// [YamlMap] which overrides entries in a base map with entries from
-/// an overrides map.
-///
-/// This map is useful to apply overrides from one yaml file to another, while
-/// keeping source references intact.
-///
-/// This map contains entries for all of the keys of the base. If both the base
-/// map and overrides map contain an entry for a given key, [mergeEntry]
-/// is called to merge the values. Otherwise, the entry from base map is taken
-/// over as is.
-///
-/// Entries that only exist in the overrides map are taken over as is.
-///
-/// The [YamlNode]s of keys of merged entries always come from base map.
-class OverrideYamlMap with MapMixin, UnmodifiableMapMixin implements YamlMap {
-  OverrideYamlMap(this._base, this._overrides, this.mergeEntry);
-
-  final YamlMap _base;
-
-  final YamlMap _overrides;
-
-  /// The function used to merge entries from overrides map into the base map.
-  ///
-  /// The function receives the [key] for wich both maps have values and the
-  /// corresponding [YamlNode]s from both maps. The returned [YamlNode] is used
-  /// as the effective value for the entry.
-  final YamlNode Function(Object key, YamlNode base, YamlNode override)
-      mergeEntry;
-
-  @override
-  SourceSpan get span => _base.span;
-
-  @override
-  late Map<dynamic, YamlNode> nodes = _buildNodes();
-
-  @override
-  CollectionStyle get style => throw UnsupportedError('Not supported.');
-
-  @override
-  Map get value => this;
-
-  @override
-  Iterable get keys => nodes.keys.map((node) => node.value);
-
-  @override
-  dynamic operator [](key) => nodes[key]?.value;
-
-  Map<dynamic, YamlNode> _buildNodes() {
-    MapEntry<dynamic, YamlNode> getEntryByKey(YamlMap map, Object key) =>
-        map.nodes.entries.firstWhere((entry) => entry.key.value == key);
-
-    final nodes = {..._base.nodes};
-
-    final baseKeys = _base.keys.toSet();
-    final overridesKeys = _overrides.keys.toSet();
-
-    // Handle overridden keys.
-    for (final key in overridesKeys.intersection(baseKeys)) {
-      final baseEntry = getEntryByKey(_base, key);
-      final overrideEntry = getEntryByKey(_overrides, key);
-
-      // YamlNodes don't work as keys in maps, in the way one might expect.
-      // Instead, we use the underlying value of the node to remove the old
-      // entry before adding the new one.
-      nodes.removeWhere((nodeKey, _) => nodeKey.value == key);
-
-      nodes[baseEntry.key] = mergeEntry(
-        key,
-        baseEntry.value,
-        overrideEntry.value,
-      );
-    }
-
-    // Handle new keys.
-    for (final key in overridesKeys.difference(baseKeys)) {
-      final entry = getEntryByKey(_overrides, key);
-      nodes[entry.key] = entry.value;
-    }
-
-    return _YamlMapNodes(nodes);
-  }
-}
-
-class _YamlMapNodes extends MapBase<dynamic, YamlNode>
-    with UnmodifiableMapMixin<dynamic, YamlNode> {
-  _YamlMapNodes(this._nodes);
-
-  final Map<dynamic, YamlNode> _nodes;
-
-  @override
-  Iterable get keys => _nodes.keys;
-
-  @override
-  YamlNode? operator [](Object? key) => _nodes.entries
-      .firstWhereOrNull((entry) => entry.key == key || entry.key.value == key)
-      ?.value;
-
-  @override
-  int get hashCode => _nodes.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      other is _YamlMapNodes && other._nodes == _nodes;
 }
 
 /// Throw a [ApplicationException] with [message].

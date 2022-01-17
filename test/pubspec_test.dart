@@ -818,21 +818,20 @@ features:
       });
     });
 
-    group('overrides', () {
-      Pubspec parseWithOverrides(String contents, String overrides) {
-        return Pubspec.parse(
+    group('pubspec overrides', () {
+      PubspecOverrides parsePubspecOverrides(String contents) {
+        return PubspecOverrides.parse(
           contents,
           sources,
-          overridesContents: overrides,
-          location: Uri.parse('file:///pubspec.yaml'),
-          overridesLocation: Uri.parse('file:///pubspec_overrides.yaml'),
+          null,
+          LanguageVersion.defaultLanguageVersion,
+          location: Uri.parse('file:///pubspec_overrides.yaml'),
         );
       }
 
-      void expectPubspecExceptionWithOverrides(
+      void expectPubspecOverridesException(
         String contents,
-        String overrides,
-        void Function(Pubspec) fn, [
+        void Function(PubspecOverrides) fn, [
         String? expectedContains,
       ]) {
         var expectation = const TypeMatcher<PubspecException>();
@@ -841,83 +840,49 @@ features:
               'toString()', contains(expectedContains));
         }
 
-        var pubspec = parseWithOverrides(contents, overrides);
+        var pubspec = parsePubspecOverrides(contents);
         expect(() => fn(pubspec), throwsA(expectation));
       }
 
       test('allows empty overrides file', () {
-        parseWithOverrides('''
-name: a
-''', '''
-''');
-      });
+        var pubspecOverrides = parsePubspecOverrides('');
 
-      test('throws exception for fields which cannot be overridden', () {
-        expectPubspecExceptionWithOverrides('''
-name: a
-''', '''
-name: b
-''', (pubspec) => pubspec.name, '"name" is not an overridable field.');
+        expect(pubspecOverrides.dependencyOverrides, isNull);
       });
 
       test('allows empty dependency_overrides section', () {
-        var pubspec = parseWithOverrides('''
-name: a
-''', '''
+        var pubspecOverrides = parsePubspecOverrides('''
 dependency_overrides:
 ''');
-        expect(pubspec.dependencyOverrides.keys, isEmpty);
+        expect(pubspecOverrides.dependencyOverrides!.keys, isEmpty);
       });
 
-      test('allows adding new dependency_overrides section', () {
-        var pubspec = parseWithOverrides('''
-name: a
-''', '''
+      test('parses dependencies in dependency_overrides section', () {
+        var pubspecOverrides = parsePubspecOverrides('''
 dependency_overrides:
-  b: 1.0.0
+  foo:
+    version: 1.0.0
 ''');
-        expect(pubspec.dependencyOverrides.keys, ['b']);
-      });
 
-      test('replaces existing dependency_overrides section', () {
-        var pubspec = parseWithOverrides('''
-name: a
-dependency_overrides:
-  a: 1.0.0
-''', '''
-dependency_overrides:
-  b: 2.0.0
-''');
-        expect(pubspec.dependencyOverrides, hasLength(1));
-        expect(pubspec.dependencyOverrides['b']?.constraint, Version(2, 0, 0));
+        var foo = pubspecOverrides.dependencyOverrides!['foo']!;
+        expect(foo.name, equals('foo'));
+        expect(foo.source, equals(sources['hosted']));
+        expect(foo.constraint.allows(Version(1, 0, 0)), isTrue);
       });
 
       test('throws exception with correct source references', () {
-        expectPubspecExceptionWithOverrides('''
-name: a
-''', '''
+        expectPubspecOverridesException('''
 dependency_overrides:
-  b:
+  foo:
     fake: bad
-''', (pubspec) => pubspec.dependencyOverrides,
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
             'Error on line 3, column 11 of /pubspec_overrides.yaml');
-
-        expectPubspecExceptionWithOverrides('''
-name: a
-dependency_overrides:
-  b:
-    fake: bad
-''', '''
-''', (pubspec) => pubspec.dependencyOverrides,
-            'Error on line 4, column 11 of /pubspec.yaml');
       });
 
       test('throws if overrides contain invalid dependency section', () {
-        expectPubspecExceptionWithOverrides('''
-name: a
-''', '''
+        expectPubspecOverridesException('''
 dependency_overrides: false
-''', (pubspec) => pubspec.dependencyOverrides);
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
       });
     });
   });

@@ -52,6 +52,11 @@ class PackageLister {
   /// The set of package names that were overridden by the root package.
   final Set<String> _overriddenPackages;
 
+  /// The [PackageRange]s of packages that were overridden by the root package.
+  ///
+  /// This list is only populated for the [PackageLister] of the root package.
+  final List<PackageRange>? _overriddenPackageRanges;
+
   /// Whether this is a downgrade, in which case the package priority should be
   /// reversed.
   final bool _isDowngrade;
@@ -107,7 +112,8 @@ class PackageLister {
       this._allowedRetractedVersion,
       {bool downgrade = false})
       : _source = cache.source(_ref.source),
-        _isDowngrade = downgrade;
+        _isDowngrade = downgrade,
+        _overriddenPackageRanges = null;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(Package package)
@@ -118,7 +124,10 @@ class PackageLister {
         // package.
         _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
-        _overriddenPackages = const UnmodifiableSetView.empty(),
+        _overriddenPackages =
+            Set.unmodifiable(package.dependencyOverrides.keys),
+        _overriddenPackageRanges =
+            List.unmodifiable(package.dependencyOverrides.values),
         _isDowngrade = false,
         _allowedRetractedVersion = null;
 
@@ -227,16 +236,16 @@ class PackageLister {
         var incompatibilities = <Incompatibility>[];
 
         for (var range in pubspec.dependencies.values) {
-          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 
         for (var range in pubspec.devDependencies.values) {
-          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 
-        for (var range in pubspec.dependencyOverrides.values) {
+        for (var range in _overriddenPackageRanges!) {
           incompatibilities.add(_dependency(depender, range));
         }
 
