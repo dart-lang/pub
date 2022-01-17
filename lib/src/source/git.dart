@@ -489,6 +489,7 @@ class BoundGitSource extends CachedSource {
     assert(!_updatedRepos.contains(path));
     try {
       await _clone(ref.description['url'], path, mirror: true);
+      await _fetchLfs(path);
     } catch (_) {
       await _deleteGitRepoIfInvalid(path);
       rethrow;
@@ -610,6 +611,15 @@ class BoundGitSource extends CachedSource {
   Future _checkOut(String repoPath, String ref) {
     return git
         .run(['checkout', ref], workingDir: repoPath).then((result) => null);
+  }
+
+  /// Fetch all LFS objects in [repoPath].
+  Future _fetchLfs(String repoPath) async {
+    try {
+      await git.run(['lfs', 'fetch', '--all'], workingDir: repoPath);
+    } catch (_) {
+      /// Skip, maybe LFS not installed
+    }
   }
 
   String _revisionCachePath(PackageId id) => p.join(
