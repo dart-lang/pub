@@ -238,17 +238,6 @@ class Package {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
         return contents.map((entity) {
-          if (linkExists(entity.path)) {
-            final target = Link(entity.path).targetSync();
-            if (dirExists(entity.path)) {
-              throw DataException(
-                  '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''');
-            }
-            if (!fileExists(entity.path)) {
-              throw DataException(
-                  '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''');
-            }
-          }
           final relative = p.relative(entity.path, from: root);
           if (Platform.isWindows) {
             return p.posix.joinAll(p.split(relative));
@@ -313,7 +302,16 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).toList();
+    ).map(resolve).map((path) {
+      if (linkExists(path)) {
+        final target = Link(path).targetSync();
+        if (!fileExists(path)) {
+          throw DataException(
+              '''Pub does not support publishing packages with non-resolving symlink: `${path}` => `$target`.''');
+        }
+      }
+      return path;
+    }).toList();
   }
 }
 
