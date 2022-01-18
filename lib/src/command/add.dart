@@ -149,7 +149,7 @@ class AddCommand extends PubCommand {
         var dependencyOverrides = updatedPubSpec.dependencyOverrides;
         if (dependencyOverrides.isNotEmpty) {
           dataError('"$name" resolved to "${resultPackage.version}" which '
-              'does not satisfy constraint "${constraint}". This could be '
+              'does not satisfy constraint "$constraint". This could be '
               'caused by "dependency_overrides".');
         }
         dataError('"$name" resolved to "${resultPackage.version}" which '
