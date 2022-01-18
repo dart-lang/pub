@@ -4,8 +4,9 @@
 
 import 'dart:async';
 
-import 'package:analyzer/dart/analysis/context_builder.dart';
-import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
+import 'package:analyzer/dart/analysis/results.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as path;
 import 'package:source_span/source_span.dart';
@@ -71,16 +72,17 @@ class NullSafetyAnalysis {
   /// If [packageId] is a relative path dependency [containingPath] must be
   /// provided with an absolute path to resolve it against.
   Future<NullSafetyAnalysisResult> nullSafetyCompliance(PackageId packageId,
-      {String containingPath}) async {
+      {String? containingPath}) async {
     // A space in the name prevents clashes with other package names.
     final fakeRootName = '${packageId.name} importer';
     final fakeRoot = Package.inMemory(Pubspec(fakeRootName,
         fields: {
           'dependencies': {
             packageId.name: {
-              packageId.source.name: packageId.source is PathSource
+              packageId.source!.name: packageId.source is PathSource
                   ? (packageId.description['relative']
-                      ? path.join(containingPath, packageId.description['path'])
+                      ? path.join(
+                          containingPath!, packageId.description['path'])
                       : packageId.description['path'])
                   : packageId.description,
               'version': packageId.version.toString(),
@@ -90,7 +92,7 @@ class NullSafetyAnalysis {
         sources: _systemCache.sources));
 
     final rootPubspec =
-        await packageId.source.bind(_systemCache).describe(packageId);
+        await packageId.source!.bind(_systemCache).describe(packageId);
     final rootLanguageVersion = rootPubspec.languageVersion;
     if (!rootLanguageVersion.supportsNullSafety) {
       final span =
@@ -107,7 +109,7 @@ class NullSafetyAnalysis {
     SolveResult result;
     try {
       result = await resolveVersions(
-        SolveType.GET,
+        SolveType.get,
         _systemCache,
         fakeRoot,
       );
@@ -116,9 +118,10 @@ class NullSafetyAnalysis {
           'Could not resolve constraints: $e');
     }
     return nullSafetyComplianceOfPackages(
-        result.packages.where((id) => id.name != fakeRootName),
-        Package(rootPubspec,
-            packageId.source.bind(_systemCache).getDirectory(packageId)));
+      result.packages.where((id) => id.name != fakeRootName),
+      Package(rootPubspec,
+          packageId.source!.bind(_systemCache).getDirectory(packageId)),
+    );
   }
 
   /// Decides if all dependendencies (transitively) have a language version
@@ -133,13 +136,15 @@ class NullSafetyAnalysis {
   ///
   /// Assumes the root package is opted in.
   Future<NullSafetyAnalysisResult> nullSafetyComplianceOfPackages(
-      Iterable<PackageId> packages, Package rootPackage) async {
-    NullSafetyAnalysisResult firstBadPackage;
+    Iterable<PackageId> packages,
+    Package rootPackage,
+  ) async {
+    NullSafetyAnalysisResult? firstBadPackage;
     for (final dependencyId in packages) {
       final packageInternalAnalysis =
           await _packageInternallyGoodCache.putIfAbsent(dependencyId, () async {
         Pubspec pubspec;
-        BoundSource boundSource;
+        BoundSource? boundSource;
         String packageDir;
         if (dependencyId.source == null) {
           pubspec = rootPackage.pubspec;
@@ -170,23 +175,30 @@ class NullSafetyAnalysis {
         final libDir =
             path.absolute(path.normalize(path.join(packageDir, 'lib')));
         if (dirExists(libDir)) {
-          final analysisSession = ContextBuilder()
-              .createContext(
-                sdkPath: getSdkPath(),
-                contextRoot: ContextLocator().locateRoots(
-                  includedPaths: [packageDir],
-                ).first,
-              )
-              .currentSession;
+          var contextCollection = AnalysisContextCollection(
+            includedPaths: [path.normalize(packageDir)],
+            resourceProvider: PhysicalResourceProvider.INSTANCE,
+            sdkPath: getSdkPath(),
+          );
+          var analysisContext = contextCollection.contexts.first;
+          var analysisSession = analysisContext.currentSession;
 
           for (final file in listDir(libDir,
               recursive: true, includeDirs: false, includeHidden: true)) {
             if (file.endsWith('.dart')) {
               final fileUrl =
                   'package:${dependencyId.name}/${path.relative(file, from: libDir)}';
-              final unitResult =
+              final someUnitResult =
                   analysisSession.getParsedUnit(path.normalize(file));
-              if (unitResult == null || unitResult.errors.isNotEmpty) {
+              ParsedUnitResult unitResult;
+              if (someUnitResult is ParsedUnitResult) {
+                unitResult = someUnitResult;
+              } else {
+                return NullSafetyAnalysisResult(
+                    NullSafetyCompliance.analysisFailed,
+                    'Could not analyze $fileUrl.');
+              }
+              if (unitResult.errors.isNotEmpty) {
                 return NullSafetyAnalysisResult(
                     NullSafetyCompliance.analysisFailed,
                     'Could not analyze $fileUrl.');
@@ -210,7 +222,6 @@ class NullSafetyAnalysis {
         }
         return NullSafetyAnalysisResult(NullSafetyCompliance.compliant, null);
       });
-      assert(packageInternalAnalysis != null);
       if (packageInternalAnalysis.compliance ==
           NullSafetyCompliance.analysisFailed) {
         return packageInternalAnalysis;
@@ -236,12 +247,12 @@ class NullSafetyAnalysisResult {
   final NullSafetyCompliance compliance;
 
   /// `null` if compliance == [NullSafetyCompliance.compliant].
-  final String reason;
+  final String? reason;
 
   NullSafetyAnalysisResult(this.compliance, this.reason);
 }
 
-SourceSpan _tryGetSpanFromYamlMap(Object map, String key) {
+SourceSpan? _tryGetSpanFromYamlMap(Object? map, String key) {
   if (map is YamlMap) {
     return map.nodes[key]?.span;
   }

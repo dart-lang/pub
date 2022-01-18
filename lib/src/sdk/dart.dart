@@ -19,7 +19,7 @@ class DartSdk extends Sdk {
   @override
   bool get isAvailable => true;
   @override
-  String get installMessage => null;
+  String? get installMessage => null;
   @override
   Version get firstPubVersion => Version.none;
 
@@ -52,5 +52,5 @@ class DartSdk extends Sdk {
   String get rootDirectory => _rootDirectory;
 
   @override
-  String packagePath(String name) => null;
+  String? packagePath(String name) => null;
 }

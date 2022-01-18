@@ -15,7 +15,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
 
   /// Creates the Git repository and commits the contents.
   @override
-  Future create([String parent]) async {
+  Future create([String? parent]) async {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['init'],
@@ -33,7 +33,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// the previous structure to the Git repo.
   ///
   /// [parent] defaults to [sandbox].
-  Future commit([String parent]) async {
+  Future commit([String? parent]) async {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['add', '.'],
@@ -45,7 +45,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// referred to by [ref].
   ///
   /// [parent] defaults to [sandbox].
-  Future<String> revParse(String ref, [String parent]) async {
+  Future<String> revParse(String ref, [String? parent]) async {
     var output = await _runGit(['rev-parse', ref], parent);
     return output[0];
   }
@@ -53,9 +53,9 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// Runs a Git command in this repository.
   ///
   /// [parent] defaults to [sandbox].
-  Future runGit(List<String> args, [String parent]) => _runGit(args, parent);
+  Future runGit(List<String> args, [String? parent]) => _runGit(args, parent);
 
-  Future<List<String>> _runGit(List<String> args, String parent) {
+  Future<List<String>> _runGit(List<String> args, String? parent) {
     // Explicitly specify the committer information. Git needs this to commit
     // and we don't want to rely on the buildbots having this already set up.
     var environment = {
@@ -70,7 +70,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
         environment: environment);
   }
 
-  Future _runGitCommands(String parent, List<List<String>> commands) async {
+  Future _runGitCommands(String? parent, List<List<String>> commands) async {
     for (var command in commands) {
       await _runGit(command, parent);
     }

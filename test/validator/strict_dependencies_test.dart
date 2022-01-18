@@ -3,11 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
-import 'package:test/test.dart';
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/strict_dependencies.dart';
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
@@ -65,8 +65,8 @@ void main() {
 
     for (var port in ['import', 'export']) {
       for (var isDev in [false, true]) {
-        Map<String, String> deps;
-        Map<String, String> devDeps;
+        Map<String, String>? deps;
+        Map<String, String>? devDeps;
 
         if (isDev) {
           devDeps = {'silly_monkey': '^1.2.3'};
@@ -190,7 +190,9 @@ linter:
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(strictDeps, errors: isNotEmpty);
+      await expectValidation(strictDeps, errors: [
+        matches('does not have silly_monkey in the `dependencies` section')
+      ]);
     });
 
     test('does not declare an "export" as a dependency', () async {
@@ -198,7 +200,9 @@ linter:
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(strictDeps, errors: isNotEmpty);
+      await expectValidation(strictDeps, errors: [
+        matches('does not have silly_monkey in the `dependencies` section')
+      ]);
     });
 
     test('has an invalid URI', () async {
@@ -240,7 +244,10 @@ linter:
             ]),
           ]).create();
 
-          await expectValidation(strictDeps, warnings: isNotEmpty);
+          await expectValidation(strictDeps, warnings: [
+            matches(
+                'does not have silly_monkey in the `dependencies` or `dev_dependencies` section')
+          ]);
         });
       }
     }

@@ -18,7 +18,7 @@ Future<void> expectValidation(error, int exitCode) async {
 }
 
 Future<void> setup({
-  String flutterConstraint,
+  String? flutterConstraint,
 }) async {
   final fakeFlutterRoot =
       d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);

@@ -4,13 +4,11 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
-
-import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -37,7 +35,7 @@ void main() {
     int argMax;
     if (Platform.isWindows) {
       // On Windows, the maximum argument list length is 8^5 bytes.
-      argMax = math.pow(8, 5);
+      argMax = 32768; // 8^5
     } else {
       // On POSIX, the maximum argument list length can be retrieved
       // automatically.
@@ -75,14 +73,14 @@ void main() {
     }
 
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer);
-    handleUpload(globalPackageServer);
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
 
-    globalPackageServer.expect('GET', '/create', (request) {
+    globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

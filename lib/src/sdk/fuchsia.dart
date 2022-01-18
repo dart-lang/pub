@@ -18,9 +18,8 @@ class FuchsiaSdk extends Sdk {
   @override
   Version get firstPubVersion => Version.parse('2.0.0-dev.51.0');
 
-  static final bool _isAvailable =
-      Platform.environment.containsKey('FUCHSIA_DART_SDK_ROOT');
-  static final String _rootDirectory =
+  static final bool _isAvailable = _rootDirectory != null;
+  static final String? _rootDirectory =
       Platform.environment['FUCHSIA_DART_SDK_ROOT'];
 
   @override
@@ -29,21 +28,21 @@ class FuchsiaSdk extends Sdk {
       'the root of the Fuchsia SDK for Dart.';
 
   @override
-  Version get version {
+  Version? get version {
     if (!_isAvailable) return null;
 
     _version ??=
-        Version.parse(readTextFile(p.join(_rootDirectory, 'version')).trim());
+        Version.parse(readTextFile(p.join(_rootDirectory!, 'version')).trim());
     return _version;
   }
 
-  Version _version;
+  Version? _version;
 
   @override
-  String packagePath(String name) {
+  String? packagePath(String name) {
     if (!isAvailable) return null;
 
-    var packagePath = p.join(_rootDirectory, 'packages', name);
+    var packagePath = p.join(_rootDirectory!, 'packages', name);
     if (dirExists(packagePath)) return packagePath;
 
     return null;

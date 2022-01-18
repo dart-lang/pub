@@ -6,8 +6,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/io.dart';
+import 'package:pub/src/log.dart' as log;
 import 'package:test_descriptor/test_descriptor.dart';
 
 /// Describes a tar file and its contents.
@@ -21,7 +21,7 @@ class TarFileDescriptor extends FileDescriptor {
   /// Creates the files and directories within this tar file, then archives
   /// them, compresses them, and saves the result to [parentDir].
   @override
-  Future create([String parent]) {
+  Future create([String? parent]) {
     return withTempDir((tempDir) async {
       await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
@@ -39,7 +39,7 @@ class TarFileDescriptor extends FileDescriptor {
   /// Validates that the `.tar.gz` file at [path] contains the expected
   /// contents.
   @override
-  Future validate([String parent]) {
+  Future validate([String? parent]) {
     throw UnimplementedError('TODO(nweiz): implement this');
   }
 

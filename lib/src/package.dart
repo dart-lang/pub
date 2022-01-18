@@ -4,11 +4,15 @@
 
 import 'dart:io';
 
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'exceptions.dart';
 import 'git.dart' as git;
+import 'ignore.dart';
 import 'io.dart';
+import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source_registry.dart';
@@ -31,19 +35,26 @@ class Package {
     return a.version.compareTo(b.version);
   }
 
+  final String? _dir;
+
   /// The path to the directory containing the package.
-  final String dir;
+  ///
+  /// It is an error to access this on an in-memory package.
+  String get dir {
+    if (isInMemory) {
+      throw UnsupportedError(
+          'Package directory cannot be used for an in-memory package');
+    }
+
+    return _dir!;
+  }
 
   /// An in-memory package can be created for doing a resolution without having
   /// a package on disk. Paths should not be resolved for these.
-  bool get _isInMemory => dir == null;
+  bool get isInMemory => _dir == null;
 
   /// The name of the package.
-  String get name {
-    if (pubspec.name != null) return pubspec.name;
-    if (dir != null) return p.basename(dir);
-    return null;
-  }
+  String get name => pubspec.name;
 
   /// The package's version.
   Version get version => pubspec.version;
@@ -81,14 +92,17 @@ class Package {
         .toList();
   }
 
+  List<String> get executableNames =>
+      executablePaths.map(p.basenameWithoutExtension).toList();
+
   /// Returns the path to the README file at the root of the entrypoint, or null
   /// if no README file is found.
   ///
   /// If multiple READMEs are found, this uses the same conventions as
   /// pub.dartlang.org for choosing the primary one: the README with the fewest
   /// extensions that is lexically ordered first is chosen.
-  String get readmePath {
-    var readmes = listFiles(recursive: false, useGitIgnore: true)
+  String? get readmePath {
+    var readmes = listFiles(recursive: false)
         .map(p.basename)
         .where((entry) => entry.contains(_readmeRegexp));
     if (readmes.isEmpty) return null;
@@ -104,61 +118,57 @@ class Package {
 
   /// Returns the path to the CHANGELOG file at the root of the entrypoint, or
   /// null if no CHANGELOG file is found.
-  String get changelogPath {
-    return listFiles(recursive: false, useGitIgnore: true).firstWhere(
-        (entry) => p.basename(entry).contains(_changelogRegexp),
-        orElse: () => null);
+  String? get changelogPath {
+    return listFiles(recursive: false).firstWhereOrNull(
+        (entry) => p.basename(entry).contains(_changelogRegexp));
   }
 
   /// Returns whether or not this package is in a Git repo.
-  bool get inGitRepo {
-    if (_inGitRepoCache != null) return _inGitRepoCache;
+  late final bool inGitRepo = computeInGitRepoCache();
 
-    if (dir == null || !git.isInstalled) {
-      _inGitRepoCache = false;
+  bool computeInGitRepoCache() {
+    if (isInMemory || !git.isInstalled) {
+      return false;
     } else {
       // If the entire package directory is ignored, don't consider it part of a
       // git repo. `git check-ignore` will return a status code of 0 for
       // ignored, 1 for not ignored, and 128 for not a Git repo.
-      var result = runProcessSync(git.command, ['check-ignore', '--quiet', '.'],
+      var result = runProcessSync(
+          git.command!, ['check-ignore', '--quiet', '.'],
           workingDir: dir);
-      _inGitRepoCache = result.exitCode == 1;
+      return result.exitCode == 1;
     }
-
-    return _inGitRepoCache;
   }
-
-  bool _inGitRepoCache;
 
   /// Loads the package whose root directory is [packageDir].
   ///
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  Package.load(String name, this.dir, SourceRegistry sources)
-      : pubspec = Pubspec.load(dir, sources, expectedName: name);
+  Package.load(String? name, String this._dir, SourceRegistry sources)
+      : pubspec = Pubspec.load(_dir, sources, expectedName: name);
 
   /// Constructs a package with the given pubspec.
   ///
   /// The package will have no directory associated with it.
-  Package.inMemory(this.pubspec) : dir = null;
+  Package.inMemory(this.pubspec) : _dir = null;
 
   /// Creates a package with [pubspec] located at [dir].
-  Package(this.pubspec, this.dir);
+  Package(this.pubspec, String this._dir);
 
   /// Given a relative path within this package, returns its absolute path.
   ///
   /// This is similar to `p.join(dir, part1, ...)`, except that subclasses may
   /// override it to report that certain paths exist elsewhere than within
   /// [dir].
-  String path(String part1,
-      [String part2,
-      String part3,
-      String part4,
-      String part5,
-      String part6,
-      String part7]) {
-    if (_isInMemory) {
+  String path(String? part1,
+      [String? part2,
+      String? part3,
+      String? part4,
+      String? part5,
+      String? part6,
+      String? part7]) {
+    if (isInMemory) {
       throw StateError("Package $name is in-memory and doesn't have paths "
           'on disk.');
     }
@@ -168,7 +178,7 @@ class Package {
   /// Given an absolute path within this package (such as that returned by
   /// [path] or [listFiles]), returns it relative to the package root.
   String relative(String path) {
-    if (dir == null) {
+    if (isInMemory) {
       throw StateError("Package $name is in-memory and doesn't have paths "
           'on disk.');
     }
@@ -176,7 +186,7 @@ class Package {
   }
 
   /// Returns the type of dependency from this package onto [name].
-  DependencyType dependencyType(String name) {
+  DependencyType dependencyType(String? name) {
     if (pubspec.fields['dependencies']?.containsKey(name) ?? false) {
       return DependencyType.direct;
     } else if (pubspec.fields['dev_dependencies']?.containsKey(name) ?? false) {
@@ -186,14 +196,15 @@ class Package {
     }
   }
 
-  /// The basenames of files that are included in [list] despite being hidden.
-  static const _allowedFiles = ['.htaccess'];
-
-  /// A set of patterns that match paths to disallowed files.
-  static final _disallowedFiles = createFileFilter(['pubspec.lock']);
-
-  /// A set of patterns that match paths to disallowed directories.
-  static final _disallowedDirs = createDirectoryFilter(['packages']);
+  static final _basicIgnoreRules = [
+    '.*', // Don't include dot-files.
+    '!.htaccess', // Include .htaccess anyways.
+    // TODO(sigurdm): consider removing this. `packages` folders are not used
+    // anymore.
+    'packages/',
+    'pubspec.lock',
+    '!pubspec.lock/', // We allow a directory called pubspec lock.
+  ];
 
   /// Returns a list of files that are considered to be part of this package.
   ///
@@ -202,120 +213,118 @@ class Package {
   /// [recursive] is true, this will return all files beneath that path;
   /// otherwise, it will only return files one level beneath it.
   ///
-  /// If [useGitIgnore] is passed, this will take the .gitignore rules into
-  /// account if the root directory of the package is (or is contained within) a
-  /// Git repository.
+  /// This will take .pubignore and .gitignore files into account.
+  ///
+  /// If [dir] is inside a git repository, all ignore files from the repo root
+  /// are considered.
+  ///
+  /// For each directory a .pubignore takes precedence over a .gitignore.
   ///
   /// Note that the returned paths won't always be beneath [dir]. To safely
   /// convert them to paths relative to the package root, use [relative].
-  List<String> listFiles(
-      {String beneath, bool recursive = true, bool useGitIgnore = false}) {
+  List<String> listFiles({String? beneath, bool recursive = true}) {
     // An in-memory package has no files.
-    if (dir == null) return [];
+    if (isInMemory) return [];
 
-    if (beneath == null) {
-      beneath = dir;
-    } else {
-      beneath = p.join(dir, beneath);
+    var packageDir = dir;
+    var root = git.repoRoot(packageDir) ?? packageDir;
+    beneath = p
+        .toUri(p.normalize(
+            p.relative(p.join(packageDir, beneath ?? '.'), from: root)))
+        .path;
+    if (beneath == './') beneath = '.';
+    String resolve(String path) {
+      if (Platform.isWindows) {
+        return p.joinAll([root, ...p.posix.split(path)]);
+      }
+      return p.join(root, path);
     }
 
-    if (!dirExists(beneath)) return [];
+    return Ignore.listFiles(
+      beneath: beneath,
+      listDir: (dir) {
+        var contents = Directory(resolve(dir)).listSync();
+        if (!recursive) {
+          contents = contents.where((entity) => entity is! Directory).toList();
+        }
+        return contents.map((entity) {
+          if (linkExists(entity.path)) {
+            final target = Link(entity.path).targetSync();
+            if (dirExists(entity.path)) {
+              throw DataException(
+                  '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''');
+            }
+            if (!fileExists(entity.path)) {
+              throw DataException(
+                  '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''');
+            }
+          }
+          final relative = p.relative(entity.path, from: root);
+          if (Platform.isWindows) {
+            return p.posix.joinAll(p.split(relative));
+          }
+          return relative;
+        });
+      },
+      ignoreForDir: (dir) {
+        final pubIgnore = resolve('$dir/.pubignore');
+        final gitIgnore = resolve('$dir/.gitignore');
+        final ignoreFile = fileExists(pubIgnore)
+            ? pubIgnore
+            : (fileExists(gitIgnore) ? gitIgnore : null);
 
-    // This is used in some performance-sensitive paths and can list many, many
-    // files. As such, it leans more heavily towards optimization as opposed to
-    // readability than most code in pub. In particular, it avoids using the
-    // path package, since re-parsing a path is very expensive relative to
-    // string operations.
-    Iterable<String> files;
-    if (useGitIgnore && inGitRepo) {
-      // List all files that aren't gitignored, including those not checked in
-      // to Git. Use [beneath] as the working dir rather than passing it as a
-      // parameter so that we list a submodule using its own git logic.
-      files = git.runSync(
-          ['ls-files', '--cached', '--others', '--exclude-standard'],
-          workingDir: beneath);
-
-      // If we're not listing recursively, strip out paths that contain
-      // separators. Since git always prints forward slashes, we always detect
-      // them.
-      if (!recursive) files = files.where((file) => !file.contains('/'));
-
-      // Git prints files relative to [beneath], but we want them relative to
-      // the pub's working directory. It also prints forward slashes on Windows
-      // which we normalize away for easier testing.
-      //
-      // Git lists empty directories as "./", which we skip so we don't keep
-      // trying to recurse into the same directory. Normally git doesn't allow
-      // totally empty directories, but a submodule that's not checked out
-      // behaves like one.
-      files = files.where((file) => file != './').map((file) {
-        return Platform.isWindows
-            ? "$beneath\\${file.replaceAll("/", "\\")}"
-            : '$beneath/$file';
-      }).expand((file) {
-        if (fileExists(file)) return [file];
-        if (!dirExists(file)) return [];
-
-        // `git ls-files` only returns files, except in the case of a submodule
-        // or a symlink to a directory.
-        return recursive ? _listWithinDir(file) : [file];
-      });
-    } else {
-      files = listDir(beneath,
-          recursive: recursive, includeDirs: false, allowed: _allowedFiles);
-    }
-
-    return files.where((file) {
-      // Using substring here is generally problematic in cases where dir has
-      // one or more trailing slashes. If you do listDir("foo"), you'll get back
-      // paths like "foo/bar". If you do listDir("foo/"), you'll get "foo/bar"
-      // (note the trailing slash was dropped. If you do listDir("foo//"),
-      // you'll get "foo//bar".
-      //
-      // This means if you strip off the prefix, the resulting string may have a
-      // leading separator (if the prefix did not have a trailing one) or it may
-      // not. However, since we are only using the results of that to call
-      // contains() on, the leading separator is harmless.
-      assert(file.startsWith(beneath));
-      file = file.substring(beneath.length);
-      return !_disallowedFiles.any(file.endsWith) &&
-          !_disallowedDirs.any(file.contains);
-    }).toList();
+        final rules = [
+          if (dir == beneath) ..._basicIgnoreRules,
+          if (ignoreFile != null) readTextFile(ignoreFile),
+        ];
+        return rules.isEmpty
+            ? null
+            : Ignore(
+                rules,
+                onInvalidPattern: (pattern, exception) {
+                  log.warning(
+                      '$ignoreFile had invalid pattern $pattern. ${exception.message}');
+                },
+                // Ignore case on MacOs and Windows, because `git clone` and
+                // `git init` will set `core.ignoreCase = true` in the local
+                // local `.git/config` file for the repository.
+                //
+                // So on Windows and MacOS most users will have case-insensitive
+                // behavior with `.gitignore`, hence, it seems reasonable to do
+                // the same when we interpret `.gitignore` and `.pubignore`.
+                //
+                // There are cases where a user may have case-sensitive behavior
+                // with `.gitignore` on Windows and MacOS:
+                //
+                //  (A) The user has manually overwritten the repository
+                //      configuration setting `core.ignoreCase = false`.
+                //
+                //  (B) The git-clone or git-init command that create the
+                //      repository did not deem `core.ignoreCase = true` to be
+                //      appropriate. Documentation for [git-config]][1] implies
+                //      this might depend on whether or not the filesystem is
+                //      case sensitive:
+                //      > If true, this option enables various workarounds to
+                //      > enable Git to work better on filesystems that are not
+                //      > case sensitive, like FAT.
+                //      > ...
+                //      > The default is false, except git-clone[1] or
+                //      > git-init[1] will probe and set core.ignoreCase true
+                //      > if appropriate when the repository is created.
+                //
+                // In either case, it seems likely that users on Windows and
+                // MacOS will prefer case-insensitive matching. We specifically
+                // know that some tooling will generate `.PDB` files instead of
+                // `.pdb`, see: [#3003][2]
+                //
+                // [1]: https://git-scm.com/docs/git-config/2.14.6#Documentation/git-config.txt-coreignoreCase
+                // [2]: https://github.com/dart-lang/pub/issues/3003
+                ignoreCase: Platform.isMacOS || Platform.isWindows,
+              );
+      },
+      isDir: (dir) => dirExists(resolve(dir)),
+    ).map(resolve).toList();
   }
-
-  /// List all files recursively beneath [dir], which should be either a symlink
-  /// to a directory or a git submodule.
-  ///
-  /// This is used by [list] when listing a Git repository, since `git ls-files`
-  /// can't natively follow symlinks and (as of Git 2.12.0-rc1) can't use
-  /// `--recurse-submodules` in conjunction with `--other`.
-  Iterable<String> _listWithinDir(String subdir) {
-    assert(dirExists(subdir));
-    assert(p.isWithin(dir, subdir));
-
-    var target = Directory(subdir).resolveSymbolicLinksSync();
-
-    List<String> targetFiles;
-    if (p.isWithin(dir, target)) {
-      // If the link points within this repo, use git to list the target
-      // location so we respect .gitignore.
-      targetFiles =
-          listFiles(beneath: p.relative(target, from: dir), useGitIgnore: true);
-    } else {
-      // If the link points outside this repo, just use the default listing
-      // logic.
-      targetFiles = listDir(target,
-          recursive: true, includeDirs: false, allowed: _allowedFiles);
-    }
-
-    // Re-write the paths so they're underneath the symlink.
-    return targetFiles.map(
-        (targetFile) => p.join(subdir, p.relative(targetFile, from: target)));
-  }
-
-  /// Returns a debug string for the package.
-  @override
-  String toString() => '$name $version ($dir)';
 }
 
 /// The type of dependency from one package to another.

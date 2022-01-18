@@ -9,10 +9,9 @@ import '../../test_pub.dart';
 
 void main() {
   test('activating a path package installs dependencies', () async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0', deps: {'baz': 'any'});
-      builder.serve('baz', '2.0.0');
-    });
+    await servePackages()
+      ..serve('bar', '1.0.0', deps: {'baz': 'any'})
+      ..serve('baz', '2.0.0');
 
     await d.dir('foo', [
       d.libPubspec('foo', '0.0.0', deps: {'bar': 'any'}),
@@ -20,7 +19,7 @@ void main() {
     ]).create();
 
     var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);
-    expect(pub.stdout, emitsThrough('Resolving dependencies...'));
+    expect(pub.stdout, emitsThrough('Resolving dependencies in ../foo...'));
     expect(pub.stdout, emitsThrough('Downloading bar 1.0.0...'));
     expect(pub.stdout, emitsThrough('Downloading baz 2.0.0...'));
     expect(pub.stdout, emitsThrough(startsWith('Activated foo 0.0.0 at path')));

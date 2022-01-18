@@ -35,7 +35,7 @@ void main() {
     await pubGet();
     var pub = await pubRun(args: ['bin/script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
     expect(
         pub.stdout,
         emits(p
@@ -49,11 +49,10 @@ void main() {
   });
 
   test('a snapshotted application sees a file: package root', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('script.dart', _script)])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('script.dart', _script)])
+    ]);
 
     await d.dir(appPath, [
       d.appPubspec({'foo': 'any'})
@@ -63,8 +62,8 @@ void main() {
 
     var pub = await pubRun(args: ['foo:script']);
 
-    expect(pub.stdout, emits('Precompiling executable...'));
-    expect(pub.stdout, emits('Precompiled foo:script.'));
+    expect(pub.stdout, emitsThrough('Building package executable...'));
+    expect(pub.stdout, emits('Built foo:script.'));
     expect(pub.stdout, emits('null'));
     expect(
         pub.stdout,
@@ -73,8 +72,8 @@ void main() {
             .toString()));
     expect(pub.stdout,
         emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
-    var fooResourcePath = p.join(
-        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+    var fooResourcePath =
+        p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });

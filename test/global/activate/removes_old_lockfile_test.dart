@@ -9,9 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test('removes the 1.6-style lockfile', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.dir(cachePath, [
       d.dir('global_packages', [

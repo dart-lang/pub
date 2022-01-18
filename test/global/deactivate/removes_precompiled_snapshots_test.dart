@@ -8,8 +8,9 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('removes precompiled snapshots', () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+  test('removes built snapshots', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await runPub(args: ['global', 'activate', 'foo']);
 

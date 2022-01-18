@@ -32,7 +32,16 @@ class PackageLister {
   ///
   /// This is `null` if this package isn't locked or if the current version
   /// solve isn't a `pub get`.
-  final PackageId _locked;
+  final PackageId? _locked;
+
+  // The version of this package that, if retracted, is still allowed in the
+  // current version solve.
+  //
+  // We don't allow a retracted version during solving unless it is already
+  // present in `pubspec.lock` or pinned in `dependency_overrides`.
+  //
+  // This is `null` if there is no retracted version that can be allowed.
+  final Version? _allowedRetractedVersion;
 
   /// The source from which [_ref] comes.
   final BoundSource _source;
@@ -67,27 +76,35 @@ class PackageLister {
 
   /// The versions of [_ref] that have been downloaded and cached, or `null` if
   /// they haven't been downloaded yet.
-  List<PackageId> get cachedVersions => _cachedVersions;
-  List<PackageId> _cachedVersions;
+  List<PackageId>? get cachedVersions => _cachedVersions;
+  List<PackageId>? _cachedVersions;
 
   /// All versions of the package, sorted by [Version.compareTo].
   Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
-        _cachedVersions = await withDependencyType(
-            _dependencyType, () => _source.getVersions(_ref));
-        _cachedVersions.sort((id1, id2) => id1.version.compareTo(id2.version));
-        return _cachedVersions;
+        var cachedVersions = (await withDependencyType(
+            _dependencyType,
+            () => _source.getVersions(_ref,
+                allowedRetractedVersion: _allowedRetractedVersion)))
+          ..sort((id1, id2) => id1.version.compareTo(id2.version));
+        _cachedVersions = cachedVersions;
+        return cachedVersions;
       });
   final _versionsMemo = AsyncMemoizer<List<PackageId>>();
 
   /// The most recent version of this package (or the oldest, if we're
   /// downgrading).
-  Future<PackageId> get latest =>
+  Future<PackageId?> get latest =>
       _latestMemo.runOnce(() => bestVersion(VersionConstraint.any));
-  final _latestMemo = AsyncMemoizer<PackageId>();
+  final _latestMemo = AsyncMemoizer<PackageId?>();
 
   /// Creates a package lister for the dependency identified by [ref].
-  PackageLister(SystemCache cache, this._ref, this._locked,
-      this._dependencyType, this._overriddenPackages,
+  PackageLister(
+      SystemCache cache,
+      this._ref,
+      this._locked,
+      this._dependencyType,
+      this._overriddenPackages,
+      this._allowedRetractedVersion,
       {bool downgrade = false})
       : _source = cache.source(_ref.source),
         _isDowngrade = downgrade;
@@ -102,11 +119,12 @@ class PackageLister {
         _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
         _overriddenPackages = const UnmodifiableSetView.empty(),
-        _isDowngrade = false;
+        _isDowngrade = false,
+        _allowedRetractedVersion = null;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
-    if (_locked != null && constraint.allows(_locked.version)) return 1;
+    if (_locked != null && constraint.allows(_locked!.version)) return 1;
     try {
       return (await _versions)
           .where((id) => constraint.allows(id.version))
@@ -125,32 +143,32 @@ class PackageLister {
   ///
   /// Throws a [PackageNotFoundException] if this lister's package doesn't
   /// exist.
-  Future<PackageId> bestVersion(VersionConstraint constraint) async {
-    if (_locked != null && constraint.allows(_locked.version)) return _locked;
+  Future<PackageId?> bestVersion(VersionConstraint? constraint) async {
+    if (_locked != null && constraint!.allows(_locked!.version)) return _locked;
 
     var versions = await _versions;
 
     // If [constraint] has a minimum (or a maximum in downgrade mode), we can
     // bail early once we're past it.
-    var isPastLimit = (Version _) => false;
+    var isPastLimit = (Version? _) => false;
     if (constraint is VersionRange) {
       if (_isDowngrade) {
         var max = constraint.max;
-        if (max != null) isPastLimit = (version) => version > max;
+        if (max != null) isPastLimit = (version) => version! > max;
       } else {
         var min = constraint.min;
-        if (min != null) isPastLimit = (version) => version < min;
+        if (min != null) isPastLimit = (version) => version! < min;
       }
     }
 
     // Return the most preferable version that matches [constraint]: the latest
     // non-prerelease version if one exists, or the latest prerelease version
     // otherwise.
-    PackageId bestPrerelease;
+    PackageId? bestPrerelease;
     for (var id in _isDowngrade ? versions : versions.reversed) {
-      if (isPastLimit != null && isPastLimit(id.version)) break;
+      if (isPastLimit(id.version)) break;
 
-      if (!constraint.allows(id.version)) continue;
+      if (!constraint!.allows(id.version)) continue;
       if (!id.version.isPreRelease) return id;
       bestPrerelease ??= id;
     }
@@ -191,7 +209,7 @@ class PackageLister {
 
     if (_cachedVersions == null &&
         _locked != null &&
-        id.version == _locked.version) {
+        id.version == _locked!.version) {
       if (_listedLockedVersion) return const [];
 
       var depender = id.toRange();
@@ -233,7 +251,8 @@ class PackageLister {
 
     var versions = await _versions;
     var index = lowerBound(versions, id,
-        compare: (id1, id2) => id1.version.compareTo(id2.version));
+        compare: (dynamic id1, dynamic id2) =>
+            id1.version.compareTo(id2.version));
     assert(index < versions.length);
     assert(versions[index].version == id.version);
 
@@ -270,7 +289,7 @@ class PackageLister {
           _alreadyListedDependencies[package] ?? VersionConstraint.empty);
 
       return _dependency(
-          _ref.withConstraint(constraint), dependencies[package]);
+          _ref.withConstraint(constraint), dependencies[package]!);
     }).toList();
   }
 
@@ -284,7 +303,7 @@ class PackageLister {
   /// version of [sdk], returns an [Incompatibility] indicating that.
   ///
   /// Otherwise, returns `null`.
-  Future<Incompatibility> _checkSdkConstraint(int index, Sdk sdk) async {
+  Future<Incompatibility?> _checkSdkConstraint(int index, Sdk sdk) async {
     var versions = await _versions;
 
     bool allowsSdk(Pubspec pubspec) => _matchesSdkConstraint(pubspec, sdk);
@@ -303,7 +322,7 @@ class PackageLister {
 
     var sdkConstraint = await foldAsync(
         slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,
-        (previous, version) async {
+        (dynamic previous, dynamic version) async {
       var pubspec = await _describeSafe(version);
       return previous.union(
           pubspec.sdkConstraints[sdk.identifier] ?? VersionConstraint.any);
@@ -345,7 +364,7 @@ class PackageLister {
   /// If a package is absent from the return value, that indicates indicate that
   /// all versions above or below [index] (according to [upper]) have the same
   /// dependency.
-  Future<Map<String, Version>> _dependencyBounds(
+  Future<Map<String, Version?>> _dependencyBounds(
       Map<String, PackageRange> dependencies, int index,
       {bool upper = true}) async {
     var versions = await _versions;
@@ -408,7 +427,7 @@ class PackageLister {
     var constraint = pubspec.sdkConstraints[sdk.identifier];
     if (constraint == null) return true;
 
-    return sdk.isAvailable && constraint.allows(sdk.version);
+    return sdk.isAvailable && constraint.allows(sdk.version!);
   }
 }
 
@@ -427,7 +446,8 @@ class _RootSource extends BoundSource {
   _RootSource(this._package);
 
   @override
-  Future<List<PackageId>> getVersions(PackageRef ref, {Duration maxAge}) {
+  Future<List<PackageId>> getVersions(PackageRef ref,
+      {Duration? maxAge, Version? allowedRetractedVersion}) {
     assert(ref.isRoot);
     return Future.value([PackageId.root(_package)]);
   }
@@ -443,10 +463,11 @@ class _RootSource extends BoundSource {
   @override
   SystemCache get systemCache => throw _unsupported;
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) =>
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration? maxAge) =>
       throw _unsupported;
   @override
   Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
   @override
-  String getDirectory(PackageId id) => throw _unsupported;
+  String getDirectory(PackageId id, {String? relativeFrom}) =>
+      throw _unsupported;
 }

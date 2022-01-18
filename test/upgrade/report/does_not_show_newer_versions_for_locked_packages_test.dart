@@ -11,14 +11,13 @@ void main() {
   test(
       'Shows newer versions available for packages that are locked and not being upgraded',
       () async {
-    await servePackages((builder) {
-      builder.serve('not_upgraded', '1.0.0');
-      builder.serve('not_upgraded', '2.0.0');
-      builder.serve('not_upgraded', '3.0.0-dev');
-      builder.serve('upgraded', '1.0.0');
-      builder.serve('upgraded', '2.0.0');
-      builder.serve('upgraded', '3.0.0-dev');
-    });
+    await servePackages()
+      ..serve('not_upgraded', '1.0.0')
+      ..serve('not_upgraded', '2.0.0')
+      ..serve('not_upgraded', '3.0.0-dev')
+      ..serve('upgraded', '1.0.0')
+      ..serve('upgraded', '2.0.0')
+      ..serve('upgraded', '3.0.0-dev');
 
     // Constraint everything to the first version.
     await d.appDir({'not_upgraded': '1.0.0', 'upgraded': '1.0.0'}).create();

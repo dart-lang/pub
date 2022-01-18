@@ -11,7 +11,7 @@ import 'utils.dart';
 /// A live-updating progress indicator for long-running log entries.
 class Progress {
   /// The timer used to write "..." during a progress log.
-  Timer _timer;
+  Timer? _timer;
 
   /// The [Stopwatch] used to track how long a progress log has been running.
   final _stopwatch = Stopwatch();
@@ -34,7 +34,7 @@ class Progress {
   Progress(this._message, {bool fine = false}) {
     _stopwatch.start();
 
-    var level = fine ? log.Level.FINE : log.Level.MESSAGE;
+    var level = fine ? log.Level.fine : log.Level.message;
 
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels
@@ -43,7 +43,7 @@ class Progress {
         !log.verbosity.isLevelVisible(level) ||
         log.json.enabled ||
         fine ||
-        log.verbosity.isLevelVisible(log.Level.FINE)) {
+        log.verbosity.isLevelVisible(log.Level.fine)) {
       // Not animating, so just log the start and wait until the task is
       // completed.
       log.write(level, '$_message...');
@@ -69,7 +69,7 @@ class Progress {
     // If we were animating, print one final update to show the user the final
     // time.
     if (_timer == null) return;
-    _timer.cancel();
+    _timer!.cancel();
     _timer = null;
     _update();
     stdout.writeln();
@@ -91,7 +91,7 @@ class Progress {
     // If we were animating, print one final update to show the user the final
     // time.
     if (_timer == null) return;
-    _timer.cancel();
+    _timer!.cancel();
     _timer = null;
   }
 
@@ -106,7 +106,7 @@ class Progress {
     // half-complete time indicator on the console.
     stdout.writeln('\b' * _timeLength);
     _timeLength = 0;
-    _timer.cancel();
+    _timer!.cancel();
     _timer = null;
   }
 

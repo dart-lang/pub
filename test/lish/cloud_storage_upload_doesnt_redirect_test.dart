@@ -14,13 +14,13 @@ void main() {
 
   test("cloud storage upload doesn't redirect", () async {
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer);
+    handleUploadForm(globalServer);
 
-    globalPackageServer.expect('POST', '/upload', (request) async {
+    globalServer.expect('POST', '/upload', (request) async {
       await request.read().drain();
       return shelf.Response(200);
     });

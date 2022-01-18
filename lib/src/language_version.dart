@@ -17,13 +17,11 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   /// The language version implied by a Dart sdk version.
   factory LanguageVersion.fromVersion(Version version) {
-    ArgumentError.checkNotNull(version, 'version');
     return LanguageVersion(version.major, version.minor);
   }
 
   /// Parse language version from string.
   factory LanguageVersion.parse(String languageVersion) {
-    ArgumentError.checkNotNull(languageVersion, 'languageVersion');
     final m = _languageVersionPattern.firstMatch(languageVersion);
     if (m == null) {
       throw FormatException(
@@ -32,8 +30,8 @@ class LanguageVersion implements Comparable<LanguageVersion> {
       );
     }
     return LanguageVersion(
-      int.parse(m.group(1)),
-      int.parse(m.group(2)),
+      int.parse(m.group(1)!),
+      int.parse(m.group(2)!),
     );
   }
 
@@ -42,14 +40,14 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   ///
   /// Fallbacks to [defaultLanguageVersion] if there is no [sdkConstraint] or
   /// the [sdkConstraint] has no lower-bound.
-  factory LanguageVersion.fromSdkConstraint(VersionConstraint sdkConstraint) {
+  factory LanguageVersion.fromSdkConstraint(VersionConstraint? sdkConstraint) {
     if (sdkConstraint == null || sdkConstraint.isEmpty) {
       return defaultLanguageVersion;
     } else if (sdkConstraint is Version) {
       return LanguageVersion.fromVersion(sdkConstraint);
     } else if (sdkConstraint is VersionRange) {
       if (sdkConstraint.min != null) {
-        return LanguageVersion.fromVersion(sdkConstraint.min);
+        return LanguageVersion.fromVersion(sdkConstraint.min!);
       }
       return defaultLanguageVersion;
     } else if (sdkConstraint is VersionUnion) {
@@ -71,6 +69,21 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   bool get supportsNullSafety => this >= firstVersionWithNullSafety;
 
+  /// Minimum language version at which short hosted syntax is supported.
+  ///
+  /// This allows `hosted` dependencies to be expressed as:
+  /// ```yaml
+  /// dependencies:
+  ///   foo:
+  ///     hosted: https://some-pub.com/path
+  ///     version: ^1.0.0
+  /// ```
+  ///
+  /// At older versions, `hosted` dependencies had to be a map with a `url` and
+  /// a `name` key.
+  bool get supportsShorterHostedSyntax =>
+      this >= firstVersionWithShorterHostedSyntax;
+
   @override
   int compareTo(LanguageVersion other) {
     if (major != other.major) return major.compareTo(other.major);
@@ -91,6 +104,7 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   static const defaultLanguageVersion = LanguageVersion(2, 7);
   static const firstVersionWithNullSafety = LanguageVersion(2, 12);
+  static const firstVersionWithShorterHostedSyntax = LanguageVersion(2, 15);
 
   /// Transform language version to string that can be parsed with
   /// [LanguageVersion.parse].

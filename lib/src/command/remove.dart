@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../entrypoint.dart';
@@ -11,7 +12,6 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
 import '../solver.dart';
-import '../yaml_edit/editor.dart';
 
 /// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
 /// and performs an operation similar to `pub get`. Unlike `pub add`, this
@@ -41,6 +41,15 @@ class RemoveCommand extends PubCommand {
 
     argParser.addFlag('precompile',
         help: 'Precompile executables in immediate dependencies.');
+
+    argParser.addFlag(
+      'example',
+      help: 'Also update dependencies in `example/` (if it exists).',
+      hide: true,
+    );
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -57,17 +66,32 @@ class RemoveCommand extends PubCommand {
       final newRoot = Package.inMemory(newPubspec);
 
       await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
-          .acquireDependencies(
-        SolveType.GET,
-        precompile: argResults['precompile'],
-        dryRun: true,
-      );
+          .acquireDependencies(SolveType.get,
+              precompile: argResults['precompile'],
+              dryRun: true,
+              analytics: null);
     } else {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
 
-      await Entrypoint.current(cache).acquireDependencies(SolveType.GET,
-          precompile: argResults['precompile']);
+      /// Create a new [Entrypoint] since we have to reprocess the updated
+      /// pubspec file.
+      final updatedEntrypoint = Entrypoint(directory, cache);
+      await updatedEntrypoint.acquireDependencies(
+        SolveType.get,
+        precompile: argResults['precompile'],
+        analytics: analytics,
+      );
+
+      var example = entrypoint.example;
+      if (argResults['example'] && example != null) {
+        await example.acquireDependencies(
+          SolveType.get,
+          precompile: argResults['precompile'],
+          onlyReportSuccessOrFailure: true,
+          analytics: analytics,
+        );
+      }
     }
   }
 
@@ -102,8 +126,8 @@ class RemoveCommand extends PubCommand {
       /// There may be packages where the dependency is declared both in
       /// dependencies and dev_dependencies.
       for (final dependencyKey in ['dependencies', 'dev_dependencies']) {
-        final dependenciesNode =
-            yamlEditor.parseAt([dependencyKey], orElse: () => null);
+        final dependenciesNode = yamlEditor
+            .parseAt([dependencyKey], orElse: () => YamlScalar.wrap(null));
 
         if (dependenciesNode is YamlMap &&
             dependenciesNode.containsKey(package)) {

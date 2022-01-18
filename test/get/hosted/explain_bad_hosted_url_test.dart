@@ -13,15 +13,31 @@ void main() {
 
     // Get once so it gets cached.
     await pubGet(
-        environment: {'PUB_HOSTED_URL': 'abc://bad_scheme.com'},
-        error: contains(
-            'PUB_HOSTED_URL` must have either the scheme "https://" or "http://".'),
-        exitCode: 78);
+      environment: {'PUB_HOSTED_URL': 'abc://bad_scheme.com'},
+      error: allOf(
+        contains('PUB_HOSTED_URL'),
+        contains('url scheme must be https:// or http://'),
+      ),
+      exitCode: 78,
+    );
 
     await pubGet(
-        environment: {'PUB_HOSTED_URL': ''},
-        error: contains(
-            'PUB_HOSTED_URL` must have either the scheme "https://" or "http://".'),
-        exitCode: 78);
+      environment: {'PUB_HOSTED_URL': ''},
+      error: allOf(
+        contains('PUB_HOSTED_URL'),
+        contains('url scheme must be https:// or http://'),
+      ),
+      exitCode: 78,
+    );
+  });
+
+  test('Allows PUB_HOSTED_URL to end with a slash', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await d.appDir({'foo': 'any'}).create();
+
+    await pubGet(
+      environment: {'PUB_HOSTED_URL': '${globalServer.url}/'},
+    );
   });
 }

@@ -16,7 +16,7 @@ void main() {
 
     await runPub(
         args: ['global', 'activate', '-spath', '../foo'],
-        output: isNot(contains('Precompiled foo:hello.')));
+        output: isNot(contains('Built foo:hello.')));
 
     await d.dir(cachePath, [
       d.dir('global_packages', [

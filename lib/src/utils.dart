@@ -9,16 +9,12 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:crypto/crypto.dart' as crypto;
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
-
-/// Whether Pub is running its own tests under Travis.CI.
-final isTravis = Platform.environment['TRAVIS_REPO_SLUG'] == 'dart-lang/pub';
 
 /// A regular expression matching a Dart identifier.
 ///
@@ -71,7 +67,7 @@ final random = math.Random.secure();
 ///
 /// If pub isn't attached to a terminal, uses an infinite line length and does
 /// not wrap text.
-final int _lineLength = () {
+final int? _lineLength = () {
   try {
     return stdout.terminalColumns;
   } on StdoutException {
@@ -128,11 +124,8 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
     });
   } else {
     runZonedGuarded(wrappedCallback, (e, stackTrace) {
-      if (stackTrace == null) {
-        stackTrace = Chain.current();
-      } else {
-        stackTrace = Chain([Trace.from(stackTrace)]);
-      }
+      stackTrace = Chain([Trace.from(stackTrace)]);
+
       if (!completer.isCompleted) completer.completeError(e, stackTrace);
     });
   }
@@ -169,8 +162,7 @@ StreamTransformer<T, T> onDoneTransformer<T>(void Function() onDone) {
 /// Pads [source] to [length] by adding [char]s at the beginning.
 ///
 /// If [char] is `null`, it defaults to a space.
-String _padLeft(String source, int length, [String char]) {
-  char ??= ' ';
+String _padLeft(String source, int length, [String char = ' ']) {
   if (source.length >= length) return source;
 
   return char * (length - source.length) + source;
@@ -181,7 +173,7 @@ String _padLeft(String source, int length, [String char]) {
 ///
 /// If [iter] does not have one item, name will be pluralized by adding "s" or
 /// using [plural], if given.
-String namedSequence(String name, Iterable iter, [String plural]) {
+String namedSequence(String name, Iterable iter, [String? plural]) {
   if (iter.length == 1) return '$name ${iter.single}';
 
   plural ??= '${name}s';
@@ -192,9 +184,8 @@ String namedSequence(String name, Iterable iter, [String plural]) {
 ///
 /// This converts each element of [iter] to a string and separates them with
 /// commas and/or [conjunction] (`"and"` by default) where appropriate.
-String toSentence(Iterable iter, {String conjunction}) {
+String toSentence(Iterable iter, {String conjunction = 'and'}) {
   if (iter.length == 1) return iter.first.toString();
-  conjunction ??= 'and';
   return iter.take(iter.length - 1).join(', ') + ' $conjunction ${iter.last}';
 }
 
@@ -202,7 +193,7 @@ String toSentence(Iterable iter, {String conjunction}) {
 ///
 /// By default, this just adds "s" to the end of [name] to get the plural. If
 /// [plural] is passed, that's used instead.
-String pluralize(String name, int number, {String plural}) {
+String pluralize(String name, int number, {String? plural}) {
   if (number == 1) return name;
   if (plural != null) return plural;
   return '${name}s';
@@ -256,7 +247,10 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
     var result = ['/$dir/'];
     if (Platform.isWindows) {
-      result..add('/$dir\\')..add('\\$dir/')..add('\\$dir\\');
+      result
+        ..add('/$dir\\')
+        ..add('\\$dir/')
+        ..add('\\$dir\\');
     }
     return result;
   }).toSet();
@@ -265,11 +259,11 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 /// Returns the maximum value in [iter] by [compare].
 ///
 /// [compare] defaults to [Comparable.compare].
-T maxAll<T extends Comparable>(Iterable<T> iter, [int Function(T, T) compare]) {
-  compare ??= Comparable.compare;
-  return iter
-      .reduce((max, element) => compare(element, max) > 0 ? element : max);
-}
+T maxAll<T extends Comparable>(
+  Iterable<T> iter, [
+  int Function(T, T) compare = Comparable.compare,
+]) =>
+    iter.reduce((max, element) => compare(element, max) > 0 ? element : max);
 
 /// Returns the element of [values] for which [orderBy] returns the smallest
 /// value.
@@ -277,10 +271,12 @@ T maxAll<T extends Comparable>(Iterable<T> iter, [int Function(T, T) compare]) {
 /// Returns the first such value in case of ties.
 ///
 /// Starts all the [orderBy] invocations in parallel.
-Future<S> minByAsync<S, T>(
-    Iterable<S> values, Future<T> Function(S) orderBy) async {
-  int minIndex;
-  T minOrderBy;
+Future<S?> minByAsync<S, T>(
+  Iterable<S> values,
+  Future<T> Function(S) orderBy,
+) async {
+  int? minIndex;
+  T? minOrderBy;
   List valuesList = values.toList();
   final orderByResults = await Future.wait(values.map(orderBy));
   for (var i = 0; i < orderByResults.length; i++) {
@@ -290,6 +286,9 @@ Future<S> minByAsync<S, T>(
       minIndex = i;
       minOrderBy = elementOrderBy;
     }
+  }
+  if (minIndex == null) {
+    return null; // when [values] is empty!
   }
   return valuesList[minIndex];
 }
@@ -376,7 +375,7 @@ String niceDuration(Duration duration) {
 
   // If we're using verbose logging, be more verbose but more accurate when
   // reporting timing information.
-  var msString = log.verbosity.isLevelVisible(log.Level.FINE)
+  var msString = log.verbosity.isLevelVisible(log.Level.fine)
       ? _padLeft(ms.toString(), 3, '0')
       : (ms ~/ 100).toString();
 
@@ -393,17 +392,14 @@ String _urlDecode(String encoded) =>
 /// Set to `true` if ANSI colors should be output regardless of terminalD
 bool forceColors = false;
 
-/// Whether "special" strings such as Unicode characters or color escapes are
-/// safe to use.
+/// Whether ansi codes such as color escapes are safe to use.
 ///
-/// On Windows or when not printing to a terminal, only printable ASCII
-/// characters should be used.
+/// On a terminal we can use ansi codes also on Windows.
 ///
 /// Tests should make sure to run the subprocess with or without an attached
 /// terminal to decide if colors will be provided.
 bool get canUseAnsiCodes =>
-    forceColors ||
-    (stdioType(stdout) == StdioType.terminal && stdout.supportsAnsiEscapes);
+    forceColors || (stdout.hasTerminal && stdout.supportsAnsiEscapes);
 
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
@@ -421,14 +417,14 @@ bool get canUseUnicode =>
     // The tests support unicode also on windows.
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
-    stdioType(stdout) != StdioType.terminal ||
+    !stdout.hasTerminal ||
     !Platform.isWindows ||
     Platform.environment.containsKey('WT_SESSION');
 
 /// Prepends each line in [text] with [prefix].
 ///
 /// If [firstPrefix] is passed, the first line is prefixed with that instead.
-String prefixLines(String text, {String prefix = '| ', String firstPrefix}) {
+String prefixLines(String text, {String prefix = '| ', String? firstPrefix}) {
   var lines = text.split('\n');
   if (firstPrefix == null) {
     return lines.map((line) => '$prefix$line').join('\n');
@@ -504,8 +500,7 @@ String yamlToString(data) {
 }
 
 /// Throw a [ApplicationException] with [message].
-@alwaysThrows
-void fail(String message, [innerError, StackTrace innerTrace]) {
+Never fail(String message, [Object? innerError, StackTrace? innerTrace]) {
   if (innerError != null) {
     throw WrappedException(message, innerError, innerTrace);
   } else {
@@ -517,7 +512,7 @@ void fail(String message, [innerError, StackTrace innerTrace]) {
 /// failed because of invalid input data.
 ///
 /// This will report the error and cause pub to exit with [exit_codes.DATA].
-void dataError(String message) => throw DataException(message);
+Never dataError(String message) => throw DataException(message);
 
 /// Returns a UUID in v4 format as a `String`.
 ///
@@ -525,7 +520,7 @@ void dataError(String message) => throw DataException(message);
 /// `255` inclusive.
 ///
 /// If [bytes] is not provided, it is generated using `Random.secure`.
-String createUuid([List<int> bytes]) {
+String createUuid([List<int>? bytes]) {
   var rnd = math.Random.secure();
 
   // See http://www.cryptosys.net/pki/uuid-rfc4122.html for notes
@@ -549,18 +544,20 @@ String createUuid([List<int> bytes]) {
 /// of whitespace.
 ///
 /// If [prefix] is passed, it's added at the beginning of any wrapped lines.
-String wordWrap(String text, {String prefix}) {
+String wordWrap(String text, {String prefix = ''}) {
   // If there is no limit, don't wrap.
-  if (_lineLength == null) return text;
+  final lineLength = _lineLength;
+  if (lineLength == null) {
+    return text;
+  }
 
-  prefix ??= '';
   return text.split('\n').map((originalLine) {
     var buffer = StringBuffer();
     var lengthSoFar = 0;
     var firstLine = true;
     for (var word in originalLine.split(' ')) {
       var wordLength = _withoutColors(word).length;
-      if (wordLength > _lineLength) {
+      if (wordLength > lineLength) {
         if (lengthSoFar != 0) buffer.writeln();
         if (!firstLine) buffer.write(prefix);
         buffer.writeln(word);
@@ -569,7 +566,7 @@ String wordWrap(String text, {String prefix}) {
         if (!firstLine) buffer.write(prefix);
         buffer.write(word);
         lengthSoFar = wordLength + prefix.length;
-      } else if (lengthSoFar + 1 + wordLength > _lineLength) {
+      } else if (lengthSoFar + 1 + wordLength > lineLength) {
         buffer.writeln();
         buffer.write(prefix);
         buffer.write(word);
@@ -614,8 +611,8 @@ bool equalsIgnoringPreRelease(Version version1, Version version2) =>
 /// [value] are used as the values for the new map.
 Map<K2, V2> mapMap<K1, V1, K2, V2>(
   Map<K1, V1> map, {
-  K2 Function(K1, V1) key,
-  V2 Function(K1, V1) value,
+  K2 Function(K1, V1)? key,
+  V2 Function(K1, V1)? value,
 }) {
   key ??= (mapKey, _) => mapKey as K2;
   value ??= (_, mapValue) => mapValue as V2;

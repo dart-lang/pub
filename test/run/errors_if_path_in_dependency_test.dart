@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -21,21 +20,12 @@ void main() {
       })
     ]).create();
 
-    await runPub(args: ['run', 'foo:sub/dir'], error: '''
-Cannot run an executable in a subdirectory of a dependency.
-
-Usage: pub run <executable> [arguments...]
--h, --help                              Print this usage information.
-    --[no-]enable-asserts               Enable assert statements.
-    --enable-experiment=<experiment>    Runs the executable in a VM with the
-                                        given experiments enabled.
-                                        (Will disable snapshotting, resulting in
-                                        slower startup).
-    --[no-]sound-null-safety            Override the default null safety
-                                        execution mode.
-
-Run "pub help" to see global options.
-See https://dart.dev/tools/pub/cmd/pub-run for detailed documentation.
-''', exitCode: exit_codes.USAGE);
+    await runPub(
+      args: ['run', 'foo:sub/dir'],
+      error: contains(
+        'Cannot run an executable in a subdirectory of a dependency.',
+      ),
+      exitCode: exit_codes.USAGE,
+    );
   });
 }

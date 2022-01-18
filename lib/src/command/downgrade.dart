@@ -14,8 +14,7 @@ class DowngradeCommand extends PubCommand {
   String get name => 'downgrade';
   @override
   String get description =>
-      "Downgrade the current package's dependencies to oldest versions.\n\n"
-      "This doesn't modify the lockfile, so it can be reset with \"pub get\".";
+      "Downgrade the current package's dependencies to oldest versions.\n\n";
   @override
   String get argumentsDescription => '[dependencies...]';
   @override
@@ -34,6 +33,15 @@ class DowngradeCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('packages-dir', hide: true);
+
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      hide: true,
+    );
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -43,11 +51,23 @@ class DowngradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     var dryRun = argResults['dry-run'];
+
     await entrypoint.acquireDependencies(
-      SolveType.DOWNGRADE,
+      SolveType.downgrade,
       unlock: argResults.rest,
       dryRun: dryRun,
+      analytics: analytics,
     );
+    var example = entrypoint.example;
+    if (argResults['example'] && example != null) {
+      await example.acquireDependencies(
+        SolveType.get,
+        unlock: argResults.rest,
+        dryRun: dryRun,
+        onlyReportSuccessOrFailure: true,
+        analytics: analytics,
+      );
+    }
 
     if (isOffline) {
       log.warning('Warning: Downgrading when offline may not update you to '

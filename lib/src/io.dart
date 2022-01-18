@@ -8,12 +8,12 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:async/async.dart';
+import 'package:cli_util/cli_util.dart'
+    show EnvironmentNotFoundException, applicationConfigHome;
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
-import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -21,7 +21,7 @@ import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
-import 'sdk.dart';
+import 'third_party/tar/tar.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -33,6 +33,12 @@ export 'package:http/http.dart' show ByteStream;
 /// indicate that beyond 32, additional file reads don't provide substantial
 /// additional throughput.
 final _descriptorPool = Pool(32);
+
+/// The assumed default file mode on Linux and macOS
+const _defaultMode = 420; // 644₈
+
+/// Mask for executable bits in file modes.
+const _executableMask = 0x49; // 001 001 001
 
 /// Determines if a file or directory exists at [path].
 bool entryExists(String path) =>
@@ -150,11 +156,12 @@ String _resolveLink(String link) {
 }
 
 /// Reads the contents of the text file [file].
-String readTextFile(String file) => File(file).readAsStringSync(encoding: utf8);
+String readTextFile(String file) => File(file).readAsStringSync();
 
 /// Reads the contents of the text file [file].
-Future<String> readTextFileAsync(String file) =>
-    File(file).readAsString(encoding: utf8);
+Future<String> readTextFileAsync(String file) {
+  return _descriptorPool.withResource(() => File(file).readAsString());
+}
 
 /// Reads the contents of the binary file [file].
 List<int> readBinaryFile(String file) {
@@ -164,14 +171,23 @@ List<int> readBinaryFile(String file) {
   return contents;
 }
 
+/// Reads the contents of the binary file [file] as a [Stream].
+Stream<List<int>> readBinaryFileAsSream(String file) {
+  log.io('Reading binary file $file.');
+  var contents = File(file).openRead();
+  return contents;
+}
+
 /// Creates [file] and writes [contents] to it.
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
 /// logged.
-void writeTextFile(String file, String contents,
-    {bool dontLogContents = false, Encoding encoding}) {
-  encoding ??= utf8;
-
+void writeTextFile(
+  String file,
+  String contents, {
+  bool dontLogContents = false,
+  Encoding encoding = utf8,
+}) {
   // Sanity check: don't spew a huge file.
   log.io('Writing ${contents.length} characters to text file $file.');
   if (!dontLogContents && contents.length < 1024 * 1024) {
@@ -186,10 +202,12 @@ void writeTextFile(String file, String contents,
 ///
 /// If [dontLogContents] is `true`, the contents of the file will never be
 /// logged.
-Future<void> writeTextFileAsync(String file, String contents,
-    {bool dontLogContents = false, Encoding encoding}) async {
-  encoding ??= utf8;
-
+Future<void> writeTextFileAsync(
+  String file,
+  String contents, {
+  bool dontLogContents = false,
+  Encoding encoding = utf8,
+}) async {
   // Sanity check: don't spew a huge file.
   log.io('Writing ${contents.length} characters to text file $file.');
   if (!dontLogContents && contents.length < 1024 * 1024) {
@@ -204,7 +222,7 @@ Future<void> writeTextFileAsync(String file, String contents,
 ///
 /// Replaces any file already at that path. Completes when the file is done
 /// being written.
-Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
+Future<String> createFileFromStream(Stream<List<int>> stream, String file) {
   // TODO(nweiz): remove extra logging when we figure out the windows bot issue.
   log.io('Creating $file from stream.');
 
@@ -214,6 +232,10 @@ Future<String> _createFileFromStream(Stream<List<int>> stream, String file) {
     log.fine('Created $file from stream.');
     return file;
   });
+}
+
+void _chmod(int mode, String file) {
+  runProcessSync('chmod', [mode.toRadixString(8), file]);
 }
 
 /// Deletes [file] if it's a symlink.
@@ -254,6 +276,10 @@ Future<String> _createSystemTempDir() async {
   return tempDir.resolveSymbolicLinksSync();
 }
 
+String resolveSymlinksOfDir(String dir) {
+  return Directory(dir).resolveSymbolicLinksSync();
+}
+
 /// Lists the contents of [dir].
 ///
 /// If [recursive] is `true`, lists subdirectory contents (defaults to `false`).
@@ -276,8 +302,7 @@ List<String> listDir(String dir,
     {bool recursive = false,
     bool includeHidden = false,
     bool includeDirs = true,
-    Iterable<String> allowed}) {
-  allowed ??= [];
+    Iterable<String> allowed = const <String>[]}) {
   var allowlistFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
@@ -286,7 +311,7 @@ List<String> listDir(String dir,
   // package, since re-parsing a path is very expensive relative to string
   // operations.
   return Directory(dir)
-      .listSync(recursive: recursive, followLinks: true)
+      .listSync(recursive: recursive)
       .where((entity) {
         if (!includeDirs && entity is Directory) return false;
         if (entity is Link) return false;
@@ -307,9 +332,10 @@ List<String> listDir(String dir,
 
         // If the basename is in [allowed], don't count its "/." as making the
         // file hidden.
-        var allowedBasename =
-            allowlistFilter.firstWhere(pathInDir.contains, orElse: () => null);
-        if (allowedBasename != null) {
+
+        if (allowlistFilter.any(pathInDir.contains)) {
+          final allowedBasename =
+              allowlistFilter.firstWhere(pathInDir.contains);
           pathInDir =
               pathInDir.substring(0, pathInDir.length - allowedBasename.length);
         }
@@ -335,51 +361,53 @@ bool dirExists(String dir) => Directory(dir).existsSync();
 /// when we try to delete or move something while it's being scanned. To
 /// mitigate that, on Windows, this will retry the operation a few times if it
 /// fails.
-void _attempt(String description, void Function() operation) {
+///
+/// For some operations it makes sense to handle ERROR_DIR_NOT_EMPTY
+/// differently. They can pass [ignoreEmptyDir] = `true`.
+void _attempt(String description, void Function() operation,
+    {bool ignoreEmptyDir = false}) {
   if (!Platform.isWindows) {
     operation();
     return;
   }
 
-  String getErrorReason(FileSystemException error) {
-    if (error.osError.errorCode == 5) {
+  String? getErrorReason(FileSystemException error) {
+    // ERROR_ACCESS_DENIED
+    if (error.osError?.errorCode == 5) {
       return 'access was denied';
     }
 
-    if (error.osError.errorCode == 32) {
+    // ERROR_SHARING_VIOLATION
+    if (error.osError?.errorCode == 32) {
       return 'it was in use by another process';
     }
 
-    if (error.osError.errorCode == 145) {
+    // ERROR_DIR_NOT_EMPTY
+    if (!ignoreEmptyDir && isDirectoryNotEmptyException(error)) {
       return 'of dart-lang/sdk#25353';
     }
 
     return null;
   }
 
-  for (var i = 0; i < 2; i++) {
+  for (var i = 0; i < 3; i++) {
     try {
       operation();
-      return;
+      break;
     } on FileSystemException catch (error) {
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      log.io('Pub failed to $description because $reason. '
-          'Retrying in 50ms.');
-      sleep(Duration(milliseconds: 50));
+      if (i < 2) {
+        log.io('Pub failed to $description because $reason. '
+            'Retrying in 50ms.');
+        sleep(Duration(milliseconds: 50));
+      } else {
+        fail('Pub failed to $description because $reason.\n'
+            'This may be caused by a virus scanner or having a file\n'
+            'in the directory open in another application.');
+      }
     }
-  }
-
-  try {
-    operation();
-  } on FileSystemException catch (error) {
-    var reason = getErrorReason(error);
-    if (reason == null) rethrow;
-
-    fail('Pub failed to $description because $reason.\n'
-        'This may be caused by a virus scanner or having a file\n'
-        'in the directory open in another application.');
   }
 }
 
@@ -425,14 +453,25 @@ void cleanDir(String dir) {
 void renameDir(String from, String to) {
   _attempt('rename directory', () {
     log.io('Renaming directory $from to $to.');
-    try {
-      Directory(from).renameSync(to);
-    } on IOException {
-      // Ensure that [to] isn't left in an inconsistent state. See issue 12436.
-      if (entryExists(to)) deleteEntry(to);
-      rethrow;
-    }
-  });
+    Directory(from).renameSync(to);
+  }, ignoreEmptyDir: true);
+}
+
+bool isDirectoryNotEmptyException(FileSystemException e) {
+  final errorCode = e.osError?.errorCode;
+  return
+      // On Linux rename will fail with ENOTEMPTY if directory exists:
+      // https://man7.org/linux/man-pages/man2/rename.2.html
+      // #define	ENOTEMPTY	39	/* Directory not empty */
+      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
+      (Platform.isLinux && errorCode == 39) ||
+          // On Windows this may fail with ERROR_DIR_NOT_EMPTY
+          // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+          (Platform.isWindows && errorCode == 145) ||
+          // On MacOS rename will fail with ENOTEMPTY if directory exists.
+          // #define ENOTEMPTY       66              /* Directory not empty */
+          // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
+          (Platform.isMacOS && errorCode == 66);
 }
 
 /// Creates a new symlink at path [symlink] that points to [target].
@@ -487,11 +526,22 @@ void createPackageSymlink(String name, String target, String symlink,
 ///
 /// The "_PUB_TESTING" variable is automatically set for all the test code's
 /// invocations of pub.
-final bool runningFromTest = Platform.environment.containsKey('_PUB_TESTING');
+final bool runningFromTest =
+    Platform.environment.containsKey('_PUB_TESTING') && _assertionsEnabled;
+
+final bool _assertionsEnabled = () {
+  try {
+    assert(false);
+    // ignore: avoid_catching_errors
+  } on AssertionError {
+    return true;
+  }
+  return false;
+}();
 
 final bool runningFromFlutter =
     Platform.environment.containsKey('PUB_ENVIRONMENT') &&
-        Platform.environment['PUB_ENVIRONMENT'].contains('flutter_cli');
+        (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
@@ -523,10 +573,6 @@ final String dartRepoRoot = (() {
   return path.fromUri(url);
 })();
 
-/// A line-by-line stream of standard input.
-final Stream<String> _stdinLines =
-    ByteStream(stdin).toStringStream().transform(const LineSplitter());
-
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
 /// Returns a [Future] that completes to `true` if the user confirms or `false`
@@ -538,12 +584,29 @@ final Stream<String> _stdinLines =
 /// is false.
 Future<bool> confirm(String message) {
   log.fine('Showing confirm message: $message');
+  return stdinPrompt('$message (y/N)?').then(RegExp(r'^[yY]').hasMatch);
+}
+
+/// Writes [prompt] and reads a line from stdin.
+Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
   if (runningFromTest) {
-    log.message('$message (y/N)?');
+    log.message(prompt);
   } else {
-    stdout.write('$message (y/N)? ');
+    stdout.write('$prompt ');
   }
-  return _stdinLines.first.then(RegExp(r'^[yY]').hasMatch);
+  if (echoMode != null && stdin.hasTerminal) {
+    final previousEchoMode = stdin.echoMode;
+    try {
+      stdin.echoMode = echoMode;
+      final result = stdin.readLineSync() ?? '';
+      stdout.write('\n');
+      return result;
+    } finally {
+      stdin.echoMode = previousEchoMode;
+    }
+  } else {
+    return stdin.readLineSync() ?? '';
+  }
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given
@@ -574,8 +637,13 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<PubProcessResult> runProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment, bool runInShell = false}) {
+Future<PubProcessResult> runProcess(
+  String executable,
+  List<String> args, {
+  workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   ArgumentError.checkNotNull(executable, 'executable');
 
   return _descriptorPool.withResource(() async {
@@ -606,8 +674,13 @@ Future<PubProcessResult> runProcess(String executable, List<String> args,
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 @visibleForTesting
-Future<_PubProcess> startProcess(String executable, List<String> args,
-    {workingDir, Map<String, String> environment, bool runInShell = false}) {
+Future<_PubProcess> startProcess(
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
@@ -627,10 +700,13 @@ Future<_PubProcess> startProcess(String executable, List<String> args,
 }
 
 /// Like [runProcess], but synchronous.
-PubProcessResult runProcessSync(String executable, List<String> args,
-    {String workingDir,
-    Map<String, String> environment,
-    bool runInShell = false}) {
+PubProcessResult runProcessSync(
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
@@ -653,19 +729,19 @@ class _PubProcess {
   final Process _process;
 
   /// The mutable field for [stdin].
-  EventSink<List<int>> _stdin;
+  late EventSink<List<int>> _stdin;
 
   /// The mutable field for [stdinClosed].
-  Future _stdinClosed;
+  late Future _stdinClosed;
 
   /// The mutable field for [stdout].
-  ByteStream _stdout;
+  late ByteStream _stdout;
 
   /// The mutable field for [stderr].
-  ByteStream _stderr;
+  late ByteStream _stderr;
 
   /// The mutable field for [exitCode].
-  Future<int> _exitCode;
+  late Future<int> _exitCode;
 
   /// The sink used for passing data to the process's standard input stream.
   ///
@@ -733,16 +809,20 @@ class _PubProcess {
 /// [fn] should have the same signature as [Process.start], except that the
 /// returned value may have any return type.
 T _doProcess<T>(
-    T Function(String, List<String>,
-            {String workingDirectory,
-            Map<String, String> environment,
-            bool runInShell})
-        fn,
-    String executable,
-    List<String> args,
-    {String workingDir,
-    Map<String, String> environment,
-    bool runInShell = false}) {
+  T Function(
+    String,
+    List<String>, {
+    String? workingDirectory,
+    Map<String, String>? environment,
+    bool runInShell,
+  })
+      fn,
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+}) {
   // TODO(rnystrom): Should dart:io just handle this?
   // Spawning a process on Windows will not look for the executable in the
   // system path. So, if executable looks like it needs that (i.e. it doesn't
@@ -792,102 +872,95 @@ Future<HttpServer> bindServer(String host, int port) async {
   return server;
 }
 
-String _tarPath = _findTarPath();
-
-/// Find a tar. Prefering system installed tar.
-///
-/// On linux tar should always be /bin/tar [See FHS 2.3][1]
-/// On MacOS it seems to always be /usr/bin/tar.
-///
-/// [1]: https://refspecs.linuxfoundation.org/FHS_2.3/fhs-2.3.pdf
-String _findTarPath() {
-  for (final file in ['/bin/tar', '/usr/bin/tar']) {
-    if (fileExists(file)) {
-      return file;
-    }
-  }
-  log.warning(
-      'Could not find a system `tar` installed in /bin/tar or /usr/bin/tar, '
-      'attempting to use tar from PATH');
-  return 'tar';
-}
-
 /// Extracts a `.tar.gz` file from [stream] to [destination].
 Future extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
-  final decompressed = stream.transform(GZipCodec().decoder);
 
-  // We used to stream directly to `tar`,  but that was fragile in certain
-  // settings.
-  final processResult = await withTempDir((tempDir) async {
-    final tarFile = path.join(tempDir, 'archive.tar');
-    try {
-      await _createFileFromStream(decompressed, tarFile);
-    } catch (e) {
-      // We don't know the error type here: https://dartbug.com/41270
-      throw FileSystemException('Could not decompress gz stream $e');
+  destination = path.absolute(destination);
+  final reader = TarReader(stream.transform(gzip.decoder));
+  while (await reader.moveNext()) {
+    final entry = reader.current;
+
+    final filePath = path.joinAll([
+      destination,
+      // Tar file names always use forward slashes
+      ...path.posix.split(entry.name),
+    ]);
+
+    if (!path.isWithin(destination, filePath)) {
+      // The tar contains entries that would be written outside of the
+      // destination. That doesn't happen by accident, assume that the tar file
+      // is malicious.
+      await reader.cancel();
+      throw FormatException('Invalid tar entry: ${entry.name}');
     }
-    return (Platform.isWindows)
-        ? runProcess(_pathTo7zip, ['x', tarFile], workingDir: destination)
-        : runProcess(_tarPath, [
-            if (_noUnknownKeyword) '--warning=no-unknown-keyword',
-            '--extract',
-            '--no-same-owner',
-            '--no-same-permissions',
-            '--directory',
-            destination,
-            '--file',
-            tarFile,
-          ]);
-  });
-  if (processResult.exitCode != exit_codes.SUCCESS) {
-    throw FileSystemException(
-        'Could not un-tar (exit code ${processResult.exitCode}). Error:\n'
-        '${processResult.stdout.join("\n")}\n'
-        '${processResult.stderr.join("\n")}');
+
+    final parentDirectory = path.dirname(filePath);
+
+    bool checkValidTarget(String linkTarget) {
+      final isValid = path.isWithin(destination, linkTarget);
+      if (!isValid) {
+        log.fine('Skipping ${entry.name}: Invalid link target');
+      }
+
+      return isValid;
+    }
+
+    switch (entry.type) {
+      case TypeFlag.dir:
+        ensureDir(filePath);
+        break;
+      case TypeFlag.reg:
+      case TypeFlag.regA:
+        // Regular file
+        deleteIfLink(filePath);
+        ensureDir(parentDirectory);
+        await createFileFromStream(entry.contents, filePath);
+
+        if (Platform.isLinux || Platform.isMacOS) {
+          // Apply executable bits from tar header, but don't change r/w bits
+          // from the default
+          final mode = _defaultMode | (entry.header.mode & _executableMask);
+
+          if (mode != _defaultMode) {
+            _chmod(mode, filePath);
+          }
+        }
+        break;
+      case TypeFlag.symlink:
+        // Link to another file in this tar, relative from this entry.
+        final resolvedTarget = path.joinAll(
+            [parentDirectory, ...path.posix.split(entry.header.linkName!)]);
+        if (!checkValidTarget(resolvedTarget)) {
+          // Don't allow links to files outside of this tar.
+          break;
+        }
+
+        ensureDir(parentDirectory);
+        createSymlink(
+            path.relative(resolvedTarget, from: parentDirectory), filePath);
+        break;
+      case TypeFlag.link:
+        // We generate hardlinks as symlinks too, but their linkName is relative
+        // to the root of the tar file (unlike symlink entries, whose linkName
+        // is relative to the entry itself).
+        final fromDestination = path.join(destination, entry.header.linkName);
+        if (!checkValidTarget(fromDestination)) {
+          break; // Link points outside of the tar file.
+        }
+
+        final fromFile = path.relative(fromDestination, from: parentDirectory);
+        ensureDir(parentDirectory);
+        createSymlink(fromFile, filePath);
+        break;
+      default:
+        // Only extract files
+        continue;
+    }
   }
-  log.fine('Extracted .tar.gz to $destination. Exit code $exitCode.');
+
+  log.fine('Extracted .tar.gz to $destination.');
 }
-
-/// Whether to include "--warning=no-unknown-keyword" when invoking tar.
-///
-/// BSD tar (the default on OS X) can insert strange headers to a tarfile that
-/// GNU tar (the default on Linux) is unable to understand. This will cause GNU
-/// tar to emit a number of harmless but scary-looking warnings which are
-/// silenced by this flag.
-final bool _noUnknownKeyword = _computeNoUnknownKeyword();
-bool _computeNoUnknownKeyword() {
-  if (!Platform.isLinux) return false;
-  var result = Process.runSync(_tarPath, ['--version']);
-  if (result.exitCode != 0) {
-    throw ApplicationException(
-        'Pub failed to run tar (exit code ${result.exitCode}):\n${result.stderr}');
-  }
-
-  var match =
-      RegExp(r'^tar \(GNU tar\) (\d+).(\d+)\n').firstMatch(result.stdout);
-  if (match == null) return false;
-
-  var major = int.parse(match[1]);
-  var minor = int.parse(match[2]);
-  return major >= 2 || (major == 1 && minor >= 23);
-}
-
-final String _pathTo7zip = (() {
-  final candidate = runningFromDartRepo
-      ? path.join(dartRepoRoot, 'third_party', '7zip', '7za.exe')
-      : path.join(
-          sdk.rootDirectory,
-          'lib',
-          '_internal',
-          'pub',
-          'asset',
-          '7zip',
-          '7za.exe',
-        );
-  if (fileExists(candidate)) return candidate;
-  throw StateError('Could not find 7zip.');
-})();
 
 /// Create a .tar.gz archive from a list of entries.
 ///
@@ -896,111 +969,53 @@ final String _pathTo7zip = (() {
 /// working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
-ByteStream createTarGz(List<String> contents, {String baseDir}) {
-  return ByteStream(StreamCompleter.fromFuture(Future.sync(() async {
-    var buffer = StringBuffer();
-    buffer.write('Creating .tar.gz stream containing:\n');
-    contents.forEach(buffer.writeln);
-    log.fine(buffer.toString());
+ByteStream createTarGz(
+  List<String> contents, {
+  required String baseDir,
+}) {
+  var buffer = StringBuffer();
+  buffer.write('Creating .tar.gz stream containing:\n');
+  contents.forEach(buffer.writeln);
+  log.fine(buffer.toString());
 
-    baseDir ??= path.current;
-    baseDir = path.absolute(baseDir);
-    contents = contents.map((entry) {
-      entry = path.absolute(entry);
-      if (!path.isWithin(baseDir, entry)) {
-        throw ArgumentError('Entry $entry is not inside $baseDir.');
-      }
-      return path.relative(entry, from: baseDir);
-    }).toList();
+  ArgumentError.checkNotNull(baseDir, 'baseDir');
+  baseDir = path.normalize(path.absolute(baseDir));
 
-    if (!Platform.isWindows) {
-      var args = [
-        // ustar is the most recent tar format that's compatible across all
-        // OSes.
-        '--format=ustar',
-        '--create',
-        '--gzip',
-        '--directory',
-        baseDir
-      ];
-
-      String stdin;
-      if (Platform.isLinux) {
-        // GNU tar flags.
-        // https://www.gnu.org/software/tar/manual/html_section/tar_33.html
-
-        args.addAll(['--files-from', '/dev/stdin']);
-        stdin = contents.join('\n');
-
-        /// Travis's version of tar apparently doesn't support passing unknown
-        /// values to the --owner and --group flags for some reason.
-        if (!isTravis) {
-          // The ustar format doesn't support large UIDs. We don't care about
-          // preserving ownership anyway, so we just set them to "pub".
-          args.addAll(['--owner=pub', '--group=pub']);
-        }
-      } else {
-        // OSX can take inputs in mtree format since at least OSX 10.9 (bsdtar
-        // 2.8.3). We use this to set the uname and gname, since it doesn't have
-        // flags for those.
-        //
-        // https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/tar.1.html
-        args.add('@/dev/stdin');
-
-        // The ustar format doesn't support large UIDs. We don't care about
-        // preserving ownership anyway, so we just set them to "pub".
-        // TODO(rnystrom): This assumes contents does not contain any
-        // directories.
-        var mtreeHeader = '#mtree\n/set uname=pub gname=pub type=file\n';
-
-        // We need a newline at the end, otherwise the last file would get
-        // ignored.
-        stdin =
-            mtreeHeader + contents.join('\n').replaceAll(' ', r'\040') + '\n';
-      }
-
-      // Setting the working directory should be unnecessary since we pass an
-      // explicit base directory to tar. However, on Mac when using an mtree
-      // input file, relative paths in the mtree file are interpreted as
-      // relative to the current working directory, not the "--directory"
-      // argument.
-      var process = await startProcess(_tarPath, args, workingDir: baseDir);
-      process.stdin.add(utf8.encode(stdin));
-      process.stdin.close();
-      return process.stdout;
+  final tarContents = Stream.fromIterable(contents.map((entry) {
+    entry = path.normalize(path.absolute(entry));
+    if (!path.isWithin(baseDir, entry)) {
+      throw ArgumentError('Entry $entry is not inside $baseDir.');
     }
 
-    // Don't use [withTempDir] here because we don't want to delete the temp
-    // directory until the returned stream has closed.
-    var tempDir = await _createSystemTempDir();
+    final relative = path.relative(entry, from: baseDir);
+    // On Windows, we can't open some files without normalizing them
+    final file = File(path.normalize(entry));
+    final stat = file.statSync();
 
-    try {
-      // Create the file containing the list of files to compress.
-      var contentsPath = path.join(tempDir, 'files.txt');
-      writeTextFile(contentsPath, contents.join('\n'));
-
-      // Create the tar file.
-      var tarFile = path.join(tempDir, 'intermediate.tar');
-      var args = ['a', '-w$baseDir', tarFile, '@$contentsPath'];
-
-      // We're passing 'baseDir' both as '-w' and setting it as the working
-      // directory explicitly here intentionally. The former ensures that the
-      // files added to the archive have the correct relative path in the
-      // archive. The latter enables relative paths in the "-i" args to be
-      // resolved.
-      await runProcess(_pathTo7zip, args, workingDir: baseDir);
-
-      // GZIP it. 7zip doesn't support doing both as a single operation.
-      // Send the output to stdout.
-      args = ['a', 'unused', '-tgzip', '-so', tarFile];
-      return (await startProcess(_pathTo7zip, args))
-          .stdout
-          .transform(onDoneTransformer(() => deleteEntry(tempDir)));
-    } catch (_) {
-      deleteEntry(tempDir);
-      rethrow;
+    if (stat.type == FileSystemEntityType.link) {
+      log.message('$entry is a link locally, but will be uploaded as a '
+          'duplicate file.');
     }
-  })));
+
+    return TarEntry(
+      TarHeader(
+        // Ensure paths in tar files use forward slashes
+        name: path.url.joinAll(path.split(relative)),
+        // We want to keep executable bits, but otherwise use the default
+        // file mode
+        mode: _defaultMode | (stat.mode & _executableMask),
+        size: stat.size,
+        modified: stat.changed,
+        userName: 'pub',
+        groupName: 'pub',
+      ),
+      file.openRead(),
+    );
+  }));
+
+  return ByteStream(tarContents
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder));
 }
 
 /// Contains the results of invoking a [Process] and waiting for it to complete.
@@ -1022,3 +1037,18 @@ class PubProcessResult {
 
   bool get success => exitCode == exit_codes.SUCCESS;
 }
+
+/// The location for dart-specific configuration.
+///
+/// `null` if no config dir could be found.
+final String? dartConfigDir = () {
+  if (runningFromTest &&
+      Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
+    return Platform.environment['_PUB_TEST_CONFIG_DIR'];
+  }
+  try {
+    return applicationConfigHome('dart');
+  } on EnvironmentNotFoundException {
+    return null;
+  }
+}();

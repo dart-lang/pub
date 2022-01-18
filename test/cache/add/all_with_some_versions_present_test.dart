@@ -9,12 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('"--all" adds all non-installed versions of the package', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.1');
-      builder.serve('foo', '1.2.2');
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.2.1')
+      ..serve('foo', '1.2.2')
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '2.0.0');
 
     // Install a couple of versions first.
     await runPub(

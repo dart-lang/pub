@@ -5,9 +5,10 @@
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
-import '../exit_codes.dart' as exit_codes;
+import '../command_runner.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `list-package-dirs` pub command.
@@ -26,6 +27,8 @@ class ListPackageDirsCommand extends PubCommand {
   ListPackageDirsCommand() {
     argParser.addOption('format',
         help: 'How output should be displayed.', allowed: ['json']);
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -33,13 +36,15 @@ class ListPackageDirsCommand extends PubCommand {
     log.json.enabled = true;
 
     if (!fileExists(entrypoint.lockFilePath)) {
-      dataError('Package "myapp" has no lockfile. Please run "pub get" first.');
+      dataError(
+          'Package "myapp" has no lockfile. Please run "$topLevelProgram pub get" first.');
     }
 
     var output = {};
 
     // Include the local paths to all locked packages.
-    var packages = mapMap(entrypoint.lockFile.packages, value: (name, package) {
+    var packages = mapMap(entrypoint.lockFile.packages,
+        value: (String name, PackageId package) {
       var source = entrypoint.cache.source(package.source);
       var packageDir = source.getDirectory(package);
       // Normalize paths and make them absolute for backwards compatibility
@@ -61,6 +66,5 @@ class ListPackageDirsCommand extends PubCommand {
     ];
 
     log.json.message(output);
-    return exit_codes.SUCCESS;
   }
 }

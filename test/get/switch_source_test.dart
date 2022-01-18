@@ -9,7 +9,8 @@ import '../test_pub.dart';
 
 void main() {
   test('re-gets a package if its source has changed', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
 
     await d.dir('foo',
         [d.libDir('foo', 'foo 0.0.1'), d.libPubspec('foo', '0.0.1')]).create();

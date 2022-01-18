@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/dart-lang/pub/workflows/Dart%20CI/badge.svg)](https://github.com/dart-lang/pub/actions?query=workflow%3A"Dart+CI")
+[![Build Status](https://github.com/dart-lang/pub/workflows/Dart%20CI/badge.svg)](https://github.com/dart-lang/pub/actions/workflows/test.yaml?query=workflow%3A%22Dart+CI%22+branch%3Amaster)
 
 Pub is the package manager for Dart.
 
@@ -72,4 +72,4 @@ All patches to official Dart packages, including to pub, need to undergo code
 review before they're submitted. The full process for putting up your patch for
 review is [documented elsewhere][contributing].
 
-[contributing]: https://github.com/dart-lang/sdk/blob/master/CONTRIBUTING.md
+[contributing]: https://github.com/dart-lang/sdk/blob/main/CONTRIBUTING.md

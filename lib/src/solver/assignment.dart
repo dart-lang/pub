@@ -17,7 +17,7 @@ class Assignment extends Term {
 
   /// The incompatibility that caused this assignment to be derived, or `null`
   /// if the assignment isn't a derivation.
-  final Incompatibility cause;
+  final Incompatibility? cause;
 
   /// Whether this assignment is a decision, as opposed to a derivation.
   bool get isDecision => cause == null;

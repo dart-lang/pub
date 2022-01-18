@@ -2,13 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+@TestOn('linux')
 import 'dart:io';
 
-@TestOn('linux')
-import 'package:test/test.dart';
-import 'package:test_descriptor/test_descriptor.dart' show sandbox;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart' show runProcess;
+import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart' show sandbox;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';

@@ -11,7 +11,6 @@ import 'package:stack_trace/stack_trace.dart';
 import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
-import 'sdk.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///
@@ -50,12 +49,12 @@ class FileException implements ApplicationException {
 /// A class for exceptions that wrap other exceptions.
 class WrappedException extends ApplicationException {
   /// The underlying exception that [this] is wrapping, if any.
-  final Object innerError;
+  final Object? innerError;
 
   /// The stack chain for [innerError] if it exists.
-  final Chain innerChain;
+  final Chain? innerChain;
 
-  WrappedException(String message, this.innerError, [StackTrace innerTrace])
+  WrappedException(String message, this.innerError, [StackTrace? innerTrace])
       : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace),
         super(message);
 }
@@ -65,7 +64,7 @@ class WrappedException extends ApplicationException {
 /// This is usually used when an exception has already been printed using
 /// [log.exception].
 class SilentException extends WrappedException {
-  SilentException(innerError, [StackTrace innerTrace])
+  SilentException(Object? innerError, [StackTrace? innerTrace])
       : super(innerError.toString(), innerError, innerTrace);
 }
 
@@ -89,15 +88,20 @@ class ConfigException extends ApplicationException {
 /// that other code in pub can use this to show a more detailed explanation of
 /// why the package was being requested.
 class PackageNotFoundException extends WrappedException {
-  /// If this failure was caused by an SDK being unavailable, this is that SDK.
-  final Sdk missingSdk;
+  /// A hint indicating an action the user could take to resolve this problem.
+  ///
+  /// This will be printed after the package resolution conflict.
+  final String? hint;
 
-  PackageNotFoundException(String message,
-      {innerError, StackTrace innerTrace, this.missingSdk})
-      : super(message, innerError, innerTrace);
+  PackageNotFoundException(
+    String message, {
+    Object? innerError,
+    StackTrace? innerTrace,
+    this.hint,
+  }) : super(message, innerError, innerTrace);
 
   @override
-  String toString() => "Package doesn't exist ($message).";
+  String toString() => 'Package not available ($message).';
 }
 
 /// Returns whether [error] is a user-facing error object.

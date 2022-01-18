@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -20,7 +21,6 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
-import '../yaml_edit/editor.dart';
 
 /// Handles the `upgrade` pub command.
 class UpgradeCommand extends PubCommand {
@@ -62,6 +62,15 @@ class UpgradeCommand extends PubCommand {
           'and updates pubspec.yaml.',
       negatable: false,
     );
+
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      hide: true,
+    );
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
@@ -88,24 +97,37 @@ class UpgradeCommand extends PubCommand {
     }
 
     if (_upgradeNullSafety) {
-      return await _runUpgradeNullSafety();
+      if (argResults['example'] && entrypoint.example != null) {
+        log.warning(
+            'Running `upgrade --null-safety` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --null-safety --directory example/` separately.');
+      }
+      await _runUpgradeNullSafety();
+    } else if (_upgradeMajorVersions) {
+      if (argResults['example'] && entrypoint.example != null) {
+        log.warning(
+            'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.');
+      }
+      await _runUpgradeMajorVersions();
+    } else {
+      await _runUpgrade(entrypoint);
     }
-
-    if (_upgradeMajorVersions) {
-      return await _runUpgradeMajorVersions();
+    if (argResults['example'] && entrypoint.example != null) {
+      // Reload the entrypoint to ensure we pick up potential changes that has
+      // been made.
+      final exampleEntrypoint = Entrypoint(directory, cache).example!;
+      await _runUpgrade(exampleEntrypoint, onlySummary: true);
     }
-
-    return await _runUpgrade();
   }
 
-  Future<void> _runUpgrade() async {
-    await entrypoint.acquireDependencies(
-      SolveType.UPGRADE,
+  Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
+    await e.acquireDependencies(
+      SolveType.upgrade,
       unlock: argResults.rest,
       dryRun: _dryRun,
       precompile: _precompile,
+      onlyReportSuccessOrFailure: onlySummary,
+      analytics: analytics,
     );
-
     _showOfflineWarning();
   }
 
@@ -157,12 +179,12 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         cache,
         Package.inMemory(resolvablePubspec),
       );
     }, condition: _shouldShowSpinner);
-    for (final resolvedPackage in solveResult?.packages ?? []) {
+    for (final resolvedPackage in solveResult.packages) {
       resolvedPackages[resolvedPackage.name] = resolvedPackage;
     }
 
@@ -174,9 +196,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       ...entrypoint.root.pubspec.devDependencies.values,
     ].where((dep) => dep.source is HostedSource);
     for (final dep in declaredHostedDependencies) {
-      final resolvedPackage = resolvedPackages[dep.name];
-      assert(resolvedPackage != null);
-      if (resolvedPackage == null || !toUpgrade.contains(dep.name)) {
+      final resolvedPackage = resolvedPackages[dep.name]!;
+      if (!toUpgrade.contains(dep.name)) {
         // If we're not to upgrade this package, or it wasn't in the
         // resolution somehow, then we ignore it.
         continue;
@@ -208,9 +229,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         dryRun: true,
         precompile: _precompile,
+        analytics: null, // No analytics for dry-run
       );
     } else {
       await _updatePubspec(changes);
@@ -218,9 +240,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint.current(cache).acquireDependencies(
-        SolveType.UPGRADE,
+      await Entrypoint(directory, cache).acquireDependencies(
+        SolveType.upgrade,
         precompile: _precompile,
+        analytics: analytics,
       );
     }
 
@@ -253,12 +276,12 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         cache,
         Package.inMemory(nullsafetyPubspec),
       );
     }, condition: _shouldShowSpinner);
-    for (final resolvedPackage in solveResult?.packages ?? []) {
+    for (final resolvedPackage in solveResult.packages) {
       resolvedPackages[resolvedPackage.name] = resolvedPackage;
     }
 
@@ -270,9 +293,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       ...entrypoint.root.pubspec.devDependencies.values,
     ].where((dep) => dep.source is HostedSource);
     for (final dep in declaredHostedDependencies) {
-      final resolvedPackage = resolvedPackages[dep.name];
-      assert(resolvedPackage != null);
-      if (resolvedPackage == null || !toUpgrade.contains(dep.name)) {
+      final resolvedPackage = resolvedPackages[dep.name]!;
+      if (!toUpgrade.contains(dep.name)) {
         // If we're not to upgrade this package, or it wasn't in the
         // resolution somehow, then we ignore it.
         continue;
@@ -301,9 +323,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         dryRun: true,
         precompile: _precompile,
+        analytics: null,
       );
     } else {
       await _updatePubspec(changes);
@@ -311,9 +334,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint.current(cache).acquireDependencies(
-        SolveType.UPGRADE,
+      await Entrypoint(directory, cache).acquireDependencies(
+        SolveType.upgrade,
         precompile: _precompile,
+        analytics: analytics,
       );
     }
 
@@ -331,10 +355,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       ...entrypoint.root.pubspec.devDependencies.keys
     ];
     await Future.wait(directDeps.map((name) async {
-      final resolvedPackage = resolvedPackages[name];
-      assert(resolvedPackage != null);
+      final resolvedPackage = resolvedPackages[name]!;
 
-      final boundSource = resolvedPackage.source.bind(cache);
+      final boundSource = resolvedPackage.source!.bind(cache);
       final pubspec = await boundSource.describe(resolvedPackage);
       if (!pubspec.languageVersion.supportsNullSafety) {
         nonMigratedDirectDeps.add(name);
@@ -446,7 +469,7 @@ You may have to:
             return dep;
           }
 
-          final boundSource = dep.source.bind(cache);
+          final boundSource = dep.source!.bind(cache);
           final packages = await boundSource.getVersions(dep.toRef());
           packages.sort((a, b) => a.version.compareTo(b.version));
 
@@ -461,7 +484,9 @@ You may have to:
           }
 
           hasNoNullSafetyVersions.add(dep.name);
-          return null;
+          // This value is never used. We will throw an exception because
+          //`hasNonNullSafetyVersions` is not empty.
+          return dep.withConstraint(VersionConstraint.empty);
         }));
 
     final deps = _removeUpperConstraints(original.dependencies.values);

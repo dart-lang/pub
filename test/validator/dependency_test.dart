@@ -8,11 +8,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:path/path.dart' as path;
-import 'package:test/test.dart';
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/dependency.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -28,7 +27,7 @@ Future<void> expectDependencyValidationWarning(String substring) =>
 
 /// Sets up a test package with dependency [dep] and mocks a server with
 /// [hostedVersions] of the package available.
-Future setUpDependency(Map dep, {List<String> hostedVersions}) {
+Future setUpDependency(Map dep, {List<String>? hostedVersions}) {
   useMockClient(MockClient((request) {
     expect(request.method, equals('GET'));
     expect(request.url.path, equals('/api/packages/foo'));

@@ -11,11 +11,10 @@ void main() {
   test('activating a Git package deactivates the hosted one', () async {
     ensureGit();
 
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+    ]);
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
@@ -31,8 +30,8 @@ void main() {
                 'Resolving dependencies...\n'
                 '+ foo 1.0.0 from git ../foo.git at '),
             // Specific revision number goes here.
-            endsWith('Precompiling executables...\n'
-                'Precompiled foo:foo.\n'
+            endsWith('Building package executables...\n'
+                'Built foo:foo.\n'
                 'Activated foo 1.0.0 from Git repository "../foo.git".')));
 
     // Should now run the git one.

@@ -3,9 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -13,11 +12,10 @@ import '../../test_pub.dart';
 void main() {
   test('runs a snapshotted script without a .dart_tool/package_config file',
       () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+    ]);
 
     await runPub(args: ['global', 'activate', 'foo']);
 
@@ -27,7 +25,7 @@ void main() {
         'global_packages/foo/.dart_tool/package_config.json'));
 
     var pub = await pubRun(global: true, args: ['foo:script']);
-    expect(pub.stdout, emits('ok'));
+    expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
   });
 
@@ -45,7 +43,7 @@ void main() {
         'global_packages/foo/.dart_tool/package_config.json'));
 
     var pub = await pubRun(global: true, args: ['foo']);
-    expect(pub.stdout, emits('ok'));
+    expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
   });
 }

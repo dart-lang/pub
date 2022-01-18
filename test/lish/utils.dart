@@ -9,8 +9,8 @@ import 'package:test/test.dart';
 
 import '../test_pub.dart';
 
-void handleUploadForm(PackageServer server, [Map body]) {
-  server.expect('GET', '/api/packages/versions/new', (request) {
+void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
+  server.expect('GET', '$path/api/packages/versions/new', (request) {
     expect(
         request.headers, containsPair('authorization', 'Bearer access token'));
 

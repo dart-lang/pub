@@ -18,15 +18,15 @@ void main() {
 
     await servePackages();
     await d
-        .credentialsFile(globalPackageServer, 'access token',
+        .credentialsFile(globalServer, 'access token',
             refreshToken: 'refresh token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(globalPackageServer);
+    var pub = await startPublish(globalServer);
     await confirmPublish(pub);
 
-    globalPackageServer.expect('POST', '/token', (request) {
+    globalServer.expect('POST', '/token', (request) {
       return request.readAsString().then((body) {
         expect(
             body, matches(RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
@@ -38,7 +38,7 @@ void main() {
       });
     });
 
-    globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
+    globalServer.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -48,7 +48,7 @@ void main() {
     await pub.shouldExit();
 
     await d
-        .credentialsFile(globalPackageServer, 'new access token',
+        .credentialsFile(globalServer, 'new access token',
             refreshToken: 'refresh token')
         .validate();
   });

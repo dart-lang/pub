@@ -3,11 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:math' as math;
-
-import 'package:test/test.dart';
 
 import 'package:pub/src/validator/size.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -19,7 +17,7 @@ ValidatorCreator size(int size) {
 
 Future<void> expectSizeValidationError(Matcher matcher) async {
   await expectValidation(
-    size(100 * math.pow(2, 20) + 1),
+    size(100 * 1048577 /*2^20 +1*/),
     errors: contains(matcher),
   );
 }
@@ -29,7 +27,7 @@ void main() {
     await d.validPackage.create();
 
     await expectValidation(size(100));
-    await expectValidation(size(100 * math.pow(2, 20)));
+    await expectValidation(size(100 * 1048576 /*2^20*/));
   });
 
   group('considers a package invalid if it is more than 100 MB', () {

@@ -3,9 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -13,7 +12,8 @@ import '../../test_pub.dart';
 void main() {
   test('upgrades a locked pub server package with a nonexistent version',
       () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
     await pubGet();
@@ -21,7 +21,9 @@ void main() {
 
     deleteEntry(p.join(d.sandbox, cachePath));
 
-    globalPackageServer.replace((builder) => builder.serve('foo', '1.0.1'));
+    server.clearPackages();
+    server.serve('foo', '1.0.1');
+
     await pubGet();
     await d.appPackagesFile({'foo': '1.0.1'}).validate();
   });

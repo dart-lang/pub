@@ -25,7 +25,7 @@ class SourceRegistry {
   ///
   /// This defaults to [hosted].
   Source get defaultSource => _default;
-  Source _default;
+  late Source _default;
 
   /// The registered sources, in name order.
   List<Source> get all {
@@ -58,7 +58,7 @@ class SourceRegistry {
       throw StateError('Default source $name is not in the registry');
     }
 
-    _default = _sources[name];
+    _default = _sources[name]!;
   }
 
   /// Registers a new source.
@@ -78,7 +78,7 @@ class SourceRegistry {
   ///
   /// Returns an [UnknownSource] if no source with that name has been
   /// registered. If [name] is null, returns the default source.
-  Source operator [](String name) {
+  Source? operator [](String? name) {
     if (name == null) return _default;
     if (_sources.containsKey(name)) return _sources[name];
     return UnknownSource(name);

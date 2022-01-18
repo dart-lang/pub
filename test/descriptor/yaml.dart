@@ -27,7 +27,7 @@ class YamlDescriptor extends FileDescriptor {
       Stream.fromIterable([utf8.encode(_contents)]);
 
   @override
-  Future validate([String parent]) async {
+  Future validate([String? parent]) async {
     var fullPath = p.join(parent ?? sandbox, name);
     if (!await File(fullPath).exists()) {
       fail("File not found: '$fullPath'.");

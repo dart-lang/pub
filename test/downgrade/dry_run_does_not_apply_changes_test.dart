@@ -3,19 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
-import 'package:test/test.dart';
-
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
   test('--dry-run shows report but does not apply changes', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0');
 
     // Create the first lockfile.
     await d.appDir({'foo': '2.0.0'}).create();

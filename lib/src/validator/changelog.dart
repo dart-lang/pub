@@ -21,7 +21,7 @@ class ChangelogValidator extends Validator {
       final changelog = entrypoint.root.changelogPath;
 
       if (changelog == null) {
-        warnings.add('Please add a`CHANGELOG.md` to your package. '
+        warnings.add('Please add a `CHANGELOG.md` to your package. '
             'See https://dart.dev/tools/pub/publishing#important-files.');
         return;
       }
@@ -41,9 +41,6 @@ class ChangelogValidator extends Validator {
         warnings.add('$changelog contains invalid UTF-8.\n'
             'This will cause it to be displayed incorrectly on '
             'the Pub site (https://pub.dev).');
-      }
-
-      if (contents == null) {
         // Failed to decode contents, so there's nothing else to check.
         return;
       }

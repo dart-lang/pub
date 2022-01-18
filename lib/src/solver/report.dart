@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
@@ -70,25 +71,33 @@ class SolveReport {
       return oldId != newId;
     }).length;
 
+    var suffix = '';
+    if (!_root.isInMemory) {
+      final dir = path.normalize(_root.dir);
+      if (dir != '.') {
+        suffix = ' in $dir';
+      }
+    }
+
     if (dryRun) {
       if (numChanged == 0) {
-        log.message('No dependencies would change.');
+        log.message('No dependencies would change$suffix.');
       } else if (numChanged == 1) {
-        log.message('Would change $numChanged dependency.');
+        log.message('Would change $numChanged dependency$suffix.');
       } else {
-        log.message('Would change $numChanged dependencies.');
+        log.message('Would change $numChanged dependencies$suffix.');
       }
     } else {
       if (numChanged == 0) {
-        if (_type == SolveType.GET) {
-          log.message('Got dependencies!');
+        if (_type == SolveType.get) {
+          log.message('Got dependencies$suffix!');
         } else {
-          log.message('No dependencies changed.');
+          log.message('No dependencies changed$suffix.');
         }
       } else if (numChanged == 1) {
-        log.message('Changed $numChanged dependency!');
+        log.message('Changed $numChanged dependency$suffix!');
       } else {
-        log.message('Changed $numChanged dependencies!');
+        log.message('Changed $numChanged dependencies$suffix!');
       }
     }
   }
@@ -134,11 +143,34 @@ class SolveReport {
     }
   }
 
+  /// Displays a single-line message, number of discontinued packages
+  /// if discontinued packages are detected.
+  Future<void> reportDiscontinued() async {
+    var numDiscontinued = 0;
+    for (var id in _result.packages) {
+      if (id.source == null) continue;
+      final status =
+          await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
+      if (status.isDiscontinued &&
+          (_root.dependencyType(id.name) == DependencyType.direct ||
+              _root.dependencyType(id.name) == DependencyType.dev)) {
+        numDiscontinued++;
+      }
+    }
+    if (numDiscontinued > 0) {
+      if (numDiscontinued == 1) {
+        log.message('1 package is discontinued.');
+      } else {
+        log.message('$numDiscontinued packages are discontinued.');
+      }
+    }
+  }
+
   /// Displays a two-line message, number of outdated packages and an
   /// instruction to run `pub outdated` if outdated packages are detected.
   void reportOutdated() {
     final outdatedPackagesCount = _result.packages.where((id) {
-      final versions = _result.availableVersions[id.name];
+      final versions = _result.availableVersions[id.name]!;
       // A version is counted:
       // - if there is a newer version which is not a pre-release and current
       // version is also not a pre-release or,
@@ -169,7 +201,7 @@ class SolveReport {
       {bool alwaysShow = false, bool highlightOverride = true}) async {
     var newId = _dependencies[name];
     var oldId = _previousLockFile.packages[name];
-    var id = newId ?? oldId;
+    var id = newId ?? oldId!;
 
     var isOverridden = _root.dependencyOverrides.containsKey(id.name);
 
@@ -210,11 +242,11 @@ class SolveReport {
       // Unchanged.
       icon = '  ';
     }
-    String message;
+    String? message;
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
-    if (newId != null && _type != SolveType.DOWNGRADE) {
-      var versions = _result.availableVersions[newId.name];
+    if (newId != null && _type != SolveType.downgrade) {
+      var versions = _result.availableVersions[newId.name]!;
 
       var newerStable = false;
       var newerUnstable = false;
@@ -229,8 +261,20 @@ class SolveReport {
         }
       }
       final status =
-          await _cache.source(id.source).status(id, Duration(days: 3));
-      if (status.isDiscontinued) {
+          await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
+
+      if (status.isRetracted) {
+        if (newerStable) {
+          message =
+              '(retracted, ${maxAll(versions, Version.prioritize)} available)';
+        } else if (newId.version.isPreRelease && newerUnstable) {
+          message = '(retracted, ${maxAll(versions)} available)';
+        } else {
+          message = '(retracted)';
+        }
+      } else if (status.isDiscontinued &&
+          (_root.dependencyType(name) == DependencyType.direct ||
+              _root.dependencyType(name) == DependencyType.dev)) {
         if (status.discontinuedReplacedBy == null) {
           message = '(discontinued)';
         } else {
@@ -248,7 +292,7 @@ class SolveReport {
       }
     }
 
-    if (_type == SolveType.GET &&
+    if (_type == SolveType.get &&
         !(alwaysShow || changed || addedOrRemoved || message != null)) {
       return;
     }
@@ -261,7 +305,7 @@ class SolveReport {
     // If the package was upgraded, show what it was upgraded from.
     if (changed) {
       _output.write(' (was ');
-      _writeId(oldId);
+      _writeId(oldId!);
       _output.write(')');
     }
 
@@ -280,7 +324,7 @@ class SolveReport {
     _output.write(id.version);
 
     if (id.source != _sources.defaultSource) {
-      var description = id.source.formatDescription(id.description);
+      var description = id.source!.formatDescription(id.description);
       _output.write(' from ${id.source} $description');
     }
   }

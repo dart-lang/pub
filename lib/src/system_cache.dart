@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'authentication/token_store.dart';
 import 'io.dart';
 import 'io.dart' as io show createTempDir;
 import 'log.dart' as log;
@@ -33,19 +34,20 @@ class SystemCache {
 
   static String defaultDir = (() {
     if (Platform.environment.containsKey('PUB_CACHE')) {
-      return Platform.environment['PUB_CACHE'];
+      return Platform.environment['PUB_CACHE']!;
     } else if (Platform.isWindows) {
       // %LOCALAPPDATA% is preferred as the cache location over %APPDATA%, because the latter is synchronised between
       // devices when the user roams between them, whereas the former is not.
       // The default cache dir used to be in %APPDATA%, so to avoid breaking old installs,
       // we use the old dir in %APPDATA% if it exists. Else, we use the new default location
       // in %LOCALAPPDATA%.
-      var appData = Platform.environment['APPDATA'];
+      //  TODO(sigurdm): handle missing APPDATA.
+      var appData = Platform.environment['APPDATA']!;
       var appDataCacheDir = p.join(appData, 'Pub', 'Cache');
       if (dirExists(appDataCacheDir)) {
         return appDataCacheDir;
       }
-      var localAppData = Platform.environment['LOCALAPPDATA'];
+      var localAppData = Platform.environment['LOCALAPPDATA']!;
       return p.join(localAppData, 'Pub', 'Cache');
     } else {
       return '${Platform.environment['HOME']}/.pub-cache';
@@ -59,7 +61,7 @@ class SystemCache {
   final sources = SourceRegistry();
 
   /// The sources bound to this cache.
-  final _boundSources = <Source, BoundSource>{};
+  final _boundSources = <Source?, BoundSource>{};
 
   /// The built-in Git source bound to this cache.
   BoundGitSource get git => _boundSources[sources.git] as BoundGitSource;
@@ -77,12 +79,16 @@ class SystemCache {
   /// The default source bound to this cache.
   BoundSource get defaultSource => source(sources[null]);
 
+  /// The default credential store.
+  final TokenStore tokenStore;
+
   /// Creates a system cache and registers all sources in [sources].
   ///
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
-  SystemCache({String rootDir, bool isOffline = false})
-      : rootDir = rootDir ?? SystemCache.defaultDir {
+  SystemCache({String? rootDir, bool isOffline = false})
+      : rootDir = rootDir ?? SystemCache.defaultDir,
+        tokenStore = TokenStore(dartConfigDir) {
     for (var source in sources.all) {
       if (source is HostedSource) {
         _boundSources[source] = source.bind(this, isOffline: isOffline);
@@ -93,8 +99,8 @@ class SystemCache {
   }
 
   /// Returns the version of [source] bound to this cache.
-  BoundSource source(Source source) =>
-      _boundSources.putIfAbsent(source, () => source.bind(this));
+  BoundSource source(Source? source) =>
+      _boundSources.putIfAbsent(source, () => source!.bind(this));
 
   /// Loads the package identified by [id].
   ///
@@ -105,6 +111,15 @@ class SystemCache {
     }
 
     return Package.load(id.name, source(id.source).getDirectory(id), sources);
+  }
+
+  Package loadCached(PackageId id) {
+    final bound = source(id.source);
+    if (bound is CachedSource) {
+      return Package.load(id.name, bound.getDirectoryInCache(id), sources);
+    } else {
+      throw ArgumentError('Call only on Cached ids.');
+    }
   }
 
   /// Determines if the system cache contains the package identified by [id].

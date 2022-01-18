@@ -45,9 +45,9 @@ class StrictDependenciesValidator extends Validator {
       }
 
       for (var directive in directives) {
-        Uri url;
+        Uri? url;
         try {
-          url = Uri.parse(directive.uri.stringValue);
+          url = Uri.parse(directive.uri.stringValue!);
         } on FormatException catch (_) {
           // Ignore a format exception. [url] will be null, and we'll emit an
           // "Invalid URL" warning below.
@@ -100,7 +100,7 @@ class StrictDependenciesValidator extends Validator {
     var directories = ['benchmark', 'test', 'tool'];
     for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
-        warnings.add(usage.dependencyMissingMessage());
+        warnings.add(usage.dependenciesMissingMessage());
       }
     }
   }
@@ -146,10 +146,16 @@ class _Usage {
   String _toMessage(String message) =>
       errorMessage(message, _file, _contents, _directive);
 
-  /// Returns an error message saying the package is not listed in dependencies.
+  /// Returns an error message saying the package is not listed in `dependencies`.
   String dependencyMissingMessage() =>
       _toMessage('This package does not have $package in the `dependencies` '
           'section of `pubspec.yaml`.');
+
+  /// Returns an error message saying the package is not listed in `dependencies`
+  ///  or `dev_dependencies`.
+  String dependenciesMissingMessage() =>
+      _toMessage('This package does not have $package in the `dependencies` '
+          'or `dev_dependencies` section of `pubspec.yaml`.');
 
   /// Returns an error message saying the package should be in `dependencies`.
   String dependencyMisplaceMessage() {
