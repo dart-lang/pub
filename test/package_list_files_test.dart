@@ -12,6 +12,7 @@ import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
+import 'validator/utils.dart';
 
 late String root;
 Entrypoint? entrypoint;
@@ -45,14 +46,7 @@ void main() {
         ]));
   });
 
-  // On windows symlinks to directories are distinct from symlinks to files.
-  void createDirectorySymlink(String path, String target) {
-    if (Platform.isWindows) {
-      Process.runSync('cmd', ['/c', 'mklink', '/D', path, target]);
-    } else {
-      Link(path).createSync(target);
-    }
-  }
+
 
   test('throws on directory symlinks', () async {
     await d.dir(appPath, [
