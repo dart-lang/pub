@@ -232,8 +232,7 @@ class HostedSource extends Source {
       return _HostedDescription(packageName, defaultUrl);
     }
 
-    final canUseShorthandSyntax =
-        languageVersion >= _minVersionForShorterHostedSyntax;
+    final canUseShorthandSyntax = languageVersion.supportsShorterHostedSyntax;
 
     if (description is String) {
       // Old versions of pub (pre Dart 2.15) interpret `hosted: foo` as
@@ -256,7 +255,7 @@ class HostedSource extends Source {
         } else {
           throw FormatException(
             'Using `hosted: <url>` is only supported with a minimum SDK '
-            'constraint of $_minVersionForShorterHostedSyntax.',
+            'constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.',
           );
         }
       }
@@ -271,7 +270,7 @@ class HostedSource extends Source {
 
     if (name is! String) {
       throw FormatException("The 'name' key must have a string value without "
-          'a minimum Dart SDK constraint of $_minVersionForShorterHostedSyntax.0 or higher.');
+          'a minimum Dart SDK constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.0 or higher.');
     }
 
     var url = defaultUrl;
@@ -285,21 +284,6 @@ class HostedSource extends Source {
 
     return _HostedDescription(name, url);
   }
-
-  /// Minimum language version at which short hosted syntax is supported.
-  ///
-  /// This allows `hosted` dependencies to be expressed as:
-  /// ```yaml
-  /// dependencies:
-  ///   foo:
-  ///     hosted: https://some-pub.com/path
-  ///     version: ^1.0.0
-  /// ```
-  ///
-  /// At older versions, `hosted` dependencies had to be a map with a `url` and
-  /// a `name` key.
-  static const LanguageVersion _minVersionForShorterHostedSyntax =
-      LanguageVersion(2, 15);
 
   static final RegExp _looksLikePackageName =
       RegExp(r'^[a-zA-Z_]+[a-zA-Z0-9_]*$');

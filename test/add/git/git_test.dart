@@ -184,4 +184,18 @@ void main() {
       })
     ]).validate();
   });
+
+  test('fails if multiple packages passed for git source', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
+        exitCode: exit_codes.USAGE,
+        error: contains('Can only add a single git package at a time.'));
+  });
 }

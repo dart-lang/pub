@@ -35,6 +35,46 @@ void main() {
     }).validate();
   });
 
+  test('adds multiple packages from a non-default pub server', () async {
+    // Make the default server serve errors. Only the custom server should
+    // be accessed.
+    (await servePackages()).serveErrors();
+
+    final server = await servePackages();
+    server.serve('foo', '1.1.0');
+    server.serve('foo', '1.2.3');
+    server.serve('bar', '0.2.5');
+    server.serve('bar', '3.2.3');
+    server.serve('baz', '0.1.3');
+    server.serve('baz', '1.3.5');
+
+    await d.appDir({}).create();
+
+    final url = server.url;
+
+    await pubAdd(
+        args: ['foo:1.2.3', 'bar:3.2.3', 'baz:1.3.5', '--hosted-url', url]);
+
+    await d.cacheDir({'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'},
+        port: server.port).validate();
+    await d.appPackagesFile(
+        {'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'}).validate();
+    await d.appDir({
+      'foo': {
+        'version': '1.2.3',
+        'hosted': {'name': 'foo', 'url': url}
+      },
+      'bar': {
+        'version': '3.2.3',
+        'hosted': {'name': 'bar', 'url': url}
+      },
+      'baz': {
+        'version': '1.3.5',
+        'hosted': {'name': 'baz', 'url': url}
+      }
+    }).validate();
+  });
+
   test('fails when adding from an invalid url', () async {
     ensureGit();
 
