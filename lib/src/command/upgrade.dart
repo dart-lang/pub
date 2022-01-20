@@ -222,11 +222,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
-      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(
+      await Entrypoint.inMemory(
         Package.inMemory(resolvablePubspec),
-        entrypoint.lockFile,
         cache,
+        lockFile: entrypoint.lockFile,
         solveResult: solveResult,
       ).acquireDependencies(
         SolveType.upgrade,
@@ -317,10 +316,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(
+      await Entrypoint.inMemory(
         Package.inMemory(nullsafetyPubspec),
-        entrypoint.lockFile,
         cache,
+        lockFile: entrypoint.lockFile,
         solveResult: solveResult,
       ).acquireDependencies(
         SolveType.upgrade,
