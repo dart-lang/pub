@@ -215,14 +215,6 @@ class Entrypoint {
   /// Writes .packages and .dart_tool/package_config.json
   Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
     final entrypointName = isGlobal ? null : root.name;
-    ensureDir(p.dirname(packageConfigFile));
-    writeTextFile(
-        packageConfigFile,
-        await lockFile.packageConfigFile(cache,
-            entrypoint: entrypointName,
-            entrypointSdkConstraint:
-                root.pubspec.sdkConstraints[sdk.identifier],
-            relativeFrom: isGlobal ? null : root.dir));
     if (generateDotPackages) {
       writeTextFile(
           packagesFile,
@@ -232,6 +224,14 @@ class Entrypoint {
     } else {
       tryDeleteEntry(packagesFile);
     }
+    ensureDir(p.dirname(packageConfigFile));
+    writeTextFile(
+        packageConfigFile,
+        await lockFile.packageConfigFile(cache,
+            entrypoint: entrypointName,
+            entrypointSdkConstraint:
+                root.pubspec.sdkConstraints[sdk.identifier],
+            relativeFrom: isGlobal ? null : root.dir));
   }
 
   /// Gets all dependencies of the [root] package.
@@ -261,7 +261,7 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
-    bool generateDotPackages = false,
+    required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {

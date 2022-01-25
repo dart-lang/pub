@@ -50,6 +50,9 @@ class RemoveCommand extends PubCommand {
 
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+
+    argParser.addFlag('packages-file',
+        defaultsTo: true, help: 'Generate the legacy ".packages" file');
   }
 
   @override
@@ -69,7 +72,8 @@ class RemoveCommand extends PubCommand {
           .acquireDependencies(SolveType.get,
               precompile: argResults['precompile'],
               dryRun: true,
-              analytics: null);
+              analytics: null,
+              generateDotPackages: false);
     } else {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
@@ -81,6 +85,7 @@ class RemoveCommand extends PubCommand {
         SolveType.get,
         precompile: argResults['precompile'],
         analytics: analytics,
+        generateDotPackages: argResults['packages-file'],
       );
 
       var example = entrypoint.example;
@@ -90,6 +95,7 @@ class RemoveCommand extends PubCommand {
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
           analytics: analytics,
+          generateDotPackages: argResults['packages-file'],
         );
       }
     }

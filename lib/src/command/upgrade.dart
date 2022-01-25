@@ -238,6 +238,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         dryRun: true,
         precompile: _precompile,
         analytics: null, // No analytics for dry-run
+        generateDotPackages: false,
       );
     } else {
       await _updatePubspec(changes);
@@ -249,6 +250,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
+        generateDotPackages: argResults['packages-file'],
       );
     }
 
@@ -332,6 +334,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         dryRun: true,
         precompile: _precompile,
         analytics: null,
+        generateDotPackages: false,
       );
     } else {
       await _updatePubspec(changes);
@@ -343,6 +346,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
+        generateDotPackages: argResults['packages-file'],
       );
     }
 
