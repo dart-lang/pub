@@ -44,8 +44,10 @@ void main() {
       }
 
       await pubCommand(command, args: ['--offline'], warning: warning);
-
-      await d.appPackagesFile({'foo': '1.2.3', 'bar': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+        d.packageConfigEntry(name: 'bar', version: '1.2.3'),
+      ]).validate();
     });
 
     test('supports prerelease versions', () async {
@@ -66,7 +68,9 @@ void main() {
 
       await pubCommand(command, args: ['--offline'], warning: warning);
 
-      await d.appPackagesFile({'foo': '1.2.3-alpha.1'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3-alpha.1'),
+      ]).validate();
     });
 
     test('fails gracefully if a dependency is not cached', () async {
@@ -143,7 +147,9 @@ void main() {
 
       await pubCommand(command, args: ['--offline']);
 
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
     });
 
     test('skips invalid cached versions', () async {
@@ -164,7 +170,9 @@ void main() {
 
       await pubCommand(command, args: ['--offline']);
 
-      await d.appPackagesFile({'foo': '1.2.2'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+      ]).validate();
     });
 
     test('skips invalid locked versions', () async {
@@ -186,7 +194,9 @@ void main() {
 
       await pubCommand(command, args: ['--offline']);
 
-      await d.appPackagesFile({'foo': '1.2.2'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+      ]).validate();
     });
   });
 }

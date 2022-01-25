@@ -17,7 +17,9 @@ void main() {
 
     await d.appDir({'foo': 'any'}).create();
     await pubGet();
-    await d.appPackagesFile({'foo': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+    ]).validate();
 
     deleteEntry(p.join(d.sandbox, cachePath));
 
@@ -25,6 +27,8 @@ void main() {
     server.serve('foo', '1.0.1');
 
     await pubGet();
-    await d.appPackagesFile({'foo': '1.0.1'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.1'),
+    ]).validate();
   });
 }

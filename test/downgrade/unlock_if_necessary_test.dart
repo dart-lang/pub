@@ -19,13 +19,19 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '2.0.0', 'foo_dep': '2.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+      d.packageConfigEntry(name: 'foo_dep', version: '2.0.0'),
+    ]).validate();
 
     server.serve('foo', '1.0.0', deps: {'foo_dep': '<2.0.0'});
     server.serve('foo_dep', '1.0.0');
 
     await pubDowngrade(args: ['foo']);
 
-    await d.appPackagesFile({'foo': '1.0.0', 'foo_dep': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      d.packageConfigEntry(name: 'foo_dep', version: '1.0.0'),
+    ]).validate();
   });
 }

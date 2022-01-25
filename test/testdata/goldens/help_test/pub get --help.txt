@@ -12,7 +12,6 @@ Usage: pub get <subcommand> [arguments...]
                             change any.
     --[no-]precompile       Build executables in immediate dependencies.
     --[no-]packages-file    Generate the legacy ".packages" file
-                            (defaults to on)
 -C, --directory=<dir>       Run this in the directory<dir>.
 
 Run "pub help" to see global options.

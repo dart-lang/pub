@@ -14,7 +14,6 @@ Usage: pub upgrade [dependencies...]
     --null-safety           Upgrade constraints in pubspec.yaml to null-safety
                             versions
     --[no-]packages-file    Generate the legacy ".packages" file
-                            (defaults to on)
     --major-versions        Upgrades packages to their latest resolvable
                             versions, and updates pubspec.yaml.
 -C, --directory=<dir>       Run this in the directory<dir>.

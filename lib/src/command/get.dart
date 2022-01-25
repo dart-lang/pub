@@ -33,8 +33,7 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
-    argParser.addFlag('packages-file',
-        defaultsTo: true, help: 'Generate the legacy ".packages" file');
+    argParser.addFlag('packages-file', help: 'Generate the legacy ".packages" file');
 
     argParser.addFlag(
       'example',

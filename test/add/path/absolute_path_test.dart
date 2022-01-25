@@ -20,7 +20,9 @@ void main() {
 
     await pubAdd(args: ['foo', '--path', absolutePath]);
 
-    await d.appPackagesFile({'foo': absolutePath}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: absolutePath),
+    ]).validate();
 
     await d.appDir({
       'foo': {'path': absolutePath}
@@ -127,7 +129,9 @@ void main() {
     await pubAdd(args: ['foo', '--path', absolutePath]);
 
     await d.cacheDir({'foo': '1.2.2'}).validate();
-    await d.appPackagesFile({'foo': '1.2.2'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+    ]).validate();
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',

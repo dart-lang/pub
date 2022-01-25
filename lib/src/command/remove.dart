@@ -51,8 +51,7 @@ class RemoveCommand extends PubCommand {
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
 
-    argParser.addFlag('packages-file',
-        defaultsTo: true, help: 'Generate the legacy ".packages" file');
+    argParser.addFlag('packages-file', help: 'Generate the legacy ".packages" file');
   }
 
   @override

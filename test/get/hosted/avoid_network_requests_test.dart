@@ -31,8 +31,10 @@ void main() {
 
     // Run the solver again.
     await pubGet();
-
-    await d.appPackagesFile({'foo': '1.2.0', 'bar': '1.2.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.0'),
+      d.packageConfigEntry(name: 'bar', version: '1.2.0'),
+    ]).validate();
 
     // The get should not have done any network requests since the lock file is
     // up to date.

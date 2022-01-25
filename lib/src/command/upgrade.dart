@@ -57,7 +57,7 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag('packages-dir', hide: true);
 
     argParser.addFlag('packages-file',
-        defaultsTo: true, help: 'Generate the legacy ".packages" file');
+        help: 'Generate the legacy ".packages" file');
 
     argParser.addFlag(
       'major-versions',
