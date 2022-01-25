@@ -14,8 +14,6 @@ class PubspecTypoValidator extends Validator {
   Future validate() async {
     final fields = entrypoint.root.pubspec.fields;
 
-    if (fields == null) return;
-
     /// Limit the number of typo warnings so as not to drown out the other
     /// warnings
     var warningCount = 0;
@@ -69,5 +67,8 @@ const _validPubspecKeys = [
   'environment',
   'executables',
   'publish_to',
-  'flutter'
+  'false_secrets',
+  'flutter',
+  'screenshots',
+  'platforms',
 ];

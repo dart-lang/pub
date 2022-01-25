@@ -3,9 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -29,7 +28,7 @@ void main() {
 
     await pubGet();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     // Switch to a new cache.
     renameInSandbox(cachePath, '$cachePath.old');
@@ -56,6 +55,6 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo'), isNot(originalFooSpec));
+    expect(packageSpec('foo'), isNot(originalFooSpec));
   });
 }

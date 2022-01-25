@@ -10,14 +10,13 @@ import '../test_pub.dart';
 void main() {
   // Regression test for issue 23113
   test('runs a named Dart application in a dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'name': 'foo',
-        'version': '1.0.0'
-      }, contents: [
-        d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'name': 'foo',
+      'version': '1.0.0'
+    }, contents: [
+      d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
+    ]);
 
     await d.dir(appPath, [
       d.appPubspec({'foo': null})
@@ -26,7 +25,7 @@ void main() {
     await pubGet(args: ['--precompile']);
 
     var pub = await pubRun(args: ['foo:bar']);
-    expect(pub.stdout, emits('foobar'));
+    expect(pub.stdout, emitsThrough('foobar'));
     await pub.shouldExit();
 
     await d.dir('foo', [
@@ -46,7 +45,7 @@ void main() {
     await pubGet();
 
     pub = await pubRun(args: ['foo:bar']);
-    expect(pub.stdout, emits('different'));
+    expect(pub.stdout, emitsThrough('different'));
     await pub.shouldExit();
   });
 }

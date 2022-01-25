@@ -4,9 +4,11 @@
 
 import 'dart:async';
 
+import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
+import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
@@ -75,16 +77,27 @@ abstract class Source {
   /// should be interpreted. This will be called during parsing to validate that
   /// the given [description] is well-formed according to this source, and to
   /// give the source a chance to canonicalize the description.
+  /// For simple hosted dependencies like `foo:` or `foo: ^1.2.3`, the
+  /// [description] may also be `null`.
   ///
   /// [containingPath] is the path to the pubspec where this description
   /// appears. It may be `null` if the description is coming from some in-memory
   /// source (such as pulling down a pubspec from pub.dartlang.org).
   ///
+  /// [languageVersion] is the minimum Dart version parsed from the pubspec's
+  /// `environment` field. Source implementations may use this parameter to only
+  /// support specific syntax for some versions.
+  ///
   /// The description in the returned [PackageRef] need bear no resemblance to
   /// the original user-provided description.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageRef parseRef(String name, description, {String containingPath});
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingPath,
+    required LanguageVersion languageVersion,
+  });
 
   /// Parses a [PackageId] from a name and a serialized description.
   ///
@@ -97,13 +110,13 @@ abstract class Source {
   ///
   /// Throws a [FormatException] if the description is not valid.
   PackageId parseId(String name, Version version, description,
-      {String containingPath});
+      {String? containingPath});
 
   /// When a [LockFile] is serialized, it uses this method to get the
   /// [description] in the right format.
   ///
   /// [containingPath] is the containing directory of the root package.
-  dynamic serializeDescription(String containingPath, description) {
+  dynamic serializeDescription(String? containingPath, description) {
     return description;
   }
 
@@ -157,7 +170,14 @@ abstract class BoundSource {
   /// uses [describe] to get that version.
   ///
   /// Sources should not override this. Instead, they implement [doGetVersions].
-  Future<List<PackageId>> getVersions(PackageRef ref) {
+  ///
+  /// If [maxAge] is given answers can be taken from cache - up to that age old.
+  ///
+  /// If given, the [allowedRetractedVersion] is the only version which can be
+  /// selected even if it is marked as retracted. Otherwise, all the returned
+  /// IDs correspond to non-retracted versions.
+  Future<List<PackageId>> getVersions(PackageRef ref,
+      {Duration? maxAge, Version? allowedRetractedVersion}) async {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
@@ -165,7 +185,19 @@ abstract class BoundSource {
       throw ArgumentError('Package $ref does not use source ${source.name}.');
     }
 
-    return doGetVersions(ref);
+    var versions = await doGetVersions(ref, maxAge);
+
+    versions = (await Future.wait(versions.map((id) async {
+      final packageStatus = await status(id, maxAge: maxAge);
+      if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
+        return id;
+      }
+      return null;
+    })))
+        .whereNotNull()
+        .toList();
+
+    return versions;
   }
 
   /// Get the IDs of all versions that match [ref].
@@ -180,7 +212,7 @@ abstract class BoundSource {
   ///
   /// This method is effectively protected: subclasses must implement it, but
   /// external code should not call this. Instead, call [getVersions].
-  Future<List<PackageId>> doGetVersions(PackageRef ref);
+  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration? maxAge);
 
   /// A cache of pubspecs described by [describe].
   final _pubspecs = <PackageId, Pubspec>{};
@@ -229,14 +261,24 @@ abstract class BoundSource {
   /// external code should not call this. Instead, call [describe].
   Future<Pubspec> doDescribe(PackageId id);
 
-  /// Ensures [id] is available locally and creates a symlink at [symlink]
-  /// pointing it.
-  Future get(PackageId id, String symlink);
-
   /// Returns the directory where this package can (or could) be found locally.
   ///
   /// If the source is cached, this will be a path in the system cache.
-  String getDirectory(PackageId id);
+  ///
+  /// If id is a relative path id, the directory will be relative from
+  /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
+  String getDirectory(PackageId id, {String? relativeFrom});
+
+  /// Returns metadata about a given package.
+  ///
+  /// For remotely hosted packages, the information can be cached for up to
+  /// [maxAge]. If [maxAge] is not given, the information is not cached.
+  ///
+  /// In the case of offline sources, [maxAge] is not used, since information is
+  /// per definiton cached.
+  Future<PackageStatus> status(PackageId id, {Duration? maxAge}) async =>
+      // Default implementation has no metadata.
+      PackageStatus();
 
   /// Stores [pubspec] so it's returned when [describe] is called with [id].
   ///
@@ -244,4 +286,18 @@ abstract class BoundSource {
   void memoizePubspec(PackageId id, Pubspec pubspec) {
     _pubspecs[id] = pubspec;
   }
+}
+
+/// Metadata about a [PackageId].
+class PackageStatus {
+  /// `null` if not [isDiscontinued]. Otherwise contains the
+  /// replacement string provided by the host or `null` if there is no
+  /// replacement.
+  final String? discontinuedReplacedBy;
+  final bool isDiscontinued;
+  final bool isRetracted;
+  PackageStatus(
+      {this.isDiscontinued = false,
+      this.discontinuedReplacedBy,
+      this.isRetracted = false});
 }

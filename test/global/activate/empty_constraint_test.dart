@@ -2,18 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
 void main() {
   test('errors if the constraint matches no versions', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '1.0.1');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '1.0.1');
 
     await runPub(
         args: ['global', 'activate', 'foo', '>1.1.0'],

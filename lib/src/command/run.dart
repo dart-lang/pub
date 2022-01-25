@@ -43,19 +43,16 @@ class RunCommand extends PubCommand {
     argParser.addFlag('sound-null-safety',
         help: 'Override the default null safety execution mode.');
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
-    // mode exposed for `dartdev run` to use as subprocess.
-    argParser.addFlag('dart-dev-run', hide: true);
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
   Future<void> runProtected() async {
     if (deprecated) {
       await log.warningsOnlyUnlessTerminal(() {
-        log.message('Deprecated. Use `dart run instead`');
+        log.message('Deprecated. Use `dart run` instead.');
       });
-    }
-    if (argResults['dart-dev-run']) {
-      return await _runFromDartDev();
     }
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
@@ -99,55 +96,5 @@ class RunCommand extends PubCommand {
       alwaysUseSubprocess: alwaysUseSubprocess,
     );
     overrideExitCode(exitCode);
-  }
-
-  /// Implement a mode for use in `dartdev run`.
-  ///
-  /// Usage: `dartdev run [package[:command]]`
-  ///
-  /// If `package` is not given, defaults to current root package.
-  /// If `command` is not given, defaults to name of `package`.
-  ///
-  /// Runs `bin/<command>.dart` from package `<package>`. If `<package>` is not
-  /// mutable (local root package or path-dependency) a source snapshot will be
-  /// cached in
-  /// `.dart_tool/pub/bin/<package>/<command>.dart-<sdkVersion>.snapshot`.
-  Future<void> _runFromDartDev() async {
-    var package = entrypoint.root.name;
-    var command = package;
-    var args = <String>[];
-
-    if (argResults.rest.isNotEmpty) {
-      if (argResults.rest[0].contains(RegExp(r'[/\\]'))) {
-        usageException('[<package>[:command]] cannot contain "/" or "\\"');
-      }
-
-      package = argResults.rest[0];
-      if (package.contains(':')) {
-        final parts = package.split(':');
-        if (parts.length > 2) {
-          usageException('[<package>[:command]] cannot contain multiple ":"');
-        }
-        package = parts[0];
-        command = parts[1];
-      } else {
-        command = package;
-      }
-      args = argResults.rest.skip(1).toList();
-    }
-
-    final vmArgs = vmArgsFromArgResults(argResults);
-
-    overrideExitCode(
-      await runExecutable(
-        entrypoint,
-        Executable(package, 'bin/$command.dart'),
-        args,
-        vmArgs: vmArgs,
-        enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-        recompile: entrypoint.precompileExecutable,
-        alwaysUseSubprocess: alwaysUseSubprocess,
-      ),
-    );
   }
 }

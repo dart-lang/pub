@@ -140,9 +140,8 @@ class DependencyValidator extends Validator {
     }
 
     String constraint;
-    var primary = Version.primary(versions);
-    if (primary != null) {
-      constraint = '^$primary';
+    if (versions.isNotEmpty) {
+      constraint = '^${Version.primary(versions)}';
     } else {
       constraint = dep.constraint.toString();
       if (!dep.constraint.isAny && dep.constraint is! Version) {
@@ -222,8 +221,9 @@ class DependencyValidator extends Validator {
       constraint = '^${(dep.constraint as VersionRange).min}';
     } else {
       constraint = '"${dep.constraint} '
-          '<${(dep.constraint as VersionRange).min.nextBreaking}"';
+          '<${(dep.constraint as VersionRange).min!.nextBreaking}"';
     }
+    // TODO: Handle the case where `dep.constraint.min` is null.
 
     warnings
         .add('Your dependency on "${dep.name}" should have an upper bound. For '
@@ -239,7 +239,7 @@ class DependencyValidator extends Validator {
   void _warnAboutPrerelease(String dependencyName, VersionRange constraint) {
     final packageVersion = entrypoint.root.version;
     if (constraint.min != null &&
-        constraint.min.isPreRelease &&
+        constraint.min!.isPreRelease &&
         !packageVersion.isPreRelease) {
       warnings.add('Packages dependent on a pre-release of another package '
           'should themselves be published as a pre-release version. '

@@ -17,7 +17,7 @@ class ExecutableValidator extends Validator {
   @override
   Future validate() async {
     var binFiles = entrypoint.root
-        .listFiles(beneath: 'bin', recursive: false, useGitIgnore: true)
+        .listFiles(beneath: 'bin', recursive: false)
         .map(entrypoint.root.relative)
         .toList();
 

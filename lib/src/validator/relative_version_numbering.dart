@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:collection/collection.dart' show IterableExtension;
+
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../null_safety_analysis.dart';
@@ -16,7 +18,7 @@ class RelativeVersionNumberingValidator extends Validator {
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
-  final String _server;
+  final Uri? _server;
 
   RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
       : super(entrypoint);
@@ -32,10 +34,9 @@ class RelativeVersionNumberingValidator extends Validator {
     } on PackageNotFoundException {
       existingVersions = [];
     }
-    existingVersions..sort((a, b) => a.version.compareTo(b.version));
-    final previousVersion = existingVersions.lastWhere(
-        (id) => id.version < entrypoint.root.version,
-        orElse: () => null);
+    existingVersions.sort((a, b) => a.version.compareTo(b.version));
+    final previousVersion = existingVersions
+        .lastWhereOrNull((id) => id.version < entrypoint.root.version);
     if (previousVersion == null) return;
 
     final previousPubspec =

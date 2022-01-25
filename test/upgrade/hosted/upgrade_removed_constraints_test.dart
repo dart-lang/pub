@@ -9,12 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('upgrades dependencies whose constraints have been removed', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'shared_dep': 'any'});
-      builder.serve('bar', '1.0.0', deps: {'shared_dep': '<2.0.0'});
-      builder.serve('shared_dep', '1.0.0');
-      builder.serve('shared_dep', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'shared_dep': 'any'})
+      ..serve('bar', '1.0.0', deps: {'shared_dep': '<2.0.0'})
+      ..serve('shared_dep', '1.0.0')
+      ..serve('shared_dep', '2.0.0');
 
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 

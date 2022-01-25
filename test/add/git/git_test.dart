@@ -31,6 +31,48 @@ void main() {
     }).validate();
   });
 
+  test('adds a package from git with relative url and --directory', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: ['--directory', appPath, 'foo', '--git-url', 'foo.git'],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 1 dependency in myapp!'),
+    );
+
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
+        d.gitPackageRevisionCacheDir('foo')
+      ])
+    ]).validate();
+
+    await d.appDir({
+      'foo': {'git': '../foo.git'}
+    }).validate();
+  });
+
+  test('fails with invalid --git-url', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: ['foo', '--git-url', ':'],
+      error:
+          contains('The --git-url must be a valid url: Invalid empty scheme.'),
+      exitCode: exit_codes.USAGE,
+    );
+  });
+
   test('adds a package from git with version constraint', () async {
     ensureGit();
 
@@ -76,7 +118,7 @@ void main() {
     ]).validate();
   });
 
-  test('fails when adding from an invalid url', () async {
+  test('fails when adding from an non-existing url', () async {
     ensureGit();
 
     await d.appDir({}).create();
@@ -114,9 +156,8 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.2');
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
@@ -142,5 +183,19 @@ void main() {
         'dependency_overrides': {'foo': '1.2.2'}
       })
     ]).validate();
+  });
+
+  test('fails if multiple packages passed for git source', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
+        exitCode: exit_codes.USAGE,
+        error: contains('Can only add a single git package at a time.'));
   });
 }

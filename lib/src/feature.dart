@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:collection';
-
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -41,7 +39,7 @@ class Feature {
     void enableFeature(Feature feature) {
       if (!enabledFeatures.add(feature)) return;
       for (var require in feature.requires) {
-        enableFeature(features[require]);
+        enableFeature(features[require]!);
       }
     }
 
@@ -57,8 +55,8 @@ class Feature {
   }
 
   Feature(this.name, Iterable<PackageRange> dependencies,
-      {Iterable<String> requires,
-      Map<String, VersionConstraint> sdkConstraints,
+      {Iterable<String>? requires,
+      Map<String, VersionConstraint>? sdkConstraints,
       this.onByDefault = true})
       : dependencies = UnmodifiableListView(dependencies.toList()),
         requires = requires == null

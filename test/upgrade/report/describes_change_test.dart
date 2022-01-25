@@ -8,13 +8,36 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
+  test('Shows count of discontinued packages', () async {
+    final server = await servePackages();
+
+    server.serve('foo', '2.0.0');
+
+    server.discontinue('foo');
+
+    // Create the first lockfile.
+    await d.appDir({'foo': '2.0.0'}).create();
+
+    await pubGet();
+
+    // Do the dry run.
+    await pubUpgrade(
+      args: ['--dry-run'],
+      output: contains('1 package is discontinued.'),
+    );
+
+    // Try without --dry-run
+    await pubUpgrade(
+      output: contains('1 package is discontinued.'),
+    );
+  });
+
   test('shows how package changed from previous lockfile', () async {
-    await servePackages((builder) {
-      builder.serve('unchanged', '1.0.0');
-      builder.serve('version_changed', '1.0.0');
-      builder.serve('version_changed', '2.0.0');
-      builder.serve('source_changed', '1.0.0');
-    });
+    await servePackages()
+      ..serve('unchanged', '1.0.0')
+      ..serve('version_changed', '1.0.0')
+      ..serve('version_changed', '2.0.0')
+      ..serve('source_changed', '1.0.0');
 
     await d.dir('source_changed', [
       d.libDir('source_changed'),

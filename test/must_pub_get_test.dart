@@ -3,23 +3,25 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
+late PackageServer server;
+
 void main() {
   setUp(() async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-    });
+    server = await servePackages();
+
+    server.serve('foo', '1.0.0');
+    server.serve('foo', '2.0.0');
 
     await d.dir(appPath, [
       d.appPubspec(),
@@ -30,6 +32,32 @@ void main() {
     await pubGet();
   });
 
+  test(
+      'does not require a pub get if a `flutter_gen` package is injected into package_config.json',
+      () async {
+    await d.dir('bar', [
+      d.pubspec({'name': 'bar'})
+    ]).create();
+    await d.dir(appPath, [
+      d.appPubspec({
+        'bar': {'path': '../bar'}
+      })
+    ]).create();
+
+    await pubGet();
+
+    final packageConfig =
+        p.join(d.sandbox, 'myapp', '.dart_tool', 'package_config.json');
+    final contents = json.decode(readTextFile(packageConfig));
+    contents['packages'].add({
+      'name': 'flutter_gen',
+      'rootUri': '.dart_tool/flutter_gen',
+      'languageVersion': '2.8',
+    });
+    writeTextFile(packageConfig, json.encode(contents));
+
+    await runPub(args: ['run', 'bin/script.dart'], output: endsWith('hello!'));
+  });
   group('requires the user to run pub get first if', () {
     group("there's no lockfile", () {
       setUp(() {
@@ -37,15 +65,7 @@ void main() {
       });
 
       _requiresPubGet(
-          'No pubspec.lock file found, please run "pub get" first.');
-    });
-
-    group("there's no .packages", () {
-      setUp(() {
-        deleteEntry(p.join(d.sandbox, 'myapp/.packages'));
-      });
-
-      _requiresPubGet('No .packages file found, please run "pub get" first.');
+          'No pubspec.lock file found, please run "dart pub get" first.');
     });
 
     group("there's no package_config.json", () {
@@ -54,7 +74,7 @@ void main() {
       });
 
       _requiresPubGet(
-          'No .dart_tool/package_config.json file found, please run "pub get".');
+          'No .dart_tool${p.separator}package_config.json file found, please run "dart pub get".');
     });
 
     group('the pubspec has a new dependency', () {
@@ -72,7 +92,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the lockfile has a dependency from the wrong source', () {
@@ -83,14 +103,14 @@ void main() {
 
         await pubGet();
 
-        await createLockFile(appPath, sandbox: ['foo']);
+        await createLockFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the lockfile has a dependency from an unknown source', () {
@@ -120,7 +140,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the lockfile has a dependency with the wrong description', () {
@@ -135,14 +155,14 @@ void main() {
 
         await pubGet();
 
-        await createLockFile(appPath, sandbox: ['foo']);
+        await createLockFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group('the pubspec has an incompatible version of a dependency', () {
@@ -162,7 +182,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group(
@@ -182,7 +202,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.yaml file has changed since the '
-          'pubspec.lock file was generated, please run "pub get" again.');
+          'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
     group(
@@ -202,7 +222,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group("the lockfile has a package that the .packages file doesn't", () {
@@ -224,7 +244,7 @@ void main() {
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group('the .packages file has a package with a non-file URI', () {
@@ -251,7 +271,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group('the .packages file points to the wrong place', () {
@@ -266,14 +286,14 @@ foo:http://example.com/
 
         await pubGet();
 
-        await createPackagesFile(appPath, sandbox: ['foo']);
+        await createPackagesFile(appPath, dependenciesInSandBox: ['foo']);
 
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.lock');
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "pub get" again.');
+          'file was generated, please run "dart pub get" again.');
     });
 
     group('the package_config.json file points to the wrong place', () {
@@ -306,18 +326,16 @@ foo:http://example.com/
       });
 
       _requiresPubGet('The pubspec.lock file has changed since the '
-          '.dart_tool/package_config.json file was generated, '
-          'please run "pub get" again.');
+          '.dart_tool${p.separator}package_config.json file was generated, '
+          'please run "dart pub get" again.');
     });
 
     group("the lock file's SDK constraint doesn't match the current SDK", () {
       setUp(() async {
         // Avoid using a path dependency because it triggers the full validation
         // logic. We want to be sure SDK-validation works without that logic.
-        globalPackageServer.add((builder) {
-          builder.serve('foo', '3.0.0', pubspec: {
-            'environment': {'sdk': '>=1.0.0 <2.0.0'}
-          });
+        server.serve('foo', '3.0.0', pubspec: {
+          'environment': {'sdk': '>=1.0.0 <2.0.0'}
         });
 
         await d.dir(appPath, [
@@ -334,7 +352,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet("Dart 0.1.2+3 is incompatible with your dependencies' "
-          'SDK constraints. Please run \"pub get\" again.');
+          'SDK constraints. Please run "dart pub get" again.');
     });
 
     test(
@@ -342,10 +360,8 @@ foo:http://example.com/
         'current Flutter SDK', () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      globalPackageServer.add((builder) {
-        builder.serve('foo', '3.0.0', pubspec: {
-          'environment': {'flutter': '>=1.0.0 <2.0.0'}
-        });
+      server.serve('foo', '3.0.0', pubspec: {
+        'environment': {'flutter': '>=1.0.0 <2.0.0'}
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
@@ -356,15 +372,15 @@ foo:http://example.com/
 
       await pubGet(environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
-      await d.dir('flutter', [d.file('version', '2.4.6')]).create();
+      await d.dir('flutter', [d.file('version', '0.9.0')]).create();
 
       // Run pub manually here because otherwise we don't have access to
       // d.sandbox.
       await runPub(
           args: ['run', 'script'],
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: "Flutter 2.4.6 is incompatible with your dependencies' SDK "
-              'constraints. Please run "pub get" again.',
+          error: "Flutter 0.9.0 is incompatible with your dependencies' SDK "
+              'constraints. Please run "dart pub get" again.',
           exitCode: exit_codes.DATA);
     });
 
@@ -389,7 +405,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('${p.join('..', 'bar', 'pubspec.yaml')} has changed '
-          'since the pubspec.lock file was generated, please run "pub get" '
+          'since the pubspec.lock file was generated, please run "dart pub get" '
           'again.');
     });
 
@@ -428,7 +444,7 @@ foo:http://example.com/
       });
 
       _requiresPubGet('${p.join('..', 'bar', 'pubspec.yaml')} has changed '
-          'since the pubspec.lock file was generated, please run "pub get" '
+          'since the pubspec.lock file was generated, please run "dart pub get" '
           'again.');
     });
   });
@@ -487,8 +503,7 @@ foo:http://example.com/
       _runsSuccessfully();
     });
 
-    group(
-        "the lockfile is newer than .packages and package_config.json, but they're up-to-date",
+    group("the lockfile is newer than package_config.json, but it's up-to-date",
         () {
       setUp(() async {
         await d.dir(appPath, [
@@ -505,10 +520,8 @@ foo:http://example.com/
 
     group("an overridden dependency's SDK constraint is unmatched", () {
       setUp(() async {
-        globalPackageServer.add((builder) {
-          builder.serve('bar', '1.0.0', pubspec: {
-            'environment': {'sdk': '0.0.0-fake'}
-          });
+        server.serve('bar', '1.0.0', pubspec: {
+          'environment': {'sdk': '0.0.0-fake'}
         });
 
         await d.dir(appPath, [
@@ -530,10 +543,8 @@ foo:http://example.com/
         () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      globalPackageServer.add((builder) {
-        builder.serve('foo', '3.0.0', pubspec: {
-          'environment': {'flutter': '>=1.0.0 <2.0.0'}
-        });
+      server.serve('foo', '3.0.0', pubspec: {
+        'environment': {'flutter': '>=1.0.0 <2.0.0'}
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
@@ -567,7 +578,7 @@ void _requiresPubGet(String message) {
   }
 }
 
-/// Ensures that pub doesn't require "pub get" for the current package.
+/// Ensures that pub doesn't require "dart pub get" for the current package.
 ///
 /// If [runDeps] is false, `pub deps` isn't included in the test. This is
 /// sometimes not desirable, since it uses slightly stronger checks for pubspec

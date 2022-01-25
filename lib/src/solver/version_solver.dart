@@ -14,6 +14,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../source/hosted.dart';
 import '../source/unknown.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -65,34 +66,33 @@ class VersionSolver {
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
 
-  /// The set of package names that were overridden by the root package, for
-  /// which other packages' constraints should be ignored.
-  final Set<String> _overriddenPackages;
+  /// The dependency constraints that this package overrides when it is the
+  /// root package.
+  ///
+  /// Dependencies here will replace any dependency on a package with the same
+  /// name anywhere in the dependency graph.
+  final Map<String, PackageRange> _dependencyOverrides;
 
-  /// The set of packages for which the lockfile should be ignored and only the
-  /// most recent versions should be used.
-  final Set<String> _useLatest;
+  /// The set of packages for which the lockfile should be ignored.
+  final Set<String> _unlock;
 
-  /// The set of packages for which we've added an incompatibility that forces
-  /// the latest version to be used.
-  final _haveUsedLatest = <PackageRef>{};
+  final _stopwatch = Stopwatch();
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
-      Iterable<String> useLatest)
-      : _overriddenPackages = MapKeySet(_root.pubspec.dependencyOverrides),
-        _useLatest = Set.from(useLatest);
+      Iterable<String> unlock)
+      : _dependencyOverrides = _root.pubspec.dependencyOverrides,
+        _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
   Future<SolveResult> solve() async {
-    var stopwatch = Stopwatch()..start();
-
+    _stopwatch.start();
     _addIncompatibility(Incompatibility(
         [Term(PackageRange.root(_root), false)], IncompatibilityCause.root));
 
     try {
       return await _systemCache.hosted.withPrefetching(() async {
-        var next = _root.name;
+        String? next = _root.name;
         while (next != null) {
           _propagate(next);
           next = await _choosePackageVersion();
@@ -102,7 +102,7 @@ class VersionSolver {
       });
     } finally {
       // Gather some solving metrics.
-      log.solver('Version solving took ${stopwatch.elapsed} seconds.\n'
+      log.solver('Version solving took ${_stopwatch.elapsed} seconds.\n'
           'Tried ${_solution.attemptedSolutions} solutions.');
     }
   }
@@ -122,7 +122,7 @@ class VersionSolver {
       // general incompatibilities as time goes on. If we look at those first,
       // we can derive stronger assignments sooner and more eagerly find
       // conflicts.
-      for (var incompatibility in _incompatibilities[package].reversed) {
+      for (var incompatibility in _incompatibilities[package]!.reversed) {
         var result = _propagateIncompatibility(incompatibility);
         if (result == #conflict) {
           // If [incompatibility] is satisfied by [_solution], we use
@@ -158,7 +158,7 @@ class VersionSolver {
     // The first entry in `incompatibility.terms` that's not yet satisfied by
     // [_solution], if one exists. If we find more than one, [_solution] is
     // inconclusive for [incompatibility] and we can't deduce anything.
-    Term unsatisfied;
+    Term? unsatisfied;
 
     for (var i = 0; i < incompatibility.terms.length; i++) {
       var term = incompatibility.terms[i];
@@ -207,17 +207,17 @@ class VersionSolver {
     while (!incompatibility.isFailure) {
       // The term in `incompatibility.terms` that was most recently satisfied by
       // [_solution].
-      Term mostRecentTerm;
+      Term? mostRecentTerm;
 
       // The earliest assignment in [_solution] such that [incompatibility] is
       // satisfied by [_solution] up to and including this assignment.
-      Assignment mostRecentSatisfier;
+      Assignment? mostRecentSatisfier;
 
       // The difference between [mostRecentSatisfier] and [mostRecentTerm];
       // that is, the versions that are allowed by [mostRecentSatisfier] and not
       // by [mostRecentTerm]. This is `null` if [mostRecentSatisfier] totally
       // satisfies [mostRecentTerm].
-      Term difference;
+      Term? difference;
 
       // The decision level of the earliest assignment in [_solution] *before*
       // [mostRecentSatisfier] such that [incompatibility] is satisfied by
@@ -250,7 +250,7 @@ class VersionSolver {
           // If [mostRecentSatisfier] doesn't satisfy [mostRecentTerm] on its
           // own, then the next-most-recent satisfier may be the one that
           // satisfies the remainder.
-          difference = mostRecentSatisfier.difference(mostRecentTerm);
+          difference = mostRecentSatisfier.difference(mostRecentTerm!);
           if (difference != null) {
             previousSatisfierLevel = math.max(previousSatisfierLevel,
                 _solution.satisfier(difference.inverse).decisionLevel);
@@ -263,7 +263,7 @@ class VersionSolver {
       // than a derivation), then [incompatibility] is the root cause. We then
       // backjump to [previousSatisfierLevel], where [incompatibility] is
       // guaranteed to allow [_propagate] to produce more assignments.
-      if (previousSatisfierLevel < mostRecentSatisfier.decisionLevel ||
+      if (previousSatisfierLevel < mostRecentSatisfier!.decisionLevel ||
           mostRecentSatisfier.cause == null) {
         _solution.backtrack(previousSatisfierLevel);
         if (newIncompatibility) _addIncompatibility(incompatibility);
@@ -279,7 +279,7 @@ class VersionSolver {
       var newTerms = <Term>[
         for (var term in incompatibility.terms)
           if (term != mostRecentTerm) term,
-        for (var term in mostRecentSatisfier.cause.terms)
+        for (var term in mostRecentSatisfier.cause!.terms)
           if (term.package != mostRecentSatisfier.package) term,
       ];
 
@@ -298,7 +298,7 @@ class VersionSolver {
       if (difference != null) newTerms.add(difference.inverse);
 
       incompatibility = Incompatibility(
-          newTerms, ConflictCause(incompatibility, mostRecentSatisfier.cause));
+          newTerms, ConflictCause(incompatibility, mostRecentSatisfier.cause!));
       newIncompatibility = true;
 
       var partially = difference == null ? '' : ' partially';
@@ -317,29 +317,13 @@ class VersionSolver {
   /// Returns the name of the package whose incompatibilities should be
   /// propagated by [_propagate], or `null` indicating that version solving is
   /// complete and a solution has been found.
-  Future<String> _choosePackageVersion() async {
+  Future<String?> _choosePackageVersion() async {
     var unsatisfied = _solution.unsatisfied.toList();
     if (unsatisfied.isEmpty) return null;
 
     // If we require a package from an unknown source, add an incompatibility
     // that will force a conflict for that package.
     for (var candidate in unsatisfied) {
-      if (_useLatest.contains(candidate.name) &&
-          candidate.source.hasMultipleVersions) {
-        var ref = candidate.toRef();
-        if (_haveUsedLatest.add(ref)) {
-          // All versions of [ref] other than the latest are forbidden.
-          var latestVersion = (await _packageLister(ref).latest).version;
-          _addIncompatibility(Incompatibility([
-            Term(
-                ref.withConstraint(
-                    VersionConstraint.any.difference(latestVersion)),
-                true),
-          ], IncompatibilityCause.useLatest));
-          return candidate.name;
-        }
-      }
-
       if (candidate.source is! UnknownSource) continue;
       _addIncompatibility(Incompatibility(
           [Term(candidate.withConstraint(VersionConstraint.any), true)],
@@ -349,14 +333,14 @@ class VersionSolver {
 
     /// Prefer packages with as few remaining versions as possible, so that if a
     /// conflict is necessary it's forced quickly.
-    var package = await minByAsync(unsatisfied, (package) async {
-      // If we're forced to use the latest version of a package, it effectively
-      // only has one version to choose from.
-      if (_useLatest.contains(package.name)) return 1;
+    var package = await minByAsync(unsatisfied, (PackageRange package) async {
       return await _packageLister(package).countVersions(package.constraint);
     });
+    if (package == null) {
+      return null; // when unsatisfied.isEmpty
+    }
 
-    PackageId version;
+    PackageId? version;
     try {
       version = await _packageLister(package).bestVersion(package.constraint);
     } on PackageNotFoundException catch (error) {
@@ -385,7 +369,7 @@ class VersionSolver {
 
     var conflict = false;
     for (var incompatibility
-        in await _packageLister(package).incompatibilitiesFor(version)) {
+        in await _packageLister(package).incompatibilitiesFor(version!)) {
       _addIncompatibility(incompatibility);
 
       // If an incompatibility is already satisfied, then selecting [version]
@@ -433,13 +417,15 @@ class VersionSolver {
     }
 
     return SolveResult(
-        _systemCache.sources,
-        _root,
-        _lockFile,
-        decisions,
-        pubspecs,
-        _getAvailableVersions(decisions),
-        _solution.attemptedSolutions);
+      _systemCache.sources,
+      _root,
+      _lockFile,
+      decisions,
+      pubspecs,
+      await _getAvailableVersions(decisions),
+      _solution.attemptedSolutions,
+      _stopwatch.elapsed,
+    );
   }
 
   /// Generates a map containing all of the known available versions for each
@@ -448,17 +434,29 @@ class VersionSolver {
   /// The version list may not always be complete. If the package is the root
   /// package, or if it's a package that we didn't unlock while solving because
   /// we weren't trying to upgrade it, we will just know the current version.
-  Map<String, List<Version>> _getAvailableVersions(List<PackageId> packages) {
+  ///
+  /// The version list will not contain any retracted package versions.
+  Future<Map<String, List<Version>>> _getAvailableVersions(
+      List<PackageId> packages) async {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
-      var cached = _packageListers[package.toRef()]?.cachedVersions;
-      // If the version list was never requested, just use the one known
-      // version.
-      var versions = cached == null
-          ? [package.version]
-          : cached.map((id) => id.version).toList();
+      // If the version list was never requested, use versions from cached
+      // version listings if the package is "hosted".
+      // TODO(sigurdm): This has a smell. The Git source should have a
+      // reasonable behavior here (we should be able to call getVersions in a
+      // way that doesn't fetch.
+      List<PackageId> ids;
+      try {
+        ids = package.source is HostedSource
+            ? (await _systemCache
+                .source(package.source)
+                .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+            : [package];
+      } on Exception {
+        ids = <PackageId>[package];
+      }
 
-      availableVersions[package.name] = versions;
+      availableVersions[package.name] = ids.map((id) => id.version).toList();
     }
 
     return availableVersions;
@@ -473,41 +471,68 @@ class VersionSolver {
       var locked = _getLocked(ref.name);
       if (locked != null && !locked.samePackage(ref)) locked = null;
 
-      var overridden = _overriddenPackages;
+      Set<String> overridden = MapKeySet(_dependencyOverrides);
       if (overridden.contains(package.name)) {
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
         overridden = Set.from(overridden)..add(_root.name);
       }
 
-      return PackageLister(_systemCache, ref, locked,
-          _root.dependencyType(package.name), overridden,
-          downgrade: _type == SolveType.DOWNGRADE);
+      return PackageLister(
+          _systemCache,
+          ref,
+          locked,
+          _root.dependencyType(package.name),
+          overridden,
+          _getAllowedRetracted(ref.name),
+          downgrade: _type == SolveType.downgrade);
     });
   }
 
-  /// Gets the version of [ref] currently locked in the lock file.
+  /// Gets the version of [package] currently locked in the lock file.
   ///
   /// Returns `null` if it isn't in the lockfile (or has been unlocked).
-  PackageId _getLocked(String package) {
-    if (_type == SolveType.GET) return _lockFile.packages[package];
+  PackageId? _getLocked(String? package) {
+    if (_type == SolveType.get) {
+      if (_unlock.contains(package)) {
+        return null;
+      }
+      return _lockFile.packages[package];
+    }
 
     // When downgrading, we don't want to force the latest versions of
     // non-hosted packages, since they don't support multiple versions and thus
     // can't be downgraded.
-    if (_type == SolveType.DOWNGRADE) {
+    if (_type == SolveType.downgrade) {
       var locked = _lockFile.packages[package];
-      if (locked != null && !locked.source.hasMultipleVersions) return locked;
+      if (locked != null && !locked.source!.hasMultipleVersions) return locked;
     }
 
-    if (_useLatest.isEmpty || _useLatest.contains(package)) return null;
+    if (_unlock.isEmpty || _unlock.contains(package)) return null;
     return _lockFile.packages[package];
+  }
+
+  /// Gets the version of [package] which can be allowed during version solving
+  /// even if that version is marked as retracted. Returns `null` if no such
+  /// version exists.
+  ///
+  /// We only allow resolving to a retracted version if it is already in the
+  /// `pubspec.lock` or pinned in `dependency_overrides`.
+  Version? _getAllowedRetracted(String? package) {
+    if (_dependencyOverrides.containsKey(package)) {
+      var range = _dependencyOverrides[package]!;
+      if (range.constraint is Version) {
+        // We have a pinned dependency.
+        return range.constraint as Version?;
+      }
+    }
+    return _lockFile.packages[package]?.version;
   }
 
   /// Logs [message] in the context of the current selected packages.
   ///
   /// If [message] is omitted, just logs a description of leaf-most selection.
-  void _log([String message]) {
+  void _log([String message = '']) {
     // Indent for the previous selections.
     log.solver(prefixLines(message, prefix: '  ' * _solution.decisionLevel));
   }

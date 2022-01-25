@@ -25,7 +25,7 @@ void main() {
 
     await pubGet();
     var pub = await pubRun(args: ['foo:bar']);
-    expect(pub.stdout, emits('foobar'));
+    expect(pub.stdout, emitsThrough('foobar'));
     await pub.shouldExit();
   });
 }

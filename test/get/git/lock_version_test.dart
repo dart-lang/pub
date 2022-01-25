@@ -3,9 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
-import 'package:test/test.dart';
-
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -33,10 +32,10 @@ void main() {
       ])
     ]).validate();
 
-    var originalFooSpec = packageSpecLine('foo');
+    var originalFooSpec = packageSpec('foo');
 
     // Delete the package spec to simulate a new checkout of the application.
-    deleteEntry(path.join(d.sandbox, packagesFilePath));
+    deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
@@ -44,6 +43,6 @@ void main() {
     // This get shouldn't upgrade the foo.git dependency due to the lockfile.
     await pubGet();
 
-    expect(packageSpecLine('foo'), originalFooSpec);
+    expect(packageSpec('foo'), originalFooSpec);
   });
 }

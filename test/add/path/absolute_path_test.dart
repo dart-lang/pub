@@ -41,6 +41,28 @@ void main() {
     }).validate();
   });
 
+  test('fails when adding multiple packages through local path', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+    final absolutePath = path.join(d.sandbox, 'foo');
+
+    await pubAdd(
+        args: ['foo:2.0.0', 'bar:0.1.3', 'baz:1.3.1', '--path', absolutePath],
+        error: contains('Can only add a single local package at a time.'),
+        exitCode: exit_codes.USAGE);
+
+    await d.appDir({}).validate();
+    await d.dir(appPath, [
+      d.nothing('.dart_tool/package_config.json'),
+      d.nothing('pubspec.lock'),
+      d.nothing('.packages'),
+    ]).validate();
+  });
+
   test('fails when adding with an invalid version constraint', () async {
     ensureGit();
 
@@ -88,9 +110,8 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.2');
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 

@@ -3,9 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:pub/src/io.dart';
+import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/source_registry.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -46,14 +47,14 @@ void main() {
 
     var repo = d.git('foo.git', [
       d.dir('sub', [
-        d.dir('dir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])
+        d.dir('dir%', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])
       ])
     ]);
     await repo.create();
 
     await d.appDir({
       'sub': {
-        'git': {'url': '../foo.git', 'path': 'sub/dir'}
+        'git': {'url': '../foo.git', 'path': 'sub/dir%25'}
       }
     }).create();
 
@@ -64,15 +65,65 @@ void main() {
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.hashDir('foo', [
           d.dir('sub', [
-            d.dir('dir', [d.libDir('sub', '1.0.0')])
+            d.dir('dir%', [d.libDir('sub', '1.0.0')])
           ])
         ])
       ])
     ]).validate();
 
     await d.appPackagesFile({
-      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
     }).validate();
+
+    final lockFile = LockFile.load(
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+
+    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
+        reason: 'use uris to specify the path relative to the repo');
+  });
+
+  test('depends on a package in a deep subdirectory, non-relative uri',
+      () async {
+    ensureGit();
+
+    var repo = d.git('foo.git', [
+      d.dir('sub', [
+        d.dir('dir%', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])
+      ])
+    ]);
+    await repo.create();
+
+    await d.appDir({
+      'sub': {
+        'git': {
+          'url': p.toUri(p.join(d.sandbox, 'foo.git')).toString(),
+          'path': 'sub/dir%25'
+        }
+      }
+    }).create();
+
+    await pubGet();
+
+    await d.dir(cachePath, [
+      d.dir('git', [
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
+        d.hashDir('foo', [
+          d.dir('sub', [
+            d.dir('dir%', [d.libDir('sub', '1.0.0')])
+          ])
+        ])
+      ])
+    ]).validate();
+
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
+    }).validate();
+
+    final lockFile = LockFile.load(
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+
+    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
+        reason: 'use uris to specify the path relative to the repo');
   });
 
   test('depends on multiple packages in subdirectories', () async {

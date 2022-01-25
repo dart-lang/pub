@@ -2,11 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
-
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/pubspec_field.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
@@ -41,6 +40,25 @@ void main() {
     test('has an HTTPS documentation URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg['documentation'] = 'https://pub.dartlang.org';
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField);
+    });
+
+    test('has empty executables', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String, String>{};
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField);
+    });
+
+    test('has executables', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String, String?>{
+        'test_pkg': null,
+        'test_pkg_helper': 'helper',
+      };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField);
@@ -112,6 +130,24 @@ void main() {
     test('has a non-HTTP repository URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg['repository'] = 'file:///foo/bar';
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField, errors: isNotEmpty);
+    });
+
+    test('has invalid executables', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String>['wrong-thing'];
+      await d.dir(appPath, [d.pubspec(pkg)]).create();
+
+      await expectValidation(pubspecField, errors: isNotEmpty);
+    });
+
+    test('has invalid executables mapping to a number', () async {
+      var pkg = packageMap('test_pkg', '1.0.0');
+      pkg['executables'] = <String, dynamic>{
+        'test_pkg': 33,
+      };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField, errors: isNotEmpty);

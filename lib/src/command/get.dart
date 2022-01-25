@@ -29,13 +29,21 @@ class GetCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
+        help: 'Build executables in immediate dependencies.');
 
     argParser.addFlag('packages-dir', hide: true);
 
     argParser.addFlag('packages-file',
-        defaultsTo: true,
-        help: 'Generate the legacy ".packages" file');
+        defaultsTo: true, help: 'Generate the legacy ".packages" file');
+
+    argParser.addFlag(
+      'example',
+      help: 'Also run in `example/` (if it exists).',
+      hide: true,
+    );
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -44,9 +52,24 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    return entrypoint.acquireDependencies(SolveType.GET,
+    await entrypoint.acquireDependencies(
+      SolveType.get,
+      dryRun: argResults['dry-run'],
+      precompile: argResults['precompile'],
+      generateDotPackages: argResults['packages-file'],
+      analytics: analytics,
+    );
+
+    var example = entrypoint.example;
+    if (argResults['example'] && example != null) {
+      await example.acquireDependencies(
+        SolveType.get,
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile'],
-        generateDotPackages: argResults['packages-file']);
+        generateDotPackages: argResults['packages-file'],
+        analytics: analytics,
+        onlyReportSuccessOrFailure: true,
+      );
+    }
   }
 }

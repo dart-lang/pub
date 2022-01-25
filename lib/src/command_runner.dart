@@ -25,6 +25,7 @@ import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/serve.dart';
+import 'command/token.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/version.dart';
@@ -35,44 +36,62 @@ import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
 
+/// The name of the program that is invoking pub
+/// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
+String topLevelProgram = _isrunningInsideFlutter ? 'flutter' : 'dart';
+
+bool _isrunningInsideFlutter =
+    (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
+
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
+  String? get directory => argResults['directory'];
+
+  @override
   bool get captureStackChains {
-    return _argResults['trace'] ||
-        _argResults['verbose'] ||
-        _argResults['verbosity'] == 'all';
+    return argResults['trace'] ||
+        argResults['verbose'] ||
+        argResults['verbosity'] == 'all';
   }
 
   @override
   Verbosity get verbosity {
-    switch (_argResults['verbosity']) {
+    switch (argResults['verbosity']) {
       case 'error':
-        return log.Verbosity.ERROR;
+        return log.Verbosity.error;
       case 'warning':
-        return log.Verbosity.WARNING;
+        return log.Verbosity.warning;
       case 'normal':
-        return log.Verbosity.NORMAL;
+        return log.Verbosity.normal;
       case 'io':
-        return log.Verbosity.IO;
+        return log.Verbosity.io;
       case 'solver':
-        return log.Verbosity.SOLVER;
+        return log.Verbosity.solver;
       case 'all':
-        return log.Verbosity.ALL;
+        return log.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (_argResults['verbose']) return log.Verbosity.ALL;
-        return log.Verbosity.NORMAL;
+        if (argResults['verbose']) return log.Verbosity.all;
+        if (runningFromTest) return log.Verbosity.testing;
+        return log.Verbosity.normal;
     }
   }
 
   @override
-  bool get trace => _argResults['trace'];
+  bool get trace => argResults['trace'];
 
-  ArgResults _argResults;
+  ArgResults? _argResults;
 
   /// The top-level options parsed by the command runner.
   @override
-  ArgResults get argResults => _argResults;
+  ArgResults get argResults {
+    final a = _argResults;
+    if (a == null) {
+      throw StateError(
+          'argResults cannot be used before Command.run is called.');
+    }
+    return a;
+  }
 
   @override
   String get usageFooter =>
@@ -102,6 +121,13 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run the subcommand in the directory<dir>.',
+      defaultsTo: '.',
+      valueHelp: 'dir',
+    );
 
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.
@@ -123,21 +149,22 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(LoginCommand());
     addCommand(LogoutCommand());
     addCommand(VersionCommand());
+    addCommand(TokenCommand());
   }
 
   @override
   Future<int> run(Iterable<String> args) async {
     try {
       _argResults = parse(args);
+      return await runCommand(argResults) ?? exit_codes.SUCCESS;
     } on UsageException catch (error) {
       log.exception(error);
       return exit_codes.USAGE;
     }
-    return await runCommand(_argResults) ?? exit_codes.SUCCESS;
   }
 
   @override
-  Future<int> runCommand(ArgResults topLevelResults) async {
+  Future<int?> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
     if (topLevelResults['version']) {

@@ -6,11 +6,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:pub/src/utils.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
-
-import 'package:pub/src/utils.dart';
 
 import '../test_pub.dart';
 
@@ -23,10 +22,10 @@ Future authorizePub(TestProcess pub, PackageServer server,
 
   var line = await pub.stdout.next;
   var match =
-      RegExp(r'[?&]redirect_uri=([0-9a-zA-Z.%+-]+)[$&]').firstMatch(line);
+      RegExp(r'[?&]redirect_uri=([0-9a-zA-Z.%+-]+)[$&]').firstMatch(line)!;
   expect(match, isNotNull);
 
-  var redirectUrl = Uri.parse(Uri.decodeComponent(match.group(1)));
+  var redirectUrl = Uri.parse(Uri.decodeComponent(match.group(1)!));
   redirectUrl = _addQueryParameters(redirectUrl, {'code': 'access code'});
 
   // Expect the /token request
@@ -60,8 +59,8 @@ Uri _addQueryParameters(Uri url, Map<String, String> parameters) {
 }
 
 /// Convert a [Map] from parameter names to values to a URL query string.
-String _mapToQuery(Map<String, String> map) {
-  var pairs = <List<String>>[];
+String _mapToQuery(Map<String, String?> map) {
+  var pairs = <List<String?>>[];
   map.forEach((key, value) {
     key = Uri.encodeQueryComponent(key);
     value = (value == null || value.isEmpty)

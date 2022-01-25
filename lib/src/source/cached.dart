@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 import '../io.dart';
@@ -31,7 +30,7 @@ abstract class CachedSource extends BoundSource {
   /// Otherwise, defers to the subclass.
   @override
   Future<Pubspec> doDescribe(PackageId id) async {
-    var packageDir = getDirectory(id);
+    var packageDir = getDirectoryInCache(id);
     if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
       return Pubspec.load(packageDir, systemCache.sources,
           expectedName: id.name);
@@ -40,6 +39,12 @@ abstract class CachedSource extends BoundSource {
     return await describeUncached(id);
   }
 
+  @override
+  String getDirectory(PackageId id, {String? relativeFrom}) =>
+      getDirectoryInCache(id);
+
+  String getDirectoryInCache(PackageId id);
+
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
   ///
@@ -47,16 +52,9 @@ abstract class CachedSource extends BoundSource {
   /// the system cache.
   Future<Pubspec> describeUncached(PackageId id);
 
-  @override
-  Future get(PackageId id, String symlink) {
-    return downloadToSystemCache(id).then((pkg) {
-      createPackageSymlink(id.name, pkg.dir, symlink);
-    });
-  }
-
   /// Determines if the package identified by [id] is already downloaded to the
   /// system cache.
-  bool isInSystemCache(PackageId id) => dirExists(getDirectory(id));
+  bool isInSystemCache(PackageId id) => dirExists(getDirectoryInCache(id));
 
   /// Downloads the package identified by [id] to the system cache.
   Future<Package> downloadToSystemCache(PackageId id);
@@ -81,5 +79,5 @@ class RepairResult {
   /// cache (but that might itself have failed).
   final bool success;
   final PackageId package;
-  RepairResult(this.package, {@required this.success});
+  RepairResult(this.package, {required this.success});
 }

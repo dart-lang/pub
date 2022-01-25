@@ -5,11 +5,10 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
-import 'package:test/test.dart';
-import 'package:test_process/test_process.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/sdk.dart';
+import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
 
 void main() {
   // This test is a bit funny.

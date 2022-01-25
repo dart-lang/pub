@@ -3,9 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
-import 'package:test/test.dart';
-
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -14,7 +13,8 @@ void main() {
   test(
       'keeps a hosted package locked to the version in the '
       'lockfile', () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
 
@@ -23,11 +23,11 @@ void main() {
 
     await d.appPackagesFile({'foo': '1.0.0'}).validate();
 
-    // Delete the .packages file to simulate a new checkout of the application.
-    deleteEntry(path.join(d.sandbox, packagesFilePath));
+    // Delete the .dart_tool/package_config.json file to simulate a new checkout of the application.
+    deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     // Start serving a newer package as well.
-    globalPackageServer.add((builder) => builder.serve('foo', '1.0.1'));
+    server.serve('foo', '1.0.1');
 
     // This shouldn't upgrade the foo dependency due to the lockfile.
     await pubGet();

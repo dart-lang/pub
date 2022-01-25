@@ -2,226 +2,162 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:test/test.dart';
-
 import '../descriptor.dart' as d;
+import '../golden_file.dart';
 import '../test_pub.dart';
 
 const _validMain = 'main() {}';
+const _invalidMain = 'main() {';
+
+extension on GoldenTestContext {
+  Future<void> runExecutablesTest() async {
+    await pubGet();
+
+    await tree();
+
+    await run(['deps', '--executables']);
+    await run(['deps', '--executables', '--dev']);
+    await run(['deps', '--json']);
+  }
+}
 
 void main() {
-  Future<void> Function() _testExecutablesOutput(output, {bool dev = true}) =>
-      () async {
-        await pubGet();
-        await runPub(
-            args: ['deps', '--executables', if (dev) '--dev' else '--no-dev'],
-            output: output);
-      };
+  testWithGolden('skips non-Dart executables', (ctx) async {
+    await d.dir(appPath, [
+      d.appPubspec(),
+      d.dir('bin', [d.file('foo.py'), d.file('bar.sh')])
+    ]).create();
 
-  Future<void> Function() _testAllDepsOutput(output) =>
-      _testExecutablesOutput(output);
-  Future<void> Function() _testNonDevDepsOutput(output) =>
-      _testExecutablesOutput(output, dev: false);
-
-  group('lists nothing when no executables found', () {
-    setUp(() async {
-      await d.dir(appPath, [d.appPubspec()]).create();
-    });
-
-    test('all dependencies', _testAllDepsOutput('\n'));
-    test('non-dev dependencies', _testNonDevDepsOutput('\n'));
+    await ctx.runExecutablesTest();
   });
 
-  group('skips non-Dart executables', () {
-    setUp(() async {
-      await d.dir(appPath, [
-        d.appPubspec(),
-        d.dir('bin', [d.file('foo.py'), d.file('bar.sh')])
-      ]).create();
-    });
+  testWithGolden('lists Dart executables, without entrypoints', (ctx) async {
+    await d.dir(appPath, [
+      d.appPubspec(),
+      d.dir(
+        'bin',
+        [d.file('foo.dart', _validMain), d.file('bar.dart', _invalidMain)],
+      )
+    ]).create();
 
-    test('all dependencies', _testAllDepsOutput('\n'));
-    test('non-dev dependencies', _testNonDevDepsOutput('\n'));
+    await ctx.runExecutablesTest();
   });
 
-  group('skips Dart executables which are not parsable', () {
-    setUp(() async {
-      await d.dir(appPath, [
-        d.appPubspec(),
-        d.dir('bin', [d.file('foo.dart', 'main() {')])
-      ]).create();
-    });
+  testWithGolden('skips executables in sub directories', (ctx) async {
+    await d.dir(appPath, [
+      d.appPubspec(),
+      d.dir('bin', [
+        d.file('foo.dart', _validMain),
+        d.dir('sub', [d.file('bar.dart', _validMain)])
+      ])
+    ]).create();
 
-    test('all dependencies', _testAllDepsOutput('\n'));
-    test('non-dev dependencies', _testNonDevDepsOutput('\n'));
+    await ctx.runExecutablesTest();
   });
 
-  group('skips Dart executables without entrypoints', () {
-    setUp(() async {
-      await d.dir(appPath, [
-        d.appPubspec(),
-        d.dir(
-            'bin', [d.file('foo.dart'), d.file('bar.dart', 'main(x, y, z) {}')])
-      ]).create();
-    });
+  testWithGolden('lists executables from a dependency', (ctx) async {
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('bar.dart', _validMain)])
+    ]).create();
 
-    test('all dependencies', _testAllDepsOutput('\n'));
-    test('non-dev dependencies', _testNonDevDepsOutput('\n'));
+    await d.dir(appPath, [
+      d.appPubspec({
+        'foo': {'path': '../foo'}
+      })
+    ]).create();
+
+    await ctx.runExecutablesTest();
   });
 
-  group('lists valid Dart executables with entrypoints', () {
-    setUp(() async {
-      await d.dir(appPath, [
-        d.appPubspec(),
-        d.dir('bin',
-            [d.file('foo.dart', _validMain), d.file('bar.dart', _validMain)])
-      ]).create();
-    });
+  testWithGolden('lists executables only from immediate dependencies',
+      (ctx) async {
+    await d.dir(appPath, [
+      d.appPubspec({
+        'foo': {'path': '../foo'}
+      })
+    ]).create();
 
-    test('all dependencies', _testAllDepsOutput('myapp: bar, foo'));
-    test('non-dev dependencies', _testNonDevDepsOutput('myapp: bar, foo'));
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0', deps: {
+        'baz': {'path': '../baz'}
+      }),
+      d.dir('bin', [d.file('bar.dart', _validMain)])
+    ]).create();
+
+    await d.dir('baz', [
+      d.libPubspec('baz', '1.0.0'),
+      d.dir('bin', [d.file('qux.dart', _validMain)])
+    ]).create();
+
+    await ctx.runExecutablesTest();
   });
 
-  group('skips executables in sub directories', () {
-    setUp(() async {
-      await d.dir(appPath, [
-        d.appPubspec(),
-        d.dir('bin', [
-          d.file('foo.dart', _validMain),
-          d.dir('sub', [d.file('bar.dart', _validMain)])
-        ])
-      ]).create();
-    });
+  testWithGolden('applies formatting before printing executables', (ctx) async {
+    await d.dir(appPath, [
+      d.appPubspec({
+        'foo': {'path': '../foo'},
+        'bar': {'path': '../bar'}
+      }),
+      d.dir('bin', [d.file('myapp.dart', _validMain)])
+    ]).create();
 
-    test('all dependencies', _testAllDepsOutput('myapp:foo'));
-    test('non-dev dependencies', _testNonDevDepsOutput('myapp:foo'));
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin',
+          [d.file('baz.dart', _validMain), d.file('foo.dart', _validMain)])
+    ]).create();
+
+    await d.dir('bar', [
+      d.libPubspec('bar', '1.0.0'),
+      d.dir('bin', [d.file('qux.dart', _validMain)])
+    ]).create();
+
+    await ctx.runExecutablesTest();
   });
 
-  group('lists executables from a dependency', () {
-    setUp(() async {
-      await d.dir('foo', [
-        d.libPubspec('foo', '1.0.0'),
-        d.dir('bin', [d.file('bar.dart', _validMain)])
-      ]).create();
+  testWithGolden('dev dependencies', (ctx) async {
+    await d.dir('foo', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('bar.dart', _validMain)])
+    ]).create();
 
-      await d.dir(appPath, [
-        d.appPubspec({
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dev_dependencies': {
           'foo': {'path': '../foo'}
-        })
-      ]).create();
-    });
+        }
+      })
+    ]).create();
 
-    test('all dependencies', _testAllDepsOutput('foo:bar'));
-    test('non-dev dependencies', _testNonDevDepsOutput('foo:bar'));
+    await ctx.runExecutablesTest();
   });
 
-  group('lists executables only from immediate dependencies', () {
-    setUp(() async {
-      await d.dir(appPath, [
-        d.appPubspec({
-          'foo': {'path': '../foo'}
-        })
-      ]).create();
+  testWithGolden('overriden dependencies executables', (ctx) async {
+    await d.dir('foo-1.0', [
+      d.libPubspec('foo', '1.0.0'),
+      d.dir('bin', [d.file('bar.dart', _validMain)])
+    ]).create();
 
-      await d.dir('foo', [
-        d.libPubspec('foo', '1.0.0', deps: {
-          'baz': {'path': '../baz'}
-        }),
-        d.dir('bin', [d.file('bar.dart', _validMain)])
-      ]).create();
+    await d.dir('foo-2.0', [
+      d.libPubspec('foo', '2.0.0'),
+      d.dir('bin',
+          [d.file('bar.dart', _validMain), d.file('baz.dart', _validMain)])
+    ]).create();
 
-      await d.dir('baz', [
-        d.libPubspec('baz', '1.0.0'),
-        d.dir('bin', [d.file('qux.dart', _validMain)])
-      ]).create();
-    });
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'path': '../foo-1.0'}
+        },
+        'dependency_overrides': {
+          'foo': {'path': '../foo-2.0'}
+        }
+      })
+    ]).create();
 
-    test('all dependencies', _testAllDepsOutput('foo:bar'));
-    test('non-dev dependencies', _testNonDevDepsOutput('foo:bar'));
-  });
-
-  group('applies formatting before printing executables', () {
-    setUp(() async {
-      await d.dir(appPath, [
-        d.appPubspec({
-          'foo': {'path': '../foo'},
-          'bar': {'path': '../bar'}
-        }),
-        d.dir('bin', [d.file('myapp.dart', _validMain)])
-      ]).create();
-
-      await d.dir('foo', [
-        d.libPubspec('foo', '1.0.0'),
-        d.dir('bin',
-            [d.file('baz.dart', _validMain), d.file('foo.dart', _validMain)])
-      ]).create();
-
-      await d.dir('bar', [
-        d.libPubspec('bar', '1.0.0'),
-        d.dir('bin', [d.file('qux.dart', _validMain)])
-      ]).create();
-    });
-
-    test('all dependencies', _testAllDepsOutput('''
-        myapp
-        foo: foo, baz
-        bar:qux'''));
-    test('non-dev dependencies', _testNonDevDepsOutput('''
-        myapp
-        foo: foo, baz
-        bar:qux'''));
-  });
-
-  group('dev dependencies', () {
-    setUp(() async {
-      await d.dir('foo', [
-        d.libPubspec('foo', '1.0.0'),
-        d.dir('bin', [d.file('bar.dart', _validMain)])
-      ]).create();
-
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dev_dependencies': {
-            'foo': {'path': '../foo'}
-          }
-        })
-      ]).create();
-    });
-
-    test('are listed if --dev flag is set', _testAllDepsOutput('foo:bar'));
-    test('are skipped if --no-dev flag is set', _testNonDevDepsOutput('\n'));
-  });
-
-  group('overriden dependencies executables', () {
-    setUp(() async {
-      await d.dir('foo-1.0', [
-        d.libPubspec('foo', '1.0.0'),
-        d.dir('bin', [d.file('bar.dart', _validMain)])
-      ]).create();
-
-      await d.dir('foo-2.0', [
-        d.libPubspec('foo', '2.0.0'),
-        d.dir('bin',
-            [d.file('bar.dart', _validMain), d.file('baz.dart', _validMain)])
-      ]).create();
-
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {
-            'foo': {'path': '../foo-1.0'}
-          },
-          'dependency_overrides': {
-            'foo': {'path': '../foo-2.0'}
-          }
-        })
-      ]).create();
-    });
-
-    test(
-        'are listed if --dev flag is set', _testAllDepsOutput('foo: bar, baz'));
-    test('are listed if --no-dev flag is set',
-        _testNonDevDepsOutput('foo: bar, baz'));
+    await ctx.runExecutablesTest();
   });
 }

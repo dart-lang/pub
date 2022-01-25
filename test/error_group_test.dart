@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:pub/src/error_group.dart';
 import 'package:test/test.dart';
 
-ErrorGroup errorGroup;
+late ErrorGroup errorGroup;
 
 // TODO(nweiz): once there's a global error handler, we should test that it does
 // and does not get called at appropriate times. See issue 5958.
@@ -41,8 +41,8 @@ void main() {
   });
 
   group('with a single future', () {
-    Completer completer;
-    Future future;
+    late Completer completer;
+    late Future future;
 
     setUp(() {
       errorGroup = ErrorGroup();
@@ -150,10 +150,10 @@ void main() {
   });
 
   group('with multiple futures', () {
-    Completer completer1;
-    Completer completer2;
-    Future future1;
-    Future future2;
+    late Completer completer1;
+    late Completer completer2;
+    late Future future1;
+    late Future future2;
 
     setUp(() {
       errorGroup = ErrorGroup();
@@ -210,8 +210,8 @@ void main() {
   });
 
   group('with a single stream', () {
-    StreamController controller;
-    Stream stream;
+    late StreamController controller;
+    late Stream stream;
 
     setUp(() {
       errorGroup = ErrorGroup();
@@ -287,8 +287,8 @@ void main() {
   });
 
   group('with a single single-subscription stream', () {
-    StreamController controller;
-    Stream stream;
+    late StreamController controller;
+    late Stream stream;
 
     setUp(() {
       errorGroup = ErrorGroup();
@@ -336,10 +336,10 @@ void main() {
   });
 
   group('with multiple streams', () {
-    StreamController controller1;
-    StreamController controller2;
-    Stream stream1;
-    Stream stream2;
+    late StreamController controller1;
+    late StreamController controller2;
+    late Stream stream1;
+    late Stream stream2;
 
     setUp(() {
       errorGroup = ErrorGroup();
@@ -409,10 +409,10 @@ void main() {
   });
 
   group('with a stream and a future', () {
-    StreamController controller;
-    Stream stream;
-    Completer completer;
-    Future future;
+    late StreamController controller;
+    late Stream stream;
+    late Completer completer;
+    late Future future;
 
     setUp(() {
       errorGroup = ErrorGroup();

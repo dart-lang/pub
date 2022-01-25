@@ -9,14 +9,13 @@ import '../../test_pub.dart';
 
 void main() {
   test('only requests versions that are needed during solving', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '1.1.0');
-      builder.serve('foo', '1.2.0');
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '1.1.0');
-      builder.serve('bar', '1.2.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '1.1.0')
+      ..serve('foo', '1.2.0')
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '1.1.0')
+      ..serve('bar', '1.2.0');
 
     await d.appDir({'foo': 'any'}).create();
 

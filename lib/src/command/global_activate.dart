@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../package_name.dart';
+import '../source/hosted.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
@@ -51,13 +52,13 @@ class GlobalActivateCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     // Default to `null`, which means all executables.
-    List<String> executables;
+    List<String>? executables;
     if (argResults.wasParsed('executable')) {
       if (argResults.wasParsed('no-executables')) {
         usageException('Cannot pass both --no-executables and --executable.');
       }
 
-      executables = argResults['executable'] as List<String>;
+      executables = argResults['executable'];
     } else if (argResults['no-executables']) {
       // An empty list means no executables.
       executables = [];
@@ -75,11 +76,19 @@ class GlobalActivateCommand extends PubCommand {
       features[feature] = FeatureDependency.unused;
     }
 
-    var overwrite = argResults['overwrite'];
-    var hostedUrl = argResults['hosted-url'];
+    final overwrite = argResults['overwrite'] as bool;
+    Uri? hostedUrl;
+    if (argResults.wasParsed('hosted-url')) {
+      try {
+        hostedUrl = validateAndNormalizeHostedUrl(argResults['hosted-url']);
+      } on FormatException catch (e) {
+        usageException('Invalid hosted-url: $e');
+      }
+    }
+
     Iterable<String> args = argResults.rest;
 
-    dynamic readArg([String error]) {
+    String readArg([String error = '']) {
       if (args.isEmpty) usageException(error);
       var arg = args.first;
       args = args.skip(1);
@@ -128,8 +137,12 @@ class GlobalActivateCommand extends PubCommand {
 
         var path = readArg('No package to activate given.');
         validateNoExtraArgs();
-        return globals.activatePath(path, executables,
-            overwriteBinStubs: overwrite);
+        return globals.activatePath(
+          path,
+          executables,
+          overwriteBinStubs: overwrite,
+          analytics: analytics,
+        );
     }
 
     throw StateError('unreachable');

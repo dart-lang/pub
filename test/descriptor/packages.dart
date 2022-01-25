@@ -6,10 +6,9 @@ import 'dart:async' show Future;
 import 'dart:convert' show JsonEncoder, json, utf8;
 import 'dart:io' show File;
 
-// ignore: deprecated_member_use
-import 'package:package_config/packages_file.dart' as packages_file;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/packages_file.dart' as packages_file;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
@@ -24,7 +23,7 @@ const _base = '/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p';
 /// Describes a `.packages` file and its contents.
 class PackagesFileDescriptor extends Descriptor {
   /// A map from package names to either version strings or path to the package.
-  final Map<String, String> _dependencies;
+  final Map<String, String>? _dependencies;
 
   /// Describes a `.packages` file with the given dependencies.
   ///
@@ -33,11 +32,12 @@ class PackagesFileDescriptor extends Descriptor {
   PackagesFileDescriptor([this._dependencies]) : super('.packages');
 
   @override
-  Future create([String parent]) {
+  Future create([String? parent]) {
     var contents = const <int>[];
-    if (_dependencies != null) {
+    var dependencies = _dependencies;
+    if (dependencies != null) {
       var mapping = <String, Uri>{};
-      _dependencies.forEach((package, version) {
+      dependencies.forEach((package, version) {
         String packagePath;
         if (_isSemver(version)) {
           // It's a cache reference.
@@ -57,7 +57,7 @@ class PackagesFileDescriptor extends Descriptor {
   }
 
   @override
-  Future validate([String parent]) async {
+  Future validate([String? parent]) async {
     var fullPath = p.join(parent ?? sandbox, name);
     if (!await File(fullPath).exists()) {
       fail("File not found: '$fullPath'.");
@@ -67,14 +67,16 @@ class PackagesFileDescriptor extends Descriptor {
 
     var map = packages_file.parse(bytes, Uri.parse(_base));
 
-    for (var package in _dependencies.keys) {
+    var dependencies = _dependencies!;
+
+    for (var package in dependencies.keys) {
       if (!map.containsKey(package)) {
         fail('.packages does not contain $package entry');
       }
 
-      var description = _dependencies[package];
+      var description = dependencies[package]!;
       if (_isSemver(description)) {
-        if (!map[package].path.contains(description)) {
+        if (!map[package]!.path.contains(description)) {
           fail('.packages of $package has incorrect version. '
               'Expected $description, found location: ${map[package]}.');
         }
@@ -89,9 +91,9 @@ class PackagesFileDescriptor extends Descriptor {
       }
     }
 
-    if (map.length != _dependencies.length) {
+    if (map.length != dependencies.length) {
       for (var key in map.keys) {
-        if (!_dependencies.containsKey(key)) {
+        if (!dependencies.containsKey(key)) {
           fail('.packages file contains unexpected entry: $key');
         }
       }
@@ -104,6 +106,8 @@ class PackagesFileDescriptor extends Descriptor {
 
 /// Describes a `.dart_tools/package_config.json` file and its contents.
 class PackageConfigFileDescriptor extends Descriptor {
+  final String _generatorVersion;
+
   /// A map describing the packages in this `package_config.json` file.
   final List<PackageConfigEntry> _packages;
 
@@ -111,7 +115,7 @@ class PackageConfigFileDescriptor extends Descriptor {
     return PackageConfig(
       configVersion: 2,
       packages: _packages,
-      generatorVersion: Version.parse('0.1.2+3'),
+      generatorVersion: Version.parse(_generatorVersion),
       generator: 'pub',
       generated: DateTime.now().toUtc(),
     );
@@ -121,11 +125,11 @@ class PackageConfigFileDescriptor extends Descriptor {
   ///
   /// [dependencies] maps package names to strings describing where the packages
   /// are located on disk.
-  PackageConfigFileDescriptor(this._packages)
+  PackageConfigFileDescriptor(this._packages, this._generatorVersion)
       : super('.dart_tool/package_config.json');
 
   @override
-  Future<void> create([String parent]) async {
+  Future<void> create([String? parent]) async {
     final packageConfigFile = File(p.join(parent ?? sandbox, name));
     await packageConfigFile.parent.create();
     await packageConfigFile.writeAsString(
@@ -134,13 +138,13 @@ class PackageConfigFileDescriptor extends Descriptor {
   }
 
   @override
-  Future<void> validate([String parent]) async {
+  Future<void> validate([String? parent]) async {
     final packageConfigFile = p.join(parent ?? sandbox, name);
     if (!await File(packageConfigFile).exists()) {
       fail("File not found: '$packageConfigFile'.");
     }
 
-    Map<String, Object> rawJson = json.decode(
+    Map<String, dynamic> rawJson = json.decode(
       await File(packageConfigFile).readAsString(),
     );
     PackageConfig config;

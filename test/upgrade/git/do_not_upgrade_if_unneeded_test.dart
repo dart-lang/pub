@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -16,7 +17,11 @@ void main() {
     await d.git('foo.git', [
       d.libDir('foo'),
       d.libPubspec('foo', '1.0.0', deps: {
-        'foo_dep': {'git': '../foo_dep.git'}
+        'foo_dep': {
+          'git': p
+              .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
+              .toString()
+        }
       })
     ]).create();
 
@@ -40,12 +45,16 @@ void main() {
       ])
     ]).validate();
 
-    var originalFooDepSpec = packageSpecLine('foo_dep');
+    var originalFooDepSpec = packageSpec('foo_dep');
 
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
       d.libPubspec('foo', '1.0.0', deps: {
-        'foo_dep': {'git': '../foo_dep.git'}
+        'foo_dep': {
+          'git': p
+              .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
+              .toString()
+        }
       })
     ]).create();
 
@@ -62,6 +71,6 @@ void main() {
       ])
     ]).validate();
 
-    expect(packageSpecLine('foo_dep'), originalFooDepSpec);
+    expect(packageSpec('foo_dep'), originalFooDepSpec);
   });
 }

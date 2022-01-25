@@ -3,18 +3,18 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-import 'package:yaml/yaml.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
   test('gets a package from a pub server', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({'foo': '1.2.3'}).create();
 
@@ -25,7 +25,7 @@ void main() {
   });
 
   test('URL encodes the package name', () async {
-    await serveNoPackages();
+    await servePackages();
 
     await d.appDir({'bad name!': '1.2.3'}).create();
 
@@ -42,11 +42,10 @@ void main() {
   test('gets a package from a non-default pub server', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
+    (await servePackages()).serveErrors();
 
-    var server = await PackageServer.start((builder) {
-      builder.serve('foo', '1.2.3');
-    });
+    var server = await startPackageServer();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({
       'foo': {
@@ -62,14 +61,15 @@ void main() {
   });
 
   group('categorizes dependency types in the lockfile', () {
-    setUp(() => servePackages((builder) {
-          builder.serve('foo', '1.2.3', deps: {'bar': 'any'});
-          builder.serve('bar', '1.2.3');
-          builder.serve('baz', '1.2.3', deps: {'qux': 'any'});
-          builder.serve('qux', '1.2.3');
-          builder.serve('zip', '1.2.3', deps: {'zap': 'any'});
-          builder.serve('zap', '1.2.3');
-        }));
+    setUp(() async {
+      await servePackages()
+        ..serve('foo', '1.2.3', deps: {'bar': 'any'})
+        ..serve('bar', '1.2.3')
+        ..serve('baz', '1.2.3', deps: {'qux': 'any'})
+        ..serve('qux', '1.2.3')
+        ..serve('zip', '1.2.3', deps: {'zap': 'any'})
+        ..serve('zap', '1.2.3');
+    });
 
     test('for main, dev, and overridden dependencies', () async {
       await d.dir(appPath, [

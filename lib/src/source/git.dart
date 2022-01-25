@@ -5,12 +5,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../git.dart' as git;
 import '../io.dart';
+import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -29,77 +31,58 @@ class GitSource extends Source {
   BoundGitSource bind(SystemCache systemCache) =>
       BoundGitSource(this, systemCache);
 
-  /// Returns a reference to a git package with the given [name] and [url].
-  ///
-  /// If passed, [reference] is the Git reference. It defaults to `"HEAD"`.
-  PackageRef refFor(String name, String url, {String reference, String path}) {
-    if (path != null) assert(p.url.isRelative(path));
-    return PackageRef(name, this,
-        {'url': url, 'ref': reference ?? 'HEAD', 'path': path ?? '.'});
-  }
-
   /// Given a valid git package description, returns the URL of the repository
   /// it pulls from.
-  String urlFromDescription(description) => description['url'];
+  /// If the url is relative, it will be returned relative to current working
+  /// directory.
+  String urlFromDescription(description) {
+    var url = description['url'];
+    if (description['relative'] == true) {
+      return p.url.relative(url, from: p.toUri(p.current).toString());
+    }
+    return url;
+  }
 
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
-    // TODO(rnystrom): Handle git URLs that are relative file paths (#8570).
-    if (description is String) description = {'url': description};
-
-    if (description is! Map) {
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingPath,
+    LanguageVersion? languageVersion,
+  }) {
+    dynamic url;
+    dynamic ref;
+    dynamic path;
+    if (description is String) {
+      url = description;
+    } else if (description is! Map) {
       throw FormatException('The description must be a Git URL or a map '
           "with a 'url' key.");
-    }
+    } else {
+      url = description['url'];
 
-    if (description['url'] is! String) {
-      throw FormatException("The 'url' field of the description must be a "
-          'string.');
-    }
-
-    _validateUrl(description['url']);
-
-    var ref = description['ref'];
-    if (ref != null && ref is! String) {
-      throw FormatException("The 'ref' field of the description must be a "
-          'string.');
-    }
-
-    var path = description['path'];
-    if (path != null) {
-      if (path is! String) {
-        throw FormatException(
-            "The 'path' field of the description must be a string.");
-      } else if (!p.url.isRelative(path)) {
-        throw FormatException(
-            "The 'path' field of the description must be relative.");
-      } else if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
-        throw FormatException(
-            "The 'path' field of the description must not reach outside the "
-            'repository.');
+      ref = description['ref'];
+      if (ref != null && ref is! String) {
+        throw FormatException("The 'ref' field of the description must be a "
+            'string.');
       }
 
-      _validateUrl(path);
+      path = description['path'];
     }
-
-    return PackageRef(name, this,
-        {'url': description['url'], 'ref': ref ?? 'HEAD', 'path': path ?? '.'});
+    return PackageRef(name, this, {
+      ..._validatedUrl(url, containingPath),
+      'ref': ref ?? 'HEAD',
+      'path': _validatedPath(path),
+    });
   }
 
   @override
   PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
+      {String? containingPath}) {
     if (description is! Map) {
       throw FormatException("The description must be a map with a 'url' "
           'key.');
     }
-
-    if (description['url'] is! String) {
-      throw FormatException("The 'url' field of the description must be a "
-          'string.');
-    }
-
-    _validateUrl(description['url']);
 
     var ref = description['ref'];
     if (ref != null && ref is! String) {
@@ -112,35 +95,80 @@ class GitSource extends Source {
           'must be a string.');
     }
 
-    var path = description['path'];
-    if (path != null) {
-      if (path is! String) {
-        throw FormatException(
-            "The 'path' field of the description must be a string.");
-      } else if (!p.url.isRelative(path)) {
-        throw FormatException(
-            "The 'path' field of the description must be relative.");
-      }
-
-      _validateUrl(path);
-    }
-
     return PackageId(name, this, version, {
-      'url': description['url'],
+      ..._validatedUrl(description['url'], containingPath),
       'ref': ref ?? 'HEAD',
       'resolved-ref': description['resolved-ref'],
-      'path': path ?? '.'
+      'path': _validatedPath(description['path'])
     });
   }
 
+  /// Serializes path dependency's [description].
+  ///
+  /// For the descriptions where `relative` attribute is `true`, tries to make
+  /// `url` relative to the specified [containingPath].
+  @override
+  dynamic serializeDescription(String? containingPath, description) {
+    final copy = Map.from(description);
+    copy.remove('relative');
+    if (description['relative'] == true && containingPath != null) {
+      copy['url'] = p.url.relative(description['url'],
+          from: Uri.file(containingPath).toString());
+    }
+    return copy;
+  }
+
   /// Throws a [FormatException] if [url] isn't a valid Git URL.
-  void _validateUrl(String url) {
+  Map<String, Object> _validatedUrl(dynamic url, String? containingDir) {
+    if (url is! String) {
+      throw FormatException("The 'url' field of the description must be a "
+          'string.');
+    }
+    var relative = false;
     // If the URL contains an @, it's probably an SSH hostname, which we don't
     // know how to validate.
-    if (url.contains('@')) return;
+    if (!url.contains('@')) {
+      // Otherwise, we use Dart's URL parser to validate the URL.
+      final parsed = Uri.parse(url);
+      if (!parsed.hasAbsolutePath) {
+        // Relative paths coming from pubspecs that are not on the local file
+        // system aren't allowed. This can happen if a hosted or git dependency
+        // has a git dependency.
+        if (containingDir == null) {
+          throw FormatException('"$url" is a relative path, but this '
+              'isn\'t a local pubspec.');
+        }
+        // A relative path is stored internally as absolute resolved relative to
+        // [containingPath].
+        relative = true;
+        url = Uri.file(p.absolute(containingDir)).resolveUri(parsed).toString();
+      }
+    }
+    return {'relative': relative, 'url': url};
+  }
 
-    // Otherwise, we use Dart's URL parser to validate the URL.
-    Uri.parse(url);
+  /// Returns [path] normalized.
+  ///
+  /// Throws a [FormatException] if [path] isn't a relative url or null.
+  String _validatedPath(dynamic path) {
+    path ??= '.';
+    if (path is! String) {
+      throw FormatException("The 'path' field of the description must be a "
+          'string.');
+    }
+
+    // Use Dart's URL parser to validate the URL.
+    final parsed = Uri.parse(path);
+    if (parsed.isAbsolute) {
+      throw FormatException(
+          "The 'path' field of the description must be relative.");
+    }
+    if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
+      throw FormatException(
+          "The 'path' field of the description must not reach outside the "
+          'repository.');
+    }
+    return p.url.normalize(parsed.toString());
   }
 
   /// If [description] has a resolved ref, print it out in short-form.
@@ -150,7 +178,7 @@ class GitSource extends Source {
   @override
   String formatDescription(description) {
     if (description is Map && description.containsKey('resolved-ref')) {
-      var result = "${description['url']} at "
+      var result = '${urlFromDescription(description)} at '
           "${description['resolved-ref'].substring(0, 6)}";
       if (description['path'] != '.') result += " in ${description["path"]}";
       return result;
@@ -225,17 +253,23 @@ class BoundGitSource extends CachedSource {
   }
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge) async {
     return await _pool.withResource(() async {
       await _ensureRepoCache(ref);
       var path = _repoCachePath(ref);
       var revision = await _firstRevision(path, ref.description['ref']);
-      var pubspec =
-          await _describeUncached(ref, revision, ref.description['path']);
+      var pubspec = await _describeUncached(
+        ref,
+        revision,
+        ref.description['path'],
+        source.urlFromDescription(ref.description),
+      );
 
       return [
         PackageId(ref.name, source, pubspec.version, {
           'url': ref.description['url'],
+          'relative': ref.description['relative'],
           'ref': ref.description['ref'],
           'resolved-ref': revision,
           'path': ref.description['path']
@@ -249,13 +283,21 @@ class BoundGitSource extends CachedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id) {
     return _pool.withResource(() => _describeUncached(
-        id.toRef(), id.description['resolved-ref'], id.description['path']));
+          id.toRef(),
+          id.description['resolved-ref'],
+          id.description['path'],
+          source.urlFromDescription(id.description),
+        ));
   }
 
   /// Like [describeUncached], but takes a separate [ref] and Git [revision]
   /// rather than a single ID.
   Future<Pubspec> _describeUncached(
-      PackageRef ref, String revision, String path) async {
+    PackageRef ref,
+    String revision,
+    String path,
+    String url,
+  ) async {
     await _ensureRevision(ref, revision);
     var repoPath = _repoCachePath(ref);
 
@@ -265,18 +307,20 @@ class BoundGitSource extends CachedSource {
 
     // Git doesn't recognize backslashes in paths, even on Windows.
     if (Platform.isWindows) pubspecPath = pubspecPath.replaceAll('\\', '/');
-
-    List<String> lines;
+    late List<String> lines;
     try {
       lines = await git
           .run(['show', '$revision:$pubspecPath'], workingDir: repoPath);
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pubspecPath" in '
-          '${ref.description['url']} $revision.');
+          '${source.urlFromDescription(ref.description)} $revision.');
     }
 
-    return Pubspec.parse(lines.join('\n'), systemCache.sources,
-        expectedName: ref.name);
+    return Pubspec.parse(
+      lines.join('\n'),
+      systemCache.sources,
+      expectedName: ref.name,
+    );
   }
 
   /// Clones a Git repo to the local filesystem.
@@ -316,15 +360,15 @@ class BoundGitSource extends CachedSource {
 
       return Package.load(
           id.name,
-          p.join(revisionCachePath, id.description['path']),
+          p.join(revisionCachePath, p.fromUri(id.description['path'])),
           systemCache.sources);
     });
   }
 
   /// Returns the path to the revision-specific cache of [id].
   @override
-  String getDirectory(PackageId id) =>
-      p.join(_revisionCachePath(id), id.description['path']);
+  String getDirectoryInCache(PackageId? id) =>
+      p.join(_revisionCachePath(id!), id.description['path']);
 
   @override
   List<Package> getCachedPackages() {
@@ -363,7 +407,7 @@ class BoundGitSource extends CachedSource {
             }
           });
         })
-        .where((package) => package != null)
+        .whereNotNull()
         .toList();
 
     // Note that there may be multiple packages with the same name and version
@@ -396,7 +440,7 @@ class BoundGitSource extends CachedSource {
         result.add(RepairResult(id, success: false));
 
         // Delete the revision cache path, not the subdirectory that contains the package.
-        tryDeleteEntry(getDirectory(id));
+        tryDeleteEntry(getDirectoryInCache(id));
       }
     }
 
@@ -443,7 +487,6 @@ class BoundGitSource extends CachedSource {
   Future _createRepoCache(PackageRef ref) async {
     var path = _repoCachePath(ref);
     assert(!_updatedRepos.contains(path));
-
     try {
       await _clone(ref.description['url'], path, mirror: true);
     } catch (_) {
@@ -479,7 +522,7 @@ class BoundGitSource extends CachedSource {
         ['rev-parse', '--is-inside-git-dir'],
         workingDir: dirPath,
       );
-      if (result?.join('\n') != 'true') {
+      if (result.join('\n') != 'true') {
         isValid = false;
       }
     } on git.GitException {
@@ -541,16 +584,23 @@ class BoundGitSource extends CachedSource {
   ///
   /// If [shallow] is true, creates a shallow clone that contains no history
   /// for the repository.
-  Future _clone(String from, String to,
-      {bool mirror = false, bool shallow = false}) {
+  Future _clone(
+    String from,
+    String to, {
+    bool mirror = false,
+    bool shallow = false,
+  }) {
     return Future.sync(() {
       // Git on Windows does not seem to automatically create the destination
       // directory.
       ensureDir(to);
-      var args = ['clone', from, to];
-
-      if (mirror) args.insert(1, '--mirror');
-      if (shallow) args.insertAll(1, ['--depth', '1']);
+      var args = [
+        'clone',
+        if (mirror) '--mirror',
+        if (shallow) ...['--depth', '1'],
+        from,
+        to
+      ];
 
       return git.run(args);
     }).then((result) => null);

@@ -10,10 +10,9 @@ import '../../test_pub.dart';
 
 void main() {
   test('an immutable application sees a file: package config', () async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0');
-
-      builder.serve('foo', '1.0.0', deps: {
+    await servePackages()
+      ..serve('bar', '1.0.0')
+      ..serve('foo', '1.0.0', deps: {
         'bar': '1.0.0'
       }, contents: [
         d.dir('bin', [
@@ -31,24 +30,23 @@ main() async {
 """)
         ])
       ]);
-    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     var pub = await pubRun(global: true, args: ['foo:script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
 
-    var packageConfigPath =
-        p.join(d.sandbox, cachePath, 'global_packages/foo/.packages');
+    var packageConfigPath = p.join(d.sandbox, cachePath,
+        'global_packages/foo/.dart_tool/package_config.json');
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
-    var fooResourcePath = p.join(
-        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+    var fooResourcePath =
+        p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
 
-    var barResourcePath = p.join(
-        globalPackageServer.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
+    var barResourcePath =
+        p.join(globalServer.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(barResourcePath).toString()));
     await pub.shouldExit(0);
   });
@@ -81,9 +79,10 @@ main() async {
 
     var pub = await pubRun(global: true, args: ['myapp:script']);
 
-    expect(pub.stdout, emits('null'));
+    expect(pub.stdout, emitsThrough('null'));
 
-    var packageConfigPath = p.join(d.sandbox, 'myapp/.packages');
+    var packageConfigPath =
+        p.join(d.sandbox, 'myapp/.dart_tool/package_config.json');
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
     var myappResourcePath = p.join(d.sandbox, 'myapp/lib/resource.txt');

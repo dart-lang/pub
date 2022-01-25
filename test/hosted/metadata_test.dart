@@ -12,9 +12,8 @@ import '../test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('sends metadata headers for a direct dependency', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
 
       await d.appDir({'foo': '1.0.0'}).create();
 
@@ -33,9 +32,8 @@ void main() {
     });
 
     test('sends metadata headers for a dev dependency', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -59,9 +57,8 @@ void main() {
     });
 
     test('sends metadata headers for a transitive dependency', () async {
-      await servePackages((builder) {
-        builder.serve('bar', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
 
       await d.appDir({
         'foo': {'path': '../foo'}
@@ -82,9 +79,8 @@ void main() {
     });
 
     test("doesn't send metadata headers to a foreign server", () async {
-      var server = await PackageServer.start((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      var server = await startPackageServer()
+        ..serve('foo', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -94,6 +90,18 @@ void main() {
       }).create();
 
       await pubCommand(command, silent: isNot(contains('X-Pub-')));
+    });
+
+    test("doesn't send metadata headers when CI=true", () async {
+      (await servePackages()).serve('foo', '1.0.0');
+
+      await d.appDir({'foo': '1.0.0'}).create();
+
+      await pubCommand(command,
+          silent: isNot(contains('X-Pub-')),
+          environment: {
+            'CI': 'true',
+          });
     });
   });
 }

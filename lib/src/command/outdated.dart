@@ -7,10 +7,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:meta/meta.dart';
+import 'package:collection/collection.dart'
+    show IterableExtension, IterableNullableExtension;
+import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -19,6 +22,8 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../source/git.dart';
+import '../source/path.dart';
 import '../source/sdk.dart' show SdkSource;
 import '../system_cache.dart';
 import '../utils.dart';
@@ -37,6 +42,9 @@ class OutdatedCommand extends PubCommand {
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
   bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
+
+  @override
+  bool get takesArguments => false;
 
   OutdatedCommand() {
     argParser.addFlag(
@@ -101,6 +109,8 @@ class OutdatedCommand extends PubCommand {
       help: 'Show transitive dependencies.\n'
           '(defaults to off in --mode=null-safety).',
     );
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
   @override
@@ -109,7 +119,7 @@ class OutdatedCommand extends PubCommand {
       'outdated': _OutdatedMode(),
       'null-safety': _NullSafetyMode(cache, entrypoint,
           shouldShowSpinner: _shouldShowSpinner),
-    }[argResults['mode']];
+    }[argResults['mode']]!;
 
     final includeDevDependencies = argResults['dev-dependencies'];
     final includeDependencyOverrides = argResults['dependency-overrides'];
@@ -128,12 +138,21 @@ class OutdatedCommand extends PubCommand {
 
     final resolvablePubspec = await mode.resolvablePubspec(upgradablePubspec);
 
-    List<PackageId> upgradablePackages;
-    List<PackageId> resolvablePackages;
+    late List<PackageId> upgradablePackages;
+    late List<PackageId> resolvablePackages;
+    late bool hasUpgradableResolution;
+    late bool hasResolvableResolution;
 
     await log.spinner('Resolving', () async {
-      upgradablePackages = await _tryResolve(upgradablePubspec, cache);
-      resolvablePackages = await _tryResolve(resolvablePubspec, cache);
+      final upgradablePackagesResult =
+          await _tryResolve(upgradablePubspec, cache);
+      hasUpgradableResolution = upgradablePackagesResult != null;
+      upgradablePackages = upgradablePackagesResult ?? [];
+
+      final resolvablePackagesResult =
+          await _tryResolve(resolvablePubspec, cache);
+      hasResolvableResolution = resolvablePackagesResult != null;
+      resolvablePackages = resolvablePackagesResult ?? [];
     }, condition: _shouldShowSpinner);
 
     // This list will be empty if there is no lock file.
@@ -150,16 +169,16 @@ class OutdatedCommand extends PubCommand {
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
       final name = packageRef.name;
-      final current = (entrypoint.lockFile?.packages ?? {})[name];
+      final current = entrypoint.lockFile.packages[name];
 
-      final upgradable = upgradablePackages.firstWhere((id) => id.name == name,
-          orElse: () => null);
-      final resolvable = resolvablePackages.firstWhere((id) => id.name == name,
-          orElse: () => null);
+      final upgradable =
+          upgradablePackages.firstWhereOrNull((id) => id.name == name);
+      final resolvable =
+          resolvablePackages.firstWhereOrNull((id) => id.name == name);
 
       // Find the latest version, and if it's overridden.
       var latestIsOverridden = false;
-      PackageId latest;
+      PackageId? latest;
       // If not overridden in current resolution we can use this
       if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
         latest ??= await _getLatest(current);
@@ -218,7 +237,7 @@ class OutdatedCommand extends PubCommand {
       ...upgradablePackages,
       ...resolvablePackages
     ]) {
-      if (!visited.add(id.name) || id.source is SdkSource) continue;
+      if (!visited.add(id.name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
     }
 
@@ -243,23 +262,23 @@ class OutdatedCommand extends PubCommand {
       final useColors =
           argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
 
-      await _outputHuman(
-        rows,
-        mode,
-        useColors: useColors,
-        showAll: showAll,
-        includeDevDependencies: includeDevDependencies,
-        lockFileExists: fileExists(entrypoint.lockFilePath),
-        hasDirectDependencies: rootPubspec.dependencies.values.any(
-          // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
-        ),
-        hasDevDependencies: rootPubspec.devDependencies.values.any(
-          // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
-        ),
-        showTransitiveDependencies: showTransitiveDependencies,
-      );
+      await _outputHuman(rows, mode,
+          useColors: useColors,
+          showAll: showAll,
+          includeDevDependencies: includeDevDependencies,
+          lockFileExists: fileExists(entrypoint.lockFilePath),
+          hasDirectDependencies: rootPubspec.dependencies.values.any(
+            // Test if it contains non-SDK dependencies
+            (c) => c.source is! SdkSource,
+          ),
+          hasDevDependencies: rootPubspec.devDependencies.values.any(
+            // Test if it contains non-SDK dependencies
+            (c) => c.source is! SdkSource,
+          ),
+          showTransitiveDependencies: showTransitiveDependencies,
+          hasUpgradableResolution: hasUpgradableResolution,
+          hasResolvableResolution: hasResolvableResolution,
+          directory: path.normalize(directory));
     }
   }
 
@@ -271,21 +290,19 @@ class OutdatedCommand extends PubCommand {
     return argResults['mode'] != 'null-safety';
   }
 
-  bool _prereleases;
-
-  bool get prereleases => _prereleases ??= () {
-        // First check if 'prereleases' was passed as an argument.
-        // If that was not the case, check for use of the legacy spelling
-        // 'pre-releases'.
-        // Otherwise fall back to the default implied by the mode.
-        if (argResults.wasParsed('prereleases')) {
-          return argResults['prereleases'];
-        }
-        if (argResults.wasParsed('pre-releases')) {
-          return argResults['pre-releases'];
-        }
-        return argResults['mode'] == 'null-safety';
-      }();
+  late final bool prereleases = () {
+    // First check if 'prereleases' was passed as an argument.
+    // If that was not the case, check for use of the legacy spelling
+    // 'pre-releases'.
+    // Otherwise fall back to the default implied by the mode.
+    if (argResults.wasParsed('prereleases')) {
+      return argResults['prereleases'];
+    }
+    if (argResults.wasParsed('pre-releases')) {
+      return argResults['pre-releases'];
+    }
+    return argResults['mode'] == 'null-safety';
+  }();
 
   /// Get the latest version of [package].
   ///
@@ -296,7 +313,7 @@ class OutdatedCommand extends PubCommand {
   /// later stable version we return a prerelease version if it exists.
   ///
   /// Returns `null`, if unable to find the package.
-  Future<PackageId> _getLatest(PackageName package) async {
+  Future<PackageId?> _getLatest(PackageName? package) async {
     if (package == null) {
       return null;
     }
@@ -321,8 +338,8 @@ class OutdatedCommand extends PubCommand {
   /// Retrieves the pubspec of package [name] in [version] from [source].
   ///
   /// Returns `null`, if given `null` as a convinience.
-  Future<_VersionDetails> _describeVersion(
-    PackageId id,
+  Future<_VersionDetails?> _describeVersion(
+    PackageId? id,
     bool isOverridden,
   ) async {
     if (id == null) {
@@ -371,27 +388,28 @@ class OutdatedCommand extends PubCommand {
   }
 }
 
-/// Try to solve [pubspec] return [PackageId]s in the resolution or `[]`.
-Future<List<PackageId>> _tryResolve(Pubspec pubspec, SystemCache cache) async {
+/// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
+/// resolution was found.
+Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
-      SolveType.UPGRADE, cache, Package.inMemory(pubspec));
-  if (solveResult == null) {
-    return [];
-  }
+    SolveType.upgrade,
+    cache,
+    Package.inMemory(pubspec),
+  );
 
-  return solveResult.packages;
+  return solveResult?.packages;
 }
 
 Future<void> _outputJson(
   List<_PackageDetails> rows,
   Mode mode, {
-  @required bool showAll,
-  @required bool includeDevDependencies,
+  required bool showAll,
+  required bool includeDevDependencies,
 }) async {
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
   if (!showAll) {
-    rows.removeWhere((row) => markedRows[row][0].asDesired);
+    rows.removeWhere((row) => markedRows[row]![0].asDesired);
   }
   if (!includeDevDependencies) {
     rows.removeWhere(
@@ -407,10 +425,10 @@ Future<void> _outputJson(
           ...(rows..sort((a, b) => a.name.compareTo(b.name)))
               .map((packageDetails) => {
                     'package': packageDetails.name,
-                    'current': markedRows[packageDetails][0]?.toJson(),
-                    'upgradable': markedRows[packageDetails][1]?.toJson(),
-                    'resolvable': markedRows[packageDetails][2]?.toJson(),
-                    'latest': markedRows[packageDetails][3]?.toJson(),
+                    'current': markedRows[packageDetails]![0].toJson(),
+                    'upgradable': markedRows[packageDetails]![1].toJson(),
+                    'resolvable': markedRows[packageDetails]![2].toJson(),
+                    'latest': markedRows[packageDetails]![3].toJson(),
                   })
         ]
       },
@@ -421,28 +439,29 @@ Future<void> _outputJson(
 Future<void> _outputHuman(
   List<_PackageDetails> rows,
   Mode mode, {
-  @required bool showAll,
-  @required bool useColors,
-  @required bool includeDevDependencies,
-  @required bool lockFileExists,
-  @required bool hasDirectDependencies,
-  @required bool hasDevDependencies,
-  @required bool showTransitiveDependencies,
+  required bool showAll,
+  required bool useColors,
+  required bool includeDevDependencies,
+  required bool lockFileExists,
+  required bool hasDirectDependencies,
+  required bool hasDevDependencies,
+  required bool showTransitiveDependencies,
+  required bool hasUpgradableResolution,
+  required bool hasResolvableResolution,
+  required String directory,
 }) async {
-  final explanation = mode.explanation;
-  if (explanation != null) {
-    log.message(explanation + '\n');
-  }
+  final directoryDesc = directory == '.' ? '' : ' in $directory';
+  log.message(mode.explanation(directoryDesc) + '\n');
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
   List<_FormattedString> formatted(_PackageDetails package) => [
         _FormattedString(package.name),
-        ...markedRows[package].map((m) => m.toHuman()),
+        ...markedRows[package]!.map((m) => m.toHuman()),
       ];
 
   if (!showAll) {
-    rows.removeWhere((row) => markedRows[row][0].asDesired);
+    rows.removeWhere((row) => markedRows[row]![0].asDesired);
   }
   if (rows.isEmpty) {
     log.message(mode.foundNoBadText);
@@ -510,7 +529,8 @@ Future<void> _outputHuman(
     for (var j = 0; j < row.length; j++) {
       b.write(row[j].formatted(useColors: useColors));
       b.write(' ' *
-          ((columnWidths[j] + 2) - row[j].computeLength(useColors: useColors)));
+          ((columnWidths[j]! + 2) -
+              row[j].computeLength(useColors: useColors)));
     }
     log.message(b.toString());
   }
@@ -537,43 +557,46 @@ Future<void> _outputHuman(
               hasKind(_DependencyKind.dev)(row)))
       .length;
 
-  if (lockFileExists) {
+  if (!hasUpgradableResolution || !hasResolvableResolution) {
+    log.message(mode.noResolutionText);
+  } else if (lockFileExists) {
     if (upgradable != 0) {
       if (upgradable == 1) {
         log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
             'an older version.\n'
-            'To update it, use `pub upgrade`.');
+            'To update it, use `$topLevelProgram pub upgrade`.');
       } else {
         log.message(
             '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
             'to older versions.\n'
-            'To update these dependencies, use `pub upgrade`.');
+            'To update these dependencies, use `$topLevelProgram pub upgrade`.');
       }
+    }
+
+    if (notAtResolvable == 0 &&
+        upgradable == 0 &&
+        rows.isNotEmpty &&
+        (directRows.isNotEmpty || devRows.isNotEmpty)) {
+      log.message(
+          "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
+          "Newer versions, listed in 'Latest', may not be mutually compatible.");
+    } else if (directRows.isEmpty && devRows.isEmpty) {
+      log.message(mode.allSafe);
     }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
         'Run `pub get` to create a pubspec.lock with versions matching your '
         'pubspec.yaml.');
   }
-
-  if (lockFileExists &&
-      notAtResolvable == 0 &&
-      upgradable == 0 &&
-      rows.isNotEmpty) {
-    log.message(
-        "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
-        "Newer versions, listed in 'Latest', may not be mutually compatible.");
-  }
-
   if (notAtResolvable != 0) {
     if (notAtResolvable == 1) {
       log.message('\n1 dependency is constrained to a '
           'version that is older than a resolvable version.\n'
-          'To update it, edit pubspec.yaml.');
+          'To update it, ${mode.upgradeConstrained}.');
     } else {
       log.message('\n$notAtResolvable  dependencies are constrained to '
           'versions that are older than a resolvable version.\n'
-          'To update these dependencies, edit pubspec.yaml.');
+          'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
 }
@@ -585,17 +608,20 @@ abstract class Mode {
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
       List<_PackageDetails> packageDetails);
 
-  String get explanation;
+  String explanation(String directoryDescription);
   String get foundNoBadText;
   String get allGood;
+  String get noResolutionText;
+  String get upgradeConstrained;
+  String get allSafe;
 
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
 
 class _OutdatedMode implements Mode {
   @override
-  String get explanation => '''
-Showing outdated packages.
+  String explanation(String directoryDescription) => '''
+Showing outdated packages$directoryDescription.
 [${log.red('*')}] indicates versions that are not the latest available.
 ''';
 
@@ -606,20 +632,31 @@ Showing outdated packages.
   String get allGood => 'all up-to-date.';
 
   @override
+  String get noResolutionText =>
+      '''No resolution was found. Try running `$topLevelProgram pub upgrade --dry-run` to explore why.''';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --major-versions`';
+
+  @override
+  String get allSafe => 'all dependencies are up-to-date.';
+
+  @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
       List<_PackageDetails> packages) async {
     final rows = <List<_MarkedVersionDetails>>[];
     for (final packageDetails in packages) {
       final cols = <_MarkedVersionDetails>[];
-      _VersionDetails previous;
+      _VersionDetails? previous;
       for (final versionDetails in [
         packageDetails.current,
         packageDetails.upgradable,
         packageDetails.resolvable,
         packageDetails.latest
       ]) {
-        String Function(String) color;
-        String prefix;
+        String Function(String)? color;
+        String? prefix;
         var asDesired = false;
         if (versionDetails != null) {
           final isLatest = versionDetails == packageDetails.latest;
@@ -647,8 +684,8 @@ Showing outdated packages.
   }
 
   @override
-  Future<Pubspec> resolvablePubspec(Pubspec pubspec) async {
-    return stripVersionUpperBounds(pubspec);
+  Future<Pubspec> resolvablePubspec(Pubspec? pubspec) async {
+    return stripVersionUpperBounds(pubspec!);
   }
 }
 
@@ -661,11 +698,11 @@ class _NullSafetyMode implements Mode {
   final _notCompliantEmoji = emoji('✗', 'x');
 
   _NullSafetyMode(this.cache, this.entrypoint,
-      {@required this.shouldShowSpinner});
+      {required this.shouldShowSpinner});
 
   @override
-  String get explanation => '''
-Showing dependencies that are currently not opted in to null-safety.
+  String explanation(String directoryDescription) => '''
+Showing dependencies$directoryDescription that are currently not opted in to null-safety.
 [${log.red(_notCompliantEmoji)}] indicates versions without null safety support.
 [${log.green(_compliantEmoji)}] indicates versions opting in to null safety.
 ''';
@@ -676,6 +713,17 @@ Showing dependencies that are currently not opted in to null-safety.
 
   @override
   String get allGood => 'all support null safety.';
+
+  @override
+  String get noResolutionText =>
+      '''No resolution was found. Try running `$topLevelProgram pub upgrade --null-safety --dry-run` to explore why.''';
+
+  @override
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --null-safety`';
+
+  @override
+  String get allSafe => 'All dependencies opt in to null-safety.';
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
@@ -690,14 +738,14 @@ Showing dependencies that are currently not opted in to null-safety.
           packageDetails.resolvable?._id,
           packageDetails.latest?._id,
         ]
-      }.where((id) => id != null);
+      }.whereNotNull();
 
       return Map.fromEntries(
         await Future.wait(
           ids.map(
             (id) async => MapEntry(
                 id,
-                (await id.source.bind(cache).describe(id))
+                (await id.source!.bind(cache).describe(id))
                     .languageVersion
                     .supportsNullSafety),
           ),
@@ -713,20 +761,20 @@ Showing dependencies that are currently not opted in to null-safety.
           packageDetails.latest
         ].map(
           (versionDetails) {
-            String Function(String) color;
-            String prefix;
-            bool nullSafetyJson;
+            String Function(String)? color;
+            String? prefix;
+            MapEntry<String, Object>? jsonExplanation;
             var asDesired = false;
             if (versionDetails != null) {
-              if (nullSafetyMap[versionDetails._id]) {
+              if (nullSafetyMap[versionDetails._id]!) {
                 color = log.green;
                 prefix = _compliantEmoji;
-                nullSafetyJson = true;
+                jsonExplanation = MapEntry('nullSafety', true);
                 asDesired = true;
               } else {
                 color = log.red;
                 prefix = _notCompliantEmoji;
-                nullSafetyJson = false;
+                jsonExplanation = MapEntry('nullSafety', false);
               }
             }
             return _MarkedVersionDetails(
@@ -734,7 +782,7 @@ Showing dependencies that are currently not opted in to null-safety.
               asDesired: asDesired,
               format: color,
               prefix: prefix,
-              jsonExplanation: MapEntry('nullSafety', nullSafetyJson),
+              jsonExplanation: jsonExplanation,
             );
           },
         ).toList()
@@ -759,7 +807,17 @@ class _VersionDetails {
   /// A string representation of this version to include in the outdated report.
   String get describe {
     final version = _pubspec.version;
-    final suffix = _overridden ? ' (overridden)' : '';
+    var suffix = '';
+    if (_overridden) {
+      suffix = ' (overridden)';
+    } else if (_id.source is SdkSource) {
+      // Version is not relevant for sdk-packages.
+      return '(sdk)';
+    } else if (_id.source is GitSource) {
+      suffix = ' (git)';
+    } else if (_id.source is PathSource) {
+      suffix = ' (path)';
+    }
     return '$version$suffix';
   }
 
@@ -775,14 +833,17 @@ class _VersionDetails {
           _overridden == other._overridden &&
           _id.source == other._id.source &&
           _pubspec.version == other._pubspec.version;
+
+  @override
+  int get hashCode => Object.hash(_pubspec.version, _id.source, _overridden);
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
   final String name;
-  final _VersionDetails current;
-  final _VersionDetails upgradable;
-  final _VersionDetails resolvable;
-  final _VersionDetails latest;
+  final _VersionDetails? current;
+  final _VersionDetails? upgradable;
+  final _VersionDetails? resolvable;
+  final _VersionDetails? latest;
   final _DependencyKind kind;
 
   _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
@@ -796,7 +857,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     return name.compareTo(other.name);
   }
 
-  Map<String, Object> toJson() {
+  Map<String, Object?> toJson() {
     return {
       'package': name,
       'current': current?.toJson(),
@@ -836,15 +897,16 @@ enum _DependencyKind {
   devTransitive,
 }
 
-_FormattedString _format(String value, Function(String) format, {prefix = ''}) {
+_FormattedString _format(String value, String Function(String) format,
+    {prefix = ''}) {
   return _FormattedString(value, format: format, prefix: prefix);
 }
 
 class _MarkedVersionDetails {
-  final MapEntry<String, Object> _jsonExplanation;
-  final _VersionDetails _versionDetails;
-  final String Function(String) _format;
-  final String _prefix;
+  final MapEntry<String, Object>? _jsonExplanation;
+  final _VersionDetails? _versionDetails;
+  final String Function(String)? _format;
+  final String? _prefix;
 
   /// This should be true if the mode creating this consideres the version as
   /// "good".
@@ -855,7 +917,7 @@ class _MarkedVersionDetails {
 
   _MarkedVersionDetails(
     this._versionDetails, {
-    @required this.asDesired,
+    required this.asDesired,
     format,
     prefix = '',
     jsonExplanation,
@@ -869,12 +931,13 @@ class _MarkedVersionDetails {
         prefix: _prefix,
       );
 
-  Object toJson() {
+  Object? toJson() {
     if (_versionDetails == null) return null;
 
-    return _jsonExplanation == null
-        ? _versionDetails.toJson()
-        : (_versionDetails.toJson()..addEntries([_jsonExplanation]));
+    var jsonExplanation = _jsonExplanation;
+    return jsonExplanation == null
+        ? _versionDetails!.toJson()
+        : (_versionDetails!.toJson()..addEntries([jsonExplanation]));
   }
 }
 
@@ -887,15 +950,15 @@ class _FormattedString {
   /// A prefix for marking this string if colors are not used.
   final String _prefix;
 
-  _FormattedString(this.value, {String Function(String) format, prefix})
+  _FormattedString(this.value, {String Function(String)? format, prefix})
       : _format = format ?? _noFormat,
         _prefix = prefix ?? '';
 
-  String formatted({@required bool useColors}) {
+  String formatted({required bool useColors}) {
     return useColors ? _format(_prefix + value) : _prefix + value;
   }
 
-  int computeLength({@required bool useColors}) {
+  int computeLength({required bool? useColors}) {
     return _prefix.length + value.length;
   }
 

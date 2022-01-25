@@ -9,8 +9,8 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
-import 'package:http_retry/http_retry.dart';
-import 'package:http_throttle/http_throttle.dart';
+import 'package:http/retry.dart';
+import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'command.dart';
@@ -41,7 +41,7 @@ class _PubHttpClient extends http.BaseClient {
 
   http.Client _inner;
 
-  _PubHttpClient([http.Client inner]) : _inner = inner ?? http.Client();
+  _PubHttpClient([http.Client? inner]) : _inner = inner ?? http.Client();
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -56,7 +56,9 @@ class _PubHttpClient extends http.BaseClient {
       }
 
       var type = Zone.current[#_dependencyType];
-      if (type != null) request.headers['X-Pub-Reason'] = type.toString();
+      if (type != null && type != DependencyType.none) {
+        request.headers['X-Pub-Reason'] = type.toString();
+      }
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
@@ -78,6 +80,11 @@ class _PubHttpClient extends http.BaseClient {
       }
     } else {
       if (request.url.origin != 'https://pub.dartlang.org') return false;
+    }
+
+    if (Platform.environment.containsKey('CI') &&
+        Platform.environment['CI'] != 'false') {
+      return false;
     }
 
     return true;
@@ -122,8 +129,8 @@ class _PubHttpClient extends http.BaseClient {
     // careful not to log OAuth2 private data, though.
 
     var responseLog = StringBuffer();
-    var request = response.request;
-    var stopwatch = _requestStopwatches.remove(request)..stop();
+    var request = response.request!;
+    var stopwatch = _requestStopwatches.remove(request)!..stop();
     responseLog.writeln('HTTP response ${response.statusCode} '
         '${response.reasonPhrase} for ${request.method} ${request.url}');
     responseLog.writeln('took ${stopwatch.elapsed}');
@@ -163,12 +170,12 @@ class _ThrowingClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    http.StreamedResponse streamedResponse;
+    late http.StreamedResponse streamedResponse;
     try {
       streamedResponse = await _inner.send(request);
     } on SocketException catch (error, stackTraceOrNull) {
       // Work around issue 23008.
-      var stackTrace = stackTraceOrNull ?? Chain.current();
+      var stackTrace = stackTraceOrNull;
 
       if (error.osError == null) rethrow;
 
@@ -181,14 +188,14 @@ class _ThrowingClient extends http.BaseClient {
       // with a retry. Failing to retry intermittent issues is likely to cause
       // customers to wrap pub in a retry loop which will not improve the
       // end-user experience.
-      if (error.osError.errorCode == 8 ||
-          error.osError.errorCode == -2 ||
-          error.osError.errorCode == -5 ||
-          error.osError.errorCode == 11001 ||
-          error.osError.errorCode == 11004) {
+      if (error.osError!.errorCode == 8 ||
+          error.osError!.errorCode == -2 ||
+          error.osError!.errorCode == -5 ||
+          error.osError!.errorCode == 11001 ||
+          error.osError!.errorCode == 11004) {
         fail('Could not resolve URL "${request.url.origin}".', error,
             stackTrace);
-      } else if (error.osError.errorCode == -12276) {
+      } else if (error.osError!.errorCode == -12276) {
         fail(
             'Unable to validate SSL certificate for '
             '"${request.url.origin}".',
@@ -203,7 +210,7 @@ class _ThrowingClient extends http.BaseClient {
     // 401 responses should be handled by the OAuth2 client. It's very
     // unlikely that they'll be returned by non-OAuth2 requests. We also want
     // to pass along 400 responses from the token endpoint.
-    var tokenRequest = streamedResponse.request.url == oauth2.tokenEndpoint;
+    var tokenRequest = streamedResponse.request!.url == oauth2.tokenEndpoint;
     if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
       return streamedResponse;
     }
@@ -229,7 +236,7 @@ class _ThrowingClient extends http.BaseClient {
 }
 
 /// The HTTP client to use for all HTTP requests.
-final httpClient = ThrottleClient(
+final httpClient = _ThrottleClient(
     16,
     _ThrowingClient(RetryClient(_pubClient,
         retries: math.max(
@@ -280,8 +287,9 @@ set innerHttpClient(http.Client client) => _pubClient._inner = client;
 ///
 /// If [type] is [DependencyType.none], no extra metadata is added.
 Future<T> withDependencyType<T>(
-    DependencyType type, Future<T> Function() callback) {
-  if (type == DependencyType.none) return callback();
+  DependencyType type,
+  Future<T> Function() callback,
+) {
   return runZoned(callback, zoneValues: {#_dependencyType: type});
 }
 
@@ -331,7 +339,7 @@ Map parseJsonResponse(http.Response response) {
 }
 
 /// Throws an error describing an invalid response from the server.
-void invalidServerResponse(http.Response response) =>
+Never invalidServerResponse(http.Response response) =>
     fail(log.red('Invalid server response:\n${response.body}'));
 
 /// Exception thrown when an HTTP operation fails.
@@ -343,4 +351,49 @@ class PubHttpException implements Exception {
   @override
   String toString() => 'HTTP error ${response.statusCode}: '
       '${response.reasonPhrase}';
+}
+
+/// A middleware client that throttles the number of concurrent requests.
+///
+/// As long as the number of requests is within the limit, this works just like
+/// a normal client. If a request is made beyond the limit, the underlying HTTP
+/// request won't be sent until other requests have completed.
+class _ThrottleClient extends http.BaseClient {
+  final Pool _pool;
+  final http.Client _inner;
+
+  /// Creates a new client that allows no more than [maxActiveRequests]
+  /// concurrent requests.
+  ///
+  /// If [inner] is passed, it's used as the inner client for sending HTTP
+  /// requests. It defaults to `new http.Client()`.
+  _ThrottleClient(int maxActiveRequests, this._inner)
+      : _pool = Pool(maxActiveRequests);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    var resource = await _pool.request();
+
+    http.StreamedResponse response;
+    try {
+      response = await _inner.send(request);
+    } catch (_) {
+      resource.release();
+      rethrow;
+    }
+
+    final responseController = StreamController<List<int>>(sync: true);
+    unawaited(response.stream.pipe(responseController));
+    unawaited(responseController.done.then((_) => resource.release()));
+    return http.StreamedResponse(responseController.stream, response.statusCode,
+        contentLength: response.contentLength,
+        request: response.request,
+        headers: response.headers,
+        isRedirect: response.isRedirect,
+        persistentConnection: response.persistentConnection,
+        reasonPhrase: response.reasonPhrase);
+  }
+
+  @override
+  void close() => _inner.close();
 }

@@ -4,9 +4,8 @@
 
 /// Helper functionality for invoking Git.
 import 'dart:async';
-import 'dart:io';
 
-import 'package:stack_trace/stack_trace.dart';
+import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
 import 'io.dart';
@@ -48,7 +47,7 @@ bool get isInstalled => command != null;
 /// Returns the stdout as a list of strings if it succeeded. Completes to an
 /// exception if it failed.
 Future<List<String>> run(List<String> args,
-    {String workingDir, Map<String, String> environment}) async {
+    {String? workingDir, Map<String, String>? environment}) async {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
@@ -56,7 +55,7 @@ Future<List<String>> run(List<String> args,
 
   log.muteProgress();
   try {
-    var result = await runProcess(command, args,
+    final result = await runProcess(command!, args,
         workingDir: workingDir,
         environment: {...?environment, 'LANG': 'en_GB'});
     if (!result.success) {
@@ -71,13 +70,13 @@ Future<List<String>> run(List<String> args,
 
 /// Like [run], but synchronous.
 List<String> runSync(List<String> args,
-    {String workingDir, Map<String, String> environment}) {
+    {String? workingDir, Map<String, String>? environment}) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
   }
 
-  var result = runProcessSync(command, args,
+  final result = runProcessSync(command!, args,
       workingDir: workingDir, environment: environment);
   if (!result.success) {
     throw GitException(args, result.stdout.join('\n'), result.stderr.join('\n'),
@@ -89,7 +88,7 @@ List<String> runSync(List<String> args,
 
 /// Returns the name of the git command-line app, or `null` if Git could not be
 /// found on the user's PATH.
-String get command {
+String? get command {
   if (_commandCache != null) return _commandCache;
 
   if (_tryGitCommand('git')) {
@@ -104,7 +103,23 @@ String get command {
   return _commandCache;
 }
 
-String _commandCache;
+String? _commandCache;
+
+/// Returns the root of the git repo [dir] belongs to. Returns `null` if not
+/// in a git repo or git is not installed.
+String? repoRoot(String dir) {
+  if (isInstalled) {
+    try {
+      return p.normalize(
+        runSync(['rev-parse', '--show-toplevel'], workingDir: dir).first,
+      );
+    } on GitException {
+      // Not in a git folder.
+      return null;
+    }
+  }
+  return null;
+}
 
 /// Checks whether [command] is the Git command for this computer.
 bool _tryGitCommand(String command) {
@@ -113,10 +128,9 @@ bool _tryGitCommand(String command) {
     var result = runProcessSync(command, ['--version']);
     var regexp = RegExp('^git version');
     return result.stdout.length == 1 && regexp.hasMatch(result.stdout.single);
-  } on ProcessException catch (error, stackTrace) {
-    var chain = Chain.forTrace(stackTrace);
+  } on RunProcessException catch (err) {
     // If the process failed, they probably don't have it.
-    log.error('Git command is not "$command": $error\n$chain');
+    log.error('Git command is not "$command": $err');
     return false;
   }
 }

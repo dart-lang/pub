@@ -26,6 +26,25 @@ void main() {
     }).validate();
   });
 
+  test('can use relative path with --directory', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: ['--directory', appPath, 'foo', '--path', 'foo'],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 1 dependency in myapp!'),
+    );
+
+    await d.appPackagesFile({'foo': '../foo'}).validate();
+
+    await d.appDir({
+      'foo': {'path': '../foo'}
+    }).validate();
+  });
+
   test('fails if path does not exist', () async {
     await d.appDir({}).create();
 
@@ -83,9 +102,8 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.2');
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 

@@ -9,24 +9,23 @@ import '../../test_pub.dart';
 
 void main() {
   test('shows pub outdated', () async {
-    await servePackages((builder) {
-      builder.serve('multiple_newer', '1.0.0');
-      builder.serve('multiple_newer', '1.0.1-unstable.1');
-      builder.serve('multiple_newer', '1.0.1');
-      builder.serve('multiple_newer', '1.0.2-unstable.1');
-      builder.serve('multiple_newer', '1.0.2-unstable.2');
-      builder.serve('multiple_newer_stable', '1.0.0');
-      builder.serve('multiple_newer_stable', '1.0.1');
-      builder.serve('multiple_newer_stable', '1.0.2');
-      builder.serve('multiple_newer_unstable', '1.0.0');
-      builder.serve('multiple_newer_unstable', '1.0.1-unstable.1');
-      builder.serve('multiple_newer_unstable', '1.0.1-unstable.2');
-      builder.serve('no_newer', '1.0.0');
-      builder.serve('one_newer_unstable', '1.0.0');
-      builder.serve('one_newer_unstable', '1.0.1-unstable.1');
-      builder.serve('one_newer_stable', '1.0.0');
-      builder.serve('one_newer_stable', '1.0.1');
-    });
+    await servePackages()
+      ..serve('multiple_newer', '1.0.0')
+      ..serve('multiple_newer', '1.0.1-unstable.1')
+      ..serve('multiple_newer', '1.0.1')
+      ..serve('multiple_newer', '1.0.2-unstable.1')
+      ..serve('multiple_newer', '1.0.2-unstable.2')
+      ..serve('multiple_newer_stable', '1.0.0')
+      ..serve('multiple_newer_stable', '1.0.1')
+      ..serve('multiple_newer_stable', '1.0.2')
+      ..serve('multiple_newer_unstable', '1.0.0')
+      ..serve('multiple_newer_unstable', '1.0.1-unstable.1')
+      ..serve('multiple_newer_unstable', '1.0.1-unstable.2')
+      ..serve('no_newer', '1.0.0')
+      ..serve('one_newer_unstable', '1.0.0')
+      ..serve('one_newer_unstable', '1.0.1-unstable.1')
+      ..serve('one_newer_stable', '1.0.0')
+      ..serve('one_newer_stable', '1.0.1');
 
     // Constraint everything to the first version.
     await d.appDir({
@@ -41,7 +40,13 @@ void main() {
     // Upgrade everything.
     await pubUpgrade(output: RegExp(r'''
 3 packages have newer versions incompatible with dependency constraints.
-Try `pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''', multiLine: true));
+
+    // Running inside Flutter this will recommend the Flutter variant.
+    await pubUpgrade(
+        environment: {'PUB_ENVIRONMENT': 'flutter_cli:get'}, output: RegExp(r'''
+3 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.$''', multiLine: true));
 
     // Upgrade `multiple_newer` to `1.0.1`.
     await d.appDir({
@@ -56,7 +61,7 @@ Try `pub outdated` for more information.$''', multiLine: true));
     // Upgrade everything.
     await pubUpgrade(output: RegExp(r'''
 2 packages have newer versions incompatible with dependency constraints.
-Try `pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''', multiLine: true));
 
     // Upgrade `multiple_newer` to `1.0.2-unstable.1`.
     await d.appDir({
@@ -71,7 +76,7 @@ Try `pub outdated` for more information.$''', multiLine: true));
     // Upgrade everything.
     await pubUpgrade(output: RegExp(r'''
 3 packages have newer versions incompatible with dependency constraints.
-Try `pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''', multiLine: true));
 
     // Upgrade all except `one_newer_stable`.
     await d.appDir({
@@ -86,6 +91,6 @@ Try `pub outdated` for more information.$''', multiLine: true));
     // Upgrade everything.
     await pubUpgrade(output: RegExp(r'''
 1 package has newer versions incompatible with dependency constraints.
-Try `pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''', multiLine: true));
   });
 }

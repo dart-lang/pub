@@ -25,10 +25,10 @@ class LoginCommand extends PubCommand {
   Future<void> runProtected() async {
     final credentials = oauth2.loadCredentials(cache);
     if (credentials == null) {
-      final userInfo = await retrieveUserInfo();
+      final userInfo = await _retrieveUserInfo();
       log.message('You are now logged in as $userInfo');
     } else {
-      final userInfo = await retrieveUserInfo();
+      final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Your credentials seems broken.\n'
             'Run `pub logout` to delete your credentials  and try again.');
@@ -38,12 +38,12 @@ class LoginCommand extends PubCommand {
     }
   }
 
-  Future<_UserInfo> retrieveUserInfo() async {
+  Future<_UserInfo?> _retrieveUserInfo() async {
     return await oauth2.withClient(cache, (client) async {
-      final discovery = await httpClient
-          .get('https://accounts.google.com/.well-known/openid-configuration');
+      final discovery = await httpClient.get(Uri.https(
+          'accounts.google.com', '/.well-known/openid-configuration'));
       final userInfoEndpoint = json.decode(discovery.body)['userinfo_endpoint'];
-      final userInfoRequest = await client.get(userInfoEndpoint);
+      final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
         final userInfo = json.decode(userInfoRequest.body);
@@ -60,5 +60,5 @@ class _UserInfo {
   final String email;
   _UserInfo(this.name, this.email);
   @override
-  String toString() => '<$email> "$name"';
+  String toString() => ['<$email>', name].join(' ');
 }

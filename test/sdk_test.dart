@@ -3,11 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-
-import 'package:test/test.dart';
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
+import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -15,9 +13,8 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     setUp(() async {
-      await servePackages((builder) {
-        builder.serve('bar', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
 
       await d.dir('flutter', [
         d.dir('packages', [
@@ -120,7 +117,7 @@ void main() {
           'foo': {'sdk': 'unknown'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
-              Because myapp depends on foo any from sdk which doesn't exist
+              Because myapp depends on foo from sdk which doesn't exist
                 (unknown SDK "unknown"), version solving failed.
             """), exitCode: exit_codes.UNAVAILABLE);
       });
@@ -130,10 +127,10 @@ void main() {
           'foo': {'sdk': 'flutter'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
-              Because myapp depends on foo any from sdk which doesn't exist (the
+              Because myapp depends on foo from sdk which doesn't exist (the
                 Flutter SDK is not available), version solving failed.
 
-              Flutter users should run `flutter pub get` instead of `pub
+              Flutter users should run `flutter pub get` instead of `dart pub
                 get`.
             """), exitCode: exit_codes.UNAVAILABLE);
       });
@@ -145,7 +142,7 @@ void main() {
         await pubCommand(command,
             environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
             error: equalsIgnoringWhitespace("""
-              Because myapp depends on bar any from sdk which doesn't exist
+              Because myapp depends on bar from sdk which doesn't exist
                 (could not find package bar in the Flutter SDK), version solving
                 failed.
             """),
@@ -157,7 +154,7 @@ void main() {
           'bar': {'sdk': 'dart'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
-              Because myapp depends on bar any from sdk which doesn't exist
+              Because myapp depends on bar from sdk which doesn't exist
                 (could not find package bar in the Dart SDK), version solving
                 failed.
             """), exitCode: exit_codes.UNAVAILABLE);

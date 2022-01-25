@@ -3,16 +3,20 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import '../ascii_tree.dart' as tree;
+import '../authentication/client.dart';
 import '../command.dart';
+import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
 import '../validator.dart';
 
@@ -30,19 +34,30 @@ class LishCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// The URL of the server to which to upload the package.
-  Uri get server {
+  late final Uri server = _createServer();
+
+  Uri _createServer() {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
-      return Uri.parse(argResults['server']);
+      try {
+        return validateAndNormalizeHostedUrl(argResults['server']);
+      } on FormatException catch (e) {
+        usageException('Invalid server: $e');
+      }
     }
 
     // Otherwise, use the one specified in the pubspec.
-    if (entrypoint.root.pubspec.publishTo != null) {
-      return Uri.parse(entrypoint.root.pubspec.publishTo);
+    final publishTo = entrypoint.root.pubspec.publishTo;
+    if (publishTo != null) {
+      try {
+        return validateAndNormalizeHostedUrl(publishTo);
+      } on FormatException catch (e) {
+        throw DataException('Invalid publish_to: $e');
+      }
     }
 
-    // Otherwise, use the default.
-    return Uri.parse(cache.sources.hosted.defaultUrl);
+    // Use the default server if nothing else is specified
+    return cache.sources.hosted.defaultUrl;
   }
 
   /// Whether the publish is just a preview.
@@ -63,50 +78,112 @@ class LishCommand extends PubCommand {
     argParser.addOption('server',
         help: 'The package server to which to upload this package.',
         hide: true);
+
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
-  Future<void> _publish(List<int> packageBytes) async {
-    Uri cloudStorageUrl;
+  Future<void> _publishUsingClient(
+    List<int> packageBytes,
+    http.Client client,
+  ) async {
+    Uri? cloudStorageUrl;
+
     try {
-      await oauth2.withClient(cache, (client) {
-        return log.progress('Uploading', () async {
-          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-          // should report that error and exit.
-          var newUri = server.resolve('/api/packages/versions/new');
-          var response = await client.get(newUri, headers: pubApiHeaders);
-          var parameters = parseJsonResponse(response);
+      await log.progress('Uploading', () async {
+        var newUri = server.resolve('api/packages/versions/new');
+        var response = await client.get(newUri, headers: pubApiHeaders);
+        var parameters = parseJsonResponse(response);
 
-          var url = _expectField(parameters, 'url', response);
-          if (url is! String) invalidServerResponse(response);
-          cloudStorageUrl = Uri.parse(url);
-          var request = http.MultipartRequest('POST', cloudStorageUrl);
+        var url = _expectField(parameters, 'url', response);
+        if (url is! String) invalidServerResponse(response);
+        cloudStorageUrl = Uri.parse(url);
+        // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+        // should report that error and exit.
+        var request = http.MultipartRequest('POST', cloudStorageUrl!);
 
-          var fields = _expectField(parameters, 'fields', response);
-          if (fields is! Map) invalidServerResponse(response);
-          fields.forEach((key, value) {
-            if (value is! String) invalidServerResponse(response);
-            request.fields[key] = value;
-          });
-
-          request.followRedirects = false;
-          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-              filename: 'package.tar.gz'));
-          var postResponse =
-              await http.Response.fromStream(await client.send(request));
-
-          var location = postResponse.headers['location'];
-          if (location == null) throw PubHttpException(postResponse);
-          handleJsonSuccess(await client.get(location, headers: pubApiHeaders));
+        var fields = _expectField(parameters, 'fields', response);
+        if (fields is! Map) invalidServerResponse(response);
+        fields.forEach((key, value) {
+          if (value is! String) invalidServerResponse(response);
+          request.fields[key] = value;
         });
+
+        request.followRedirects = false;
+        request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
+            filename: 'package.tar.gz'));
+        var postResponse =
+            await http.Response.fromStream(await client.send(request));
+
+        var location = postResponse.headers['location'];
+        if (location == null) throw PubHttpException(postResponse);
+        handleJsonSuccess(
+            await client.get(Uri.parse(location), headers: pubApiHeaders));
       });
+    } on AuthenticationException catch (error) {
+      var msg = '';
+      if (error.statusCode == 401) {
+        msg += '$server package repository requested authentication!\n'
+            'You can provide credentials using:\n'
+            '    pub token add $server\n';
+      }
+      if (error.statusCode == 403) {
+        msg += 'Insufficient permissions to the resource at the $server '
+            'package repository.\nYou can modify credentials using:\n'
+            '    pub token add $server\n';
+      }
+      if (error.serverMessage != null) {
+        msg += '\n' + error.serverMessage! + '\n';
+      }
+      dataError(msg + log.red('Authentication failed!'));
     } on PubHttpException catch (error) {
-      var url = error.response.request.url;
+      var url = error.response.request!.url;
       if (url == cloudStorageUrl) {
         // TODO(nweiz): the response may have XML-formatted information about
         // the error. Try to parse that out once we have an easily-accessible
         // XML parser.
         fail(log.red('Failed to upload the package.'));
       } else if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
+        handleJsonError(error.response);
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> _publish(List<int> packageBytes) async {
+    try {
+      final officialPubServers = {
+        'https://pub.dartlang.org',
+        'https://pub.dev',
+
+        // Pub uses oauth2 credentials only for authenticating official pub
+        // servers for security purposes (to not expose pub.dev access token to
+        // 3rd party servers).
+        // For testing publish command we're using mock servers hosted on
+        // localhost address which is not a known pub server address. So we
+        // explicitly have to define mock servers as official server to test
+        // publish command with oauth2 credentials.
+        if (runningFromTest &&
+            Platform.environment.containsKey('PUB_HOSTED_URL') &&
+            Platform.environment['_PUB_TEST_AUTH_METHOD'] == 'oauth2')
+          Platform.environment['PUB_HOSTED_URL'],
+      };
+
+      if (officialPubServers.contains(server.toString())) {
+        // Using OAuth2 authentication client for the official pub servers
+        await oauth2.withClient(cache, (client) {
+          return _publishUsingClient(packageBytes, client);
+        });
+      } else {
+        // For third party servers using bearer authentication client
+        await withAuthenticatedClient(cache, server, (client) {
+          return _publishUsingClient(packageBytes, client);
+        });
+      }
+    } on PubHttpException catch (error) {
+      var url = error.response.request!.url;
+      if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
         handleJsonError(error.response);
       } else {
         rethrow;
@@ -136,7 +213,7 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
-    var files = entrypoint.root.listFiles(useGitIgnore: true);
+    var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root}.');
 
     // Show the package contents so the user can verify they look OK.
@@ -154,6 +231,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       overrideExitCode(exit_codes.DATA);
       return;
     } else if (dryRun) {
+      log.message('The server may enforce additional checks.');
       return;
     } else {
       await _publish(await packageBytesFuture);
@@ -174,8 +252,14 @@ the \$PUB_HOSTED_URL environment variable.''',
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(entrypoint, packageSize, server.toString(),
-        hints: hints, warnings: warnings, errors: errors);
+    await Validator.runAll(
+      entrypoint,
+      packageSize,
+      server,
+      hints: hints,
+      warnings: warnings,
+      errors: errors,
+    );
 
     if (errors.isNotEmpty) {
       log.error('Sorry, your package is missing '

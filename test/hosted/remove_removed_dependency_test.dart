@@ -10,10 +10,9 @@ import '../test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test("removes a dependency that's removed from the pubspec", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('bar', '1.0.0');
-      });
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('bar', '1.0.0');
 
       await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 

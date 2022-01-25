@@ -58,7 +58,9 @@ class Term {
         if (otherConstraint.allowsAll(constraint)) return SetRelation.subset;
 
         // foo ^2.0.0 is disjoint with foo ^1.0.0
-        if (!constraint.allowsAny(otherConstraint)) return SetRelation.disjoint;
+        if (!constraint.allowsAny(otherConstraint)) {
+          return SetRelation.disjoint;
+        }
 
         // foo >=1.5.0 <3.0.0 overlaps foo ^1.0.0
         return SetRelation.overlapping;
@@ -67,7 +69,9 @@ class Term {
         if (!_compatiblePackage(other.package)) return SetRelation.overlapping;
 
         // not foo ^1.0.0 is disjoint with foo ^1.5.0
-        if (constraint.allowsAll(otherConstraint)) return SetRelation.disjoint;
+        if (constraint.allowsAll(otherConstraint)) {
+          return SetRelation.disjoint;
+        }
 
         // not foo ^1.5.0 overlaps foo ^1.0.0
         // not foo ^2.0.0 is a superset of foo ^1.5.0
@@ -108,7 +112,7 @@ class Term {
   ///
   /// Throws an [ArgumentError] if [other] doesn't refer to a package with the
   /// same name as [package].
-  Term intersect(Term other) {
+  Term? intersect(Term other) {
     if (package.name != other.package.name) {
       throw ArgumentError.value(
           other, 'other', 'should refer to package ${package.name}');
@@ -146,7 +150,7 @@ class Term {
   ///
   /// Throws an [ArgumentError] if [other] doesn't refer to a package with the
   /// same name as [package].
-  Term difference(Term other) => intersect(other.inverse); // A ∖ B → A ∩ not B
+  Term? difference(Term other) => intersect(other.inverse); // A ∖ B → A ∩ not B
 
   /// Returns whether [other] is compatible with [package].
   bool _compatiblePackage(PackageRange other) =>
@@ -155,7 +159,7 @@ class Term {
   /// Returns a new [Term] with the same package as [this] and with
   /// [constraint], unless that would produce a term that allows no packages,
   /// in which case this returns `null`.
-  Term _nonEmptyTerm(VersionConstraint constraint, bool isPositive) =>
+  Term? _nonEmptyTerm(VersionConstraint constraint, bool isPositive) =>
       constraint.isEmpty
           ? null
           : Term(package.withConstraint(constraint), isPositive);

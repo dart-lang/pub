@@ -12,13 +12,11 @@ void main() {
     test(
         "removes a transitive dependency that's no longer depended "
         'on', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', deps: {'shared_dep': 'any'});
-        builder.serve('bar', '1.0.0',
-            deps: {'shared_dep': 'any', 'bar_dep': 'any'});
-        builder.serve('shared_dep', '1.0.0');
-        builder.serve('bar_dep', '1.0.0');
-      });
+      await servePackages()
+        ..serve('foo', '1.0.0', deps: {'shared_dep': 'any'})
+        ..serve('bar', '1.0.0', deps: {'shared_dep': 'any', 'bar_dep': 'any'})
+        ..serve('shared_dep', '1.0.0')
+        ..serve('bar_dep', '1.0.0');
 
       await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
