@@ -84,7 +84,7 @@ void main() {
 
     await d.appDir({'foo': '^4.0.0', 'bar': '^1.0.0'}).validate();
     await d.cacheDir({'foo': '4.0.0', 'bar': '1.5.0'}).validate();
-     await d.appPackageConfigFile([
+    await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '4.0.0'),
       d.packageConfigEntry(name: 'bar', version: '1.5.0'),
     ]).validate();
