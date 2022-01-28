@@ -93,7 +93,7 @@ class AddCommand extends PubCommand {
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
     argParser.addFlag('packages-file',
-        help: 'Generate the legacy ".packages" file');
+        help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
   @override
