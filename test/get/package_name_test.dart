@@ -60,17 +60,4 @@ void main() {
           [d.packageConfigEntry(name: 'foo.bar.baz', path: '.')])
     ]).validate();
   });
-
-  test('pub flag prevents .packages', () async {
-    await d.dir(appPath, [
-      d.pubspec({'name': 'foo.bar.baz', 'version': '1.0.0'}),
-      d.libDir('foo.bar.baz', 'foo.bar.baz 1.0.0')
-    ]).create();
-
-    await pubGet(args: ['--no-packages-file']);
-
-    await d.dir(appPath, [
-      d.nothing('.packages'),
-    ]).validate();
-  });
 }
