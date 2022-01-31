@@ -24,7 +24,7 @@ void main() {
         d.dir('lib')
       ]).create();
 
-      await pubCommand(command, args: ['--packages-file']);
+      await pubCommand(command, args: ['--legacy-packages-file']);
 
       await d.dir(appPath, [
         d.packagesFile(
@@ -51,7 +51,7 @@ void main() {
       await oldFile.create();
       await oldFile.validate(); // Sanity-check that file was created correctly.
 
-      await pubCommand(command, args: ['--packages-file']);
+      await pubCommand(command, args: ['--legacy-packages-file']);
 
       await d.dir(appPath, [
         d.packagesFile(
@@ -67,7 +67,7 @@ void main() {
       ]).create();
 
       await pubCommand(command,
-          args: ['--offline', '--packages-file'],
+          args: ['--offline', '--legacy-packages-file'],
           error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
@@ -104,7 +104,7 @@ void main() {
         d.dir('lib')
       ]).create();
 
-      await pubCommand(command, args: ['--packages-file']);
+      await pubCommand(command, args: ['--legacy-packages-file']);
 
       await d.dir(appPath, [
         d.packagesFile({'myapp': '.', 'baz': '../local_baz', 'foo': '1.2.3'}),

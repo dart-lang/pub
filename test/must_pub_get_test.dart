@@ -213,7 +213,7 @@ void main() {
           d.appPubspec({'foo': '1.0.0'})
         ]).create();
 
-        await pubGet(args: ['--packages-file']);
+        await pubGet(args: ['--legacy-packages-file']);
 
         deleteEntry(p.join(d.sandbox, cachePath));
 
@@ -235,7 +235,7 @@ void main() {
           })
         ]).create();
 
-        await pubGet(args: ['--packages-file']);
+        await pubGet(args: ['--legacy-packages-file']);
 
         await createPackagesFile(appPath);
 
@@ -257,7 +257,7 @@ void main() {
           })
         ]).create();
 
-        await pubGet(args: ['--packages-file']);
+        await pubGet(args: ['--legacy-packages-file']);
 
         await d.dir(appPath, [
           d.file('.packages', '''
@@ -284,7 +284,7 @@ foo:http://example.com/
           })
         ]).create();
 
-        await pubGet(args: ['--packages-file']);
+        await pubGet(args: ['--legacy-packages-file']);
 
         await createPackagesFile(appPath, dependenciesInSandBox: ['foo']);
 

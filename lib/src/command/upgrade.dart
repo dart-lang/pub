@@ -56,7 +56,7 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
-    argParser.addFlag('packages-file',
+    argParser.addFlag('legacy-packages-file',
         help: 'Generate the legacy ".packages" file', negatable: false);
 
     argParser.addFlag(
@@ -83,7 +83,7 @@ class UpgradeCommand extends PubCommand {
 
   bool get _precompile => argResults['precompile'];
 
-  bool get _packagesFile => argResults['packages-file'];
+  bool get _packagesFile => argResults['legacy-packages-file'];
 
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];
@@ -250,7 +250,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
-        generateDotPackages: argResults['packages-file'],
+        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 
@@ -346,7 +346,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
-        generateDotPackages: argResults['packages-file'],
+        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 

@@ -51,7 +51,7 @@ class RemoveCommand extends PubCommand {
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
 
-    argParser.addFlag('packages-file',
+    argParser.addFlag('legacy-packages-file',
         help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
@@ -85,7 +85,7 @@ class RemoveCommand extends PubCommand {
         SolveType.get,
         precompile: argResults['precompile'],
         analytics: analytics,
-        generateDotPackages: argResults['packages-file'],
+        generateDotPackages: argResults['legacy-packages-file'],
       );
 
       var example = entrypoint.example;
@@ -95,7 +95,7 @@ class RemoveCommand extends PubCommand {
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
           analytics: analytics,
-          generateDotPackages: argResults['packages-file'],
+          generateDotPackages: argResults['legacy-packages-file'],
         );
       }
     }
