@@ -229,7 +229,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.upgrade,
+        SolveType.get,
         dryRun: true,
         precompile: _precompile,
         analytics: null, // No analytics for dry-run
@@ -241,7 +241,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint(directory, cache).acquireDependencies(
-        SolveType.upgrade,
+        SolveType.get,
         precompile: _precompile,
         analytics: analytics,
       );
