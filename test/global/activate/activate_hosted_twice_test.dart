@@ -24,15 +24,7 @@ main(args) => print('bar $version');''')
         d.dir('lib', [d.file('bar.dart', 'final version = "1.0.0";')])
       ]);
 
-    await runPub(args: ['global', 'activate', 'foo'], output: '''
-Resolving dependencies...
-+ bar 1.0.0
-+ foo 1.0.0
-Downloading foo 1.0.0...
-Downloading bar 1.0.0...
-Building package executables...
-Built foo:foo.
-Activated foo 1.0.0.''');
+    await runPub(args: ['global', 'activate', 'foo'], output: anything);
 
     await runPub(args: ['global', 'activate', 'foo'], output: '''
 Package foo is currently active at version 1.0.0.

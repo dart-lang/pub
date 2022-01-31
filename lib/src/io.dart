@@ -383,7 +383,7 @@ void _attempt(String description, void Function() operation,
     }
 
     // ERROR_DIR_NOT_EMPTY
-    if (!ignoreEmptyDir && isDirectoryNotEmptyException(error)) {
+    if (!ignoreEmptyDir && _isDirectoryNotEmptyException(error)) {
       return 'of dart-lang/sdk#25353';
     }
 
@@ -457,7 +457,35 @@ void renameDir(String from, String to) {
   }, ignoreEmptyDir: true);
 }
 
-bool isDirectoryNotEmptyException(FileSystemException e) {
+/// Renames directory [from] to [to].
+/// If it fails with "destination not empty" we log and continue, assuming
+/// another process got there before us.
+void tryRenameDir(String from, String to) {
+  ensureDir(path.dirname(to));
+  try {
+    renameDir(from, to);
+  } on FileSystemException catch (e) {
+    tryDeleteEntry(from);
+    if (!_isDirectoryNotEmptyException(e)) {
+      rethrow;
+    }
+    log.fine('''
+Destination directory $to already existed.
+Assuming a concurrent pub invocation installed it.''');
+  }
+}
+
+void copyFile(String from, String to) {
+  log.io('Copying "$from" to "$to".');
+  File(from).copySync(to);
+}
+
+void renameFile(String from, String to) {
+  log.io('Renaming "$from" to "$to".');
+  File(from).renameSync(to);
+}
+
+bool _isDirectoryNotEmptyException(FileSystemException e) {
   final errorCode = e.osError?.errorCode;
   return
       // On Linux rename will fail with ENOTEMPTY if directory exists:

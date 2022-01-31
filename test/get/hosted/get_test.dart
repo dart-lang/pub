@@ -21,7 +21,9 @@ void main() {
     await pubGet();
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
   });
 
   test('URL encodes the package name', () async {
@@ -57,7 +59,9 @@ void main() {
     await pubGet();
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
+    ]).validate();
   });
 
   group('categorizes dependency types in the lockfile', () {

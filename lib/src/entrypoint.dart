@@ -16,7 +16,6 @@ import 'command_runner.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
-import 'http.dart' as http;
 import 'io.dart';
 import 'language_version.dart';
 import 'lock_file.dart';
@@ -73,7 +72,13 @@ final _sdkConstraint = () {
 /// but may be the entrypoint when you're running its tests.
 class Entrypoint {
   /// The root package this entrypoint is associated with.
+  ///
+  /// For a global package, this is the activated package.
   final Package root;
+
+  /// For a global package, this is the directory that the package is installed
+  /// in. Non-global packages have null.
+  final String? globalDir;
 
   /// The system-wide cache which caches packages that need to be fetched over
   /// the network.
@@ -83,7 +88,8 @@ class Entrypoint {
   bool get isCached => !root.isInMemory && p.isWithin(cache.rootDir, root.dir);
 
   /// Whether this is an entrypoint for a globally-activated package.
-  final bool isGlobal;
+  // final bool isGlobal;
+  bool get isGlobal => globalDir != null;
 
   /// The lockfile for the entrypoint.
   ///
@@ -123,8 +129,7 @@ class Entrypoint {
   ///
   /// Global packages (except those from path source)
   /// store these in the global cache.
-  String? get _configRoot =>
-      isCached ? p.join(cache.rootDir, 'global_packages', root.name) : root.dir;
+  String? get _configRoot => isCached ? globalDir : root.dir;
 
   /// The path to the entrypoint's ".packages" file.
   ///
@@ -153,11 +158,7 @@ class Entrypoint {
   /// but the configuration is stored at the package itself.
   String get cachePath {
     if (isGlobal) {
-      return p.join(
-        cache.rootDir,
-        'global_packages',
-        root.name,
-      );
+      return globalDir!;
     } else {
       var newPath = root.path('.dart_tool/pub');
       var oldPath = root.path('.pub');
@@ -174,15 +175,25 @@ class Entrypoint {
   String get _incrementalDillsPath => p.join(cachePath, 'incremental');
 
   /// Loads the entrypoint from a package at [rootDir].
-  Entrypoint(String rootDir, this.cache)
-      : root = Package.load(null, rootDir, cache.sources),
-        isGlobal = false;
+  Entrypoint(
+    String rootDir,
+    this.cache,
+  )   : root = Package.load(null, rootDir, cache.sources),
+        globalDir = null;
+
+  Entrypoint.inMemory(this.root, this.cache,
+      {required LockFile? lockFile, SolveResult? solveResult})
+      : _lockFile = lockFile,
+        globalDir = null {
+    if (solveResult != null) {
+      _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
+    }
+  }
 
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passed as an optimization.
-  Entrypoint.global(this.root, this._lockFile, this.cache,
-      {SolveResult? solveResult})
-      : isGlobal = true {
+  Entrypoint.global(this.globalDir, this.root, this._lockFile, this.cache,
+      {SolveResult? solveResult}) {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
     }
@@ -202,19 +213,25 @@ class Entrypoint {
   Entrypoint? _example;
 
   /// Writes .packages and .dart_tool/package_config.json
-  Future<void> writePackagesFiles() async {
-    writeTextFile(
-        packagesFile,
-        lockFile.packagesFile(cache,
-            entrypoint: root.name, relativeFrom: root.dir));
+  Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
+    final entrypointName = isGlobal ? null : root.name;
+    if (generateDotPackages) {
+      writeTextFile(
+          packagesFile,
+          lockFile.packagesFile(cache,
+              entrypoint: entrypointName,
+              relativeFrom: isGlobal ? null : root.dir));
+    } else {
+      tryDeleteEntry(packagesFile);
+    }
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
         await lockFile.packageConfigFile(cache,
-            entrypoint: root.name,
+            entrypoint: entrypointName,
             entrypointSdkConstraint:
                 root.pubspec.sdkConstraints[sdk.identifier],
-            relativeFrom: root.dir));
+            relativeFrom: isGlobal ? null : root.dir));
   }
 
   /// Gets all dependencies of the [root] package.
@@ -244,6 +261,7 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
+    required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
@@ -294,7 +312,7 @@ class Entrypoint {
       await result.showReport(type, cache);
     }
     if (!dryRun) {
-      await Future.wait(result.packages.map(_get));
+      await result.downloadCachedPackages(cache);
       _saveLockFile(result);
     }
     if (onlyReportSuccessOrFailure) {
@@ -312,7 +330,7 @@ class Entrypoint {
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-      await writePackagesFiles();
+      await writePackagesFiles(generateDotPackages: generateDotPackages);
 
       try {
         if (precompile) {
@@ -387,10 +405,11 @@ class Entrypoint {
 
   Future<void> _precompileExecutable(Executable executable) async {
     final package = executable.package;
+
     await dart.precompile(
         executablePath: resolveExecutable(executable),
         outputPath: pathOfExecutable(executable),
-        incrementalDillOutputPath: incrementalDillPathOfExecutable(executable),
+        incrementalDillPath: incrementalDillPathOfExecutable(executable),
         packageConfigPath: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
@@ -468,21 +487,6 @@ class Entrypoint {
         deleteEntry(entry);
       }
     }
-  }
-
-  /// Makes sure the package at [id] is locally available.
-  ///
-  /// This automatically downloads the package to the system-wide cache as well
-  /// if it requires network access to retrieve (specifically, if the package's
-  /// source is a [CachedSource]).
-  Future<void> _get(PackageId id) async {
-    return await http.withDependencyType(root.dependencyType(id.name),
-        () async {
-      if (id.isRoot) return;
-
-      var source = cache.source(id.source);
-      if (source is CachedSource) await source.downloadToSystemCache(id);
-    });
   }
 
   /// Throws a [DataError] if the `.dart_tool/package_config.json` file doesn't

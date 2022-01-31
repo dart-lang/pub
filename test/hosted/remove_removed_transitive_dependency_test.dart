@@ -21,20 +21,21 @@ void main() {
       await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
       await pubCommand(command);
-
-      await d.appPackagesFile({
-        'foo': '1.0.0',
-        'bar': '1.0.0',
-        'shared_dep': '1.0.0',
-        'bar_dep': '1.0.0',
-      }).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+        d.packageConfigEntry(name: 'shared_dep', version: '1.0.0'),
+        d.packageConfigEntry(name: 'bar_dep', version: '1.0.0'),
+      ]).validate();
 
       await d.appDir({'foo': 'any'}).create();
 
       await pubCommand(command);
 
-      await d
-          .appPackagesFile({'foo': '1.0.0', 'shared_dep': '1.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+        d.packageConfigEntry(name: 'shared_dep', version: '1.0.0'),
+      ]).validate();
     });
   });
 }
