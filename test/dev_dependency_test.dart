@@ -27,7 +27,10 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo', 'bar': '../bar'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+    ]).validate();
   });
 
   test("includes dev dependency's transitive dependencies", () async {
@@ -52,7 +55,10 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo', 'bar': '../bar'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+    ]).validate();
   });
 
   test("ignores transitive dependency's dev dependencies", () async {
@@ -78,6 +84,8 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+    ]).validate();
   });
 }

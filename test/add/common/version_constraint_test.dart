@@ -22,7 +22,9 @@ void main() {
     await pubAdd(args: ['foo']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': '^1.2.3'}).validate();
   });
 
@@ -35,7 +37,9 @@ void main() {
     await pubAdd(args: ['foo:1.2.3']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': '1.2.3'}).validate();
   });
 
@@ -48,7 +52,9 @@ void main() {
     await pubAdd(args: ['foo:1.2.3-dev']);
 
     await d.cacheDir({'foo': '1.2.3-dev'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3-dev'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3-dev'),
+    ]).validate();
     await d.appDir({'foo': '1.2.3-dev'}).validate();
   });
 
@@ -65,7 +71,9 @@ void main() {
     await pubAdd(args: ['foo:any']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': 'any'}).validate();
   });
 
@@ -78,7 +86,9 @@ void main() {
     await pubAdd(args: ['foo:>1.2.0 <2.0.0']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': '>1.2.0 <2.0.0'}).validate();
   });
 
@@ -98,7 +108,10 @@ void main() {
     await d.appDir({'foo': '^0.1.0', 'bar': '2.0.3'}).validate();
 
     await d.cacheDir({'foo': '0.1.0', 'bar': '2.0.3'}).validate();
-    await d.appPackagesFile({'foo': '0.1.0', 'bar': '2.0.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '0.1.0'),
+      d.packageConfigEntry(name: 'bar', version: '2.0.3'),
+    ]).validate();
   });
 
   group('does not update pubspec if no available version found', () {

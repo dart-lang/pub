@@ -42,6 +42,8 @@ class DowngradeCommand extends PubCommand {
 
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addFlag('legacy-packages-file',
+        help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
   @override
@@ -57,6 +59,7 @@ class DowngradeCommand extends PubCommand {
       unlock: argResults.rest,
       dryRun: dryRun,
       analytics: analytics,
+      generateDotPackages: argResults['legacy-packages-file'],
     );
     var example = entrypoint.example;
     if (argResults['example'] && example != null) {
@@ -66,6 +69,7 @@ class DowngradeCommand extends PubCommand {
         dryRun: dryRun,
         onlyReportSuccessOrFailure: true,
         analytics: analytics,
+        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 

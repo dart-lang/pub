@@ -56,6 +56,9 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
+    argParser.addFlag('legacy-packages-file',
+        help: 'Generate the legacy ".packages" file', negatable: false);
+
     argParser.addFlag(
       'major-versions',
       help: 'Upgrades packages to their latest resolvable versions, '
@@ -79,6 +82,8 @@ class UpgradeCommand extends PubCommand {
   bool get _dryRun => argResults['dry-run'];
 
   bool get _precompile => argResults['precompile'];
+
+  bool get _packagesFile => argResults['legacy-packages-file'];
 
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];
@@ -126,6 +131,7 @@ class UpgradeCommand extends PubCommand {
       dryRun: _dryRun,
       precompile: _precompile,
       onlyReportSuccessOrFailure: onlySummary,
+      generateDotPackages: _packagesFile,
       analytics: analytics,
     );
     _showOfflineWarning();
@@ -232,6 +238,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         dryRun: true,
         precompile: _precompile,
         analytics: null, // No analytics for dry-run
+        generateDotPackages: false,
       );
     } else {
       await _updatePubspec(changes);
@@ -243,6 +250,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
+        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 
@@ -326,6 +334,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         dryRun: true,
         precompile: _precompile,
         analytics: null,
+        generateDotPackages: false,
       );
     } else {
       await _updatePubspec(changes);
@@ -337,6 +346,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
+        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 

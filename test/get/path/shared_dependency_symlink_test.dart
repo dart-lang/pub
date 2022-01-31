@@ -40,13 +40,10 @@ void main() {
 
     await pubGet();
 
-    await d.dir(appPath, [
-      d.packagesFile({
-        'myapp': '.',
-        'foo': '../foo',
-        'bar': '../bar',
-        'shared': '../shared'
-      })
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+      d.packageConfigEntry(name: 'shared', path: '../shared'),
     ]).validate();
   });
 }
