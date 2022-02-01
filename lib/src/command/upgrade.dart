@@ -224,13 +224,14 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         resolvedPackage.version,
       ));
     }
+    final newPubspecText = _updatePubspec(changes);
 
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       await Entrypoint.inMemory(
         Package.inMemory(
-          _applyChanges(entrypoint.root.pubspec, changes.values),
+          Pubspec.parse(newPubspecText, cache.sources),
         ),
         cache,
         lockFile: entrypoint.lockFile,
@@ -243,8 +244,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         generateDotPackages: false,
       );
     } else {
-      await _updatePubspec(changes);
-
+      if (changes.isNotEmpty) {
+        writeTextFile(entrypoint.pubspecPath, newPubspecText);
+      }
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
@@ -322,12 +324,13 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       changes[dep] = dep.withConstraint(constraint);
     }
 
+    final newPubspecText = _updatePubspec(changes);
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
       await Entrypoint.inMemory(
-        Package.inMemory(nullsafetyPubspec),
+        Package.inMemory(Pubspec.parse(newPubspecText, cache.sources)),
         cache,
         lockFile: entrypoint.lockFile,
         solveResult: solveResult,
@@ -339,8 +342,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         generateDotPackages: false,
       );
     } else {
-      await _updatePubspec(changes);
-
+      if (changes.isNotEmpty) {
+        writeTextFile(entrypoint.pubspecPath, newPubspecText);
+      }
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
@@ -391,35 +395,11 @@ You may have to:
     _showOfflineWarning();
   }
 
-  Pubspec _applyChanges(
-    Pubspec original,
-    Iterable<PackageRange> changes,
-  ) {
-    final copy = Pubspec(
-      original.name,
-      version: original.version,
-      sdkConstraints: original.sdkConstraints,
-      dependencies: original.dependencies.values,
-      devDependencies: original.devDependencies.values,
-      dependencyOverrides: original.dependencyOverrides.values,
-    );
-    for (final change in changes) {
-      if (copy.dependencies.containsKey(change.name)) {
-        copy.dependencies[change.name] = change;
-      } else {
-        copy.devDependencies[change.name] = change;
-      }
-    }
-    return copy;
-  }
-
   /// Updates `pubspec.yaml` with given [changes].
-  Future<void> _updatePubspec(
+  String _updatePubspec(
     Map<PackageRange, PackageRange> changes,
-  ) async {
+  ) {
     ArgumentError.checkNotNull(changes, 'changes');
-
-    if (changes.isEmpty) return;
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
     final deps = entrypoint.root.pubspec.dependencies.keys;
@@ -440,9 +420,7 @@ You may have to:
         );
       }
     }
-
-    /// Windows line endings are already handled by [yamlEditor]
-    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
+    return yamlEditor.toString();
   }
 
   /// Outputs a summary of changes made to `pubspec.yaml`.
