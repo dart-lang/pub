@@ -99,11 +99,10 @@ void main() {
     });
 
     test('upgrades only the selected package', () async {
-      await servePackages()
+      final server = await servePackages()
         ..serve('foo', '1.0.0')
         ..serve('foo', '2.0.0')
-        ..serve('bar', '0.1.0')
-        ..serve('bar', '0.2.0');
+        ..serve('bar', '0.1.0');
 
       await d.appDir({
         'foo': '^1.0.0',
@@ -111,6 +110,8 @@ void main() {
       }).create();
 
       await pubGet();
+
+      server.serve('bar', '0.1.1');
 
       // 1 constraint should be updated
       await pubUpgrade(
