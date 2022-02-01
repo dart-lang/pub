@@ -97,6 +97,33 @@ void main() {
     });
   });
 
+  test('throws on symlink cycles', () async {
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp'}),
+      d.file('file1.txt', 'contents'),
+      d.file('file2.txt', 'contents'),
+      d.dir('subdir', [
+        d.dir('a', [d.file('file')]),
+      ]),
+    ]).create();
+    createDirectorySymlink(
+        p.join(d.sandbox, appPath, 'subdir', 'symlink'), '..');
+
+    createEntrypoint();
+
+    expect(
+      () => entrypoint!.root.listFiles(),
+      throwsA(
+        isA<DataException>().having(
+          (e) => e.message,
+          'message',
+          contains(
+              'Pub does not support publishing packages with non-resolving symlink:'),
+        ),
+      ),
+    );
+  });
+
   test('can list a package inside a symlinked folder', () async {
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'}),
