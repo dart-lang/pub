@@ -229,7 +229,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       await Entrypoint.inMemory(
-        Package.inMemory(resolvablePubspec),
+        Package.inMemory(
+          _applyChanges(entrypoint.root.pubspec, changes.values),
+        ),
         cache,
         lockFile: entrypoint.lockFile,
         solveResult: solveResult,
@@ -387,6 +389,28 @@ You may have to:
     }
 
     _showOfflineWarning();
+  }
+
+  Pubspec _applyChanges(
+    Pubspec original,
+    Iterable<PackageRange> changes,
+  ) {
+    final copy = Pubspec(
+      original.name,
+      version: original.version,
+      sdkConstraints: original.sdkConstraints,
+      dependencies: original.dependencies.values,
+      devDependencies: original.devDependencies.values,
+      dependencyOverrides: original.dependencyOverrides.values,
+    );
+    for (final change in changes) {
+      if (copy.dependencies.containsKey(change.name)) {
+        copy.dependencies[change.name] = change;
+      } else {
+        copy.devDependencies[change.name] = change;
+      }
+    }
+    return copy;
   }
 
   /// Updates `pubspec.yaml` with given [changes].
