@@ -125,7 +125,7 @@ void main() {
     final git = d.git(appPath, [
       ...d.validPackage.contents,
       d.dir('dir_with_symlink', [
-        d.file('.pubignore', '/symlink'),
+        d.file('.pubignore', 'symlink'),
       ]),
     ]);
     await git.create();
