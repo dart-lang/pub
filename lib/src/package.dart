@@ -319,7 +319,7 @@ class Package {
         final target = Link(path).targetSync();
         if (!fileExists(path)) {
           throw DataException(
-              '''Pub does not support publishing packages with non-resolving symlink: `${path}` => `$target`.''');
+              '''Pub does not support publishing packages with non-resolving symlink: `$path` => `$target`.''');
         }
       }
       return path;
