@@ -118,7 +118,7 @@ void main() {
         workingDirectory: packageRoot);
     createDirectorySymlink(
         p.join(d.sandbox, appPath, 'dir_with_symlink', 'symlink'), '..');
-    git.commit();
+    await git.commit();
 
     await expectValidation(contains('Package has 0 warnings.'), 0,
         workingDirectory: packageRoot);
