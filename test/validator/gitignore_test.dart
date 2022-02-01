@@ -119,7 +119,9 @@ void main() {
         workingDirectory: packageRoot);
   });
 
-  test('Should consider symlinks to be valid files and not list them as gitignored', () async {
+  test(
+      'Should consider symlinks to be valid files and not list them as gitignored',
+      () async {
     final git = d.git(appPath, [
       ...d.validPackage.contents,
       d.dir('dir_with_symlink', [

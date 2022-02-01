@@ -46,8 +46,6 @@ void main() {
         ]));
   });
 
-
-
   test('throws on directory symlinks', () async {
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'}),
