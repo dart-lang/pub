@@ -286,7 +286,7 @@ class Ignore {
       if (currentIsDir) {
         final ignore = ignoreForDir(normalizedCurrent);
         ignoreStack.add(
-            ignore == null ? null : _IgnorePrefixPair(ignore, '$current/'));
+            ignore == null ? null : _IgnorePrefixPair(ignore, current == '/' ? current : '$current/'));
         // Put all entities in current on the stack to be processed.
         toVisit.add(listDir(normalizedCurrent).map((x) => '/$x').toList());
         if (includeDirs) {
