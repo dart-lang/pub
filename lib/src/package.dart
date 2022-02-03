@@ -322,7 +322,9 @@ class Package {
       },
       isDir: (dir) => dirExists(resolve(dir)),
     ).map((relative) {
-      if (_listParentDirs(relative).any(symlinkPaths.contains)) {
+      final parentSymlinkDir = _listParentDirs(relative).firstWhereOrNull(symlinkPaths.contains);
+      if (parentSymlinkDir != null) {
+        final path = resolve(parentSymlinkDir);
         throw DataException(
             '''Pub does not support publishing packages with directory symlinks: `$path`''');
       }
