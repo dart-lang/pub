@@ -321,7 +321,14 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).map((path) {
+    ).map((relative) {
+      if (_listParentDirs(relative).any(symlinkPaths.contains)) {
+        throw DataException(
+            '''Pub does not support publishing packages with directory symlinks: `$path`''');
+      }
+
+      final path = resolve(relative);
+
       if (linkExists(path)) {
         final target = Link(path).targetSync();
         if (!fileExists(path)) {
@@ -329,14 +336,7 @@ class Package {
               '''Pub does not support publishing packages with non-resolving symlink: `$path` => `$target`.''');
         }
       }
-      var relative = p.relative(path, from: root);
-      if (Platform.isWindows) {
-        relative = p.posix.joinAll(p.split(relative));
-      }
-      if (_listParentDirs(relative).any(symlinkPaths.contains)) {
-        throw DataException(
-            '''Pub does not support publishing packages with directory symlinks: `$path`''');
-      }
+
       return path;
     }).toList();
   }
