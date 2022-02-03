@@ -242,6 +242,8 @@ class Package {
       return p.join(root, path);
     }
 
+    final Set<String> symlinkPaths = {};
+
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
@@ -250,10 +252,15 @@ class Package {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
         return contents.map((entity) {
-          final relative = p.relative(entity.path, from: root);
+          var relative = p.relative(entity.path, from: root);
           if (Platform.isWindows) {
-            return p.posix.joinAll(p.split(relative));
+            relative = p.posix.joinAll(p.split(relative));
           }
+
+          if (linkExists(entity.path) && dirExists(entity.path)) {
+            symlinkPaths.add('$relative/');
+          }
+
           return relative;
         });
       },
@@ -322,8 +329,25 @@ class Package {
               '''Pub does not support publishing packages with non-resolving symlink: `$path` => `$target`.''');
         }
       }
+      var relative = p.relative(path, from: root);
+      if (Platform.isWindows) {
+        relative = p.posix.joinAll(p.split(relative));
+      }
+      if (_listParentDirs(relative).any(symlinkPaths.contains)) {
+        throw DataException(
+            '''Pub does not support publishing packages with directory symlinks: `$path`''');
+      }
       return path;
     }).toList();
+  }
+
+  Iterable<String> _listParentDirs(String relativePath) sync* {
+    final parts = relativePath.split('/');
+    String partial = '';
+    for (final part in parts) {
+      partial += '$part/';
+      yield partial;
+    }
   }
 }
 
