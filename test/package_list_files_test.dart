@@ -46,7 +46,7 @@ void main() {
         ]));
   });
 
-  test('throws on directory symlinks', () async {
+  test('not throws on valid directory symlinks', () async {
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'}),
       d.file('file1.txt', 'contents'),
@@ -60,18 +60,13 @@ void main() {
 
     createEntrypoint();
 
-    expect(
-      () => entrypoint!.root.listFiles(),
-      throwsA(
-        isA<DataException>().having(
-          (e) => e.message,
-          'message',
-          contains(
-            'Pub does not support publishing packages with directory symlinks',
-          ),
-        ),
-      ),
-    );
+    expect(entrypoint!.root.listFiles(), {
+      p.join(root, 'pubspec.yaml'),
+      p.join(root, 'file1.txt'),
+      p.join(root, 'file2.txt'),
+      p.join(root, 'subdir', 'a', 'file'),
+      p.join(root, 'subdir', 'symlink', 'file'),
+    });
   });
 
   test('not throws on ignored directory symlinks', () async {
