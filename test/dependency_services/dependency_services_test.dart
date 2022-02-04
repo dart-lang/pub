@@ -37,7 +37,7 @@ final snapshot = () async {
   await precompile(
       executablePath: p.join('bin', 'dependency_services.dart'),
       outputPath: snapshotFilename,
-      incrementalDillOutputPath: snapshotIncrementalFilename,
+      incrementalDillPath: snapshotIncrementalFilename,
       name: 'bin/pub.dart',
       packageConfigPath: p.join('.dart_tool', 'package_config.json'));
   return snapshotFilename;
@@ -99,10 +99,10 @@ Future<void> listReportApply(
 
 Future<void> main() async {
   testWithGolden('Removing transitive', (context) async {
-    await servePackages((builder) => builder
+    (await servePackages())
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('foo', '2.2.3')
-      ..serve('transitive', '1.0.0'));
+      ..serve('transitive', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -120,11 +120,11 @@ Future<void> main() async {
   });
 
   testWithGolden('Compatible', (context) async {
-    await servePackages((builder) => builder
+    final server = (await servePackages())
       ..serve('foo', '1.2.3')
       ..serve('foo', '2.2.3')
       ..serve('bar', '1.2.3')
-      ..serve('bar', '2.2.3'));
+      ..serve('bar', '2.2.3');
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
@@ -135,7 +135,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    globalPackageServer!.add((b) => b.serve('foo', '1.2.4'));
+    server.serve('foo', '1.2.4');
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('1.2.3')),
       _PackageVersion('transitive', null)
@@ -143,10 +143,10 @@ Future<void> main() async {
   });
 
   testWithGolden('Adding transitive', (context) async {
-    await servePackages((builder) => builder
+    (await servePackages())
       ..serve('foo', '1.2.3')
       ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
-      ..serve('transitive', '1.0.0'));
+      ..serve('transitive', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -164,9 +164,9 @@ Future<void> main() async {
   });
 
   testWithGolden('multibreaking', (context) async {
-    await servePackages((builder) => builder
+    final server = (await servePackages())
       ..serve('foo', '1.0.0')
-      ..serve('bar', '1.0.0'));
+      ..serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -178,13 +178,13 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
-    globalPackageServer!.add((builder) => builder
+    server
       ..serve('foo', '1.5.0') // compatible
       ..serve('foo', '2.0.0') // single breaking
       ..serve('foo', '3.0.0', deps: {'bar': '^2.0.0'}) // multi breaking
       ..serve('foo', '3.0.1', deps: {'bar': '^2.0.0'})
       ..serve('bar', '2.0.0', deps: {'foo': '^3.0.0'})
-      ..serve('transitive', '1.0.0'));
+      ..serve('transitive', '1.0.0');
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('3.0.1'),
           constraint: VersionConstraint.parse('^3.0.0')),
