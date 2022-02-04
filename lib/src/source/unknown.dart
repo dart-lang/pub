@@ -109,7 +109,10 @@ class ResolvedUnknownDescription
       : super(description);
 
   @override
-  Object? serializeForLockfile({required String? containingDir}) {}
+  Object? serializeForLockfile({required String? containingDir}) {
+    throw UnsupportedError(
+        "Cannot serialize a package description from an unknown source '${description.source.name}'.");
+  }
 
   @override
   operator ==(Object other) =>
