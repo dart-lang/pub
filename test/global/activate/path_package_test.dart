@@ -55,13 +55,14 @@ void main() {
   });
 
   test("Doesn't precompile binaries when activating from path", () async {
-    final server = await servePackages();
-    server.serve(
-      'bar',
-      '1.0.0',
-      contents: [
-        d.dir('bin', [d.file('bar.dart', "main() => print('bar');")])
-      ],
+    await servePackages(
+      (builder) => builder.serve(
+        'bar',
+        '1.0.0',
+        contents: [
+          d.dir('bin', [d.file('bar.dart', "main() => print('bar');")])
+        ],
+      ),
     );
 
     await d.dir('foo', [

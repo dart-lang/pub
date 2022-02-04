@@ -10,13 +10,14 @@ import '../test_pub.dart';
 void main() {
   // Regression test for issue 23113
   test('runs a named Dart application in a dependency', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'name': 'foo',
-      'version': '1.0.0'
-    }, contents: [
-      d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        'name': 'foo',
+        'version': '1.0.0'
+      }, contents: [
+        d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
+      ]);
+    });
 
     await d.dir(appPath, [
       d.appPubspec({'foo': null})

@@ -50,9 +50,6 @@ class RemoveCommand extends PubCommand {
 
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
-
-    argParser.addFlag('legacy-packages-file',
-        help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
   @override
@@ -68,12 +65,11 @@ class RemoveCommand extends PubCommand {
       final newPubspec = _removePackagesFromPubspec(rootPubspec, packages);
       final newRoot = Package.inMemory(newPubspec);
 
-      await Entrypoint.inMemory(newRoot, cache, lockFile: entrypoint.lockFile)
-          .acquireDependencies(SolveType.get,
+      await Entrypoint.global(newRoot, entrypoint.lockFile, cache)
+          .acquireDependencies(SolveType.GET,
               precompile: argResults['precompile'],
               dryRun: true,
-              analytics: null,
-              generateDotPackages: false);
+              analytics: null);
     } else {
       /// Update the pubspec.
       _writeRemovalToPubspec(packages);
@@ -82,20 +78,18 @@ class RemoveCommand extends PubCommand {
       /// pubspec file.
       final updatedEntrypoint = Entrypoint(directory, cache);
       await updatedEntrypoint.acquireDependencies(
-        SolveType.get,
+        SolveType.GET,
         precompile: argResults['precompile'],
         analytics: analytics,
-        generateDotPackages: argResults['legacy-packages-file'],
       );
 
       var example = entrypoint.example;
       if (argResults['example'] && example != null) {
         await example.acquireDependencies(
-          SolveType.get,
+          SolveType.GET,
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
           analytics: analytics,
-          generateDotPackages: argResults['legacy-packages-file'],
         );
       }
     }

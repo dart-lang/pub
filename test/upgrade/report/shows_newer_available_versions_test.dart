@@ -9,26 +9,28 @@ import '../../test_pub.dart';
 
 void main() {
   test('shows how many newer versions are available', () async {
-    await servePackages()
-      ..serve('multiple_newer', '1.0.0')
-      ..serve('multiple_newer', '1.0.1-unstable.1')
-      ..serve('multiple_newer', '1.0.1')
-      ..serve('multiple_newer', '1.0.2-unstable.1')
-      ..serve('multiple_newer_stable', '1.0.0')
-      ..serve('multiple_newer_stable', '1.0.1')
-      ..serve('multiple_newer_stable', '1.0.2')
-      ..serve('multiple_newer_unstable', '1.0.0')
-      ..serve('multiple_newer_unstable', '1.0.1-unstable.1')
-      ..serve('multiple_newer_unstable', '1.0.1-unstable.2')
-      ..serve('multiple_newer_unstable2', '1.0.1-unstable.1')
-      ..serve('multiple_newer_unstable2', '1.0.1-unstable.2')
-      ..serve('no_newer', '1.0.0')
-      ..serve('one_newer_unstable', '1.0.0')
-      ..serve('one_newer_unstable', '1.0.1-unstable.1')
-      ..serve('one_newer_unstable2', '1.0.1-unstable.1')
-      ..serve('one_newer_unstable2', '1.0.1-unstable.2')
-      ..serve('one_newer_stable', '1.0.0')
-      ..serve('one_newer_stable', '1.0.1');
+    await servePackages((builder) {
+      builder.serve('multiple_newer', '1.0.0');
+      builder.serve('multiple_newer', '1.0.1-unstable.1');
+      builder.serve('multiple_newer', '1.0.1');
+      builder.serve('multiple_newer', '1.0.2-unstable.1');
+      builder.serve('multiple_newer_stable', '1.0.0');
+      builder.serve('multiple_newer_stable', '1.0.1');
+      builder.serve('multiple_newer_stable', '1.0.2');
+      builder.serve('multiple_newer_unstable', '1.0.0');
+      builder.serve('multiple_newer_unstable', '1.0.1-unstable.1');
+      builder.serve('multiple_newer_unstable', '1.0.1-unstable.2');
+      builder.serve('multiple_newer_unstable2', '1.0.1-unstable.1');
+      builder.serve('multiple_newer_unstable2', '1.0.1-unstable.2');
+      builder.serve('multiple_newer_unstable2', '1.0.1-unstable.2');
+      builder.serve('no_newer', '1.0.0');
+      builder.serve('one_newer_unstable', '1.0.0');
+      builder.serve('one_newer_unstable', '1.0.1-unstable.1');
+      builder.serve('one_newer_unstable2', '1.0.1-unstable.1');
+      builder.serve('one_newer_unstable2', '1.0.1-unstable.2');
+      builder.serve('one_newer_stable', '1.0.0');
+      builder.serve('one_newer_stable', '1.0.1');
+    });
 
     // Constraint everything to the first version.
     await d.appDir({

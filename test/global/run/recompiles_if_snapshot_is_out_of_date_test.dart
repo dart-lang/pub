@@ -11,10 +11,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('recompiles a script if the snapshot is out-of-date', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+      ]);
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 

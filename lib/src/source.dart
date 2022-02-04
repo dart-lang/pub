@@ -116,7 +116,7 @@ abstract class Source {
   /// [description] in the right format.
   ///
   /// [containingPath] is the containing directory of the root package.
-  dynamic serializeDescription(String? containingPath, description) {
+  dynamic serializeDescription(String containingPath, description) {
     return description;
   }
 

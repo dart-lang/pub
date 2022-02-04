@@ -464,9 +464,6 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         } else {
           expr += '.*';
         }
-      } else if (peekChar() == '/' || peekChar() == null) {
-        // /a/* should not match '/a/'
-        expr += '[^/]+';
       } else {
         // Handle a single '*'
         expr += '[^/]*';
@@ -523,6 +520,7 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
     expr = '$expr/\$';
   } else {
     expr = '$expr/?\$';
+    // expr = '$expr\$';
   }
   try {
     return _IgnoreParseResult(

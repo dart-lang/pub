@@ -14,13 +14,15 @@ void main() {
   setUp(d.validPackage.create);
 
   test('upload form provides an error', () async {
-    await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await servePackages((_) {});
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
 
-    globalServer.expect('GET', '/api/packages/versions/new', (request) async {
+    globalPackageServer!.extraHandlers['/api/packages/versions/new'] =
+        expectAsync1((request) {
+      expect(request.method, 'GET');
       return shelf.Response.notFound(jsonEncode({
         'error': {'message': 'your request sucked'}
       }));

@@ -9,10 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('runs a script with assertions enabled', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')])
+      ]);
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 

@@ -12,12 +12,10 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(() async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3', pubspec: {
-      'environment': {'sdk': '^2.0.0'}
-    });
-  });
+  setUp(() => servePackages((b) => b.serve('foo', '1.2.3', pubspec: {
+        'environment': {'sdk': '^2.0.0'}
+      })));
+
   forBothPubGetAndUpgrade((command) {
     Future<void> testWith(dynamic dependency) async {
       await d.dir(appPath, [
@@ -44,19 +42,19 @@ void main() {
         'source': 'hosted',
         'description': {
           'name': 'foo',
-          'url': globalServer.url,
+          'url': globalPackageServer!.url,
         },
         'version': '1.2.3',
       });
     }
 
     test('supports hosted: <url> syntax', () async {
-      return testWith({'hosted': globalServer.url});
+      return testWith({'hosted': globalPackageServer!.url});
     });
 
     test('supports hosted map without name', () {
       return testWith({
-        'hosted': {'url': globalServer.url},
+        'hosted': {'url': globalPackageServer!.url},
       });
     });
 
@@ -82,8 +80,8 @@ void main() {
         await File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsString(),
       );
 
-      expect(
-          lockFile['packages']['foo']['description']['url'], globalServer.url);
+      expect(lockFile['packages']['foo']['description']['url'],
+          globalPackageServer!.url);
     });
   });
 }

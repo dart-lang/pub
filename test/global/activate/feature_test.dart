@@ -10,8 +10,8 @@ import '../../test_pub.dart';
 
 void main() {
   test('enables default-on features by default', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
@@ -21,9 +21,11 @@ void main() {
             'dependencies': {'baz': '1.0.0'}
           }
         }
-      })
-      ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0');
+      });
+
+      builder.serve('bar', '1.0.0');
+      builder.serve('baz', '1.0.0');
+    });
 
     await runPub(args: ['global', 'activate', 'foo'], output: contains('''
 Resolving dependencies...
@@ -33,8 +35,8 @@ Downloading'''));
   });
 
   test('can enable default-off features', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
@@ -44,9 +46,11 @@ Downloading'''));
             'dependencies': {'baz': '1.0.0'}
           }
         }
-      })
-      ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0');
+      });
+
+      builder.serve('bar', '1.0.0');
+      builder.serve('baz', '1.0.0');
+    });
 
     await runPub(
         args: ['global', 'activate', 'foo', '--features', 'things'],
@@ -59,8 +63,8 @@ Downloading'''));
   });
 
   test('can disable default-on features', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
@@ -70,9 +74,11 @@ Downloading'''));
             'dependencies': {'baz': '1.0.0'}
           }
         }
-      })
-      ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0');
+      });
+
+      builder.serve('bar', '1.0.0');
+      builder.serve('baz', '1.0.0');
+    });
 
     await runPub(
         args: ['global', 'activate', 'foo', '--omit-features', 'stuff'],
@@ -83,8 +89,8 @@ Downloading'''));
   });
 
   test('supports multiple arguments', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
@@ -95,9 +101,11 @@ Downloading'''));
             'dependencies': {'baz': '1.0.0'}
           }
         }
-      })
-      ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0');
+      });
+
+      builder.serve('bar', '1.0.0');
+      builder.serve('baz', '1.0.0');
+    });
 
     await runPub(
         args: ['global', 'activate', 'foo', '--features', 'things,stuff'],
@@ -110,8 +118,8 @@ Downloading'''));
   });
 
   test('can both enable and disable', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
@@ -121,9 +129,11 @@ Downloading'''));
             'dependencies': {'baz': '1.0.0'}
           }
         }
-      })
-      ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0');
+      });
+
+      builder.serve('bar', '1.0.0');
+      builder.serve('baz', '1.0.0');
+    });
 
     await runPub(args: [
       'global',

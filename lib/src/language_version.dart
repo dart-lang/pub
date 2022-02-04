@@ -69,21 +69,6 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   bool get supportsNullSafety => this >= firstVersionWithNullSafety;
 
-  /// Minimum language version at which short hosted syntax is supported.
-  ///
-  /// This allows `hosted` dependencies to be expressed as:
-  /// ```yaml
-  /// dependencies:
-  ///   foo:
-  ///     hosted: https://some-pub.com/path
-  ///     version: ^1.0.0
-  /// ```
-  ///
-  /// At older versions, `hosted` dependencies had to be a map with a `url` and
-  /// a `name` key.
-  bool get supportsShorterHostedSyntax =>
-      this >= firstVersionWithShorterHostedSyntax;
-
   @override
   int compareTo(LanguageVersion other) {
     if (major != other.major) return major.compareTo(other.major);
@@ -104,7 +89,6 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   static const defaultLanguageVersion = LanguageVersion(2, 7);
   static const firstVersionWithNullSafety = LanguageVersion(2, 12);
-  static const firstVersionWithShorterHostedSyntax = LanguageVersion(2, 15);
 
   /// Transform language version to string that can be parsed with
   /// [LanguageVersion.parse].

@@ -375,7 +375,7 @@ String niceDuration(Duration duration) {
 
   // If we're using verbose logging, be more verbose but more accurate when
   // reporting timing information.
-  var msString = log.verbosity.isLevelVisible(log.Level.fine)
+  var msString = log.verbosity.isLevelVisible(log.Level.FINE)
       ? _padLeft(ms.toString(), 3, '0')
       : (ms ~/ 100).toString();
 

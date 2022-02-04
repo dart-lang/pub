@@ -12,23 +12,16 @@ import '../../test_pub.dart';
 void main() {
   test('upgrades a locked pub server package with a nonexistent version',
       () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
+    await servePackages((builder) => builder.serve('foo', '1.0.0'));
 
     await d.appDir({'foo': 'any'}).create();
     await pubGet();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0'}).validate();
 
     deleteEntry(p.join(d.sandbox, cachePath));
 
-    server.clearPackages();
-    server.serve('foo', '1.0.1');
-
+    globalPackageServer!.replace((builder) => builder.serve('foo', '1.0.1'));
     await pubGet();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.1'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.1'}).validate();
   });
 }

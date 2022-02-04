@@ -8,10 +8,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('activating a package installs its dependencies', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', deps: {'bar': 'any'})
-      ..serve('bar', '1.0.0', deps: {'baz': 'any'})
-      ..serve('baz', '1.0.0');
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
+      builder.serve('bar', '1.0.0', deps: {'baz': 'any'});
+      builder.serve('baz', '1.0.0');
+    });
 
     await runPub(
         args: ['global', 'activate', 'foo'],

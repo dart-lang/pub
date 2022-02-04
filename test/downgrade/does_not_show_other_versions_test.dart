@@ -9,10 +9,11 @@ import '../test_pub.dart';
 
 void main() {
   test('does not show how many other versions are available', () async {
-    await servePackages()
-      ..serve('downgraded', '1.0.0')
-      ..serve('downgraded', '2.0.0')
-      ..serve('downgraded', '3.0.0-dev');
+    await servePackages((builder) {
+      builder.serve('downgraded', '1.0.0');
+      builder.serve('downgraded', '2.0.0');
+      builder.serve('downgraded', '3.0.0-dev');
+    });
 
     await d.appDir({'downgraded': '3.0.0-dev'}).create();
 

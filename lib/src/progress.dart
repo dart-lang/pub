@@ -34,7 +34,7 @@ class Progress {
   Progress(this._message, {bool fine = false}) {
     _stopwatch.start();
 
-    var level = fine ? log.Level.fine : log.Level.message;
+    var level = fine ? log.Level.FINE : log.Level.MESSAGE;
 
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels
@@ -43,7 +43,7 @@ class Progress {
         !log.verbosity.isLevelVisible(level) ||
         log.json.enabled ||
         fine ||
-        log.verbosity.isLevelVisible(log.Level.fine)) {
+        log.verbosity.isLevelVisible(log.Level.FINE)) {
       // Not animating, so just log the start and wait until the task is
       // completed.
       log.write(level, '$_message...');

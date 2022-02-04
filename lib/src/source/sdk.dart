@@ -101,10 +101,8 @@ class BoundSdkSource extends BoundSource {
     if (sdk == null) {
       throw PackageNotFoundException('unknown SDK "$identifier"');
     } else if (!sdk.isAvailable) {
-      throw PackageNotFoundException(
-        'the ${sdk.name} SDK is not available',
-        hint: sdk.installMessage,
-      );
+      throw PackageNotFoundException('the ${sdk.name} SDK is not available',
+          missingSdk: sdk);
     }
 
     var path = sdk.packagePath(package.name);

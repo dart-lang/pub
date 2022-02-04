@@ -366,7 +366,7 @@ class OutdatedCommand extends PubCommand {
 /// resolution was found.
 Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
-    SolveType.upgrade,
+    SolveType.UPGRADE,
     cache,
     Package.inMemory(pubspec),
   );
@@ -807,9 +807,6 @@ class _VersionDetails {
           _overridden == other._overridden &&
           _id.source == other._id.source &&
           _pubspec.version == other._pubspec.version;
-
-  @override
-  int get hashCode => Object.hash(_pubspec.version, _id.source, _overridden);
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {

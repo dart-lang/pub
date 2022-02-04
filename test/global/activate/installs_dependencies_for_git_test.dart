@@ -9,9 +9,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('activating a Git package installs its dependencies', () async {
-    await servePackages()
-      ..serve('bar', '1.0.0', deps: {'baz': 'any'})
-      ..serve('baz', '1.0.0');
+    await servePackages((builder) {
+      builder.serve('bar', '1.0.0', deps: {'baz': 'any'});
+      builder.serve('baz', '1.0.0');
+    });
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0', deps: {'bar': 'any'}),

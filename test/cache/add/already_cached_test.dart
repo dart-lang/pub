@@ -9,8 +9,9 @@ import '../../test_pub.dart';
 
 void main() {
   test('does nothing if the package is already cached', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
+    await servePackages((builder) {
+      builder.serve('foo', '1.2.3');
+    });
 
     // Run once to put it in the cache.
     await runPub(

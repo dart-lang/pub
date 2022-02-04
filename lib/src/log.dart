@@ -12,11 +12,9 @@ import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'progress.dart';
-import 'sdk.dart';
 import 'transcript.dart';
 import 'utils.dart';
 
@@ -26,7 +24,7 @@ import 'utils.dart';
 final json = _JsonLogger();
 
 /// The current logging verbosity.
-Verbosity verbosity = Verbosity.normal;
+Verbosity verbosity = Verbosity.NORMAL;
 
 /// In cases where there's a ton of log spew, make sure we don't eat infinite
 /// memory.
@@ -34,11 +32,11 @@ Verbosity verbosity = Verbosity.normal;
 /// This can occur when the backtracking solver stumbles into a pathological
 /// dependency graph. It generally will find a solution, but it may log
 /// thousands and thousands of entries to get there.
-const _maxTranscript = 10000;
+const _MAX_TRANSCRIPT = 10000;
 
 /// The list of recorded log messages. Will only be recorded if
 /// [recordTranscript()] is called.
-final Transcript<_Entry> _transcript = Transcript(_maxTranscript);
+Transcript<_Entry>? _transcript;
 
 /// The currently-animated progress indicator, if any.
 ///
@@ -60,34 +58,34 @@ final _bold = getAnsi('\u001b[1m');
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
 ///
-/// By default, [error] and [warning] messages are printed to sterr. [message]
+/// By default, [ERROR] and [WARNING] messages are printed to sterr. [MESSAGE]
 /// messages are printed to stdout, and others are ignored.
 class Level {
   /// An error occurred and an operation could not be completed.
   ///
   /// Usually shown to the user on stderr.
-  static const error = Level._('ERR ');
+  static const ERROR = Level._('ERR ');
 
   /// Something unexpected happened, but the program was able to continue,
   /// though possibly in a degraded fashion.
-  static const warning = Level._('WARN');
+  static const WARNING = Level._('WARN');
 
   /// A message intended specifically to be shown to the user.
-  static const message = Level._('MSG ');
+  static const MESSAGE = Level._('MSG ');
 
   /// Some interaction with the external world occurred, such as a network
   /// operation, process spawning, or file IO.
-  static const io = Level._('IO  ');
+  static const IO = Level._('IO  ');
 
   /// Incremental output during pub's version constraint solver.
-  static const solver = Level._('SLVR');
+  static const SOLVER = Level._('SLVR');
 
   /// Fine-grained and verbose additional information.
   ///
   /// Used to provide program state context for other logs (such as what pub
   /// was doing when an IO operation occurred) or just more detail for an
   /// operation.
-  static const fine = Level._('FINE');
+  static const FINE = Level._('FINE');
 
   const Level._(this.name);
 
@@ -101,83 +99,73 @@ class Level {
 /// displayed.
 class Verbosity {
   /// Silence all logging.
-  static const none = Verbosity._('none', {
-    Level.error: null,
-    Level.warning: null,
-    Level.message: null,
-    Level.io: null,
-    Level.solver: null,
-    Level.fine: null
+  static const NONE = Verbosity._('none', {
+    Level.ERROR: null,
+    Level.WARNING: null,
+    Level.MESSAGE: null,
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows only errors.
-  static const error = Verbosity._('error', {
-    Level.error: _logToStderr,
-    Level.warning: null,
-    Level.message: null,
-    Level.io: null,
-    Level.solver: null,
-    Level.fine: null
+  static const ERROR = Verbosity._('error', {
+    Level.ERROR: _logToStderr,
+    Level.WARNING: null,
+    Level.MESSAGE: null,
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows only errors and warnings.
-  static const warning = Verbosity._('warning', {
-    Level.error: _logToStderr,
-    Level.warning: _logToStderr,
-    Level.message: null,
-    Level.io: null,
-    Level.solver: null,
-    Level.fine: null
+  static const WARNING = Verbosity._('warning', {
+    Level.ERROR: _logToStderr,
+    Level.WARNING: _logToStderr,
+    Level.MESSAGE: null,
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// The default verbosity which shows errors, warnings, and messages.
-  static const normal = Verbosity._('normal', {
-    Level.error: _logToStderr,
-    Level.warning: _logToStderr,
-    Level.message: _logToStdout,
-    Level.io: null,
-    Level.solver: null,
-    Level.fine: null
+  static const NORMAL = Verbosity._('normal', {
+    Level.ERROR: _logToStderr,
+    Level.WARNING: _logToStderr,
+    Level.MESSAGE: _logToStdout,
+    Level.IO: null,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows errors, warnings, messages, and IO event logs.
-  static const io = Verbosity._('io', {
-    Level.error: _logToStderrWithLabel,
-    Level.warning: _logToStderrWithLabel,
-    Level.message: _logToStdoutWithLabel,
-    Level.io: _logToStderrWithLabel,
-    Level.solver: null,
-    Level.fine: null
+  static const IO = Verbosity._('io', {
+    Level.ERROR: _logToStderrWithLabel,
+    Level.WARNING: _logToStderrWithLabel,
+    Level.MESSAGE: _logToStdoutWithLabel,
+    Level.IO: _logToStderrWithLabel,
+    Level.SOLVER: null,
+    Level.FINE: null
   });
 
   /// Shows errors, warnings, messages, and version solver logs.
-  static const solver = Verbosity._('solver', {
-    Level.error: _logToStderr,
-    Level.warning: _logToStderr,
-    Level.message: _logToStdout,
-    Level.io: null,
-    Level.solver: _logToStdout,
-    Level.fine: null
+  static const SOLVER = Verbosity._('solver', {
+    Level.ERROR: _logToStderr,
+    Level.WARNING: _logToStderr,
+    Level.MESSAGE: _logToStdout,
+    Level.IO: null,
+    Level.SOLVER: _logToStdout,
+    Level.FINE: null
   });
 
   /// Shows all logs.
-  static const all = Verbosity._('all', {
-    Level.error: _logToStderrWithLabel,
-    Level.warning: _logToStderrWithLabel,
-    Level.message: _logToStdoutWithLabel,
-    Level.io: _logToStderrWithLabel,
-    Level.solver: _logToStderrWithLabel,
-    Level.fine: _logToStderrWithLabel
-  });
-
-  /// Shows all logs.
-  static const testing = Verbosity._('testing', {
-    Level.error: _logToStderrWithLabel,
-    Level.warning: _logToStderrWithLabel,
-    Level.message: _logToStdoutWithLabel,
-    Level.io: _logToStderrWithLabel,
-    Level.solver: _logToStderrWithLabel,
-    Level.fine: _logToStderrWithLabel
+  static const ALL = Verbosity._('all', {
+    Level.ERROR: _logToStderrWithLabel,
+    Level.WARNING: _logToStderrWithLabel,
+    Level.MESSAGE: _logToStdoutWithLabel,
+    Level.IO: _logToStderrWithLabel,
+    Level.SOLVER: _logToStderrWithLabel,
+    Level.FINE: _logToStderrWithLabel
   });
 
   const Verbosity._(this.name, this._loggers);
@@ -200,7 +188,7 @@ class _Entry {
   _Entry(this.level, this.lines);
 }
 
-/// Logs [message] at [Level.error].
+/// Logs [message] at [Level.ERROR].
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
@@ -210,24 +198,24 @@ void error(message, [error, StackTrace? trace]) {
     message = message.isEmpty ? '$error' : '$message: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
   }
-  write(Level.error, message);
-  if (trace != null) write(Level.fine, Chain.forTrace(trace));
+  write(Level.ERROR, message);
+  if (trace != null) write(Level.FINE, Chain.forTrace(trace));
 }
 
-/// Logs [message] at [Level.warning].
-void warning(message) => write(Level.warning, message);
+/// Logs [message] at [Level.WARNING].
+void warning(message) => write(Level.WARNING, message);
 
-/// Logs [message] at [Level.message].
-void message(message) => write(Level.message, message);
+/// Logs [message] at [Level.MESSAGE].
+void message(message) => write(Level.MESSAGE, message);
 
-/// Logs [message] at [Level.io].
-void io(message) => write(Level.io, message);
+/// Logs [message] at [Level.IO].
+void io(message) => write(Level.IO, message);
 
-/// Logs [message] at [Level.solver].
-void solver(message) => write(Level.solver, message);
+/// Logs [message] at [Level.SOLVER].
+void solver(message) => write(Level.SOLVER, message);
 
-/// Logs [message] at [Level.fine].
-void fine(message) => write(Level.fine, message);
+/// Logs [message] at [Level.FINE].
+void fine(message) => write(Level.FINE, message);
 
 /// Logs [message] at [level].
 void write(Level level, message) {
@@ -245,10 +233,10 @@ void write(Level level, message) {
   var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
-  _transcript.add(entry);
+  if (_transcript != null) _transcript!.add(entry);
 }
 
-/// Logs the spawning of an [executable] process with [arguments] at [io]
+/// Logs the spawning of an [executable] process with [arguments] at [IO]
 /// level.
 void process(
     String executable, List<String> arguments, String workingDirectory) {
@@ -325,77 +313,23 @@ void exception(exception, [StackTrace? trace]) {
   }
 }
 
-/// Prints the recorded log transcript to stderr.
-void dumpTranscriptToStdErr() {
+/// Enables recording of log entries.
+void recordTranscript() {
+  _transcript = Transcript<_Entry>(_MAX_TRANSCRIPT);
+}
+
+/// If [recordTranscript()] was called, then prints the previously recorded log
+/// transcript to stderr.
+void dumpTranscript() {
+  if (_transcript == null) return;
+
   stderr.writeln('---- Log transcript ----');
-  _transcript.forEach((entry) {
+  _transcript!.forEach((entry) {
     _printToStream(stderr, entry, showLabel: true);
   }, (discarded) {
     stderr.writeln('---- ($discarded discarded) ----');
   });
   stderr.writeln('---- End log transcript ----');
-}
-
-String _limit(String input, int limit) {
-  const snip = '[...]';
-  if (input.length < limit - snip.length) return input;
-  return '${input.substring(0, limit ~/ 2 - snip.length)}'
-      '$snip'
-      '${input.substring(limit)}';
-}
-
-/// Prints relevant system information and the log transcript to [path].
-void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
-  final buffer = StringBuffer();
-  buffer.writeln('''
-Information about the latest pub run.
-
-If you believe something is not working right, you can go to 
-https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
-
-Before making this file public, make sure to remove any sensitive information!
-
-Pub version: ${sdk.version}
-Created: ${DateTime.now().toIso8601String()}
-FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set>'}
-PUB_HOSTED_URL: ${Platform.environment['PUB_HOSTED_URL'] ?? '<not set>'}
-PUB_CACHE: "${Platform.environment['PUB_CACHE'] ?? '<not set>'}"
-Command: $command
-Platform: ${Platform.operatingSystem}
-''');
-
-  if (entrypoint != null) {
-    buffer.writeln('---- ${p.absolute(entrypoint.pubspecPath)} ----');
-    if (fileExists(entrypoint.pubspecPath)) {
-      buffer.writeln(_limit(readTextFile(entrypoint.pubspecPath), 5000));
-    } else {
-      buffer.writeln('<No pubspec.yaml>');
-    }
-    buffer.writeln('---- End pubspec.yaml ----');
-    buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
-    if (fileExists(entrypoint.lockFilePath)) {
-      buffer.writeln(_limit(readTextFile(entrypoint.lockFilePath), 5000));
-    } else {
-      buffer.writeln('<No pubspec.lock>');
-    }
-    buffer.writeln('---- End pubspec.lock ----');
-  }
-
-  buffer.writeln('---- Log transcript ----');
-
-  _transcript.forEach((entry) {
-    _printToStream(buffer, entry, showLabel: true);
-  }, (discarded) {
-    buffer.writeln('---- ($discarded entries discarded) ----');
-  });
-  buffer.writeln('---- End log transcript ----');
-  ensureDir(p.dirname(path));
-  try {
-    writeTextFile(path, buffer.toString(), dontLogContents: true);
-  } on IOException catch (e) {
-    stderr.writeln('Failed writing log to `$path` ($e), writing it to stderr:');
-    dumpTranscriptToStdErr();
-  }
 }
 
 /// Filter out normal pub output when not attached to a terminal
@@ -405,8 +339,8 @@ Platform: ${Platform.operatingSystem}
 /// This is useful to not pollute stdout when the output is piped somewhere.
 Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
   final oldVerbosity = verbosity;
-  if (verbosity == Verbosity.normal && !stdout.hasTerminal) {
-    verbosity = Verbosity.warning;
+  if (verbosity == Verbosity.NORMAL && !stdout.hasTerminal) {
+    verbosity = Verbosity.WARNING;
   }
   final result = await callback();
   verbosity = oldVerbosity;
@@ -419,7 +353,7 @@ Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 /// If anything else is logged during this (including another call to
 /// [progress]) that cancels the progress animation, although the total time
 /// will still be printed once it finishes. If [fine] is passed, the progress
-/// information will only be visible at [Level.fine].
+/// information will only be visible at [Level.FINE].
 Future<T> progress<T>(String message, Future<T> Function() callback) {
   _stopProgress();
 
@@ -558,7 +492,7 @@ void _logToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
   _printToStream(sink, entry, showLabel: showLabel);
 }
 
-void _printToStream(StringSink sink, _Entry entry, {required bool showLabel}) {
+void _printToStream(IOSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
 
   var firstLine = true;

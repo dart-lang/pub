@@ -21,14 +21,14 @@ void main() {
 
     await servePackages();
     await d
-        .credentialsFile(globalServer, 'access token',
+        .credentialsFile(globalPackageServer!, 'access token',
             refreshToken: 'bad refresh token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(globalServer);
+    var pub = await startPublish(globalPackageServer!);
 
-    globalServer.expect('POST', '/token', (request) {
+    globalPackageServer!.expect('POST', '/token', (request) {
       return request.read().drain().then((_) {
         return shelf.Response(400,
             body: jsonEncode({'error': 'invalid_request'}),
@@ -39,10 +39,11 @@ void main() {
     await confirmPublish(pub);
 
     await expectLater(pub.stdout, emits(startsWith('Uploading...')));
-    await authorizePub(pub, globalServer, 'new access token');
+    await authorizePub(pub, globalPackageServer!, 'new access token');
 
     var done = Completer();
-    globalServer.expect('GET', '/api/packages/versions/new', (request) async {
+    globalPackageServer!.expect('GET', '/api/packages/versions/new',
+        (request) async {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 

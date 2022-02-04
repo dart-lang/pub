@@ -17,13 +17,13 @@ void main() {
 
   test('--force publishes if there are no warnings or errors', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer, args: ['--force']);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!, args: ['--force']);
 
-    handleUploadForm(globalServer);
-    handleUpload(globalServer);
+    handleUploadForm(globalPackageServer!);
+    handleUpload(globalPackageServer!);
 
-    globalServer.expect('GET', '/create', (request) {
+    globalPackageServer!.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

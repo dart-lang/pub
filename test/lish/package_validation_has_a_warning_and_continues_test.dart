@@ -22,13 +22,13 @@ void main() {
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
     pub.stdin.writeln('y');
-    handleUploadForm(globalServer);
-    handleUpload(globalServer);
+    handleUploadForm(globalPackageServer!);
+    handleUpload(globalPackageServer!);
 
-    globalServer.expect('GET', '/create', (request) {
+    globalPackageServer!.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

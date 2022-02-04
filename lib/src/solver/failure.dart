@@ -7,6 +7,7 @@ import 'package:collection/collection.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
+import '../sdk.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
@@ -92,20 +93,39 @@ class _Writer {
   String write() {
     var buffer = StringBuffer();
 
-    // Find all notices from incompatibility causes. This allows an
-    // [IncompatibilityCause] to provide a notice that is printed before the
-    // explanation of the conflict.
-    // Notably, this is used for stating which SDK version is currently
-    // installed, if an SDK is incompatible with a dependency.
-    final notices = _root.externalIncompatibilities
-        .map((c) => c.cause.notice)
-        .whereNotNull()
-        .toSet() // Avoid duplicates
-        .sortedBy((n) => n); // sort for consistency
-    for (final n in notices) {
-      buffer.writeln(n);
+    // SDKs whose version constraints weren't matched.
+    var sdkConstraintCauses = <Sdk>{};
+
+    // SDKs implicated in any way in the solve failure.
+    var sdkCauses = <Sdk>{};
+
+    for (var incompatibility in _root.externalIncompatibilities) {
+      var cause = incompatibility.cause;
+      if (cause is PackageNotFoundCause) {
+        var sdk = cause.sdk;
+        if (sdk != null) {
+          sdkCauses.add(sdk);
+        }
+      } else if (cause is SdkCause) {
+        sdkCauses.add(cause.sdk);
+        sdkConstraintCauses.add(cause.sdk);
+      }
     }
-    if (notices.isNotEmpty) buffer.writeln();
+
+    // If the failure was caused in part by unsatisfied SDK constraints,
+    // indicate the actual versions so we don't have to list them (possibly
+    // multiple times) in the main body of the error message.
+    //
+    // Iterate through [sdks] to ensure that SDKs versions are printed in a
+    // consistent order
+    var wroteLine = false;
+    for (var sdk in sdks.values) {
+      if (!sdkConstraintCauses.contains(sdk)) continue;
+      if (!sdk.isAvailable) continue;
+      wroteLine = true;
+      buffer.writeln('The current ${sdk.name} SDK version is ${sdk.version}.');
+    }
+    if (wroteLine) buffer.writeln();
 
     if (_root.cause is ConflictCause) {
       _visit(_root, const {});
@@ -139,21 +159,15 @@ class _Writer {
       buffer.writeln(wordWrap(message, prefix: ' ' * (padding + 2)));
     }
 
-    // Iterate through all hints, these are intended to be actionable, such as:
-    //  * How to install an SDK, and,
-    //  * How to provide authentication.
-    // Hence, it makes sense to show these at the end of the explanation, as the
-    // user will ideally see these before reading the actual conflict and
-    // understand how to fix the issue.
-    _root.externalIncompatibilities
-        .map((c) => c.cause.hint)
-        .whereNotNull()
-        .toSet() // avoid duplicates
-        .sortedBy((hint) => hint) // sort hints for consistent ordering.
-        .forEach((hint) {
+    // Iterate through [sdks] to ensure that SDKs versions are printed in a
+    // consistent order
+    for (var sdk in sdks.values) {
+      if (!sdkCauses.contains(sdk)) continue;
+      if (sdk.isAvailable) continue;
+      if (sdk.installMessage == null) continue;
       buffer.writeln();
-      buffer.writeln(hint);
-    });
+      buffer.writeln(sdk.installMessage);
+    }
 
     return buffer.toString();
   }

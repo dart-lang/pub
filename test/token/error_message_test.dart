@@ -9,7 +9,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void respondWithWwwAuthenticate(String headerValue) {
-  globalServer.expect('GET', '/api/packages/versions/new', (request) {
+  globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
     return shelf.Response(403, headers: {'www-authenticate': headerValue});
   });
 }
@@ -18,7 +18,7 @@ Future<void> expectPubErrorMessage(dynamic matcher) {
   return runPub(
     args: ['lish'],
     environment: {
-      'PUB_HOSTED_URL': globalServer.url,
+      'PUB_HOSTED_URL': globalPackageServer!.url,
       '_PUB_TEST_AUTH_METHOD': 'token',
     },
     exitCode: 65,
@@ -34,7 +34,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url, 'token': 'access token'},
+        {'url': globalPackageServer!.url, 'token': 'access token'},
       ]
     }).create();
   });

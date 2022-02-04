@@ -18,12 +18,8 @@ export 'src/pub_embeddable_command.dart' show PubAnalytics;
 ///
 /// If [analytics] is given, pub will use that analytics instance to send
 /// statistics about resolutions.
-///
-/// [isVerbose] should return `true` (after argument resolution) if the
-/// embedding top-level is in verbose mode.
-Command<int> pubCommand(
-        {PubAnalytics? analytics, required bool Function() isVerbose}) =>
-    PubEmbeddableCommand(analytics, isVerbose);
+Command<int> pubCommand({PubAnalytics? analytics}) =>
+    PubEmbeddableCommand(analytics);
 
 /// Support for the `pub` toplevel command.
 @Deprecated('Use [pubCommand] instead.')

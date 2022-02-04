@@ -9,8 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('does not request a pubspec for a cached package', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
+    await servePackages((builder) => builder.serve('foo', '1.2.3'));
 
     await d.appDir({'foo': '1.2.3'}).create();
 
@@ -19,18 +18,16 @@ void main() {
 
     // Clear the cache. We don't care about anything that was served during
     // the initial get.
-    server.requestedPaths.clear();
+    globalServer!.requestedPaths.clear();
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
 
     // Run the solver again now that it's cached.
     await pubGet();
 
     // The get should not have requested the pubspec since it's local already.
-    expect(server.requestedPaths,
+    expect(globalServer!.requestedPaths,
         isNot(contains('packages/foo/versions/1.2.3.yaml')));
   });
 }

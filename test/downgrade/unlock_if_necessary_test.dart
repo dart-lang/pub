@@ -11,27 +11,24 @@ void main() {
   test(
       "downgrades one locked hosted package's dependencies if it's "
       'necessary', () async {
-    final server = await servePackages();
-    server.serve('foo', '2.0.0', deps: {'foo_dep': 'any'});
-    server.serve('foo_dep', '2.0.0');
+    await servePackages((builder) {
+      builder.serve('foo', '2.0.0', deps: {'foo_dep': 'any'});
+      builder.serve('foo_dep', '2.0.0');
+    });
 
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '2.0.0'),
-      d.packageConfigEntry(name: 'foo_dep', version: '2.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '2.0.0', 'foo_dep': '2.0.0'}).validate();
 
-    server.serve('foo', '1.0.0', deps: {'foo_dep': '<2.0.0'});
-    server.serve('foo_dep', '1.0.0');
+    globalPackageServer!.add((builder) {
+      builder.serve('foo', '1.0.0', deps: {'foo_dep': '<2.0.0'});
+      builder.serve('foo_dep', '1.0.0');
+    });
 
     await pubDowngrade(args: ['foo']);
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'foo_dep', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'foo_dep': '1.0.0'}).validate();
   });
 }

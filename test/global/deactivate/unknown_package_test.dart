@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('errors if the package is not activated', () async {
-    await servePackages();
+    await serveNoPackages();
 
     await runPub(
         args: ['global', 'deactivate', 'foo'],

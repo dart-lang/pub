@@ -23,7 +23,7 @@ const _catchableSignals = [
   ProcessSignal.sigwinch,
 ];
 
-const _script = """
+const SCRIPT = """
 import 'dart:io';
 
 main() {
@@ -41,7 +41,7 @@ void main() {
   test('forwards signals to the inner script', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('script.dart', _script)])
+      d.dir('bin', [d.file('script.dart', SCRIPT)])
     ]).create();
 
     await pubGet();

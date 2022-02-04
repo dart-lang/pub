@@ -9,12 +9,14 @@ import '../../test_pub.dart';
 
 void main() {
   test('warns if the binstub directory is not on the path', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'some-dart-script': 'script'}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'some-dart-script': 'script'}
+      }, contents: [
+        d.dir(
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+      ]);
+    });
 
     await runPub(
         args: ['global', 'activate', 'foo'],

@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('errors if the package could not be found', () async {
-    await servePackages();
+    await serveNoPackages();
 
     await runPub(
         args: ['global', 'activate', 'foo'],

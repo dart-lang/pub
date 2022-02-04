@@ -14,21 +14,20 @@ import 'test_pub.dart';
 Future<void> main() async {
   testWithGolden('commands taking a --directory/-C parameter work',
       (ctx) async {
-    await servePackages()
+    await servePackages((b) => b
       ..serve('foo', '1.0.0')
       ..serve('foo', '0.1.2')
-      ..serve('bar', '1.2.3');
-    await credentialsFile(globalServer, 'access token').create();
-    globalServer.handle(
-      RegExp('/api/packages/test_pkg/uploaders'),
-      (request) {
-        return shelf.Response.ok(
-            jsonEncode({
-              'success': {'message': 'Good job!'}
-            }),
-            headers: {'content-type': 'application/json'});
-      },
-    );
+      ..serve('bar', '1.2.3'));
+    await credentialsFile(globalPackageServer!, 'access token').create();
+    globalPackageServer!
+        .extraHandlers[RegExp('/api/packages/test_pkg/uploaders')] = (request) {
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Good job!'}
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    };
 
     await validPackage.create();
     await dir(appPath, [

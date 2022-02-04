@@ -13,28 +13,24 @@ void main() {
   test(
       'keeps a hosted package locked to the version in the '
       'lockfile', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
+    await servePackages((builder) => builder.serve('foo', '1.0.0'));
 
     await d.appDir({'foo': 'any'}).create();
 
     // This should lock the foo dependency to version 1.0.0.
     await pubGet();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-    ]).validate();
+
+    await d.appPackagesFile({'foo': '1.0.0'}).validate();
 
     // Delete the .dart_tool/package_config.json file to simulate a new checkout of the application.
     deleteEntry(path.join(d.sandbox, packageConfigFilePath));
 
     // Start serving a newer package as well.
-    server.serve('foo', '1.0.1');
+    globalPackageServer!.add((builder) => builder.serve('foo', '1.0.1'));
 
     // This shouldn't upgrade the foo dependency due to the lockfile.
     await pubGet();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0'}).validate();
   });
 }

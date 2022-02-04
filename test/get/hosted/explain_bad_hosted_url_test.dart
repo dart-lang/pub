@@ -32,12 +32,11 @@ void main() {
   });
 
   test('Allows PUB_HOSTED_URL to end with a slash', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
+    await servePackages((b) => b.serve('foo', '1.0.0'));
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet(
-      environment: {'PUB_HOSTED_URL': '${globalServer.url}/'},
+      environment: {'PUB_HOSTED_URL': '${globalPackageServer!.url}/'},
     );
   });
 }

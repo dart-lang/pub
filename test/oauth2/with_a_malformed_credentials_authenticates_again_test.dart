@@ -19,11 +19,11 @@ void main() {
     await d.dir(
         configPath, [d.file('pub-credentials.json', '{bad json')]).create();
 
-    var pub = await startPublish(globalServer);
+    var pub = await startPublish(globalPackageServer!);
     await confirmPublish(pub);
-    await authorizePub(pub, globalServer, 'new access token');
+    await authorizePub(pub, globalPackageServer!, 'new access token');
 
-    globalServer.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 
@@ -34,6 +34,8 @@ void main() {
     // do so rather than killing it so it'll write out the credentials file.
     await pub.shouldExit(1);
 
-    await d.credentialsFile(globalServer, 'new access token').validate();
+    await d
+        .credentialsFile(globalPackageServer!, 'new access token')
+        .validate();
   });
 }

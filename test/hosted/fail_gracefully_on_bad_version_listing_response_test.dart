@@ -9,7 +9,6 @@ import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
-import '../golden_file.dart';
 import '../test_pub.dart';
 
 void main() {
@@ -17,18 +16,15 @@ void main() {
     test(
         'fails gracefully if the package server responds with broken package listings',
         () async {
-      final server = await servePackages();
-      server.serve('foo', '1.2.3');
-      server.expect(
-        'GET',
-        RegExp('/api/packages/.*'),
-        expectAsync1((request) {
-          return Response(200,
-              body: jsonEncode({
-                'notTheRight': {'response': 'type'}
-              }));
-        }),
-      );
+      await servePackages((b) => b..serve('foo', '1.2.3'));
+      globalPackageServer!.extraHandlers[RegExp('/api/packages/.*')] =
+          expectAsync1((request) {
+        expect(request.method, 'GET');
+        return Response(200,
+            body: jsonEncode({
+              'notTheRight': {'response': 'type'}
+            }));
+      });
       await d.appDir({'foo': '1.2.3'}).create();
 
       await pubCommand(command,
@@ -39,81 +35,5 @@ void main() {
           ]),
           exitCode: exit_codes.DATA);
     });
-  });
-
-  testWithGolden('bad_json', (ctx) async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
-    server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(200,
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
-    });
-    await d.appDir({'foo': '1.2.3'}).create();
-
-    await ctx.run(['get']);
-  });
-
-  testWithGolden('403', (ctx) async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
-    server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(403,
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
-    });
-    await d.appDir({'foo': '1.2.3'}).create();
-
-    await ctx.run(['get']);
-  });
-
-  testWithGolden('401', (ctx) async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
-    server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(401,
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
-    });
-    await d.appDir({'foo': '1.2.3'}).create();
-
-    await ctx.run(['get']);
-  });
-
-  testWithGolden('403-with-message', (ctx) async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
-    server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(403,
-          headers: {
-            'www-authenticate': 'Bearer realm="pub", message="<message>"',
-          },
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
-    });
-    await d.appDir({'foo': '1.2.3'}).create();
-
-    await ctx.run(['get']);
-  });
-
-  testWithGolden('401-with-message', (ctx) async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
-    server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(401,
-          headers: {
-            'www-authenticate': 'Bearer realm="pub", message="<message>"',
-          },
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
-    });
-    await d.appDir({'foo': '1.2.3'}).create();
-
-    await ctx.run(['get']);
   });
 }

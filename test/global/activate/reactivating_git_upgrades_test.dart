@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -30,12 +29,11 @@ void main() {
     await d.git('foo.git', [d.libPubspec('foo', '1.0.1')]).commit();
 
     // Activating it again pulls down the latest commit.
-    final locationUri = p.toUri(p.join(d.sandbox, 'foo.git'));
     await runPub(
         args: ['global', 'activate', '-sgit', '../foo.git'],
         output: allOf(
             startsWith('Package foo is currently active from Git repository '
-                '"$locationUri".\n'
+                '"../foo.git".\n'
                 'Resolving dependencies...\n'
                 '+ foo 1.0.1 from git ../foo.git at '),
             // Specific revision number goes here.

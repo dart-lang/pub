@@ -49,10 +49,11 @@ void main() {
   });
 
   test('a snapshotted application sees a file: package root', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', _script)])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('script.dart', _script)])
+      ]);
+    });
 
     await d.dir(appPath, [
       d.appPubspec({'foo': 'any'})
@@ -72,8 +73,8 @@ void main() {
             .toString()));
     expect(pub.stdout,
         emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
-    var fooResourcePath =
-        p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+    var fooResourcePath = p.join(
+        globalPackageServer!.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });

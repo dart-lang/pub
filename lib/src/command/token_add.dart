@@ -57,11 +57,17 @@ class TokenAddCommand extends PubCommand {
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "$rawHostedUrl"\n'
           '${e.message}');
+    } on TimeoutException catch (_) {
+      // Timeout is added to readLine call to make sure automated jobs doesn't
+      // get stuck on noop state if user forget to pipe token to the 'token add'
+      // command. This behavior might be removed.
+      throw ApplicationException('Token is not provided within 15 minutes.');
     }
   }
 
   Future<void> _addTokenFromStdin(Uri hostedUrl) async {
-    final token = await stdinPrompt('Enter secret token:', echoMode: false);
+    final token = await stdinPrompt('Enter secret token:', echoMode: false)
+        .timeout(const Duration(minutes: 15));
     if (token.isEmpty) {
       usageException('Token is not provided.');
     }

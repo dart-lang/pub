@@ -5,7 +5,6 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import '../http.dart';
 import '../io.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
@@ -13,7 +12,6 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
-import '../source/cached.dart';
 import '../source/hosted.dart';
 import '../source_registry.dart';
 import '../system_cache.dart';
@@ -80,18 +78,6 @@ class SolveResult {
 
   final LockFile _previousLockFile;
 
-  /// Downloads all cached packages in [packages].
-  Future<void> downloadCachedPackages(SystemCache cache) async {
-    await Future.wait(packages.map((id) async {
-      if (id.source == null) return;
-      final source = cache.source(id.source);
-      if (source is! CachedSource) return;
-      return await withDependencyType(_root.dependencyType(id.name), () async {
-        await source.downloadToSystemCache(id);
-      });
-    }));
-  }
-
   /// Returns the names of all packages that were changed.
   ///
   /// This includes packages that were added or removed.
@@ -136,7 +122,7 @@ class SolveResult {
     final report =
         SolveReport(type, _sources, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
-    if (type == SolveType.upgrade) {
+    if (type == SolveType.UPGRADE) {
       await report.reportDiscontinued();
       report.reportOutdated();
     }

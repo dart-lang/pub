@@ -108,10 +108,10 @@ class GitSource extends Source {
   /// For the descriptions where `relative` attribute is `true`, tries to make
   /// `url` relative to the specified [containingPath].
   @override
-  dynamic serializeDescription(String? containingPath, description) {
+  dynamic serializeDescription(String containingPath, description) {
     final copy = Map.from(description);
     copy.remove('relative');
-    if (description['relative'] == true && containingPath != null) {
+    if (description['relative'] == true) {
       copy['url'] = p.url.relative(description['url'],
           from: Uri.file(containingPath).toString());
     }

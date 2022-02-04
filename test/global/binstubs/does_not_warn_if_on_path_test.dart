@@ -12,12 +12,14 @@ import '../../test_pub.dart';
 
 void main() {
   test('does not warn if the binstub directory is on the path', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'script': null}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'script': null}
+      }, contents: [
+        d.dir(
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+      ]);
+    });
 
     // Add the test's cache bin directory to the path.
     var binDir = p.dirname(Platform.executable);

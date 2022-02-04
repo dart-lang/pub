@@ -12,12 +12,14 @@ import 'utils.dart';
 
 void main() {
   test('the generated binstub runs a snapshotted executable', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'foo-script': 'script'}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'foo-script': 'script'}
+      }, contents: [
+        d.dir(
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+      ]);
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 

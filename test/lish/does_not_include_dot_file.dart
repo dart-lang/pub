@@ -30,14 +30,14 @@ void main() {
 
   test('Check if package doesn\'t include dot-files', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
-    handleUploadForm(globalServer);
-    handleUpload(globalServer);
+    handleUploadForm(globalPackageServer!);
+    handleUpload(globalPackageServer!);
 
-    globalServer.expect('GET', '/create', (request) {
+    globalPackageServer!.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

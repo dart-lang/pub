@@ -15,13 +15,13 @@ void main() {
 
   test('upload form fields is not a map', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
 
     var body = {'url': 'http://example.com/upload', 'fields': 12};
-    handleUploadForm(globalServer, body: body);
+    handleUploadForm(globalPackageServer!, body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));
     await pub.shouldExit(1);

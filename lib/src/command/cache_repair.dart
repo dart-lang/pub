@@ -23,8 +23,6 @@ class CacheRepairCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    // Delete any eventual temp-files left in the cache.
-    cache.deleteTempDir();
     // Repair every cached source.
     final repairResults = (await Future.wait(
             cache.sources.all.map(cache.source).map((source) async {

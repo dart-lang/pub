@@ -11,8 +11,7 @@ import '../test_pub.dart';
 
 void main() {
   test(r'runs even with an empty environment (eg. no $HOME)', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.3');
+    await servePackages((builder) => builder.serve('foo', '1.2.3'));
 
     await d.appDir({'foo': 'any'}).create();
 

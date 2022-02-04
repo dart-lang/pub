@@ -14,13 +14,13 @@ void main() {
 
   test('cloud storage upload provides an error', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
-    handleUploadForm(globalServer);
+    handleUploadForm(globalPackageServer!);
 
-    globalServer.expect('POST', '/upload', (request) {
+    globalPackageServer!.expect('POST', '/upload', (request) {
       return request.read().drain().then((_) {
         return shelf.Response.notFound(
             '<Error><Message>Your request sucked.</Message></Error>',

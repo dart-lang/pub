@@ -9,8 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('highlights overridden packages', () async {
-    final server = await servePackages();
-    server.serve('overridden', '1.0.0');
+    await servePackages((builder) => builder.serve('overridden', '1.0.0'));
 
     await d.dir(appPath, [
       d.pubspec({

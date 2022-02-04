@@ -16,12 +16,12 @@ void main() {
       'credentials.json', () async {
     await d.validPackage.create();
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
 
-    globalServer.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
       return shelf.Response(401,
           body: jsonEncode({
             'error': {'message': 'your token sucks'}

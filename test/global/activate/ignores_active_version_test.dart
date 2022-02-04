@@ -9,14 +9,15 @@ import '../../test_pub.dart';
 
 void main() {
   test('ignores previously activated version', () async {
-    await servePackages()
-      ..serve(
+    await servePackages((builder) {
+      builder.serve(
         'foo',
         '1.2.3',
-      )
-      ..serve('foo', '1.3.0', contents: [
+      );
+      builder.serve('foo', '1.3.0', contents: [
         d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
       ]);
+    });
 
     // Activate 1.2.3.
     await runPub(args: ['global', 'activate', 'foo', '1.2.3']);

@@ -18,7 +18,7 @@ void main() {
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     await servePackages();
-    var pub = await startPublish(globalServer);
+    var pub = await startPublish(globalPackageServer!);
 
     pub.stdin.writeln('n');
     await pub.shouldExit(exit_codes.DATA);

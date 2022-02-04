@@ -13,11 +13,12 @@ void main() {
   test(
       'adds the latest version of the package matching the '
       'version constraint', () async {
-    await servePackages()
-      ..serve('foo', '1.2.2')
-      ..serve('foo', '1.2.3')
-      ..serve('foo', '2.0.0-dev')
-      ..serve('foo', '2.0.0');
+    await servePackages((builder) {
+      builder.serve('foo', '1.2.2');
+      builder.serve('foo', '1.2.3');
+      builder.serve('foo', '2.0.0-dev');
+      builder.serve('foo', '2.0.0');
+    });
 
     await runPub(
         args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0'],

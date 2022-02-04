@@ -9,13 +9,14 @@ import '../../test_pub.dart';
 
 void main() {
   test('performs verison solver backtracking if necessary', () async {
-    await servePackages()
-      ..serve('foo', '1.1.0', pubspec: {
+    await servePackages((builder) {
+      builder.serve('foo', '1.1.0', pubspec: {
         'environment': {'sdk': '>=0.1.2 <0.2.0'}
-      })
-      ..serve('foo', '1.2.0', pubspec: {
+      });
+      builder.serve('foo', '1.2.0', pubspec: {
         'environment': {'sdk': '>=0.1.3 <0.2.0'}
       });
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 

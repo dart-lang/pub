@@ -9,9 +9,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('errors if the constraint matches no versions', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0')
-      ..serve('foo', '1.0.1');
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '1.0.1');
+    });
 
     await runPub(
         args: ['global', 'activate', 'foo', '>1.1.0'],

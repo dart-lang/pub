@@ -19,9 +19,7 @@ void main() {
 
     await pubAdd(args: ['foo', '--path', '../foo']);
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../foo'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '../foo'}).validate();
 
     await d.appDir({
       'foo': {'path': '../foo'}
@@ -40,9 +38,7 @@ void main() {
       output: contains('Changed 1 dependency in myapp!'),
     );
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../foo'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '../foo'}).validate();
 
     await d.appDir({
       'foo': {'path': '../foo'}
@@ -106,8 +102,9 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.2.2');
+    await servePackages((builder) {
+      builder.serve('foo', '1.2.2');
+    });
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
@@ -122,9 +119,7 @@ void main() {
     await pubAdd(args: ['foo', '--path', '../foo']);
 
     await d.cacheDir({'foo': '1.2.2'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.2'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.2.2'}).validate();
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',

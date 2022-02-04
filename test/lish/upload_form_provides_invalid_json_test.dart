@@ -13,12 +13,12 @@ void main() {
 
   test('upload form provides invalid JSON', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
 
-    globalServer.expect('GET', '/api/packages/versions/new',
+    globalPackageServer!.expect('GET', '/api/packages/versions/new',
         (request) => shelf.Response.ok('{not json'));
 
     expect(

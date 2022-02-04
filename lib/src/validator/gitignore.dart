@@ -46,10 +46,8 @@ class GitignoreValidator extends Validator {
         beneath: beneath,
         listDir: (dir) {
           var contents = Directory(resolve(dir)).listSync();
-          return contents
-              .where((e) => !(linkExists(e.path) && dirExists(e.path)))
-              .map((entity) => p.posix
-                  .joinAll(p.split(p.relative(entity.path, from: root))));
+          return contents.map((entity) =>
+              p.posix.joinAll(p.split(p.relative(entity.path, from: root))));
         },
         ignoreForDir: (dir) {
           final gitIgnore = resolve('$dir/.gitignore');
@@ -71,7 +69,7 @@ class GitignoreValidator extends Validator {
 
       if (ignoredFilesCheckedIn.isNotEmpty) {
         warnings.add('''
-${ignoredFilesCheckedIn.length} checked-in ${pluralize('file', ignoredFilesCheckedIn.length)} ${ignoredFilesCheckedIn.length == 1 ? 'is' : 'are'} ignored by a `.gitignore`.
+${ignoredFilesCheckedIn.length} checked in ${pluralize('file', ignoredFilesCheckedIn.length)} ${ignoredFilesCheckedIn.length == 1 ? 'is' : 'are'} ignored by a `.gitignore`.
 Previous versions of Pub would include those in the published package.
 
 Consider adjusting your `.gitignore` files to not ignore those files, and if you do not wish to

@@ -11,10 +11,11 @@ void main() {
   test(
       'does not show how many newer versions are available for '
       'packages that are locked and not being upgraded', () async {
-    await servePackages()
-      ..serve('a', '1.0.0')
-      ..serve('b', '1.0.0')
-      ..serve('c', '2.0.0');
+    await servePackages((builder) {
+      builder.serve('a', '1.0.0');
+      builder.serve('b', '1.0.0');
+      builder.serve('c', '2.0.0');
+    });
 
     await d.appDir({'a': 'any'}).create();
 

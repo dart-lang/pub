@@ -10,10 +10,11 @@ import '../../test_pub.dart';
 
 void main() {
   test("fails if the current SDK doesn't match the constraint", () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+      ]);
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 
@@ -40,14 +41,15 @@ void main() {
   });
 
   test('fails if SDK is downgraded below the constraints', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'environment': {
-        'sdk': '>=2.0.0 <3.0.0',
-      },
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        'environment': {
+          'sdk': '>=2.0.0 <3.0.0',
+        },
+      }, contents: [
+        d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")])
+      ]);
+    });
 
     await runPub(
       environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
@@ -67,8 +69,8 @@ void main() {
   });
 
   test('fails if SDK is downgraded below dependency SDK constraints', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', deps: {
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', deps: {
         'bar': '^1.0.0',
       }, pubspec: {
         'environment': {
@@ -76,12 +78,13 @@ void main() {
         },
       }, contents: [
         d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")])
-      ])
-      ..serve('bar', '1.0.0', pubspec: {
+      ]);
+      builder.serve('bar', '1.0.0', pubspec: {
         'environment': {
           'sdk': '>=2.2.0 <3.0.0',
         },
       });
+    });
 
     await runPub(
       environment: {'_PUB_TEST_SDK_VERSION': '2.2.0'},

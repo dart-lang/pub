@@ -11,36 +11,38 @@ import '../../test_pub.dart';
 
 void main() {
   test('Report retracted packages', () async {
-    final server = await servePackages()
+    await servePackages((builder) => builder
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
-      ..serve('bar', '1.0.0');
+      ..serve('bar', '1.0.0'));
     await d.appDir({'foo': '1.0.0'}).create();
 
     await pubGet();
 
-    server.retractPackageVersion('bar', '1.0.0');
+    globalPackageServer!
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(server.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(output: contains('bar 1.0.0 (retracted)'));
   });
 
   test('Report retracted packages with newer version available', () async {
-    final server = await servePackages()
+    await servePackages((builder) => builder
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0')
       ..serve('bar', '2.0.0')
-      ..serve('bar', '2.0.1-pre');
+      ..serve('bar', '2.0.1-pre'));
     await d.appDir({'foo': '1.0.0'}).create();
 
     await pubGet();
 
-    server.retractPackageVersion('bar', '1.0.0');
+    globalPackageServer!
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(server.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(output: contains('bar 1.0.0 (retracted, 2.0.0 available)'));
@@ -48,18 +50,19 @@ void main() {
 
   test('Report retracted packages with newer prerelease version available',
       () async {
-    final server = await servePackages()
+    await servePackages((builder) => builder
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0-pre'})
       ..serve('bar', '1.0.0-pre')
-      ..serve('bar', '2.0.1-pre');
+      ..serve('bar', '2.0.1-pre'));
     await d.appDir({'foo': '1.0.0'}).create();
 
     await pubGet();
 
-    server.retractPackageVersion('bar', '1.0.0-pre');
+    globalPackageServer!
+        .add((builder) => builder..retractPackageVersion('bar', '1.0.0-pre'));
     // Delete the cache to trigger the report.
     final barVersionsCache =
-        p.join(server.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(

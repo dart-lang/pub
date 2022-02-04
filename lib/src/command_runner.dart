@@ -58,22 +58,21 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Verbosity get verbosity {
     switch (argResults['verbosity']) {
       case 'error':
-        return log.Verbosity.error;
+        return log.Verbosity.ERROR;
       case 'warning':
-        return log.Verbosity.warning;
+        return log.Verbosity.WARNING;
       case 'normal':
-        return log.Verbosity.normal;
+        return log.Verbosity.NORMAL;
       case 'io':
-        return log.Verbosity.io;
+        return log.Verbosity.IO;
       case 'solver':
-        return log.Verbosity.solver;
+        return log.Verbosity.SOLVER;
       case 'all':
-        return log.Verbosity.all;
+        return log.Verbosity.ALL;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (argResults['verbose']) return log.Verbosity.all;
-        if (runningFromTest) return log.Verbosity.testing;
-        return log.Verbosity.normal;
+        if (argResults['verbose']) return log.Verbosity.ALL;
+        return log.Verbosity.NORMAL;
     }
   }
 

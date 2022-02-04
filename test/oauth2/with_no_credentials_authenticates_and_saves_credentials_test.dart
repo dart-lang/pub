@@ -16,11 +16,11 @@ void main() {
     await d.validPackage.create();
 
     await servePackages();
-    var pub = await startPublish(globalServer);
+    var pub = await startPublish(globalPackageServer!);
     await confirmPublish(pub);
-    await authorizePub(pub, globalServer);
+    await authorizePub(pub, globalPackageServer!);
 
-    globalServer.expect('GET', '/api/packages/versions/new', (request) {
+    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
       expect(request.headers,
           containsPair('authorization', 'Bearer access token'));
 
@@ -31,6 +31,6 @@ void main() {
     // do so rather than killing it so it'll write out the credentials file.
     await pub.shouldExit(1);
 
-    await d.credentialsFile(globalServer, 'access token').validate();
+    await d.credentialsFile(globalPackageServer!, 'access token').validate();
   });
 }

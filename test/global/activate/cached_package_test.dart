@@ -9,10 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('can activate an already cached package', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+      ]);
+    });
 
     await runPub(args: ['cache', 'add', 'foo']);
 

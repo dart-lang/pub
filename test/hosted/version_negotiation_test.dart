@@ -16,11 +16,11 @@ void main() {
 
       await d.appDir({
         'foo': {
-          'hosted': {'name': 'foo', 'url': globalServer.url}
+          'hosted': {'name': 'foo', 'url': globalPackageServer!.url}
         }
       }).create();
 
-      globalServer.expect('GET', '/api/packages/foo', (request) {
+      globalPackageServer!.expect('GET', '/api/packages/foo', (request) {
         expect(
             request.headers['accept'], equals('application/vnd.pub.v2+json'));
         return shelf.Response(404);
@@ -35,14 +35,14 @@ void main() {
 
       await d.appDir({
         'foo': {
-          'hosted': {'name': 'foo', 'url': globalServer.url}
+          'hosted': {'name': 'foo', 'url': globalPackageServer!.url}
         }
       }).create();
 
       var pub = await startPub(args: [command.name]);
 
-      globalServer.expect(
-          'GET', '/api/packages/foo', (request) => shelf.Response(406));
+      globalPackageServer!
+          .expect('GET', '/api/packages/foo', (request) => shelf.Response(406));
 
       await pub.shouldExit(1);
 

@@ -9,15 +9,16 @@ import '../../test_pub.dart';
 
 void main() {
   test('removes binstubs when the package is deactivated', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'one': null, 'two': null}
-    }, contents: [
-      d.dir('bin', [
-        d.file('one.dart', "main(args) => print('one');"),
-        d.file('two.dart', "main(args) => print('two');")
-      ])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'one': null, 'two': null}
+      }, contents: [
+        d.dir('bin', [
+          d.file('one.dart', "main(args) => print('one');"),
+          d.file('two.dart', "main(args) => print('two');")
+        ])
+      ]);
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
     await runPub(args: ['global', 'deactivate', 'foo']);

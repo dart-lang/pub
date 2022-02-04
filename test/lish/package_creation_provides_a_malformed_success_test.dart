@@ -16,15 +16,15 @@ void main() {
 
   test('package creation provides a malformed success', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
-    handleUploadForm(globalServer);
-    handleUpload(globalServer);
+    handleUploadForm(globalPackageServer!);
+    handleUpload(globalPackageServer!);
 
     var body = {'success': 'Your package was awesome.'};
-    globalServer.expect('GET', '/create', (request) {
+    globalPackageServer!.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode(body));
     });
 

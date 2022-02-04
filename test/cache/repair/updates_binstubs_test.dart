@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-const _outdatedBinstub = '''
+const _OUTDATED_BINSTUB = '''
 #!/usr/bin/env sh
 # This file was created by pub v0.1.2-3.
 # Package: foo
@@ -19,17 +19,19 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 
 void main() {
   test('updates an outdated binstub script', () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'foo-script': 'script'}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0', pubspec: {
+        'executables': {'foo-script': 'script'}
+      }, contents: [
+        d.dir(
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+      ]);
+    });
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('foo-script'), _outdatedBinstub)])
+      d.dir('bin', [d.file(binStubName('foo-script'), _OUTDATED_BINSTUB)])
     ]).create();
 
     // Repair them.

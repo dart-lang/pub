@@ -10,6 +10,7 @@ import 'package:collection/collection.dart'
     show maxBy, IterableNullableExtension;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:pedantic/pedantic.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -159,7 +160,7 @@ class HostedSource extends Source {
   }
 
   @override
-  dynamic serializeDescription(String? containingPath, description) {
+  dynamic serializeDescription(String containingPath, description) {
     final desc = _asDescription(description);
     return _serializedDescriptionFor(desc.packageName, desc.uri);
   }
@@ -232,7 +233,8 @@ class HostedSource extends Source {
       return _HostedDescription(packageName, defaultUrl);
     }
 
-    final canUseShorthandSyntax = languageVersion.supportsShorterHostedSyntax;
+    final canUseShorthandSyntax =
+        languageVersion >= _minVersionForShorterHostedSyntax;
 
     if (description is String) {
       // Old versions of pub (pre Dart 2.15) interpret `hosted: foo` as
@@ -255,7 +257,7 @@ class HostedSource extends Source {
         } else {
           throw FormatException(
             'Using `hosted: <url>` is only supported with a minimum SDK '
-            'constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.',
+            'constraint of $_minVersionForShorterHostedSyntax.',
           );
         }
       }
@@ -270,7 +272,7 @@ class HostedSource extends Source {
 
     if (name is! String) {
       throw FormatException("The 'name' key must have a string value without "
-          'a minimum Dart SDK constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.0 or higher.');
+          'a minimum Dart SDK constraint of $_minVersionForShorterHostedSyntax.0 or higher.');
     }
 
     var url = defaultUrl;
@@ -284,6 +286,21 @@ class HostedSource extends Source {
 
     return _HostedDescription(name, url);
   }
+
+  /// Minimum language version at which short hosted syntax is supported.
+  ///
+  /// This allows `hosted` dependencies to be expressed as:
+  /// ```yaml
+  /// dependencies:
+  ///   foo:
+  ///     hosted: https://some-pub.com/path
+  ///     version: ^1.0.0
+  /// ```
+  ///
+  /// At older versions, `hosted` dependencies had to be a map with a `url` and
+  /// a `name` key.
+  static const LanguageVersion _minVersionForShorterHostedSyntax =
+      LanguageVersion(2, 15);
 
   static final RegExp _looksLikePackageName =
       RegExp(r'^[a-zA-Z_]+[a-zA-Z0-9_]*$');
@@ -389,8 +406,8 @@ class BoundHostedSource extends CachedSource {
       body = decoded;
       result = _versionInfoFromPackageListing(body, ref, url);
     } on Exception catch (error, stackTrace) {
-      final packageName = source._asDescription(ref.description).packageName;
-      _throwFriendlyError(error, stackTrace, packageName, serverUrl);
+      var parsed = source._asDescription(ref.description);
+      _throwFriendlyError(error, stackTrace, parsed.packageName, parsed.uri);
     }
 
     // Cache the response on disk.
@@ -688,7 +705,6 @@ class BoundHostedSource extends CachedSource {
           packages.map((package) async {
             var id = source.idFor(package.name, package.version, url: url);
             try {
-              deleteEntry(package.dir);
               await _download(id, package.dir);
               return RepairResult(id, success: true);
             } catch (error, stackTrace) {
@@ -797,74 +813,51 @@ class BoundHostedSource extends CachedSource {
       var tempDir = systemCache.createTempDir();
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
+      // Remove the existing directory if it exists. This will happen if
+      // we're forcing a download to repair the cache.
+      if (dirExists(destPath)) deleteEntry(destPath);
+
       // Now that the get has succeeded, move it to the real location in the
-      // cache.
-      //
-      // If this fails with a "directory not empty" exception we assume that
-      // another pub process has installed the same package version while we
-      // downloaded.
-      tryRenameDir(tempDir, destPath);
+      // cache. This ensures that we don't leave half-busted ghost
+      // directories in the user's pub cache if a get fails.
+      renameDir(tempDir, destPath);
     });
   }
 
-  /// When an error occurs trying to read something about [package] from [hostedUrl],
+  /// When an error occurs trying to read something about [package] from [url],
   /// this tries to translate into a more user friendly error message.
   ///
   /// Always throws an error, either the original one or a better one.
   Never _throwFriendlyError(
-    Exception error,
+    error,
     StackTrace stackTrace,
     String package,
-    Uri hostedUrl,
+    Uri url,
   ) {
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
         throw PackageNotFoundException(
-            'could not find package $package at $hostedUrl',
+            'could not find package $package at $url',
             innerError: error,
             innerTrace: stackTrace);
       }
 
       fail(
           '${error.response.statusCode} ${error.response.reasonPhrase} trying '
-          'to find package $package at $hostedUrl.',
+          'to find package $package at $url.',
           error,
           stackTrace);
     } else if (error is io.SocketException) {
-      fail('Got socket error trying to find package $package at $hostedUrl.',
-          error, stackTrace);
+      fail('Got socket error trying to find package $package at $url.', error,
+          stackTrace);
     } else if (error is io.TlsException) {
-      fail('Got TLS error trying to find package $package at $hostedUrl.',
-          error, stackTrace);
-    } else if (error is AuthenticationException) {
-      String? hint;
-      var message = 'authentication failed';
-
-      assert(error.statusCode == 401 || error.statusCode == 403);
-      if (error.statusCode == 401) {
-        hint = '$hostedUrl package repository requested authentication!\n'
-            'You can provide credentials using:\n'
-            '    pub token add $hostedUrl';
-      }
-      if (error.statusCode == 403) {
-        hint = 'Insufficient permissions to the resource at the $hostedUrl '
-            'package repository.\nYou can modify credentials using:\n'
-            '    pub token add $hostedUrl';
-        message = 'authorization failed';
-      }
-
-      if (error.serverMessage?.isNotEmpty == true && hint != null) {
-        hint += '\n${error.serverMessage}';
-      }
-
-      throw PackageNotFoundException(message, hint: hint);
+      fail('Got TLS error trying to find package $package at $url.', error,
+          stackTrace);
     } else if (error is FormatException) {
       throw PackageNotFoundException(
-        'Got badly formatted response trying to find package $package at $hostedUrl',
-        innerError: error,
-        innerTrace: stackTrace,
-        hint: 'Check that "$hostedUrl" is a valid package repository.',
-      );
+          'Got badly formatted response trying to find package $package at $url',
+          innerError: error,
+          innerTrace: stackTrace);
     } else {
       // Otherwise re-throw the original exception.
       throw error;
@@ -982,9 +975,7 @@ class _OfflineHostedSource extends BoundHostedSource {
     // If there are no versions in the cache, report a clearer error.
     if (versions.isEmpty) {
       throw PackageNotFoundException(
-        'could not find package ${ref.name} in cache',
-        hint: 'Try again without --offline!',
-      );
+          'could not find package ${ref.name} in cache');
     }
 
     return versions;
@@ -1000,9 +991,7 @@ class _OfflineHostedSource extends BoundHostedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id) {
     throw PackageNotFoundException(
-      '${id.name} ${id.version} is not available in cache',
-      hint: 'Try again without --offline!',
-    );
+        '${id.name} ${id.version} is not available in your system cache');
   }
 
   @override

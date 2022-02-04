@@ -15,8 +15,8 @@ void main() {
 
   test('upload form is missing url', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalPackageServer!, 'access token').create();
+    var pub = await startPublish(globalPackageServer!);
 
     await confirmPublish(pub);
 
@@ -24,7 +24,7 @@ void main() {
       'fields': {'field1': 'value1', 'field2': 'value2'}
     };
 
-    handleUploadForm(globalServer, body: body);
+    handleUploadForm(globalPackageServer!, body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));
     await pub.shouldExit(1);

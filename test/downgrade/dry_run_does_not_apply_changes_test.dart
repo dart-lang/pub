@@ -11,9 +11,10 @@ import '../test_pub.dart';
 
 void main() {
   test('--dry-run shows report but does not apply changes', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0')
-      ..serve('foo', '2.0.0');
+    await servePackages((builder) {
+      builder.serve('foo', '1.0.0');
+      builder.serve('foo', '2.0.0');
+    });
 
     // Create the first lockfile.
     await d.appDir({'foo': '2.0.0'}).create();
