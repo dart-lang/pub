@@ -5,7 +5,8 @@
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/source/git.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -76,9 +77,12 @@ void main() {
     }).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
 
-    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
+    expect(
+        (lockFile.packages['sub']!.description.description as GitDescription)
+            .path,
+        'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
   });
 
@@ -120,9 +124,12 @@ void main() {
     }).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
 
-    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
+    expect(
+        (lockFile.packages['sub']!.description.description as GitDescription)
+            .path,
+        'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
   });
 

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:pub_semver/pub_semver.dart';
 
@@ -18,15 +19,11 @@ import '../system_cache.dart';
 /// doesn't recognize.
 ///
 /// [null object]: http://en.wikipedia.org/wiki/Null_Object_pattern
-class UnknownSource extends Source {
+class UnknownSource extends Source<UnknownDescription> {
   @override
   final String name;
 
   UnknownSource(this.name);
-
-  @override
-  BoundSource bind(SystemCache systemCache) =>
-      _BoundUnknownSource(this, systemCache);
 
   /// Two unknown sources are the same if their names are the same.
   @override
@@ -36,48 +33,88 @@ class UnknownSource extends Source {
   int get hashCode => name.hashCode;
 
   @override
-  bool descriptionsEqual(description1, description2) =>
-      description1 == description2;
-
-  @override
-  int hashDescription(description) => description.hashCode;
-
-  @override
-  PackageRef parseRef(
+  PackageRef<UnknownDescription> parseRef(
     String name,
-    description, {
-    String? containingPath,
+    Object? description, {
+    String? containingDir,
     LanguageVersion? languageVersion,
   }) =>
-      PackageRef(name, this, description);
+      PackageRef(name, UnknownDescription(description, this));
 
   @override
-  PackageId parseId(String name, Version version, description,
-          {String? containingPath}) =>
-      PackageId(name, this, version, description);
-}
-
-class _BoundUnknownSource extends BoundSource {
-  @override
-  final UnknownSource source;
+  PackageId<UnknownDescription> parseId(
+          String name, Version version, Object? description,
+          {String? containingDir}) =>
+      PackageId(name, version,
+          ResolvedUnknownDescription(UnknownDescription(description, this)));
 
   @override
-  final SystemCache systemCache;
-
-  _BoundUnknownSource(this.source, this.systemCache);
-
-  @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration? maxAge) =>
+  Future<List<PackageId<UnknownDescription>>> doGetVersions(
+          PackageRef<UnknownDescription> ref,
+          Duration? maxAge,
+          SystemCache cache) =>
       throw UnsupportedError(
-          "Cannot get package versions from unknown source '${source.name}'.");
+          "Cannot get package versions from unknown source '$name'.");
 
   @override
-  Future<Pubspec> doDescribe(PackageId id) => throw UnsupportedError(
-      "Cannot describe a package from unknown source '${source.name}'.");
+  Future<Pubspec> doDescribe(
+          PackageId<UnknownDescription> id, SystemCache cache) =>
+      throw UnsupportedError(
+          "Cannot describe a package from unknown source '$name'.");
 
   /// Returns the directory where this package can be found locally.
   @override
-  String getDirectory(PackageId id, {String? relativeFrom}) =>
+  String getDirectory(
+    PackageId<UnknownDescription> id,
+    SystemCache cache, {
+    String? relativeFrom,
+  }) =>
       throw UnsupportedError(
-          "Cannot find a package from an unknown source '${source.name}'.");
+          "Cannot find a package from an unknown source '$name'.");
+}
+
+class UnknownDescription extends Description<UnknownDescription> {
+  final Object? description;
+  @override
+  final UnknownSource source;
+  UnknownDescription(this.description, this.source);
+
+  @override
+  String format({required String? containingDir}) {
+    return json.encode(description);
+  }
+
+  @override
+  Object? serializeForPubspec({
+    required String? containingDir,
+    required LanguageVersion languageVersion,
+  }) {
+    throw UnsupportedError(
+        "Cannot serialize a package description from an unknown source '${source.name}'.");
+  }
+
+  @override
+  operator ==(Object other) =>
+      other is UnknownDescription &&
+      source.name == other.source.name &&
+      json.encode(description) == json.encode(other.description);
+
+  @override
+  int get hashCode => Object.hash(source.name, json.encode(description));
+}
+
+class ResolvedUnknownDescription
+    extends ResolvedDescription<UnknownDescription> {
+  ResolvedUnknownDescription(UnknownDescription description)
+      : super(description);
+
+  @override
+  Object? serializeForLockfile({required String? containingDir}) {}
+
+  @override
+  operator ==(Object other) =>
+      other is ResolvedUnknownDescription && description == other.description;
+
+  @override
+  int get hashCode => description.hashCode;
 }

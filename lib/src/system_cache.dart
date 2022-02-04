@@ -4,14 +4,18 @@
 
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
+import 'exceptions.dart';
 import 'io.dart';
 import 'io.dart' as io show createTempDir;
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
+import 'pubspec.dart';
 import 'source.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
@@ -19,7 +23,6 @@ import 'source/hosted.dart';
 import 'source/path.dart';
 import 'source/sdk.dart';
 import 'source/unknown.dart';
-import 'source_registry.dart';
 
 /// The system-wide cache of downloaded packages.
 ///
@@ -29,6 +32,8 @@ import 'source_registry.dart';
 class SystemCache {
   /// The root directory where this package cache is located.
   final String rootDir;
+
+  String rootDirForSource(CachedSource source) => p.join(rootDir, source.name);
 
   String get tempDir => p.join(rootDir, '_temp');
 
@@ -54,69 +59,57 @@ class SystemCache {
     }
   })();
 
-  /// The registry for sources used by this system cache.
-  ///
-  /// New sources registered here will be available through the [source]
-  /// function.
-  final sources = SourceRegistry();
+  /// The available sources.
+  late final _sources =
+      Map.fromIterable([hosted, git, path, sdk], key: (source) => source.name);
 
-  /// The sources bound to this cache.
-  final _boundSources = <Source?, BoundSource>{};
+  Source sources(String? name) {
+    return name == null
+        ? defaultSource
+        : (_sources[name] ?? UnknownSource(name));
+  }
 
-  /// The built-in Git source bound to this cache.
-  BoundGitSource get git => _boundSources[sources.git] as BoundGitSource;
+  Source get defaultSource => hosted;
 
-  /// The built-in hosted source bound to this cache.
-  BoundHostedSource get hosted =>
-      _boundSources[sources.hosted] as BoundHostedSource;
+  /// The built-in Git source.
+  GitSource get git => GitSource.instance;
+
+  /// The built-in hosted source.
+  HostedSource get hosted => HostedSource.instance;
 
   /// The built-in path source bound to this cache.
-  BoundPathSource get path => _boundSources[sources.path] as BoundPathSource;
+  PathSource get path => PathSource.instance;
 
   /// The built-in SDK source bound to this cache.
-  BoundSdkSource get sdk => _boundSources[sources.sdk] as BoundSdkSource;
-
-  /// The default source bound to this cache.
-  BoundSource get defaultSource => source(sources[null]);
+  SdkSource get sdk => SdkSource.instance;
 
   /// The default credential store.
   final TokenStore tokenStore;
+
+  /// If true, cached sources will attempt to use the cached packages for
+  /// resolution.
+  final bool isOffline;
 
   /// Creates a system cache and registers all sources in [sources].
   ///
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
-  SystemCache({String? rootDir, bool isOffline = false})
+  SystemCache({String? rootDir, this.isOffline = false})
       : rootDir = rootDir ?? SystemCache.defaultDir,
-        tokenStore = TokenStore(dartConfigDir) {
-    for (var source in sources.all) {
-      if (source is HostedSource) {
-        _boundSources[source] = source.bind(this, isOffline: isOffline);
-      } else {
-        _boundSources[source] = source.bind(this);
-      }
-    }
-  }
-
-  /// Returns the version of [source] bound to this cache.
-  BoundSource source(Source? source) =>
-      _boundSources.putIfAbsent(source, () => source!.bind(this));
+        tokenStore = TokenStore(dartConfigDir);
 
   /// Loads the package identified by [id].
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
   Package load(PackageId id) {
-    if (id.source is UnknownSource) {
-      throw ArgumentError('Unknown source ${id.source}.');
-    }
-
-    return Package.load(id.name, source(id.source).getDirectory(id), sources);
+    return Package.load(id.name, id.source.getDirectory(id, this), sources);
   }
 
   Package loadCached(PackageId id) {
-    final bound = source(id.source);
-    if (bound is CachedSource) {
-      return Package.load(id.name, bound.getDirectoryInCache(id), sources);
+    final source = id.description.description.source;
+    if (source is CachedSource) {
+      return Package.load(
+          id.name, source.getDirectoryInCache(id, this), sources);
     } else {
       throw ArgumentError('Call only on Cached ids.');
     }
@@ -124,9 +117,11 @@ class SystemCache {
 
   /// Determines if the system cache contains the package identified by [id].
   bool contains(PackageId id) {
-    var source = this.source(id.source);
+    final source = id.source;
 
-    if (source is CachedSource) return source.isInSystemCache(id);
+    if (source is CachedSource) {
+      return source.isInSystemCache(id, this);
+    }
     throw ArgumentError('Package $id is not cacheable.');
   }
 
@@ -146,4 +141,72 @@ class SystemCache {
     log.fine('Clean up system cache temp directory $tempDir.');
     if (dirExists(tempDir)) deleteEntry(tempDir);
   }
+
+  /// An in-memory cache of pubspecs described by [describe].
+  final cachedPubspecs = <PackageId, Pubspec>{};
+
+  /// Loads the (possibly remote) pubspec for the package version identified by
+  /// [id].
+  ///
+  /// This may be called for packages that have not yet been downloaded during
+  /// the version resolution process. Its results are automatically memoized.
+  ///
+  /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
+  /// version.
+  Future<Pubspec> describe(PackageId id) async {
+    var pubspec = cachedPubspecs[id] ??= await id.source.doDescribe(id, this);
+    if (pubspec.version != id.version) {
+      throw PackageNotFoundException(
+        'the pubspec for $id has version ${pubspec.version}',
+      );
+    }
+    return pubspec;
+  }
+
+  /// Get the IDs of all versions that match [ref].
+  ///
+  /// Note that this does *not* require the packages to be downloaded locally,
+  /// which is the point. This is used during version resolution to determine
+  /// which package versions are available to be downloaded (or already
+  /// downloaded).
+  ///
+  /// By default, this assumes that each description has a single version and
+  /// uses [describe] to get that version.
+  ///
+  /// If [maxAge] is given answers can be taken from cache - up to that age old.
+  ///
+  /// If given, the [allowedRetractedVersion] is the only version which can be
+  /// selected even if it is marked as retracted. Otherwise, all the returned
+  /// IDs correspond to non-retracted versions.
+  Future<List<PackageId>> getVersions(PackageRef ref,
+      {Duration? maxAge, Version? allowedRetractedVersion}) async {
+    if (ref.isRoot) {
+      throw ArgumentError('Cannot get versions for the root package.');
+    }
+    var versions = await ref.source.doGetVersions(ref, maxAge, this);
+
+    versions = (await Future.wait(versions.map((id) async {
+      final packageStatus = await ref.source.status(id, this, maxAge: maxAge);
+      if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
+        return id;
+      }
+      return null;
+    })))
+        .whereNotNull()
+        .toList();
+
+    return versions;
+  }
+
+  /// Returns the directory where this package can (or could) be found locally.
+  ///
+  /// If the source is cached, this will be a path in the system cache.
+  ///
+  /// If id is a relative path id, the directory will be relative from
+  /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
+  String getDirectory(PackageId id, SystemCache cache, {String? relativeFrom}) {
+    return id.source.getDirectory(id, this, relativeFrom: relativeFrom);
+  }
 }
+
+typedef SourceRegistry = Source Function(String? name);

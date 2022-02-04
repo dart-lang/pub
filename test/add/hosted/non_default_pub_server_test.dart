@@ -14,7 +14,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await servePackages();
+    final server = await PackageServer.start();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
@@ -65,7 +65,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await servePackages();
+    final server = await PackageServer.start();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
@@ -92,7 +92,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await servePackages();
+    final server = await PackageServer.start();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
@@ -119,7 +119,8 @@ void main() {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     (await servePackages()).serveErrors();
-    final server = await servePackages();
+
+    final server = await PackageServer.start();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');

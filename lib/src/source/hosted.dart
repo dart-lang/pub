@@ -84,27 +84,25 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
 
 /// A package source that gets packages from a package hosting site that uses
 /// the same API as pub.dartlang.org.
-class HostedSource extends Source {
+class HostedSource extends CachedSource<HostedDescription> {
+  static HostedSource instance = HostedSource._();
+
+  HostedSource._();
+
   @override
   final name = 'hosted';
   @override
   final hasMultipleVersions = true;
 
-  @override
-  BoundHostedSource bind(SystemCache systemCache, {bool isOffline = false}) =>
-      isOffline
-          ? _OfflineHostedSource(this, systemCache)
-          : BoundHostedSource(this, systemCache);
-
   static String pubDevUrl = 'https://pub.dartlang.org';
 
   static bool isFromPubDev(PackageId id) {
-    return id.source is HostedSource &&
-        (id.description as _HostedDescription).uri.toString() == pubDevUrl;
+    return id is PackageId<HostedDescription> &&
+        id.description.description.url == pubDevUrl;
   }
 
   /// Gets the default URL for the package server for hosted dependencies.
-  Uri get defaultUrl {
+  late final String defaultUrl = () {
     // Changing this to pub.dev raises the following concerns:
     //
     //  1. It would blow through users caches.
@@ -117,63 +115,42 @@ class HostedSource extends Source {
     // Clearly, a bit of investigation is necessary before we update this to
     // pub.dev, it might be attractive to do next time we change the server API.
     try {
-      return _defaultUrl ??= validateAndNormalizeHostedUrl(
+      return validateAndNormalizeHostedUrl(
         io.Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dartlang.org',
-      );
+      ).toString();
     } on FormatException catch (e) {
       throw ConfigException(
           'Invalid `PUB_HOSTED_URL="${e.source}"`: ${e.message}');
     }
-  }
-
-  Uri? _defaultUrl;
+  }();
 
   /// Returns a reference to a hosted package named [name].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
-  PackageRef refFor(String name, {Uri? url}) =>
-      PackageRef(name, this, _HostedDescription(name, url ?? defaultUrl));
+  PackageRef<HostedDescription> refFor(String name, {String? url}) {
+    final d = HostedDescription(name, url ?? defaultUrl);
+    return PackageRef(name, d);
+  }
 
   /// Returns an ID for a hosted package named [name] at [version].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
-  PackageId idFor(String name, Version version, {Uri? url}) => PackageId(
-      name, this, version, _HostedDescription(name, url ?? defaultUrl));
-
-  /// Returns the description for a hosted package named [name] with the
-  /// given package server [url].
-  dynamic _serializedDescriptionFor(String name, [Uri? url]) {
-    if (url == null) {
-      return name;
-    }
-    try {
-      url = validateAndNormalizeHostedUrl(url.toString());
-    } on FormatException catch (e) {
-      throw ArgumentError.value(url, 'url', 'url must be normalized: $e');
-    }
-    return {'name': name, 'url': url.toString()};
-  }
-
-  @override
-  dynamic serializeDescription(String containingPath, description) {
-    final desc = _asDescription(description);
-    return _serializedDescriptionFor(desc.packageName, desc.uri);
-  }
-
-  @override
-  String formatDescription(description) =>
-      'on ${_asDescription(description).uri}';
-
-  @override
-  bool descriptionsEqual(description1, description2) =>
-      _asDescription(description1) == _asDescription(description2);
-
-  @override
-  int hashDescription(description) => _asDescription(description).hashCode;
+  PackageId<HostedDescription> idFor(
+    String name,
+    Version version, {
+    String? url,
+  }) =>
+      PackageId(
+        name,
+        version,
+        ResolvedHostedDescription(
+          HostedDescription(name, url ?? defaultUrl.toString()),
+        ),
+      );
 
   /// Ensures that [description] is a valid hosted package description.
   ///
@@ -187,49 +164,64 @@ class HostedSource extends Source {
   ///  1. With an url and an optional name in a map: `hosted: {url: <url>}`
   ///  2. With a direct url: `hosted: <url>`
   @override
-  PackageRef parseRef(String name, description,
-      {String? containingPath, required LanguageVersion languageVersion}) {
+  PackageRef<HostedDescription> parseRef(String name, description,
+      {String? containingDir, required LanguageVersion languageVersion}) {
     return PackageRef(
-        name, this, _parseDescription(name, description, languageVersion));
+        name, _parseDescription(name, description, languageVersion));
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingPath}) {
+  PackageId<HostedDescription> parseId(
+      String name, Version version, description,
+      {String? containingDir}) {
     // Old pub versions only wrote `description: <pkg>` into the lock file.
     if (description is String) {
       if (description != name) {
         throw FormatException('The description should be the same as the name');
       }
       return PackageId(
-          name, this, version, _HostedDescription(name, defaultUrl));
+        name,
+        version,
+        ResolvedHostedDescription(HostedDescription(name, defaultUrl)),
+      );
     }
-
-    final serializedDescription = (description as Map).cast<String, String>();
-
+    if (description is! Map) {
+      throw FormatException('The description should be a string or a map.');
+    }
+    final url = description['url'];
+    if (url is! String) {
+      throw FormatException('The url should be a string.');
+    }
+    final foundName = description['name'];
+    if (foundName is! String) {
+      throw FormatException('The name should be a string.');
+    }
+    if (foundName != name) {
+      throw FormatException('The name should be $name');
+    }
     return PackageId(
       name,
-      this,
       version,
-      _HostedDescription(serializedDescription['name']!,
-          Uri.parse(serializedDescription['url']!)),
+      ResolvedHostedDescription(
+        HostedDescription(name, Uri.parse(url).toString()),
+      ),
     );
   }
 
-  _HostedDescription _asDescription(desc) => desc as _HostedDescription;
+  HostedDescription _asDescription(desc) => desc as HostedDescription;
 
   /// Parses the description for a package.
   ///
   /// If the package parses correctly, this returns a (name, url) pair. If not,
   /// this throws a descriptive FormatException.
-  _HostedDescription _parseDescription(
+  HostedDescription _parseDescription(
     String packageName,
     description,
     LanguageVersion languageVersion,
   ) {
     if (description == null) {
       // Simple dependency without a `hosted` block, use the default server.
-      return _HostedDescription(packageName, defaultUrl);
+      return HostedDescription(packageName, defaultUrl);
     }
 
     final canUseShorthandSyntax =
@@ -246,13 +238,13 @@ class HostedSource extends Source {
       // environment, we throw an error if something that looks like a URI is
       // used as a package name.
       if (canUseShorthandSyntax) {
-        return _HostedDescription(
-            packageName, validateAndNormalizeHostedUrl(description));
+        return HostedDescription(
+            packageName, validateAndNormalizeHostedUrl(description).toString());
       } else {
         if (_looksLikePackageName.hasMatch(description)) {
           // Valid use of `hosted: package` dependency with an old SDK
           // environment.
-          return _HostedDescription(description, defaultUrl);
+          return HostedDescription(description, defaultUrl);
         } else {
           throw FormatException(
             'Using `hosted: <url>` is only supported with a minimum SDK '
@@ -280,10 +272,10 @@ class HostedSource extends Source {
       if (u is! String) {
         throw FormatException("The 'url' key must be a string value.");
       }
-      url = validateAndNormalizeHostedUrl(u);
+      url = validateAndNormalizeHostedUrl(u).toString();
     }
 
-    return _HostedDescription(name, url);
+    return HostedDescription(name, url);
   }
 
   /// Minimum language version at which short hosted syntax is supported.
@@ -303,67 +295,29 @@ class HostedSource extends Source {
 
   static final RegExp _looksLikePackageName =
       RegExp(r'^[a-zA-Z_]+[a-zA-Z0-9_]*$');
-}
 
-/// Information about a package version retrieved from /api/packages/$package
-class _VersionInfo {
-  final Pubspec pubspec;
-  final Uri archiveUrl;
-  final PackageStatus status;
+  late final RateLimitedScheduler<_RefAndCache,
+          Map<PackageId<HostedDescription>, _VersionInfo>?> _scheduler =
+      RateLimitedScheduler(
+    _fetchVersions,
+    maxConcurrentOperations: 10,
+  );
 
-  _VersionInfo(this.pubspec, this.archiveUrl, this.status);
-}
-
-/// The [PackageName.description] for a [HostedSource], storing the package name
-/// and resolved URI of the package server.
-class _HostedDescription {
-  final String packageName;
-  final Uri uri;
-
-  _HostedDescription(this.packageName, this.uri) {
-    ArgumentError.checkNotNull(packageName, 'packageName');
-    ArgumentError.checkNotNull(uri, 'uri');
-  }
-
-  @override
-  int get hashCode => Object.hash(packageName, uri);
-
-  @override
-  bool operator ==(Object other) {
-    return other is _HostedDescription &&
-        other.packageName == packageName &&
-        other.uri == uri;
-  }
-}
-
-/// The [BoundSource] for [HostedSource].
-class BoundHostedSource extends CachedSource {
-  @override
-  final HostedSource source;
-
-  @override
-  final SystemCache systemCache;
-  late RateLimitedScheduler<PackageRef, Map<PackageId, _VersionInfo>?>
-      _scheduler;
-
-  BoundHostedSource(this.source, this.systemCache) {
-    _scheduler = RateLimitedScheduler(
-      _fetchVersions,
-      maxConcurrentOperations: 10,
-    );
-  }
-
-  Map<PackageId, _VersionInfo> _versionInfoFromPackageListing(
-      Map body, PackageRef ref, Uri location) {
+  Map<PackageId<HostedDescription>, _VersionInfo>
+      _versionInfoFromPackageListing(Map body,
+          PackageRef<HostedDescription> ref, Uri location, SystemCache cache) {
     final versions = body['versions'];
     if (versions is List) {
       return Map.fromEntries(versions.map((map) {
         final pubspecData = map['pubspec'];
         if (pubspecData is Map) {
-          var pubspec = Pubspec.fromMap(pubspecData, systemCache.sources,
+          var pubspec = Pubspec.fromMap(pubspecData, cache.sources,
               expectedName: ref.name, location: location);
-          var id = source.idFor(ref.name, pubspec.version,
-              url: _serverFor(ref.description));
+          var id = idFor(
+            ref.name,
+            pubspec.version,
+            url: ref.description.url,
+          );
           var archiveUrl = map['archive_url'];
           if (archiveUrl is String) {
             final status = PackageStatus(
@@ -381,21 +335,22 @@ class BoundHostedSource extends CachedSource {
     throw FormatException('versions must be a list');
   }
 
-  Future<Map<PackageId, _VersionInfo>?> _fetchVersionsNoPrefetching(
-      PackageRef ref) async {
-    final serverUrl = _hostedUrl(ref.description);
-    final url = _listVersionsUrl(ref.description);
+  Future<Map<PackageId<HostedDescription>, _VersionInfo>?>
+      _fetchVersionsNoPrefetching(
+          PackageRef<HostedDescription> ref, SystemCache cache) async {
+    final hostedUrl = ref.description.url;
+    final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
 
     late final String bodyText;
     late final dynamic body;
-    late final Map<PackageId, _VersionInfo> result;
+    late final Map<PackageId<HostedDescription>, _VersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
       bodyText = await withAuthenticatedClient(
-        systemCache,
-        serverUrl,
+        cache,
+        Uri.parse(hostedUrl),
         (client) => client.read(url, headers: pubApiHeaders),
       );
       final decoded = jsonDecode(bodyText);
@@ -403,57 +358,61 @@ class BoundHostedSource extends CachedSource {
         throw FormatException('version listing must be a mapping');
       }
       body = decoded;
-      result = _versionInfoFromPackageListing(body, ref, url);
+      result = _versionInfoFromPackageListing(body, ref, url, cache);
     } on Exception catch (error, stackTrace) {
-      final packageName = source._asDescription(ref.description).packageName;
-      _throwFriendlyError(error, stackTrace, packageName, serverUrl);
+      final packageName = _asDescription(ref.description).packageName;
+      _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
 
     // Cache the response on disk.
     // Don't cache overly big responses.
     if (bodyText.length < 100 * 1024) {
-      await _cacheVersionListingResponse(body, ref);
+      await _cacheVersionListingResponse(body, ref, cache);
     }
     return result;
   }
 
-  Future<Map<PackageId, _VersionInfo>?> _fetchVersions(PackageRef ref) async {
+  Future<Map<PackageId<HostedDescription>, _VersionInfo>?> _fetchVersions(
+      _RefAndCache refAndCache) async {
+    final ref = refAndCache.ref;
     final preschedule =
-        Zone.current[_prefetchingKey] as void Function(PackageRef)?;
+        Zone.current[_prefetchingKey] as void Function(_RefAndCache)?;
 
     /// Prefetch the dependencies of the latest version, we are likely to need
     /// them later.
     void prescheduleDependenciesOfLatest(
-        Map<PackageId, _VersionInfo>? listing) {
+      Map<PackageId<HostedDescription>, _VersionInfo>? listing,
+      SystemCache cache,
+    ) {
       if (listing == null) return;
       final latestVersion =
           maxBy(listing.keys.map((id) => id.version), (e) => e)!;
-      final latestVersionId =
-          PackageId(ref.name, source, latestVersion, ref.description);
+      final latestVersionId = PackageId<HostedDescription>(
+          ref.name, latestVersion, ResolvedHostedDescription(ref.description));
       final dependencies =
           listing[latestVersionId]?.pubspec.dependencies.values ?? [];
       unawaited(withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
-          if (packageRange.source is HostedSource) {
-            preschedule!(packageRange.toRef());
+          if (packageRange is PackageRange<HostedDescription>) {
+            preschedule!(_RefAndCache(packageRange.toRef(), cache));
           }
         }
       }));
     }
 
+    final cache = refAndCache.cache;
     if (preschedule != null) {
       /// If we have a cached response - preschedule dependencies of that.
       prescheduleDependenciesOfLatest(
-        await _cachedVersionListingResponse(ref),
-      );
+          await _cachedVersionListingResponse(ref, cache), cache);
     }
-    final result = await _fetchVersionsNoPrefetching(ref);
+    final result = await _fetchVersionsNoPrefetching(ref, cache);
 
     if (preschedule != null) {
       // Preschedule the dependencies from the actual response.
       // This might overlap with those from the cached response. But the
       // scheduler ensures each listing will be fetched at most once.
-      prescheduleDependenciesOfLatest(result);
+      prescheduleDependenciesOfLatest(result, cache);
     }
     return result;
   }
@@ -464,7 +423,8 @@ class BoundHostedSource extends CachedSource {
   /// Invariant: Entries in this cache are the parsed version of the exact same
   ///  information cached on disk. I.e. if the entry is present in this cache,
   /// there will not be a newer version on disk.
-  final Map<PackageRef, Pair<DateTime, Map<PackageId, _VersionInfo>>>
+  final Map<PackageRef<HostedDescription>,
+          Pair<DateTime, Map<PackageId<HostedDescription>, _VersionInfo>>>
       _responseCache = {};
 
   /// If a cached version listing response for [ref] exists on disk and is less
@@ -474,9 +434,10 @@ class BoundHostedSource extends CachedSource {
   ///
   /// If [maxAge] is not given, we will try to get the cached version no matter
   /// how old it is.
-  Future<Map<PackageId, _VersionInfo>?> _cachedVersionListingResponse(
-      PackageRef ref,
-      {Duration? maxAge}) async {
+  Future<Map<PackageId<HostedDescription>, _VersionInfo>?>
+      _cachedVersionListingResponse(
+          PackageRef<HostedDescription> ref, SystemCache cache,
+          {Duration? maxAge}) async {
     if (_responseCache.containsKey(ref)) {
       final cacheAge = DateTime.now().difference(_responseCache[ref]!.first);
       if (maxAge == null || maxAge > cacheAge) {
@@ -484,7 +445,7 @@ class BoundHostedSource extends CachedSource {
         return _responseCache[ref]!.last;
       }
     }
-    final cachePath = _versionListingCachePath(ref);
+    final cachePath = _versionListingCachePath(ref, cache);
     final stat = io.File(cachePath).statSync();
     final now = DateTime.now();
     if (stat.type == io.FileSystemEntityType.file) {
@@ -503,6 +464,7 @@ class BoundHostedSource extends CachedSource {
                 cachedDoc,
                 ref,
                 Uri.file(cachePath),
+                cache,
               );
               _responseCache[ref] = Pair(parsedTimestamp, res);
               return res;
@@ -525,8 +487,11 @@ class BoundHostedSource extends CachedSource {
 
   /// Saves the (decoded) response from package-listing of [ref].
   Future<void> _cacheVersionListingResponse(
-      Map<String, dynamic> body, PackageRef ref) async {
-    final path = _versionListingCachePath(ref);
+    Map<String, dynamic> body,
+    PackageRef<HostedDescription> ref,
+    SystemCache cache,
+  ) async {
+    final path = _versionListingCachePath(ref, cache);
     try {
       ensureDir(p.dirname(path));
       await writeTextFileAsync(
@@ -548,21 +513,40 @@ class BoundHostedSource extends CachedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, {Duration? maxAge}) async {
+  Future<PackageStatus> status(
+      PackageId<HostedDescription> id, SystemCache cache,
+      {Duration? maxAge}) async {
+    if (cache.isOffline) {
+      // Do we have a cached version response on disk?
+      final versionListing =
+          await _cachedVersionListingResponse(id.toRef(), cache);
+
+      if (versionListing == null) {
+        return PackageStatus();
+      }
+      // If we don't have the specific version we return the empty response.
+      //
+      // This should not happen. But in production we want to avoid a crash, since
+      // it is more or less harmless.
+      //
+      // TODO(sigurdm): Consider representing the non-existence of the
+      // package-version in the return value.
+      return versionListing[id]?.status ?? PackageStatus();
+    }
     final ref = id.toRef();
     // Did we already get info for this package?
-    var versionListing = _scheduler.peek(ref);
+    var versionListing = _scheduler.peek(_RefAndCache(ref, cache));
     if (maxAge != null) {
       // Do we have a cached version response on disk?
       versionListing ??=
-          await _cachedVersionListingResponse(ref, maxAge: maxAge);
+          await _cachedVersionListingResponse(ref, cache, maxAge: maxAge);
     }
     // Otherwise retrieve the info from the host.
     versionListing ??= await _scheduler
-        .schedule(ref)
+        .schedule(_RefAndCache(ref, cache))
         // Failures retrieving the listing here should just be ignored.
         .catchError(
-          (_) => <PackageId, _VersionInfo>{},
+          (_) => <PackageId<HostedDescription>, _VersionInfo>{},
           test: (error) => error is Exception,
         );
 
@@ -579,12 +563,12 @@ class BoundHostedSource extends CachedSource {
   }
 
   // The path where the response from the package-listing api is cached.
-  String _versionListingCachePath(PackageRef ref) {
-    final parsed = source._asDescription(ref.description);
-    final dir = _urlToDirectory(parsed.uri);
+  String _versionListingCachePath(
+      PackageRef<HostedDescription> ref, SystemCache cache) {
+    final dir = _urlToDirectory(ref.description.url);
     // Use a dot-dir because older versions of pub won't choke on that
     // name when iterating the cache (it is not listed by [listDir]).
-    return p.join(systemCacheRoot, dir, _versionListingDirectory,
+    return p.join(cache.rootDirForSource(this), dir, _versionListingDirectory,
         '${ref.name}-versions.json');
   }
 
@@ -593,53 +577,85 @@ class BoundHostedSource extends CachedSource {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   @override
-  Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge) async {
-    var versionListing = _scheduler.peek(ref);
+  Future<List<PackageId<HostedDescription>>> doGetVersions(
+    PackageRef<HostedDescription> ref,
+    Duration? maxAge,
+    SystemCache cache,
+  ) async {
+    if (cache.isOffline) {
+      final url = ref.description.url;
+      final root = cache.rootDirForSource(HostedSource.instance);
+      final dir = p.join(root, _urlToDirectory(url));
+      log.io('Finding versions of ${ref.name} in $dir');
+      List<PackageId<HostedDescription>> offlineVersions;
+      if (dirExists(dir)) {
+        offlineVersions = listDir(dir)
+            .where(_looksLikePackageDir)
+            .map((entry) => _idForBasename(p.basename(entry), url))
+            .where((id) => id.name == ref.name && id.version != Version.none)
+            .toList();
+      } else {
+        offlineVersions = [];
+      }
+
+      // If there are no versions in the cache, report a clearer error.
+      if (offlineVersions.isEmpty) {
+        throw PackageNotFoundException(
+          'could not find package ${ref.name} in cache',
+          hint: 'Try again without --offline!',
+        );
+      }
+
+      return offlineVersions;
+    }
+    var versionListing = _scheduler.peek(_RefAndCache(ref, cache));
     if (maxAge != null) {
       // Do we have a cached version response on disk?
       versionListing ??=
-          await _cachedVersionListingResponse(ref, maxAge: maxAge);
+          await _cachedVersionListingResponse(ref, cache, maxAge: maxAge);
     }
-    versionListing ??= await _scheduler.schedule(ref);
+    versionListing ??= await _scheduler.schedule(_RefAndCache(ref, cache));
     return versionListing!.keys.toList();
   }
 
   /// Parses [description] into its server and package name components, then
   /// converts that to a Uri for listing versions of the given package.
-  Uri _listVersionsUrl(description) {
-    final parsed = source._asDescription(description);
-    final hostedUrl = parsed.uri;
-    final package = Uri.encodeComponent(parsed.packageName);
-    return hostedUrl.resolve('api/packages/$package');
-  }
-
-  /// Parses [description] into server name component.
-  Uri _hostedUrl(description) {
-    final parsed = source._asDescription(description);
-    return parsed.uri;
+  Uri _listVersionsUrl(PackageRef<HostedDescription> ref) {
+    final package = Uri.encodeComponent(ref.name);
+    return Uri.parse(ref.description.url).resolve('api/packages/$package');
   }
 
   /// Retrieves the pubspec for a specific version of a package that is
   /// available from the site.
   @override
-  Future<Pubspec> describeUncached(PackageId id) async {
-    final versions = await _scheduler.schedule(id.toRef());
-    final url = _listVersionsUrl(id.description);
+  Future<Pubspec> describeUncached(
+      PackageId<HostedDescription> id, SystemCache cache) async {
+    if (cache.isOffline) {
+      throw PackageNotFoundException(
+        '${id.name} ${id.version} is not available in cache',
+        hint: 'Try again without --offline!',
+      );
+    }
+    final versions = await _scheduler.schedule(_RefAndCache(id.toRef(), cache));
+    final url = _listVersionsUrl(id.toRef());
     return versions![id]?.pubspec ??
         (throw PackageNotFoundException('Could not find package $id at $url'));
   }
 
   /// Downloads the package identified by [id] to the system cache.
   @override
-  Future<Package> downloadToSystemCache(PackageId id) async {
-    if (!isInSystemCache(id)) {
-      var packageDir = getDirectoryInCache(id);
+  Future<Package> downloadToSystemCache(
+      PackageId<HostedDescription> id, SystemCache cache) async {
+    if (!isInSystemCache(id, cache)) {
+      if (cache.isOffline) {
+        throw StateError('Cannot download packages when offline.');
+      }
+      var packageDir = getDirectoryInCache(id, cache);
       ensureDir(p.dirname(packageDir));
-      await _download(id, packageDir);
+      await _download(id, packageDir, cache);
     }
 
-    return Package.load(id.name, getDirectoryInCache(id), systemCache.sources);
+    return Package.load(id.name, getDirectoryInCache(id, cache), cache.sources);
   }
 
   /// The system cache directory for the hosted source contains subdirectories
@@ -648,21 +664,24 @@ class BoundHostedSource extends CachedSource {
   /// Each of these subdirectories then contains a subdirectory for each
   /// package downloaded from that site.
   @override
-  String getDirectoryInCache(PackageId id) {
-    var parsed = source._asDescription(id.description);
-    var dir = _urlToDirectory(parsed.uri);
-    return p.join(systemCacheRoot, dir, '${parsed.packageName}-${id.version}');
+  String getDirectoryInCache(
+      PackageId<HostedDescription> id, SystemCache cache) {
+    final rootDir = cache.rootDirForSource(this);
+
+    var dir = _urlToDirectory(id.description.description.url);
+    return p.join(rootDir, dir, '${id.name}-${id.version}');
   }
 
   /// Re-downloads all packages that have been previously downloaded into the
   /// system cache from any server.
   @override
-  Future<Iterable<RepairResult>> repairCachedPackages() async {
-    if (!dirExists(systemCacheRoot)) return [];
+  Future<Iterable<RepairResult>> repairCachedPackages(SystemCache cache) async {
+    final rootDir = cache.rootDirForSource(this);
+    if (!dirExists(rootDir)) return [];
 
-    return (await Future.wait(listDir(systemCacheRoot).map((serverDir) async {
+    return (await Future.wait(listDir(rootDir).map((serverDir) async {
       final directory = p.basename(serverDir);
-      Uri url;
+      late final String url;
       try {
         url = _directoryToUrl(directory);
       } on FormatException {
@@ -678,15 +697,18 @@ class BoundHostedSource extends CachedSource {
       var packages = <Package>[];
       for (var entry in listDir(serverDir)) {
         try {
-          packages.add(Package.load(null, entry, systemCache.sources));
+          packages.add(Package.load(null, entry, cache.sources));
         } catch (error, stackTrace) {
           log.error('Failed to load package', error, stackTrace);
+          final id = _idForBasename(
+            p.basename(entry),
+            url,
+          );
           results.add(
             RepairResult(
-              _idForBasename(
-                p.basename(entry),
-                url: url,
-              ),
+              id.name,
+              id.version,
+              this,
               success: false,
             ),
           );
@@ -702,20 +724,20 @@ class BoundHostedSource extends CachedSource {
       return results
         ..addAll(await Future.wait(
           packages.map((package) async {
-            var id = source.idFor(package.name, package.version, url: url);
+            var id = idFor(package.name, package.version, url: url);
             try {
               deleteEntry(package.dir);
-              await _download(id, package.dir);
-              return RepairResult(id, success: true);
+              await _download(id, package.dir, cache);
+              return RepairResult(id.name, id.version, this, success: true);
             } catch (error, stackTrace) {
               var message = 'Failed to repair ${log.bold(package.name)} '
                   '${package.version}';
-              if (url != source.defaultUrl) message += ' from $url';
+              if (url != defaultUrl) message += ' from $url';
               log.error('$message. Error:\n$error');
               log.fine(stackTrace);
 
               tryDeleteEntry(package.dir);
-              return RepairResult(id, success: false);
+              return RepairResult(id.name, id.version, this, success: false);
             }
           }),
         ));
@@ -725,36 +747,49 @@ class BoundHostedSource extends CachedSource {
 
   /// Returns the best-guess package ID for [basename], which should be a
   /// subdirectory in a hosted cache.
-  PackageId _idForBasename(String basename, {Uri? url}) {
+  PackageId<HostedDescription> _idForBasename(String basename, String url) {
     var components = split1(basename, '-');
     var version = Version.none;
     if (components.length > 1) {
       try {
         version = Version.parse(components.last);
-      } catch (_) {
+      } on FormatException {
         // Default to Version.none.
       }
     }
     final name = components.first;
-    return source.idFor(name, version, url: url);
+    return PackageId(
+      name,
+      version,
+      ResolvedHostedDescription(HostedDescription(name, url)),
+    );
   }
 
-  bool _looksLikePackageDir(String path) =>
-      dirExists(path) &&
-      _idForBasename(p.basename(path)).version != Version.none;
+  bool _looksLikePackageDir(String path) {
+    var components = split1(p.basename(path), '-');
+    if (components.length < 2) return false;
+    try {
+      Version.parse(components.last);
+    } on FormatException {
+      return false;
+    }
+    return dirExists(path);
+  }
 
   /// Gets all of the packages that have been downloaded into the system cache
   /// from the default server.
   @override
-  List<Package> getCachedPackages() {
-    var cacheDir = p.join(systemCacheRoot, _urlToDirectory(source.defaultUrl));
+  List<Package> getCachedPackages(SystemCache cache) {
+    final root = cache.rootDirForSource(HostedSource.instance);
+    var cacheDir =
+        p.join(root, _urlToDirectory(HostedSource.instance.defaultUrl));
     if (!dirExists(cacheDir)) return [];
 
     return listDir(cacheDir)
         .where(_looksLikePackageDir)
         .map((entry) {
           try {
-            return Package.load(null, entry, systemCache.sources);
+            return Package.load(null, entry, cache.sources);
           } catch (error, stackTrace) {
             log.fine('Failed to load package from $entry:\n'
                 '$error\n'
@@ -772,7 +807,11 @@ class BoundHostedSource extends CachedSource {
   /// If there is no archive_url, try to fetch it from
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
-  Future _download(PackageId id, String destPath) async {
+  Future _download(
+    PackageId<HostedDescription> id,
+    String destPath,
+    SystemCache cache,
+  ) async {
     // We never want to use a cached `archive_url`, so we never attempt to load
     // the version listing from cache. Besides in most cases we already have
     // downloaded a fresh copy of the version listing response in the in-memory
@@ -782,7 +821,7 @@ class BoundHostedSource extends CachedSource {
     // a custom package server may include a temporary signature in the
     // query-string as is the case with signed S3 URLs. And we wish to allow for
     // such URLs to be used.
-    final versions = await _scheduler.schedule(id.toRef());
+    final versions = await _scheduler.schedule(_RefAndCache(id.toRef(), cache));
     final versionInfo = versions![id];
     final packageName = id.name;
     final version = id.version;
@@ -790,8 +829,6 @@ class BoundHostedSource extends CachedSource {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
     }
-    final parsedDescription = source._asDescription(id.description);
-    final server = parsedDescription.uri;
 
     var url = versionInfo.archiveUrl;
     log.io('Get package from $url.');
@@ -801,7 +838,9 @@ class BoundHostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await withAuthenticatedClient(systemCache, server,
+      var response = await withAuthenticatedClient(
+          cache,
+          Uri.parse(id.description.description.url),
           (client) => client.send(http.Request('GET', url)));
 
       // We download the archive to disk instead of streaming it directly into
@@ -810,7 +849,7 @@ class BoundHostedSource extends CachedSource {
       // cancelling a http stream makes it not reusable.
       // There are ways around this, and we might revisit this later.
       await createFileFromStream(response.stream, archivePath);
-      var tempDir = systemCache.createTempDir();
+      var tempDir = cache.createTempDir();
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
       // Now that the get has succeeded, move it to the real location in the
@@ -841,7 +880,7 @@ Assuming a concurrent pub invocation installed it.''');
     Exception error,
     StackTrace stackTrace,
     String package,
-    Uri hostedUrl,
+    String hostedUrl,
   ) {
     if (error is PubHttpException) {
       if (error.response.statusCode == 404) {
@@ -897,68 +936,6 @@ Assuming a concurrent pub invocation installed it.''');
     }
   }
 
-  /// Given a URL, returns a "normalized" string to be used as a directory name
-  /// for packages downloaded from the server at that URL.
-  ///
-  /// This normalization strips off the scheme (which is presumed to be HTTP or
-  /// HTTPS) and *sort of* URL-encodes it. I say "sort of" because it does it
-  /// incorrectly: it uses the character's *decimal* ASCII value instead of hex.
-  ///
-  /// This could cause an ambiguity since some characters get encoded as three
-  /// digits and others two. It's possible for one to be a prefix of the other.
-  /// In practice, the set of characters that are encoded don't happen to have
-  /// any collisions, so the encoding is reversible.
-  ///
-  /// This behavior is a bug, but is being preserved for compatibility.
-  String _urlToDirectory(Uri hostedUrl) {
-    var url = hostedUrl.toString();
-    // Normalize all loopback URLs to "localhost".
-    url = url.replaceAllMapped(
-        RegExp(r'^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?'), (match) {
-      // Don't include the scheme for HTTPS URLs. This makes the directory names
-      // nice for the default and most recommended scheme. We also don't include
-      // it for localhost URLs, since they're always known to be HTTP.
-      var localhost = match[2] == null ? '' : 'localhost';
-      var scheme =
-          match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
-      return '$scheme$localhost';
-    });
-    return replace(
-      url,
-      RegExp(r'[<>:"\\/|?*%]'),
-      (match) => '%${match[0]!.codeUnitAt(0)}',
-    );
-  }
-
-  /// Given a directory name in the system cache, returns the URL of the server
-  /// whose packages it contains.
-  ///
-  /// See [_urlToDirectory] for details on the mapping. Note that because the
-  /// directory name does not preserve the scheme, this has to guess at it. It
-  /// chooses "http" for loopback URLs (mainly to support the pub tests) and
-  /// "https" for all others.
-  Uri _directoryToUrl(String directory) {
-    // Decode the pseudo-URL-encoded characters.
-    var chars = '<>:"\\/|?*%';
-    for (var i = 0; i < chars.length; i++) {
-      var c = chars.substring(i, i + 1);
-      directory = directory.replaceAll('%${c.codeUnitAt(0)}', c);
-    }
-
-    // If the URL has an explicit scheme, use that.
-    if (directory.contains('://')) {
-      return Uri.parse(directory);
-    }
-
-    // Otherwise, default to http for localhost and https for everything else.
-    var scheme =
-        isLoopback(directory.replaceAll(RegExp(':.*'), '')) ? 'http' : 'https';
-    return Uri.parse('$scheme://$directory');
-  }
-
-  /// Returns the server URL for [description].
-  Uri _serverFor(description) => source._asDescription(description).uri;
-
   /// Enables speculative prefetching of dependencies of packages queried with
   /// [getVersions].
   Future<T> withPrefetching<T>(Future<T> Function() callback) async {
@@ -972,80 +949,140 @@ Assuming a concurrent pub invocation installed it.''');
   static const _prefetchingKey = #_prefetch;
 }
 
-/// This is the modified hosted source used when pub get or upgrade are run
-/// with "--offline".
+/// The [PackageName.description] for a [HostedSource], storing the package name
+/// and resolved URI of the package server.
+class HostedDescription extends Description<HostedDescription> {
+  final String packageName;
+  final String url;
+
+  HostedDescription(this.packageName, this.url);
+
+  @override
+  int get hashCode => Object.hash(packageName, url);
+
+  @override
+  bool operator ==(Object other) {
+    return other is HostedDescription &&
+        other.packageName == packageName &&
+        other.url == url;
+  }
+
+  @override
+  String format({required String? containingDir}) => 'on $url';
+
+  @override
+  Object? serializeForPubspec({
+    required String? containingDir,
+    required LanguageVersion languageVersion,
+  }) {
+    if (url == source.defaultUrl) {
+      return null;
+    }
+    return {'url': url, 'name': packageName};
+  }
+
+  @override
+  HostedSource get source => HostedSource.instance;
+}
+
+class ResolvedHostedDescription extends ResolvedDescription<HostedDescription> {
+  ResolvedHostedDescription(HostedDescription description) : super(description);
+
+  @override
+  Object? serializeForLockfile({required String? containingDir}) {
+    late final String url;
+    try {
+      url = validateAndNormalizeHostedUrl(description.url).toString();
+    } on FormatException catch (e) {
+      throw ArgumentError.value(url, 'url', 'url must be normalized: $e');
+    }
+    return {'name': description.packageName, 'url': url.toString()};
+  }
+
+  @override
+  int get hashCode => description.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is ResolvedHostedDescription &&
+        other.description == description;
+  }
+}
+
+/// Information about a package version retrieved from /api/packages/$package<
+class _VersionInfo {
+  final Pubspec pubspec;
+  final Uri archiveUrl;
+  final PackageStatus status;
+
+  _VersionInfo(this.pubspec, this.archiveUrl, this.status);
+}
+
+/// Given a URL, returns a "normalized" string to be used as a directory name
+/// for packages downloaded from the server at that URL.
 ///
-/// This uses the system cache to get the list of available packages and does
-/// no network access.
-class _OfflineHostedSource extends BoundHostedSource {
-  _OfflineHostedSource(HostedSource source, SystemCache systemCache)
-      : super(source, systemCache);
+/// This normalization strips off the scheme (which is presumed to be HTTP or
+/// HTTPS) and *sort of* URL-encodes it. I say "sort of" because it does it
+/// incorrectly: it uses the character's *decimal* ASCII value instead of hex.
+///
+/// This could cause an ambiguity since some characters get encoded as three
+/// digits and others two. It's possible for one to be a prefix of the other.
+/// In practice, the set of characters that are encoded don't happen to have
+/// any collisions, so the encoding is reversible.
+///
+/// This behavior is a bug, but is being preserved for compatibility.
+String _urlToDirectory(String hostedUrl) {
+  // Normalize all loopback URLs to "localhost".
+  final url = hostedUrl.replaceAllMapped(
+      RegExp(r'^(https?://)(127\.0\.0\.1|\[::1\]|localhost)?'), (match) {
+    // Don't include the scheme for HTTPS URLs. This makes the directory names
+    // nice for the default and most recommended scheme. We also don't include
+    // it for localhost URLs, since they're always known to be HTTP.
+    var localhost = match[2] == null ? '' : 'localhost';
+    var scheme = match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
+    return '$scheme$localhost';
+  });
+  return replace(
+    url,
+    RegExp(r'[<>:"\\/|?*%]'),
+    (match) => '%${match[0]!.codeUnitAt(0)}',
+  );
+}
 
-  /// Gets the list of all versions of [ref] that are in the system cache.
-  @override
-  Future<List<PackageId>> doGetVersions(
-    PackageRef ref,
-    Duration? maxAge,
-  ) async {
-    var parsed = source._asDescription(ref.description);
-    var server = parsed.uri;
-    log.io('Finding versions of ${ref.name} in '
-        '$systemCacheRoot/${_urlToDirectory(server)}');
-
-    var dir = p.join(systemCacheRoot, _urlToDirectory(server));
-
-    List<PackageId> versions;
-    if (dirExists(dir)) {
-      versions = listDir(dir)
-          .where(_looksLikePackageDir)
-          .map((entry) => _idForBasename(p.basename(entry), url: server))
-          .where((id) => id.name == ref.name && id.version != Version.none)
-          .toList();
-    } else {
-      versions = [];
-    }
-
-    // If there are no versions in the cache, report a clearer error.
-    if (versions.isEmpty) {
-      throw PackageNotFoundException(
-        'could not find package ${ref.name} in cache',
-        hint: 'Try again without --offline!',
-      );
-    }
-
-    return versions;
+/// Given a directory name in the system cache, returns the URL of the server
+/// whose packages it contains.
+///
+/// See [_urlToDirectory] for details on the mapping. Note that because the
+/// directory name does not preserve the scheme, this has to guess at it. It
+/// chooses "http" for loopback URLs (mainly to support the pub tests) and
+/// "https" for all others.
+String _directoryToUrl(String directory) {
+  // Decode the pseudo-URL-encoded characters.
+  var chars = '<>:"\\/|?*%';
+  for (var i = 0; i < chars.length; i++) {
+    var c = chars.substring(i, i + 1);
+    directory = directory.replaceAll('%${c.codeUnitAt(0)}', c);
   }
 
-  @override
-  Future _download(PackageId id, String destPath) {
-    // Since HostedSource is cached, this will only be called for uncached
-    // packages.
-    throw UnsupportedError('Cannot download packages when offline.');
+  // If the URL has an explicit scheme, use that.
+  if (directory.contains('://')) {
+    return Uri.parse(directory).toString();
   }
 
-  @override
-  Future<Pubspec> describeUncached(PackageId id) {
-    throw PackageNotFoundException(
-      '${id.name} ${id.version} is not available in cache',
-      hint: 'Try again without --offline!',
-    );
-  }
+  // Otherwise, default to http for localhost and https for everything else.
+  var scheme =
+      isLoopback(directory.replaceAll(RegExp(':.*'), '')) ? 'http' : 'https';
+  return Uri.parse('$scheme://$directory').toString();
+}
+
+// TODO(sigurdm): This is quite inelegant.
+class _RefAndCache {
+  final PackageRef<HostedDescription> ref;
+  final SystemCache cache;
+  _RefAndCache(this.ref, this.cache);
 
   @override
-  Future<PackageStatus> status(PackageId id, {Duration? maxAge}) async {
-    // Do we have a cached version response on disk?
-    final versionListing = await _cachedVersionListingResponse(id.toRef());
-
-    if (versionListing == null) {
-      return PackageStatus();
-    }
-    // If we don't have the specific version we return the empty response.
-    //
-    // This should not happen. But in production we want to avoid a crash, since
-    // it is more or less harmless.
-    //
-    // TODO(sigurdm): Consider representing the non-existence of the
-    // package-version in the return value.
-    return versionListing[id]?.status ?? PackageStatus();
-  }
+  int get hashCode => ref.hashCode;
+  @override
+  bool operator ==(Object other) => other is _RefAndCache && other.ref == ref;
 }

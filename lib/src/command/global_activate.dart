@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
-import '../package_name.dart';
 import '../source/hosted.dart';
 import '../utils.dart';
 
@@ -64,18 +63,6 @@ class GlobalActivateCommand extends PubCommand {
       executables = [];
     }
 
-    var features = <String, FeatureDependency>{};
-    for (var feature in argResults['features'] ?? []) {
-      features[feature] = FeatureDependency.required;
-    }
-    for (var feature in argResults['omit-features'] ?? []) {
-      if (features.containsKey(feature)) {
-        usageException('Cannot both enable and disable $feature.');
-      }
-
-      features[feature] = FeatureDependency.unused;
-    }
-
     final overwrite = argResults['overwrite'] as bool;
     Uri? hostedUrl;
     if (argResults.wasParsed('hosted-url')) {
@@ -107,8 +94,11 @@ class GlobalActivateCommand extends PubCommand {
         var repo = readArg('No Git repository given.');
         // TODO(rnystrom): Allow passing in a Git ref too.
         validateNoExtraArgs();
-        return globals.activateGit(repo, executables,
-            features: features, overwriteBinStubs: overwrite);
+        return globals.activateGit(
+          repo,
+          executables,
+          overwriteBinStubs: overwrite,
+        );
 
       case 'hosted':
         var package = readArg('No package to activate given.');
@@ -124,17 +114,15 @@ class GlobalActivateCommand extends PubCommand {
         }
 
         validateNoExtraArgs();
-        return globals.activateHosted(package, constraint, executables,
-            features: features, overwriteBinStubs: overwrite, url: hostedUrl);
+        return globals.activateHosted(
+          package,
+          constraint,
+          executables,
+          overwriteBinStubs: overwrite,
+          url: hostedUrl?.toString(),
+        );
 
       case 'path':
-        if (features.isNotEmpty) {
-          // Globally-activated path packages just use the existing lockfile, so
-          // we can't change the feature selection.
-          usageException('--features and --omit-features may not be used with '
-              'the path source.');
-        }
-
         var path = readArg('No package to activate given.');
         validateNoExtraArgs();
         return globals.activatePath(

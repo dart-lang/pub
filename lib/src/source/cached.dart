@@ -5,12 +5,14 @@
 import 'dart:async';
 
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
+import '../system_cache.dart';
 
 /// Base class for a [BoundSource] that installs packages into pub's
 /// [SystemCache].
@@ -19,55 +21,51 @@ import '../source.dart';
 /// packages or the package needs to be "frozen" at the point in time that it's
 /// installed. (For example, Git packages are cached because installing from
 /// the same repo over time may yield different commits.)
-abstract class CachedSource extends BoundSource {
-  /// The root directory of this source's cache within the system cache.
-  ///
-  /// This shouldn't be overridden by subclasses.
-  String get systemCacheRoot => path.join(systemCache.rootDir, source.name);
-
+abstract class CachedSource<T extends Description<T>> extends Source<T> {
   /// If [id] is already in the system cache, just loads it from there.
   ///
   /// Otherwise, defers to the subclass.
   @override
-  Future<Pubspec> doDescribe(PackageId id) async {
-    var packageDir = getDirectoryInCache(id);
+  Future<Pubspec> doDescribe(PackageId<T> id, SystemCache cache) async {
+    var packageDir = getDirectoryInCache(id, cache);
     if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
-      return Pubspec.load(packageDir, systemCache.sources,
-          expectedName: id.name);
+      return Pubspec.load(packageDir, cache.sources, expectedName: id.name);
     }
 
-    return await describeUncached(id);
+    return await describeUncached(id, cache);
   }
 
   @override
-  String getDirectory(PackageId id, {String? relativeFrom}) =>
-      getDirectoryInCache(id);
+  String getDirectory(PackageId<T> id, SystemCache cache,
+          {String? relativeFrom}) =>
+      getDirectoryInCache(id, cache);
 
-  String getDirectoryInCache(PackageId id);
+  String getDirectoryInCache(PackageId<T> id, SystemCache cache);
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
   ///
   /// This will only be called for packages that have not yet been installed in
   /// the system cache.
-  Future<Pubspec> describeUncached(PackageId id);
+  Future<Pubspec> describeUncached(PackageId<T> id, SystemCache cache);
 
   /// Determines if the package identified by [id] is already downloaded to the
   /// system cache.
-  bool isInSystemCache(PackageId id) => dirExists(getDirectoryInCache(id));
+  bool isInSystemCache(PackageId<T> id, SystemCache cache) =>
+      dirExists(getDirectoryInCache(id, cache));
 
   /// Downloads the package identified by [id] to the system cache.
-  Future<Package> downloadToSystemCache(PackageId id);
+  Future<Package> downloadToSystemCache(PackageId<T> id, SystemCache cache);
 
   /// Returns the [Package]s that have been downloaded to the system cache.
-  List<Package> getCachedPackages();
+  List<Package> getCachedPackages(SystemCache cache);
 
   /// Reinstalls all packages that have been previously installed into the
   /// system cache by this source.
   ///
   /// Returns a list of results indicating for each if that package was
   /// successfully repaired.
-  Future<Iterable<RepairResult>> repairCachedPackages();
+  Future<Iterable<RepairResult>> repairCachedPackages(SystemCache cache);
 }
 
 /// The result of repairing a single cache entry.
@@ -78,6 +76,13 @@ class RepairResult {
   /// When something goes wrong the package is attempted removed from
   /// cache (but that might itself have failed).
   final bool success;
-  final PackageId package;
-  RepairResult(this.package, {required this.success});
+  final String packageName;
+  final Version version;
+  final Source source;
+  RepairResult(
+    this.packageName,
+    this.version,
+    this.source, {
+    required this.success,
+  });
 }

@@ -39,7 +39,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'sdk': 'flutter', 'version': '^0.0.1'}
+          'foo': {'sdk': 'flutter'}
         }
       }),
       d.packagesFile({

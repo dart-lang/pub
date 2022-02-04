@@ -373,7 +373,7 @@ class _Writer {
   /// but each has a different source, those incompatibilities should explicitly
   /// print their sources, and similarly for differing descriptions.
   Map<String, PackageDetail> _detailsForCause(ConflictCause cause) {
-    var conflictPackages = <String, PackageName>{};
+    var conflictPackages = <String, PackageRange>{};
     for (var term in cause.conflict.terms) {
       if (term.package.isRoot) continue;
       conflictPackages[term.package.name] = term.package;
@@ -384,10 +384,11 @@ class _Writer {
       var conflictPackage = conflictPackages[term.package.name];
       if (term.package.isRoot) continue;
       if (conflictPackage == null) continue;
-      if (conflictPackage.source != term.package.source) {
+      if (conflictPackage.description.source !=
+          term.package.description.source) {
         details[term.package.name] =
             const PackageDetail(showSource: true, showVersion: false);
-      } else if (!conflictPackage.samePackage(term.package)) {
+      } else if (conflictPackage.toRef() != term.package.toRef()) {
         details[term.package.name] =
             const PackageDetail(showDescription: true, showVersion: false);
       }

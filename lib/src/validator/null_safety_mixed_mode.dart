@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../entrypoint.dart';
 import '../null_safety_analysis.dart';
 import '../package_name.dart';
+import '../source/path.dart';
 import '../validator.dart';
 
 /// Gives a warning when publishing a new version, if this package opts into
@@ -23,12 +24,16 @@ class NullSafetyMixedModeValidator extends Validator {
     if (!declaredLanguageVersion.supportsNullSafety) {
       return;
     }
-    final analysisResult = await NullSafetyAnalysis(entrypoint.cache)
-        .nullSafetyCompliance(PackageId(
-            entrypoint.root.name,
-            entrypoint.cache.sources.path,
-            entrypoint.root.version,
-            {'relative': false, 'path': p.absolute(entrypoint.root.dir)}));
+    final analysisResult =
+        await NullSafetyAnalysis(entrypoint.cache).nullSafetyCompliance(
+      PackageId<PathDescription>(
+        entrypoint.root.name,
+        entrypoint.root.version,
+        ResolvedPathDescription(
+          PathDescription(p.absolute(entrypoint.root.dir), false),
+        ),
+      ),
+    );
 
     if (analysisResult.compliance == NullSafetyCompliance.mixed) {
       warnings.add('''

@@ -181,18 +181,21 @@ class OutdatedCommand extends PubCommand {
       PackageId? latest;
       // If not overridden in current resolution we can use this
       if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(current);
+        latest ??=
+            await _getLatest(current?.toRef(), version: current?.version);
       }
       // If present as a dependency or dev_dependency we use this
-      latest ??= await _getLatest(rootPubspec.dependencies[name]);
-      latest ??= await _getLatest(rootPubspec.devDependencies[name]);
+      latest ??= await _getLatest(rootPubspec.dependencies[name]?.toRef());
+      latest ??= await _getLatest(rootPubspec.devDependencies[name]?.toRef());
       // If not overridden and present in either upgradable or resolvable we
       // use this reference to find the latest
       if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(upgradable);
+        latest ??=
+            await _getLatest(upgradable?.toRef(), version: upgradable?.version);
       }
       if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(resolvable);
+        latest ??=
+            await _getLatest(resolvable?.toRef(), version: resolvable?.version);
       }
       // Otherwise, we might simply not have a latest, when a transitive
       // dependency is overridden the source can depend on which versions we
@@ -200,7 +203,8 @@ class OutdatedCommand extends PubCommand {
       // allow 3rd party pub servers, but other servers might. Hence, we choose
       // to fallback to using the overridden source for latest.
       if (latest == null) {
-        latest ??= await _getLatest(current ?? upgradable ?? resolvable);
+        final id = current ?? upgradable ?? resolvable;
+        latest ??= await _getLatest(id?.toRef(), version: id?.version);
         latestIsOverridden = true;
       }
 
@@ -309,16 +313,15 @@ class OutdatedCommand extends PubCommand {
   /// Will include prereleases in the comparison if '--prereleases' was enabled
   /// by the arguments.
   ///
-  /// If [package] is a [PackageId] with a prerelease version and there are no
+  /// If [version] is non-null and is a prerelease version and there are no
   /// later stable version we return a prerelease version if it exists.
   ///
   /// Returns `null`, if unable to find the package.
-  Future<PackageId?> _getLatest(PackageName? package) async {
+  Future<PackageId?> _getLatest(PackageRef? package, {Version? version}) async {
     if (package == null) {
       return null;
     }
-    final ref = package.toRef();
-    final available = await cache.source(ref.source).getVersions(ref);
+    final available = await cache.getVersions(package);
     if (available.isEmpty) {
       return null;
     }
@@ -327,9 +330,9 @@ class OutdatedCommand extends PubCommand {
     available.sort(prereleases
         ? (x, y) => x.version.compareTo(y.version)
         : (x, y) => Version.prioritize(x.version, y.version));
-    if (package is PackageId &&
-        package.version.isPreRelease &&
-        package.version > available.last.version) {
+    if (version != null &&
+        version.isPreRelease &&
+        version > available.last.version) {
       available.sort((x, y) => x.version.compareTo(y.version));
     }
     return available.last;
@@ -346,7 +349,7 @@ class OutdatedCommand extends PubCommand {
       return null;
     }
     return _VersionDetails(
-      await cache.source(id.source).describe(id),
+      await cache.describe(id),
       id,
       isOverridden,
     );
@@ -380,7 +383,7 @@ class OutdatedCommand extends PubCommand {
       if (id == null) {
         continue; // allow partial resolutions
       }
-      final pubspec = await cache.source(id.source).describe(id);
+      final pubspec = await cache.describe(id);
       queue.addAll(pubspec.dependencies.keys);
     }
 
@@ -743,11 +746,8 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
       return Map.fromEntries(
         await Future.wait(
           ids.map(
-            (id) async => MapEntry(
-                id,
-                (await id.source!.bind(cache).describe(id))
-                    .languageVersion
-                    .supportsNullSafety),
+            (id) async => MapEntry(id,
+                (await cache.describe(id)).languageVersion.supportsNullSafety),
           ),
         ),
       );

@@ -16,90 +16,79 @@ import '../system_cache.dart';
 import '../utils.dart';
 
 /// A package [Source] that gets packages from a hard-coded SDK.
-class SdkSource extends Source {
+class SdkSource extends Source<SdkDescription> {
+  static final SdkSource instance = SdkSource._();
+
+  SdkSource._();
+
   @override
   final name = 'sdk';
 
-  @override
-  BoundSource bind(SystemCache systemCache) =>
-      BoundSdkSource(this, systemCache);
-
-  /// Returns a reference to an SDK package named [name] from [sdk].
-  PackageRef refFor(String name, String sdk) => PackageRef(name, this, sdk);
-
-  /// Returns an ID for an SDK package with the given [name] and [version] from
-  /// [sdk].
-  PackageId idFor(String name, Version version, String sdk) =>
-      PackageId(name, this, version, sdk);
-
   /// Parses an SDK dependency.
   @override
-  PackageRef parseRef(String name, description,
-      {String? containingPath, LanguageVersion? languageVersion}) {
+  PackageRef<SdkDescription> parseRef(String name, description,
+      {String? containingDir, LanguageVersion? languageVersion}) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
     }
 
-    return PackageRef(name, this, description);
+    return PackageRef(name, SdkDescription(description));
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingPath}) {
+  PackageId<SdkDescription> parseId(String name, Version version, description,
+      {String? containingDir}) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
     }
 
-    return PackageId(name, this, version, description);
+    return PackageId(
+      name,
+      version,
+      ResolvedSdkDescription(SdkDescription(description)),
+    );
   }
 
   @override
-  bool descriptionsEqual(description1, description2) =>
-      description1 == description2;
-
-  @override
-  int hashDescription(description) => description.hashCode;
-}
-
-/// The [BoundSource] for [SdkSource].
-class BoundSdkSource extends BoundSource {
-  @override
-  final SdkSource source;
-
-  @override
-  final SystemCache systemCache;
-
-  BoundSdkSource(this.source, this.systemCache);
-
-  @override
-  Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge) async {
-    var pubspec = _loadPubspec(ref);
-    var id = PackageId(ref.name, source, pubspec.version, ref.description);
-    memoizePubspec(id, pubspec);
+  Future<List<PackageId<SdkDescription>>> doGetVersions(
+      PackageRef<SdkDescription> ref,
+      Duration? maxAge,
+      SystemCache cache) async {
+    var pubspec = _loadPubspec(ref, cache);
+    var id = PackageId(
+      ref.name,
+      pubspec.version,
+      ResolvedSdkDescription(ref.description),
+    );
+    // Store the pubspec in memory if we need to refer to it again.
+    cache.cachedPubspecs[id] = pubspec;
     return [id];
   }
 
   @override
-  Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id);
+  Future<Pubspec> doDescribe(
+    PackageId<SdkDescription> id,
+    SystemCache cache,
+  ) async =>
+      _loadPubspec(id.toRef(), cache);
 
-  /// Loads the pubspec for the Flutter package named [name].
+  /// Loads the pubspec for the SDK package named [ref].
   ///
-  /// Throws a [PackageNotFoundException] if [package]'s SDK is unavailable or
+  /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
-  Pubspec _loadPubspec(PackageName package) =>
-      Pubspec.load(_verifiedPackagePath(package), systemCache.sources,
-          expectedName: package.name);
+  Pubspec _loadPubspec(PackageRef<SdkDescription> ref, SystemCache cache) =>
+      Pubspec.load(_verifiedPackagePath(ref), cache.sources,
+          expectedName: ref.name);
 
   /// Returns the path for the given [package].
   ///
   /// Throws a [PackageNotFoundException] if [package]'s SDK is unavailable or
   /// doesn't contain the package.
-  String _verifiedPackagePath(PackageName package) {
-    var identifier = package.description as String?;
-    var sdk = sdks[identifier!];
+  String _verifiedPackagePath(PackageRef<SdkDescription> package) {
+    var sdkName = package.description.sdk;
+    var sdk = sdks[sdkName];
     if (sdk == null) {
-      throw PackageNotFoundException('unknown SDK "$identifier"');
+      throw PackageNotFoundException('unknown SDK "$sdkName"');
     } else if (!sdk.isAvailable) {
       throw PackageNotFoundException(
         'the ${sdk.name} SDK is not available',
@@ -115,14 +104,44 @@ class BoundSdkSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id, {String? relativeFrom}) {
+  String getDirectory(PackageId<SdkDescription> id, SystemCache cache,
+      {String? relativeFrom}) {
     try {
-      return _verifiedPackagePath(id);
+      return _verifiedPackagePath(id.toRef());
     } on PackageNotFoundException catch (error) {
       // [PackageNotFoundException]s are uncapitalized and unpunctuated because
       // they're used within other sentences by the version solver, but
       // [ApplicationException]s should be full sentences.
       throw ApplicationException(capitalize(error.message) + '.');
     }
+  }
+}
+
+class SdkDescription extends Description<SdkDescription> {
+  /// The sdk the described package comes from.
+  final String sdk;
+
+  SdkDescription(this.sdk);
+  @override
+  String format({required String? containingDir}) => sdk;
+
+  @override
+  Object? serializeForPubspec({
+    required String? containingDir,
+    required LanguageVersion languageVersion,
+  }) {
+    return sdk;
+  }
+
+  @override
+  Source<SdkDescription> get source => SdkSource.instance;
+}
+
+class ResolvedSdkDescription extends ResolvedDescription<SdkDescription> {
+  ResolvedSdkDescription(SdkDescription description) : super(description);
+
+  @override
+  Object? serializeForLockfile({required String? containingDir}) {
+    return description.sdk;
   }
 }

@@ -7,9 +7,10 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -2859,7 +2860,8 @@ Future expectResolves(
 
   if (result == null) return;
 
-  var registry = SourceRegistry();
+  var cache = SystemCache();
+  var registry = cache.sources;
   var lockFile =
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
   var resultPubspec = Pubspec.fromMap({'dependencies': result}, registry);
@@ -2868,13 +2870,13 @@ Future expectResolves(
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
     var id = ids.remove(dep.name);
-    final source = dep.source;
 
-    if (source is HostedSource && (dep.description.uri == source.defaultUrl)) {
+    if (dep is PackageRange<HostedDescription> &&
+        (dep.description.url == SystemCache().hosted.defaultUrl)) {
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
-      dep = registry.hosted
-          .refFor(dep.name, url: Uri.parse(globalServer.url))
+      dep = cache.hosted
+          .refFor(dep.name, url: globalServer.url)
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');

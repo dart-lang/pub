@@ -42,7 +42,9 @@ class Runner extends CommandRunner<int> {
             dependencyKindCustomDimensionName: 'cd1')
         : null;
     addCommand(
-        pubCommand(analytics: analytics)..addSubcommand(ThrowingCommand()));
+        pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
+          ..addSubcommand(ThrowingCommand()));
+    argParser.addFlag('verbose');
   }
 
   @override

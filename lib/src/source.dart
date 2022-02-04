@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
@@ -15,43 +14,32 @@ import 'system_cache.dart';
 
 /// A source from which to get packages.
 ///
-/// Each source has many packages that it looks up using [PackageId]s. Sources
-/// that inherit this directly (currently just [PathSource]) are *uncached*
-/// sources. They deliver a package directly to the package that depends on it.
+/// Each source has many packages that it looks up using [PackageRef]s.
 ///
 /// Other sources are *cached* sources. These extend [CachedSource]. When a
 /// package needs a dependency from a cached source, it is first installed in
 /// the [SystemCache] and then acquired from there.
 ///
-/// Each user-visible source has two classes: a [Source] that knows how to do
-/// filesystem-independent operations like parsing and comparing descriptions,
-/// and a [BoundSource] that knows how to actually install (and potentially
-/// download) those packages. Only the [BoundSource] has access to the
-/// [SystemCache].
+/// Methods on [Source] that depends on the cache will take it as an argument.
 ///
-/// ## Subclassing
+/// ## Types of description
 ///
-/// All [Source]s should extend this class and all [BoundSource]s should extend
-/// [BoundSource]. In addition to defining the behavior of various methods,
-/// sources define the structure of package descriptions used in [PackageRef]s,
-/// [PackageRange]s, and [PackageId]s. There are three distinct types of
-/// description, although in practice most sources use the same format for one
-/// or more of these:
+/// * Pubspec.yaml descriptions. These are included in pubspecs and usually
+///   written by hand. They're typically more flexible in the formats they allow
+///   to optimize for ease of authoring.
 ///
-/// * User descriptions. These are included in pubspecs and usually written by
-///   hand. They're typically more flexible in the formats they allow to
-///   optimize for ease of authoring.
-///
-/// * Reference descriptions. These are the descriptions in [PackageRef]s and
+/// * [Description]s. These are the descriptions in [PackageRef]s and
 ///   [PackageRange]. They're parsed directly from user descriptions using
-///   [parseRef], and so add no additional information.
+///   [Source.parseRef]. Internally relative paths are stored absolute, such
+///   they can be serialized elsewhere.
 ///
-/// * ID descriptions. These are the descriptions in [PackageId]s, which
+/// * [ResolvedDescription]s. These are the descriptions in [PackageId]s, which
 ///   uniquely identify and provide the means to locate the concrete code of a
 ///   package. They may contain additional expensive-to-compute information
 ///   relative to the corresponding reference descriptions. These are the
-///   descriptions stored in lock files.
-abstract class Source {
+///   descriptions stored in lock files. (This is mainly relevant for the
+///   resolved-ref of GitDescriptions.)
+abstract class Source<T extends Description<T>> {
   /// The name of the source.
   ///
   /// Should be lower-case, suitable for use in a filename, and unique across
@@ -64,25 +52,20 @@ abstract class Source {
   /// Defaults to `false`.
   bool get hasMultipleVersions => false;
 
-  /// Records the system cache to which this source belongs.
-  ///
-  /// This should only be called once for each source, by
-  /// [SystemCache.register]. It should not be overridden by base classes.
-  BoundSource bind(SystemCache systemCache);
-
   /// Parses a [PackageRef] from a name and a user-provided [description].
   ///
   /// When a [Pubspec] is parsed, it reads in the description for each
   /// dependency. It is up to the dependency's [Source] to determine how that
   /// should be interpreted. This will be called during parsing to validate that
   /// the given [description] is well-formed according to this source, and to
-  /// give the source a chance to canonicalize the description.
-  /// For simple hosted dependencies like `foo:` or `foo: ^1.2.3`, the
-  /// [description] may also be `null`.
+  /// give the source a chance to canonicalize the description. For simple
+  /// hosted dependencies like `foo:` or `foo: ^1.2.3`, the [description] may
+  /// also be `null`.
   ///
-  /// [containingPath] is the path to the pubspec where this description
-  /// appears. It may be `null` if the description is coming from some in-memory
-  /// source (such as pulling down a pubspec from pub.dartlang.org).
+  /// [containingDir] is the path to the directory of the pubspec where this
+  /// description appears. It may be `null` if the description is coming from
+  /// some in-memory source (such as pulling down a pubspec from
+  /// pub.dartlang.org).
   ///
   /// [languageVersion] is the minimum Dart version parsed from the pubspec's
   /// `environment` field. Source implementations may use this parameter to only
@@ -92,10 +75,10 @@ abstract class Source {
   /// the original user-provided description.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageRef parseRef(
+  PackageRef<T> parseRef(
     String name,
     description, {
-    String? containingPath,
+    String? containingDir,
     required LanguageVersion languageVersion,
   });
 
@@ -104,60 +87,17 @@ abstract class Source {
   /// This only accepts descriptions serialized using [serializeDescription]. It
   /// should not be used with user-authored descriptions.
   ///
-  /// [containingPath] is the path to the lockfile where this description
-  /// appears. It may be `null` if the description is coming from some in-memory
-  /// source.
+  /// [containingDir] is the path to the directory lockfile where this
+  /// description appears. It may be `null` if the description is coming from
+  /// some in-memory source.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageId parseId(String name, Version version, description,
-      {String? containingPath});
-
-  /// When a [LockFile] is serialized, it uses this method to get the
-  /// [description] in the right format.
-  ///
-  /// [containingPath] is the containing directory of the root package.
-  dynamic serializeDescription(String containingPath, description) {
-    return description;
-  }
-
-  /// When a package [description] is shown to the user, this is called to
-  /// convert it into a human-friendly form.
-  ///
-  /// By default, it just converts the description to a string, but sources
-  /// may customize this.
-  String formatDescription(description) {
-    return description.toString();
-  }
-
-  /// Returns whether or not [description1] describes the same package as
-  /// [description2] for this source.
-  ///
-  /// This method should be light-weight. It doesn't need to validate that
-  /// either package exists.
-  ///
-  /// Note that either description may be a reference description or an ID
-  /// description; they need not be the same type. ID descriptions should be
-  /// considered equal to the reference descriptions that produced them.
-  bool descriptionsEqual(description1, description2);
-
-  /// Returns a hash code for [description].
-  ///
-  /// Descriptions that compare equal using [descriptionsEqual] should return
-  /// the same hash code.
-  int hashDescription(description);
+  PackageId<T> parseId(String name, Version version, description,
+      {String? containingDir});
 
   /// Returns the source's name.
   @override
   String toString() => name;
-}
-
-/// A source bound to a [SystemCache].
-abstract class BoundSource {
-  /// The unbound source that produced [this].
-  Source get source;
-
-  /// The system cache to which [this] is bound.
-  SystemCache get systemCache;
 
   /// Get the IDs of all versions that match [ref].
   ///
@@ -168,84 +108,8 @@ abstract class BoundSource {
   ///
   /// By default, this assumes that each description has a single version and
   /// uses [describe] to get that version.
-  ///
-  /// Sources should not override this. Instead, they implement [doGetVersions].
-  ///
-  /// If [maxAge] is given answers can be taken from cache - up to that age old.
-  ///
-  /// If given, the [allowedRetractedVersion] is the only version which can be
-  /// selected even if it is marked as retracted. Otherwise, all the returned
-  /// IDs correspond to non-retracted versions.
-  Future<List<PackageId>> getVersions(PackageRef ref,
-      {Duration? maxAge, Version? allowedRetractedVersion}) async {
-    if (ref.isRoot) {
-      throw ArgumentError('Cannot get versions for the root package.');
-    }
-    if (ref.source != source) {
-      throw ArgumentError('Package $ref does not use source ${source.name}.');
-    }
-
-    var versions = await doGetVersions(ref, maxAge);
-
-    versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await status(id, maxAge: maxAge);
-      if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
-        return id;
-      }
-      return null;
-    })))
-        .whereNotNull()
-        .toList();
-
-    return versions;
-  }
-
-  /// Get the IDs of all versions that match [ref].
-  ///
-  /// Note that this does *not* require the packages to be downloaded locally,
-  /// which is the point. This is used during version resolution to determine
-  /// which package versions are available to be downloaded (or already
-  /// downloaded).
-  ///
-  /// By default, this assumes that each description has a single version and
-  /// uses [describe] to get that version.
-  ///
-  /// This method is effectively protected: subclasses must implement it, but
-  /// external code should not call this. Instead, call [getVersions].
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration? maxAge);
-
-  /// A cache of pubspecs described by [describe].
-  final _pubspecs = <PackageId, Pubspec>{};
-
-  /// Loads the (possibly remote) pubspec for the package version identified by
-  /// [id].
-  ///
-  /// This may be called for packages that have not yet been downloaded during
-  /// the version resolution process. Its results are automatically memoized.
-  ///
-  /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
-  /// version.
-  ///
-  /// Sources should not override this. Instead, they implement [doDescribe].
-  Future<Pubspec> describe(PackageId id) async {
-    if (id.isRoot) throw ArgumentError('Cannot describe the root package.');
-    if (id.source != source) {
-      throw ArgumentError('Package $id does not use source ${source.name}.');
-    }
-
-    var pubspec = _pubspecs[id];
-    if (pubspec != null) return pubspec;
-
-    // Delegate to the overridden one.
-    pubspec = await doDescribe(id);
-    if (pubspec.version != id.version) {
-      throw PackageNotFoundException(
-          'the pubspec for $id has version ${pubspec.version}');
-    }
-
-    _pubspecs[id] = pubspec;
-    return pubspec;
-  }
+  Future<List<PackageId<T>>> doGetVersions(
+      PackageRef<T> ref, Duration? maxAge, SystemCache cache);
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
@@ -257,9 +121,7 @@ abstract class BoundSource {
   /// This may be called for packages that have not yet been downloaded during
   /// the version resolution process.
   ///
-  /// This method is effectively protected: subclasses must implement it, but
-  /// external code should not call this. Instead, call [describe].
-  Future<Pubspec> doDescribe(PackageId id);
+  Future<Pubspec> doDescribe(PackageId<T> id, SystemCache cache);
 
   /// Returns the directory where this package can (or could) be found locally.
   ///
@@ -267,7 +129,8 @@ abstract class BoundSource {
   ///
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
-  String getDirectory(PackageId id, {String? relativeFrom});
+  String getDirectory(PackageId<T> id, SystemCache cache,
+      {String? relativeFrom});
 
   /// Returns metadata about a given package.
   ///
@@ -276,16 +139,38 @@ abstract class BoundSource {
   ///
   /// In the case of offline sources, [maxAge] is not used, since information is
   /// per definiton cached.
-  Future<PackageStatus> status(PackageId id, {Duration? maxAge}) async =>
+  Future<PackageStatus> status(
+    PackageId<T> id,
+    SystemCache cache, {
+    Duration? maxAge,
+  }) async =>
       // Default implementation has no metadata.
       PackageStatus();
+}
 
-  /// Stores [pubspec] so it's returned when [describe] is called with [id].
+abstract class Description<T extends Description<T>> {
+  Source<T> get source;
+  Object? serializeForPubspec(
+      {required String? containingDir,
+      required LanguageVersion languageVersion});
+
+  /// Converts `this` into a human-friendly form to show the user.
+  String format({required String? containingDir});
+}
+
+abstract class ResolvedDescription<T extends Description<T>> {
+  final T description;
+  ResolvedDescription(this.description);
+
+  /// When a [LockFile] is serialized, it uses this method to get the
+  /// [description] in the right format.
   ///
-  /// This is notionally protected; it should only be called by subclasses.
-  void memoizePubspec(PackageId id, Pubspec pubspec) {
-    _pubspecs[id] = pubspec;
-  }
+  /// [containingPath] is the containing directory of the root package.
+  Object? serializeForLockfile({required String? containingDir});
+
+  /// Converts `this` into a human-friendly form to show the user.
+  String format({required String? containingDir}) =>
+      description.format(containingDir: containingDir);
 }
 
 /// Metadata about a [PackageId].
@@ -296,8 +181,9 @@ class PackageStatus {
   final String? discontinuedReplacedBy;
   final bool isDiscontinued;
   final bool isRetracted;
-  PackageStatus(
-      {this.isDiscontinued = false,
-      this.discontinuedReplacedBy,
-      this.isRetracted = false});
+  PackageStatus({
+    this.isDiscontinued = false,
+    this.discontinuedReplacedBy,
+    this.isRetracted = false,
+  });
 }

@@ -17,45 +17,36 @@ import '../system_cache.dart';
 import '../utils.dart';
 
 /// A package [Source] that gets packages from a given local file path.
-class PathSource extends Source {
+class PathSource extends Source<PathDescription> {
+  static PathSource instance = PathSource._();
+  PathSource._();
+
   @override
   final name = 'path';
 
-  @override
-  BoundSource bind(SystemCache systemCache) =>
-      BoundPathSource(this, systemCache);
-
-  /// Given a valid path reference description, returns the file path it
-  /// describes.
-  ///
-  /// This returned path may be relative or absolute and it is up to the caller
-  /// to know how to interpret a relative path.
-  String pathFromDescription(description) => description['path'];
-
-  /// Returns a reference to a path package named [name] at [path].
-  PackageRef refFor(String name, String path) {
-    return PackageRef(
-        name, this, {'path': path, 'relative': p.isRelative(path)});
-  }
-
+  // /// Returns a reference to a path package named [name] at [path].
+  // PackageRef<PathDescription> refFor(String name, String path) {
+  //   if (p.isRelative(path)) {
+  //     PackageRef(name, {'path':p.absolute(path), 'relative': p.isRelative(path)});
+  //   }
+  //   return PackageRef(name, {'path': path, 'relative': p.isRelative(path)});
+  // }
+//{name: myapp, dev_dependencies: {foo: 1.2.2}, dependency_overrides: {foo: {path: ../foo}}, environment: {sdk: >=0.1.2 <1.0.0}}
+//{name: myapp, dev_dependencies: {foo: ^1.2.2}, dependency_overrides: {foo: {path: ../foo}}, environment: {sdk: >=0.1.2 <1.0.0}}
   /// Returns an ID for a path package with the given [name] and [version] at
   /// [path].
-  PackageId idFor(String name, Version version, String path) {
+  ///
+  /// If [path] is relative it is resolved relative to [relativeTo]
+  PackageId<PathDescription> idFor(
+      String name, Version version, String path, String relativeTo) {
     return PackageId(
-        name, this, version, {'path': path, 'relative': p.isRelative(path)});
+      name,
+      version,
+      ResolvedPathDescription(
+        PathDescription(p.join(relativeTo, path), p.isRelative(path)),
+      ),
+    );
   }
-
-  @override
-  bool descriptionsEqual(description1, description2) {
-    // Compare real paths after normalizing and resolving symlinks.
-    var path1 = canonicalize(description1['path']);
-    var path2 = canonicalize(description2['path']);
-    return path1 == path2;
-  }
-
-  @override
-  int hashDescription(description) =>
-      canonicalize(description['path']).hashCode;
 
   /// Parses a path dependency.
   ///
@@ -63,16 +54,16 @@ class PathSource extends Source {
   /// original path but resolved relative to the containing path. The
   /// "relative" key will be `true` if the original path was relative.
   @override
-  PackageRef parseRef(
+  PackageRef<PathDescription> parseRef(
     String name,
     description, {
-    String? containingPath,
+    String? containingDir,
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
       throw FormatException('The description must be a path string.');
     }
-
+    var dir = description;
     // Resolve the path relative to the containing file path, and remember
     // whether the original path was relative or absolute.
     var isRelative = p.isRelative(description);
@@ -80,66 +71,54 @@ class PathSource extends Source {
       // Relative paths coming from pubspecs that are not on the local file
       // system aren't allowed. This can happen if a hosted or git dependency
       // has a path dependency.
-      if (containingPath == null) {
+      if (containingDir == null) {
         throw FormatException('"$description" is a relative path, but this '
             'isn\'t a local pubspec.');
       }
 
-      description = p.normalize(p.join(p.dirname(containingPath), description));
+      dir = p.normalize(
+        p.absolute(p.join(containingDir, description)),
+      );
     }
-
-    return PackageRef(
-        name, this, {'path': description, 'relative': isRelative});
+    return PackageRef(name, PathDescription(dir, isRelative));
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingPath}) {
+  PackageId<PathDescription> parseId(String name, Version version, description,
+      {String? containingDir}) {
     if (description is! Map) {
       throw FormatException('The description must be a map.');
     }
-
-    if (description['path'] is! String) {
+    var path = description['path'];
+    if (path is! String) {
       throw FormatException("The 'path' field of the description must "
           'be a string.');
     }
-
-    if (description['relative'] is! bool) {
+    final relative = description['relative'];
+    if (relative is! bool) {
       throw FormatException("The 'relative' field of the description "
           'must be a boolean.');
     }
 
     // Resolve the path relative to the containing file path.
-    if (description['relative']) {
+    if (relative) {
       // Relative paths coming from lockfiles that are not on the local file
       // system aren't allowed.
-      if (containingPath == null) {
+      if (containingDir == null) {
         throw FormatException('"$description" is a relative path, but this '
             'isn\'t a local pubspec.');
       }
 
-      description = Map.from(description);
-      description['path'] =
-          p.normalize(p.join(p.dirname(containingPath), description['path']));
+      path = p.normalize(
+        p.absolute(p.join(containingDir, description['path'])),
+      );
     }
 
-    return PackageId(name, this, version, description);
-  }
-
-  /// Serializes path dependency's [description].
-  ///
-  /// For the descriptions where `relative` attribute is `true`, tries to make
-  /// `path` relative to the specified [containingPath].
-  @override
-  dynamic serializeDescription(String containingPath, description) {
-    if (description['relative']) {
-      return {
-        'path': relativePathWithPosixSeparators(
-            p.relative(description['path'], from: containingPath)),
-        'relative': true
-      };
-    }
-    return description;
+    return PackageId(
+      name,
+      version,
+      ResolvedPathDescription(PathDescription(path, relative)),
+    );
   }
 
   /// On both Windows and linux we prefer `/` in the pubspec.lock for relative
@@ -149,49 +128,41 @@ class PathSource extends Source {
     return p.posix.joinAll(p.split(path));
   }
 
-  /// Converts a parsed relative path to its original relative form.
   @override
-  String formatDescription(description) {
-    var sourcePath = description['path'];
-    if (description['relative']) sourcePath = p.relative(description['path']);
-    return sourcePath;
-  }
-}
-
-/// The [BoundSource] for [PathSource].
-class BoundPathSource extends BoundSource {
-  @override
-  final PathSource source;
-
-  @override
-  final SystemCache systemCache;
-
-  BoundPathSource(this.source, this.systemCache);
-
-  @override
-  Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge) async {
+  Future<List<PackageId<PathDescription>>> doGetVersions(
+      PackageRef<PathDescription> ref,
+      Duration? maxAge,
+      SystemCache cache) async {
     // There's only one package ID for a given path. We just need to find the
     // version.
-    var pubspec = _loadPubspec(ref);
-    var id = PackageId(ref.name, source, pubspec.version, ref.description);
-    memoizePubspec(id, pubspec);
+    var pubspec = _loadPubspec(ref, cache);
+    var id = PackageId<PathDescription>(
+        ref.name, pubspec.version, ResolvedPathDescription(ref.description));
+    // Store the pubspec in memory if we need to refer to it again.
+    cache.cachedPubspecs[id] = pubspec;
     return [id];
   }
 
   @override
-  Future<Pubspec> doDescribe(PackageId id) async => _loadPubspec(id.toRef());
+  Future<Pubspec> doDescribe(
+          PackageId<PathDescription> id, SystemCache cache) async =>
+      _loadPubspec(id.toRef(), cache);
 
-  Pubspec _loadPubspec(PackageRef ref) {
+  Pubspec _loadPubspec(PackageRef<PathDescription> ref, SystemCache cache) {
     var dir = _validatePath(ref.name, ref.description);
-    return Pubspec.load(dir, systemCache.sources, expectedName: ref.name);
+    return Pubspec.load(dir, cache.sources, expectedName: ref.name);
   }
 
   @override
-  String getDirectory(PackageId id, {String? relativeFrom}) {
-    return id.description['relative']
-        ? p.relative(id.description['path'], from: relativeFrom)
-        : id.description['path']!;
+  String getDirectory(
+    PackageId<PathDescription> id,
+    SystemCache cache, {
+    String? relativeFrom,
+  }) {
+    final description = id.description.description;
+    return description.relative
+        ? p.relative(description.path, from: relativeFrom)
+        : description.path;
   }
 
   /// Ensures that [description] is a valid path description and returns a
@@ -200,8 +171,8 @@ class BoundPathSource extends BoundSource {
   /// It must be a map, with a "path" key containing a path that points to an
   /// existing directory. Throws an [ApplicationException] if the path is
   /// invalid.
-  String _validatePath(String name, description) {
-    var dir = description['path'];
+  String _validatePath(String name, PathDescription description) {
+    final dir = description.path;
 
     if (dirExists(dir)) return dir;
 
@@ -209,8 +180,66 @@ class BoundPathSource extends BoundSource {
       fail('Path dependency for package $name must refer to a directory, '
           'not a file. Was "$dir".');
     }
-
-    throw PackageNotFoundException('could not find package $name at "$dir"',
-        innerError: FileException('$dir does not exist.', dir));
+    throw PackageNotFoundException(
+      'could not find package $name at "${description.format(containingDir: null)}"',
+      innerError: FileException('$dir does not exist.', dir),
+    );
   }
+}
+
+class PathDescription extends Description<PathDescription> {
+  final String path;
+  final bool relative;
+
+  PathDescription(this.path, this.relative) : assert(!p.isRelative(path));
+  @override
+  String format({required String? containingDir}) {
+    return relative ? p.relative(path, from: containingDir) : path;
+  }
+
+  @override
+  Object? serializeForPubspec({
+    required String? containingDir,
+    required LanguageVersion languageVersion,
+  }) {
+    return relative
+        ? PathSource.relativePathWithPosixSeparators(
+            p.relative(path, from: containingDir))
+        : path;
+  }
+
+  @override
+  Source<PathDescription> get source => PathSource.instance;
+
+  @override
+  bool operator ==(Object other) {
+    return other is PathDescription &&
+        canonicalize(path) == canonicalize(other.path);
+  }
+
+  @override
+  int get hashCode => canonicalize(path).hashCode;
+}
+
+class ResolvedPathDescription extends ResolvedDescription<PathDescription> {
+  ResolvedPathDescription(PathDescription description) : super(description);
+
+  @override
+  Object? serializeForLockfile({required String? containingDir}) {
+    if (description.relative) {
+      return {
+        'path': PathSource.relativePathWithPosixSeparators(
+            p.relative(description.path, from: containingDir)),
+        'relative': true
+      };
+    }
+    return {'path': description.path, 'relative': p.relative('false')};
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is ResolvedPathDescription && other.description == description;
+
+  @override
+  int get hashCode => description.hashCode;
 }

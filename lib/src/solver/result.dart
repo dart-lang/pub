@@ -13,7 +13,6 @@ import '../package_name.dart';
 import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
 import '../source/hosted.dart';
-import '../source_registry.dart';
 import '../system_cache.dart';
 import 'report.dart';
 import 'type.dart';
@@ -74,8 +73,6 @@ class SolveResult {
         overriddenDependencies: MapKeySet(_root.dependencyOverrides));
   }
 
-  final SourceRegistry _sources;
-
   final LockFile _previousLockFile;
 
   /// Returns the names of all packages that were changed.
@@ -92,22 +89,14 @@ class SolveResult {
         .toSet());
   }
 
-  SolveResult(
-      this._sources,
-      this._root,
-      this._previousLockFile,
-      this.packages,
-      this.pubspecs,
-      this.availableVersions,
-      this.attemptedSolutions,
-      this.resolutionTime);
+  SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
+      this.availableVersions, this.attemptedSolutions, this.resolutionTime);
 
   /// Displays a report of what changes were made to the lockfile.
   ///
   /// [type] is the type of version resolution that was run.
   Future<void> showReport(SolveType type, SystemCache cache) async {
-    await SolveReport(type, _sources, _root, _previousLockFile, this, cache)
-        .show();
+    await SolveReport(type, _root, _previousLockFile, this, cache).show();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -119,8 +108,7 @@ class SolveResult {
   /// [type] is the type of version resolution that was run.
   Future<void> summarizeChanges(SolveType type, SystemCache cache,
       {bool dryRun = false}) async {
-    final report =
-        SolveReport(type, _sources, _root, _previousLockFile, this, cache);
+    final report = SolveReport(type, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
     if (type == SolveType.upgrade) {
       await report.reportDiscontinued();

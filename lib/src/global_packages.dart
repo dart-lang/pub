@@ -84,10 +84,12 @@ class GlobalPackages {
   /// If [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future<void> activateGit(String repo, List<String>? executables,
-      {Map<String, FeatureDependency>? features,
-      required bool overwriteBinStubs}) async {
-    var name = await cache.git.getPackageNameFromRepo(repo);
+  Future<void> activateGit(
+    String repo,
+    List<String>? executables, {
+    required bool overwriteBinStubs,
+  }) async {
+    var name = await cache.git.getPackageNameFromRepo(repo, cache);
 
     // TODO(nweiz): Add some special handling for git repos that contain path
     // dependencies. Their executables shouldn't be cached, and there should
@@ -95,16 +97,15 @@ class GlobalPackages {
     // changed (see also issue 20499).
     PackageRef ref;
     try {
-      ref = cache.git.source.parseRef(name, {'url': repo}, containingPath: '.');
+      ref = cache.git.parseRef(name, {'url': repo}, containingDir: '.');
     } on FormatException catch (e) {
       throw ApplicationException(e.message);
     }
     await _installInCache(
-        ref
-            .withConstraint(VersionConstraint.any)
-            .withFeatures(features ?? const {}),
-        executables,
-        overwriteBinStubs: overwriteBinStubs);
+      ref.withConstraint(VersionConstraint.any),
+      executables,
+      overwriteBinStubs: overwriteBinStubs,
+    );
   }
 
   /// Finds the latest version of the hosted package with [name] that matches
@@ -121,15 +122,14 @@ class GlobalPackages {
   /// [url] is an optional custom pub server URL. If not null, the package to be
   /// activated will be fetched from this URL instead of the default pub URL.
   Future<void> activateHosted(
-      String name, VersionConstraint constraint, List<String>? executables,
-      {Map<String, FeatureDependency>? features,
-      required bool overwriteBinStubs,
-      Uri? url}) async {
+    String name,
+    VersionConstraint constraint,
+    List<String>? executables, {
+    required bool overwriteBinStubs,
+    String? url,
+  }) async {
     await _installInCache(
-        cache.hosted.source
-            .refFor(name, url: url)
-            .withConstraint(constraint)
-            .withFeatures(features ?? const {}),
+        cache.hosted.refFor(name, url: url).withConstraint(constraint),
         executables,
         overwriteBinStubs: overwriteBinStubs);
   }
@@ -163,7 +163,12 @@ class GlobalPackages {
 
     // Write a lockfile that points to the local package.
     var fullPath = canonicalize(entrypoint.root.dir);
-    var id = cache.path.source.idFor(name, entrypoint.root.version, fullPath);
+    var id = cache.path.idFor(
+      name,
+      entrypoint.root.version,
+      fullPath,
+      p.current,
+    );
 
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
@@ -229,8 +234,10 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
       return http.withDependencyType(root.dependencyType(id.name), () async {
         if (id.isRoot) return;
 
-        var source = cache.source(id.source);
-        if (source is CachedSource) await source.downloadToSystemCache(id);
+        var source = id.source;
+        if (source is CachedSource) {
+          await source.downloadToSystemCache(id, cache);
+        }
       });
     }));
 
@@ -247,7 +254,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
     final entrypoint = Entrypoint.global(
       Package(
         result.pubspecs[dep.name]!,
-        (cache.source(dep.source) as CachedSource).getDirectoryInCache(id),
+        (dep.source as CachedSource).getDirectoryInCache(id, cache),
       ),
       lockFile,
       cache,
@@ -291,23 +298,20 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
     var oldPath = p.join(_directory, '$package.lock');
     if (fileExists(oldPath)) deleteEntry(oldPath);
 
-    writeTextFile(_getLockFilePath(package),
-        lockFile.serialize(p.join(_directory, package)));
+    writeTextFile(_getLockFilePath(package), lockFile.serialize(null));
   }
 
   /// Shows the user the currently active package with [name], if any.
   void _describeActive(LockFile lockFile, String? name) {
-    var id = lockFile.packages[name]!;
+    final id = lockFile.packages[name]!;
+    final description = id.description.description;
 
-    var source = id.source;
-    if (source is GitSource) {
-      var url = source.urlFromDescription(id.description);
+    if (description is GitDescription) {
       log.message('Package ${log.bold(name)} is currently active from Git '
-          'repository "$url".');
-    } else if (source is PathSource) {
-      var path = source.pathFromDescription(id.description);
+          'repository "${p.prettyUri(description.url)}".');
+    } else if (description is PathDescription) {
       log.message('Package ${log.bold(name)} is currently active at path '
-          '"$path".');
+          '"${description.path}".');
     } else {
       log.message('Package ${log.bold(name)} is currently active at version '
           '${log.bold(id.version)}.');
@@ -365,9 +369,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
     var id = lockFile.packages[name]!;
     lockFile = lockFile.removePackage(name);
 
-    var source = cache.source(id.source);
     Entrypoint entrypoint;
-    if (source is CachedSource) {
+    if (id.source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
       entrypoint = Entrypoint.global(cache.loadCached(id), lockFile, cache);
@@ -375,7 +378,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
       entrypoint = Entrypoint(
-          (id.source as PathSource).pathFromDescription(id.description), cache);
+          (id.description.description as PathDescription).path, cache);
     }
 
     entrypoint.root.pubspec.sdkConstraints.forEach((sdkName, constraint) {
@@ -487,12 +490,12 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
 
   /// Returns formatted string representing the package [id].
   String _formatPackage(PackageId id) {
-    var source = id.source;
-    if (source is GitSource) {
-      var url = source.urlFromDescription(id.description);
+    final description = id.description.description;
+    if (description is GitDescription) {
+      var url = p.prettyUri(description.url);
       return '${log.bold(id.name)} ${id.version} from Git repository "$url"';
-    } else if (source is PathSource) {
-      var path = source.pathFromDescription(id.description);
+    } else if (description is PathDescription) {
+      var path = description.path;
       return '${log.bold(id.name)} ${id.version} at path "$path"';
     } else {
       return '${log.bold(id.name)} ${id.version}';
