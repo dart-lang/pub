@@ -146,11 +146,14 @@ class AnalyzerErrorGroup implements Exception {
   String toString() => errors.join('\n');
 }
 
-/// Precompiles the Dart executable at [executablePath] to a kernel file at
-/// [outputPath].
+/// Precompiles the Dart executable at [executablePath].
 ///
-/// This file is also cached at [incrementalDillOutputPath] which is used to
-/// initialize the compiler on future runs.
+/// If the compilation succeeds it is saved to a kernel file at [outputPath].
+///
+/// If compilation fails, the output is cached at [incrementalDillOutputPath].
+///
+/// Whichever of [incrementalDillOutputPath] and [outputPath] already exists is
+/// used to initialize the compiler run.
 ///
 /// The [packageConfigPath] should point at the package config file to be used
 /// for `package:` uri resolution.
@@ -158,39 +161,65 @@ class AnalyzerErrorGroup implements Exception {
 /// The [name] is used to describe the executable in logs and error messages.
 Future<void> precompile({
   required String executablePath,
-  required String incrementalDillOutputPath,
+  required String incrementalDillPath,
   required String name,
   required String outputPath,
   required String packageConfigPath,
 }) async {
   ensureDir(p.dirname(outputPath));
-  ensureDir(p.dirname(incrementalDillOutputPath));
+  ensureDir(p.dirname(incrementalDillPath));
+
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
-  var client = await FrontendServerClient.start(
-    executablePath,
-    incrementalDillOutputPath,
-    platformDill,
-    sdkRoot: sdkRoot,
-    packagesJson: packageConfigPath,
-    printIncrementalDependencies: false,
-  );
+  String? tempDir;
+  FrontendServerClient? client;
   try {
-    var result = await client.compile();
+    tempDir = createTempDir(p.dirname(incrementalDillPath), 'tmp');
+    // To avoid potential races we copy the incremental data to a temporary file
+    // for just this compilation.
+    final temporaryIncrementalDill =
+        p.join(tempDir, '${p.basename(incrementalDillPath)}.incremental.dill');
+    try {
+      if (fileExists(incrementalDillPath)) {
+        copyFile(incrementalDillPath, temporaryIncrementalDill);
+      } else if (fileExists(outputPath)) {
+        copyFile(outputPath, temporaryIncrementalDill);
+      }
+    } on FileSystemException {
+      // Not able to copy existing file, compilation will start from scratch.
+    }
+
+    client = await FrontendServerClient.start(
+      executablePath,
+      temporaryIncrementalDill,
+      platformDill,
+      sdkRoot: sdkRoot,
+      packagesJson: packageConfigPath,
+      printIncrementalDependencies: false,
+    );
+    final result = await client.compile();
 
     final highlightedName = log.bold(name);
     if (result?.errorCount == 0) {
       log.message('Built $highlightedName.');
-      await File(incrementalDillOutputPath).copy(outputPath);
+      // By using rename we ensure atomicity. An external observer will either
+      // see the old or the new snapshot.
+      renameFile(temporaryIncrementalDill, outputPath);
     } else {
-      // Don't leave partial results.
-      deleteEntry(outputPath);
+      // By using rename we ensure atomicity. An external observer will either
+      // see the old or the new snapshot.
+      renameFile(temporaryIncrementalDill, incrementalDillPath);
+      // If compilation failed we don't want to leave an incorrect snapshot.
+      tryDeleteEntry(outputPath);
 
       throw ApplicationException(
           log.yellow('Failed to build $highlightedName:\n') +
               (result?.compilerOutputLines.join('\n') ?? ''));
     }
   } finally {
-    client.kill();
+    client?.kill();
+    if (tempDir != null) {
+      tryDeleteEntry(tempDir);
+    }
   }
 }

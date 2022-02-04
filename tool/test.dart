@@ -29,7 +29,7 @@ Future<void> main(List<String> args) async {
     await precompile(
         executablePath: path.join('bin', 'pub.dart'),
         outputPath: pubSnapshotFilename,
-        incrementalDillOutputPath: pubSnapshotIncrementalFilename,
+        incrementalDillPath: pubSnapshotIncrementalFilename,
         name: 'bin/pub.dart',
         packageConfigPath: path.join('.dart_tool', 'package_config.json'));
     testProcess = await Process.start(

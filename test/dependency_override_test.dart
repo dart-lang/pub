@@ -27,7 +27,9 @@ void main() {
 
       await pubCommand(command);
 
-      await d.appPackagesFile({'foo': '2.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+      ]).validate();
     });
 
     test('treats override as implicit dependency', () async {
@@ -43,7 +45,9 @@ void main() {
 
       await pubCommand(command);
 
-      await d.appPackagesFile({'foo': '1.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      ]).validate();
     });
 
     test('ignores other constraints on overridden package', () async {
@@ -65,7 +69,10 @@ void main() {
 
       await pubCommand(command);
 
-      await d.appPackagesFile({'foo': '2.0.0', 'bar': '1.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      ]).validate();
     });
 
     test('ignores SDK constraints', () async {
@@ -82,8 +89,9 @@ void main() {
       ]).create();
 
       await pubCommand(command);
-
-      await d.appPackagesFile({'foo': '1.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      ]).validate();
     });
 
     test('warns about overridden dependencies', () async {

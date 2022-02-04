@@ -18,12 +18,16 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+    ]).validate();
     server.serve('foo', '1.0.1');
     await d.appDir({'foo': '>1.0.0'}).create();
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '1.0.1'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.1'),
+    ]).validate();
   });
 }

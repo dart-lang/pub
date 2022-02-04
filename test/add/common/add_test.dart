@@ -37,29 +37,6 @@ void main() {
   });
 
   group('normally', () {
-    test('fails if extra arguments are passed', () async {
-      final server = await servePackages();
-      server.serve('foo', '1.2.2');
-
-      await d.dir(appPath, [
-        d.pubspec({'name': 'myapp'})
-      ]).create();
-
-      await pubAdd(
-          args: ['foo', '^1.2.2'],
-          exitCode: exit_codes.USAGE,
-          error: contains('Takes only a single argument.'));
-
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-        }),
-        d.nothing('.dart_tool/package_config.json'),
-        d.nothing('pubspec.lock'),
-        d.nothing('.packages'),
-      ]).validate();
-    });
-
     test('adds a package from a pub server', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
@@ -69,8 +46,31 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
       await d.appDir({'foo': '1.2.3'}).validate();
+    });
+
+    test('adds multiple package from a pub server', () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+      server.serve('bar', '1.1.0');
+      server.serve('baz', '2.5.3');
+
+      await d.appDir({}).create();
+
+      await pubAdd(args: ['foo:1.2.3', 'bar:1.1.0', 'baz:2.5.3']);
+
+      await d.cacheDir(
+          {'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+        d.packageConfigEntry(name: 'bar', version: '1.1.0'),
+        d.packageConfigEntry(name: 'baz', version: '2.5.3'),
+      ]).validate();
+      await d
+          .appDir({'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
     });
 
     test(
@@ -95,7 +95,9 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -141,7 +143,9 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
@@ -222,7 +226,9 @@ environment:
               'adding it to dependencies instead.'));
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -249,7 +255,9 @@ environment:
         await pubAdd(args: ['foo']);
 
         await d.cacheDir({'foo': '1.2.2'}).validate();
-        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+        await d.appPackageConfigFile([
+          d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+        ]).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -461,7 +469,9 @@ environment:
 
       await pubAdd(args: ['--dev', 'foo:1.2.3']);
 
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -571,7 +581,9 @@ environment:
         await pubAdd(args: ['foo', '--dev']);
 
         await d.cacheDir({'foo': '1.2.2'}).validate();
-        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+        await d.appPackageConfigFile([
+          d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+        ]).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',

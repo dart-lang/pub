@@ -156,10 +156,20 @@ class PackageConfigFileDescriptor extends Descriptor {
 
     // Compare packages as sets to ignore ordering.
     expect(
-      config.packages.map((e) => e.toJson()).toSet(),
-      equals(_packages.map((e) => e.toJson()).toSet()),
-      reason:
-          '"packages" property in "$packageConfigFile" does not expected values',
+      config.packages,
+      _packages
+          .map(
+            (p) => isA<PackageConfigEntry>()
+                .having((p0) => p0.name, 'name', p.name)
+                .having(
+                    (p0) => p0.languageVersion,
+                    'languageVersion',
+                    // If the expected entry has no language-version we don't check it.
+                    p.languageVersion ?? anything)
+                .having((p0) => p0.rootUri, 'rootUri', p.rootUri)
+                .having((p0) => p0.packageUri, 'packageUri', p.packageUri),
+          )
+          .toSet(),
     );
 
     final expected = PackageConfig.fromJson(_config.toJson());

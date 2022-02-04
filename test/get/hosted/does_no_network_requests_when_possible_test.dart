@@ -27,7 +27,9 @@ void main() {
     await pubGet();
 
     await d.cacheDir({'foo': '1.2.0'}).validate();
-    await d.appPackagesFile({'foo': '1.2.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.0'),
+    ]).validate();
 
     // The get should not have done any network requests since the lock file is
     // up to date.

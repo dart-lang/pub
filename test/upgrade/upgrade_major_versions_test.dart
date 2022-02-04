@@ -41,12 +41,11 @@ void main() {
         'bar': '^0.2.0',
         'baz': '^1.0.0',
       }).validate();
-
-      await d.appPackagesFile({
-        'foo': '2.0.0',
-        'bar': '0.2.0',
-        'baz': '1.0.1',
-      }).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '0.2.0'),
+        d.packageConfigEntry(name: 'baz', version: '1.0.1'),
+      ]).validate();
     });
 
     test('bumps dev_dependency constraints and shows summary report', () async {
@@ -92,19 +91,18 @@ void main() {
         }),
       ]).validate();
 
-      await d.appPackagesFile({
-        'foo': '2.0.0',
-        'bar': '0.2.0',
-        'baz': '1.0.1',
-      }).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '0.2.0'),
+        d.packageConfigEntry(name: 'baz', version: '1.0.1'),
+      ]).validate();
     });
 
     test('upgrades only the selected package', () async {
-      await servePackages()
+      final server = await servePackages()
         ..serve('foo', '1.0.0')
         ..serve('foo', '2.0.0')
-        ..serve('bar', '0.1.0')
-        ..serve('bar', '0.2.0');
+        ..serve('bar', '0.1.0');
 
       await d.appDir({
         'foo': '^1.0.0',
@@ -112,6 +110,8 @@ void main() {
       }).create();
 
       await pubGet();
+
+      server.serve('bar', '0.1.1');
 
       // 1 constraint should be updated
       await pubUpgrade(
@@ -127,7 +127,10 @@ void main() {
         'bar': '^0.1.0',
       }).validate();
 
-      await d.appPackagesFile({'foo': '2.0.0', 'bar': '0.1.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '0.1.0'),
+      ]).validate();
     });
 
     test('chooses the latest version where possible', () async {
@@ -158,7 +161,9 @@ void main() {
         d.file('pubspec.lock', contains('3.0.0'))
       ]).validate();
 
-      await d.appPackagesFile({'foo': '3.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '3.0.0'),
+      ]).validate();
     });
 
     test('overridden dependencies - no resolution', () async {
@@ -210,7 +215,10 @@ void main() {
         })
       ]).validate();
 
-      await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      ]).validate();
     });
 
     test('upgrade should not downgrade any versions', () async {
@@ -248,10 +256,10 @@ void main() {
         'bar': '^4.0.0',
       }).validate();
 
-      await d.appPackagesFile({
-        'foo': '1.0.0',
-        'bar': '4.0.0',
-      }).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '4.0.0'),
+      ]).validate();
     });
   });
 }

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
+
 import 'package:pub_semver/pub_semver.dart';
 
 import 'language_version.dart';
@@ -160,8 +162,6 @@ class PackageConfigEntry {
   /// Given as `<major>.<minor>` version, similar to the `// @dart = X.Y`
   /// comment. This is derived from the lower-bound on the Dart SDK requirement
   /// in the `pubspec.yaml` for the given package.
-  ///
-  /// `null` if not given.
   LanguageVersion? languageVersion;
 
   /// Additional properties not in the specification for the
@@ -173,10 +173,8 @@ class PackageConfigEntry {
     required this.rootUri,
     this.packageUri,
     this.languageVersion,
-    this.additionalProperties,
-  }) {
-    additionalProperties ??= {};
-  }
+    this.additionalProperties = const {},
+  });
 
   /// Create [PackageConfigEntry] from JSON [data].
   ///
@@ -249,7 +247,12 @@ class PackageConfigEntry {
   Map<String, Object?> toJson() => {
         'name': name,
         'rootUri': rootUri.toString(),
-        if (packageUri != null) 'packageUri': packageUri?.toString(),
+        if (packageUri != null) 'packageUri': packageUri.toString(),
         if (languageVersion != null) 'languageVersion': '$languageVersion',
       }..addAll(additionalProperties ?? {});
+
+  @override
+  String toString() {
+    return JsonEncoder.withIndent('  ').convert(toJson());
+  }
 }

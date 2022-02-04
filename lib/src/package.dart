@@ -83,10 +83,12 @@ class Package {
       ..addAll(dependencyOverrides);
   }
 
-  /// Returns a list of asset ids for all Dart executables in this package's bin
+  /// Returns a list of paths to all Dart executables in this package's bin
   /// directory.
   List<String> get executablePaths {
-    return ordered(listFiles(beneath: 'bin', recursive: false))
+    final binDir = p.join(dir, 'bin');
+    if (!dirExists(binDir)) return <String>[];
+    return ordered(listDir(p.join(dir, 'bin'), includeDirs: false))
         .where((executable) => p.extension(executable) == '.dart')
         .map((executable) => p.relative(executable, from: dir))
         .toList();

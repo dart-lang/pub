@@ -12,7 +12,6 @@ import 'command_runner.dart';
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'executable.dart' as exec;
-import 'http.dart' as http;
 import 'io.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
@@ -61,6 +60,8 @@ class GlobalPackages {
 
   /// The directory where the lockfiles for activated packages are stored.
   String get _directory => p.join(cache.rootDir, 'global_packages');
+
+  String _packageDir(String packageName) => p.join(_directory, packageName);
 
   /// The directory where binstubs for global package executables are stored.
   String get _binStubDir => p.join(cache.rootDir, 'bin');
@@ -149,17 +150,13 @@ class GlobalPackages {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+    await entrypoint.acquireDependencies(
+      SolveType.get,
+      analytics: analytics,
+      generateDotPackages: false,
+    );
     var name = entrypoint.root.name;
-
-    try {
-      var originalLockFile =
-          LockFile.load(_getLockFilePath(name), cache.sources);
-      // Call this just to log what the current active package is, if any.
-      _describeActive(originalLockFile, name);
-    } on IOException {
-      // Couldn't read the lock file. It probably doesn't exist.
-    }
+    _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
     var fullPath = canonicalize(entrypoint.root.dir);
@@ -170,12 +167,13 @@ class GlobalPackages {
       p.current,
     );
 
+    final tempDir = cache.createTempDir();
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    _writeLockFile(name, LockFile([id]));
+    _writeLockFile(tempDir, LockFile([id]));
 
-    var binDir = p.join(_directory, name, 'bin');
-    if (dirExists(binDir)) deleteEntry(binDir);
+    tryDeleteEntry(_packageDir(name));
+    tryRenameDir(tempDir, _packageDir(name));
 
     _updateBinStubs(entrypoint, entrypoint.root, executables,
         overwriteBinStubs: overwriteBinStubs);
@@ -183,17 +181,12 @@ class GlobalPackages {
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
+  ///
+  /// If [silent] less logging will be printed.
   Future<void> _installInCache(PackageRange dep, List<String>? executables,
-      {required bool overwriteBinStubs}) async {
-    LockFile? originalLockFile;
-    try {
-      originalLockFile =
-          LockFile.load(_getLockFilePath(dep.name), cache.sources);
-      // Call this just to log what the current active package is, if any.
-      _describeActive(originalLockFile, dep.name);
-    } on IOException {
-      // Couldn't read the lock file. It probably doesn't exist.
-    }
+      {required bool overwriteBinStubs, bool silent = false}) async {
+    final name = dep.name;
+    LockFile? originalLockFile = _describeActive(name, cache);
 
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = Package.inMemory(Pubspec('pub global activate',
@@ -205,105 +198,91 @@ class GlobalPackages {
     // being available, report that as a [dataError].
     SolveResult result;
     try {
-      result = await log.progress('Resolving dependencies',
-          () => resolveVersions(SolveType.get, cache, root));
+      result = await log.spinner(
+        'Resolving dependencies',
+        () => resolveVersions(SolveType.get, cache, root),
+        condition: !silent,
+      );
     } on SolveFailure catch (error) {
       for (var incompatibility
           in error.incompatibility.externalIncompatibilities) {
         if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
-        if (incompatibility.terms.single.package.name != dep.name) continue;
+        if (incompatibility.terms.single.package.name != name) continue;
         dataError(error.toString());
       }
       rethrow;
     }
+    // We want the entrypoint to be rooted at 'dep' not the dummy-package.
+    result.packages.removeWhere((id) => id.name == 'pub global activate');
 
     final sameVersions = originalLockFile != null &&
         originalLockFile.samePackageIds(result.lockFile);
 
+    final PackageId id = result.lockFile.packages[name]!;
     if (sameVersions) {
       log.message('''
-The package ${dep.name} is already activated at newest available version.
-To recompile executables, first run `$topLevelProgram pub global deactivate ${dep.name}`.
+The package $name is already activated at newest available version.
+To recompile executables, first run `$topLevelProgram pub global deactivate $name`.
 ''');
     } else {
-      await result.showReport(SolveType.get, cache);
+      // Only precompile binaries if we have a new resolution.
+      if (!silent) await result.showReport(SolveType.get, cache);
+
+      await result.downloadCachedPackages(cache);
+
+      final lockFile = result.lockFile;
+      final tempDir = cache.createTempDir();
+      _writeLockFile(tempDir, lockFile);
+
+      // Load the package graph from [result] so we don't need to re-parse all
+      // the pubspecs.
+      final entrypoint = Entrypoint.global(
+        tempDir,
+        cache.loadCached(id),
+        lockFile,
+        cache,
+        solveResult: result,
+      );
+
+      await entrypoint.writePackagesFiles();
+
+      await entrypoint.precompileExecutables();
+
+      tryDeleteEntry(_packageDir(name));
+      tryRenameDir(tempDir, _packageDir(name));
     }
 
-    // Make sure all of the dependencies are locally installed.
-    await Future.wait(result.packages.map((id) {
-      return http.withDependencyType(root.dependencyType(id.name), () async {
-        if (id.isRoot) return;
-
-        var source = id.source;
-        if (source is CachedSource) {
-          await source.downloadToSystemCache(id, cache);
-        }
-      });
-    }));
-
-    var lockFile = result.lockFile;
-    _writeLockFile(dep.name, lockFile);
-    await _writePackageConfigFiles(dep.name, lockFile);
-
-    // We want the entrypoint to be rooted at 'dep' not the dummy-package.
-    result.packages.removeWhere((id) => id.name == 'pub global activate');
-
-    var id = lockFile.packages[dep.name]!;
-    // Load the package graph from [result] so we don't need to re-parse all
-    // the pubspecs.
     final entrypoint = Entrypoint.global(
-      Package(
-        result.pubspecs[dep.name]!,
-        (dep.source as CachedSource).getDirectoryInCache(id, cache),
-      ),
-      lockFile,
+      _packageDir(id.name),
+      cache.loadCached(id),
+      result.lockFile,
       cache,
       solveResult: result,
     );
-    if (!sameVersions) {
-      // Only precompile binaries if we have a new resolution.
-      await entrypoint.precompileExecutables();
-    }
-
     _updateBinStubs(
       entrypoint,
       cache.load(entrypoint.lockFile.packages[dep.name]!),
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
-
-    log.message('Activated ${_formatPackage(id)}.');
-  }
-
-  Future<void> _writePackageConfigFiles(
-      String package, LockFile lockFile) async {
-    // TODO(sigurdm): Use [Entrypoint.writePackagesFiles] instead.
-    final packagesFilePath = _getPackagesFilePath(package);
-    final packageConfigFilePath = _getPackageConfigFilePath(package);
-    final dir = p.dirname(packagesFilePath);
-    writeTextFile(
-        packagesFilePath, lockFile.packagesFile(cache, relativeFrom: dir));
-    ensureDir(p.dirname(packageConfigFilePath));
-    writeTextFile(packageConfigFilePath,
-        await lockFile.packageConfigFile(cache, relativeFrom: dir));
+    if (!silent) log.message('Activated ${_formatPackage(id)}.');
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
-  void _writeLockFile(String package, LockFile lockFile) {
-    ensureDir(p.join(_directory, package));
-
-    // TODO(nweiz): This cleans up Dart 1.6's old lockfile location. Remove it
-    // when Dart 1.6 is old enough that we don't think anyone will have these
-    // lockfiles anymore (issue 20703).
-    var oldPath = p.join(_directory, '$package.lock');
-    if (fileExists(oldPath)) deleteEntry(oldPath);
-
-    writeTextFile(_getLockFilePath(package), lockFile.serialize(null));
+  void _writeLockFile(String dir, LockFile lockFile) {
+    writeTextFile(p.join(dir, 'pubspec.lock'), lockFile.serialize(null));
   }
 
   /// Shows the user the currently active package with [name], if any.
-  void _describeActive(LockFile lockFile, String? name) {
-    final id = lockFile.packages[name]!;
+  LockFile? _describeActive(String name, SystemCache cache) {
+    late final LockFile lockFile;
+    try {
+      lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
+    } on IOException {
+      // Couldn't read the lock file. It probably doesn't exist.
+      return null;
+    }
+    var id = lockFile.packages[name]!;
     final description = id.description.description;
 
     if (description is GitDescription) {
@@ -316,6 +295,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
       log.message('Package ${log.bold(name)} is currently active at version '
           '${log.bold(id.version)}.');
     }
+    return lockFile;
   }
 
   /// Deactivates a previously-activated package named [name].
@@ -345,22 +325,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
     try {
       lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
-      var oldLockFilePath = p.join(_directory, '$name.lock');
-      try {
-        // TODO(nweiz): This looks for Dart 1.6's old lockfile location.
-        // Remove it when Dart 1.6 is old enough that we don't think anyone
-        // will have these lockfiles anymore (issue 20703).
-        lockFile = LockFile.load(oldLockFilePath, cache.sources);
-      } on IOException {
-        // If we couldn't read the lock file, it's not activated.
-        dataError('No active package ${log.bold(name)}.');
-      }
-
-      // Move the old lockfile to its new location.
-      ensureDir(p.dirname(lockFilePath));
-      File(oldLockFilePath).renameSync(lockFilePath);
-      // Just make sure these files are created as well.
-      await _writePackageConfigFiles(name, lockFile);
+      // If we couldn't read the lock file, it's not activated.
+      dataError('No active package ${log.bold(name)}.');
     }
 
     // Remove the package itself from the lockfile. We put it in there so we
@@ -373,7 +339,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
     if (id.source is CachedSource) {
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
-      entrypoint = Entrypoint.global(cache.loadCached(id), lockFile, cache);
+      entrypoint = Entrypoint.global(
+          _packageDir(id.name), cache.loadCached(id), lockFile, cache);
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
@@ -448,16 +415,6 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
   /// [name].
   String _getLockFilePath(String name) =>
       p.join(_directory, name, 'pubspec.lock');
-
-  /// Gets the path to the .packages file for an activated cached package with
-  /// [name].
-  String _getPackagesFilePath(String name) =>
-      p.join(_directory, name, '.packages');
-
-  /// Gets the path to the `package_config.json` file for an
-  /// activated cached package with [name].
-  String _getPackageConfigFilePath(String name) =>
-      p.join(_directory, name, '.dart_tool', 'package_config.json');
 
   /// Shows the user a formatted list of globally activated packages.
   void listActivePackages() {
@@ -545,17 +502,24 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
           log.message('Reactivating ${log.bold(id.name)} ${id.version}...');
 
           var entrypoint = await find(id.name);
+          final packageExecutables = executables.remove(id.name) ?? [];
 
-          await _writePackageConfigFiles(id.name, entrypoint.lockFile);
-          await entrypoint.precompileExecutables();
-          var packageExecutables = executables.remove(id.name) ?? [];
-          _updateBinStubs(
-            entrypoint,
-            cache.load(id),
-            packageExecutables,
-            overwriteBinStubs: true,
-            suggestIfNotOnPath: false,
-          );
+          if (entrypoint.isCached) {
+            deleteEntry(entrypoint.globalDir!);
+            await _installInCache(
+              id.toRange(),
+              packageExecutables,
+              overwriteBinStubs: true,
+              silent: true,
+            );
+          } else {
+            await activatePath(
+              entrypoint.root.dir,
+              packageExecutables,
+              overwriteBinStubs: true,
+              analytics: null,
+            );
+          }
           successes.add(id.name);
         } catch (error, stackTrace) {
           var message = 'Failed to reactivate '
@@ -709,10 +673,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
     // Show errors for any missing scripts.
     // TODO(rnystrom): This can print false positives since a script may be
     // produced by a transformer. Do something better.
-    var binFiles = package
-        .listFiles(beneath: 'bin', recursive: false)
-        .map(package.relative)
-        .toList();
+    var binFiles = package.executablePaths;
     for (var executable in installed) {
       var script = package.pubspec.executables[executable];
       var scriptPath = p.join('bin', '$script.dart');
@@ -764,6 +725,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate ${de
     // If the script was built to a snapshot, just try to invoke that
     // directly and skip pub global run entirely.
     String invocation;
+    late String binstub;
     if (Platform.isWindows) {
       if (fileExists(snapshot)) {
         // We expect absolute paths from the precompiler since relative ones
@@ -789,7 +751,7 @@ exit /b %errorlevel%
       } else {
         invocation = 'dart pub global run ${package.name}:$script %*';
       }
-      var batch = '''
+      binstub = '''
 @echo off
 rem This file was created by pub v${sdk.version}.
 rem Package: ${package.name}
@@ -798,7 +760,6 @@ rem Executable: $executable
 rem Script: $script
 $invocation
 ''';
-      writeTextFile(binStubPath, batch);
     } else {
       if (fileExists(snapshot)) {
         // We expect absolute paths from the precompiler since relative ones
@@ -821,7 +782,7 @@ fi
       } else {
         invocation = 'dart pub global run ${package.name}:$script "\$@"';
       }
-      var bash = '''
+      binstub = '''
 #!/usr/bin/env sh
 # This file was created by pub v${sdk.version}.
 # Package: ${package.name}
@@ -830,25 +791,31 @@ fi
 # Script: $script
 $invocation
 ''';
+    }
 
-      // Write this as the system encoding since the system is going to execute
-      // it and it might contain non-ASCII characters in the pathnames.
-      writeTextFile(binStubPath, bash, encoding: const SystemEncoding());
+    // Write the binstub to a temporary location, make it executable and move
+    // it into place afterwards to avoid races.
+    final tempDir = cache.createTempDir();
+    try {
+      final tmpPath = p.join(tempDir, binStubPath);
 
-      // Make it executable.
-      var result = Process.runSync('chmod', ['+x', binStubPath]);
-      if (result.exitCode != 0) {
-        // Couldn't make it executable so don't leave it laying around.
-        try {
-          deleteEntry(binStubPath);
-        } on IOException catch (err) {
-          // Do nothing. We're going to fail below anyway.
-          log.fine('Could not delete binstub:\n$err');
+      // Write this as the system encoding since the system is going to
+      // execute it and it might contain non-ASCII characters in the
+      // pathnames.
+      writeTextFile(tmpPath, binstub, encoding: const SystemEncoding());
+
+      if (Platform.isLinux || Platform.isMacOS) {
+        // Make it executable.
+        var result = Process.runSync('chmod', ['+x', tmpPath]);
+        if (result.exitCode != 0) {
+          // Couldn't make it executable so don't leave it laying around.
+          fail('Could not make "$tmpPath" executable (exit code '
+              '${result.exitCode}):\n${result.stderr}');
         }
-
-        fail('Could not make "$binStubPath" executable (exit code '
-            '${result.exitCode}):\n${result.stderr}');
       }
+      File(tmpPath).renameSync(binStubPath);
+    } finally {
+      deleteEntry(tempDir);
     }
 
     return previousPackage;
