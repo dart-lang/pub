@@ -9,9 +9,8 @@ import '../test_pub.dart';
 
 void main() {
   test('--dry-run shows but does not apply changes', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': '1.0.0'}).create();
 

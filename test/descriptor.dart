@@ -179,7 +179,7 @@ Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
 /// that this cache represents. It defaults to [globalServer.port].
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(cachePath, [
-    dir('hosted', [dir('localhost%58${port ?? globalServer?.port}', contents)])
+    dir('hosted', [dir('localhost%58${port ?? globalServer.port}', contents)])
   ]);
 }
 
@@ -277,6 +277,23 @@ Descriptor packageConfigFile(
 }) =>
     PackageConfigFileDescriptor(packages, generatorVersion);
 
+Descriptor appPackageConfigFile(
+  List<PackageConfigEntry> packages, {
+  String generatorVersion = '0.1.2+3',
+}) =>
+    dir(
+      appPath,
+      [
+        packageConfigFile(
+          [
+            packageConfigEntry(name: 'myapp', path: '.'),
+            ...packages,
+          ],
+          generatorVersion: generatorVersion,
+        ),
+      ],
+    );
+
 /// Create a [PackageConfigEntry] which assumes package with [name] is either
 /// a cached package with given [version] or a path dependency at given [path].
 PackageConfigEntry packageConfigEntry({
@@ -284,6 +301,7 @@ PackageConfigEntry packageConfigEntry({
   String? version,
   String? path,
   String? languageVersion,
+  PackageServer? server,
 }) {
   if (version != null && path != null) {
     throw ArgumentError.value(
@@ -295,7 +313,7 @@ PackageConfigEntry packageConfigEntry({
   }
   Uri rootUri;
   if (version != null) {
-    rootUri = p.toUri(globalPackageServer!.pathInCache(name, version));
+    rootUri = p.toUri((server ?? globalServer).pathInCache(name, version));
   } else {
     rootUri = p.toUri(p.join('..', path));
   }

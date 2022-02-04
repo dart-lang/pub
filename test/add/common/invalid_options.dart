@@ -39,12 +39,10 @@ void main() {
   test('cannot use both --path and --host-<option> flags', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveNoPackages();
-    globalPackageServer!.serveErrors();
+    (await servePackages()).serveErrors();
 
-    final server = await PackageServer.start((builder) {
-      builder.serve('foo', '1.2.3');
-    });
+    final server = await startPackageServer();
+    server.serve('foo', '1.2.3');
 
     await d
         .dir('bar', [d.libDir('bar'), d.libPubspec('foo', '0.0.1')]).create();
@@ -76,12 +74,10 @@ void main() {
   test('cannot use both --hosted-url and --git-<option> flags', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveNoPackages();
-    globalPackageServer!.serveErrors();
+    (await servePackages()).serveErrors();
 
-    final server = await PackageServer.start((builder) {
-      builder.serve('foo', '1.2.3');
-    });
+    final server = await startPackageServer();
+    server.serve('foo', '1.2.3');
 
     ensureGit();
 

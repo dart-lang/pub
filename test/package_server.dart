@@ -4,160 +4,156 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/third_party/tar/tar.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart';
 import 'package:test/test.dart' as test show expect;
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-/// The current global [PackageServer].
-PackageServer? get globalPackageServer => _globalPackageServer;
-PackageServer? _globalPackageServer;
-
-/// Creates an HTTP server that replicates the structure of pub.dartlang.org and
-/// makes it the current [globalServer].
-///
-/// Calls [callback] with a [PackageServerBuilder] that's used to specify
-/// which packages to serve.
-Future servePackages([void Function(PackageServerBuilder)? callback]) async {
-  _globalPackageServer = await PackageServer.start(callback ?? (_) {});
-  globalServer = _globalPackageServer!._inner;
-
-  addTearDown(() {
-    _globalPackageServer = null;
-  });
-}
-
-/// Like [servePackages], but instead creates an empty server with no packages
-/// registered.
-///
-/// This will always replace a previous server.
-Future serveNoPackages() => servePackages((_) {});
-
-/// Sets up the global package server to report an error on any request.
-///
-/// If no server has been set up, an empty server will be started.
-Future serveErrors() async {
-  var packageServer = globalPackageServer;
-  if (packageServer == null) {
-    await serveNoPackages();
-  } else {
-    packageServer.serveErrors();
-  }
-}
-
 class PackageServer {
   /// The inner [DescriptorServer] that this uses to serve its descriptors.
-  final DescriptorServer _inner;
+  final shelf.Server _inner;
 
-  /// The [d.DirectoryDescriptor] describing the server layout of
-  /// `/api/packages` on the test server.
-  ///
-  /// This contains metadata for packages that are being served via
-  /// [servePackages].
-  final _servedApiPackageDir = d.dir('packages', []);
+  /// Handlers of requests. Last matching handler will be used.
+  final List<_PatternAndHandler> _handlers = [];
 
-  /// The [d.DirectoryDescriptor] describing the server layout of `/packages` on
-  /// the test server.
-  ///
-  /// This contains the tarballs for packages that are being served via
-  /// [servePackages].
-  final _servedPackageDir = d.dir('packages', []);
+  // A list of all the requests recieved up till now.
+  final List<String> requestedPaths = <String>[];
 
-  /// The current [PackageServerBuilder] that a user uses to specify which
-  /// package to serve.
-  ///
-  /// This is preserved so that additional packages can be added.
-  late final PackageServerBuilder _builder;
+  PackageServer._(this._inner) {
+    _inner.mount((request) {
+      final path = request.url.path;
+      requestedPaths.add(path);
 
-  /// The port used for the server.
-  int get port => _inner.port;
+      final pathWithInitialSlash = '/$path';
+      for (final entry in _handlers.reversed) {
+        final match = entry.pattern.matchAsPrefix(pathWithInitialSlash);
+        if (match != null && match.end == pathWithInitialSlash.length) {
+          final a = entry.handler(request);
+          return a;
+        }
+      }
+      return shelf.Response.notFound('Could not find ${request.url}');
+    });
+  }
 
-  /// The URL for the server.
-  String get url => 'http://localhost:$port';
+  static final _versionInfoPattern = RegExp(r'/api/packages/([a-zA-Z_0-9]*)');
+  static final _downloadPattern =
+      RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
 
-  /// Handlers for requests not easily described as packages.
-  Map<Pattern, shelf.Handler> get extraHandlers => _inner.extraHandlers;
+  static Future<PackageServer> start() async {
+    final server =
+        PackageServer._(await shelf_io.IOServer.bind('localhost', 0));
+    server.handle(
+      _versionInfoPattern,
+      (shelf.Request request) {
+        final parts = request.url.pathSegments;
+        assert(parts[0] == 'api');
+        assert(parts[1] == 'packages');
+        final name = parts[2];
 
-  /// From now on report errors on any request.
-  void serveErrors() => extraHandlers
-    ..clear()
-    ..[RegExp('.*')] = (request) {
-      fail('The HTTP server received an unexpected request:\n'
-          '${request.method} ${request.requestedUri}');
-    };
+        final package = server._packages[name];
+        if (package == null) {
+          return shelf.Response.notFound('No package named $name');
+        }
+        return shelf.Response.ok(jsonEncode({
+          'name': name,
+          'uploaders': ['nweiz@google.com'],
+          'versions': package.versions.values
+              .map((version) => packageVersionApiMap(
+                    server._inner.url.toString(),
+                    version.pubspec,
+                    retracted: version.isRetracted,
+                  ))
+              .toList(),
+          if (package.isDiscontinued) 'isDiscontinued': true,
+          if (package.discontinuedReplacementText != null)
+            'replacedBy': package.discontinuedReplacementText,
+        }));
+      },
+    );
 
-  /// Creates an HTTP server that replicates the structure of pub.dartlang.org.
-  ///
-  /// Calls [callback] with a [PackageServerBuilder] that's used to specify
-  /// which packages to serve.
-  static Future<PackageServer> start(
-      void Function(PackageServerBuilder) callback) async {
-    var descriptorServer = await DescriptorServer.start();
-    var server = PackageServer._(descriptorServer);
-    descriptorServer.contents
-      ..add(d.dir('api', [server._servedApiPackageDir]))
-      ..add(server._servedPackageDir);
-    server.add(callback);
+    server.handle(
+      _downloadPattern,
+      (shelf.Request request) {
+        final parts = request.url.pathSegments;
+        assert(parts[0] == 'packages');
+        final name = parts[1];
+        assert(parts[2] == 'versions');
+        final package = server._packages[name];
+        if (package == null) {
+          return shelf.Response.notFound('No package $name');
+        }
+
+        final version = Version.parse(
+            parts[3].substring(0, parts[3].length - '.tar.gz'.length));
+        assert(parts[3].endsWith('.tar.gz'));
+
+        for (final packageVersion in package.versions.values) {
+          if (packageVersion.version == version) {
+            return shelf.Response.ok(packageVersion.contents());
+          }
+        }
+        return shelf.Response.notFound('No version $version of $name');
+      },
+    );
     return server;
   }
 
-  PackageServer._(this._inner) {
-    _builder = PackageServerBuilder._(this);
+  Future<void> close() async {
+    await _inner.close();
   }
 
-  /// Add to the current set of packages that are being served.
-  void add(void Function(PackageServerBuilder) callback) {
-    callback(_builder);
+  /// The port used for the server.
+  int get port => _inner.url.port;
 
-    _servedApiPackageDir.contents.clear();
-    _servedPackageDir.contents.clear();
+  /// The URL for the server.
+  String get url => _inner.url.toString();
 
-    _builder._packages.forEach((name, package) {
-      _servedApiPackageDir.contents.addAll([
-        d.file(
-            name,
-            jsonEncode({
-              'name': name,
-              'uploaders': ['nweiz@google.com'],
-              'versions': package.versions.values
-                  .map((version) => packageVersionApiMap(url, version.pubspec,
-                      retracted: version.isRetracted))
-                  .toList(),
-              if (package.isDiscontinued) 'isDiscontinued': true,
-              if (package.discontinuedReplacementText != null)
-                'replacedBy': package.discontinuedReplacementText,
-            })),
-        d.dir(name, [
-          d.dir('versions', package.versions.values.map((version) {
-            return d.file(
-                version.version.toString(),
-                jsonEncode(packageVersionApiMap(url, version.pubspec,
-                    retracted: version.isRetracted, full: true)));
-          }))
-        ])
-      ]);
+  /// From now on report errors on any request.
+  void serveErrors() => _handlers
+    ..clear()
+    ..add(
+      _PatternAndHandler(
+        RegExp('.*'),
+        (request) {
+          fail('The HTTP server received an unexpected request:\n'
+              '${request.method} ${request.requestedUri}');
+        },
+      ),
+    );
 
-      _servedPackageDir.contents.add(d.dir(name, [
-        d.dir(
-            'versions',
-            package.versions.values.map((version) =>
-                d.tar('${version.version}.tar.gz', version.contents)))
-      ]));
-    });
+  void handle(Pattern pattern, shelf.Handler handler) {
+    _handlers.add(
+      _PatternAndHandler(
+        pattern,
+        handler,
+      ),
+    );
   }
 
   // Installs a handler at [pattern] that expects to be called exactly once with
   // the given [method].
+  //
+  // The handler is installed as the start to give it priority over more general
+  // handlers.
   void expect(String method, Pattern pattern, shelf.Handler handler) {
-    extraHandlers[pattern] = expectAsync1((request) {
-      test.expect(request.method, method);
-      return handler(request);
-    });
+    handle(
+      pattern,
+      expectAsync1(
+        (request) {
+          test.expect(request.method, method);
+          return handler(request);
+        },
+      ),
+    );
   }
 
   /// Returns the path of [package] at [version], installed from this server, in
@@ -169,25 +165,8 @@ class PackageServer {
   String get cachingPath =>
       p.join(d.sandbox, cachePath, 'hosted', 'localhost%58$port');
 
-  /// Replace the current set of packages that are being served.
-  void replace(void Function(PackageServerBuilder) callback) {
-    _builder._clear();
-    add(callback);
-  }
-}
-
-/// A builder for specifying which packages should be served by [servePackages].
-class PackageServerBuilder {
   /// A map from package names to the concrete packages to serve.
   final _packages = <String, _ServedPackage>{};
-
-  /// The package server that this builder is associated with.
-  final PackageServer _server;
-
-  /// The URL for the server that this builder is associated with.
-  String get serverUrl => _server.url;
-
-  PackageServerBuilder._(this._server);
 
   /// Specifies that a package named [name] with [version] should be served.
   ///
@@ -208,7 +187,44 @@ class PackageServerBuilder {
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
     var package = _packages.putIfAbsent(name, () => _ServedPackage());
-    package.versions[version] = _ServedPackageVersion(pubspecFields, contents);
+    package.versions[version] = _ServedPackageVersion(
+      pubspecFields,
+      contents: () {
+        final entries = <TarEntry>[];
+
+        void addDescriptor(d.Descriptor descriptor, String path) {
+          if (descriptor is d.DirectoryDescriptor) {
+            for (final e in descriptor.contents) {
+              addDescriptor(e, p.posix.join(path, descriptor.name));
+            }
+          } else {
+            entries.add(
+              TarEntry(
+                TarHeader(
+                  // Ensure paths in tar files use forward slashes
+                  name: p.posix.join(path, descriptor.name),
+                  // We want to keep executable bits, but otherwise use the default
+                  // file mode
+                  mode: 420,
+                  // size: 100,
+                  modified: DateTime.now(),
+                  userName: 'pub',
+                  groupName: 'pub',
+                ),
+                (descriptor as d.FileDescriptor).readAsBytes(),
+              ),
+            );
+          }
+        }
+
+        for (final e in contents ?? <d.Descriptor>[]) {
+          addDescriptor(e, '');
+        }
+        return Stream.fromIterable(entries)
+            .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+            .transform(gzip.encoder);
+      },
+    );
   }
 
   // Mark a package discontinued.
@@ -220,7 +236,7 @@ class PackageServerBuilder {
   }
 
   /// Clears all existing packages from this builder.
-  void _clear() {
+  void clearPackages() {
     _packages.clear();
   }
 
@@ -238,10 +254,17 @@ class _ServedPackage {
 /// A package that's intended to be served.
 class _ServedPackageVersion {
   final Map pubspec;
-  final List<d.Descriptor> contents;
+  final Stream<List<int>> Function() contents;
   bool isRetracted = false;
 
   Version get version => Version.parse(pubspec['version']);
 
-  _ServedPackageVersion(this.pubspec, this.contents);
+  _ServedPackageVersion(this.pubspec, {required this.contents});
+}
+
+class _PatternAndHandler {
+  Pattern pattern;
+  shelf.Handler handler;
+
+  _PatternAndHandler(this.pattern, this.handler);
 }
