@@ -9,11 +9,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('recompiles activated executable snapshots', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+    ]);
 
     await runPub(args: ['global', 'activate', 'foo']);
 

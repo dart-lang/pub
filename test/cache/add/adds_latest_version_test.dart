@@ -9,11 +9,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('adds the latest stable version of the package', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '1.2.4-dev');
-    });
+    await servePackages()
+      ..serve('foo', '1.2.2')
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '1.2.4-dev');
 
     await runPub(
         args: ['cache', 'add', 'foo'], output: 'Downloading foo 1.2.3...');

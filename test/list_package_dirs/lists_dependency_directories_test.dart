@@ -12,7 +12,8 @@ import '../test_pub.dart';
 
 void main() {
   test('prints the local paths to all packages in the lockfile', () async {
-    await servePackages((builder) => builder.serve('bar', '1.0.0'));
+    final server = await servePackages()
+      ..serve('bar', '1.0.0');
 
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
@@ -37,7 +38,7 @@ void main() {
       'packages': {
         'foo': path.join(d.sandbox, 'foo', 'lib'),
         'bar': path.join(d.sandbox, cachePath, 'hosted',
-            'localhost%58${globalServer!.port}', 'bar-1.0.0', 'lib'),
+            'localhost%58${server.port}', 'bar-1.0.0', 'lib'),
         'myapp': canonicalize(path.join(d.sandbox, appPath, 'lib'))
       },
       'input_files': [

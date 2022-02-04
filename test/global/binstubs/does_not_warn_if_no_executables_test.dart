@@ -9,12 +9,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('does not warn if the package has no executables', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir(
-            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+    ]);
 
     await runPub(
         args: ['global', 'activate', 'foo'],

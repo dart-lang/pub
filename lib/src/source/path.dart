@@ -130,9 +130,11 @@ class PathSource extends Source {
   ///
   /// For the descriptions where `relative` attribute is `true`, tries to make
   /// `path` relative to the specified [containingPath].
+  ///
+  /// If [containingPath] is `null` they are serialized as absolute.
   @override
-  dynamic serializeDescription(String containingPath, description) {
-    if (description['relative']) {
+  dynamic serializeDescription(String? containingPath, description) {
+    if (description['relative'] == true && containingPath != null) {
       return {
         'path': relativePathWithPosixSeparators(
             p.relative(description['path'], from: containingPath)),

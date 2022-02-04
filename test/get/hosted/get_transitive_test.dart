@@ -9,18 +9,20 @@ import '../../test_pub.dart';
 
 void main() {
   test('gets packages transitively from a pub server', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.3', deps: {'bar': '2.0.4'});
-      builder.serve('bar', '2.0.3');
-      builder.serve('bar', '2.0.4');
-      builder.serve('bar', '2.0.5');
-    });
+    await servePackages()
+      ..serve('foo', '1.2.3', deps: {'bar': '2.0.4'})
+      ..serve('bar', '2.0.3')
+      ..serve('bar', '2.0.4')
+      ..serve('bar', '2.0.5');
 
     await d.appDir({'foo': '1.2.3'}).create();
 
     await pubGet();
 
     await d.cacheDir({'foo': '1.2.3', 'bar': '2.0.4'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3', 'bar': '2.0.4'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      d.packageConfigEntry(name: 'bar', version: '2.0.4'),
+    ]).validate();
   });
 }

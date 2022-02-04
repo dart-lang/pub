@@ -56,6 +56,9 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
+    argParser.addFlag('legacy-packages-file',
+        help: 'Generate the legacy ".packages" file', negatable: false);
+
     argParser.addFlag(
       'major-versions',
       help: 'Upgrades packages to their latest resolvable versions, '
@@ -79,6 +82,8 @@ class UpgradeCommand extends PubCommand {
   bool get _dryRun => argResults['dry-run'];
 
   bool get _precompile => argResults['precompile'];
+
+  bool get _packagesFile => argResults['legacy-packages-file'];
 
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];
@@ -121,11 +126,12 @@ class UpgradeCommand extends PubCommand {
 
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
     await e.acquireDependencies(
-      SolveType.UPGRADE,
+      SolveType.upgrade,
       unlock: argResults.rest,
       dryRun: _dryRun,
       precompile: _precompile,
       onlyReportSuccessOrFailure: onlySummary,
+      generateDotPackages: _packagesFile,
       analytics: analytics,
     );
     _showOfflineWarning();
@@ -179,7 +185,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         cache,
         Package.inMemory(resolvablePubspec),
       );
@@ -218,32 +224,37 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         resolvedPackage.version,
       ));
     }
+    final newPubspecText = _updatePubspec(changes);
 
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
-      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(
-        Package.inMemory(resolvablePubspec),
-        entrypoint.lockFile,
+      await Entrypoint.inMemory(
+        Package.inMemory(
+          Pubspec.parse(newPubspecText, cache.sources),
+        ),
         cache,
+        lockFile: entrypoint.lockFile,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.get,
         dryRun: true,
         precompile: _precompile,
         analytics: null, // No analytics for dry-run
+        generateDotPackages: false,
       );
     } else {
-      await _updatePubspec(changes);
-
+      if (changes.isNotEmpty) {
+        writeTextFile(entrypoint.pubspecPath, newPubspecText);
+      }
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint(directory, cache).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.get,
         precompile: _precompile,
         analytics: analytics,
+        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 
@@ -276,7 +287,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         cache,
         Package.inMemory(nullsafetyPubspec),
       );
@@ -313,31 +324,35 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       changes[dep] = dep.withConstraint(constraint);
     }
 
+    final newPubspecText = _updatePubspec(changes);
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(
-        Package.inMemory(nullsafetyPubspec),
-        entrypoint.lockFile,
+      await Entrypoint.inMemory(
+        Package.inMemory(Pubspec.parse(newPubspecText, cache.sources)),
         cache,
+        lockFile: entrypoint.lockFile,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         dryRun: true,
         precompile: _precompile,
         analytics: null,
+        generateDotPackages: false,
       );
     } else {
-      await _updatePubspec(changes);
-
+      if (changes.isNotEmpty) {
+        writeTextFile(entrypoint.pubspecPath, newPubspecText);
+      }
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint(directory, cache).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
+        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 
@@ -381,12 +396,10 @@ You may have to:
   }
 
   /// Updates `pubspec.yaml` with given [changes].
-  Future<void> _updatePubspec(
+  String _updatePubspec(
     Map<PackageRange, PackageRange> changes,
-  ) async {
+  ) {
     ArgumentError.checkNotNull(changes, 'changes');
-
-    if (changes.isEmpty) return;
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
     final deps = entrypoint.root.pubspec.dependencies.keys;
@@ -407,9 +420,7 @@ You may have to:
         );
       }
     }
-
-    /// Windows line endings are already handled by [yamlEditor]
-    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
+    return yamlEditor.toString();
   }
 
   /// Outputs a summary of changes made to `pubspec.yaml`.

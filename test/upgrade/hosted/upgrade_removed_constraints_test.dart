@@ -9,24 +9,29 @@ import '../../test_pub.dart';
 
 void main() {
   test('upgrades dependencies whose constraints have been removed', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'shared_dep': 'any'});
-      builder.serve('bar', '1.0.0', deps: {'shared_dep': '<2.0.0'});
-      builder.serve('shared_dep', '1.0.0');
-      builder.serve('shared_dep', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'shared_dep': 'any'})
+      ..serve('bar', '1.0.0', deps: {'shared_dep': '<2.0.0'})
+      ..serve('shared_dep', '1.0.0')
+      ..serve('shared_dep', '2.0.0');
 
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
     await pubUpgrade();
 
-    await d.appPackagesFile(
-        {'foo': '1.0.0', 'bar': '1.0.0', 'shared_dep': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      d.packageConfigEntry(name: 'shared_dep', version: '1.0.0'),
+    ]).validate();
 
     await d.appDir({'foo': 'any'}).create();
 
     await pubUpgrade();
 
-    await d.appPackagesFile({'foo': '1.0.0', 'shared_dep': '2.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      d.packageConfigEntry(name: 'shared_dep', version: '2.0.0'),
+    ]).validate();
   });
 }

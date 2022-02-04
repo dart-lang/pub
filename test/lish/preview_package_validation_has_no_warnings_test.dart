@@ -17,8 +17,8 @@ void main() {
         packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    await servePackages((_) {});
-    var pub = await startPublish(globalPackageServer!, args: ['--dry-run']);
+    await servePackages();
+    var pub = await startPublish(globalServer, args: ['--dry-run']);
 
     await pub.shouldExit(exit_codes.SUCCESS);
     expect(pub.stderr, emitsThrough('Package has 0 warnings.'));

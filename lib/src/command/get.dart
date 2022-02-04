@@ -33,6 +33,9 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
+    argParser.addFlag('legacy-packages-file',
+        help: 'Generate the legacy ".packages" file', negatable: false);
+
     argParser.addFlag(
       'example',
       help: 'Also run in `example/` (if it exists).',
@@ -50,19 +53,23 @@ class GetCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     await entrypoint.acquireDependencies(
-      SolveType.GET,
+      SolveType.get,
       dryRun: argResults['dry-run'],
       precompile: argResults['precompile'],
+      generateDotPackages: argResults['legacy-packages-file'],
       analytics: analytics,
     );
 
     var example = entrypoint.example;
     if (argResults['example'] && example != null) {
-      await example.acquireDependencies(SolveType.GET,
-          dryRun: argResults['dry-run'],
-          precompile: argResults['precompile'],
-          onlyReportSuccessOrFailure: true,
-          analytics: analytics);
+      await example.acquireDependencies(
+        SolveType.get,
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile'],
+        generateDotPackages: argResults['legacy-packages-file'],
+        analytics: analytics,
+        onlyReportSuccessOrFailure: true,
+      );
     }
   }
 }
