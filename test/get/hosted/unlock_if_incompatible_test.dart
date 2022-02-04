@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -13,18 +11,23 @@ void main() {
   test(
       'upgrades a locked pub server package with a new incompatible '
       'constraint', () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '1.0.0'}).validate();
-    globalPackageServer.add((builder) => builder.serve('foo', '1.0.1'));
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+    ]).validate();
+    server.serve('foo', '1.0.1');
     await d.appDir({'foo': '>1.0.0'}).create();
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '1.0.1'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.1'),
+    ]).validate();
   });
 }

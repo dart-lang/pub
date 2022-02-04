@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -19,9 +17,9 @@ void main() {
   });
 
   test('running pub cache clean --force deletes cache', () async {
-    await servePackages((b) => b
+    await servePackages()
       ..serve('foo', '1.1.2')
-      ..serve('bar', '1.2.3'));
+      ..serve('bar', '1.2.3');
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
     final cache = path.join(d.sandbox, cachePath);
@@ -34,9 +32,9 @@ void main() {
 
   test('running pub cache clean deletes cache only with confirmation',
       () async {
-    await servePackages((b) => b
+    await servePackages()
       ..serve('foo', '1.1.2')
-      ..serve('bar', '1.2.3'));
+      ..serve('bar', '1.2.3');
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
     final cache = path.join(d.sandbox, cachePath);

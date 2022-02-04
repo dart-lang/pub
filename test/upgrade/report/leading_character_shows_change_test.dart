@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -11,17 +9,16 @@ import '../../test_pub.dart';
 
 void main() {
   test('the character before each package describes the change', () async {
-    await servePackages((builder) {
-      builder.serve('added', '1.0.0');
-      builder.serve('downgraded', '1.0.0');
-      builder.serve('downgraded', '2.0.0');
-      builder.serve('overridden', '1.0.0');
-      builder.serve('removed', '1.0.0');
-      builder.serve('source_changed', '1.0.0');
-      builder.serve('upgraded', '1.0.0');
-      builder.serve('upgraded', '2.0.0');
-      builder.serve('unchanged', '1.0.0');
-    });
+    await servePackages()
+      ..serve('added', '1.0.0')
+      ..serve('downgraded', '1.0.0')
+      ..serve('downgraded', '2.0.0')
+      ..serve('overridden', '1.0.0')
+      ..serve('removed', '1.0.0')
+      ..serve('source_changed', '1.0.0')
+      ..serve('upgraded', '1.0.0')
+      ..serve('upgraded', '2.0.0')
+      ..serve('unchanged', '1.0.0');
 
     await d.dir('description_changed_1', [
       d.libDir('description_changed'),

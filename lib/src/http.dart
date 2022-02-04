@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// Helpers for dealing with HTTP.
 import 'dart:async';
 import 'dart:convert';
@@ -12,7 +10,6 @@ import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -44,7 +41,7 @@ class _PubHttpClient extends http.BaseClient {
 
   http.Client _inner;
 
-  _PubHttpClient([http.Client inner]) : _inner = inner ?? http.Client();
+  _PubHttpClient([http.Client? inner]) : _inner = inner ?? http.Client();
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -132,8 +129,8 @@ class _PubHttpClient extends http.BaseClient {
     // careful not to log OAuth2 private data, though.
 
     var responseLog = StringBuffer();
-    var request = response.request;
-    var stopwatch = _requestStopwatches.remove(request)..stop();
+    var request = response.request!;
+    var stopwatch = _requestStopwatches.remove(request)!..stop();
     responseLog.writeln('HTTP response ${response.statusCode} '
         '${response.reasonPhrase} for ${request.method} ${request.url}');
     responseLog.writeln('took ${stopwatch.elapsed}');
@@ -173,12 +170,12 @@ class _ThrowingClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    http.StreamedResponse streamedResponse;
+    late http.StreamedResponse streamedResponse;
     try {
       streamedResponse = await _inner.send(request);
     } on SocketException catch (error, stackTraceOrNull) {
       // Work around issue 23008.
-      var stackTrace = stackTraceOrNull ?? Chain.current();
+      var stackTrace = stackTraceOrNull;
 
       if (error.osError == null) rethrow;
 
@@ -191,14 +188,14 @@ class _ThrowingClient extends http.BaseClient {
       // with a retry. Failing to retry intermittent issues is likely to cause
       // customers to wrap pub in a retry loop which will not improve the
       // end-user experience.
-      if (error.osError.errorCode == 8 ||
-          error.osError.errorCode == -2 ||
-          error.osError.errorCode == -5 ||
-          error.osError.errorCode == 11001 ||
-          error.osError.errorCode == 11004) {
+      if (error.osError!.errorCode == 8 ||
+          error.osError!.errorCode == -2 ||
+          error.osError!.errorCode == -5 ||
+          error.osError!.errorCode == 11001 ||
+          error.osError!.errorCode == 11004) {
         fail('Could not resolve URL "${request.url.origin}".', error,
             stackTrace);
-      } else if (error.osError.errorCode == -12276) {
+      } else if (error.osError!.errorCode == -12276) {
         fail(
             'Unable to validate SSL certificate for '
             '"${request.url.origin}".',
@@ -213,7 +210,7 @@ class _ThrowingClient extends http.BaseClient {
     // 401 responses should be handled by the OAuth2 client. It's very
     // unlikely that they'll be returned by non-OAuth2 requests. We also want
     // to pass along 400 responses from the token endpoint.
-    var tokenRequest = streamedResponse.request.url == oauth2.tokenEndpoint;
+    var tokenRequest = streamedResponse.request!.url == oauth2.tokenEndpoint;
     if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
       return streamedResponse;
     }
@@ -342,7 +339,7 @@ Map parseJsonResponse(http.Response response) {
 }
 
 /// Throws an error describing an invalid response from the server.
-void invalidServerResponse(http.Response response) =>
+Never invalidServerResponse(http.Response response) =>
     fail(log.red('Invalid server response:\n${response.body}'));
 
 /// Exception thrown when an HTTP operation fails.

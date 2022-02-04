@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -11,16 +9,15 @@ import '../../test_pub.dart';
 
 void main() {
   test('snapshots the executables for a hosted package', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [
-          d.file('hello.dart', "void main() => print('hello!');"),
-          d.file('goodbye.dart', "void main() => print('goodbye!');"),
-          d.file('shell.sh', 'echo shell'),
-          d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")])
-        ])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [
+        d.file('hello.dart', "void main() => print('hello!');"),
+        d.file('goodbye.dart', "void main() => print('goodbye!');"),
+        d.file('shell.sh', 'echo shell'),
+        d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")])
+      ])
+    ]);
 
     await runPub(
         args: ['global', 'activate', 'foo'],

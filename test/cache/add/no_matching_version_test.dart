@@ -2,18 +2,15 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
 void main() {
   test('fails if no version matches the version constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-      builder.serve('foo', '1.2.3');
-    });
+    await servePackages()
+      ..serve('foo', '1.2.2')
+      ..serve('foo', '1.2.3');
 
     await runPub(
         args: ['cache', 'add', 'foo', '-v', '>2.0.0'],

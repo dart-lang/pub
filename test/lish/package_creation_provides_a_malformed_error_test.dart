@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
@@ -18,15 +16,15 @@ void main() {
 
   test('package creation provides a malformed error', () async {
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer);
-    handleUpload(globalPackageServer);
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
 
     var body = {'error': 'Your package was too boring.'};
-    globalPackageServer.expect('GET', '/create', (request) {
+    globalServer.expect('GET', '/create', (request) {
       return shelf.Response.notFound(jsonEncode(body));
     });
 

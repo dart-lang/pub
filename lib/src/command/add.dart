@@ -2,8 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
@@ -14,6 +13,7 @@ import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../git.dart';
 import '../io.dart';
+import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -34,9 +34,10 @@ class AddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
-  String get description => 'Add a dependency to pubspec.yaml.';
+  String get description => 'Add dependencies to pubspec.yaml.';
   @override
-  String get argumentsDescription => '<package>[:<constraint>] [options]';
+  String get argumentsDescription =>
+      '<package>[:<constraint>] [<package2>[:<constraint2>]...] [options]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
   @override
@@ -44,29 +45,34 @@ class AddCommand extends PubCommand {
 
   bool get isDev => argResults['dev'];
   bool get isDryRun => argResults['dry-run'];
-  String get gitUrl => argResults['git-url'];
-  String get gitPath => argResults['git-path'];
-  String get gitRef => argResults['git-ref'];
-  String get hostUrl => argResults['hosted-url'];
-  String get path => argResults['path'];
-  String get sdk => argResults['sdk'];
+  String? get gitUrl => argResults['git-url'];
+  String? get gitPath => argResults['git-path'];
+  String? get gitRef => argResults['git-ref'];
+  String? get hostUrl => argResults['hosted-url'];
+  String? get path => argResults['path'];
+  String? get sdk => argResults['sdk'];
 
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
   bool get hasHostOptions => hostUrl != null;
+
+  bool get isHosted => !hasGitOptions && path == null && path == null;
 
   AddCommand() {
     argParser.addFlag('dev',
         abbr: 'd',
         negatable: false,
-        help: 'Adds package to the development dependencies instead.');
+        help: 'Adds to the development dependencies instead.');
 
     argParser.addOption('git-url', help: 'Git URL of the package');
     argParser.addOption('git-ref',
         help: 'Git branch or commit to be retrieved');
     argParser.addOption('git-path', help: 'Path of git package in repository');
     argParser.addOption('hosted-url', help: 'URL of package host server');
-    argParser.addOption('path', help: 'Local path');
-    argParser.addOption('sdk', help: 'SDK source for package');
+    argParser.addOption('path', help: 'Add package from local path');
+    argParser.addOption('sdk',
+        help: 'add package from SDK source',
+        allowed: ['flutter'],
+        valueHelp: '[flutter]');
     argParser.addFlag(
       'example',
       help:
@@ -85,25 +91,32 @@ class AddCommand extends PubCommand {
     argParser.addFlag('precompile',
         help: 'Build executables in immediate dependencies.');
     argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+        abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
+    argParser.addFlag('legacy-packages-file',
+        help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
   @override
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
-      usageException('Must specify a package to be added.');
-    } else if (argResults.rest.length > 1) {
-      usageException('Takes only a single argument.');
+      usageException('Must specify at least one package to be added.');
+    } else if (argResults.rest.length > 1 && gitUrl != null) {
+      usageException('Can only add a single git package at a time.');
+    } else if (argResults.rest.length > 1 && path != null) {
+      usageException('Can only add a single local package at a time.');
+    }
+    final languageVersion = entrypoint.root.pubspec.languageVersion;
+    final updates =
+        argResults.rest.map((p) => _parsePackage(p, languageVersion)).toList();
+
+    var updatedPubSpec = entrypoint.root.pubspec;
+    for (final update in updates) {
+      /// Perform version resolution in-memory.
+      updatedPubSpec =
+          await _addPackageToPubspec(updatedPubSpec, update.packageRange);
     }
 
-    final packageInformation = _parsePackage(argResults.rest.first);
-    final package = packageInformation.first;
-
-    /// Perform version resolution in-memory.
-    final updatedPubSpec =
-        await _addPackageToPubspec(entrypoint.root.pubspec, package);
-
-    SolveResult solveResult;
+    late SolveResult solveResult;
 
     try {
       /// Use [SolveType.UPGRADE] to solve for the highest version of [package]
@@ -112,9 +125,11 @@ class AddCommand extends PubCommand {
       /// that a resolution exists before we update pubspec.yaml.
       // TODO(sigurdm): We should really use a spinner here.
       solveResult = await resolveVersions(
-          SolveType.UPGRADE, cache, Package.inMemory(updatedPubSpec));
+          SolveType.upgrade, cache, Package.inMemory(updatedPubSpec));
     } on GitException {
-      dataError('Unable to resolve package "${package.name}" with the given '
+      final packageRange = updates.first.packageRange;
+      dataError(
+          'Unable to resolve package "${packageRange.name}" with the given '
           'git parameters.');
     } on SolveFailure catch (e) {
       dataError(e.message);
@@ -123,56 +138,63 @@ class AddCommand extends PubCommand {
       dataError(e.message);
     }
 
-    final resultPackage = solveResult.packages
-        .firstWhere((packageId) => packageId.name == package.name);
+    /// Verify the results for each package.
+    for (final update in updates) {
+      final packageRange = update.packageRange;
+      final name = packageRange.name;
+      final resultPackage = solveResult.packages
+          .firstWhere((packageId) => packageId.name == name);
 
-    /// Assert that [resultPackage] is within the original user's expectations.
-    if (package.constraint != null &&
-        !package.constraint.allows(resultPackage.version)) {
-      if (updatedPubSpec.dependencyOverrides != null &&
-          updatedPubSpec.dependencyOverrides.isNotEmpty) {
-        dataError(
-            '"${package.name}" resolved to "${resultPackage.version}" which '
-            'does not satisfy constraint "${package.constraint}". This could be '
-            'caused by "dependency_overrides".');
+      /// Assert that [resultPackage] is within the original user's expectations.
+      var constraint = packageRange.constraint;
+      if (!constraint.allows(resultPackage.version)) {
+        var dependencyOverrides = updatedPubSpec.dependencyOverrides;
+        if (dependencyOverrides.isNotEmpty) {
+          dataError('"$name" resolved to "${resultPackage.version}" which '
+              'does not satisfy constraint "$constraint". This could be '
+              'caused by "dependency_overrides".');
+        }
+        dataError('"$name" resolved to "${resultPackage.version}" which '
+            'does not satisfy constraint "$constraint".');
       }
-      dataError(
-          '"${package.name}" resolved to "${resultPackage.version}" which '
-          'does not satisfy constraint "${package.constraint}".');
     }
-
     if (isDryRun) {
       /// Even if it is a dry run, run `acquireDependencies` so that the user
       /// gets a report on the other packages that might change version due
       /// to this new dependency.
       final newRoot = Package.inMemory(updatedPubSpec);
 
-      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(newRoot, entrypoint.lockFile, cache,
-              solveResult: solveResult)
-          .acquireDependencies(
-        SolveType.GET,
-        dryRun: true,
-        precompile: argResults['precompile'],
-      );
+      await Entrypoint.inMemory(newRoot, cache,
+              solveResult: solveResult, lockFile: entrypoint.lockFile)
+          .acquireDependencies(SolveType.get,
+              dryRun: true,
+              precompile: argResults['precompile'],
+              analytics: analytics,
+              generateDotPackages: false);
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-      _updatePubspec(resultPackage, packageInformation, isDev);
+      _updatePubspec(solveResult.packages, updates, isDev);
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
       final updatedEntrypoint = Entrypoint(directory, cache);
-      await updatedEntrypoint.acquireDependencies(SolveType.GET,
-          precompile: argResults['precompile']);
+      await updatedEntrypoint.acquireDependencies(
+        SolveType.get,
+        precompile: argResults['precompile'],
+        analytics: analytics,
+        generateDotPackages: argResults['legacy-packages-file'],
+      );
 
       if (argResults['example'] && entrypoint.example != null) {
-        await entrypoint.example.acquireDependencies(
-          SolveType.GET,
+        await entrypoint.example!.acquireDependencies(
+          SolveType.get,
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
+          analytics: analytics,
+          generateDotPackages: argResults['legacy-packages-file'],
         );
       }
     }
@@ -272,9 +294,7 @@ class AddCommand extends PubCommand {
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  Pair<PackageRange, dynamic> _parsePackage(String package) {
-    ArgumentError.checkNotNull(package, 'package');
-
+  _ParseResult _parsePackage(String package, LanguageVersion languageVersion) {
     final _conflictingFlagSets = [
       ['git-url', 'git-ref', 'git-path'],
       ['hosted-url'],
@@ -287,7 +307,7 @@ class AddCommand extends PubCommand {
       final conflictingFlag = _conflictingFlagSets
           .where((s) => !s.contains(flag))
           .expand((s) => s)
-          .firstWhere(argResults.wasParsed, orElse: () => null);
+          .firstWhereOrNull(argResults.wasParsed);
       if (conflictingFlag != null) {
         usageException(
             'Packages can only have one source, "pub add" flags "--$flag" and '
@@ -314,7 +334,7 @@ class AddCommand extends PubCommand {
 
     /// We want to allow for [constraint] to take on a `null` value here to
     /// preserve the fact that the user did not specify a constraint.
-    VersionConstraint constraint;
+    VersionConstraint? constraint;
 
     try {
       constraint = splitPackage.length == 2
@@ -326,6 +346,7 @@ class AddCommand extends PubCommand {
 
     /// Determine the relevant [packageRange] and [pubspecInformation] depending
     /// on the type of package.
+    var path = this.path;
     if (hasGitOptions) {
       dynamic git;
 
@@ -334,7 +355,7 @@ class AddCommand extends PubCommand {
       }
       Uri parsed;
       try {
-        parsed = Uri.parse(gitUrl);
+        parsed = Uri.parse(gitUrl!);
       } on FormatException catch (e) {
         usageException('The --git-url must be a valid url: ${e.message}.');
       }
@@ -357,7 +378,7 @@ class AddCommand extends PubCommand {
         git.removeWhere((key, value) => value == null);
       }
 
-      packageRange = cache.sources['git']
+      packageRange = cache.sources.git
           .parseRef(packageName, git, containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'git': git};
@@ -366,28 +387,38 @@ class AddCommand extends PubCommand {
           ? PathSource.relativePathWithPosixSeparators(
               p.relative(path, from: entrypoint.root.dir))
           : path;
-      packageRange = cache.sources['path']
+      packageRange = cache.sources.path
           .parseRef(packageName, relativeToEntryPoint,
               containingPath: entrypoint.pubspecPath)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'path': relativeToEntryPoint};
     } else if (sdk != null) {
-      packageRange = cache.sources['sdk']
+      packageRange = cache.sources.sdk
           .parseRef(packageName, sdk)
           .withConstraint(constraint ?? VersionConstraint.any);
       pubspecInformation = {'sdk': sdk};
     } else {
-      final hostInfo =
-          hasHostOptions ? {'url': hostUrl, 'name': packageName} : null;
-
-      if (hostInfo == null) {
-        pubspecInformation = constraint?.toString();
+      // Hosted
+      final Object? hostInfo;
+      if (hasHostOptions) {
+        hostInfo = languageVersion.supportsShorterHostedSyntax
+            ? hostUrl
+            : {'url': hostUrl, 'name': packageName};
+        pubspecInformation = {
+          'hosted': hostInfo,
+        };
       } else {
-        pubspecInformation = {'hosted': hostInfo};
+        hostInfo = null;
+        pubspecInformation = constraint?.toString();
       }
 
-      packageRange = PackageRange(packageName, cache.sources['hosted'],
-          constraint ?? VersionConstraint.any, hostInfo ?? packageName);
+      packageRange = cache.hosted.source
+          .parseRef(
+            packageName,
+            hostInfo,
+            languageVersion: entrypoint.root.pubspec.languageVersion,
+          )
+          .withConstraint(constraint ?? VersionConstraint.any);
     }
 
     if (pubspecInformation is Map && constraint != null) {
@@ -400,69 +431,74 @@ class AddCommand extends PubCommand {
       };
     }
 
-    return Pair(packageRange, pubspecInformation);
+    return _ParseResult(packageRange, pubspecInformation);
   }
 
   /// Writes the changes to the pubspec file.
-  void _updatePubspec(PackageId resultPackage,
-      Pair<PackageRange, dynamic> packageInformation, bool isDevelopment) {
-    ArgumentError.checkNotNull(resultPackage, 'resultPackage');
-    ArgumentError.checkNotNull(packageInformation, 'pubspecInformation');
-
-    final package = packageInformation.first;
-    var pubspecInformation = packageInformation.last;
-
-    if ((sdk != null || hasHostOptions) &&
-        pubspecInformation is Map &&
-        pubspecInformation['version'] == null) {
-      /// We cannot simply assign the value of version since it is likely that
-      /// [pubspecInformation] takes on the type
-      /// [Map<String, Map<String, String>>]
-      pubspecInformation = {
-        ...pubspecInformation,
-        'version': '^${resultPackage.version}'
-      };
-    }
-
-    final dependencyKey = isDevelopment ? 'dev_dependencies' : 'dependencies';
-    final packagePath = [dependencyKey, package.name];
-
+  void _updatePubspec(List<PackageId> resultPackages,
+      List<_ParseResult> updates, bool isDevelopment) {
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
     log.io('Reading ${entrypoint.pubspecPath}.');
     log.fine('Contents:\n$yamlEditor');
 
-    /// Handle situations where the user might not have the dependencies or
-    /// dev_dependencies map.
-    if (yamlEditor.parseAt([dependencyKey], orElse: () => null)?.value ==
-        null) {
-      yamlEditor.update([dependencyKey],
-          {package.name: pubspecInformation ?? '^${resultPackage.version}'});
-    } else {
-      yamlEditor.update(
-          packagePath, pubspecInformation ?? '^${resultPackage.version}');
-    }
+    for (final update in updates) {
+      final packageRange = update.packageRange;
+      final name = packageRange.name;
+      final resultId = resultPackages.firstWhere((id) => id.name == name);
+      var description = update.description;
 
-    log.fine('Added ${package.name} to "$dependencyKey".');
-
-    /// Remove the package from dev_dependencies if we are adding it to
-    /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
-    if (!isDevelopment) {
-      final devDependenciesNode =
-          yamlEditor.parseAt(['dev_dependencies'], orElse: () => null);
-
-      if (devDependenciesNode is YamlMap &&
-          devDependenciesNode.containsKey(package.name)) {
-        if (devDependenciesNode.length == 1) {
-          yamlEditor.remove(['dev_dependencies']);
-        } else {
-          yamlEditor.remove(['dev_dependencies', package.name]);
+      if (isHosted) {
+        final inferredConstraint =
+            VersionConstraint.compatibleWith(resultId.version).toString();
+        if (description == null) {
+          description = inferredConstraint;
+        } else if (description is Map && description['version'] == null) {
+          /// We cannot simply assign the value of version since it is likely that
+          /// [description] takes on the type
+          /// [Map<String, Map<String, String>>]
+          description = {...description, 'version': '^${resultId.version}'};
         }
+      }
 
-        log.fine('Removed ${package.name} from "dev_dependencies".');
+      final dependencyKey = isDevelopment ? 'dev_dependencies' : 'dependencies';
+      final packagePath = [dependencyKey, name];
+
+      /// Ensure we have a [dependencyKey] map in the `pubspec.yaml`.
+      if (yamlEditor.parseAt([dependencyKey],
+              orElse: () => YamlScalar.wrap(null)).value ==
+          null) {
+        yamlEditor.update([dependencyKey], {});
+      }
+      yamlEditor.update(packagePath, description);
+
+      log.fine('Added ${packageRange.name} to "$dependencyKey".');
+
+      /// Remove the package from dev_dependencies if we are adding it to
+      /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
+      if (!isDevelopment) {
+        final devDependenciesNode = yamlEditor
+            .parseAt(['dev_dependencies'], orElse: () => YamlScalar.wrap(null));
+
+        if (devDependenciesNode is YamlMap &&
+            devDependenciesNode.containsKey(name)) {
+          if (devDependenciesNode.length == 1) {
+            yamlEditor.remove(['dev_dependencies']);
+          } else {
+            yamlEditor.remove(['dev_dependencies', name]);
+          }
+
+          log.fine('Removed $name from "dev_dependencies".');
+        }
       }
     }
 
     /// Windows line endings are already handled by [yamlEditor]
     writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
   }
+}
+
+class _ParseResult {
+  PackageRange packageRange;
+  Object? description;
+  _ParseResult(this.packageRange, this.description);
 }

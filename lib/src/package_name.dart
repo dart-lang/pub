@@ -2,16 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
-import 'source/git.dart';
 import 'source/hosted.dart';
-import 'source/path.dart';
 import 'utils.dart';
 
 /// The equality to use when comparing the feature sets of two package names.
@@ -25,7 +21,7 @@ abstract class PackageName {
   /// The [Source] used to look up this package.
   ///
   /// If this is a root package, this will be `null`.
-  final Source source;
+  final Source? source;
 
   /// The metadata used by the package's [source] to identify and locate it.
   ///
@@ -53,25 +49,31 @@ abstract class PackageName {
   /// `this.toRef() == other.toRef()`.
   bool samePackage(PackageName other) {
     if (other.name != name) return false;
-    if (source == null) return other.source == null;
+    var thisSource = source;
+    if (thisSource == null) return other.source == null;
 
-    return other.source == source &&
-        source.descriptionsEqual(description, other.description);
+    return other.source == thisSource &&
+        thisSource.descriptionsEqual(description, other.description);
   }
 
   @override
+  bool operator ==(Object other) =>
+      throw UnimplementedError('Subclass should implement ==');
+
+  @override
   int get hashCode {
-    if (source == null) return name.hashCode;
+    var thisSource = source;
+    if (thisSource == null) return name.hashCode;
     return name.hashCode ^
-        source.hashCode ^
-        source.hashDescription(description);
+        thisSource.hashCode ^
+        thisSource.hashDescription(description);
   }
 
   /// Returns a string representation of this package name.
   ///
   /// If [detail] is passed, it controls exactly which details are included.
   @override
-  String toString([PackageDetail detail]);
+  String toString([PackageDetail? detail]);
 }
 
 /// A reference to a [Package], but not any particular version(s) of it.
@@ -82,14 +84,14 @@ class PackageRef extends PackageName {
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses. A reference
   /// can be obtained from a user-supplied description using [Source.parseRef].
-  PackageRef(String name, Source source, description)
+  PackageRef(String name, Source? source, description)
       : super._(name, source, description);
 
   /// Creates a reference to the given root package.
   PackageRef.root(Package package) : super._(package.name, null, package.name);
 
   @override
-  String toString([PackageDetail detail]) {
+  String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
     if (isRoot) return name;
 
@@ -97,7 +99,7 @@ class PackageRef extends PackageName {
     if (detail.showSource ?? source is! HostedSource) {
       buffer.write(' from $source');
       if (detail.showDescription) {
-        buffer.write(' ${source.formatDescription(description)}');
+        buffer.write(' ${source!.formatDescription(description)}');
       }
     }
 
@@ -106,6 +108,9 @@ class PackageRef extends PackageName {
 
   @override
   bool operator ==(other) => other is PackageRef && samePackage(other);
+
+  @override
+  int get hashCode => super.hashCode ^ 'PackageRef'.hashCode;
 }
 
 /// A reference to a specific version of a package.
@@ -130,7 +135,7 @@ class PackageId extends PackageName {
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageId(String name, Source source, this.version, description)
+  PackageId(String name, Source? source, this.version, description)
       : super._(name, source, description);
 
   /// Creates an ID for the given root package.
@@ -149,7 +154,7 @@ class PackageId extends PackageName {
   PackageRange toRange() => withConstraint(version);
 
   @override
-  String toString([PackageDetail detail]) {
+  String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
 
     var buffer = StringBuffer(name);
@@ -158,7 +163,7 @@ class PackageId extends PackageName {
     if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
       buffer.write(' from $source');
       if (detail.showDescription) {
-        buffer.write(' ${source.formatDescription(description)}');
+        buffer.write(' ${source!.formatDescription(description)}');
       }
     }
 
@@ -179,8 +184,8 @@ class PackageRange extends PackageName {
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageRange(String name, Source source, this.constraint, description,
-      {Map<String, FeatureDependency> features})
+  PackageRange(String name, Source? source, this.constraint, description,
+      {Map<String, FeatureDependency>? features})
       : features = features == null
             ? const {}
             : UnmodifiableMapView(Map.from(features)),
@@ -220,7 +225,7 @@ class PackageRange extends PackageName {
   }
 
   @override
-  String toString([PackageDetail detail]) {
+  String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
 
     var buffer = StringBuffer(name);
@@ -231,7 +236,7 @@ class PackageRange extends PackageName {
     if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
       buffer.write(' from $source');
       if (detail.showDescription) {
-        buffer.write(' ${source.formatDescription(description)}');
+        buffer.write(' ${source!.formatDescription(description)}');
       }
     }
 
@@ -246,9 +251,7 @@ class PackageRange extends PackageName {
   bool get _showVersionConstraint {
     if (isRoot) return false;
     if (!constraint.isAny) return true;
-    if (source is PathSource) return false;
-    if (source is GitSource) return false;
-    return true;
+    return source!.hasMultipleVersions;
   }
 
   /// Returns a new [PackageRange] with [features] merged with [this.features].
@@ -267,9 +270,10 @@ class PackageRange extends PackageName {
     var range = constraint as VersionRange;
     if (!range.includeMin) return this;
     if (range.includeMax) return this;
-    if (range.min == null) return this;
-    if (range.max == range.min.nextBreaking.firstPreRelease) {
-      return withConstraint(VersionConstraint.compatibleWith(range.min));
+    var min = range.min;
+    if (min == null) return this;
+    if (range.max == min.nextBreaking.firstPreRelease) {
+      return withConstraint(VersionConstraint.compatibleWith(min));
     } else {
       return this;
     }
@@ -328,13 +332,13 @@ class PackageDetail {
   /// If this is `null`, the version is shown for all packages other than root
   /// [PackageId]s or [PackageRange]s with `git` or `path` sources and `any`
   /// constraints.
-  final bool showVersion;
+  final bool? showVersion;
 
   /// Whether to show the package source.
   ///
   /// If this is `null`, the source is shown for all non-hosted, non-root
   /// packages. It's always `true` if [showDescription] is `true`.
-  final bool showSource;
+  final bool? showSource;
 
   /// Whether to show the package description.
   ///
@@ -348,9 +352,9 @@ class PackageDetail {
 
   const PackageDetail(
       {this.showVersion,
-      bool showSource,
-      bool showDescription,
-      bool showFeatures})
+      bool? showSource,
+      bool? showDescription,
+      bool? showFeatures})
       : showSource = showDescription == true ? true : showSource,
         showDescription = showDescription ?? false,
         showFeatures = showFeatures ?? true;
@@ -358,8 +362,8 @@ class PackageDetail {
   /// Returns a [PackageDetail] with the maximum amount of detail between [this]
   /// and [other].
   PackageDetail max(PackageDetail other) => PackageDetail(
-      showVersion: showVersion || other.showVersion,
-      showSource: showSource || other.showSource,
+      showVersion: showVersion! || other.showVersion!,
+      showSource: showSource! || other.showSource!,
       showDescription: showDescription || other.showDescription,
       showFeatures: showFeatures || other.showFeatures);
 }

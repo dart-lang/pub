@@ -94,7 +94,7 @@ class Ignore {
   /// [1]: https://git-scm.com/docs/gitignore
   /// [2]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase
   Ignore(
-    Iterable<String> patterns, {
+    List<String> patterns, {
     bool ignoreCase = false,
     void Function(String pattern, FormatException exception)? onInvalidPattern,
   }) : _rules = _parseIgnorePatterns(
@@ -464,6 +464,9 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         } else {
           expr += '.*';
         }
+      } else if (peekChar() == '/' || peekChar() == null) {
+        // /a/* should not match '/a/'
+        expr += '[^/]+';
       } else {
         // Handle a single '*'
         expr += '[^/]*';
@@ -520,7 +523,6 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
     expr = '$expr/\$';
   } else {
     expr = '$expr/?\$';
-    // expr = '$expr\$';
   }
   try {
     return _IgnoreParseResult(

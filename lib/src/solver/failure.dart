@@ -2,14 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:collection/collection.dart';
 
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
-import '../sdk.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
@@ -30,7 +27,7 @@ class SolveFailure implements ApplicationException {
   ///
   /// If multiple [PackageNotFoundException]s caused the error, it's undefined
   /// which one is returned.
-  PackageNotFoundException get packageNotFound {
+  PackageNotFoundException? get packageNotFound {
     for (var incompatibility in incompatibility.externalIncompatibilities) {
       var cause = incompatibility.cause;
       if (cause is PackageNotFoundCause) return cause.exception;
@@ -70,7 +67,7 @@ class _Writer {
   /// incompatibility, and why its terms are incompatible. The number is
   /// optional and indicates the explicit number that should be associated with
   /// the line so it can be referred to later on.
-  final _lines = <Pair<String, int>>[];
+  final _lines = <Pair<String, int?>>[];
 
   // A map from incompatibilities to the line numbers that were written for
   // those incompatibilities.
@@ -82,51 +79,33 @@ class _Writer {
 
   /// Populates [_derivations] for [incompatibility] and its transitive causes.
   void _countDerivations(Incompatibility incompatibility) {
-    if (_derivations.containsKey(incompatibility)) {
-      _derivations[incompatibility]++;
-    } else {
-      _derivations[incompatibility] = 1;
+    _derivations.update(incompatibility, (value) => value + 1, ifAbsent: () {
       var cause = incompatibility.cause;
       if (cause is ConflictCause) {
         _countDerivations(cause.conflict);
         _countDerivations(cause.other);
       }
-    }
+      return 1;
+    });
   }
 
   String write() {
     var buffer = StringBuffer();
 
-    // SDKs whose version constraints weren't matched.
-    var sdkConstraintCauses = <Sdk>{};
-
-    // SDKs implicated in any way in the solve failure.
-    var sdkCauses = <Sdk>{};
-
-    for (var incompatibility in _root.externalIncompatibilities) {
-      var cause = incompatibility.cause;
-      if (cause is PackageNotFoundCause && cause.sdk != null) {
-        sdkCauses.add(cause.sdk);
-      } else if (cause is SdkCause) {
-        sdkCauses.add(cause.sdk);
-        sdkConstraintCauses.add(cause.sdk);
-      }
+    // Find all notices from incompatibility causes. This allows an
+    // [IncompatibilityCause] to provide a notice that is printed before the
+    // explanation of the conflict.
+    // Notably, this is used for stating which SDK version is currently
+    // installed, if an SDK is incompatible with a dependency.
+    final notices = _root.externalIncompatibilities
+        .map((c) => c.cause.notice)
+        .whereNotNull()
+        .toSet() // Avoid duplicates
+        .sortedBy((n) => n); // sort for consistency
+    for (final n in notices) {
+      buffer.writeln(n);
     }
-
-    // If the failure was caused in part by unsatisfied SDK constraints,
-    // indicate the actual versions so we don't have to list them (possibly
-    // multiple times) in the main body of the error message.
-    //
-    // Iterate through [sdks] to ensure that SDKs versions are printed in a
-    // consistent order
-    var wroteLine = false;
-    for (var sdk in sdks.values) {
-      if (!sdkConstraintCauses.contains(sdk)) continue;
-      if (!sdk.isAvailable) continue;
-      wroteLine = true;
-      buffer.writeln('The current ${sdk.name} SDK version is ${sdk.version}.');
-    }
-    if (wroteLine) buffer.writeln();
+    if (notices.isNotEmpty) buffer.writeln();
 
     if (_root.cause is ConflictCause) {
       _visit(_root, const {});
@@ -160,15 +139,21 @@ class _Writer {
       buffer.writeln(wordWrap(message, prefix: ' ' * (padding + 2)));
     }
 
-    // Iterate through [sdks] to ensure that SDKs versions are printed in a
-    // consistent order
-    for (var sdk in sdks.values) {
-      if (!sdkCauses.contains(sdk)) continue;
-      if (sdk.isAvailable) continue;
-      if (sdk.installMessage == null) continue;
+    // Iterate through all hints, these are intended to be actionable, such as:
+    //  * How to install an SDK, and,
+    //  * How to provide authentication.
+    // Hence, it makes sense to show these at the end of the explanation, as the
+    // user will ideally see these before reading the actual conflict and
+    // understand how to fix the issue.
+    _root.externalIncompatibilities
+        .map((c) => c.cause.hint)
+        .whereNotNull()
+        .toSet() // avoid duplicates
+        .sortedBy((hint) => hint) // sort hints for consistent ordering.
+        .forEach((hint) {
       buffer.writeln();
-      buffer.writeln(sdk.installMessage);
-    }
+      buffer.writeln(hint);
+    });
 
     return buffer.toString();
   }
@@ -203,23 +188,24 @@ class _Writer {
       {bool conclusion = false}) {
     // Add explicit numbers for incompatibilities that are written far away
     // from their successors or that are used for multiple derivations.
-    var numbered = conclusion || _derivations[incompatibility] > 1;
+    var numbered = conclusion || _derivations[incompatibility]! > 1;
     var conjunction = conclusion || incompatibility == _root ? 'So,' : 'And';
     var incompatibilityString =
         log.bold(incompatibility.toString(detailsForIncompatibility));
 
-    var cause = incompatibility.cause as ConflictCause;
-    var detailsForCause = _detailsForCause(cause);
-    if (cause.conflict.cause is ConflictCause &&
-        cause.other.cause is ConflictCause) {
-      var conflictLine = _lineNumbers[cause.conflict];
-      var otherLine = _lineNumbers[cause.other];
+    var conflictClause = incompatibility.cause as ConflictCause;
+    var detailsForCause = _detailsForCause(conflictClause);
+    var cause = conflictClause.conflict.cause;
+    var otherCause = conflictClause.other.cause;
+    if (cause is ConflictCause && otherCause is ConflictCause) {
+      var conflictLine = _lineNumbers[conflictClause.conflict];
+      var otherLine = _lineNumbers[conflictClause.other];
       if (conflictLine != null && otherLine != null) {
         _write(
             incompatibility,
             'Because ' +
-                cause.conflict.andToString(
-                    cause.other, detailsForCause, conflictLine, otherLine) +
+                conflictClause.conflict.andToString(conflictClause.other,
+                    detailsForCause, conflictLine, otherLine) +
                 ', $incompatibilityString.',
             numbered: numbered);
       } else if (conflictLine != null || otherLine != null) {
@@ -227,13 +213,13 @@ class _Writer {
         Incompatibility withoutLine;
         int line;
         if (conflictLine != null) {
-          withLine = cause.conflict;
-          withoutLine = cause.other;
+          withLine = conflictClause.conflict;
+          withoutLine = conflictClause.other;
           line = conflictLine;
         } else {
-          withLine = cause.other;
-          withoutLine = cause.conflict;
-          line = otherLine;
+          withLine = conflictClause.other;
+          withoutLine = conflictClause.conflict;
+          line = otherLine!;
         }
 
         _visit(withoutLine, detailsForCause);
@@ -243,35 +229,38 @@ class _Writer {
             '($line), $incompatibilityString.',
             numbered: numbered);
       } else {
-        var singleLineConflict = _isSingleLine(cause.conflict.cause);
-        var singleLineOther = _isSingleLine(cause.other.cause);
+        var singleLineConflict = _isSingleLine(cause);
+        var singleLineOther = _isSingleLine(otherCause);
         if (singleLineOther || singleLineConflict) {
-          var first = singleLineOther ? cause.conflict : cause.other;
-          var second = singleLineOther ? cause.other : cause.conflict;
+          var first =
+              singleLineOther ? conflictClause.conflict : conflictClause.other;
+          var second =
+              singleLineOther ? conflictClause.other : conflictClause.conflict;
           _visit(first, detailsForCause);
           _visit(second, detailsForCause);
           _write(incompatibility, 'Thus, $incompatibilityString.',
               numbered: numbered);
         } else {
-          _visit(cause.conflict, {}, conclusion: true);
+          _visit(conflictClause.conflict, {}, conclusion: true);
           _lines.add(Pair('', null));
 
-          _visit(cause.other, detailsForCause);
+          _visit(conflictClause.other, detailsForCause);
           _write(
               incompatibility,
               '$conjunction because '
-              '${cause.conflict.toString(detailsForCause)} '
-              '(${_lineNumbers[cause.conflict]}), '
+              '${conflictClause.conflict.toString(detailsForCause)} '
+              '(${_lineNumbers[conflictClause.conflict]}), '
               '$incompatibilityString.',
               numbered: numbered);
         }
       }
-    } else if (cause.conflict.cause is ConflictCause ||
-        cause.other.cause is ConflictCause) {
-      var derived =
-          cause.conflict.cause is ConflictCause ? cause.conflict : cause.other;
-      var ext =
-          cause.conflict.cause is ConflictCause ? cause.other : cause.conflict;
+    } else if (cause is ConflictCause || otherCause is ConflictCause) {
+      var derived = cause is ConflictCause
+          ? conflictClause.conflict
+          : conflictClause.other;
+      var ext = cause is ConflictCause
+          ? conflictClause.other
+          : conflictClause.conflict;
 
       var derivedLine = _lineNumbers[derived];
       if (derivedLine != null) {
@@ -313,7 +302,7 @@ class _Writer {
       _write(
           incompatibility,
           'Because '
-          '${cause.conflict.andToString(cause.other, detailsForCause)}, '
+          '${conflictClause.conflict.andToString(conflictClause.other, detailsForCause)}, '
           '$incompatibilityString.',
           numbered: numbered);
     }
@@ -347,7 +336,7 @@ class _Writer {
   bool _isCollapsible(Incompatibility incompatibility) {
     // If [incompatibility] is used for multiple derivations, it will need a
     // line number and so will need to be written explicitly.
-    if (_derivations[incompatibility] > 1) return false;
+    if (_derivations[incompatibility]! > 1) return false;
 
     var cause = incompatibility.cause as ConflictCause;
     // If [incompatibility] is derived from two derived incompatibilities,

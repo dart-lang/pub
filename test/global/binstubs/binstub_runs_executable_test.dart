@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
@@ -14,14 +12,12 @@ import 'utils.dart';
 
 void main() {
   test('the generated binstub runs a snapshotted executable', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'executables': {'foo-script': 'script'}
-      }, contents: [
-        d.dir(
-            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'executables': {'foo-script': 'script'}
+    }, contents: [
+      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+    ]);
 
     await runPub(args: ['global', 'activate', 'foo']);
 

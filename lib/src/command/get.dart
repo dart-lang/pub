@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import '../command.dart';
@@ -35,6 +33,9 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
+    argParser.addFlag('legacy-packages-file',
+        help: 'Generate the legacy ".packages" file', negatable: false);
+
     argParser.addFlag(
       'example',
       help: 'Also run in `example/` (if it exists).',
@@ -51,14 +52,24 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
-    await entrypoint.acquireDependencies(SolveType.GET,
-        dryRun: argResults['dry-run'], precompile: argResults['precompile']);
+    await entrypoint.acquireDependencies(
+      SolveType.get,
+      dryRun: argResults['dry-run'],
+      precompile: argResults['precompile'],
+      generateDotPackages: argResults['legacy-packages-file'],
+      analytics: analytics,
+    );
 
-    if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(SolveType.GET,
-          dryRun: argResults['dry-run'],
-          precompile: argResults['precompile'],
-          onlyReportSuccessOrFailure: true);
+    var example = entrypoint.example;
+    if (argResults['example'] && example != null) {
+      await example.acquireDependencies(
+        SolveType.get,
+        dryRun: argResults['dry-run'],
+        precompile: argResults['precompile'],
+        generateDotPackages: argResults['legacy-packages-file'],
+        analytics: analytics,
+        onlyReportSuccessOrFailure: true,
+      );
     }
   }
 }

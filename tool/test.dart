@@ -3,8 +3,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 /// Test wrapper script.
 /// Many of the integration tests runs the `pub` command, this is slow if every
 /// invocation requires the dart compiler to load all the sources. This script
@@ -19,7 +17,7 @@ import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
-  Process testProcess;
+  Process? testProcess;
   final sub = ProcessSignal.sigint.watch().listen((signal) {
     testProcess?.kill(signal);
   });
@@ -31,7 +29,7 @@ Future<void> main(List<String> args) async {
     await precompile(
         executablePath: path.join('bin', 'pub.dart'),
         outputPath: pubSnapshotFilename,
-        incrementalDillOutputPath: pubSnapshotIncrementalFilename,
+        incrementalDillPath: pubSnapshotIncrementalFilename,
         name: 'bin/pub.dart',
         packageConfigPath: path.join('.dart_tool', 'package_config.json'));
     testProcess = await Process.start(

@@ -2,12 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.11
-
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
+import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import 'credential.dart';
@@ -17,7 +17,7 @@ class TokenStore {
   TokenStore(this.configDir);
 
   /// Cache directory.
-  final String configDir;
+  final String? configDir;
 
   /// List of saved authentication tokens.
   ///
@@ -28,9 +28,9 @@ class TokenStore {
   /// Reads "pub-tokens.json" and parses / deserializes it into list of
   /// [Credential].
   List<Credential> _loadCredentials() {
-    final result = List<Credential>.empty(growable: true);
+    final result = <Credential>[];
     final path = _tokensFile;
-    if (!fileExists(path)) {
+    if (path == null || !fileExists(path)) {
       return result;
     }
 
@@ -90,11 +90,20 @@ class TokenStore {
     return result;
   }
 
+  Never missingConfigDir() {
+    final variable = Platform.isWindows ? '%APPDATA%' : r'$HOME';
+    throw DataException('No config dir found. Check that $variable is set');
+  }
+
   /// Writes [credentials] into "pub-tokens.json".
   void _saveCredentials(List<Credential> credentials) {
-    ensureDir(path.dirname(_tokensFile));
+    final tokensFile = _tokensFile;
+    if (tokensFile == null) {
+      missingConfigDir();
+    }
+    ensureDir(path.dirname(tokensFile));
     writeTextFile(
-        _tokensFile,
+        tokensFile,
         jsonEncode(<String, dynamic>{
           'version': 1,
           'hosted': credentials.map((it) => it.toJson()).toList(),
@@ -134,8 +143,8 @@ class TokenStore {
 
   /// Returns [Credential] for authenticating given [hostedUrl] or `null` if no
   /// matching credential is found.
-  Credential findCredential(Uri hostedUrl) {
-    Credential matchedCredential;
+  Credential? findCredential(Uri hostedUrl) {
+    Credential? matchedCredential;
     for (final credential in credentials) {
       if (credential.url == hostedUrl && credential.isValid()) {
         if (matchedCredential == null) {
@@ -161,10 +170,22 @@ class TokenStore {
 
   /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {
-    deleteEntry(_tokensFile);
-    log.message('pub-tokens.json is deleted.');
+    final tokensFile = _tokensFile;
+    if (tokensFile == null) {
+      missingConfigDir();
+    } else if (!fileExists(tokensFile)) {
+      log.message('No credentials file found at "$tokensFile"');
+    } else {
+      deleteEntry(tokensFile);
+      log.message('pub-tokens.json is deleted.');
+    }
   }
 
   /// Full path to the "pub-tokens.json" file.
-  String get _tokensFile => path.join(configDir, 'pub-tokens.json');
+  ///
+  /// `null` if no config directory could be found.
+  String? get _tokensFile {
+    var dir = configDir;
+    return dir == null ? null : path.join(dir, 'pub-tokens.json');
+  }
 }

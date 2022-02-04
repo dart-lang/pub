@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'lock_file.dart';
@@ -33,8 +31,8 @@ Future<SolveResult> resolveVersions(
   SolveType type,
   SystemCache cache,
   Package root, {
-  LockFile lockFile,
-  Iterable<String> unlock,
+  LockFile? lockFile,
+  Iterable<String> unlock = const [],
 }) {
   lockFile ??= LockFile.empty();
   return VersionSolver(
@@ -42,7 +40,7 @@ Future<SolveResult> resolveVersions(
     cache,
     root,
     lockFile,
-    unlock ?? [],
+    unlock,
   ).solve();
 }
 
@@ -60,12 +58,12 @@ Future<SolveResult> resolveVersions(
 /// If [unlock] is empty [SolveType.get] interprets this as lock everything,
 /// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
-Future<SolveResult> tryResolveVersions(
+Future<SolveResult?> tryResolveVersions(
   SolveType type,
   SystemCache cache,
   Package root, {
-  LockFile lockFile,
-  Iterable<String> unlock,
+  LockFile? lockFile,
+  Iterable<String>? unlock,
 }) async {
   try {
     return await resolveVersions(
@@ -73,7 +71,7 @@ Future<SolveResult> tryResolveVersions(
       cache,
       root,
       lockFile: lockFile,
-      unlock: unlock,
+      unlock: unlock ?? [],
     );
   } on SolveFailure {
     return null;

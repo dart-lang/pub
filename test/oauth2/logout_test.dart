@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -13,7 +11,7 @@ void main() {
   test('with an existing credentials file, deletes it.', () async {
     await servePackages();
     await d
-        .credentialsFile(globalPackageServer, 'access token',
+        .credentialsFile(globalServer, 'access token',
             refreshToken: 'refresh token',
             expiration: DateTime.now().add(Duration(hours: 1)))
         .create();
@@ -30,7 +28,7 @@ void main() {
     await servePackages();
     await d
         .credentialsFile(
-          globalPackageServer,
+          globalServer,
           'access token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),
@@ -39,7 +37,7 @@ void main() {
 
     await d
         .legacyCredentialsFile(
-          globalPackageServer,
+          globalServer,
           'access token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),

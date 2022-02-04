@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -13,15 +11,14 @@ import '../../test_pub.dart';
 void main() {
   test('handles failure to reinstall some packages', () async {
     // Only serve two packages so repairing will have a failure.
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '1.2.5');
-    });
+    final server = await servePackages()
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '1.2.5');
 
     // Set up a cache with some packages.
     await d.dir(cachePath, [
       d.dir('hosted', [
-        d.dir('localhost%58${globalServer.port}', [
+        d.dir('localhost%58${server.port}', [
           d.dir('foo-1.2.3',
               [d.libPubspec('foo', '1.2.3'), d.file('broken.txt')]),
           d.dir('foo-1.2.4',
@@ -41,7 +38,7 @@ void main() {
     expect(pub.stderr, emits(startsWith('Failed to repair foo 1.2.4. Error:')));
     expect(
         pub.stderr,
-        emits('Package doesn\'t exist '
+        emits('Package not available '
             '(Package foo has no version 1.2.4).'));
 
     expect(pub.stdout, emits('Reinstalled 2 packages.'));
