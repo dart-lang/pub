@@ -19,14 +19,44 @@ void main() {
 
   test('archives and uploads a package', () async {
     await servePackages();
-    await d.credentialsFile(globalPackageServer!, 'access token').create();
-    var pub = await startPublish(globalPackageServer!);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer!);
-    handleUpload(globalPackageServer!);
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
 
-    globalPackageServer!.expect('GET', '/create', (request) {
+    globalServer.expect('GET', '/create', (request) {
+      return shelf.Response.ok(jsonEncode({
+        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+      }));
+    });
+
+    expect(pub.stdout, emits(startsWith('Uploading...')));
+    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    await pub.shouldExit(exit_codes.SUCCESS);
+  });
+
+  test('publishes to hosted-url with path', () async {
+    await servePackages();
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': globalServer.url + '/sub/folder', 'env': 'TOKEN'},
+      ]
+    }).create();
+    var pub = await startPublish(
+      globalServer,
+      path: '/sub/folder',
+      authMethod: 'token',
+      environment: {'TOKEN': 'access token'},
+    );
+
+    await confirmPublish(pub);
+    handleUploadForm(globalServer, path: '/sub/folder');
+    handleUpload(globalServer);
+
+    globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
@@ -53,14 +83,14 @@ void main() {
     await d.dir(p.join(appPath, 'empty')).create();
 
     await servePackages();
-    await d.credentialsFile(globalPackageServer!, 'access token').create();
-    var pub = await startPublish(globalPackageServer!);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer!);
-    handleUpload(globalPackageServer!);
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
 
-    globalPackageServer!.expect('GET', '/create', (request) {
+    globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

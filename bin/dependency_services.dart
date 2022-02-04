@@ -97,7 +97,7 @@ class DependencyServicesCommandRunner extends CommandRunner<int>
   }
 
   @override
-  log.Verbosity get verbosity => log.Verbosity.NORMAL;
+  log.Verbosity get verbosity => log.Verbosity.normal;
 }
 
 Future<void> main(List<String> arguments) async {

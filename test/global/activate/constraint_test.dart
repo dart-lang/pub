@@ -9,12 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('chooses the highest version that matches the constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '1.0.1');
-      builder.serve('foo', '1.1.0');
-      builder.serve('foo', '1.2.3');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '1.0.1')
+      ..serve('foo', '1.1.0')
+      ..serve('foo', '1.2.3');
 
     await runPub(args: ['global', 'activate', 'foo', '<1.1.0']);
 

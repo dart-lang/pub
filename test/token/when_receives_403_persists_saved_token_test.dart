@@ -12,17 +12,17 @@ void main() {
   setUp(d.validPackage.create);
 
   test('when receives 403 response persists saved token', () async {
-    await servePackages();
+    final server = await servePackages();
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer!.url, 'token': 'access token'},
+        {'url': server.url, 'token': 'access token'},
       ]
     }).create();
-    var pub = await startPublish(globalPackageServer!, authMethod: 'token');
+    var pub = await startPublish(server, authMethod: 'token');
     await confirmPublish(pub);
 
-    globalPackageServer!.expect('GET', '/api/packages/versions/new', (request) {
+    server.expect('GET', '/api/packages/versions/new', (request) {
       return shelf.Response(403);
     });
 
@@ -31,7 +31,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer!.url, 'token': 'access token'},
+        {'url': server.url, 'token': 'access token'},
       ]
     }).validate();
   });

@@ -93,7 +93,7 @@ class DependencyServicesReportCommand extends PubCommand {
       }
 
       final resolution = await tryResolveVersions(
-        SolveType.GET,
+        SolveType.get,
         cache,
         Package.inMemory(pubspec),
         lockFile: lockFile,
@@ -210,7 +210,7 @@ String _kindString(Pubspec pubspec, String packageName) {
 /// resolution was found.
 Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
-    SolveType.UPGRADE,
+    SolveType.upgrade,
     cache,
     Package.inMemory(pubspec),
   );
@@ -346,8 +346,8 @@ class DependencyServicesApplyCommand extends PubCommand {
     await log.warningsOnlyUnlessTerminal(
       () async {
         // This will fail if the new configuration does not resolve.
-        await Entrypoint(directory, cache)
-            .acquireDependencies(SolveType.GET, analytics: null);
+        await Entrypoint(directory, cache).acquireDependencies(SolveType.get,
+            analytics: null, generateDotPackages: false);
       },
     );
     // Dummy message.

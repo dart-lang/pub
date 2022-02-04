@@ -10,12 +10,11 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('activating a hosted package deactivates the path one', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
-      ]);
-    });
+  test('activating a path package deactivates the hosted one', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+    ]);
 
     await d.dir('foo', [
       d.libPubspec('foo', '2.0.0'),

@@ -13,7 +13,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('URL encodes the package name', () async {
-    await serveNoPackages();
+    await servePackages();
 
     await d.appDir({}).create();
 
@@ -37,49 +37,48 @@ void main() {
   });
 
   group('normally', () {
-    test('fails if extra arguments are passed', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.2');
-      });
-
-      await d.dir(appPath, [
-        d.pubspec({'name': 'myapp'})
-      ]).create();
-
-      await pubAdd(
-          args: ['foo', '^1.2.2'],
-          exitCode: exit_codes.USAGE,
-          error: contains('Takes only a single argument.'));
-
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-        }),
-        d.nothing('.dart_tool/package_config.json'),
-        d.nothing('pubspec.lock'),
-        d.nothing('.packages'),
-      ]).validate();
-    });
-
     test('adds a package from a pub server', () async {
-      await servePackages((builder) => builder.serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
 
       await d.appDir({}).create();
 
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
       await d.appDir({'foo': '1.2.3'}).validate();
+    });
+
+    test('adds multiple package from a pub server', () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+      server.serve('bar', '1.1.0');
+      server.serve('baz', '2.5.3');
+
+      await d.appDir({}).create();
+
+      await pubAdd(args: ['foo:1.2.3', 'bar:1.1.0', 'baz:2.5.3']);
+
+      await d.cacheDir(
+          {'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+        d.packageConfigEntry(name: 'bar', version: '1.1.0'),
+        d.packageConfigEntry(name: 'baz', version: '2.5.3'),
+      ]).validate();
+      await d
+          .appDir({'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
     });
 
     test(
         'does not remove empty dev_dependencies while adding to normal dependencies',
         () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3');
-        builder.serve('foo', '1.2.2');
-      });
+      await servePackages()
+        ..serve('foo', '1.2.3')
+        ..serve('foo', '1.2.2');
 
       await d.dir(appPath, [
         d.file('pubspec.yaml', '''
@@ -96,7 +95,9 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -109,7 +110,8 @@ void main() {
 
     test('dry run does not actually add the package or modify the pubspec',
         () async {
-      await servePackages((builder) => builder.serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
 
       await d.appDir({}).create();
 
@@ -131,7 +133,8 @@ void main() {
     test(
         'adds a package from a pub server even when dependencies key does not exist',
         () async {
-      await servePackages((builder) => builder.serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
         d.pubspec({'name': 'myapp'})
@@ -140,16 +143,17 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
     group('warns user to use pub upgrade if package exists', () {
       test('if package is added without a version constraint', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.appDir({'foo': '1.2.2'}).create();
 
@@ -164,10 +168,9 @@ void main() {
       });
 
       test('if package is added with a specific version constraint', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.appDir({'foo': '1.2.2'}).create();
 
@@ -182,10 +185,9 @@ void main() {
       });
 
       test('if package is added with a version constraint range', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.appDir({'foo': '1.2.2'}).create();
 
@@ -201,10 +203,9 @@ void main() {
     });
 
     test('removes dev_dependency and add to normal dependency', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3');
-        builder.serve('foo', '1.2.2');
-      });
+      await servePackages()
+        ..serve('foo', '1.2.3')
+        ..serve('foo', '1.2.2');
 
       await d.dir(appPath, [
         d.file('pubspec.yaml', '''
@@ -225,7 +226,9 @@ environment:
               'adding it to dependencies instead.'));
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -237,10 +240,9 @@ environment:
 
     group('dependency override', () {
       test('passes if package does not specify a range', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.dir(appPath, [
           d.pubspec({
@@ -253,7 +255,9 @@ environment:
         await pubAdd(args: ['foo']);
 
         await d.cacheDir({'foo': '1.2.2'}).validate();
-        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+        await d.appPackageConfigFile([
+          d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+        ]).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -264,9 +268,8 @@ environment:
       });
 
       test('passes if constraint matches git dependency override', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.3');
 
         await d.git('foo.git',
             [d.libDir('foo'), d.libPubspec('foo', '1.2.3')]).create();
@@ -295,9 +298,8 @@ environment:
       });
 
       test('passes if constraint matches path dependency override', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.2');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.2');
         await d.dir(
             'foo', [d.libDir('foo'), d.libPubspec('foo', '1.2.2')]).create();
 
@@ -325,9 +327,8 @@ environment:
       });
 
       test('fails with bad version constraint', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.3');
 
         await d.dir(appPath, [
           d.pubspec({'name': 'myapp', 'dependencies': {}})
@@ -348,10 +349,9 @@ environment:
       });
 
       test('fails if constraint does not match override', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.dir(appPath, [
           d.pubspec({
@@ -381,9 +381,8 @@ environment:
       });
 
       test('fails if constraint matches git dependency override', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.3');
 
         await d.git('foo.git',
             [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
@@ -421,9 +420,8 @@ environment:
 
       test('fails if constraint does not match path dependency override',
           () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.2');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.2');
         await d.dir(
             'foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
@@ -462,7 +460,8 @@ environment:
 
   group('--dev', () {
     test('--dev adds packages to dev_dependencies instead', () async {
-      await servePackages((builder) => builder.serve('foo', '1.2.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
         d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
@@ -470,7 +469,9 @@ environment:
 
       await pubAdd(args: ['--dev', 'foo:1.2.3']);
 
-      await d.appPackagesFile({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -482,10 +483,9 @@ environment:
 
     group('warns user to use pub upgrade if package exists', () {
       test('if package is added without a version constraint', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.dir(appPath, [
           d.pubspec({
@@ -510,10 +510,9 @@ environment:
       });
 
       test('if package is added with a specific version constraint', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.dir(appPath, [
           d.pubspec({
@@ -538,10 +537,9 @@ environment:
       });
 
       test('if package is added with a version constraint range', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.dir(appPath, [
           d.pubspec({
@@ -568,10 +566,9 @@ environment:
 
     group('dependency override', () {
       test('passes if package does not specify a range', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.dir(appPath, [
           d.pubspec({
@@ -584,7 +581,9 @@ environment:
         await pubAdd(args: ['foo', '--dev']);
 
         await d.cacheDir({'foo': '1.2.2'}).validate();
-        await d.appPackagesFile({'foo': '1.2.2'}).validate();
+        await d.appPackageConfigFile([
+          d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+        ]).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -595,10 +594,8 @@ environment:
       });
 
       test('passes if constraint is git dependency', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-        });
-
+        final server = await servePackages();
+        server.serve('foo', '1.2.3');
         await d.git('foo.git',
             [d.libDir('foo'), d.libPubspec('foo', '1.2.3')]).create();
 
@@ -626,9 +623,8 @@ environment:
       });
 
       test('passes if constraint matches path dependency override', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.2');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.2');
         await d.dir(
             'foo', [d.libDir('foo'), d.libPubspec('foo', '1.2.2')]).create();
 
@@ -656,10 +652,9 @@ environment:
       });
 
       test('fails if constraint does not match override', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-          builder.serve('foo', '1.2.2');
-        });
+        await servePackages()
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '1.2.2');
 
         await d.dir(appPath, [
           d.pubspec({
@@ -689,9 +684,8 @@ environment:
       });
 
       test('fails if constraint matches git dependency override', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.3');
 
         await d.git('foo.git',
             [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
@@ -729,9 +723,9 @@ environment:
 
       test('fails if constraint does not match path dependency override',
           () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.2');
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.2');
+
         await d.dir(
             'foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
@@ -770,10 +764,9 @@ environment:
     test(
         'prints information saying that package is already a dependency if it '
         'already exists and exits with a usage exception', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3');
-        builder.serve('foo', '1.2.2');
-      });
+      await servePackages()
+        ..serve('foo', '1.2.3')
+        ..serve('foo', '1.2.2');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -805,9 +798,8 @@ environment:
 
   /// Differs from the previous test because this tests YAML in flow format.
   test('adds to empty ', () async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.file('pubspec.yaml', '''
@@ -825,10 +817,9 @@ environment:
   });
 
   test('preserves comments', () async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0');
-      builder.serve('foo', '1.0.0');
-    });
+    await servePackages()
+      ..serve('bar', '1.0.0')
+      ..serve('foo', '1.0.0');
 
     await d.dir(appPath, [
       d.file('pubspec.yaml', '''

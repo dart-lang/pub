@@ -13,9 +13,8 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     setUp(() async {
-      await servePackages((builder) {
-        builder.serve('bar', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
 
       await d.dir('flutter', [
         d.dir('packages', [
@@ -38,13 +37,10 @@ void main() {
       }).create();
       await pubCommand(command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
-
-      await d.dir(appPath, [
-        d.packagesFile({
-          'myapp': '.',
-          'foo': p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-          'bar': '1.0.0'
-        })
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(
+            name: 'foo', path: p.join(d.sandbox, 'flutter', 'packages', 'foo')),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
       ]).validate();
     });
 
@@ -55,11 +51,10 @@ void main() {
       await pubCommand(command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
-      await d.dir(appPath, [
-        d.packagesFile({
-          'myapp': '.',
-          'baz': p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz')
-        })
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(
+            name: 'baz',
+            path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz')),
       ]).validate();
     });
 
@@ -94,10 +89,7 @@ void main() {
       deleteEntry(p.join(d.sandbox, 'flutter', 'version'));
       await pubCommand(command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
-
-      await d.dir(appPath, [
-        d.packagesFile({'myapp': '.'})
-      ]).validate();
+      await d.appPackageConfigFile([]).validate();
     });
 
     group('fails if', () {
@@ -170,13 +162,10 @@ void main() {
       }).create();
       await pubCommand(command,
           environment: {'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia')});
-
-      await d.dir(appPath, [
-        d.packagesFile({
-          'myapp': '.',
-          'foo': p.join(d.sandbox, 'fuchsia', 'packages', 'foo'),
-          'bar': '1.0.0'
-        })
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(
+            name: 'foo', path: p.join(d.sandbox, 'fuchsia', 'packages', 'foo')),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
       ]).validate();
     });
   });

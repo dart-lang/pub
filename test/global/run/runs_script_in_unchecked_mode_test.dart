@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-const SCRIPT = '''
+const _script = '''
 main() {
   assert(false);
   print("no checks");
@@ -16,11 +16,10 @@ main() {
 
 void main() {
   test('runs a script in unchecked mode by default', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('script.dart', SCRIPT)])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('script.dart', _script)])
+    ]);
 
     await runPub(args: ['global', 'activate', 'foo']);
 

@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-const SCRIPT = r'''
+const _script = r'''
 import 'dart:io';
 
 main(List<String> args) {
@@ -21,11 +21,11 @@ void main() {
       d.appPubspec({'test': '1.0.0'}),
     ]).create();
 
-    await servePackages((server) => server
-      ..serve('test', '1.0.0', contents: [
-        d.dir('bin',
-            [d.file('test.dart', 'main(List<String> args) => print("hello");')])
-      ]));
+    final server = await servePackages();
+    server.serve('test', '1.0.0', contents: [
+      d.dir('bin',
+          [d.file('test.dart', 'main(List<String> args) => print("hello");')])
+    ]);
 
     await pubGet(args: ['--no-precompile']);
   }
@@ -57,10 +57,10 @@ void main() {
       d.appPubspec({'test': '1.0.0'}),
     ]).create();
 
-    await servePackages((server) => server
-      ..serve('test', '1.0.0', contents: [
-        d.dir('bin', [d.file('test.dart', SCRIPT)])
-      ]));
+    final server = await servePackages();
+    server.serve('test', '1.0.0', contents: [
+      d.dir('bin', [d.file('test.dart', _script)])
+    ]);
 
     await pubGet(
         args: ['--no-precompile'], environment: {'PUB_CACHE': '.pub_cache'});
@@ -80,10 +80,10 @@ void main() {
       d.appPubspec({'test': '1.0.0'}),
     ]).create();
 
-    await servePackages((server) => server
-      ..serve('test', '1.0.0', contents: [
-        d.dir('bin', [d.file('test.dart', SCRIPT)])
-      ]));
+    final server = await servePackages();
+    server.serve('test', '1.0.0', contents: [
+      d.dir('bin', [d.file('test.dart', _script)])
+    ]);
 
     await pubGet(
         args: ['--precompile'],
@@ -104,10 +104,10 @@ void main() {
       d.appPubspec({'test': '1.0.0'}),
     ]).create();
 
-    await servePackages((server) => server
-      ..serve('test', '1.0.0', contents: [
-        d.dir('bin', [d.file('test.dart', SCRIPT)])
-      ]));
+    final server = await servePackages();
+    server.serve('test', '1.0.0', contents: [
+      d.dir('bin', [d.file('test.dart', _script)])
+    ]);
 
     await pubGet(
         args: ['--precompile'],

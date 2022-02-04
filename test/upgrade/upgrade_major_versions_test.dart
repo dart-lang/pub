@@ -10,14 +10,13 @@ import '../test_pub.dart';
 void main() {
   group('pub upgrade --major-versions', () {
     test('bumps dependency constraints and shows summary report', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('foo', '2.0.0');
-        builder.serve('bar', '0.1.0');
-        builder.serve('bar', '0.2.0');
-        builder.serve('baz', '1.0.0');
-        builder.serve('baz', '1.0.1');
-      });
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0')
+        ..serve('bar', '0.1.0')
+        ..serve('bar', '0.2.0')
+        ..serve('baz', '1.0.0')
+        ..serve('baz', '1.0.1');
 
       await d.appDir({
         'foo': '^1.0.0',
@@ -42,23 +41,21 @@ void main() {
         'bar': '^0.2.0',
         'baz': '^1.0.0',
       }).validate();
-
-      await d.appPackagesFile({
-        'foo': '2.0.0',
-        'bar': '0.2.0',
-        'baz': '1.0.1',
-      }).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '0.2.0'),
+        d.packageConfigEntry(name: 'baz', version: '1.0.1'),
+      ]).validate();
     });
 
     test('bumps dev_dependency constraints and shows summary report', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('foo', '2.0.0');
-        builder.serve('bar', '0.1.0');
-        builder.serve('bar', '0.2.0');
-        builder.serve('baz', '1.0.0');
-        builder.serve('baz', '1.0.1');
-      });
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0')
+        ..serve('bar', '0.1.0')
+        ..serve('bar', '0.2.0')
+        ..serve('baz', '1.0.0')
+        ..serve('baz', '1.0.1');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -94,20 +91,18 @@ void main() {
         }),
       ]).validate();
 
-      await d.appPackagesFile({
-        'foo': '2.0.0',
-        'bar': '0.2.0',
-        'baz': '1.0.1',
-      }).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '0.2.0'),
+        d.packageConfigEntry(name: 'baz', version: '1.0.1'),
+      ]).validate();
     });
 
     test('upgrades only the selected package', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('foo', '2.0.0');
-        builder.serve('bar', '0.1.0');
-        builder.serve('bar', '0.2.0');
-      });
+      final server = await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0')
+        ..serve('bar', '0.1.0');
 
       await d.appDir({
         'foo': '^1.0.0',
@@ -115,6 +110,8 @@ void main() {
       }).create();
 
       await pubGet();
+
+      server.serve('bar', '0.1.1');
 
       // 1 constraint should be updated
       await pubUpgrade(
@@ -130,15 +127,17 @@ void main() {
         'bar': '^0.1.0',
       }).validate();
 
-      await d.appPackagesFile({'foo': '2.0.0', 'bar': '0.1.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '0.1.0'),
+      ]).validate();
     });
 
     test('chooses the latest version where possible', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('foo', '2.0.0');
-        builder.serve('foo', '3.0.0');
-      });
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0')
+        ..serve('foo', '3.0.0');
 
       await d.appDir({'foo': '^1.0.0'}).create();
 
@@ -162,17 +161,17 @@ void main() {
         d.file('pubspec.lock', contains('3.0.0'))
       ]).validate();
 
-      await d.appPackagesFile({'foo': '3.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '3.0.0'),
+      ]).validate();
     });
 
     test('overridden dependencies - no resolution', () async {
-      await servePackages(
-        (builder) => builder
-          ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
-          ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
-          ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
-          ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'}),
-      );
+      await servePackages()
+        ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
+        ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
+        ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
+        ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'});
 
       await d.dir(appPath, [
         d.pubspec({
@@ -216,23 +215,25 @@ void main() {
         })
       ]).validate();
 
-      await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      ]).validate();
     });
 
     test('upgrade should not downgrade any versions', () async {
       /// The version solver solves the packages with the least number of
       /// versions remaining, so we add more 'bar' packages to force 'foo' to be
       /// resolved first
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('foo', '2.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0', pubspec: {
           'dependencies': {'bar': '1.0.0'}
-        });
-        builder.serve('bar', '1.0.0');
-        builder.serve('bar', '2.0.0');
-        builder.serve('bar', '3.0.0');
-        builder.serve('bar', '4.0.0');
-      });
+        })
+        ..serve('bar', '1.0.0')
+        ..serve('bar', '2.0.0')
+        ..serve('bar', '3.0.0')
+        ..serve('bar', '4.0.0');
 
       await d.appDir({
         'foo': '^1.0.0',
@@ -255,10 +256,10 @@ void main() {
         'bar': '^4.0.0',
       }).validate();
 
-      await d.appPackagesFile({
-        'foo': '1.0.0',
-        'bar': '4.0.0',
-      }).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+        d.packageConfigEntry(name: 'bar', version: '4.0.0'),
+      ]).validate();
     });
   });
 }
