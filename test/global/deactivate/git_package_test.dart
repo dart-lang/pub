@@ -2,8 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -20,9 +19,10 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-sgit', '../foo.git']);
 
+    final locationUri = p.toUri(p.join(d.sandbox, 'foo.git'));
     await runPub(
         args: ['global', 'deactivate', 'foo'],
         output:
-            'Deactivated package foo 1.0.0 from Git repository "../foo.git".');
+            'Deactivated package foo 1.0.0 from Git repository "$locationUri".');
   });
 }

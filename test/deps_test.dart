@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -12,21 +10,19 @@ import 'test_pub.dart';
 
 void main() {
   setUp(() async {
-    await servePackages((builder) {
-      builder.serve('normal', '1.2.3',
-          deps: {'transitive': 'any', 'circular_a': 'any'});
-      builder.serve('transitive', '1.2.3', deps: {'shared': 'any'});
-      builder.serve('shared', '1.2.3', deps: {'other': 'any'});
-      builder.serve('dev_only', '1.2.3');
-      builder.serve('unittest', '1.2.3',
-          deps: {'shared': 'any', 'dev_only': 'any'});
-      builder.serve('other', '1.0.0', deps: {'myapp': 'any'});
-      builder.serve('overridden', '1.0.0');
-      builder.serve('overridden', '2.0.0');
-      builder.serve('override_only', '1.2.3');
-      builder.serve('circular_a', '1.2.3', deps: {'circular_b': 'any'});
-      builder.serve('circular_b', '1.2.3', deps: {'circular_a': 'any'});
-    });
+    await servePackages()
+      ..serve('normal', '1.2.3',
+          deps: {'transitive': 'any', 'circular_a': 'any'})
+      ..serve('transitive', '1.2.3', deps: {'shared': 'any'})
+      ..serve('shared', '1.2.3', deps: {'other': 'any'})
+      ..serve('dev_only', '1.2.3')
+      ..serve('unittest', '1.2.3', deps: {'shared': 'any', 'dev_only': 'any'})
+      ..serve('other', '1.0.0', deps: {'myapp': 'any'})
+      ..serve('overridden', '1.0.0')
+      ..serve('overridden', '2.0.0')
+      ..serve('override_only', '1.2.3')
+      ..serve('circular_a', '1.2.3', deps: {'circular_b': 'any'})
+      ..serve('circular_b', '1.2.3', deps: {'circular_a': 'any'});
 
     await d.dir('from_path',
         [d.libDir('from_path'), d.libPubspec('from_path', '1.2.3')]).create();

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -13,11 +11,10 @@ void main() {
   test(
       'does not show how many newer versions are available for '
       'packages that are locked and not being upgraded', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('b', '1.0.0');
-      builder.serve('c', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('b', '1.0.0')
+      ..serve('c', '2.0.0');
 
     await d.appDir({'a': 'any'}).create();
 

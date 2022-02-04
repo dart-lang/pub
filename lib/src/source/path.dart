@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
@@ -11,6 +9,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
 import '../io.dart';
+import '../language_version.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
@@ -64,7 +63,12 @@ class PathSource extends Source {
   /// original path but resolved relative to the containing path. The
   /// "relative" key will be `true` if the original path was relative.
   @override
-  PackageRef parseRef(String name, description, {String containingPath}) {
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingPath,
+    LanguageVersion? languageVersion,
+  }) {
     if (description is! String) {
       throw FormatException('The description must be a path string.');
     }
@@ -90,7 +94,7 @@ class PathSource extends Source {
 
   @override
   PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
+      {String? containingPath}) {
     if (description is! Map) {
       throw FormatException('The description must be a map.');
     }
@@ -126,9 +130,11 @@ class PathSource extends Source {
   ///
   /// For the descriptions where `relative` attribute is `true`, tries to make
   /// `path` relative to the specified [containingPath].
+  ///
+  /// If [containingPath] is `null` they are serialized as absolute.
   @override
-  dynamic serializeDescription(String containingPath, description) {
-    if (description['relative']) {
+  dynamic serializeDescription(String? containingPath, description) {
+    if (description['relative'] == true && containingPath != null) {
       return {
         'path': relativePathWithPosixSeparators(
             p.relative(description['path'], from: containingPath)),
@@ -165,7 +171,8 @@ class BoundPathSource extends BoundSource {
   BoundPathSource(this.source, this.systemCache);
 
   @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration maxAge) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge) async {
     // There's only one package ID for a given path. We just need to find the
     // version.
     var pubspec = _loadPubspec(ref);
@@ -183,10 +190,10 @@ class BoundPathSource extends BoundSource {
   }
 
   @override
-  String getDirectory(PackageId id, {String relativeFrom}) {
+  String getDirectory(PackageId id, {String? relativeFrom}) {
     return id.description['relative']
         ? p.relative(id.description['path'], from: relativeFrom)
-        : id.description['path'];
+        : id.description['path']!;
   }
 
   /// Ensures that [description] is a valid path description and returns a

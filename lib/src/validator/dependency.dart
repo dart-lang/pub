@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -223,8 +221,9 @@ class DependencyValidator extends Validator {
       constraint = '^${(dep.constraint as VersionRange).min}';
     } else {
       constraint = '"${dep.constraint} '
-          '<${(dep.constraint as VersionRange).min.nextBreaking}"';
+          '<${(dep.constraint as VersionRange).min!.nextBreaking}"';
     }
+    // TODO: Handle the case where `dep.constraint.min` is null.
 
     warnings
         .add('Your dependency on "${dep.name}" should have an upper bound. For '
@@ -240,7 +239,7 @@ class DependencyValidator extends Validator {
   void _warnAboutPrerelease(String dependencyName, VersionRange constraint) {
     final packageVersion = entrypoint.root.version;
     if (constraint.min != null &&
-        constraint.min.isPreRelease &&
+        constraint.min!.isPreRelease &&
         !packageVersion.isPreRelease) {
       warnings.add('Packages dependent on a pre-release of another package '
           'should themselves be published as a pre-release version. '

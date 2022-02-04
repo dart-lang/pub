@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -27,8 +25,8 @@ void main() {
       d.nothing('pubspec.lock'),
       // The "packages" directory should not have been generated.
       d.nothing('packages'),
-      // The ".packages" file should not have been created.
-      d.nothing('.packages'),
+      // The package config file should not have been created.
+      d.nothing('.dart_tool/package_config.json'),
     ]).validate();
   });
 }

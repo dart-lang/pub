@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import '../package_name.dart';
 import 'incompatibility.dart';
 import 'term.dart';
@@ -19,7 +17,7 @@ class Assignment extends Term {
 
   /// The incompatibility that caused this assignment to be derived, or `null`
   /// if the assignment isn't a derivation.
-  final Incompatibility cause;
+  final Incompatibility? cause;
 
   /// Whether this assignment is a decision, as opposed to a derivation.
   bool get isDecision => cause == null;

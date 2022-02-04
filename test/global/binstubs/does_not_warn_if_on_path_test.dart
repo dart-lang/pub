@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -14,14 +12,12 @@ import '../../test_pub.dart';
 
 void main() {
   test('does not warn if the binstub directory is on the path', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'executables': {'script': null}
-      }, contents: [
-        d.dir(
-            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'executables': {'script': null}
+    }, contents: [
+      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+    ]);
 
     // Add the test's cache bin directory to the path.
     var binDir = p.dirname(Platform.executable);

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -23,7 +21,7 @@ class TarFileDescriptor extends FileDescriptor {
   /// Creates the files and directories within this tar file, then archives
   /// them, compresses them, and saves the result to [parentDir].
   @override
-  Future create([String parent]) {
+  Future create([String? parent]) {
     return withTempDir((tempDir) async {
       await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
@@ -41,7 +39,7 @@ class TarFileDescriptor extends FileDescriptor {
   /// Validates that the `.tar.gz` file at [path] contains the expected
   /// contents.
   @override
-  Future validate([String parent]) {
+  Future validate([String? parent]) {
     throw UnimplementedError('TODO(nweiz): implement this');
   }
 

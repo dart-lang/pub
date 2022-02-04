@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -13,14 +11,13 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  setUp(() {
-    return servePackages((builder) {
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '1.2.4');
-      builder.serve('foo', '1.2.5');
-      builder.serve('bar', '1.2.3');
-      builder.serve('bar', '1.2.4');
-    });
+  setUp(() async {
+    await servePackages()
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '1.2.4')
+      ..serve('foo', '1.2.5')
+      ..serve('bar', '1.2.3')
+      ..serve('bar', '1.2.4');
   });
 
   test('reinstalls previously cached hosted packages', () async {

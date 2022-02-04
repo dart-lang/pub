@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
@@ -52,7 +50,7 @@ class SdkConstraintValidator extends Validator {
             'Expand it manually instead:\n'
             '\n'
             'environment:\n'
-            '  sdk: \"$dartConstraintWithoutCaret\"');
+            '  sdk: "$dartConstraintWithoutCaret"');
       }
 
       if (dartConstraint.max == null) {

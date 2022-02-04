@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import '../command.dart';
@@ -44,6 +42,8 @@ class DowngradeCommand extends PubCommand {
 
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addFlag('legacy-packages-file',
+        help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
   @override
@@ -53,16 +53,24 @@ class DowngradeCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     var dryRun = argResults['dry-run'];
+
     await entrypoint.acquireDependencies(
-      SolveType.DOWNGRADE,
+      SolveType.downgrade,
       unlock: argResults.rest,
       dryRun: dryRun,
+      analytics: analytics,
+      generateDotPackages: argResults['legacy-packages-file'],
     );
-    if (argResults['example'] && entrypoint.example != null) {
-      await entrypoint.example.acquireDependencies(SolveType.GET,
-          unlock: argResults.rest,
-          dryRun: dryRun,
-          onlyReportSuccessOrFailure: true);
+    var example = entrypoint.example;
+    if (argResults['example'] && example != null) {
+      await example.acquireDependencies(
+        SolveType.get,
+        unlock: argResults.rest,
+        dryRun: dryRun,
+        onlyReportSuccessOrFailure: true,
+        analytics: analytics,
+        generateDotPackages: argResults['legacy-packages-file'],
+      );
     }
 
     if (isOffline) {

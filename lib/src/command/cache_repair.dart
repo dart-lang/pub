@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
 import '../command.dart';
@@ -25,6 +23,8 @@ class CacheRepairCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    // Delete any eventual temp-files left in the cache.
+    cache.deleteTempDir();
     // Repair every cached source.
     final repairResults = (await Future.wait(
             cache.sources.all.map(cache.source).map((source) async {

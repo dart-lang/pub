@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -29,7 +27,10 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo', 'bar': '../bar'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+    ]).validate();
   });
 
   test("includes dev dependency's transitive dependencies", () async {
@@ -54,7 +55,10 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo', 'bar': '../bar'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+    ]).validate();
   });
 
   test("ignores transitive dependency's dev dependencies", () async {
@@ -80,6 +84,8 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+    ]).validate();
   });
 }

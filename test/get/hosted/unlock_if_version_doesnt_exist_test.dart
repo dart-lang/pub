@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -14,16 +12,23 @@ import '../../test_pub.dart';
 void main() {
   test('upgrades a locked pub server package with a nonexistent version',
       () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
     await pubGet();
-    await d.appPackagesFile({'foo': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+    ]).validate();
 
     deleteEntry(p.join(d.sandbox, cachePath));
 
-    globalPackageServer.replace((builder) => builder.serve('foo', '1.0.1'));
+    server.clearPackages();
+    server.serve('foo', '1.0.1');
+
     await pubGet();
-    await d.appPackagesFile({'foo': '1.0.1'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.1'),
+    ]).validate();
   });
 }

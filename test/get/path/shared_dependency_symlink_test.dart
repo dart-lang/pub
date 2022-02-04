@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
 
 import 'package:test/test.dart';
@@ -42,13 +40,10 @@ void main() {
 
     await pubGet();
 
-    await d.dir(appPath, [
-      d.packagesFile({
-        'myapp': '.',
-        'foo': '../foo',
-        'bar': '../bar',
-        'shared': '../shared'
-      })
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+      d.packageConfigEntry(name: 'shared', path: '../shared'),
     ]).validate();
   });
 }
