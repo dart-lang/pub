@@ -206,8 +206,8 @@ class GitSource extends CachedSource<GitDescription> {
       var path = _repoCachePath(ref, cache);
       var revision = await _firstRevision(path,
           ref.description.ref!); // TODO(sigurdm) when can ref be null here?
-      var pubspec = await _describeUncached(ref, revision, ref.description.path,
-          ref.description.urlRelativeToCurrentDir(), cache);
+      var pubspec =
+          await _describeUncached(ref, revision, ref.description.path, cache);
 
       return [
         PackageId(ref.name, pubspec.version,
@@ -225,7 +225,6 @@ class GitSource extends CachedSource<GitDescription> {
           id.toRef(),
           (id.description as GitResolvedDescription).resolvedRef,
           id.description.description.path,
-          id.description.description.urlRelativeToCurrentDir(),
           cache,
         ));
   }
@@ -236,7 +235,6 @@ class GitSource extends CachedSource<GitDescription> {
     PackageRef<GitDescription> ref,
     String revision,
     String path,
-    String url,
     SystemCache cache,
   ) async {
     await _ensureRevision(ref, revision, cache);
@@ -254,7 +252,7 @@ class GitSource extends CachedSource<GitDescription> {
           .run(['show', '$revision:$pubspecPath'], workingDir: repoPath);
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pubspecPath" in '
-          '${ref.description.urlRelativeToCurrentDir()} $revision.');
+          '${p.prettyUri(ref.description.url)} $revision.');
     }
 
     return Pubspec.parse(
@@ -667,14 +665,6 @@ class GitDescription extends Description<GitDescription> {
 
   @override
   GitSource get source => GitSource.instance;
-
-  /// If [url] is relative, it will be returned relative to current working
-  /// directory, otherwise as-is.
-  String urlRelativeToCurrentDir() {
-    return relative
-        ? p.url.relative(url, from: p.toUri(p.current).toString())
-        : url;
-  }
 
   @override
   bool operator ==(Object other) {
