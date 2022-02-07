@@ -181,7 +181,7 @@ class PathSource extends Source<PathDescription> {
           'not a file. Was "$dir".');
     }
     throw PackageNotFoundException(
-      'could not find package $name at "${description.format(containingDir: null)}"',
+      'could not find package $name at "${description.format()}"',
       innerError: FileException('$dir does not exist.', dir),
     );
   }
@@ -193,8 +193,8 @@ class PathDescription extends Description<PathDescription> {
 
   PathDescription(this.path, this.relative) : assert(!p.isRelative(path));
   @override
-  String format({required String? containingDir}) {
-    return relative ? p.relative(path, from: containingDir) : path;
+  String format() {
+    return relative ? p.relative(path) : path;
   }
 
   @override

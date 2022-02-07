@@ -323,7 +323,7 @@ class SolveReport {
     _output.write(id.version);
 
     if (id.source != _cache.defaultSource) {
-      var description = id.description.format(containingDir: null);
+      var description = id.description.format();
       _output.write(' from ${id.source} $description');
     }
   }

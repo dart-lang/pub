@@ -641,8 +641,8 @@ class GitDescription extends Description<GitDescription> {
   }
 
   @override
-  String format({required String? containingDir}) {
-    var result = '${urlRelativeToCurrentDir()} at '
+  String format() {
+    var result = '${p.prettyUri(url)} at '
         '$ref';
     if (path != '.') result += ' in $path';
     return result;
@@ -694,8 +694,8 @@ class GitResolvedDescription extends ResolvedDescription<GitDescription> {
       : super(description);
 
   @override
-  String format({required String? containingDir}) {
-    var result = '${description.urlRelativeToCurrentDir()} at '
+  String format() {
+    var result = '${p.prettyUri(description.url)} at '
         '${resolvedRef.substring(0, 6)}';
     if (description.path != '.') result += ' in ${description.path}';
     return result;

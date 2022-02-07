@@ -123,7 +123,7 @@ class SdkDescription extends Description<SdkDescription> {
 
   SdkDescription(this.sdk);
   @override
-  String format({required String? containingDir}) => sdk;
+  String format() => sdk;
 
   @override
   Object? serializeForPubspec({

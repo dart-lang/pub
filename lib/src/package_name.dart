@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
@@ -38,7 +37,7 @@ class PackageRef<T extends Description<T>> {
     if (detail.showSource ?? description is! HostedDescription) {
       buffer.write(' from ${description.source}');
       if (detail.showDescription) {
-        buffer.write(' ${description.format(containingDir: p.current)}');
+        buffer.write(' ${description.format()}');
       }
     }
 
@@ -117,7 +116,7 @@ class PackageId<T extends Description<T>> {
         (detail.showSource ?? description is! ResolvedHostedDescription)) {
       buffer.write(' from ${description.description.source}');
       if (detail.showDescription) {
-        buffer.write(' ${description.format(containingDir: null)}');
+        buffer.write(' ${description.format()}');
       }
     }
 
@@ -162,7 +161,7 @@ class PackageRange<T extends Description<T>> {
     if (!isRoot && (detail.showSource ?? description is! HostedDescription)) {
       buffer.write(' from ${description.source.name}');
       if (detail.showDescription) {
-        buffer.write(' ${description.format(containingDir: p.current)}');
+        buffer.write(' ${description.format()}');
       }
     }
     return buffer.toString();

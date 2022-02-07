@@ -942,7 +942,7 @@ class HostedDescription extends Description<HostedDescription> {
   }
 
   @override
-  String format({required String? containingDir}) => 'on $url';
+  String format() => 'on $url';
 
   @override
   Object? serializeForPubspec({

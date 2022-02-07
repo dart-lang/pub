@@ -155,7 +155,9 @@ abstract class Description<T extends Description<T>> {
       required LanguageVersion languageVersion});
 
   /// Converts `this` into a human-friendly form to show the user.
-  String format({required String? containingDir});
+  ///
+  /// Paths are always rrelative to current dir.
+  String format();
 }
 
 abstract class ResolvedDescription<T extends Description<T>> {
@@ -169,8 +171,9 @@ abstract class ResolvedDescription<T extends Description<T>> {
   Object? serializeForLockfile({required String? containingDir});
 
   /// Converts `this` into a human-friendly form to show the user.
-  String format({required String? containingDir}) =>
-      description.format(containingDir: containingDir);
+  ///
+  /// Paths are always rrelative to current dir.
+  String format() => description.format();
 }
 
 /// Metadata about a [PackageId].

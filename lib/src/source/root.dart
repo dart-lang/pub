@@ -74,7 +74,7 @@ class RootDescription extends Description<RootDescription> {
 
   RootDescription(this.package);
   @override
-  String format({required String? containingDir}) {
+  String format() {
     throw UnsupportedError('Trying to format a root package description.');
   }
 

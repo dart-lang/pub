@@ -80,7 +80,7 @@ class UnknownDescription extends Description<UnknownDescription> {
   UnknownDescription(this.description, this.source);
 
   @override
-  String format({required String? containingDir}) {
+  String format() {
     return json.encode(description);
   }
 
