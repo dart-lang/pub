@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub/src/dart.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
@@ -30,18 +31,7 @@ ${catFile('pubspec.lock')}
 ''');
 }
 
-final snapshot = () async {
-  final snapshotFilename = p.absolute(
-      p.join('.dart_tool', '_pub', 'dependency_services.dart.snapshot.dart2'));
-  final snapshotIncrementalFilename = '$snapshotFilename.incremental';
-  await precompile(
-      executablePath: p.join('bin', 'dependency_services.dart'),
-      outputPath: snapshotFilename,
-      incrementalDillPath: snapshotIncrementalFilename,
-      name: 'bin/pub.dart',
-      packageConfigPath: p.join('.dart_tool', 'package_config.json'));
-  return snapshotFilename;
-}();
+late final String snapshot;
 
 extension on GoldenTestContext {
   Future<void> runDependencyServices(List<String> args, {String? stdin}) async {
@@ -98,6 +88,20 @@ Future<void> listReportApply(
 }
 
 Future<void> main() async {
+  setUpAll(() async {
+    final tempDir = Directory.systemTemp.createTempSync();
+    snapshot = p.join(tempDir.path, 'dependency_services.dart.snapshot');
+    final r = Process.runSync(Platform.resolvedExecutable, [
+      '--snapshot=$snapshot',
+      p.join('bin', 'dependency_services.dart'),
+    ]);
+    expect(r.exitCode, 0, reason: r.stderr);
+  });
+
+  tearDownAll(() {
+    File(snapshot).parent.deleteSync(recursive: true);
+  });
+
   testWithGolden('Removing transitive', (context) async {
     (await servePackages())
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
