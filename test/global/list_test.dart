@@ -32,7 +32,7 @@ void main() {
 
     await runPub(
         args: ['global', 'list'],
-        output: 'foo 1.0.0 from Git repository "../foo.git"');
+        output: 'foo 1.0.0 from Git repository "..${p.separator}foo.git"');
   });
 
   test('lists an activated Path package', () async {
