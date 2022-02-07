@@ -25,6 +25,6 @@ void main() {
             // Specific revision number goes here.
             endsWith('Building package executables...\n'
                 'Built foo:foo.\n'
-                'Activated foo 1.0.0 from Git repository "../foo.git".')));
+                'Activated foo 1.0.0 from Git repository "..${separator}foo.git".')));
   });
 }

@@ -21,7 +21,7 @@ void main() {
         args: ['global', 'activate', '-sgit', '../foo.git'],
         output: allOf(
             startsWith('Resolving dependencies...\n'
-                '+ foo 1.0.0 from git ../foo.git at '),
+                '+ foo 1.0.0 from git ..${separator}foo.git at '),
             // Specific revision number goes here.
             endsWith('Building package executables...\n'
                 'Built foo:foo.\n'
