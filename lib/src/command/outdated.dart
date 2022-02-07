@@ -184,9 +184,9 @@ class OutdatedCommand extends PubCommand {
             await cache.getLatest(current, allowPrereleases: prereleases);
       }
       // If present as a dependency or dev_dependency we use this
-      latest ??= await cache.getLatest(rootPubspec.dependencies[name]!,
+      latest ??= await cache.getLatest(rootPubspec.dependencies[name],
           allowPrereleases: prereleases);
-      latest ??= await cache.getLatest(rootPubspec.devDependencies[name]!,
+      latest ??= await cache.getLatest(rootPubspec.devDependencies[name],
           allowPrereleases: prereleases);
       // If not overridden and present in either upgradable or resolvable we
       // use this reference to find the latest
