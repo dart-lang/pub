@@ -50,13 +50,15 @@ extension on GoldenTestContext {
       await process.stdin.flush();
       await process.stdin.close();
     }
+    final outLines = outputLines(process.stdout);
+    final errLines = outputLines(process.stderr);
     final exitCode = await process.exitCode;
 
     final pipe = stdin == null ? '' : ' echo ${protectArgument(stdin)} |';
     buffer.writeln([
       '\$$pipe dependency_services ${args.map(protectArgument).join(' ')}',
-      ...await outputLines(process.stdout),
-      ...(await outputLines(process.stderr)).map((e) => '[STDERR] $e'),
+      ...await outLines,
+      ...(await errLines).map((e) => '[STDERR] $e'),
       if (exitCode != 0) '[EXIT CODE] $exitCode',
     ].join('\n'));
 
