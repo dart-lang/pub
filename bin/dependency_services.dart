@@ -5,6 +5,8 @@
 /// Support for automated upgrades.
 ///
 /// For now this is not a finalized interface. Don't rely on this.
+library dependency_services;
+
 import 'dart:async';
 
 import 'package:args/args.dart';
