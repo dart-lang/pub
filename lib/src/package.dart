@@ -328,7 +328,8 @@ class Package {
       },
       isDir: (dir) => dirExists(resolve(dir)),
     ).map((relative) {
-      final parentSymlinkDir = _listParentDirs(relative).firstWhereOrNull(symlinkPaths.contains);
+      final parentSymlinkDir =
+          _listParentDirs(relative).firstWhereOrNull(symlinkPaths.contains);
       if (parentSymlinkDir != null) {
         final path = resolve(parentSymlinkDir);
         throw DataException(
