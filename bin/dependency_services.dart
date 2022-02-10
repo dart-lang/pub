@@ -17,7 +17,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/log.dart' as log;
 
-class DependencyServicesCommandRunner extends CommandRunner<int>
+class _DependencyServicesCommandRunner extends CommandRunner<int>
     implements PubTopLevel {
   @override
   String? get directory => argResults['directory'];
@@ -45,7 +45,7 @@ class DependencyServicesCommandRunner extends CommandRunner<int>
     return a;
   }
 
-  DependencyServicesCommandRunner()
+  _DependencyServicesCommandRunner()
       : super('dependency_services', 'Support for automatic upgrades',
             usageLineLength: lineLength) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
@@ -103,5 +103,5 @@ class DependencyServicesCommandRunner extends CommandRunner<int>
 }
 
 Future<void> main(List<String> arguments) async {
-  await flushThenExit(await DependencyServicesCommandRunner().run(arguments));
+  await flushThenExit(await _DependencyServicesCommandRunner().run(arguments));
 }
