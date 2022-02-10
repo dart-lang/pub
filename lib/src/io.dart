@@ -1086,7 +1086,7 @@ final String? dartConfigDir = () {
 /// If x is alphanumeric we leave it as is.
 ///
 /// Otherwise, wrap with single quotation, and use '\'' to insert single quote.
-String protectArgument(String x) =>
+String escapeShellArgument(String x) =>
     RegExp(r'^[a-zA-Z0-9-_=@.]+$').stringMatch(x) == null
         ? "'${x.replaceAll(r'\', '\\').replaceAll("'", r"'\''")}'"
         : x;
