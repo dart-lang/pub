@@ -151,10 +151,9 @@ class SystemCache {
 
   /// Get the latest version of [package].
   ///
-  /// Will include prereleases in the comparison if [allowPrereleases].
-  ///
-  /// If [package] is a [PackageId] with a prerelease version and there are no
-  /// later stable version we return a prerelease version if it exists.
+  /// Will consider _prereleases_ if:
+  ///  * [allowPrereleases] is true, or,
+  ///  * [package] is a [PackageId] with a prerelease version, and no later prerelease exists.
   ///
   /// Returns `null`, if unable to find the package.
   Future<PackageId?> getLatest(
