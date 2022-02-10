@@ -288,7 +288,7 @@ class SolveReport {
           // Only show newer prereleases for versions where a prerelease is
           // already chosen.
           newId.version.isPreRelease && newerUnstable) {
-        message = '(${maxAll(versions, Comparable.compare)} available)';
+        message = '(${maxAll(versions)} available)';
       }
     }
 

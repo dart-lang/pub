@@ -940,9 +940,9 @@ Future<void> runPubIntoBuffer(
   //       .map((e) => '\$ export ${e.key}=${e.value}')
   //       .join('\n'));
   // }
-  final pipe = stdin == null ? '' : ' echo ${protectArgument(stdin)} |';
+  final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
   buffer.writeln(filterUnstableLines([
-    '\$$pipe pub ${args.map(protectArgument).join(' ')}',
+    '\$$pipe pub ${args.map(escapeShellArgument).join(' ')}',
     ...await process.stdout.rest.toList(),
   ]).join('\n'));
   for (final line in filterUnstableLines(await process.stderr.rest.toList())) {

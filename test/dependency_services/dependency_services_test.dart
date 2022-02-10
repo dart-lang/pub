@@ -54,9 +54,9 @@ extension on GoldenTestContext {
     final errLines = outputLines(process.stderr);
     final exitCode = await process.exitCode;
 
-    final pipe = stdin == null ? '' : ' echo ${protectArgument(stdin)} |';
+    final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
     buffer.writeln([
-      '\$$pipe dependency_services ${args.map(protectArgument).join(' ')}',
+      '\$$pipe dependency_services ${args.map(escapeShellArgument).join(' ')}',
       ...await outLines,
       ...(await errLines).map((e) => '[STDERR] $e'),
       if (exitCode != 0) '[EXIT CODE] $exitCode',
