@@ -23,6 +23,7 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../system_cache.dart';
+import '../utils.dart';
 
 class DependencyServicesReportCommand extends PubCommand {
   @override
@@ -336,7 +337,15 @@ class DependencyServicesApplyCommand extends PubCommand {
         lockFileEditor.update(
             ['packages', targetPackage, 'version'], targetVersion.toString());
       }
+      if (targetVersion == null &&
+          lockFileEditor != null &&
+          !lockFileYaml['packages'].containsKey(targetPackage)) {
+        dataError(
+          'Trying to remove non-existing transitive dependency $targetPackage.',
+        );
+      }
     }
+
     if (pubspecEditor.edits.isNotEmpty) {
       writeTextFile(entrypoint.pubspecPath, pubspecEditor.toString());
     }

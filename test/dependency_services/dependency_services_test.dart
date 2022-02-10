@@ -33,7 +33,9 @@ ${catFile('pubspec.lock')}
 late final String snapshot;
 
 extension on GoldenTestContext {
-  Future<void> runDependencyServices(List<String> args, {String? stdin}) async {
+  /// Returns the stdout.
+  Future<String> runDependencyServices(List<String> args,
+      {String? stdin}) async {
     final buffer = StringBuffer();
     buffer.writeln('## Section ${args.join(' ')}');
     final process = await Process.start(
@@ -63,6 +65,7 @@ extension on GoldenTestContext {
     ].join('\n'));
 
     expectNextSection(buffer.toString());
+    return (await outLines).join('\n');
   }
 }
 
@@ -74,12 +77,15 @@ Future<Iterable<String>> outputLines(Stream<List<int>> stream) async {
 
 Future<void> listReportApply(
   GoldenTestContext context,
-  List<_PackageVersion> upgrades,
-) async {
+  List<_PackageVersion> upgrades, {
+  void Function(Map)? reportAssertions,
+}) async {
   manifestAndLockfile(context);
   await context.runDependencyServices(['list']);
-  await context.runDependencyServices(['report']);
-
+  final report = await context.runDependencyServices(['report']);
+  if (reportAssertions != null) {
+    reportAssertions(json.decode(report));
+  }
   final input = json.encode({
     'dependencyChanges': upgrades,
   });
@@ -121,7 +127,16 @@ Future<void> main() async {
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', null)
-    ]);
+    ], reportAssertions: (report) {
+      expect(
+        findChangeVersion(report, 'singleBreaking', 'foo'),
+        '2.2.3',
+      );
+      expect(
+        findChangeVersion(report, 'singleBreaking', 'transitive'),
+        null,
+      );
+    });
   });
 
   testWithGolden('Compatible', (context) async {
@@ -142,9 +157,13 @@ Future<void> main() async {
     await pubGet();
     server.serve('foo', '1.2.4');
     await listReportApply(context, [
-      _PackageVersion('foo', Version.parse('1.2.3')),
-      _PackageVersion('transitive', null)
-    ]);
+      _PackageVersion('foo', Version.parse('1.2.4')),
+    ], reportAssertions: (report) {
+      expect(
+        findChangeVersion(report, 'compatible', 'foo'),
+        '1.2.4',
+      );
+    });
   });
 
   testWithGolden('Adding transitive', (context) async {
@@ -165,7 +184,16 @@ Future<void> main() async {
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', Version.parse('1.0.0'))
-    ]);
+    ], reportAssertions: (report) {
+      expect(
+        findChangeVersion(report, 'singleBreaking', 'foo'),
+        '2.2.3',
+      );
+      expect(
+        findChangeVersion(report, 'singleBreaking', 'transitive'),
+        '1.0.0',
+      );
+    });
   });
 
   testWithGolden('multibreaking', (context) async {
@@ -194,8 +222,22 @@ Future<void> main() async {
       _PackageVersion('foo', Version.parse('3.0.1'),
           constraint: VersionConstraint.parse('^3.0.0')),
       _PackageVersion('bar', Version.parse('2.0.0'))
-    ]);
+    ], reportAssertions: (report) {
+      expect(
+        findChangeVersion(report, 'multiBreaking', 'foo'),
+        '3.0.1',
+      );
+      expect(
+        findChangeVersion(report, 'multiBreaking', 'bar'),
+        '2.0.0',
+      );
+    });
   });
+}
+
+dynamic findChangeVersion(dynamic json, String updateType, String name) {
+  final dep = json['dependencies'].firstWhere((p) => p['name'] == 'foo');
+  return dep[updateType].firstWhere((p) => p['name'] == name)['version'];
 }
 
 class _PackageVersion {

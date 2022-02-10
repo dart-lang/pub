@@ -23,14 +23,10 @@ class _DependencyServicesCommandRunner extends CommandRunner<int>
   String? get directory => argResults['directory'];
 
   @override
-  bool get captureStackChains {
-    return argResults['trace'] ||
-        argResults['verbose'] ||
-        argResults['verbosity'] == 'all';
-  }
+  bool get captureStackChains => argResults['verbose'];
 
   @override
-  bool get trace => argResults['trace'];
+  bool get trace => argResults['verbose'];
 
   ArgResults? _argResults;
 
@@ -48,9 +44,6 @@ class _DependencyServicesCommandRunner extends CommandRunner<int>
   _DependencyServicesCommandRunner()
       : super('dependency_services', 'Support for automatic upgrades',
             usageLineLength: lineLength) {
-    argParser.addFlag('version', negatable: false, help: 'Print pub version.');
-    argParser.addFlag('trace',
-        help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
     argParser.addOption(
