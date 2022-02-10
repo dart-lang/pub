@@ -51,22 +51,6 @@ class _DependencyServicesCommandRunner extends CommandRunner<int>
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
-    argParser
-        .addOption('verbosity', help: 'Control output verbosity.', allowed: [
-      'error',
-      'warning',
-      'normal',
-      'io',
-      'solver',
-      'all'
-    ], allowedHelp: {
-      'error': 'Show only errors.',
-      'warning': 'Show only errors and warnings.',
-      'normal': 'Show errors, warnings, and user messages.',
-      'io': 'Also show IO operations.',
-      'solver': 'Show steps during version resolution.',
-      'all': 'Show all output including internal tracing messages.'
-    });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
     argParser.addOption(
