@@ -891,7 +891,8 @@ Matcher matchesMultiple(String pattern, int times) {
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
 
-Iterable<String> _filter(List<String> input) {
+/// Removes output from pub known to be unstable.
+Iterable<String> filterUnstableLines(List<String> input) {
   return input
       // Downloading order is not deterministic, so to avoid flakiness we filter
       // out these lines.
@@ -916,12 +917,18 @@ Future<void> runPubIntoBuffer(
   StringBuffer buffer, {
   Map<String, String>? environment,
   String? workingDirectory,
+  String? stdin,
 }) async {
   final process = await startPub(
     args: args,
     environment: environment,
     workingDirectory: workingDirectory,
   );
+  if (stdin != null) {
+    process.stdin.write(stdin);
+    await process.stdin.flush();
+    await process.stdin.close();
+  }
   final exitCode = await process.exitCode;
 
   // TODO(jonasfj): Clean out temporary directory names from env vars...
@@ -933,11 +940,12 @@ Future<void> runPubIntoBuffer(
   //       .map((e) => '\$ export ${e.key}=${e.value}')
   //       .join('\n'));
   // }
-  buffer.writeln(_filter([
-    '\$ pub ${args.join(' ')}',
+  final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
+  buffer.writeln(filterUnstableLines([
+    '\$$pipe pub ${args.map(escapeShellArgument).join(' ')}',
     ...await process.stdout.rest.toList(),
   ]).join('\n'));
-  for (final line in _filter(await process.stderr.rest.toList())) {
+  for (final line in filterUnstableLines(await process.stderr.rest.toList())) {
     buffer.writeln('[STDERR] $line');
   }
   if (exitCode != 0) {

@@ -13,7 +13,6 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'authentication/token_store.dart';
-import 'command_runner.dart';
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
@@ -127,7 +126,7 @@ abstract class PubCommand extends Command<int> {
   }
 
   PubTopLevel get _pubTopLevel =>
-      _pubEmbeddableCommand ?? runner as PubCommandRunner;
+      _pubEmbeddableCommand ?? runner as PubTopLevel;
 
   PubAnalytics? get analytics => _pubEmbeddableCommand?.analytics;
 
