@@ -156,7 +156,7 @@ abstract class Description<T extends Description<T>> {
 
   /// Converts `this` into a human-friendly form to show the user.
   ///
-  /// Paths are always rrelative to current dir.
+  /// Paths are always relative to current dir.
   String format();
 }
 
