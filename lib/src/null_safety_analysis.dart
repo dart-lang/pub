@@ -9,6 +9,7 @@ import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
@@ -82,12 +83,18 @@ class NullSafetyAnalysis {
             packageId.name: {
               packageId.source.name: description.serializeForPubspec(
                   containingDir: null,
-                  languageVersion: LanguageVersion.parse('2.15')),
+                  languageVersion:
+                      LanguageVersion.firstVersionWithShorterHostedSyntax),
               'version': packageId.version.toString(),
             }
           }
         },
-        sources: _systemCache.sources));
+        sources: _systemCache.sources,
+        sdkConstraints: {
+          'dart': VersionConstraint.compatibleWith(
+            LanguageVersion.firstVersionWithShorterHostedSyntax.firstStable(),
+          )
+        }));
 
     final rootPubspec = await _systemCache.describe(packageId);
     final rootLanguageVersion = rootPubspec.languageVersion;
