@@ -148,6 +148,16 @@ abstract class Source<T extends Description<T>> {
       PackageStatus();
 }
 
+/// The information needed to get a version-listing of a named package from a
+/// [Source].
+///
+/// For a hosted package this would be the host url.
+///
+/// For a git package this would be the repo url and a ref and a path inside
+/// the repo.
+///
+/// This is the information that goes into a `pubspec.yaml` dependency together
+/// with a version constraint.
 abstract class Description<T extends Description<T>> {
   Source<T> get source;
   Object? serializeForPubspec(
@@ -160,6 +170,14 @@ abstract class Description<T extends Description<T>> {
   String format();
 }
 
+/// A resolved description is a [Description] plus whatever information you need
+/// to lock down a specific version.
+///
+/// This is currently only relevant for the [GitSource] that resolves the
+/// [Description.ref] to a specific commit id in [GitSource.doGetVersions].
+///
+/// This is the information that goes into a `pubspec.lock` file together with
+/// a version number (that is represented by a [PackageId].
 abstract class ResolvedDescription<T extends Description<T>> {
   final T description;
   ResolvedDescription(this.description);

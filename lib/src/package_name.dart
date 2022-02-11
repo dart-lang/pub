@@ -8,8 +8,13 @@ import 'package.dart';
 import 'source.dart';
 import 'source/hosted.dart';
 import 'source/root.dart';
+import 'system_cache.dart';
 
 /// A reference to a [Package], but not any particular version(s) of it.
+///
+/// It knows the [name] of a package and a [Description] that is connected
+/// with a certain [Source]. This is what you need for listing available
+/// versions of a package. See [SystemCache.getVersions].
 class PackageRef<T extends Description<T>> {
   final String name;
   final T description;
@@ -18,10 +23,6 @@ class PackageRef<T extends Description<T>> {
 
   /// Creates a reference to a package with the given [name], and
   /// [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses. A reference
-  /// can be obtained from a user-supplied description using [Source.parseRef].
   PackageRef(this.name, this.description);
 
   /// Creates a reference to the given root package.
@@ -59,17 +60,16 @@ class PackageRef<T extends Description<T>> {
 
 /// A reference to a specific version of a package.
 ///
-/// A package ID contains enough information to correctly get the package.
+/// A package ID contains enough information to correctly retrieve the package.
 ///
 /// It's possible for multiple distinct package IDs to point to different
 /// packages that have identical contents. For example, the same package may be
 /// available from multiple sources. As far as Pub is concerned, those packages
 /// are different.
 ///
-/// Note that a package ID's [description] field has a different structure than
-/// the [PackageRef.description] or [PackageRange.description] fields for some
-/// sources. For example, the `git` source adds revision information to the
-/// description to ensure that the same ID always points to the same source.
+/// Note that a package ID's [description] field is a [ResolvedDescription]
+/// while [PackageRef.description] and [PackageRange.description] are
+/// [Description]s.
 class PackageId<T extends Description<T>> {
   final String name;
   final Version version;
@@ -125,6 +125,8 @@ class PackageId<T extends Description<T>> {
 }
 
 /// A reference to a constrained range of versions of one package.
+///
+/// This is represented as a [PackageRef] and a [VersionConstraint].
 class PackageRange<T extends Description<T>> {
   final PackageRef<T> _ref;
 
