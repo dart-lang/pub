@@ -118,7 +118,7 @@ class NullSafetyAnalysis {
       result.packages.where((id) => id.name != fakeRootName),
       Package(
         rootPubspec,
-        packageId.source.getDirectory(packageId, _systemCache),
+        _systemCache.getDirectory(packageId),
       ),
     );
   }
@@ -151,7 +151,7 @@ class NullSafetyAnalysis {
         } else {
           source = dependencyId.source;
           pubspec = await _systemCache.describe(dependencyId);
-          packageDir = source.getDirectory(dependencyId, _systemCache);
+          packageDir = _systemCache.getDirectory(dependencyId);
         }
 
         if (!pubspec.languageVersion.supportsNullSafety) {

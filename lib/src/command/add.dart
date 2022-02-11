@@ -174,7 +174,6 @@ class AddCommand extends PubCommand {
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-
       _updatePubspec(solveResult.packages, updates, isDev);
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
@@ -291,7 +290,6 @@ class AddCommand extends PubCommand {
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-
   _ParseResult _parsePackage(String package, LanguageVersion languageVersion) {
     final _conflictingFlagSets = [
       ['git-url', 'git-ref', 'git-path'],

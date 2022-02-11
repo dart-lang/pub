@@ -204,7 +204,7 @@ class SystemCache {
   ///
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
-  String getDirectory(PackageId id, SystemCache cache, {String? relativeFrom}) {
+  String getDirectory(PackageId id, {String? relativeFrom}) {
     return id.source.getDirectory(id, this, relativeFrom: relativeFrom);
   }
 }

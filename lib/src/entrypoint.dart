@@ -608,8 +608,8 @@ class Entrypoint {
         // If we can't load the pubspec, the user needs to re-run "pub get".
       }
 
-      final relativePubspecPath = p.join(
-          source.getDirectory(id, cache, relativeFrom: '.'), 'pubspec.yaml');
+      final relativePubspecPath =
+          p.join(cache.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
       dataError('$relativePubspecPath has '
           'changed since the $lockFilePath file was generated, please run '
           '"$topLevelProgram pub get" again.');
@@ -637,7 +637,7 @@ class Entrypoint {
       if (source is! CachedSource) return true;
 
       // Get the directory.
-      var dir = source.getDirectory(package, cache, relativeFrom: '.');
+      var dir = cache.getDirectory(package, relativeFrom: '.');
       // See if the directory is there and looks like a package.
       return fileExists(p.join(dir, 'pubspec.yaml'));
     });
@@ -678,7 +678,7 @@ class Entrypoint {
 
       final source = lockFileId.source;
       final lockFilePackagePath = root.path(
-        source.getDirectory(lockFileId, cache, relativeFrom: root.dir),
+        cache.getDirectory(lockFileId, relativeFrom: root.dir),
       );
 
       // Make sure that the packagePath agrees with the lock file about the
@@ -828,7 +828,7 @@ class Entrypoint {
         );
         if (pkg.languageVersion != languageVersion) {
           final relativePubspecPath = p.join(
-            source.getDirectory(id, cache, relativeFrom: '.'),
+            cache.getDirectory(id, relativeFrom: '.'),
             'pubspec.yaml',
           );
           dataError('$relativePubspecPath has '
