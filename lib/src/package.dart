@@ -247,7 +247,18 @@ class Package {
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
-        var contents = Directory(resolve(dir)).listSync();
+        final resolvedDir = resolve(dir);
+        if (linkExists(resolvedDir)) {
+          try {
+            Link(resolvedDir).resolveSymbolicLinksSync();
+          } on FileSystemException catch (_) {
+            final target = Link(resolvedDir).targetSync();
+            throw DataException(
+                '''Pub does not support publishing packages with non-resolving symlink: `$path` => `$target`.''');
+          }
+        }
+
+        var contents = Directory(resolvedDir).listSync();
         if (!recursive) {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
