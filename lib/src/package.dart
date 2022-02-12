@@ -244,7 +244,7 @@ class Package {
           }
         }
 
-        var contents = Directory(resolvedDir).listSync(recursive: true);
+        var contents = Directory(resolvedDir).listSync(followLinks: false);
         if (!recursive) {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
