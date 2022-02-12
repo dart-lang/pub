@@ -246,7 +246,13 @@ class Package {
 
         var contents = Directory(resolvedDir).listSync(followLinks: false);
         if (!recursive) {
-          contents = contents.where((entity) => entity is! Directory).toList();
+          contents = contents
+              .where(
+                (entity) =>
+                    entity is! Directory &&
+                    !(linkExists(entity.path) && dirExists(entity.path)),
+              )
+              .toList();
         }
         return contents.map((entity) {
           final relative = p.relative(entity.path, from: root);
