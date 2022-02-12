@@ -233,7 +233,7 @@ class Package {
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
-        var contents = Directory(resolve(dir)).listSync(recursive: true);
+        var contents = Directory(resolve(dir)).listSync();
         if (!recursive) {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
