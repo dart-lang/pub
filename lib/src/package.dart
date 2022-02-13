@@ -243,8 +243,17 @@ class Package {
                 '''Pub does not support publishing packages with non-resolving symlink: `$path` => `$target`.''');
           }
         }
-
-        var contents = Directory(resolvedDir).listSync(followLinks: false);
+        List<FileSystemEntity> contents;
+        try {
+          contents = Directory(resolvedDir).listSync(followLinks: false);
+        } catch (e) {
+          log.warning('dir: $dir');
+          log.warning('resolvedDir: $resolvedDir');
+          log.warning('linkExists(resolvedDir): ${linkExists(resolvedDir)}');
+          log.warning(
+              'Link(resolvedDir).resolveSymbolicLinksSync(): ${Link(resolvedDir).resolveSymbolicLinksSync()}');
+          rethrow;
+        }
         if (!recursive) {
           contents = contents
               .where(
