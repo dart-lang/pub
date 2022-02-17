@@ -91,8 +91,8 @@ This aims to increase robustness against intermittent network issues, while not
 overloading servers that are partially failing.
 
 Clients are strongly encouraged to employ exponential backoff starting at 200ms,
-400ms, etc. stopping after 5-7 retries. Excessive can have negative impact on
-servers and network performance.
+400ms, etc. stopping after 5-7 retries. Excessive retries can have a negative impact
+on servers and network performance.
 
 
 ## Rejecting Requests
