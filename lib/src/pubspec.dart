@@ -729,20 +729,6 @@ class PubspecOverrides with _PubspecParsingMixin {
         location: pubspecOverridesUri);
   }
 
-  PubspecOverrides({
-    String? packageName,
-    required LanguageVersion languageVersion,
-    Iterable<PackageRange>? dependencyOverrides,
-    Map? fields,
-    SourceRegistry? sources,
-  })  : _packageName = packageName,
-        _languageVersion = languageVersion,
-        _dependencyOverrides = dependencyOverrides == null
-            ? null
-            : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
-        _fields = fields == null ? YamlMap() : YamlMap.wrap(fields),
-        _sources = sources;
-
   /// Returns a [PubspecOverrides] object for an already-parsed map representing
   /// its contents.
   ///
