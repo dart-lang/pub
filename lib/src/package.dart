@@ -66,7 +66,7 @@ class Package {
   ///
   /// If this package has been loaded without overrides or
   /// `pubspec_overrides.yaml` does not exist, this will be `null`.
-  late final PubspecOverrides? pubspecOverrides;
+  late final PubspecOverrides? _pubspecOverrides;
 
   /// The immediate dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get dependencies => pubspec.dependencies;
@@ -77,7 +77,7 @@ class Package {
   /// The dependency overrides this package specifies in its pubspec or pubspec
   /// overrides.
   Map<String, PackageRange> get dependencyOverrides =>
-      pubspecOverrides?.dependencyOverrides ?? pubspec.dependencyOverrides;
+      _pubspecOverrides?.dependencyOverrides ?? pubspec.dependencyOverrides;
 
   /// All immediate dependencies this package specifies.
   ///
@@ -153,16 +153,16 @@ class Package {
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
   ///
-  /// Only if [withPubspecOverrides] is `true`, will [pubspecOverrides] be
-  /// loaded from `pubspec_overrides.yaml`.
+  /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
+  /// `true`.
   Package.load(String? name, String this._dir, SourceRegistry sources,
       {bool withPubspecOverrides = false})
       : pubspec = Pubspec.load(_dir, sources, expectedName: name) {
     if (withPubspecOverrides && fileExists(path('pubspec_overrides.yaml'))) {
-      pubspecOverrides = PubspecOverrides.load(
+      _pubspecOverrides = PubspecOverrides.load(
           _dir!, sources, pubspec.name, pubspec.languageVersion);
     } else {
-      pubspecOverrides = null;
+      _pubspecOverrides = null;
     }
   }
 
