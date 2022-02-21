@@ -101,7 +101,7 @@ abstract class Validator {
         'Make sure your SDK constraint excludes old versions:\n'
         '\n'
         'environment:\n'
-        '  sdk: \"$newSdkConstraint\"');
+        '  sdk: "$newSdkConstraint"');
   }
 
   /// Returns whether [version1] and [version2] are pre-releases of the same version.

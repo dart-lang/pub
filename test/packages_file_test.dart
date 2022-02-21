@@ -11,21 +11,20 @@ import 'test_pub.dart';
 
 void main() {
   forBothPubGetAndUpgrade((command) {
-    test('.packages file is created', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])]);
-        builder.serve('bar', '3.2.1', contents: [d.dir('lib', [])]);
-        builder.serve('baz', '2.2.2',
+    test('.packages file is created with flag', () async {
+      await servePackages()
+        ..serve('foo', '1.2.3',
+            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
+        ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
+        ..serve('baz', '2.2.2',
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
-      });
 
       await d.dir(appPath, [
         d.appPubspec({'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
-      await pubCommand(command);
+      await pubCommand(command, args: ['--legacy-packages-file']);
 
       await d.dir(appPath, [
         d.packagesFile(
@@ -33,14 +32,13 @@ void main() {
       ]).validate();
     });
 
-    test('.packages file is overwritten', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])]);
-        builder.serve('bar', '3.2.1', contents: [d.dir('lib', [])]);
-        builder.serve('baz', '2.2.2',
+    test('.packages file is overwritten with flag', () async {
+      await servePackages()
+        ..serve('foo', '1.2.3',
+            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
+        ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
+        ..serve('baz', '2.2.2',
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
-      });
 
       await d.dir(appPath, [
         d.appPubspec({'foo': '1.2.3'}),
@@ -53,7 +51,7 @@ void main() {
       await oldFile.create();
       await oldFile.validate(); // Sanity-check that file was created correctly.
 
-      await pubCommand(command);
+      await pubCommand(command, args: ['--legacy-packages-file']);
 
       await d.dir(appPath, [
         d.packagesFile(
@@ -61,27 +59,32 @@ void main() {
       ]).validate();
     });
 
-    test('.packages file is not created if pub command fails', () async {
+    test('.packages file is not created if pub command fails with flag',
+        () async {
       await d.dir(appPath, [
         d.appPubspec({'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
       await pubCommand(command,
-          args: ['--offline'], error: equalsIgnoringWhitespace("""
+          args: ['--offline', '--legacy-packages-file'],
+          error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
-          """), exitCode: exit_codes.UNAVAILABLE);
+
+            Try again without --offline!
+          """),
+          exitCode: exit_codes.UNAVAILABLE);
 
       await d.dir(appPath, [d.nothing('.packages')]).validate();
     });
 
-    test('.packages file has relative path to path dependency', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3',
-            deps: {'baz': 'any'}, contents: [d.dir('lib', [])]);
-        builder.serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
-      });
+    test('.packages file has relative path to path dependency with flag',
+        () async {
+      await servePackages()
+        ..serve('foo', '1.2.3',
+            deps: {'baz': 'any'}, contents: [d.dir('lib', [])])
+        ..serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
 
       await d.dir('local_baz', [
         d.libDir('baz', 'baz 3.2.1'),
@@ -101,7 +104,7 @@ void main() {
         d.dir('lib')
       ]).create();
 
-      await pubCommand(command);
+      await pubCommand(command, args: ['--legacy-packages-file']);
 
       await d.dir(appPath, [
         d.packagesFile({'myapp': '.', 'baz': '../local_baz', 'foo': '1.2.3'}),

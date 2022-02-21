@@ -17,7 +17,7 @@ Changed 1 dependency in myapp!
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 2
-$ pub -C myapp/example get --directory=myapp bar
+$ pub -C 'myapp/example' get --directory=myapp bar
 Resolving dependencies in myapp...
 Got dependencies in myapp!
 
@@ -40,7 +40,7 @@ Got dependencies in myapp!
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 5
-$ pub get bar -C myapp/example
+$ pub get bar -C 'myapp/example'
 Resolving dependencies in myapp/example...
 + foo 1.0.0
 + test_pkg 1.0.0 from path myapp
@@ -49,7 +49,7 @@ Changed 2 dependencies in myapp/example!
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 6
-$ pub get bar -C myapp/example2
+$ pub get bar -C 'myapp/example2'
 Resolving dependencies in myapp/example2...
 [STDERR] Error on line 1, column 9 of myapp/pubspec.yaml: "name" field doesn't match expected name "myapp".
 [STDERR]   ╷
@@ -61,7 +61,7 @@ Resolving dependencies in myapp/example2...
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 7
-$ pub get bar -C myapp/broken_dir
+$ pub get bar -C 'myapp/broken_dir'
 [STDERR] Could not find a file named "pubspec.yaml" in "$SANDBOX/myapp/broken_dir".
 [EXIT CODE] 66
 
@@ -84,7 +84,7 @@ No dependencies changed in myapp.
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 10
-$ pub run -C myapp bin/app.dart
+$ pub run -C myapp 'bin/app.dart'
 Building package executable...
 Built test_pkg:app.
 Hi

@@ -16,14 +16,14 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer!.url, 'env': 'TOKEN'},
+        {'url': globalServer.url, 'env': 'TOKEN'},
       ]
     }).create();
-    var pub = await startPublish(globalPackageServer!,
+    var pub = await startPublish(globalServer,
         authMethod: 'token', environment: {'TOKEN': 'access token'});
     await confirmPublish(pub);
 
-    handleUploadForm(globalPackageServer!);
+    handleUploadForm(globalServer);
 
     await pub.shouldExit(1);
   });
@@ -33,13 +33,13 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer!.url, 'token': 'access token'},
+        {'url': globalServer.url, 'token': 'access token'},
       ]
     }).create();
-    var pub = await startPublish(globalPackageServer!, authMethod: 'token');
+    var pub = await startPublish(globalServer, authMethod: 'token');
     await confirmPublish(pub);
 
-    handleUploadForm(globalPackageServer!);
+    handleUploadForm(globalServer);
 
     await pub.shouldExit(1);
   });

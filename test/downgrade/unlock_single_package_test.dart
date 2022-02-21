@@ -9,51 +9,60 @@ import '../test_pub.dart';
 
 void main() {
   test('can unlock a single package only in downgrade', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '2.1.0', deps: {'bar': '>1.0.0'});
-      builder.serve('bar', '2.1.0');
-    });
+    final server = await servePackages();
+    server.serve('foo', '2.1.0', deps: {'bar': '>1.0.0'});
+    server.serve('bar', '2.1.0');
 
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
 
     await pubGet();
-    await d.appPackagesFile({'foo': '2.1.0', 'bar': '2.1.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '2.1.0'),
+      d.packageConfigEntry(name: 'bar', version: '2.1.0'),
+    ]).validate();
 
-    globalPackageServer!.add((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('bar', '1.0.0');
-    });
-
-    await pubDowngrade(args: ['bar']);
-    await d.appPackagesFile({'foo': '2.1.0', 'bar': '2.1.0'}).validate();
-
-    globalPackageServer!.add((builder) {
-      builder.serve('foo', '2.0.0', deps: {'bar': 'any'});
-      builder.serve('bar', '2.0.0');
-    });
+    server.serve('foo', '1.0.0', deps: {'bar': 'any'});
+    server.serve('bar', '1.0.0');
 
     await pubDowngrade(args: ['bar']);
-    await d.appPackagesFile({'foo': '2.1.0', 'bar': '2.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '2.1.0'),
+      d.packageConfigEntry(name: 'bar', version: '2.1.0'),
+    ]).validate();
+
+    server.serve('foo', '2.0.0', deps: {'bar': 'any'});
+    server.serve('bar', '2.0.0');
+
+    await pubDowngrade(args: ['bar']);
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '2.1.0'),
+      d.packageConfigEntry(name: 'bar', version: '2.0.0'),
+    ]).validate();
 
     await pubDowngrade();
-    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+    ]).validate();
   });
 
   test('will not downgrade below constraint #2629', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '2.1.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '2.1.0');
 
     await d.appDir({'foo': '^2.0.0'}).create();
 
     await pubGet();
-
-    await d.appPackagesFile({'foo': '2.1.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '2.1.0'),
+    ]).validate();
 
     await pubDowngrade(args: ['foo']);
 
-    await d.appPackagesFile({'foo': '2.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '2.0.0'),
+    ]).validate();
   });
 }

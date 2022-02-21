@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
 import 'io.dart';
@@ -20,6 +21,7 @@ import 'source/path.dart';
 import 'source/sdk.dart';
 import 'source/unknown.dart';
 import 'source_registry.dart';
+import 'utils.dart';
 
 /// The system-wide cache of downloaded packages.
 ///
@@ -145,5 +147,44 @@ class SystemCache {
   void deleteTempDir() {
     log.fine('Clean up system cache temp directory $tempDir.');
     if (dirExists(tempDir)) deleteEntry(tempDir);
+  }
+
+  /// Get the latest version of [package].
+  ///
+  /// Will consider _prereleases_ if:
+  ///  * [allowPrereleases] is true, or,
+  ///  * [package] is a [PackageId] with a prerelease version, and no later prerelease exists.
+  ///
+  /// Returns `null`, if unable to find the package.
+  Future<PackageId?> getLatest(
+    PackageName? package, {
+    bool allowPrereleases = false,
+  }) async {
+    if (package == null) {
+      return null;
+    }
+    final ref = package.toRef();
+    // TODO: Pass some maxAge to getVersions
+    final available = await source(ref.source).getVersions(ref);
+    if (available.isEmpty) {
+      return null;
+    }
+
+    final latest = maxAll(
+      available.map((id) => id.version),
+      allowPrereleases ? Comparable.compare : Version.prioritize,
+    );
+
+    if (package is PackageId &&
+        package.version.isPreRelease &&
+        package.version > latest &&
+        !allowPrereleases) {
+      return getLatest(package, allowPrereleases: true);
+    }
+
+    // There should be exactly one entry in [available] matching [latest]
+    assert(available.where((id) => id.version == latest).length == 1);
+
+    return available.firstWhere((id) => id.version == latest);
   }
 }

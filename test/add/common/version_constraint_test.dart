@@ -10,86 +10,96 @@ import '../../test_pub.dart';
 
 void main() {
   test('allows empty version constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '0.2.3');
-      builder.serve('foo', '1.0.1');
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '2.0.0-dev');
-      builder.serve('foo', '1.3.4-dev');
-    });
+    await servePackages()
+      ..serve('foo', '0.2.3')
+      ..serve('foo', '1.0.1')
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '2.0.0-dev')
+      ..serve('foo', '1.3.4-dev');
 
     await d.appDir({}).create();
 
     await pubAdd(args: ['foo']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': '^1.2.3'}).validate();
   });
 
   test('allows specific version constraint', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({}).create();
 
     await pubAdd(args: ['foo:1.2.3']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': '1.2.3'}).validate();
   });
 
   test('allows specific pre-release version constraint', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3-dev'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3-dev');
 
     await d.appDir({}).create();
 
     await pubAdd(args: ['foo:1.2.3-dev']);
 
     await d.cacheDir({'foo': '1.2.3-dev'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3-dev'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3-dev'),
+    ]).validate();
     await d.appDir({'foo': '1.2.3-dev'}).validate();
   });
 
   test('allows the "any" version constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '0.2.3');
-      builder.serve('foo', '1.0.1');
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '2.0.0-dev');
-      builder.serve('foo', '1.3.4-dev');
-    });
+    await servePackages()
+      ..serve('foo', '0.2.3')
+      ..serve('foo', '1.0.1')
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '2.0.0-dev')
+      ..serve('foo', '1.3.4-dev');
 
     await d.appDir({}).create();
 
     await pubAdd(args: ['foo:any']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': 'any'}).validate();
   });
 
   test('allows version constraint range', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({}).create();
 
     await pubAdd(args: ['foo:>1.2.0 <2.0.0']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({'foo': '>1.2.0 <2.0.0'}).validate();
   });
 
   test(
       'empty constraint allows it to choose the latest version not in conflict',
       () async {
-    await servePackages((builder) {
-      builder.serve('foo', '0.1.0');
-      builder.serve('foo', '1.2.3', deps: {'bar': '2.0.4'});
-      builder.serve('bar', '2.0.3');
-      builder.serve('bar', '2.0.4');
-    });
+    await servePackages()
+      ..serve('foo', '0.1.0')
+      ..serve('foo', '1.2.3', deps: {'bar': '2.0.4'})
+      ..serve('bar', '2.0.3')
+      ..serve('bar', '2.0.4');
 
     await d.appDir({'bar': '2.0.3'}).create();
 
@@ -98,12 +108,16 @@ void main() {
     await d.appDir({'foo': '^0.1.0', 'bar': '2.0.3'}).validate();
 
     await d.cacheDir({'foo': '0.1.0', 'bar': '2.0.3'}).validate();
-    await d.appPackagesFile({'foo': '0.1.0', 'bar': '2.0.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '0.1.0'),
+      d.packageConfigEntry(name: 'bar', version: '2.0.3'),
+    ]).validate();
   });
 
   group('does not update pubspec if no available version found', () {
     test('simple', () async {
-      await servePackages((builder) => builder.serve('foo', '1.0.3'));
+      final server = await servePackages();
+      server.serve('foo', '1.0.3');
 
       await d.appDir({}).create();
 
@@ -124,11 +138,10 @@ void main() {
     });
 
     test('transitive', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3', deps: {'bar': '2.0.4'});
-        builder.serve('bar', '2.0.3');
-        builder.serve('bar', '2.0.4');
-      });
+      await servePackages()
+        ..serve('foo', '1.2.3', deps: {'bar': '2.0.4'})
+        ..serve('bar', '2.0.3')
+        ..serve('bar', '2.0.4');
 
       await d.appDir({'bar': '2.0.3'}).create();
 

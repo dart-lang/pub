@@ -25,7 +25,6 @@
 /// [Ignore.listFiles].
 ///
 /// [1]: https://git-scm.com/docs/gitignore
-
 import 'package:meta/meta.dart';
 
 /// A set of ignore rules representing a single ignore file.
@@ -148,7 +147,8 @@ class Ignore {
         path.endsWith('/') ? path.substring(0, path.length - 1) : path;
     return listFiles(
       beneath: pathWithoutSlash,
-      includeDirs: true, // because we are listing below pathWithoutSlash
+      includeDirs: true,
+      // because we are listing below pathWithoutSlash
       listDir: (dir) {
         // List the next part of path:
         if (dir == pathWithoutSlash) return [];
@@ -285,8 +285,10 @@ class Ignore {
       }
       if (currentIsDir) {
         final ignore = ignoreForDir(normalizedCurrent);
-        ignoreStack
-            .add(ignore == null ? null : _IgnorePrefixPair(ignore, current));
+        ignoreStack.add(ignore == null
+            ? null
+            : _IgnorePrefixPair(
+                ignore, current == '/' ? current : '$current/'));
         // Put all entities in current on the stack to be processed.
         toVisit.add(listDir(normalizedCurrent).map((x) => '/$x').toList());
         if (includeDirs) {
@@ -309,13 +311,16 @@ class _IgnoreParseResult {
 
   // An invalid pattern is also considered empty.
   bool get empty => rule == null;
+
   bool get valid => exception == null;
 
   // For invalid patterns this contains a description of the problem.
   final FormatException? exception;
 
   _IgnoreParseResult(this.pattern, this.rule) : exception = null;
+
   _IgnoreParseResult.invalid(this.pattern, this.exception) : rule = null;
+
   _IgnoreParseResult.empty(this.pattern)
       : rule = null,
         exception = null;
@@ -464,6 +469,9 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         } else {
           expr += '.*';
         }
+      } else if (peekChar() == '/' || peekChar() == null) {
+        // /a/* should not match '/a/'
+        expr += '[^/]+';
       } else {
         // Handle a single '*'
         expr += '[^/]*';
@@ -520,7 +528,6 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
     expr = '$expr/\$';
   } else {
     expr = '$expr/?\$';
-    // expr = '$expr\$';
   }
   try {
     return _IgnoreParseResult(
@@ -538,7 +545,9 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
 class _IgnorePrefixPair {
   final Ignore ignore;
   final String prefix;
+
   _IgnorePrefixPair(this.ignore, this.prefix);
+
   @override
   String toString() {
     return '{${ignore._rules.map((r) => r.original)} $prefix}';
