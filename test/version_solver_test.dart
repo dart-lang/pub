@@ -1928,10 +1928,9 @@ void override() {
   });
 
   test('overrides in pubspec_overrides.yaml', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1947,11 +1946,10 @@ void override() {
   });
 
   test('pubspec_overrides.yaml takes precedence over pubspec.yaml', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '2.0.0');
-      builder.serve('a', '3.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
+      ..serve('a', '3.0.0');
 
     await d.dir(appPath, [
       d.pubspec({

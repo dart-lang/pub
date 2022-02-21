@@ -12,10 +12,9 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('pubspec overrides', () async {
-      await servePackages((builder) {
-        builder.serve('lib', '1.0.0');
-        builder.serve('lib', '2.0.0');
-      });
+      await servePackages()
+        ..serve('lib', '1.0.0')
+        ..serve('lib', '2.0.0');
 
       await d.dir(appPath, [
         d.appPubspec({'lib': '1.0.0'}),
