@@ -118,11 +118,25 @@ class DependencyServicesReportCommand extends PubCommand {
             'name': p.name,
             'version': p.version.toString(),
             'kind': _kindString(pubspec, p.name),
-            'constraint': originalConstraint == null
+            'constraintBumped': originalConstraint == null
                 ? null
                 : upgradeType == UpgradeType.compatible
                     ? originalConstraint.toString()
                     : VersionConstraint.compatibleWith(p.version).toString(),
+            'constraintWidened': originalConstraint == null
+                ? null
+                : upgradeType == UpgradeType.compatible
+                    ? originalConstraint.toString()
+                    : _widenConstraint(originalConstraint, p.version)
+                        .toString(),
+            'constraintBumpedIfNeeded': originalConstraint == null
+                ? null
+                : upgradeType == UpgradeType.compatible
+                    ? originalConstraint.toString()
+                    : originalConstraint.allows(p.version)
+                        ? originalConstraint.toString()
+                        : VersionConstraint.compatibleWith(p.version)
+                            .toString(),
             'previousVersion': currentPackages[p.name]?.version.toString(),
             'previousConstraint': originalConstraint?.toString(),
           };
@@ -135,7 +149,9 @@ class DependencyServicesReportCommand extends PubCommand {
               'version': null,
               'kind':
                   'transitive', // Only transitive constraints can be removed.
-              'constraint': null,
+              'constraintBumped': null,
+              'constraintWidened': null,
+              'constraintBumpedIfNeeded': null,
               'previousVersion':
                   currentPackages[oldPackageName]?.version.toString(),
               'previousConstraint': null,
@@ -378,4 +394,31 @@ Map<String, PackageRange>? dependencySetOfPackage(
       : pubspec.devDependencies.containsKey(package.name)
           ? pubspec.devDependencies
           : null;
+}
+
+VersionConstraint _widenConstraint(
+    VersionConstraint original, Version newVersion) {
+  if (original.allows(newVersion)) return original;
+  if (original is VersionRange) {
+    final min = original.min;
+    final max = original.max;
+    if (max != null && newVersion >= max) {
+      return VersionRange(
+        min: min,
+        includeMin: original.includeMin,
+        max: newVersion.nextBreaking.firstPreRelease,
+      );
+    }
+    if (min != null && newVersion <= min) {
+      return VersionRange(
+          min: newVersion,
+          includeMin: true,
+          max: max,
+          includeMax: original.includeMax);
+    }
+  }
+
+  if (original.isEmpty) return newVersion;
+  throw ArgumentError.value(
+      original, 'original', 'Must be a Version range or empty');
 }
