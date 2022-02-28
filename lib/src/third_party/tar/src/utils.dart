@@ -237,9 +237,9 @@ Stream<List<int>> zeroes(int length) async* {
   }
 }
 
-/// An optimized reader reading 512-byte blocks from an [input] stream.
+/// An optimized reader reading 512-byte blocks from an input stream.
 class BlockReader {
-  final Stream<List<int>> input;
+  final Stream<List<int>> _input;
   StreamSubscription<List<int>>? _subscription;
   bool _isClosed = false;
 
@@ -280,7 +280,7 @@ class BlockReader {
   /// starting at this offset.
   int _offsetInTrailingData = 0;
 
-  BlockReader(this.input);
+  BlockReader(this._input);
 
   /// Emits full blocks.
   ///
@@ -403,7 +403,7 @@ class BlockReader {
 
     final sub = _subscription;
     if (sub == null) {
-      _subscription = input.listen(_onData,
+      _subscription = _input.listen(_onData,
           onError: _onError, onDone: _onDone, cancelOnError: true);
     } else {
       sub.resume();
