@@ -144,18 +144,22 @@ Future<void> main() async {
       ..serve('foo', '1.2.3')
       ..serve('foo', '2.2.3')
       ..serve('bar', '1.2.3')
-      ..serve('bar', '2.2.3');
+      ..serve('bar', '2.2.3')
+      ..serve('boo', '1.2.3');
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
         'dependencies': {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
+          'boo': '^1.0.0',
         },
       })
     ]).create();
     await pubGet();
     server.serve('foo', '1.2.4');
+    server.serve('boo', '1.2.4');
+
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('1.2.4')),
     ], reportAssertions: (report) {

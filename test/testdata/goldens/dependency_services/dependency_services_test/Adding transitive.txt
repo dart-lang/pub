@@ -48,7 +48,9 @@ $ dependency_services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": "^2.2.3",
+          "constraintBumped": "^2.2.3",
+          "constraintWidened": ">=1.0.0 <3.0.0",
+          "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
           "previousConstraint": "^1.0.0"
         },
@@ -56,7 +58,9 @@ $ dependency_services report
           "name": "transitive",
           "version": "1.0.0",
           "kind": "transitive",
-          "constraint": null,
+          "constraintBumped": null,
+          "constraintWidened": null,
+          "constraintBumpedIfNeeded": null,
           "previousVersion": null,
           "previousConstraint": null
         }
@@ -66,7 +70,9 @@ $ dependency_services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
-          "constraint": "^2.2.3",
+          "constraintBumped": "^2.2.3",
+          "constraintWidened": ">=1.0.0 <3.0.0",
+          "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
           "previousConstraint": "^1.0.0"
         },
@@ -74,7 +80,9 @@ $ dependency_services report
           "name": "transitive",
           "version": "1.0.0",
           "kind": "transitive",
-          "constraint": null,
+          "constraintBumped": null,
+          "constraintWidened": null,
+          "constraintBumpedIfNeeded": null,
           "previousVersion": null,
           "previousConstraint": null
         }
