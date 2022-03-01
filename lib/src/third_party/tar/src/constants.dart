@@ -216,13 +216,6 @@ const c_ISGID = 1024;
 /// Sticky bit
 const c_ISVTX = 512;
 
-/// **********************
-///  Convenience constants
-/// **********************
-/// 64-bit integer max and min values
-const int64MaxValue = 9223372036854775807;
-const int64MinValue = -9223372036854775808;
-
 /// Constants to determine file modes.
 const modeType = 2401763328;
 const modeSymLink = 134217728;
