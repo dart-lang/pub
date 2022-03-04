@@ -167,10 +167,6 @@ class LishCommand extends PubCommand {
         if (runningFromTest &&
             Platform.environment.containsKey('_PUB_TEST_DEFAULT_HOSTED_URL'))
           Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'],
-        /*if (runningFromTest &&
-            Platform.environment.containsKey('PUB_HOSTED_URL') &&
-            Platform.environment['_PUB_TEST_AUTH_METHOD'] == 'oauth2')
-          Platform.environment['PUB_HOSTED_URL'],*/
       };
 
       final isOfficalServer = officialPubServers.contains(server.toString());
