@@ -165,13 +165,17 @@ class LishCommand extends PubCommand {
         // explicitly have to define mock servers as official server to test
         // publish command with oauth2 credentials.
         if (runningFromTest &&
-            Platform.environment.containsKey('PUB_HOSTED_URL') &&
-            Platform.environment['_PUB_TEST_AUTH_METHOD'] == 'oauth2')
-          Platform.environment['PUB_HOSTED_URL'],
+            Platform.environment.containsKey('_PUB_TEST_DEFAULT_HOSTED_URL'))
+          Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'],
       };
 
-      if (officialPubServers.contains(server.toString())) {
-        // Using OAuth2 authentication client for the official pub servers
+      final isOfficalServer = officialPubServers.contains(server.toString());
+      if (isOfficalServer && !cache.tokenStore.hasCredential(server)) {
+        // Using OAuth2 authentication client for the official pub servers, when
+        // we don't have an explicit token from [TokenStore] to use instead.
+        //
+        // This allows us to use `dart pub token add` to inject a token for use
+        // with the official servers.
         await oauth2.withClient(cache, (client) {
           return _publishUsingClient(packageBytes, client);
         });
