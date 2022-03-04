@@ -222,9 +222,11 @@ class Package {
   ///
   /// For each directory a .pubignore takes precedence over a .gitignore.
   ///
-  /// Note that the returned paths will be always be below [dir], and are thus
-  /// relative to current working directory. To convert them to paths relative
-  /// to the package root, use [p.relative].
+  /// Note that the returned paths will be always be below [dir], and will
+  /// always start with [dir] (thus alway be relative to current working
+  /// directory or absolute id [dir] is absolute.
+  ///
+  /// To convert them to paths relative to the package root, use [p.relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
     // An in-memory package has no files.
     if (isInMemory) return [];
