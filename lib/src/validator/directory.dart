@@ -30,7 +30,7 @@ class DirectoryValidator extends Validator {
     for (final file in entrypoint.root.listFiles()) {
       // Find the topmost directory name of [file].
       final dir = path.join(entrypoint.root.dir,
-          path.split(path.relative(file, from: entrypoint.root.dir))[0]);
+          path.split(path.relative(file, from: entrypoint.root.dir)).first);
       if (!visited.add(dir)) continue;
       if (!dirExists(dir)) continue;
 
