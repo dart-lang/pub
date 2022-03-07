@@ -143,7 +143,7 @@ bool _tryGitCommand(String command) {
       // We just warn here, as some features might work with older versions of
       // git.
       log.warning('''
-Pub need at least git version 2.14 for all features to work.
+Pub needs at least git version 2.14 for all features to work.
 You seem to have ${output.substring('git '.length)}.
 ''');
     }
