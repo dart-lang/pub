@@ -6,6 +6,7 @@
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
 import 'io.dart';
@@ -121,13 +122,32 @@ String? repoRoot(String dir) {
   return null;
 }
 
+final _minSupportedGitVersion = Version(2, 14, 0);
+
 /// Checks whether [command] is the Git command for this computer.
 bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
     var result = runProcessSync(command, ['--version']);
-    var regexp = RegExp('^git version');
-    return result.stdout.length == 1 && regexp.hasMatch(result.stdout.single);
+
+    if (result.stdout.length != 1) return false;
+    final output = result.stdout.single;
+    final match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(output);
+
+    if (match == null) return false;
+    // Git seems to use many parts in the version number. We just check the
+    // first two.
+    final major = int.parse(match[1]!);
+    final minor = int.parse(match[2]!);
+    if (Version(major, minor, 0) < _minSupportedGitVersion) {
+      // We just warn here, as some features might work with older versions of
+      // git.
+      log.warning('''
+Pub need at least git version 2.14 for all features to work.
+You seem to have ${output.substring('git '.length)}.
+''');
+    }
+    return true;
   } on RunProcessException catch (err) {
     // If the process failed, they probably don't have it.
     log.error('Git command is not "$command": $err');
