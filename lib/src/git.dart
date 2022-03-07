@@ -122,6 +122,8 @@ String? repoRoot(String dir) {
   return null;
 }
 
+/// '--recourse-submodules' was introduced in Git 2.14
+/// (https://git-scm.com/book/en/v2/Git-Tools-Submodules).
 final _minSupportedGitVersion = Version(2, 14, 0);
 
 /// Checks whether [command] is the Git command for this computer.
