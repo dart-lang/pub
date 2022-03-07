@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import 'command_runner.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
@@ -145,8 +146,8 @@ bool _tryGitCommand(String command) {
       // We just warn here, as some features might work with older versions of
       // git.
       log.warning('''
-Pub needs at least git version 2.14 for all features to work.
-You seem to have ${output.substring('git '.length)}.
+You have a very old version of git (version ${output.substring('git version '.length)}),
+for $topLevelProgram it is recommended to use git version 2.14 or newer.
 ''');
     }
     return true;

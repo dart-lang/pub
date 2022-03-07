@@ -88,7 +88,8 @@ if "%1"=="--version" (
 
     await pubGet(
       environment: extendedPathEnv(),
-      warning: contains('You seem to have version 2.13.1.616'),
+      warning:
+          contains('You have a very old version of git (version 2.13.1.616)'),
       exitCode: 0,
     );
   });
