@@ -56,7 +56,7 @@ void main() {
       });
     });
 
-    expect(pub.stdout, emits('Good job!'));
+    expect(pub.stdout, emitsThrough('Good job!'));
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 
@@ -75,7 +75,7 @@ void main() {
           headers: {'content-type': 'application/json'});
     });
 
-    expect(pub.stdout, emits('Good job!'));
+    expect(pub.stdout, emitsThrough('Good job!'));
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 
@@ -94,7 +94,7 @@ void main() {
           headers: {'content-type': 'application/json'});
     });
 
-    expect(pub.stdout, emits('Good job!'));
+    expect(pub.stdout, emitsThrough('Good job!'));
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 

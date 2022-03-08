@@ -17,7 +17,7 @@ class UploaderCommand extends PubCommand {
   String get name => 'uploader';
   @override
   String get description =>
-      'Manage uploaders for a package on pub.dartlang.org.';
+      'Manage uploaders for a package on pub.dartlang.org. (Deprecated)';
   @override
   String get argumentsDescription => '[options] {add/remove} <email>';
   @override
@@ -74,6 +74,10 @@ the \$PUB_HOSTED_URL environment variable.''',
     }
 
     final package = argResults['package'] ?? entrypoint.root.name;
+    log.message(
+        'This command is deprecated and will be removed from a future version.\n'
+        'Manage uploaders from https://pub.dev/packages/$name/admin');
+
     final uploader = rest[0];
     try {
       final response = await oauth2.withClient(cache, (client) {
