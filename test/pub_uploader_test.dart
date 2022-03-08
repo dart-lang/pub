@@ -13,7 +13,10 @@ void main() {
       args: ['uploader', 'add'],
       error: '''
 Package uploaders are no longer managed from the command line.
-Manage uploaders from https://pub.dev/packages/<packageName>/admin.''',
+Manage uploaders from:
+
+https://pub.dev/packages/<packageName>/admin
+''',
       exitCode: 1,
     );
 
@@ -22,7 +25,10 @@ Manage uploaders from https://pub.dev/packages/<packageName>/admin.''',
       args: ['uploader', 'add'],
       error: '''
 Package uploaders are no longer managed from the command line.
-Manage uploaders from https://pub.dev/packages/myapp/admin.''',
+Manage uploaders from:
+
+https://pub.dev/packages/myapp/admin
+''',
       exitCode: 1,
     );
   });

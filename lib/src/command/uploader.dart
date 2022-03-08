@@ -50,6 +50,9 @@ class UploaderCommand extends PubCommand {
     }
     fail('''
 Package uploaders are no longer managed from the command line.
-Manage uploaders from https://pub.dev/packages/$packageName/admin.''');
+Manage uploaders from:
+
+https://pub.dev/packages/$packageName/admin
+''');
   }
 }
