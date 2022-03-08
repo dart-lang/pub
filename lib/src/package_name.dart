@@ -15,19 +15,19 @@ import 'system_cache.dart';
 /// It knows the [name] of a package and a [Description] that is connected
 /// with a certain [Source]. This is what you need for listing available
 /// versions of a package. See [SystemCache.getVersions].
-class PackageRef<T extends Description<T>> {
+class PackageRef {
   final String name;
-  final T description;
+  final Description description;
   bool get isRoot => description is RootDescription;
-  Source<T> get source => description.source;
+  Source get source => description.source;
 
   /// Creates a reference to a package with the given [name], and
   /// [description].
   PackageRef(this.name, this.description);
 
   /// Creates a reference to the given root package.
-  static PackageRef<RootDescription> root(Package package) =>
-      PackageRef<RootDescription>(package.name, RootDescription(package));
+  static PackageRef root(Package package) =>
+      PackageRef(package.name, RootDescription(package));
 
   @override
   String toString([PackageDetail? detail]) {
@@ -45,12 +45,12 @@ class PackageRef<T extends Description<T>> {
     return buffer.toString();
   }
 
-  PackageRange<T> withConstraint(VersionConstraint constraint) =>
-      PackageRange<T>(this, constraint);
+  PackageRange withConstraint(VersionConstraint constraint) =>
+      PackageRange(this, constraint);
 
   @override
   bool operator ==(other) =>
-      other is PackageRef<T> &&
+      other is PackageRef &&
       name == other.name &&
       description == other.description;
 
@@ -70,12 +70,12 @@ class PackageRef<T extends Description<T>> {
 /// Note that a package ID's [description] field is a [ResolvedDescription]
 /// while [PackageRef.description] and [PackageRange.description] are
 /// [Description]s.
-class PackageId<T extends Description<T>> {
+class PackageId {
   final String name;
   final Version version;
-  final ResolvedDescription<T> description;
+  final ResolvedDescription description;
   bool get isRoot => description is ResolvedRootDescription;
-  Source<T> get source => description.description.source;
+  Source get source => description.description.source;
 
   /// Creates an ID for a package with the given [name], [source], [version],
   /// and [description].
@@ -85,25 +85,23 @@ class PackageId<T extends Description<T>> {
   PackageId(this.name, this.version, this.description);
 
   /// Creates an ID for the given root package.
-  static PackageId<RootDescription> root(Package package) => PackageId(
-      package.name,
-      package.version,
-      ResolvedRootDescription(RootDescription(package)));
+  static PackageId root(Package package) => PackageId(package.name,
+      package.version, ResolvedRootDescription(RootDescription(package)));
 
   @override
   int get hashCode => Object.hash(name, version, description);
 
   @override
   bool operator ==(other) =>
-      other is PackageId<T> &&
+      other is PackageId &&
       name == other.name &&
       version == other.version &&
       description == other.description;
 
   /// Returns a [PackageRange] that allows only [version] of this package.
-  PackageRange<T> toRange() => PackageRange<T>(toRef(), version);
+  PackageRange toRange() => PackageRange(toRef(), version);
 
-  PackageRef<T> toRef() => PackageRef(name, description.description);
+  PackageRef toRef() => PackageRef(name, description.description);
 
   @override
   String toString([PackageDetail? detail]) {
@@ -127,14 +125,14 @@ class PackageId<T extends Description<T>> {
 /// A reference to a constrained range of versions of one package.
 ///
 /// This is represented as a [PackageRef] and a [VersionConstraint].
-class PackageRange<T extends Description<T>> {
-  final PackageRef<T> _ref;
+class PackageRange {
+  final PackageRef _ref;
 
   /// The allowed package versions.
   final VersionConstraint constraint;
 
   String get name => _ref.name;
-  T get description => _ref.description;
+  Description get description => _ref.description;
   bool get isRoot => _ref.isRoot;
   Source get source => _ref.source;
 
@@ -146,10 +144,10 @@ class PackageRange<T extends Description<T>> {
   PackageRange(this._ref, this.constraint);
 
   /// Creates a range that selects the root package.
-  static PackageRange<RootDescription> root(Package package) =>
+  static PackageRange root(Package package) =>
       PackageRange(PackageRef.root(package), package.version);
 
-  PackageRef<T> toRef() => _ref;
+  PackageRef toRef() => _ref;
 
   @override
   String toString([PackageDetail? detail]) {
@@ -178,7 +176,7 @@ class PackageRange<T extends Description<T>> {
 
   /// Returns a copy of [this] with the same semantics, but with a `^`-style
   /// constraint if possible.
-  PackageRange<T> withTerseConstraint() {
+  PackageRange withTerseConstraint() {
     if (constraint is! VersionRange) return this;
     if (constraint.toString().startsWith('^')) return this;
 

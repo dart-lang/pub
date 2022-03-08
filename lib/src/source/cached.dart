@@ -21,12 +21,12 @@ import '../system_cache.dart';
 /// packages or the package needs to be "frozen" at the point in time that it's
 /// installed. (For example, Git packages are cached because installing from
 /// the same repo over time may yield different commits.)
-abstract class CachedSource<T extends Description<T>> extends Source<T> {
+abstract class CachedSource extends Source {
   /// If [id] is already in the system cache, just loads it from there.
   ///
   /// Otherwise, defers to the subclass.
   @override
-  Future<Pubspec> doDescribe(PackageId<T> id, SystemCache cache) async {
+  Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async {
     var packageDir = getDirectoryInCache(id, cache);
     if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
       return Pubspec.load(packageDir, cache.sources, expectedName: id.name);
@@ -36,26 +36,26 @@ abstract class CachedSource<T extends Description<T>> extends Source<T> {
   }
 
   @override
-  String getDirectory(PackageId<T> id, SystemCache cache,
+  String doGetDirectory(PackageId id, SystemCache cache,
           {String? relativeFrom}) =>
       getDirectoryInCache(id, cache);
 
-  String getDirectoryInCache(PackageId<T> id, SystemCache cache);
+  String getDirectoryInCache(PackageId id, SystemCache cache);
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
   ///
   /// This will only be called for packages that have not yet been installed in
   /// the system cache.
-  Future<Pubspec> describeUncached(PackageId<T> id, SystemCache cache);
+  Future<Pubspec> describeUncached(PackageId id, SystemCache cache);
 
   /// Determines if the package identified by [id] is already downloaded to the
   /// system cache.
-  bool isInSystemCache(PackageId<T> id, SystemCache cache) =>
+  bool isInSystemCache(PackageId id, SystemCache cache) =>
       dirExists(getDirectoryInCache(id, cache));
 
   /// Downloads the package identified by [id] to the system cache.
-  Future<Package> downloadToSystemCache(PackageId<T> id, SystemCache cache);
+  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache);
 
   /// Returns the [Package]s that have been downloaded to the system cache.
   List<Package> getCachedPackages(SystemCache cache);

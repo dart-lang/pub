@@ -46,9 +46,9 @@ class DependencyValidator extends Validator {
       var constraint = dependency.constraint;
       if (dependency.name == 'flutter') {
         _warnAboutFlutterSdk(dependency);
-      } else if (dependency is PackageRange<SdkDescription>) {
+      } else if (dependency.source is SdkSource) {
         _warnAboutSdkSource(dependency);
-      } else if (dependency is PackageRange<HostedDescription>) {
+      } else if (dependency.source is HostedSource) {
         if (constraint.isAny) {
           _warnAboutNoConstraint(dependency);
         } else if (constraint is VersionRange) {
@@ -66,9 +66,9 @@ class DependencyValidator extends Validator {
         }
       } else {
         await _warnAboutSource(dependency);
+        final description = dependency.description;
 
-        if (dependency is PackageRange<GitDescription> &&
-            dependency.description.path != '.') {
+        if (description is GitDescription && description.path != '.') {
           validateSdkConstraint(_firstGitPathVersion,
               "Older versions of pub don't support Git path dependencies.");
         }
@@ -78,7 +78,7 @@ class DependencyValidator extends Validator {
 
   /// Warn about improper dependencies on Flutter.
   void _warnAboutFlutterSdk(PackageRange dep) {
-    if (dep is PackageRange<SdkDescription>) {
+    if (dep.source is SdkSource) {
       _warnAboutSdkSource(dep);
       return;
     }
@@ -95,8 +95,12 @@ class DependencyValidator extends Validator {
 
   /// Emit an error for dependencies from unknown SDKs or without appropriate
   /// constraints on the Dart SDK.
-  void _warnAboutSdkSource(PackageRange<SdkDescription> dep) {
-    var identifier = dep.description.sdk;
+  void _warnAboutSdkSource(PackageRange dep) {
+    final description = dep.description;
+    if (description is! SdkDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    var identifier = description.sdk;
     var sdk = sdks[identifier];
     if (sdk == null) {
       errors.add('Unknown SDK "$identifier" for dependency "${dep.name}".');
@@ -129,7 +133,7 @@ class DependencyValidator extends Validator {
     }
 
     // Path sources are errors. Other sources are just warnings.
-    var messages = dep is PackageRange<PathDescription> ? errors : warnings;
+    var messages = dep.source is PathSource ? errors : warnings;
 
     messages.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
         'source. Use the hosted source instead. For example:\n'

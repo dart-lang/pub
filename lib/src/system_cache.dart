@@ -102,7 +102,7 @@ class SystemCache {
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
   Package load(PackageId id) {
-    return Package.load(id.name, id.source.getDirectory(id, this), sources);
+    return Package.load(id.name, getDirectory(id), sources);
   }
 
   Package loadCached(PackageId id) {
@@ -205,7 +205,13 @@ class SystemCache {
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
   String getDirectory(PackageId id, {String? relativeFrom}) {
-    return id.source.getDirectory(id, this, relativeFrom: relativeFrom);
+    return id.source.doGetDirectory(id, this, relativeFrom: relativeFrom);
+  }
+
+  Future<void> downloadPackage(PackageId id) async {
+    final source = id.source;
+    assert(source is CachedSource);
+    await (source as CachedSource).downloadToSystemCache(id, this);
   }
 }
 

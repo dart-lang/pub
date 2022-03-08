@@ -26,7 +26,7 @@ class NullSafetyMixedModeValidator extends Validator {
     }
     final analysisResult =
         await NullSafetyAnalysis(entrypoint.cache).nullSafetyCompliance(
-      PackageId<PathDescription>(
+      PackageId(
         entrypoint.root.name,
         entrypoint.root.version,
         ResolvedPathDescription(
@@ -34,7 +34,7 @@ class NullSafetyMixedModeValidator extends Validator {
         ),
       ),
     );
-
+    print(analysisResult.compliance);
     if (analysisResult.compliance == NullSafetyCompliance.mixed) {
       warnings.add('''
 This package is opting into null-safety, but a dependency or file is not.

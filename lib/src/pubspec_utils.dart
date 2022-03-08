@@ -70,8 +70,8 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
       var unconstrainedRange = packageRange;
 
       /// We only need to remove the upper bound if it is a hosted package.
-      if (packageRange is PackageRange<HostedDescription>) {
-        unconstrainedRange = PackageRange<HostedDescription>(
+      if (packageRange.description is HostedDescription) {
+        unconstrainedRange = PackageRange(
           packageRange.toRef(),
           await constrainToFirstWithNullSafety(packageRange),
         );
@@ -119,9 +119,9 @@ Pubspec stripVersionUpperBounds(Pubspec original,
       var unconstrainedRange = packageRange;
 
       /// We only need to remove the upper bound if it is a hosted package.
-      if (packageRange is PackageRange<HostedDescription> &&
+      if (packageRange.description is HostedDescription &&
           (stripOnly!.isEmpty || stripOnly.contains(packageRange.name))) {
-        unconstrainedRange = PackageRange<HostedDescription>(
+        unconstrainedRange = PackageRange(
           packageRange.toRef(),
           stripUpperBound(packageRange.constraint),
         );

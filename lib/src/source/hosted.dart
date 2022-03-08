@@ -84,7 +84,7 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
 
 /// A package source that gets packages from a package hosting site that uses
 /// the same API as pub.dartlang.org.
-class HostedSource extends CachedSource<HostedDescription> {
+class HostedSource extends CachedSource {
   static HostedSource instance = HostedSource._();
 
   HostedSource._();
@@ -97,8 +97,8 @@ class HostedSource extends CachedSource<HostedDescription> {
   static String pubDevUrl = 'https://pub.dartlang.org';
 
   static bool isFromPubDev(PackageId id) {
-    return id is PackageId<HostedDescription> &&
-        id.description.description.url == pubDevUrl;
+    final description = id.description.description;
+    return description is HostedDescription && description.url == pubDevUrl;
   }
 
   /// Gets the default URL for the package server for hosted dependencies.
@@ -129,7 +129,7 @@ class HostedSource extends CachedSource<HostedDescription> {
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
-  PackageRef<HostedDescription> refFor(String name, {String? url}) {
+  PackageRef refFor(String name, {String? url}) {
     final d = HostedDescription(name, url ?? defaultUrl);
     return PackageRef(name, d);
   }
@@ -139,7 +139,7 @@ class HostedSource extends CachedSource<HostedDescription> {
   /// If [url] is passed, it's the URL of the pub server from which the package
   /// should be downloaded. [url] most be normalized and validated using
   /// [validateAndNormalizeHostedUrl].
-  PackageId<HostedDescription> idFor(
+  PackageId idFor(
     String name,
     Version version, {
     String? url,
@@ -164,15 +164,14 @@ class HostedSource extends CachedSource<HostedDescription> {
   ///  1. With an url and an optional name in a map: `hosted: {url: <url>}`
   ///  2. With a direct url: `hosted: <url>`
   @override
-  PackageRef<HostedDescription> parseRef(String name, description,
+  PackageRef parseRef(String name, description,
       {String? containingDir, required LanguageVersion languageVersion}) {
     return PackageRef(
         name, _parseDescription(name, description, languageVersion));
   }
 
   @override
-  PackageId<HostedDescription> parseId(
-      String name, Version version, description,
+  PackageId parseId(String name, Version version, description,
       {String? containingDir}) {
     // Old pub versions only wrote `description: <pkg>` into the lock file.
     if (description is String) {
@@ -280,16 +279,18 @@ class HostedSource extends CachedSource<HostedDescription> {
   static final RegExp _looksLikePackageName =
       RegExp(r'^[a-zA-Z_]+[a-zA-Z0-9_]*$');
 
-  late final RateLimitedScheduler<_RefAndCache,
-          Map<PackageId<HostedDescription>, _VersionInfo>?> _scheduler =
-      RateLimitedScheduler(
+  late final RateLimitedScheduler<_RefAndCache, Map<PackageId, _VersionInfo>?>
+      _scheduler = RateLimitedScheduler(
     _fetchVersions,
     maxConcurrentOperations: 10,
   );
 
-  Map<PackageId<HostedDescription>, _VersionInfo>
-      _versionInfoFromPackageListing(Map body,
-          PackageRef<HostedDescription> ref, Uri location, SystemCache cache) {
+  Map<PackageId, _VersionInfo> _versionInfoFromPackageListing(
+      Map body, PackageRef ref, Uri location, SystemCache cache) {
+    final description = ref.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
     final versions = body['versions'];
     if (versions is List) {
       return Map.fromEntries(versions.map((map) {
@@ -300,7 +301,7 @@ class HostedSource extends CachedSource<HostedDescription> {
           var id = idFor(
             ref.name,
             pubspec.version,
-            url: ref.description.url,
+            url: description.url,
           );
           var archiveUrl = map['archive_url'];
           if (archiveUrl is String) {
@@ -319,16 +320,20 @@ class HostedSource extends CachedSource<HostedDescription> {
     throw FormatException('versions must be a list');
   }
 
-  Future<Map<PackageId<HostedDescription>, _VersionInfo>?>
-      _fetchVersionsNoPrefetching(
-          PackageRef<HostedDescription> ref, SystemCache cache) async {
-    final hostedUrl = ref.description.url;
+  Future<Map<PackageId, _VersionInfo>?> _fetchVersionsNoPrefetching(
+      PackageRef ref, SystemCache cache) async {
+    final description = ref.description;
+
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    final hostedUrl = description.url;
     final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
 
     late final String bodyText;
     late final dynamic body;
-    late final Map<PackageId<HostedDescription>, _VersionInfo> result;
+    late final Map<PackageId, _VersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
@@ -356,28 +361,32 @@ class HostedSource extends CachedSource<HostedDescription> {
     return result;
   }
 
-  Future<Map<PackageId<HostedDescription>, _VersionInfo>?> _fetchVersions(
+  Future<Map<PackageId, _VersionInfo>?> _fetchVersions(
       _RefAndCache refAndCache) async {
     final ref = refAndCache.ref;
+    final description = ref.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
     final preschedule =
         Zone.current[_prefetchingKey] as void Function(_RefAndCache)?;
 
     /// Prefetch the dependencies of the latest version, we are likely to need
     /// them later.
     void prescheduleDependenciesOfLatest(
-      Map<PackageId<HostedDescription>, _VersionInfo>? listing,
+      Map<PackageId, _VersionInfo>? listing,
       SystemCache cache,
     ) {
       if (listing == null) return;
       final latestVersion =
           maxBy(listing.keys.map((id) => id.version), (e) => e)!;
-      final latestVersionId = PackageId<HostedDescription>(
-          ref.name, latestVersion, ResolvedHostedDescription(ref.description));
+      final latestVersionId = PackageId(
+          ref.name, latestVersion, ResolvedHostedDescription(description));
       final dependencies =
           listing[latestVersionId]?.pubspec.dependencies.values ?? [];
       unawaited(withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
-          if (packageRange is PackageRange<HostedDescription>) {
+          if (packageRange.source is HostedSource) {
             preschedule!(_RefAndCache(packageRange.toRef(), cache));
           }
         }
@@ -407,8 +416,7 @@ class HostedSource extends CachedSource<HostedDescription> {
   /// Invariant: Entries in this cache are the parsed version of the exact same
   ///  information cached on disk. I.e. if the entry is present in this cache,
   /// there will not be a newer version on disk.
-  final Map<PackageRef<HostedDescription>,
-          Pair<DateTime, Map<PackageId<HostedDescription>, _VersionInfo>>>
+  final Map<PackageRef, Pair<DateTime, Map<PackageId, _VersionInfo>>>
       _responseCache = {};
 
   /// If a cached version listing response for [ref] exists on disk and is less
@@ -418,10 +426,9 @@ class HostedSource extends CachedSource<HostedDescription> {
   ///
   /// If [maxAge] is not given, we will try to get the cached version no matter
   /// how old it is.
-  Future<Map<PackageId<HostedDescription>, _VersionInfo>?>
-      _cachedVersionListingResponse(
-          PackageRef<HostedDescription> ref, SystemCache cache,
-          {Duration? maxAge}) async {
+  Future<Map<PackageId, _VersionInfo>?> _cachedVersionListingResponse(
+      PackageRef ref, SystemCache cache,
+      {Duration? maxAge}) async {
     if (_responseCache.containsKey(ref)) {
       final cacheAge = DateTime.now().difference(_responseCache[ref]!.first);
       if (maxAge == null || maxAge > cacheAge) {
@@ -472,7 +479,7 @@ class HostedSource extends CachedSource<HostedDescription> {
   /// Saves the (decoded) response from package-listing of [ref].
   Future<void> _cacheVersionListingResponse(
     Map<String, dynamic> body,
-    PackageRef<HostedDescription> ref,
+    PackageRef ref,
     SystemCache cache,
   ) async {
     final path = _versionListingCachePath(ref, cache);
@@ -497,8 +504,7 @@ class HostedSource extends CachedSource<HostedDescription> {
   }
 
   @override
-  Future<PackageStatus> status(
-      PackageId<HostedDescription> id, SystemCache cache,
+  Future<PackageStatus> status(PackageId id, SystemCache cache,
       {Duration? maxAge}) async {
     if (cache.isOffline) {
       // Do we have a cached version response on disk?
@@ -530,7 +536,7 @@ class HostedSource extends CachedSource<HostedDescription> {
         .schedule(_RefAndCache(ref, cache))
         // Failures retrieving the listing here should just be ignored.
         .catchError(
-          (_) => <PackageId<HostedDescription>, _VersionInfo>{},
+          (_) => <PackageId, _VersionInfo>{},
           test: (error) => error is Exception,
         );
 
@@ -547,9 +553,12 @@ class HostedSource extends CachedSource<HostedDescription> {
   }
 
   // The path where the response from the package-listing api is cached.
-  String _versionListingCachePath(
-      PackageRef<HostedDescription> ref, SystemCache cache) {
-    final dir = _urlToDirectory(ref.description.url);
+  String _versionListingCachePath(PackageRef ref, SystemCache cache) {
+    final description = ref.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    final dir = _urlToDirectory(description.url);
     // Use a dot-dir because older versions of pub won't choke on that
     // name when iterating the cache (it is not listed by [listDir]).
     return p.join(cache.rootDirForSource(this), dir, _versionListingDirectory,
@@ -561,17 +570,21 @@ class HostedSource extends CachedSource<HostedDescription> {
   /// Downloads a list of all versions of a package that are available from the
   /// site.
   @override
-  Future<List<PackageId<HostedDescription>>> doGetVersions(
-    PackageRef<HostedDescription> ref,
+  Future<List<PackageId>> doGetVersions(
+    PackageRef ref,
     Duration? maxAge,
     SystemCache cache,
   ) async {
+    final description = ref.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
     if (cache.isOffline) {
-      final url = ref.description.url;
+      final url = description.url;
       final root = cache.rootDirForSource(HostedSource.instance);
       final dir = p.join(root, _urlToDirectory(url));
       log.io('Finding versions of ${ref.name} in $dir');
-      List<PackageId<HostedDescription>> offlineVersions;
+      List<PackageId> offlineVersions;
       if (dirExists(dir)) {
         offlineVersions = listDir(dir)
             .where(_looksLikePackageDir)
@@ -604,16 +617,19 @@ class HostedSource extends CachedSource<HostedDescription> {
 
   /// Parses [description] into its server and package name components, then
   /// converts that to a Uri for listing versions of the given package.
-  Uri _listVersionsUrl(PackageRef<HostedDescription> ref) {
+  Uri _listVersionsUrl(PackageRef ref) {
+    final description = ref.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
     final package = Uri.encodeComponent(ref.name);
-    return Uri.parse(ref.description.url).resolve('api/packages/$package');
+    return Uri.parse(description.url).resolve('api/packages/$package');
   }
 
   /// Retrieves the pubspec for a specific version of a package that is
   /// available from the site.
   @override
-  Future<Pubspec> describeUncached(
-      PackageId<HostedDescription> id, SystemCache cache) async {
+  Future<Pubspec> describeUncached(PackageId id, SystemCache cache) async {
     if (cache.isOffline) {
       throw PackageNotFoundException(
         '${id.name} ${id.version} is not available in cache',
@@ -628,8 +644,7 @@ class HostedSource extends CachedSource<HostedDescription> {
 
   /// Downloads the package identified by [id] to the system cache.
   @override
-  Future<Package> downloadToSystemCache(
-      PackageId<HostedDescription> id, SystemCache cache) async {
+  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache) async {
     if (!isInSystemCache(id, cache)) {
       if (cache.isOffline) {
         throw StateError('Cannot download packages when offline.');
@@ -648,11 +663,14 @@ class HostedSource extends CachedSource<HostedDescription> {
   /// Each of these subdirectories then contains a subdirectory for each
   /// package downloaded from that site.
   @override
-  String getDirectoryInCache(
-      PackageId<HostedDescription> id, SystemCache cache) {
+  String getDirectoryInCache(PackageId id, SystemCache cache) {
+    final description = id.description.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
     final rootDir = cache.rootDirForSource(this);
 
-    var dir = _urlToDirectory(id.description.description.url);
+    var dir = _urlToDirectory(description.url);
     return p.join(rootDir, dir, '${id.name}-${id.version}');
   }
 
@@ -731,7 +749,7 @@ class HostedSource extends CachedSource<HostedDescription> {
 
   /// Returns the best-guess package ID for [basename], which should be a
   /// subdirectory in a hosted cache.
-  PackageId<HostedDescription> _idForBasename(String basename, String url) {
+  PackageId _idForBasename(String basename, String url) {
     var components = split1(basename, '-');
     var version = Version.none;
     if (components.length > 1) {
@@ -792,10 +810,14 @@ class HostedSource extends CachedSource<HostedDescription> {
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   Future _download(
-    PackageId<HostedDescription> id,
+    PackageId id,
     String destPath,
     SystemCache cache,
   ) async {
+    final description = id.description.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
     // We never want to use a cached `archive_url`, so we never attempt to load
     // the version listing from cache. Besides in most cases we already have
     // downloaded a fresh copy of the version listing response in the in-memory
@@ -824,7 +846,7 @@ class HostedSource extends CachedSource<HostedDescription> {
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
       var response = await withAuthenticatedClient(
           cache,
-          Uri.parse(id.description.description.url),
+          Uri.parse(description.url),
           (client) => client.send(http.Request('GET', url)));
 
       // We download the archive to disk instead of streaming it directly into
@@ -925,7 +947,7 @@ class HostedSource extends CachedSource<HostedDescription> {
 
 /// The [PackageName.description] for a [HostedSource], storing the package name
 /// and resolved URI of the package server.
-class HostedDescription extends Description<HostedDescription> {
+class HostedDescription extends Description {
   final String packageName;
   final String url;
 
@@ -959,7 +981,10 @@ class HostedDescription extends Description<HostedDescription> {
   HostedSource get source => HostedSource.instance;
 }
 
-class ResolvedHostedDescription extends ResolvedDescription<HostedDescription> {
+class ResolvedHostedDescription extends ResolvedDescription {
+  @override
+  HostedDescription get description => super.description as HostedDescription;
+
   ResolvedHostedDescription(HostedDescription description) : super(description);
 
   @override
@@ -1051,7 +1076,7 @@ String _directoryToUrl(String directory) {
 
 // TODO(sigurdm): This is quite inelegant.
 class _RefAndCache {
-  final PackageRef<HostedDescription> ref;
+  final PackageRef ref;
   final SystemCache cache;
   _RefAndCache(this.ref, this.cache);
 

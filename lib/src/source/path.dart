@@ -17,7 +17,7 @@ import '../system_cache.dart';
 import '../utils.dart';
 
 /// A package [Source] that gets packages from a given local file path.
-class PathSource extends Source<PathDescription> {
+class PathSource extends Source {
   static PathSource instance = PathSource._();
   PathSource._();
 
@@ -37,7 +37,7 @@ class PathSource extends Source<PathDescription> {
   /// [path].
   ///
   /// If [path] is relative it is resolved relative to [relativeTo]
-  PackageId<PathDescription> idFor(
+  PackageId idFor(
       String name, Version version, String path, String relativeTo) {
     return PackageId(
       name,
@@ -54,7 +54,7 @@ class PathSource extends Source<PathDescription> {
   /// original path but resolved relative to the containing path. The
   /// "relative" key will be `true` if the original path was relative.
   @override
-  PackageRef<PathDescription> parseRef(
+  PackageRef parseRef(
     String name,
     description, {
     String? containingDir,
@@ -84,7 +84,7 @@ class PathSource extends Source<PathDescription> {
   }
 
   @override
-  PackageId<PathDescription> parseId(String name, Version version, description,
+  PackageId parseId(String name, Version version, description,
       {String? containingDir}) {
     if (description is! Map) {
       throw FormatException('The description must be a map.');
@@ -129,37 +129,45 @@ class PathSource extends Source<PathDescription> {
   }
 
   @override
-  Future<List<PackageId<PathDescription>>> doGetVersions(
-      PackageRef<PathDescription> ref,
-      Duration? maxAge,
-      SystemCache cache) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge, SystemCache cache) async {
+    final description = ref.description;
+    if (description is! PathDescription) {
+      throw ArgumentError('Wrong source');
+    }
     // There's only one package ID for a given path. We just need to find the
     // version.
     var pubspec = _loadPubspec(ref, cache);
-    var id = PackageId<PathDescription>(
-        ref.name, pubspec.version, ResolvedPathDescription(ref.description));
+    var id = PackageId(
+        ref.name, pubspec.version, ResolvedPathDescription(description));
     // Store the pubspec in memory if we need to refer to it again.
     cache.cachedPubspecs[id] = pubspec;
     return [id];
   }
 
   @override
-  Future<Pubspec> doDescribe(
-          PackageId<PathDescription> id, SystemCache cache) async =>
+  Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async =>
       _loadPubspec(id.toRef(), cache);
 
-  Pubspec _loadPubspec(PackageRef<PathDescription> ref, SystemCache cache) {
-    var dir = _validatePath(ref.name, ref.description);
+  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) {
+    final description = ref.description;
+    if (description is! PathDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    var dir = _validatePath(ref.name, description);
     return Pubspec.load(dir, cache.sources, expectedName: ref.name);
   }
 
   @override
-  String getDirectory(
-    PackageId<PathDescription> id,
+  String doGetDirectory(
+    PackageId id,
     SystemCache cache, {
     String? relativeFrom,
   }) {
     final description = id.description.description;
+    if (description is! PathDescription) {
+      throw ArgumentError('Wrong source');
+    }
     return description.relative
         ? p.relative(description.path, from: relativeFrom)
         : description.path;
@@ -187,7 +195,7 @@ class PathSource extends Source<PathDescription> {
   }
 }
 
-class PathDescription extends Description<PathDescription> {
+class PathDescription extends Description {
   final String path;
   final bool relative;
 
@@ -209,7 +217,7 @@ class PathDescription extends Description<PathDescription> {
   }
 
   @override
-  Source<PathDescription> get source => PathSource.instance;
+  Source get source => PathSource.instance;
 
   @override
   bool operator ==(Object other) {
@@ -221,15 +229,17 @@ class PathDescription extends Description<PathDescription> {
   int get hashCode => canonicalize(path).hashCode;
 }
 
-class ResolvedPathDescription extends ResolvedDescription<PathDescription> {
+class ResolvedPathDescription extends ResolvedDescription {
+  @override
+  PathDescription get description => super.description as PathDescription;
+
   ResolvedPathDescription(PathDescription description) : super(description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     if (description.relative) {
       return {
-        'path': PathSource.relativePathWithPosixSeparators(
-            p.relative(description.path, from: containingDir)),
+        'path': p.relative(description.path, from: containingDir),
         'relative': true
       };
     }

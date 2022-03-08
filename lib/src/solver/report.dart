@@ -147,7 +147,7 @@ class SolveReport {
   Future<void> reportDiscontinued() async {
     var numDiscontinued = 0;
     for (var id in _result.packages) {
-      if (id is PackageId<RootDescription>) continue;
+      if (id.description is RootDescription) continue;
       final status =
           await id.source.status(id, _cache, maxAge: Duration(days: 3));
       if (status.isDiscontinued &&

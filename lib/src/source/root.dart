@@ -11,7 +11,7 @@ import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
 
-class RootSource extends Source<RootDescription> {
+class RootSource extends Source {
   static final RootSource instance = RootSource._();
 
   RootSource._();
@@ -21,39 +21,47 @@ class RootSource extends Source<RootDescription> {
 
   @override
   Future<Pubspec> doDescribe(
-    PackageId<RootDescription> id,
+    PackageId id,
     SystemCache cache,
   ) async {
-    return id.description.description.package.pubspec;
+    final description = id.description.description;
+    if (description is! RootDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    return description.package.pubspec;
   }
 
   @override
-  Future<List<PackageId<RootDescription>>> doGetVersions(
-      PackageRef<RootDescription> ref, Duration? maxAge, SystemCache cache) {
-    return Future.value([PackageId.root(ref.description.package)]);
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge, SystemCache cache) async {
+    final description = ref.description;
+    if (description is! RootDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    return [PackageId.root(description.package)];
   }
 
   @override
-  String getDirectory(PackageId<RootDescription> id, SystemCache cache,
+  String doGetDirectory(PackageId id, SystemCache cache,
       {String? relativeFrom}) {
     // TODO(sigurdm): Should we support this.
     throw UnsupportedError('Cannot get the directory of the root package');
   }
 
   @override
-  PackageId<RootDescription> parseId(String name, Version version, description,
+  PackageId parseId(String name, Version version, description,
       {String? containingDir}) {
     throw UnsupportedError('Trying to parse a root package description.');
   }
 
   @override
-  PackageRef<RootDescription> parseRef(String name, description,
+  PackageRef parseRef(String name, description,
       {String? containingDir, required LanguageVersion languageVersion}) {
     throw UnsupportedError('Trying to parse a root package description.');
   }
 }
 
-class ResolvedRootDescription extends ResolvedDescription<RootDescription> {
+class ResolvedRootDescription extends ResolvedDescription {
   ResolvedRootDescription(RootDescription description) : super(description);
 
   @override
@@ -69,7 +77,7 @@ class ResolvedRootDescription extends ResolvedDescription<RootDescription> {
   int get hashCode => description.hashCode;
 }
 
-class RootDescription extends Description<RootDescription> {
+class RootDescription extends Description {
   final Package package;
 
   RootDescription(this.package);
@@ -87,7 +95,7 @@ class RootDescription extends Description<RootDescription> {
   }
 
   @override
-  Source<RootDescription> get source => RootSource.instance;
+  Source get source => RootSource.instance;
 
   @override
   bool operator ==(Object other) =>

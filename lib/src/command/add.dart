@@ -349,7 +349,7 @@ class AddCommand extends PubCommand {
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.
 
-      ref = PackageRef<GitDescription>(
+      ref = PackageRef(
         packageName,
         GitDescription(
           url: parsed.toString(),
@@ -359,12 +359,12 @@ class AddCommand extends PubCommand {
         ),
       );
     } else if (path != null) {
-      ref = PackageRef<PathDescription>(
+      ref = PackageRef(
           packageName, PathDescription(p.absolute(path), p.isRelative(path)));
     } else if (sdk != null) {
       ref = cache.sdk.parseRef(packageName, sdk);
     } else {
-      ref = PackageRef<HostedDescription>(
+      ref = PackageRef(
         packageName,
         HostedDescription(
           packageName,

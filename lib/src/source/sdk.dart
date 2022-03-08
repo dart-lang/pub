@@ -16,7 +16,7 @@ import '../system_cache.dart';
 import '../utils.dart';
 
 /// A package [Source] that gets packages from a hard-coded SDK.
-class SdkSource extends Source<SdkDescription> {
+class SdkSource extends Source {
   static final SdkSource instance = SdkSource._();
 
   SdkSource._();
@@ -26,7 +26,7 @@ class SdkSource extends Source<SdkDescription> {
 
   /// Parses an SDK dependency.
   @override
-  PackageRef<SdkDescription> parseRef(String name, description,
+  PackageRef parseRef(String name, description,
       {String? containingDir, LanguageVersion? languageVersion}) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
@@ -36,7 +36,7 @@ class SdkSource extends Source<SdkDescription> {
   }
 
   @override
-  PackageId<SdkDescription> parseId(String name, Version version, description,
+  PackageId parseId(String name, Version version, description,
       {String? containingDir}) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
@@ -50,15 +50,17 @@ class SdkSource extends Source<SdkDescription> {
   }
 
   @override
-  Future<List<PackageId<SdkDescription>>> doGetVersions(
-      PackageRef<SdkDescription> ref,
-      Duration? maxAge,
-      SystemCache cache) async {
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge, SystemCache cache) async {
+    final description = ref.description;
+    if (description is! SdkDescription) {
+      throw ArgumentError('Wrong source');
+    }
     var pubspec = _loadPubspec(ref, cache);
     var id = PackageId(
       ref.name,
       pubspec.version,
-      ResolvedSdkDescription(ref.description),
+      ResolvedSdkDescription(description),
     );
     // Store the pubspec in memory if we need to refer to it again.
     cache.cachedPubspecs[id] = pubspec;
@@ -67,7 +69,7 @@ class SdkSource extends Source<SdkDescription> {
 
   @override
   Future<Pubspec> doDescribe(
-    PackageId<SdkDescription> id,
+    PackageId id,
     SystemCache cache,
   ) async =>
       _loadPubspec(id.toRef(), cache);
@@ -76,16 +78,20 @@ class SdkSource extends Source<SdkDescription> {
   ///
   /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
-  Pubspec _loadPubspec(PackageRef<SdkDescription> ref, SystemCache cache) =>
+  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) =>
       Pubspec.load(_verifiedPackagePath(ref), cache.sources,
           expectedName: ref.name);
 
-  /// Returns the path for the given [package].
+  /// Returns the path for the given [ref].
   ///
-  /// Throws a [PackageNotFoundException] if [package]'s SDK is unavailable or
+  /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
-  String _verifiedPackagePath(PackageRef<SdkDescription> package) {
-    var sdkName = package.description.sdk;
+  String _verifiedPackagePath(PackageRef ref) {
+    final description = ref.description;
+    if (description is! SdkDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    var sdkName = description.sdk;
     var sdk = sdks[sdkName];
     if (sdk == null) {
       throw PackageNotFoundException('unknown SDK "$sdkName"');
@@ -96,15 +102,15 @@ class SdkSource extends Source<SdkDescription> {
       );
     }
 
-    var path = sdk.packagePath(package.name);
+    var path = sdk.packagePath(ref.name);
     if (path != null) return path;
 
     throw PackageNotFoundException(
-        'could not find package ${package.name} in the ${sdk.name} SDK');
+        'could not find package ${ref.name} in the ${sdk.name} SDK');
   }
 
   @override
-  String getDirectory(PackageId<SdkDescription> id, SystemCache cache,
+  String doGetDirectory(PackageId id, SystemCache cache,
       {String? relativeFrom}) {
     try {
       return _verifiedPackagePath(id.toRef());
@@ -117,7 +123,7 @@ class SdkSource extends Source<SdkDescription> {
   }
 }
 
-class SdkDescription extends Description<SdkDescription> {
+class SdkDescription extends Description {
   /// The sdk the described package comes from.
   final String sdk;
 
@@ -134,10 +140,13 @@ class SdkDescription extends Description<SdkDescription> {
   }
 
   @override
-  Source<SdkDescription> get source => SdkSource.instance;
+  Source get source => SdkSource.instance;
 }
 
-class ResolvedSdkDescription extends ResolvedDescription<SdkDescription> {
+class ResolvedSdkDescription extends ResolvedDescription {
+  @override
+  SdkDescription get description => super.description as SdkDescription;
+
   ResolvedSdkDescription(SdkDescription description) : super(description);
 
   @override

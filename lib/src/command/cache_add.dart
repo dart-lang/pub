@@ -77,7 +77,7 @@ class CacheAddCommand extends PubCommand {
       }
 
       // Download it.
-      await source.downloadToSystemCache(id, cache);
+      await cache.downloadPackage(id);
     }
 
     if (argResults['all']) {

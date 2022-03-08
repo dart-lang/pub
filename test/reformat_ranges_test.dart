@@ -16,10 +16,7 @@ void main() {
   test('reformatMax when max has a build identifier', () {
     expect(
       reformatMax(
-        [
-          PackageId<HostedDescription>(
-              'abc', Version.parse('1.2.3'), description)
-        ],
+        [PackageId('abc', Version.parse('1.2.3'), description)],
         VersionRange(
           min: Version.parse('0.2.4'),
           max: Version.parse('1.2.4'),
@@ -36,7 +33,7 @@ void main() {
     expect(
       reformatMax(
         [
-          PackageId<HostedDescription>(
+          PackageId(
             'abc',
             Version.parse('1.2.4-3'),
             description,

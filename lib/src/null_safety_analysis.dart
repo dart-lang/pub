@@ -75,6 +75,8 @@ class NullSafetyAnalysis {
     PackageId packageId,
   ) async {
     final description = packageId.description.description;
+    final rootPubspec = await _systemCache.describe(packageId);
+
     // A space in the name prevents clashes with other package names.
     final fakeRootName = '${packageId.name} importer';
     final fakeRoot = Package.inMemory(Pubspec(fakeRootName,
@@ -90,13 +92,8 @@ class NullSafetyAnalysis {
           }
         },
         sources: _systemCache.sources,
-        sdkConstraints: {
-          'dart': VersionConstraint.compatibleWith(
-            LanguageVersion.firstVersionWithShorterHostedSyntax.firstStable(),
-          )
-        }));
+        sdkConstraints: {'dart': rootPubspec.sdkConstraints['dart']!}));
 
-    final rootPubspec = await _systemCache.describe(packageId);
     final rootLanguageVersion = rootPubspec.languageVersion;
     if (!rootLanguageVersion.supportsNullSafety) {
       final span =

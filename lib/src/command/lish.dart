@@ -212,7 +212,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     }
 
     var files = entrypoint.root.listFiles();
-    log.fine('Archiving and publishing ${entrypoint.root}.');
+    log.fine('Archiving and publishing ${entrypoint.root.name}.');
 
     // Show the package contents so the user can verify they look OK.
     var package = entrypoint.root;

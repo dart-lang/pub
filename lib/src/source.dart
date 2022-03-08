@@ -10,6 +10,7 @@ import 'exceptions.dart';
 import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'source/git.dart';
 import 'system_cache.dart';
 
 /// A source from which to get packages.
@@ -39,7 +40,7 @@ import 'system_cache.dart';
 ///   relative to the corresponding reference descriptions. These are the
 ///   descriptions stored in lock files. (This is mainly relevant for the
 ///   resolved-ref of GitDescriptions.)
-abstract class Source<T extends Description<T>> {
+abstract class Source {
   /// The name of the source.
   ///
   /// Should be lower-case, suitable for use in a filename, and unique across
@@ -75,7 +76,7 @@ abstract class Source<T extends Description<T>> {
   /// the original user-provided description.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageRef<T> parseRef(
+  PackageRef parseRef(
     String name,
     description, {
     String? containingDir,
@@ -92,7 +93,7 @@ abstract class Source<T extends Description<T>> {
   /// some in-memory source.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageId<T> parseId(String name, Version version, description,
+  PackageId parseId(String name, Version version, description,
       {String? containingDir});
 
   /// Returns the source's name.
@@ -108,8 +109,8 @@ abstract class Source<T extends Description<T>> {
   ///
   /// By default, this assumes that each description has a single version and
   /// uses [describe] to get that version.
-  Future<List<PackageId<T>>> doGetVersions(
-      PackageRef<T> ref, Duration? maxAge, SystemCache cache);
+  Future<List<PackageId>> doGetVersions(
+      PackageRef ref, Duration? maxAge, SystemCache cache);
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
@@ -121,7 +122,7 @@ abstract class Source<T extends Description<T>> {
   /// This may be called for packages that have not yet been downloaded during
   /// the version resolution process.
   ///
-  Future<Pubspec> doDescribe(PackageId<T> id, SystemCache cache);
+  Future<Pubspec> doDescribe(PackageId id, SystemCache cache);
 
   /// Returns the directory where this package can (or could) be found locally.
   ///
@@ -129,7 +130,7 @@ abstract class Source<T extends Description<T>> {
   ///
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
-  String getDirectory(PackageId<T> id, SystemCache cache,
+  String doGetDirectory(PackageId id, SystemCache cache,
       {String? relativeFrom});
 
   /// Returns metadata about a given package.
@@ -138,14 +139,14 @@ abstract class Source<T extends Description<T>> {
   /// [maxAge]. If [maxAge] is not given, the information is not cached.
   ///
   /// In the case of offline sources, [maxAge] is not used, since information is
-  /// per definiton cached.
+  /// per definition cached.
   Future<PackageStatus> status(
-    PackageId<T> id,
+    PackageId id,
     SystemCache cache, {
     Duration? maxAge,
-  }) async =>
-      // Default implementation has no metadata.
-      PackageStatus();
+  }) async {
+    return PackageStatus();
+  }
 }
 
 /// The information needed to get a version-listing of a named package from a
@@ -158,8 +159,8 @@ abstract class Source<T extends Description<T>> {
 ///
 /// This is the information that goes into a `pubspec.yaml` dependency together
 /// with a version constraint.
-abstract class Description<T extends Description<T>> {
-  Source<T> get source;
+abstract class Description {
+  Source get source;
   Object? serializeForPubspec(
       {required String? containingDir,
       required LanguageVersion languageVersion});
@@ -178,8 +179,8 @@ abstract class Description<T extends Description<T>> {
 ///
 /// This is the information that goes into a `pubspec.lock` file together with
 /// a version number (that is represented by a [PackageId].
-abstract class ResolvedDescription<T extends Description<T>> {
-  final T description;
+abstract class ResolvedDescription {
+  final Description description;
   ResolvedDescription(this.description);
 
   /// When a [LockFile] is serialized, it uses this method to get the
@@ -190,7 +191,7 @@ abstract class ResolvedDescription<T extends Description<T>> {
 
   /// Converts `this` into a human-friendly form to show the user.
   ///
-  /// Paths are always rrelative to current dir.
+  /// Paths are always relative to current dir.
   String format() => description.format();
 }
 

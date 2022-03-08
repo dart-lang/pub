@@ -19,7 +19,7 @@ import '../system_cache.dart';
 /// doesn't recognize.
 ///
 /// [null object]: http://en.wikipedia.org/wiki/Null_Object_pattern
-class UnknownSource extends Source<UnknownDescription> {
+class UnknownSource extends Source {
   @override
   final String name;
 
@@ -33,7 +33,7 @@ class UnknownSource extends Source<UnknownDescription> {
   int get hashCode => name.hashCode;
 
   @override
-  PackageRef<UnknownDescription> parseRef(
+  PackageRef parseRef(
     String name,
     Object? description, {
     String? containingDir,
@@ -42,30 +42,26 @@ class UnknownSource extends Source<UnknownDescription> {
       PackageRef(name, UnknownDescription(description, this));
 
   @override
-  PackageId<UnknownDescription> parseId(
-          String name, Version version, Object? description,
+  PackageId parseId(String name, Version version, Object? description,
           {String? containingDir}) =>
       PackageId(name, version,
           ResolvedUnknownDescription(UnknownDescription(description, this)));
 
   @override
-  Future<List<PackageId<UnknownDescription>>> doGetVersions(
-          PackageRef<UnknownDescription> ref,
-          Duration? maxAge,
-          SystemCache cache) =>
+  Future<List<PackageId>> doGetVersions(
+          PackageRef ref, Duration? maxAge, SystemCache cache) =>
       throw UnsupportedError(
           "Cannot get package versions from unknown source '$name'.");
 
   @override
-  Future<Pubspec> doDescribe(
-          PackageId<UnknownDescription> id, SystemCache cache) =>
+  Future<Pubspec> doDescribe(PackageId id, SystemCache cache) =>
       throw UnsupportedError(
           "Cannot describe a package from unknown source '$name'.");
 
   /// Returns the directory where this package can be found locally.
   @override
-  String getDirectory(
-    PackageId<UnknownDescription> id,
+  String doGetDirectory(
+    PackageId id,
     SystemCache cache, {
     String? relativeFrom,
   }) =>
@@ -73,7 +69,7 @@ class UnknownSource extends Source<UnknownDescription> {
           "Cannot find a package from an unknown source '$name'.");
 }
 
-class UnknownDescription extends Description<UnknownDescription> {
+class UnknownDescription extends Description {
   final Object? description;
   @override
   final UnknownSource source;
@@ -103,8 +99,7 @@ class UnknownDescription extends Description<UnknownDescription> {
   int get hashCode => Object.hash(source.name, json.encode(description));
 }
 
-class ResolvedUnknownDescription
-    extends ResolvedDescription<UnknownDescription> {
+class ResolvedUnknownDescription extends ResolvedDescription {
   ResolvedUnknownDescription(UnknownDescription description)
       : super(description);
 

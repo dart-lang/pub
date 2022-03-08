@@ -446,7 +446,7 @@ class VersionSolver {
       // way that doesn't fetch.
       List<PackageId> ids;
       try {
-        ids = package is PackageId<HostedDescription>
+        ids = package.source is HostedSource
             ? await _systemCache.getVersions(package.toRef(),
                 maxAge: Duration(days: 3))
             : [package];

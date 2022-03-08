@@ -221,12 +221,12 @@ packages:
 
     test('serialize() dumps the lockfile to YAML', () {
       var lockfile = LockFile([
-        PackageId<HostedDescription>(
+        PackageId(
             'foo',
             Version.parse('1.2.3'),
             ResolvedHostedDescription(
                 HostedDescription('foo', 'https://foo.com'))),
-        PackageId<HostedDescription>(
+        PackageId(
             'bar',
             Version.parse('3.2.1'),
             ResolvedHostedDescription(
