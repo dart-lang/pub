@@ -114,7 +114,9 @@ The server may enforce additional checks.
 
 ## Section 12
 $ pub uploader -C myapp add sigurdm@google.com
-Good job!
+[STDERR] Package uploaders are no longer managed from the command line.
+[STDERR] Manage uploaders from https://pub.dev/packages/test_pkg/admin.
+[EXIT CODE] 1
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
