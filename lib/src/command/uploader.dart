@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:io';
 
 import '../command.dart';
-import '../io.dart';
 import '../utils.dart';
 
 /// Handles the `uploader` pub command.
