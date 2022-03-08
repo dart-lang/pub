@@ -9,7 +9,6 @@ import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:cli_util/cli_util.dart';
 import 'package:path/path.dart' as path;
-import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
