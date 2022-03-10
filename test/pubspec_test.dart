@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
@@ -886,7 +888,7 @@ dependency_overrides:
   foo:
     fake: bad
 ''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
-            'Error on line 3, column 11 of /pubspec_overrides.yaml');
+            'Error on line 3, column 11 of ${Platform.pathSeparator}pubspec_overrides.yaml');
       });
 
       test('throws if overrides contain invalid dependency section', () {
