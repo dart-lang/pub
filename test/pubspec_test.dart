@@ -819,22 +819,27 @@ features:
     });
 
     group('pubspec overrides', () {
-      PubspecOverrides parsePubspecOverrides(String contents) {
-        return PubspecOverrides.parse(
-          contents,
+      Pubspec parsePubspecOverrides(String overridesContents) {
+        return Pubspec.parse(
+          '''
+name: app
+environment:
+  sdk: '>=2.7.0 <3.0.0'
+dependency_overrides:
+  bar: 2.1.0
+''',
           sources,
-          null,
-          LanguageVersion.defaultLanguageVersion,
-          location: Uri.parse('file:///pubspec_overrides.yaml'),
+          overridesFileContents: overridesContents,
+          overridesLocation: Uri.parse('file:///pubspec_overrides.yaml'),
         );
       }
 
       void expectPubspecOverridesException(
         String contents,
-        void Function(PubspecOverrides) fn, [
+        void Function(Pubspec) fn, [
         String? expectedContains,
       ]) {
-        var expectation = const TypeMatcher<PubspecException>();
+        var expectation = isA<PubspecException>();
         if (expectedContains != null) {
           expectation = expectation.having((error) => error.toString(),
               'toString()', contains(expectedContains));
@@ -845,29 +850,34 @@ features:
       }
 
       test('allows empty overrides file', () {
-        var pubspecOverrides = parsePubspecOverrides('');
-
-        expect(pubspecOverrides.dependencyOverrides, isNull);
+        var pubspec = parsePubspecOverrides('');
+        expect(pubspec.dependencyOverrides['foo'], isNull);
+        final bar = pubspec.dependencyOverrides['bar']!;
+        expect(bar.name, equals('bar'));
+        expect(bar.source, equals(sources['hosted']));
+        expect(bar.constraint, VersionConstraint.parse('2.1.0'));
       });
 
       test('allows empty dependency_overrides section', () {
-        var pubspecOverrides = parsePubspecOverrides('''
+        final pubspec = parsePubspecOverrides('''
 dependency_overrides:
 ''');
-        expect(pubspecOverrides.dependencyOverrides!.keys, isEmpty);
+        expect(pubspec.dependencyOverrides, isEmpty);
       });
 
       test('parses dependencies in dependency_overrides section', () {
-        var pubspecOverrides = parsePubspecOverrides('''
+        final pubspec = parsePubspecOverrides('''
 dependency_overrides:
   foo:
     version: 1.0.0
 ''');
 
-        var foo = pubspecOverrides.dependencyOverrides!['foo']!;
+        expect(pubspec.dependencyOverrides['bar'], isNull);
+
+        final foo = pubspec.dependencyOverrides['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source, equals(sources['hosted']));
-        expect(foo.constraint.allows(Version(1, 0, 0)), isTrue);
+        expect(foo.constraint, VersionConstraint.parse('1.0.0'));
       });
 
       test('throws exception with correct source references', () {
