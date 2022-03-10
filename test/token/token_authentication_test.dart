@@ -19,8 +19,11 @@ void main() {
         {'url': globalServer.url, 'env': 'TOKEN'},
       ]
     }).create();
-    var pub = await startPublish(globalServer,
-        authMethod: 'token', environment: {'TOKEN': 'access token'});
+    var pub = await startPublish(
+      globalServer,
+      overrideDefaultHostedServer: false,
+      environment: {'TOKEN': 'access token'},
+    );
     await confirmPublish(pub);
 
     handleUploadForm(globalServer);
@@ -36,7 +39,10 @@ void main() {
         {'url': globalServer.url, 'token': 'access token'},
       ]
     }).create();
-    var pub = await startPublish(globalServer, authMethod: 'token');
+    var pub = await startPublish(
+      globalServer,
+      overrideDefaultHostedServer: false,
+    );
     await confirmPublish(pub);
 
     handleUploadForm(globalServer);

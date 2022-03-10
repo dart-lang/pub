@@ -213,6 +213,44 @@ class SystemCache {
     assert(source is CachedSource);
     await (source as CachedSource).downloadToSystemCache(id, this);
   }
+
+  /// Get the latest version of [package].
+  ///
+  /// Will consider _prereleases_ if:
+  ///  * [allowPrereleases] is true, or,
+  ///  * If [version] is non-null and is a prerelease version and there are no
+  ///    later stable version we return a prerelease version if it exists.
+  ///
+  /// Returns `null`, if unable to find the package or if [package] is `null`.
+  Future<PackageId?> getLatest(
+    PackageRef? package, {
+    Version? version,
+    bool allowPrereleases = false,
+  }) async {
+    if (package == null) {
+      return null;
+    }
+    // TODO: Pass some maxAge to getVersions
+    final available = await getVersions(package);
+    if (available.isEmpty) {
+      return null;
+    }
+
+    available.sort(allowPrereleases
+        ? (x, y) => x.version.compareTo(y.version)
+        : (x, y) => Version.prioritize(x.version, y.version));
+    var latest = available.last;
+
+    if (version != null && version.isPreRelease && version > latest.version) {
+      available.sort((x, y) => x.version.compareTo(y.version));
+      latest = available.last;
+    }
+
+    // There should be exactly one entry in [available] matching [latest]
+    assert(available.where((id) => id.version == latest.version).length == 1);
+
+    return latest;
+  }
 }
 
 typedef SourceRegistry = Source Function(String? name);

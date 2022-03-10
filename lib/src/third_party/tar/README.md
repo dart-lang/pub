@@ -1,7 +1,7 @@
 # package:tar
 
-Vendored elements from `package:tar` for use in creation and extration of
+Vendored elements from `package:tar` for use in creation and extraction of
 tar-archives.
 
  * Repository: `https://github.com/simolus3/tar/`
- * Revision: `b5c5a11d8969f458ccdeb8cf01615f692fed3e97`
+ * Revision: `7cdb563c9894600c6a739ec268f8673d6122006f`

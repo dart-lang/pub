@@ -10,7 +10,6 @@ import 'dart:math';
 import 'package:collection/collection.dart'
     show IterableExtension, IterableNullableExtension;
 import 'package:path/path.dart' as path;
-import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -181,21 +180,24 @@ class OutdatedCommand extends PubCommand {
       PackageId? latest;
       // If not overridden in current resolution we can use this
       if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
-        latest ??=
-            await _getLatest(current?.toRef(), version: current?.version);
+        latest ??= await cache.getLatest(current?.toRef(),
+            version: current?.version, allowPrereleases: prereleases);
       }
       // If present as a dependency or dev_dependency we use this
-      latest ??= await _getLatest(rootPubspec.dependencies[name]?.toRef());
-      latest ??= await _getLatest(rootPubspec.devDependencies[name]?.toRef());
+      latest ??= await cache.getLatest(rootPubspec.dependencies[name]?.toRef(),
+          allowPrereleases: prereleases);
+      latest ??= await cache.getLatest(
+          rootPubspec.devDependencies[name]?.toRef(),
+          allowPrereleases: prereleases);
       // If not overridden and present in either upgradable or resolvable we
       // use this reference to find the latest
       if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??=
-            await _getLatest(upgradable?.toRef(), version: upgradable?.version);
+        latest ??= await cache.getLatest(upgradable?.toRef(),
+            version: upgradable?.version, allowPrereleases: prereleases);
       }
       if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??=
-            await _getLatest(resolvable?.toRef(), version: resolvable?.version);
+        latest ??= await cache.getLatest(resolvable?.toRef(),
+            version: resolvable?.version, allowPrereleases: prereleases);
       }
       // Otherwise, we might simply not have a latest, when a transitive
       // dependency is overridden the source can depend on which versions we
@@ -204,7 +206,8 @@ class OutdatedCommand extends PubCommand {
       // to fallback to using the overridden source for latest.
       if (latest == null) {
         final id = current ?? upgradable ?? resolvable;
-        latest ??= await _getLatest(id?.toRef(), version: id?.version);
+        latest ??= await cache.getLatest(id?.toRef(),
+            version: id?.version, allowPrereleases: prereleases);
         latestIsOverridden = true;
       }
 
@@ -307,36 +310,6 @@ class OutdatedCommand extends PubCommand {
     }
     return argResults['mode'] == 'null-safety';
   }();
-
-  /// Get the latest version of [package].
-  ///
-  /// Will include prereleases in the comparison if '--prereleases' was enabled
-  /// by the arguments.
-  ///
-  /// If [version] is non-null and is a prerelease version and there are no
-  /// later stable version we return a prerelease version if it exists.
-  ///
-  /// Returns `null`, if unable to find the package.
-  Future<PackageId?> _getLatest(PackageRef? package, {Version? version}) async {
-    if (package == null) {
-      return null;
-    }
-    final available = await cache.getVersions(package);
-    if (available.isEmpty) {
-      return null;
-    }
-
-    // TODO(sigurdm): Refactor this to share logic with report.dart.
-    available.sort(prereleases
-        ? (x, y) => x.version.compareTo(y.version)
-        : (x, y) => Version.prioritize(x.version, y.version));
-    if (version != null &&
-        version.isPreRelease &&
-        version > available.last.version) {
-      available.sort((x, y) => x.version.compareTo(y.version));
-    }
-    return available.last;
-  }
 
   /// Retrieves the pubspec of package [name] in [version] from [source].
   ///

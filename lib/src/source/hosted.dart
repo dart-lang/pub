@@ -115,8 +115,15 @@ class HostedSource extends CachedSource {
     // Clearly, a bit of investigation is necessary before we update this to
     // pub.dev, it might be attractive to do next time we change the server API.
     try {
+      var defaultHostedUrl = 'https://pub.dartlang.org';
+      // Allow the defaultHostedUrl to be overriden when running from tests
+      if (runningFromTest) {
+        defaultHostedUrl =
+            io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] ??
+                defaultHostedUrl;
+      }
       return validateAndNormalizeHostedUrl(
-        io.Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dartlang.org',
+        io.Platform.environment['PUB_HOSTED_URL'] ?? defaultHostedUrl,
       ).toString();
     } on FormatException catch (e) {
       throw ConfigException(

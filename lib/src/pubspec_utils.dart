@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package_name.dart';
@@ -144,7 +143,6 @@ Pubspec stripVersionUpperBounds(Pubspec original,
 
 /// Removes the upper bound of [constraint]. If [constraint] is the
 /// empty version constraint, [VersionConstraint.empty] will be returned.
-@visibleForTesting
 VersionConstraint stripUpperBound(VersionConstraint constraint) {
   ArgumentError.checkNotNull(constraint, 'constraint');
 

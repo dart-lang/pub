@@ -19,7 +19,7 @@ void main() {
         {'url': server.url, 'token': 'access token'},
       ]
     }).create();
-    var pub = await startPublish(server, authMethod: 'token');
+    var pub = await startPublish(server, overrideDefaultHostedServer: false);
     await confirmPublish(pub);
 
     server.expect('GET', '/api/packages/versions/new', (request) {

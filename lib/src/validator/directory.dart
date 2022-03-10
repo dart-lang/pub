@@ -22,30 +22,35 @@ class DirectoryValidator extends Validator {
     'tools'
   ];
 
+  static String docRef = 'See https://dart.dev/tools/pub/package-layout.';
+
   @override
-  Future validate() {
-    return Future.sync(() {
-      for (var dir in listDir(entrypoint.root.dir)) {
-        if (!dirExists(dir)) continue;
+  Future<void> validate() async {
+    final visited = <String>{};
+    for (final file in entrypoint.root.listFiles()) {
+      // Find the topmost directory name of [file].
+      final dir = path.join(entrypoint.root.dir,
+          path.split(path.relative(file, from: entrypoint.root.dir)).first);
+      if (!visited.add(dir)) continue;
+      if (!dirExists(dir)) continue;
 
-        dir = path.basename(dir);
-        if (_pluralNames.contains(dir)) {
-          // Cut off the "s"
-          var singularName = dir.substring(0, dir.length - 1);
-          warnings.add('Rename the top-level "$dir" directory to '
-              '"$singularName".\n'
-              'The Pub layout convention is to use singular directory '
-              'names.\n'
-              'Plural names won\'t be correctly identified by Pub and other '
-              'tools.');
-        }
-
-        if (dir.contains(RegExp(r'^samples?$'))) {
-          warnings.add('Rename the top-level "$dir" directory to "example".\n'
-              'This allows Pub to find your examples and create "packages" '
-              'directories for them.\n');
-        }
+      final dirName = path.basename(dir);
+      if (_pluralNames.contains(dirName)) {
+        // Cut off the "s"
+        var singularName = dirName.substring(0, dirName.length - 1);
+        warnings.add('Rename the top-level "$dirName" directory to '
+            '"$singularName".\n'
+            'The Pub layout convention is to use singular directory '
+            'names.\n'
+            'Plural names won\'t be correctly identified by Pub and other '
+            'tools.\n$docRef');
       }
-    });
+
+      if (dirName.contains(RegExp(r'^samples?$'))) {
+        warnings.add('Rename the top-level "$dirName" directory to "example".\n'
+            'This allows Pub to find your examples and create "packages" '
+            'directories for them.\n$docRef');
+      }
+    }
   }
 }

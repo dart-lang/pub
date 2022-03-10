@@ -37,6 +37,31 @@ void main() {
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 
+  test('archives and uploads a package using token', () async {
+    await servePackages();
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': globalServer.url, 'token': 'access token'},
+      ]
+    }).create();
+    var pub = await startPublish(globalServer);
+
+    await confirmPublish(pub);
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
+
+    globalServer.expect('GET', '/create', (request) {
+      return shelf.Response.ok(jsonEncode({
+        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+      }));
+    });
+
+    expect(pub.stdout, emits(startsWith('Uploading...')));
+    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    await pub.shouldExit(exit_codes.SUCCESS);
+  });
+
   test('publishes to hosted-url with path', () async {
     await servePackages();
     await d.tokensFile({
@@ -48,7 +73,7 @@ void main() {
     var pub = await startPublish(
       globalServer,
       path: '/sub/folder',
-      authMethod: 'token',
+      overrideDefaultHostedServer: false,
       environment: {'TOKEN': 'access token'},
     );
 
