@@ -171,10 +171,10 @@ class Package {
   /// Constructs a package with the given pubspec.
   ///
   /// The package will have no directory associated with it.
-  Package.inMemory(this.pubspec) : _dir = null;
+  Package.inMemory(this.pubspec) : _dir = null, _pubspecOverrides = null;
 
   /// Creates a package with [pubspec] located at [dir].
-  Package(this.pubspec, String this._dir);
+  Package(this.pubspec, String this._dir): _pubspecOverrides = null;
 
   /// Given a relative path within this package, returns its absolute path.
   ///
