@@ -157,9 +157,12 @@ class Package {
   ///
   /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
   /// `true`.
-  Package.load(String? name, String this._dir, SourceRegistry sources,
-      {bool withPubspecOverrides = false})
-      : pubspec = Pubspec.load(_dir, sources, expectedName: name) {
+  Package.load(
+    String? name,
+    String this._dir,
+    SourceRegistry sources, {
+    bool withPubspecOverrides = false,
+  }) : pubspec = Pubspec.load(_dir, sources, expectedName: name) {
     if (withPubspecOverrides && fileExists(path('pubspec_overrides.yaml'))) {
       _pubspecOverrides = PubspecOverrides.load(
           _dir!, sources, pubspec.name, pubspec.languageVersion);
@@ -171,10 +174,12 @@ class Package {
   /// Constructs a package with the given pubspec.
   ///
   /// The package will have no directory associated with it.
-  Package.inMemory(this.pubspec) : _dir = null, _pubspecOverrides = null;
+  Package.inMemory(this.pubspec)
+      : _dir = null,
+        _pubspecOverrides = null;
 
   /// Creates a package with [pubspec] located at [dir].
-  Package(this.pubspec, String this._dir): _pubspecOverrides = null;
+  Package(this.pubspec, String this._dir) : _pubspecOverrides = null;
 
   /// Given a relative path within this package, returns its absolute path.
   ///
