@@ -17,7 +17,7 @@ class NullSafetyMixedModeValidator extends Validator {
   NullSafetyMixedModeValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future<void> validate() async {
+  Future<void> validate(List<String> files) async {
     final pubspec = entrypoint.root.pubspec;
     final declaredLanguageVersion = pubspec.languageVersion;
     if (!declaredLanguageVersion.supportsNullSafety) {

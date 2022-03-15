@@ -4,7 +4,6 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -17,9 +16,6 @@ import 'package_name.dart';
 import 'pubspec.dart';
 import 'source_registry.dart';
 import 'utils.dart';
-
-final _readmeRegexp = RegExp(r'^README($|\.)', caseSensitive: false);
-final _changelogRegexp = RegExp(r'^CHANGELOG($|\.)', caseSensitive: false);
 
 /// A named, versioned, unit of code and resource reuse.
 class Package {
@@ -96,34 +92,6 @@ class Package {
 
   List<String> get executableNames =>
       executablePaths.map(p.basenameWithoutExtension).toList();
-
-  /// Returns the path to the README file at the root of the entrypoint, or null
-  /// if no README file is found.
-  ///
-  /// If multiple READMEs are found, this uses the same conventions as
-  /// pub.dartlang.org for choosing the primary one: the README with the fewest
-  /// extensions that is lexically ordered first is chosen.
-  String? get readmePath {
-    var readmes = listFiles(recursive: false)
-        .map(p.basename)
-        .where((entry) => entry.contains(_readmeRegexp));
-    if (readmes.isEmpty) return null;
-
-    return p.join(dir, readmes.reduce((readme1, readme2) {
-      var extensions1 = '.'.allMatches(readme1).length;
-      var extensions2 = '.'.allMatches(readme2).length;
-      var comparison = extensions1.compareTo(extensions2);
-      if (comparison == 0) comparison = readme1.compareTo(readme2);
-      return (comparison <= 0) ? readme1 : readme2;
-    }));
-  }
-
-  /// Returns the path to the CHANGELOG file at the root of the entrypoint, or
-  /// null if no CHANGELOG file is found.
-  String? get changelogPath {
-    return listFiles(recursive: false).firstWhereOrNull(
-        (entry) => p.basename(entry).contains(_changelogRegexp));
-  }
 
   /// Returns whether or not this package is in a Git repo.
   late final bool inGitRepo = computeInGitRepoCache();

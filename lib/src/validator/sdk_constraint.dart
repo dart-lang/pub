@@ -35,7 +35,7 @@ class SdkConstraintValidator extends Validator {
   }
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     final dartConstraint = _sdkConstraintFromPubspecYaml();
     if (dartConstraint is VersionRange) {
       if (dartConstraint.toString().startsWith('^')) {

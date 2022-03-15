@@ -25,9 +25,9 @@ class DirectoryValidator extends Validator {
   static String docRef = 'See https://dart.dev/tools/pub/package-layout.';
 
   @override
-  Future<void> validate() async {
+  Future<void> validate(List<String> files) async {
     final visited = <String>{};
-    for (final file in entrypoint.root.listFiles()) {
+    for (final file in files) {
       // Find the topmost directory name of [file].
       final dir = path.join(entrypoint.root.dir,
           path.split(path.relative(file, from: entrypoint.root.dir)).first);

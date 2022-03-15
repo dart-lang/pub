@@ -27,13 +27,14 @@ class LanguageVersionValidator extends Validator {
   }
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     final declaredLanguageVersion = entrypoint.root.pubspec.languageVersion;
 
-    for (final path in ['lib', 'bin']
-        .map((path) => entrypoint.root.listFiles(beneath: path))
-        .expand((files) => files)
-        .where((String file) => p.extension(file) == '.dart')) {
+    for (final path in ['lib', 'bin'].expand((path) {
+      final canonicalDir = p.canonicalize(p.join(entrypoint.root.dir, path));
+      return files
+          .where((file) => p.extension(file) == '.dart' && p.canonicalize(p.dirname(file)) == canonicalDir);
+    })) {
       CompilationUnit unit;
       try {
         unit = analysisContextManager.parse(path);

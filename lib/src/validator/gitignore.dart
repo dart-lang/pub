@@ -21,7 +21,7 @@ class GitignoreValidator extends Validator {
   GitignoreValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future<void> validate() async {
+  Future<void> validate(List<String> files) async {
     if (entrypoint.root.inGitRepo) {
       final checkedIntoGit = git.runSync([
         'ls-files',

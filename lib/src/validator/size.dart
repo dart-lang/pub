@@ -19,7 +19,7 @@ class SizeValidator extends Validator {
   SizeValidator(Entrypoint entrypoint, this.packageSize) : super(entrypoint);
 
   @override
-  Future validate() {
+  Future validate(List<String> files) {
     return packageSize.then((size) {
       if (size <= _maxSize) return;
       var sizeInMb = (size / math.pow(2, 20)).toStringAsPrecision(4);

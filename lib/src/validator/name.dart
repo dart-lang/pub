@@ -16,7 +16,7 @@ class NameValidator extends Validator {
   NameValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() {
+  Future validate(List<String> files) {
     return Future.sync(() {
       _checkName(entrypoint.root.name);
 

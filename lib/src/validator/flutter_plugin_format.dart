@@ -22,7 +22,7 @@ class FlutterPluginFormatValidator extends Validator {
   FlutterPluginFormatValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     final pubspec = entrypoint.root.pubspec;
 
     // Ignore all packages that do not have the `flutter.plugin` property.

@@ -11,7 +11,7 @@ class PubspecTypoValidator extends Validator {
   PubspecTypoValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     final fields = entrypoint.root.pubspec.fields;
 
     /// Limit the number of typo warnings so as not to drown out the other

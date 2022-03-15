@@ -29,7 +29,7 @@ class LeakDetectionValidator extends Validator {
   LeakDetectionValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future<void> validate() async {
+  Future<void> validate(List<String> files) async {
     // Load `false_secrets` from `pubspec.yaml`.
     final falseSecrets = Ignore(
       entrypoint.root.pubspec.falseSecrets,
@@ -37,7 +37,7 @@ class LeakDetectionValidator extends Validator {
     );
 
     final pool = Pool(20); // don't read more than 20 files concurrently!
-    final leaks = await Future.wait(entrypoint.root.listFiles().map((f) async {
+    final leaks = await Future.wait(files.map((f) async {
       final relPath = entrypoint.root.relative(f);
 
       // Skip files matching patterns in `false_secrets`

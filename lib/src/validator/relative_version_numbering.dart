@@ -24,7 +24,7 @@ class RelativeVersionNumberingValidator extends Validator {
       : super(entrypoint);
 
   @override
-  Future<void> validate() async {
+  Future<void> validate(List<String> files) async {
     final hostedSource = entrypoint.cache.sources.hosted;
     List<PackageId> existingVersions;
     try {

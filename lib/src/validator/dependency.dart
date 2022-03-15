@@ -34,7 +34,7 @@ class DependencyValidator extends Validator {
   DependencyValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     await _validateDependencies(entrypoint.root.pubspec.dependencies.values);
 
     for (var feature in entrypoint.root.pubspec.features.values) {

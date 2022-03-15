@@ -15,7 +15,7 @@ class DependencyOverrideValidator extends Validator {
   DependencyOverrideValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() {
+  Future validate(List<String> files) {
     var overridden = MapKeySet(entrypoint.root.dependencyOverrides);
     var dev = MapKeySet(entrypoint.root.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {

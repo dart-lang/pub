@@ -15,9 +15,10 @@ class ExecutableValidator extends Validator {
   ExecutableValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() async {
-    var binFiles = entrypoint.root
-        .listFiles(beneath: 'bin', recursive: false)
+  Future validate(List<String> files) async {
+    final canonicalBinDir = p.canonicalize(p.join(entrypoint.root.dir, 'bin'));
+    var binFiles = files
+        .where((file) => p.canonicalize(p.dirname(file)) == canonicalBinDir)
         .map(entrypoint.root.relative)
         .toList();
 

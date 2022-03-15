@@ -16,7 +16,7 @@ class FlutterConstraintValidator extends Validator {
       'https://dart.dev/go/flutter-upper-bound-deprecation';
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     final environment = entrypoint.root.pubspec.fields['environment'];
     if (environment is Map) {
       final flutterConstraint = environment['flutter'];

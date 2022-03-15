@@ -64,7 +64,7 @@ abstract class Validator {
 
   /// Validates the entrypoint, adding any errors and warnings to [errors] and
   /// [warnings], respectively.
-  Future validate();
+  Future validate(List<String> files);
 
   /// Adds an error if the package's SDK constraint doesn't exclude Dart SDK
   /// versions older than [firstSdkVersion].
@@ -151,7 +151,8 @@ abstract class Validator {
     ];
     validators.add(SizeValidator(entrypoint, packageSize));
 
-    return Future.wait(validators.map((validator) => validator.validate()))
+    final files = entrypoint.root.listFiles();
+    return Future.wait(validators.map((validator) => validator.validate(files)))
         .then((_) {
       hints.addAll([for (final validator in validators) ...validator.hints]);
       warnings

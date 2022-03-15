@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../entrypoint.dart';
 import '../validator.dart';
@@ -14,16 +14,17 @@ class LicenseValidator extends Validator {
   LicenseValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() {
+  Future validate(List<String> files) {
     return Future.sync(() {
       final licenseLike =
           RegExp(r'^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$');
-      final candidates = entrypoint.root
-          .listFiles(recursive: false)
-          .map(path.basename)
-          .where(licenseLike.hasMatch);
+      final canonicalRootDir = p.canonicalize(entrypoint.root.dir);
+      final candidates = files.where((entry) =>
+          licenseLike.hasMatch(p.basename(entry)) &&
+          p.canonicalize(p.dirname(entry)) == canonicalRootDir);
       if (candidates.isNotEmpty) {
-        if (!candidates.contains('LICENSE')) {
+        if (!candidates
+            .any((candidate) => p.basename(candidate) == 'LICENSE')) {
           final firstCandidate = candidates.first;
           warnings.add('Please consider renaming $firstCandidate to `LICENSE`. '
               'See https://dart.dev/tools/pub/publishing#important-files.');

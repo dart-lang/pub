@@ -13,7 +13,7 @@ class PubspecFieldValidator extends Validator {
   PubspecFieldValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() {
+  Future validate(List<String> files) {
     _validateFieldIsString('description');
     _validateFieldUrl('homepage');
     _validateFieldUrl('repository');

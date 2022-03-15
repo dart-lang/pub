@@ -69,12 +69,12 @@ class StrictDependenciesValidator extends Validator {
   }
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     var dependencies = entrypoint.root.dependencies.keys.toSet()
       ..add(entrypoint.root.name);
     var devDependencies = MapKeySet(entrypoint.root.devDependencies);
-    _validateLibBin(dependencies, devDependencies);
-    _validateBenchmarkTestTool(dependencies, devDependencies);
+    _validateLibBin(dependencies, devDependencies, files);
+    _validateBenchmarkTestTool(dependencies, devDependencies, files);
   }
 
   /// Validates that no Dart files in `lib/` or `bin/` have dependencies that
@@ -82,8 +82,9 @@ class StrictDependenciesValidator extends Validator {
   ///
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
-  void _validateLibBin(Set<String> deps, Set<String> devDeps) {
-    for (var usage in _usagesBeneath(['lib', 'bin'])) {
+  void _validateLibBin(
+      Set<String> deps, Set<String> devDeps, List<String> files) {
+    for (var usage in _usagesBeneath(['lib', 'bin'], files)) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
           errors.add(usage.dependencyMisplaceMessage());
@@ -96,19 +97,25 @@ class StrictDependenciesValidator extends Validator {
 
   /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
-  void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
+  void _validateBenchmarkTestTool(
+      Set<String> deps, Set<String> devDeps, List<String> files) {
     var directories = ['benchmark', 'test', 'tool'];
-    for (var usage in _usagesBeneath(directories)) {
+    for (var usage in _usagesBeneath(directories, files)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependenciesMissingMessage());
       }
     }
   }
 
-  Iterable<_Usage> _usagesBeneath(List<String> paths) => _findPackages(paths
-      .map((path) => entrypoint.root.listFiles(beneath: path))
-      .expand((files) => files)
-      .where((String file) => p.extension(file) == '.dart'));
+  Iterable<_Usage> _usagesBeneath(List<String> paths, List<String> files) =>
+      _findPackages(paths.expand((path) {
+        final canonicalDir = p.canonicalize(p.join(entrypoint.root.dir, path));
+        return files.where(
+          (file) =>
+              p.extension(file) == '.dart' &&
+              p.isWithin(canonicalDir, p.canonicalize(p.dirname(file))),
+        );
+      }));
 }
 
 /// A parsed import or export directive in a D source file.

@@ -13,7 +13,7 @@ class DeprecatedFieldsValidator extends Validator {
   DeprecatedFieldsValidator(Entrypoint entrypoint) : super(entrypoint);
 
   @override
-  Future validate() async {
+  Future validate(List<String> files) async {
     if (entrypoint.root.pubspec.fields.containsKey('transformers')) {
       warnings.add('Your pubspec.yaml includes a "transformers" section which'
           ' is no longer used and may be removed.');

@@ -851,8 +851,9 @@ typedef ValidatorCreator = Validator Function(Entrypoint entrypoint);
 /// Returns a scheduled Future that contains the validator after validation.
 Future<Validator> validatePackage(ValidatorCreator fn) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var validator = fn(Entrypoint(_pathInSandbox(appPath), cache));
-  await validator.validate();
+  final entrypoint = Entrypoint(_pathInSandbox(appPath), cache);
+  var validator = fn(entrypoint);
+  await validator.validate(entrypoint.root.listFiles());
   return validator;
 }
 
