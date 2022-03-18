@@ -859,6 +859,7 @@ Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
     _globalServer == null
         ? Uri.parse('https://pub.dev')
         : Uri.parse(globalServer.url),
+    entrypoint.root.listFiles(),
   );
   await validator.validate();
   return validator;
