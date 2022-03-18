@@ -403,22 +403,34 @@ VersionConstraint _widenConstraint(
     final min = original.min;
     final max = original.max;
     if (max != null && newVersion >= max) {
-      return VersionRange(
-        min: min,
-        includeMin: original.includeMin,
-        max: newVersion.nextBreaking.firstPreRelease,
+      return compatibleWithIfPossible(
+        VersionRange(
+          min: min,
+          includeMin: original.includeMin,
+          max: newVersion.nextBreaking.firstPreRelease,
+        ),
       );
     }
     if (min != null && newVersion <= min) {
-      return VersionRange(
-          min: newVersion,
-          includeMin: true,
-          max: max,
-          includeMax: original.includeMax);
+      return compatibleWithIfPossible(
+        VersionRange(
+            min: newVersion,
+            includeMin: true,
+            max: max,
+            includeMax: original.includeMax),
+      );
     }
   }
 
   if (original.isEmpty) return newVersion;
   throw ArgumentError.value(
       original, 'original', 'Must be a Version range or empty');
+}
+
+VersionConstraint compatibleWithIfPossible(VersionRange versionRange) {
+  final min = versionRange.min;
+  if (min != null && min.nextBreaking.firstPreRelease == versionRange.max) {
+    return VersionConstraint.compatibleWith(min);
+  }
+  return versionRange;
 }
