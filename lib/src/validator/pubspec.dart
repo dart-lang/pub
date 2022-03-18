@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:path/path.dart' as p;
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 /// Validates that a package's pubspec exists.
@@ -14,12 +13,10 @@ import '../validator.dart';
 /// In most cases this is clearly true, since pub can't run without a pubspec,
 /// but it's possible that the pubspec is gitignored.
 class PubspecValidator extends Validator {
-  PubspecValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future validate(List<String> files) async {
-    if (!files.any((file) =>
-        p.canonicalize(file) == p.canonicalize(entrypoint.pubspecPath))) {
+  Future validate() async {
+    if (!filesBeneath('.', recursive: false)
+        .any((file) => p.basename(file) == 'pubspec.yaml')) {
       errors.add('The pubspec is hidden, probably by .gitignore or pubignore.');
     }
   }

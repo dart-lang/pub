@@ -8,7 +8,6 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
-import '../entrypoint.dart';
 import '../io.dart';
 import '../validator.dart';
 
@@ -16,14 +15,10 @@ final _changelogRegexp = RegExp(r'^CHANGELOG($|\.)', caseSensitive: false);
 
 /// A validator that validates a package's changelog file.
 class ChangelogValidator extends Validator {
-  ChangelogValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future<void> validate(List<String> files) async {
-    final canonicalRootDir = p.canonicalize(entrypoint.root.dir);
-    final changelog = files.firstWhereOrNull((entry) =>
-        p.basename(entry).contains(_changelogRegexp) &&
-        p.canonicalize(p.dirname(entry)) == canonicalRootDir);
+  Future<void> validate() async {
+    final changelog = filesBeneath('.', recursive: false).firstWhereOrNull(
+        (entry) => p.basename(entry).contains(_changelogRegexp));
 
     if (changelog == null) {
       warnings.add('Please add a `CHANGELOG.md` to your package. '

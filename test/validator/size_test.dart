@@ -11,13 +11,10 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-ValidatorCreator size(int size) {
-  return (entrypoint) => SizeValidator(entrypoint, Future.value(size));
-}
-
 Future<void> expectSizeValidationError(Matcher matcher) async {
   await expectValidation(
-    size(100 * 1048577 /*2^20 +1*/),
+    () => SizeValidator(),
+    size: 100 * (1 << 20) + 1,
     errors: contains(matcher),
   );
 }
@@ -26,8 +23,8 @@ void main() {
   test('considers a package valid if it is <= 100 MB', () async {
     await d.validPackage.create();
 
-    await expectValidation(size(100));
-    await expectValidation(size(100 * 1048576 /*2^20*/));
+    await expectValidation(() => SizeValidator(), size: 100);
+    await expectValidation(() => SizeValidator(), size: 100 * (1 << 20));
   });
 
   group('considers a package invalid if it is more than 100 MB', () {

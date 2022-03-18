@@ -12,7 +12,6 @@ import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:source_span/source_span.dart';
 
-import '../entrypoint.dart';
 import '../ignore.dart';
 import '../validator.dart';
 
@@ -26,10 +25,8 @@ const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
 /// accidentally leaked.
 @sealed
 class LeakDetectionValidator extends Validator {
-  LeakDetectionValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future<void> validate(List<String> files) async {
+  Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
     final falseSecrets = Ignore(
       entrypoint.root.pubspec.falseSecrets,

@@ -2,16 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import '../entrypoint.dart';
 import '../levenshtein.dart';
 import '../validator.dart';
 
 /// Validates that a package's pubspec does not contain any typos in its keys.
 class PubspecTypoValidator extends Validator {
-  PubspecTypoValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future validate(List<String> files) async {
+  Future validate() async {
     final fields = entrypoint.root.pubspec.fields;
 
     /// Limit the number of typo warnings so as not to drown out the other

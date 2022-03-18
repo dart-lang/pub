@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import '../entrypoint.dart';
 import '../git.dart' as git;
 import '../ignore.dart';
 import '../io.dart';
@@ -18,10 +17,8 @@ import '../validator.dart';
 /// .gitignore. These would be considered part of the package by previous
 /// versions of pub.
 class GitignoreValidator extends Validator {
-  GitignoreValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future<void> validate(List<String> files) async {
+  Future<void> validate() async {
     if (entrypoint.root.inGitRepo) {
       final checkedIntoGit = git.runSync([
         'ls-files',

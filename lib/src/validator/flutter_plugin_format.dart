@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 const _pluginDocsUrl =
@@ -19,10 +18,8 @@ const _pluginDocsUrl =
 /// See:
 /// https://flutter.dev/docs/development/packages-and-plugins/developing-packages
 class FlutterPluginFormatValidator extends Validator {
-  FlutterPluginFormatValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future validate(List<String> files) async {
+  Future validate() async {
     final pubspec = entrypoint.root.pubspec;
 
     // Ignore all packages that do not have the `flutter.plugin` property.

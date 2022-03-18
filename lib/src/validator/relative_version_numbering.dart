@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:collection/collection.dart' show IterableExtension;
 
-import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../null_safety_analysis.dart';
 import '../package_name.dart';
@@ -18,19 +17,13 @@ class RelativeVersionNumberingValidator extends Validator {
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
 
-  final Uri? _server;
-
-  RelativeVersionNumberingValidator(Entrypoint entrypoint, this._server)
-      : super(entrypoint);
-
   @override
-  Future<void> validate(List<String> files) async {
+  Future<void> validate() async {
     final hostedSource = entrypoint.cache.sources.hosted;
     List<PackageId> existingVersions;
     try {
-      existingVersions = await hostedSource
-          .bind(entrypoint.cache)
-          .getVersions(hostedSource.refFor(entrypoint.root.name, url: _server));
+      existingVersions = await hostedSource.bind(entrypoint.cache).getVersions(
+          hostedSource.refFor(entrypoint.root.name, url: serverUrl));
     } on PackageNotFoundException {
       existingVersions = [];
     }

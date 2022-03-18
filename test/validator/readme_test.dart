@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/readme.dart';
@@ -13,7 +12,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator readme(Entrypoint entrypoint) => ReadmeValidator(entrypoint);
+Validator readme() => ReadmeValidator();
 
 void main() {
   setUp(d.validPackage.create);

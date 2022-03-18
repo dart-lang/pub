@@ -6,21 +6,15 @@ import 'dart:async';
 
 import 'package:path/path.dart' as p;
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 /// Validates that a package's pubspec doesn't contain executables that
 /// reference non-existent scripts.
 class ExecutableValidator extends Validator {
-  ExecutableValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future validate(List<String> files) async {
-    final canonicalBinDir = p.canonicalize(p.join(entrypoint.root.dir, 'bin'));
-    var binFiles = files
-        .where((file) => p.canonicalize(p.dirname(file)) == canonicalBinDir)
-        .map(entrypoint.root.relative)
-        .toList();
+  Future validate() async {
+    final binFiles =
+        filesBeneath('bin', recursive: false).map(entrypoint.root.relative);
 
     entrypoint.root.pubspec.executables.forEach((executable, script) {
       var scriptPath = p.join('bin', '$script.dart');

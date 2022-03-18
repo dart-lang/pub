@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../entrypoint.dart';
 import '../sdk.dart';
 import '../validator.dart';
 
@@ -18,8 +17,6 @@ import '../validator.dart';
 /// * is not depending on a prerelease, unless the package itself is a
 /// prerelease.
 class SdkConstraintValidator extends Validator {
-  SdkConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
-
   /// Get SDK version constraint from `pubspec.yaml` without any defaults or
   /// overrides.
   VersionConstraint _sdkConstraintFromPubspecYaml() {
@@ -35,7 +32,7 @@ class SdkConstraintValidator extends Validator {
   }
 
   @override
-  Future validate(List<String> files) async {
+  Future validate() async {
     final dartConstraint = _sdkConstraintFromPubspecYaml();
     if (dartConstraint is VersionRange) {
       if (dartConstraint.toString().startsWith('^')) {

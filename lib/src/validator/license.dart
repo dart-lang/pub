@@ -6,22 +6,18 @@ import 'dart:async';
 
 import 'package:path/path.dart' as p;
 
-import '../entrypoint.dart';
 import '../validator.dart';
+
+final licenseLike =
+    RegExp(r'^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$');
 
 /// A validator that checks that a LICENSE-like file exists.
 class LicenseValidator extends Validator {
-  LicenseValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future validate(List<String> files) {
+  Future validate() {
     return Future.sync(() {
-      final licenseLike =
-          RegExp(r'^(([a-zA-Z0-9]+[-_])?(LICENSE|COPYING)|UNLICENSE)(\..*)?$');
-      final canonicalRootDir = p.canonicalize(entrypoint.root.dir);
-      final candidates = files.where((entry) =>
-          licenseLike.hasMatch(p.basename(entry)) &&
-          p.canonicalize(p.dirname(entry)) == canonicalRootDir);
+      final candidates = filesBeneath('.', recursive: false)
+          .where((file) => licenseLike.hasMatch(p.basename(file)));
       if (candidates.isNotEmpty) {
         if (!candidates
             .any((candidate) => p.basename(candidate) == 'LICENSE')) {

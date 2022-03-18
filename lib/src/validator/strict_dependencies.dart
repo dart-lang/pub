@@ -11,7 +11,6 @@ import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../dart.dart';
-import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -19,19 +18,16 @@ import '../validator.dart';
 
 /// Validates that Dart source files only import declared dependencies.
 class StrictDependenciesValidator extends Validator {
-  final AnalysisContextManager analysisContextManager =
-      AnalysisContextManager();
-
-  StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint) {
-    var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
-    analysisContextManager.createContextsForDirectory(packagePath);
-  }
-
   /// Lazily returns all dependency uses in [files].
   ///
   /// Files that do not parse and directives that don't import or export
   /// `package:` URLs are ignored.
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
+    final packagePath = p.normalize(p.absolute(entrypoint.root.dir));
+    final AnalysisContextManager analysisContextManager =
+        AnalysisContextManager();
+    analysisContextManager.createContextsForDirectory(packagePath);
+
     for (var file in files) {
       List<UriBasedDirective> directives;
       var contents = readTextFile(file);
@@ -69,12 +65,12 @@ class StrictDependenciesValidator extends Validator {
   }
 
   @override
-  Future validate(List<String> files) async {
+  Future validate() async {
     var dependencies = entrypoint.root.dependencies.keys.toSet()
       ..add(entrypoint.root.name);
     var devDependencies = MapKeySet(entrypoint.root.devDependencies);
-    _validateLibBin(dependencies, devDependencies, files);
-    _validateBenchmarkTestTool(dependencies, devDependencies, files);
+    _validateLibBin(dependencies, devDependencies);
+    _validateBenchmarkTestTool(dependencies, devDependencies);
   }
 
   /// Validates that no Dart files in `lib/` or `bin/` have dependencies that
@@ -82,9 +78,8 @@ class StrictDependenciesValidator extends Validator {
   ///
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
-  void _validateLibBin(
-      Set<String> deps, Set<String> devDeps, List<String> files) {
-    for (var usage in _usagesBeneath(['lib', 'bin'], files)) {
+  void _validateLibBin(Set<String> deps, Set<String> devDeps) {
+    for (var usage in _usagesBeneath(['lib', 'bin'])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
           errors.add(usage.dependencyMisplaceMessage());
@@ -97,25 +92,25 @@ class StrictDependenciesValidator extends Validator {
 
   /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
-  void _validateBenchmarkTestTool(
-      Set<String> deps, Set<String> devDeps, List<String> files) {
+  void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
     var directories = ['benchmark', 'test', 'tool'];
-    for (var usage in _usagesBeneath(directories, files)) {
+    for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependenciesMissingMessage());
       }
     }
   }
 
-  Iterable<_Usage> _usagesBeneath(List<String> paths, List<String> files) =>
-      _findPackages(paths.expand((path) {
-        final canonicalDir = p.canonicalize(p.join(entrypoint.root.dir, path));
-        return files.where(
-          (file) =>
-              p.extension(file) == '.dart' &&
-              p.isWithin(canonicalDir, p.canonicalize(p.dirname(file))),
-        );
-      }));
+  Iterable<_Usage> _usagesBeneath(List<String> paths) {
+    return _findPackages(
+      paths.expand(
+        (path) {
+          return filesBeneath(path, recursive: true)
+              .where((file) => p.extension(file) == '.dart');
+        },
+      ),
+    );
+  }
 }
 
 /// A parsed import or export directive in a D source file.

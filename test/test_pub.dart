@@ -844,16 +844,23 @@ void _validateOutputJson(
 }
 
 /// A function that creates a [Validator] subclass.
-typedef ValidatorCreator = Validator Function(Entrypoint entrypoint);
+typedef ValidatorCreator = Validator Function();
 
 /// Schedules a single [Validator] to run on the [appPath].
 ///
 /// Returns a scheduled Future that contains the validator after validation.
-Future<Validator> validatePackage(ValidatorCreator fn) async {
+Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   final entrypoint = Entrypoint(_pathInSandbox(appPath), cache);
-  var validator = fn(entrypoint);
-  await validator.validate(entrypoint.root.listFiles());
+  var validator = fn();
+  validator.context = ValidationContext(
+    entrypoint,
+    await Future.value(size ?? 100),
+    _globalServer == null
+        ? Uri.parse('https://pub.dev')
+        : Uri.parse(globalServer.url),
+  );
+  await validator.validate();
   return validator;
 }
 

@@ -6,16 +6,13 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 /// A validator that validates a package's dependencies overrides (or the
 /// absence thereof).
 class DependencyOverrideValidator extends Validator {
-  DependencyOverrideValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future validate(List<String> files) {
+  Future validate() {
     var overridden = MapKeySet(entrypoint.root.dependencyOverrides);
     var dev = MapKeySet(entrypoint.root.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {

@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/language_version.dart';
 import 'package:test/test.dart';
@@ -11,8 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator validator(Entrypoint entrypoint) =>
-    LanguageVersionValidator(entrypoint);
+Validator validator() => LanguageVersionValidator();
 
 Future<void> setup(
     {required String sdkConstraint, String? libraryLanguageVersion}) async {
