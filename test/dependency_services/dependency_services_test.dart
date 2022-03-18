@@ -238,10 +238,6 @@ Future<void> main() async {
         findChangeVersion(report, 'multiBreaking', 'bar'),
         '2.0.0',
       );
-      expect(
-        findChangeVersion(report, 'singleBreaking', 'baz'),
-        '2.0.0',
-      );
     });
   });
 }
