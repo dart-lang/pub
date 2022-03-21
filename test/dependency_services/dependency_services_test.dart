@@ -5,9 +5,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:http/http.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -160,6 +162,16 @@ Future<void> main() async {
     server.serve('foo', '1.2.4');
     server.serve('boo', '1.2.4');
 
+    // Check that nothing is downloaded. This testing logic is a bit fragile, if
+    // we change the pattern for pattern for the download URL then this will
+    // pass silently. There isn't much we can / should do about it.
+    // Just accept the limitations, and remove it if the test becomes useless.
+    var downloaded = false;
+    server.handle(RegExp(r'/.+\.tar\.gz'), (request) {
+      downloaded = true;
+      return shelf.Response.notFound('This test should not download!');
+    });
+
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('1.2.4')),
     ], reportAssertions: (report) {
@@ -168,6 +180,9 @@ Future<void> main() async {
         '1.2.4',
       );
     });
+
+    // We didn't expect the download pattern to get called
+    expect(downloaded, false);
   });
 
   testWithGolden('Adding transitive', (context) async {

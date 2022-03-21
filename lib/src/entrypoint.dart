@@ -260,6 +260,7 @@ class Entrypoint {
     SolveType type, {
     Iterable<String>? unlock,
     bool dryRun = false,
+    bool skipDownloadToCache = false,
     bool precompile = false,
     required bool generateDotPackages,
     required PubAnalytics? analytics,
@@ -312,7 +313,9 @@ class Entrypoint {
       await result.showReport(type, cache);
     }
     if (!dryRun) {
-      await result.downloadCachedPackages(cache);
+      if (!skipDownloadToCache) {
+        await result.downloadCachedPackages(cache);
+      }
       _saveLockFile(result);
     }
     if (onlyReportSuccessOrFailure) {

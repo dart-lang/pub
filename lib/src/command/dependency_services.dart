@@ -368,11 +368,16 @@ class DependencyServicesApplyCommand extends PubCommand {
     if (lockFileEditor != null && lockFileEditor.edits.isNotEmpty) {
       writeTextFile(entrypoint.lockFilePath, lockFileEditor.toString());
     }
+    // TODO: Handle HTTP exceptions gracefully!
     await log.warningsOnlyUnlessTerminal(
       () async {
         // This will fail if the new configuration does not resolve.
-        await Entrypoint(directory, cache).acquireDependencies(SolveType.get,
-            analytics: null, generateDotPackages: false);
+        await Entrypoint(directory, cache).acquireDependencies(
+          SolveType.get,
+          analytics: null,
+          generateDotPackages: false,
+          skipDownloadToCache: true,
+        );
       },
     );
     // Dummy message.
