@@ -5,7 +5,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
