@@ -13,7 +13,6 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../io.dart';
 import '../lock_file.dart';
