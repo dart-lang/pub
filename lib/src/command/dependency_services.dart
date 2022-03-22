@@ -16,6 +16,7 @@ import '../command.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../io.dart';
+import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -275,10 +276,10 @@ class DependencyServicesListCommand extends PubCommand {
 }
 
 enum UpgradeType {
-  /// Only upgrade pubspec.lock
+  /// Only upgrade pubspec.lock.
   compatible,
 
-  /// Unlock at most one dependency in pubspec.yaml
+  /// Unlock at most one dependency in pubspec.yaml.
   singleBreaking,
 
   /// Unlock any dependencies in pubspec.yaml needed for getting the
@@ -292,7 +293,7 @@ class DependencyServicesApplyCommand extends PubCommand {
 
   @override
   String get description =>
-      'Output a machine digestible listing of all dependencies';
+      'Updates pubspec.yaml and pubspec.lock according to input.';
 
   @override
   bool get takesArguments => true;
@@ -362,17 +363,31 @@ class DependencyServicesApplyCommand extends PubCommand {
       }
     }
 
-    if (pubspecEditor.edits.isNotEmpty) {
-      writeTextFile(entrypoint.pubspecPath, pubspecEditor.toString());
-    }
-    if (lockFileEditor != null && lockFileEditor.edits.isNotEmpty) {
-      writeTextFile(entrypoint.lockFilePath, lockFileEditor.toString());
-    }
+    final updatedLockfile = lockFileEditor == null
+        ? null
+        : LockFile.parse(lockFileEditor.toString(), cache.sources);
     await log.warningsOnlyUnlessTerminal(
       () async {
-        // This will fail if the new configuration does not resolve.
-        await Entrypoint(directory, cache).acquireDependencies(SolveType.get,
-            analytics: null, generateDotPackages: false);
+        final updatedPubspec = pubspecEditor.toString();
+        // Resolve versions, this will update transitive dependencies that were
+        // not passed in the input. And also counts as a validation of the input
+        // by ensuring the resolution is valid.
+        //
+        // We don't use `acquireDependencies` as that downloads all the archives
+        // to cache.
+        final solveResult = await resolveVersions(
+          SolveType.get,
+          cache,
+          Package.inMemory(Pubspec.parse(updatedPubspec, cache.sources)),
+          lockFile: updatedLockfile,
+        );
+        if (pubspecEditor.edits.isNotEmpty) {
+          writeTextFile(entrypoint.pubspecPath, updatedPubspec);
+        }
+        // Only if we originally had a lock-file we write the resulting lockfile back.
+        if (lockFileEditor != null) {
+          entrypoint.saveLockFile(solveResult);
+        }
       },
     );
     // Dummy message.

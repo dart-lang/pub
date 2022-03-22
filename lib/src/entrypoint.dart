@@ -313,7 +313,7 @@ class Entrypoint {
     }
     if (!dryRun) {
       await result.downloadCachedPackages(cache);
-      _saveLockFile(result);
+      saveLockFile(result);
     }
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
@@ -844,7 +844,7 @@ class Entrypoint {
   ///
   /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
   /// uses that.
-  void _saveLockFile(SolveResult result) {
+  void saveLockFile(SolveResult result) {
     _lockFile = result.lockFile;
 
     final windowsLineEndings = fileExists(lockFilePath) &&
