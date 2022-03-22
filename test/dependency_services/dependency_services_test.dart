@@ -203,7 +203,8 @@ Future<void> main() async {
   testWithGolden('multibreaking', (context) async {
     final server = (await servePackages())
       ..serve('foo', '1.0.0')
-      ..serve('bar', '1.0.0');
+      ..serve('bar', '1.0.0')
+      ..serve('baz', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -211,6 +212,8 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
+          // Pinned version. See that the widened constraint is correct.
+          'baz': '1.0.0',
         },
       })
     ]).create();
@@ -221,7 +224,7 @@ Future<void> main() async {
       ..serve('foo', '3.0.0', deps: {'bar': '^2.0.0'}) // multi breaking
       ..serve('foo', '3.0.1', deps: {'bar': '^2.0.0'})
       ..serve('bar', '2.0.0', deps: {'foo': '^3.0.0'})
-      ..serve('transitive', '1.0.0');
+      ..serve('baz', '1.1.0');
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('3.0.1'),
           constraint: VersionConstraint.parse('^3.0.0')),
