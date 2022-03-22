@@ -374,6 +374,7 @@ class DependencyServicesApplyCommand extends PubCommand {
         //
         // We don't use `acquireDependencies` as that downloads all the archives
         // to cache.
+        // TODO: Handle HTTP exceptions gracefully!
         final solveResult = await resolveVersions(
           SolveType.get,
           cache,
