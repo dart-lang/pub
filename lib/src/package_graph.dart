@@ -40,14 +40,15 @@ class PackageGraph {
   /// the packages' pubspecs are already fully-parsed.
   factory PackageGraph.fromSolveResult(
       Entrypoint entrypoint, SolveResult result) {
-    var packages = Map<String, Package>.fromIterable(result.packages,
-        key: (id) => id.name,
-        value: (id) {
-          if (id.name == entrypoint.root.name) return entrypoint.root;
-
-          return Package(result.pubspecs[id.name]!,
-              entrypoint.cache.source(id.source).getDirectory(id));
-        });
+    final packages = {
+      for (final id in result.packages)
+        id.name: id.name == entrypoint.root.name
+            ? entrypoint.root
+            : Package(
+                result.pubspecs[id.name]!,
+                entrypoint.cache.getDirectory(id),
+              )
+    };
 
     return PackageGraph(entrypoint, result.lockFile, packages);
   }
@@ -84,7 +85,7 @@ class PackageGraph {
       return entrypoint.isCached;
     } else {
       var id = lockFile.packages[package]!;
-      return entrypoint.cache.source(id.source) is CachedSource;
+      return id.source is CachedSource;
     }
   }
 

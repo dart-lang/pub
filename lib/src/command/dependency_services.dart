@@ -90,7 +90,7 @@ class DependencyServicesReportCommand extends PubCommand {
       if (dependencySet != null) {
         // Force the version to be the new version.
         dependencySet[package.name] =
-            package.toRange().withConstraint(package.toRange().constraint);
+            package.toRef().withConstraint(package.toRange().constraint);
       }
 
       final resolution = await tryResolveVersions(
@@ -177,7 +177,7 @@ class DependencyServicesReportCommand extends PubCommand {
       PackageId? singleBreakingVersion;
       if (dependencySet != null) {
         dependencySet[package.name] = package
-            .toRange()
+            .toRef()
             .withConstraint(stripUpperBound(package.toRange().constraint));
         final singleBreakingPackagesResult =
             await _tryResolve(singleBreakingPubspec, cache);
@@ -188,7 +188,10 @@ class DependencyServicesReportCommand extends PubCommand {
         'name': package.name,
         'version': package.version.toString(),
         'kind': kind,
-        'latest': (await cache.getLatest(package))?.version.toString(),
+        'latest':
+            (await cache.getLatest(package.toRef(), version: package.version))
+                ?.version
+                .toString(),
         'constraint':
             _constraintOf(compatiblePubspec, package.name)?.toString(),
         if (compatibleVersion != null)
@@ -403,7 +406,7 @@ class _PackageVersion {
 }
 
 Map<String, PackageRange>? dependencySetOfPackage(
-    Pubspec pubspec, PackageName package) {
+    Pubspec pubspec, PackageId package) {
   return pubspec.dependencies.containsKey(package.name)
       ? pubspec.dependencies
       : pubspec.devDependencies.containsKey(package.name)

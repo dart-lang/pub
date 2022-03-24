@@ -110,4 +110,6 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   /// [LanguageVersion.parse].
   @override
   String toString() => '$major.$minor';
+
+  Version firstStable() => Version(major, minor, 0);
 }

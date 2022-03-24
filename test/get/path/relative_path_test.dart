@@ -4,7 +4,8 @@
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/source/path.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -90,10 +91,11 @@ void main() {
     await pubGet();
 
     var lockfilePath = path.join(d.sandbox, appPath, 'pubspec.lock');
-    var lockfile = LockFile.load(lockfilePath, SourceRegistry());
-    var description = lockfile.packages['foo']!.description;
+    var lockfile = LockFile.load(lockfilePath, SystemCache().sources);
+    var description =
+        lockfile.packages['foo']!.description.description as PathDescription;
 
-    expect(description['relative'], isTrue);
-    expect(description['path'], path.join(d.sandbox, 'foo'));
+    expect(description.relative, isTrue);
+    expect(description.path, path.join(d.sandbox, 'foo'));
   });
 }

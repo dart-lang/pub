@@ -20,7 +20,6 @@ import 'pubspec.dart';
 import 'solver.dart';
 import 'source.dart';
 import 'source/cached.dart';
-import 'source/path.dart';
 import 'system_cache.dart';
 
 enum NullSafetyCompliance {
@@ -71,28 +70,29 @@ class NullSafetyAnalysis {
   ///
   /// If [packageId] is a relative path dependency [containingPath] must be
   /// provided with an absolute path to resolve it against.
-  Future<NullSafetyAnalysisResult> nullSafetyCompliance(PackageId packageId,
-      {String? containingPath}) async {
+  Future<NullSafetyAnalysisResult> nullSafetyCompliance(
+    PackageId packageId,
+  ) async {
+    final description = packageId.description.description;
+    final rootPubspec = await _systemCache.describe(packageId);
+
     // A space in the name prevents clashes with other package names.
     final fakeRootName = '${packageId.name} importer';
     final fakeRoot = Package.inMemory(Pubspec(fakeRootName,
         fields: {
           'dependencies': {
             packageId.name: {
-              packageId.source!.name: packageId.source is PathSource
-                  ? (packageId.description['relative']
-                      ? path.join(
-                          containingPath!, packageId.description['path'])
-                      : packageId.description['path'])
-                  : packageId.description,
+              packageId.source.name: description.serializeForPubspec(
+                  containingDir: null,
+                  languageVersion:
+                      LanguageVersion.firstVersionWithShorterHostedSyntax),
               'version': packageId.version.toString(),
             }
           }
         },
-        sources: _systemCache.sources));
+        sources: _systemCache.sources,
+        sdkConstraints: {'dart': rootPubspec.sdkConstraints['dart']!}));
 
-    final rootPubspec =
-        await packageId.source!.bind(_systemCache).describe(packageId);
     final rootLanguageVersion = rootPubspec.languageVersion;
     if (!rootLanguageVersion.supportsNullSafety) {
       final span =
@@ -119,8 +119,10 @@ class NullSafetyAnalysis {
     }
     return nullSafetyComplianceOfPackages(
       result.packages.where((id) => id.name != fakeRootName),
-      Package(rootPubspec,
-          packageId.source!.bind(_systemCache).getDirectory(packageId)),
+      Package(
+        rootPubspec,
+        _systemCache.getDirectory(packageId),
+      ),
     );
   }
 
@@ -144,15 +146,15 @@ class NullSafetyAnalysis {
       final packageInternalAnalysis =
           await _packageInternallyGoodCache.putIfAbsent(dependencyId, () async {
         Pubspec pubspec;
-        BoundSource? boundSource;
+        Source? source;
         String packageDir;
-        if (dependencyId.source == null) {
+        if (dependencyId.isRoot) {
           pubspec = rootPackage.pubspec;
           packageDir = rootPackage.dir;
         } else {
-          boundSource = _systemCache.source(dependencyId.source);
-          pubspec = await boundSource.describe(dependencyId);
-          packageDir = boundSource.getDirectory(dependencyId);
+          source = dependencyId.source;
+          pubspec = await _systemCache.describe(dependencyId);
+          packageDir = _systemCache.getDirectory(dependencyId);
         }
 
         if (!pubspec.languageVersion.supportsNullSafety) {
@@ -167,9 +169,9 @@ class NullSafetyAnalysis {
           );
         }
 
-        if (boundSource is CachedSource) {
+        if (source is CachedSource) {
           // TODO(sigurdm): Consider using withDependencyType here.
-          await boundSource.downloadToSystemCache(dependencyId);
+          await source.downloadToSystemCache(dependencyId, _systemCache);
         }
 
         final libDir =

@@ -26,7 +26,7 @@ import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/package_name.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
@@ -609,8 +609,8 @@ Future<void> createLockFile(String package,
     Map<String, String>? hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
-  var lockFile = _createLockFile(cache.sources,
-      sandbox: dependenciesInSandBox, hosted: hosted);
+  var lockFile =
+      _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
     d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package))),
@@ -631,8 +631,8 @@ Future<void> createPackagesFile(String package,
     {Iterable<String>? dependenciesInSandBox,
     Map<String, String>? hosted}) async {
   var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var lockFile = _createLockFile(cache.sources,
-      sandbox: dependenciesInSandBox, hosted: hosted);
+  var lockFile =
+      _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
     d.file(
@@ -653,7 +653,7 @@ Future<void> createPackagesFile(String package,
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-LockFile _createLockFile(SourceRegistry sources,
+LockFile _createLockFile(SystemCache cache,
     {Iterable<String>? sandbox, Map<String, String>? hosted}) {
   var dependencies = {};
 
@@ -663,19 +663,14 @@ LockFile _createLockFile(SourceRegistry sources,
     }
   }
 
-  var packages = dependencies.keys.map((name) {
-    var dependencyPath = dependencies[name];
-    return sources.path.parseId(
-        name, Version(0, 0, 0), {'path': dependencyPath, 'relative': true},
-        containingPath: p.join(d.sandbox, appPath));
-  }).toList();
-
-  if (hosted != null) {
-    hosted.forEach((name, version) {
-      var id = sources.hosted.idFor(name, Version.parse(version));
-      packages.add(id);
-    });
-  }
+  final packages = <PackageId>[
+    ...dependencies.entries.map((entry) => cache.path.parseId(
+        entry.key, Version(0, 0, 0), {'path': entry.value, 'relative': true},
+        containingDir: p.join(d.sandbox, appPath))),
+    if (hosted != null)
+      ...hosted.entries.map(
+          (entry) => cache.hosted.idFor(entry.key, Version.parse(entry.value)))
+  ];
 
   return LockFile(packages);
 }

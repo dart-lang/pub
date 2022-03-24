@@ -34,9 +34,7 @@ class LishCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// The URL of the server to which to upload the package.
-  late final Uri server = _createServer();
-
-  Uri _createServer() {
+  late final Uri host = () {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
@@ -57,8 +55,8 @@ class LishCommand extends PubCommand {
     }
 
     // Use the default server if nothing else is specified
-    return cache.sources.hosted.defaultUrl;
-  }
+    return Uri.parse(cache.hosted.defaultUrl);
+  }();
 
   /// Whether the publish is just a preview.
   bool get dryRun => argResults['dry-run'];
@@ -91,7 +89,7 @@ class LishCommand extends PubCommand {
 
     try {
       await log.progress('Uploading', () async {
-        var newUri = server.resolve('api/packages/versions/new');
+        var newUri = host.resolve('api/packages/versions/new');
         var response = await client.get(newUri, headers: pubApiHeaders);
         var parameters = parseJsonResponse(response);
 
@@ -123,14 +121,14 @@ class LishCommand extends PubCommand {
     } on AuthenticationException catch (error) {
       var msg = '';
       if (error.statusCode == 401) {
-        msg += '$server package repository requested authentication!\n'
+        msg += '$host package repository requested authentication!\n'
             'You can provide credentials using:\n'
-            '    pub token add $server\n';
+            '    pub token add $host\n';
       }
       if (error.statusCode == 403) {
-        msg += 'Insufficient permissions to the resource at the $server '
+        msg += 'Insufficient permissions to the resource at the $host '
             'package repository.\nYou can modify credentials using:\n'
-            '    pub token add $server\n';
+            '    pub token add $host\n';
       }
       if (error.serverMessage != null) {
         msg += '\n' + error.serverMessage! + '\n';
@@ -143,7 +141,7 @@ class LishCommand extends PubCommand {
         // the error. Try to parse that out once we have an easily-accessible
         // XML parser.
         fail(log.red('Failed to upload the package.'));
-      } else if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
+      } else if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
       } else {
         rethrow;
@@ -170,8 +168,9 @@ class LishCommand extends PubCommand {
           Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'],
       };
 
-      final isOfficalServer = officialPubServers.contains(server.toString());
-      if (isOfficalServer && !cache.tokenStore.hasCredential(server)) {
+      // Using OAuth2 authentication client for the official pub servers
+      final isOfficalServer = officialPubServers.contains(host.toString());
+      if (isOfficalServer && !cache.tokenStore.hasCredential(host)) {
         // Using OAuth2 authentication client for the official pub servers, when
         // we don't have an explicit token from [TokenStore] to use instead.
         //
@@ -182,13 +181,13 @@ class LishCommand extends PubCommand {
         });
       } else {
         // For third party servers using bearer authentication client
-        await withAuthenticatedClient(cache, server, (client) {
+        await withAuthenticatedClient(cache, host, (client) {
           return _publishUsingClient(packageBytes, client);
         });
       }
     } on PubHttpException catch (error) {
       var url = error.response.request!.url;
-      if (Uri.parse(url.origin) == Uri.parse(server.origin)) {
+      if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
       } else {
         rethrow;
@@ -219,11 +218,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     }
 
     var files = entrypoint.root.listFiles();
-    log.fine('Archiving and publishing ${entrypoint.root}.');
+    log.fine('Archiving and publishing ${entrypoint.root.name}.');
 
     // Show the package contents so the user can verify they look OK.
     var package = entrypoint.root;
-    log.message('Publishing ${package.name} ${package.version} to $server:\n'
+    log.message('Publishing ${package.name} ${package.version} to $host:\n'
         '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
 
     var packageBytesFuture =
@@ -260,7 +259,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     await Validator.runAll(
       entrypoint,
       packageSize,
-      server,
+      host,
       hints: hints,
       warnings: warnings,
       errors: errors,

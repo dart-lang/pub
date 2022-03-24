@@ -30,10 +30,9 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-sgit', '../foo.git']);
 
-    final locationUri = p.toUri(p.join(d.sandbox, 'foo.git'));
     await runPub(
         args: ['global', 'list'],
-        output: 'foo 1.0.0 from Git repository "$locationUri"');
+        output: 'foo 1.0.0 from Git repository "..${p.separator}foo.git"');
   });
 
   test('lists an activated Path package', () async {

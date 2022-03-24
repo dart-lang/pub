@@ -11,14 +11,13 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
-import 'feature.dart';
 import 'io.dart';
 import 'language_version.dart';
 import 'log.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
-import 'source_registry.dart';
+import 'system_cache.dart';
 import 'utils.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
@@ -164,58 +163,6 @@ class Pubspec extends PubspecBase {
   }
 
   Map<String, PackageRange>? _dependencyOverrides;
-
-  late final Map<String, Feature> features = _computeFeatures();
-
-  Map<String, Feature> _computeFeatures() {
-    final features = fields['features'];
-    if (features == null) {
-      return const {};
-    }
-
-    if (features is! YamlMap) {
-      _error('"features" field must be a map.', fields.nodes['features']!.span);
-    }
-
-    return mapMap(features.nodes,
-        key: (dynamic nameNode, dynamic _) => _validateFeatureName(nameNode),
-        value: (dynamic nameNode, dynamic specNode) {
-          if (specNode.value == null) {
-            return Feature(nameNode.value, const []);
-          }
-
-          if (specNode is! YamlMap) {
-            _error('A feature specification must be a map.', specNode.span);
-          }
-
-          var onByDefault = specNode['default'] ?? true;
-          if (onByDefault is! bool) {
-            _error('Default must be true or false.',
-                specNode.nodes['default']!.span);
-          }
-
-          var requires = _parseStringList(specNode.nodes['requires'],
-              validate: (name, span) {
-            if (!features.containsKey(name)) _error('Undefined feature.', span);
-          });
-
-          var dependencies = _parseDependencies(
-            'dependencies',
-            specNode.nodes['dependencies'],
-            _sources,
-            languageVersion,
-            _packageName,
-            _location,
-          );
-
-          var sdkConstraints = _parseEnvironment(specNode);
-
-          return Feature(nameNode.value, dependencies.values,
-              requires: requires,
-              sdkConstraints: sdkConstraints,
-              onByDefault: onByDefault);
-        });
-  }
 
   /// A map from SDK identifiers to constraints on those SDK versions.
   Map<String, VersionConstraint> get sdkConstraints {
@@ -400,7 +347,8 @@ class Pubspec extends PubspecBase {
         _sdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': VersionConstraint.any}),
         _includeDefaultSdkConstraint = false,
-        _sources = sources ?? SourceRegistry(),
+        _sources = sources ??
+            ((String? name) => throw StateError('No source registry given')),
         _overridesFileFields = null,
         super(
           fields == null ? YamlMap() : YamlMap.wrap(fields),
@@ -496,7 +444,6 @@ class Pubspec extends PubspecBase {
     _collectError(() => dependencies);
     _collectError(() => devDependencies);
     _collectError(() => publishTo);
-    _collectError(() => features);
     _collectError(() => executables);
     _collectError(() => falseSecrets);
     _collectError(_ensureEnvironment);
@@ -542,11 +489,10 @@ Map<String, PackageRange> _parseDependencies(
       String? sourceName;
 
       VersionConstraint versionConstraint = VersionRange();
-      var features = const <String, FeatureDependency>{};
       if (spec == null) {
-        sourceName = sources.defaultSource.name;
+        sourceName = null;
       } else if (spec is String) {
-        sourceName = sources.defaultSource.name;
+        sourceName = null;
         versionConstraint =
             _parseVersionConstraint(specNode, packageName, fileType);
       } else if (spec is Map) {
@@ -561,11 +507,6 @@ Map<String, PackageRange> _parseDependencies(
             packageName,
             fileType,
           );
-        }
-
-        if (spec.containsKey('features')) {
-          spec.remove('features');
-          features = _parseDependencyFeatures(specMap.nodes['features']);
         }
 
         var sourceNames = spec.keys.toList();
@@ -590,83 +531,24 @@ Map<String, PackageRange> _parseDependencies(
 
       // Let the source validate the description.
       var ref = _wrapFormatException('description', descriptionNode?.span, () {
-        String? pubspecPath;
+        String? pubspecDir;
         if (location != null && _isFileUri(location)) {
-          pubspecPath = path.fromUri(location);
+          pubspecDir = path.dirname(path.fromUri(location));
         }
 
-        return sources[sourceName]!.parseRef(
+        return sources(sourceName).parseRef(
           name,
           descriptionNode?.value,
-          containingPath: pubspecPath,
+          containingDir: pubspecDir,
           languageVersion: languageVersion,
         );
       }, packageName, fileType, targetPackage: name);
 
-      dependencies[name] =
-          ref.withConstraint(versionConstraint).withFeatures(features);
+      dependencies[name] = ref.withConstraint(versionConstraint);
     },
   );
 
   return dependencies;
-}
-
-/// Parses [node] to a map from feature names to whether those features are
-/// enabled.
-Map<String, FeatureDependency> _parseDependencyFeatures(YamlNode? node) {
-  if (node?.value == null) return const {};
-  if (node is! YamlMap) _error('Features must be a map.', node!.span);
-
-  return mapMap(node.nodes,
-      key: (dynamic nameNode, dynamic _) => _validateFeatureName(nameNode),
-      value: (dynamic _, dynamic valueNode) {
-        var value = valueNode.value;
-        if (value is bool) {
-          return value ? FeatureDependency.required : FeatureDependency.unused;
-        } else if (value is String && value == 'if available') {
-          return FeatureDependency.ifAvailable;
-        } else {
-          _error('Features must be true, false, or "if available".',
-              valueNode.span);
-        }
-      });
-}
-
-/// Verifies that [node] is a string and a valid feature name, and returns it
-/// if so.
-String _validateFeatureName(YamlNode node) {
-  var name = node.value;
-  if (name is! String) {
-    _error('A feature name must be a string.', node.span);
-  } else if (!packageNameRegExp.hasMatch(name)) {
-    _error('A feature name must be a valid Dart identifier.', node.span);
-  }
-
-  return name;
-}
-
-/// Verifies that [node] is a list of strings and returns it.
-///
-/// If [validate] is passed, it's called for each string in [node].
-List<String> _parseStringList(YamlNode? node,
-    {void Function(String value, SourceSpan)? validate}) {
-  var list = _parseList(node);
-  for (var element in list.nodes) {
-    var value = element.value;
-    if (value is String) {
-      if (validate != null) validate(value, element.span);
-    } else {
-      _error('Must be a string.', element.span);
-    }
-  }
-  return list.cast<String>();
-}
-
-/// Verifies that [node] is a list and returns it.
-YamlList _parseList(YamlNode? node) {
-  if (node == null || node.value == null) return YamlList();
-  if (node is YamlList) return node;
-  _error('Must be a list.', node.span);
 }
 
 /// Returns whether [uri] is a file URI.
@@ -719,9 +601,14 @@ VersionConstraint _parseVersionConstraint(
 ///
 /// If [targetPackage] is provided, the value is used to describe the
 /// dependency that caused the problem.
-T _wrapFormatException<T>(String description, SourceSpan? span, T Function() fn,
-    String? packageName, _FileType fileType,
-    {String? targetPackage}) {
+T _wrapFormatException<T>(
+  String description,
+  SourceSpan? span,
+  T Function() fn,
+  String? packageName,
+  _FileType fileType, {
+  String? targetPackage,
+}) {
   try {
     return fn();
   } on FormatException catch (e) {

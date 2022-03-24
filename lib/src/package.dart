@@ -15,7 +15,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'source_registry.dart';
+import 'system_cache.dart';
 import 'utils.dart';
 
 final _readmeRegexp = RegExp(r'^README($|\.)', caseSensitive: false);

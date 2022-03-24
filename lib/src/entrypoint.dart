@@ -617,7 +617,7 @@ class Entrypoint {
     // Check that uncached dependencies' pubspecs are also still satisfied,
     // since they're mutable and may have changed since the last get.
     for (var id in lockFile.packages.values) {
-      var source = cache.source(id.source);
+      final source = id.source;
       if (source is CachedSource) continue;
 
       try {
@@ -630,7 +630,7 @@ class Entrypoint {
       }
 
       final relativePubspecPath =
-          p.join(source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
+          p.join(cache.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
       dataError('$relativePubspecPath has '
           'changed since the $lockFilePath file was generated, please run '
           '"$topLevelProgram pub get" again.');
@@ -654,11 +654,11 @@ class Entrypoint {
       // We only care about cached sources. Uncached sources aren't "installed".
       // If one of those is missing, we want to show the user the file not
       // found error later since installing won't accomplish anything.
-      var source = cache.source(package.source);
+      var source = package.source;
       if (source is! CachedSource) return true;
 
       // Get the directory.
-      var dir = source.getDirectory(package, relativeFrom: '.');
+      var dir = cache.getDirectory(package, relativeFrom: '.');
       // See if the directory is there and looks like a package.
       return fileExists(p.join(dir, 'pubspec.yaml'));
     });
@@ -697,9 +697,9 @@ class Entrypoint {
         return false;
       }
 
-      final source = cache.source(lockFileId.source);
+      final source = lockFileId.source;
       final lockFilePackagePath = root.path(
-        source.getDirectory(lockFileId, relativeFrom: root.dir),
+        cache.getDirectory(lockFileId, relativeFrom: root.dir),
       );
 
       // Make sure that the packagePath agrees with the lock file about the
@@ -836,7 +836,7 @@ class Entrypoint {
 
       // If a package is cached, then it's universally immutable and we need
       // not check if the language version is correct.
-      final source = cache.source(id.source);
+      final source = id.source;
       if (source is CachedSource) {
         continue;
       }
@@ -849,7 +849,9 @@ class Entrypoint {
         );
         if (pkg.languageVersion != languageVersion) {
           final relativePubspecPath = p.join(
-              source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
+            cache.getDirectory(id, relativeFrom: '.'),
+            'pubspec.yaml',
+          );
           dataError('$relativePubspecPath has '
               'changed since the $lockFilePath file was generated, please run '
               '"$topLevelProgram pub get" again.');
