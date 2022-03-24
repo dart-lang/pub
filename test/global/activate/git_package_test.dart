@@ -5,6 +5,7 @@
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
+import 'package:path/path.dart' as p;
 import '../../test_pub.dart';
 
 void main() {
@@ -66,7 +67,7 @@ void main() {
         'activate',
         '-sgit',
         '../foo.git',
-        '--git-ref=HEAD^',
+        '--git-ref=HEAD~',
         '--git-path=sub/',
       ],
       output: allOf(
@@ -76,7 +77,7 @@ void main() {
         contains('in sub'),
         endsWith('Building package executables...\n'
             'Built foo:foo.\n'
-            'Activated foo 2.0.0 from Git repository "../foo.git".'),
+            'Activated foo 2.0.0 from Git repository "..${p.separator}foo.git".'),
       ),
     );
     await runPub(
