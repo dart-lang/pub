@@ -49,7 +49,7 @@ class PackageLister {
   /// The type of the dependency from the root package onto [_ref].
   final DependencyType _dependencyType;
 
-  /// The set of package names that were overridden by the root package.
+  /// The set of packages that were overridden by the root package.
   final Set<String> _overriddenPackages;
 
   /// Whether this is a downgrade, in which case the package priority should be
@@ -118,7 +118,8 @@ class PackageLister {
         // package.
         _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
-        _overriddenPackages = const UnmodifiableSetView.empty(),
+        _overriddenPackages =
+            Set.unmodifiable(package.dependencyOverrides.keys),
         _isDowngrade = false,
         _allowedRetractedVersion = null;
 
@@ -227,12 +228,12 @@ class PackageLister {
         var incompatibilities = <Incompatibility>[];
 
         for (var range in pubspec.dependencies.values) {
-          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 
         for (var range in pubspec.devDependencies.values) {
-          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 

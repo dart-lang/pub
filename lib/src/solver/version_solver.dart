@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
@@ -80,7 +79,7 @@ class VersionSolver {
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> unlock)
-      : _dependencyOverrides = _root.pubspec.dependencyOverrides,
+      : _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
@@ -471,12 +470,12 @@ class VersionSolver {
       var locked = _getLocked(ref.name);
       if (locked != null && !locked.samePackage(ref)) locked = null;
 
-      Set<String> overridden = MapKeySet(_dependencyOverrides);
-      if (overridden.contains(package.name)) {
+      final overridden = <String>{
+        ..._dependencyOverrides.keys,
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
-        overridden = Set.from(overridden)..add(_root.name);
-      }
+        if (_dependencyOverrides.containsKey(package.name)) _root.name
+      };
 
       return PackageLister(
           _systemCache,

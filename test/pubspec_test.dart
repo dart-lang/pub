@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
@@ -186,7 +188,7 @@ dependencies:
       expect(foo.source, equals(sources['hosted']));
     });
 
-    test('throws if it dependes on itself', () {
+    test('throws if it depends on itself', () {
       expectPubspecException('''
 name: myapp
 dependencies:
@@ -815,6 +817,90 @@ features:
           expectPubspecException('features: {foobar: {requires: [baz]}}',
               (pubspec) => pubspec.features);
         });
+      });
+    });
+
+    group('pubspec overrides', () {
+      Pubspec parsePubspecOverrides(String overridesContents) {
+        return Pubspec.parse(
+          '''
+name: app
+environment:
+  sdk: '>=2.7.0 <3.0.0'
+dependency_overrides:
+  bar: 2.1.0
+''',
+          sources,
+          overridesFileContents: overridesContents,
+          overridesLocation: Uri.parse('file:///pubspec_overrides.yaml'),
+        );
+      }
+
+      void expectPubspecOverridesException(
+        String contents,
+        void Function(Pubspec) fn, [
+        String? expectedContains,
+      ]) {
+        var expectation = isA<PubspecException>();
+        if (expectedContains != null) {
+          expectation = expectation.having((error) => error.toString(),
+              'toString()', contains(expectedContains));
+        }
+
+        var pubspec = parsePubspecOverrides(contents);
+        expect(() => fn(pubspec), throwsA(expectation));
+      }
+
+      test('allows empty overrides file', () {
+        var pubspec = parsePubspecOverrides('');
+        expect(pubspec.dependencyOverrides['foo'], isNull);
+        final bar = pubspec.dependencyOverrides['bar']!;
+        expect(bar.name, equals('bar'));
+        expect(bar.source, equals(sources['hosted']));
+        expect(bar.constraint, VersionConstraint.parse('2.1.0'));
+      });
+
+      test('allows empty dependency_overrides section', () {
+        final pubspec = parsePubspecOverrides('''
+dependency_overrides:
+''');
+        expect(pubspec.dependencyOverrides, isEmpty);
+      });
+
+      test('parses dependencies in dependency_overrides section', () {
+        final pubspec = parsePubspecOverrides('''
+dependency_overrides:
+  foo:
+    version: 1.0.0
+''');
+
+        expect(pubspec.dependencyOverrides['bar'], isNull);
+
+        final foo = pubspec.dependencyOverrides['foo']!;
+        expect(foo.name, equals('foo'));
+        expect(foo.source, equals(sources['hosted']));
+        expect(foo.constraint, VersionConstraint.parse('1.0.0'));
+      });
+
+      test('throws exception with correct source references', () {
+        expectPubspecOverridesException('''
+dependency_overrides:
+  foo:
+    fake: bad
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
+            'Error on line 3, column 11 of ${Platform.pathSeparator}pubspec_overrides.yaml');
+      });
+
+      test('throws if overrides contain invalid dependency section', () {
+        expectPubspecOverridesException('''
+dependency_overrides: false
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
+      });
+
+      test('throws if overrides contain an unknown field', () {
+        expectPubspecOverridesException('''
+name: 'foo'
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
       });
     });
   });
