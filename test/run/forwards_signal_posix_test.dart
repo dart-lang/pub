@@ -27,11 +27,11 @@ const _script = """
 import 'dart:io';
 
 main() {
-  ProcessSignal.SIGHUP.watch().first.then(print);
-  ProcessSignal.SIGTERM.watch().first.then(print);
-  ProcessSignal.SIGUSR1.watch().first.then(print);
-  ProcessSignal.SIGUSR2.watch().first.then(print);
-  ProcessSignal.SIGWINCH.watch().first.then(print);
+  ProcessSignal.sighup.watch().first.then(print);
+  ProcessSignal.sigterm.watch().first.then(print);
+  ProcessSignal.sigusr1.watch().first.then(print);
+  ProcessSignal.sigusr2.watch().first.then(print);
+  ProcessSignal.sigwinch.watch().first.then(print);
 
   print("ready");
 }
