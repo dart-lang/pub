@@ -46,9 +46,7 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-      ]).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
@@ -64,11 +62,8 @@ void main() {
 
       await d.cacheDir(
           {'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-        d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-        d.packageConfigEntry(name: 'baz', version: '2.5.3'),
-      ]).validate();
+      await d.appPackagesFile(
+          {'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
       await d
           .appDir({'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
     });
@@ -95,9 +90,7 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-      ]).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -143,9 +136,7 @@ void main() {
       await pubAdd(args: ['foo:1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-      ]).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
       await d.appDir({'foo': '1.2.3'}).validate();
     });
 
@@ -226,9 +217,7 @@ environment:
               'adding it to dependencies instead.'));
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-      ]).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -255,9 +244,7 @@ environment:
         await pubAdd(args: ['foo']);
 
         await d.cacheDir({'foo': '1.2.2'}).validate();
-        await d.appPackageConfigFile([
-          d.packageConfigEntry(name: 'foo', version: '1.2.2'),
-        ]).validate();
+        await d.appPackagesFile({'foo': '1.2.2'}).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
@@ -469,9 +456,7 @@ environment:
 
       await pubAdd(args: ['--dev', 'foo:1.2.3']);
 
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-      ]).validate();
+      await d.appPackagesFile({'foo': '1.2.3'}).validate();
 
       await d.dir(appPath, [
         d.pubspec({
@@ -581,9 +566,7 @@ environment:
         await pubAdd(args: ['foo', '--dev']);
 
         await d.cacheDir({'foo': '1.2.2'}).validate();
-        await d.appPackageConfigFile([
-          d.packageConfigEntry(name: 'foo', version: '1.2.2'),
-        ]).validate();
+        await d.appPackagesFile({'foo': '1.2.2'}).validate();
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',

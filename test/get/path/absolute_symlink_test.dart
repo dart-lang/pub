@@ -24,8 +24,8 @@ void main() {
 
     await pubGet();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: fooPath),
+    await d.dir(appPath, [
+      d.packagesFile({'myapp': '.', 'foo': fooPath})
     ]).validate();
 
     await d.dir('moved').create();
@@ -35,9 +35,9 @@ void main() {
     renameInSandbox(appPath, path.join('moved', appPath));
 
     await d.dir('moved', [
-      d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', path: fooPath),
-      ]),
+      d.dir(appPath, [
+        d.packagesFile({'myapp': '.', 'foo': fooPath})
+      ])
     ]).validate();
   });
 }

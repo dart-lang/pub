@@ -17,9 +17,8 @@ void main() {
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-    ]).validate();
+
+    await d.appPackagesFile({'foo': '1.0.0'}).validate();
 
     server.serve('foo', '1.0.1');
 
@@ -27,8 +26,6 @@ void main() {
 
     await pubGet();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0'}).validate();
   });
 }

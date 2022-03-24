@@ -45,8 +45,7 @@ void main() {
       await pubCommand(command);
 
       await d.dir('myapp', [
-        d.packageConfigFile(
-            [d.packageConfigEntry(name: 'myapp_name', path: '.')]),
+        d.packagesFile({'myapp_name': '.'})
       ]).validate();
     });
 
