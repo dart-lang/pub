@@ -85,23 +85,35 @@ class GlobalPackages {
   /// If [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future<void> activateGit(String repo, List<String>? executables,
-      {Map<String, FeatureDependency>? features,
-      required bool overwriteBinStubs}) async {
+  Future<void> activateGit(
+    String repo,
+    List<String>? executables, {
+    Map<String, FeatureDependency>? features,
+    required bool overwriteBinStubs,
+    String? path,
+    String? ref,
+  }) async {
     var name = await cache.git.getPackageNameFromRepo(repo);
 
     // TODO(nweiz): Add some special handling for git repos that contain path
     // dependencies. Their executables shouldn't be cached, and there should
     // be a mechanism for redoing dependency resolution if a path pubspec has
     // changed (see also issue 20499).
-    PackageRef ref;
+    PackageRef packageRef;
     try {
-      ref = cache.git.source.parseRef(name, {'url': repo}, containingPath: '.');
+      packageRef = cache.git.source.parseRef(
+          name,
+          {
+            'url': repo,
+            if (path != null) 'path': path,
+            if (ref != null) 'ref': ref,
+          },
+          containingPath: '.');
     } on FormatException catch (e) {
       throw ApplicationException(e.message);
     }
     await _installInCache(
-        ref
+        packageRef
             .withConstraint(VersionConstraint.any)
             .withFeatures(features ?? const {}),
         executables,

@@ -27,6 +27,11 @@ class GlobalActivateCommand extends PubCommand {
         allowed: ['git', 'hosted', 'path'],
         defaultsTo: 'hosted');
 
+    argParser.addOption('git-path', help: 'Path of git package in repository');
+
+    argParser.addOption('git-ref',
+        help: 'Git branch or commit to be retrieved');
+
     argParser.addMultiOption('features',
         abbr: 'f', help: 'Feature(s) to enable.', hide: true);
 
@@ -102,13 +107,24 @@ class GlobalActivateCommand extends PubCommand {
       usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 
+    if (argResults['source'] != 'git' &&
+        (argResults['git-path'] != null || argResults['git-ref'] != null)) {
+      usageException(
+          'Options `--git-path` and `--git-ref` can only be used with --source=git.');
+    }
+
     switch (argResults['source']) {
       case 'git':
         var repo = readArg('No Git repository given.');
-        // TODO(rnystrom): Allow passing in a Git ref too.
         validateNoExtraArgs();
-        return globals.activateGit(repo, executables,
-            features: features, overwriteBinStubs: overwrite);
+        return globals.activateGit(
+          repo,
+          executables,
+          features: features,
+          overwriteBinStubs: overwrite,
+          path: argResults['git-path'],
+          ref: argResults['git-ref'],
+        );
 
       case 'hosted':
         var package = readArg('No package to activate given.');
