@@ -24,8 +24,6 @@ void main() {
     await pubGet();
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
   });
 }

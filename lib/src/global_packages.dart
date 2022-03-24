@@ -150,11 +150,7 @@ class GlobalPackages {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(
-      SolveType.get,
-      analytics: analytics,
-      generateDotPackages: false,
-    );
+    await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
     var name = entrypoint.root.name;
     _describeActive(name, cache);
 
