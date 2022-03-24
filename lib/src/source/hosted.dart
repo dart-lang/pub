@@ -79,6 +79,14 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
   if (u.path.isNotEmpty && !u.path.endsWith('/')) {
     u = u.replace(path: u.path + '/');
   }
+  // pub.dev and pub.dartlang.org are identical.
+  //
+  // We rewrite here to avoid caching both, and to avoid having different
+  // credentials for these two.
+  if (u == Uri.parse('https://pub.dev')) {
+    log.fine('Using https://pub.dartlang.org instead of https://pub.dev.');
+    u = Uri.parse('https://pub.dartlang.org');
+  }
   return u;
 }
 

@@ -153,7 +153,8 @@ class LishCommand extends PubCommand {
     try {
       final officialPubServers = {
         'https://pub.dartlang.org',
-        'https://pub.dev',
+        // [validateAndNormalizeHostedUrl] normalizes https://pub.dev to
+        // https://pub.dartlang.org, so we don't need to do allow that here.
 
         // Pub uses oauth2 credentials only for authenticating official pub
         // servers for security purposes (to not expose pub.dev access token to
