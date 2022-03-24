@@ -145,6 +145,14 @@ class Entrypoint {
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
 
+  /// Whether the entrypoint package contains a `pubspec_overrides.yaml` file.
+  bool get hasPubspecOverrides =>
+      !root.isInMemory && fileExists(pubspecOverridesPath);
+
+  /// The path to the entrypoint package's pubspec overrides file.
+  String get pubspecOverridesPath =>
+      p.normalize(root.path('pubspec_overrides.yaml'));
+
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => p.normalize(p.join(_configRoot!, 'pubspec.lock'));
 
@@ -178,7 +186,8 @@ class Entrypoint {
   Entrypoint(
     String rootDir,
     this.cache,
-  )   : root = Package.load(null, rootDir, cache.sources),
+  )   : root = Package.load(null, rootDir, cache.sources,
+            withPubspecOverrides: true),
         globalDir = null;
 
   Entrypoint.inMemory(this.root, this.cache,
@@ -213,17 +222,13 @@ class Entrypoint {
   Entrypoint? _example;
 
   /// Writes .packages and .dart_tool/package_config.json
-  Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
+  Future<void> writePackagesFiles() async {
     final entrypointName = isGlobal ? null : root.name;
-    if (generateDotPackages) {
-      writeTextFile(
-          packagesFile,
-          lockFile.packagesFile(cache,
-              entrypoint: entrypointName,
-              relativeFrom: isGlobal ? null : root.dir));
-    } else {
-      tryDeleteEntry(packagesFile);
-    }
+    writeTextFile(
+        packagesFile,
+        lockFile.packagesFile(cache,
+            entrypoint: entrypointName,
+            relativeFrom: isGlobal ? null : root.dir));
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
@@ -261,10 +266,14 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
-    required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
+    if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
+      log.warning(
+          'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
+    }
+
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
@@ -313,7 +322,7 @@ class Entrypoint {
     }
     if (!dryRun) {
       await result.downloadCachedPackages(cache);
-      _saveLockFile(result);
+      saveLockFile(result);
     }
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
@@ -330,7 +339,7 @@ class Entrypoint {
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-      await writePackagesFiles(generateDotPackages: generateDotPackages);
+      await writePackagesFiles();
 
       try {
         if (precompile) {
@@ -518,11 +527,22 @@ class Entrypoint {
     var pubspecModified = File(pubspecPath).lastModifiedSync();
     var lockFileModified = File(lockFilePath).lastModifiedSync();
 
+    var pubspecChanged = lockFileModified.isBefore(pubspecModified);
+    var pubspecOverridesChanged = false;
+
+    if (hasPubspecOverrides) {
+      var pubspecOverridesModified =
+          File(pubspecOverridesPath).lastModifiedSync();
+      pubspecOverridesChanged =
+          lockFileModified.isBefore(pubspecOverridesModified);
+    }
+
     var touchedLockFile = false;
-    if (lockFileModified.isBefore(pubspecModified) || hasPathDependencies) {
-      // If `pubspec.lock` is newer than `pubspec.yaml` or we have path
-      // dependencies, then we check that `pubspec.lock` is a correct solution
-      // for the requirements in `pubspec.yaml`. This aims to:
+    if (pubspecChanged || pubspecOverridesChanged || hasPathDependencies) {
+      // If `pubspec.lock` is older than `pubspec.yaml` or
+      // `pubspec_overrides.yaml`, or we have path dependencies, then we check
+      // that `pubspec.lock` is a correct solution for the requirements in
+      // `pubspec.yaml` and `pubspec_overrides.yaml`. This aims to:
       //  * Prevent missing packages when `pubspec.lock` is checked into git.
       //  * Mitigate missing transitive dependencies when the `pubspec.yaml` in
       //    a path dependency is changed.
@@ -531,7 +551,8 @@ class Entrypoint {
         touchedLockFile = true;
         touch(lockFilePath);
       } else {
-        dataError('The $pubspecPath file has changed since the $lockFilePath '
+        var filePath = pubspecChanged ? pubspecPath : pubspecOverridesPath;
+        dataError('The $filePath file has changed since the $lockFilePath '
             'file was generated, please run "$topLevelProgram pub get" again.');
       }
     }
@@ -549,11 +570,11 @@ class Entrypoint {
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
     if (packageConfigModified.isBefore(lockFileModified) ||
         hasPathDependencies) {
-      // If `package_config.json` is newer than `pubspec.lock` or we have
+      // If `package_config.json` is older than `pubspec.lock` or we have
       // path dependencies, then we check that `package_config.json` is a
       // correct configuration on the local machine. This aims to:
       //  * Mitigate issues when copying a folder from one machine to another.
-      //  * Force `pub get` if a path dependency has changed language verison.
+      //  * Force `pub get` if a path dependency has changed language version.
       _checkPackageConfigUpToDate();
       touch(packageConfigFile);
     } else if (touchedLockFile) {
@@ -846,7 +867,7 @@ class Entrypoint {
   ///
   /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
   /// uses that.
-  void _saveLockFile(SolveResult result) {
+  void saveLockFile(SolveResult result) {
     _lockFile = result.lockFile;
 
     final windowsLineEndings = fileExists(lockFilePath) &&

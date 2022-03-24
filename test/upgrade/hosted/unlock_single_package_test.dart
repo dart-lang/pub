@@ -18,10 +18,7 @@ void main() {
 
     await pubGet();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
 
     server.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
     server.serve('bar', '2.0.0');
@@ -29,23 +26,16 @@ void main() {
     // This can't upgrade 'bar'
     await pubUpgrade(args: ['bar']);
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
+
     // Introducing foo and bar 1.1.0, to show that only 'bar' will be upgraded
     server.serve('foo', '1.1.0', deps: {'bar': '<2.0.0'});
     server.serve('bar', '1.1.0');
 
     await pubUpgrade(args: ['bar']);
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
+
     await pubUpgrade();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '2.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '2.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '2.0.0', 'bar': '2.0.0'}).validate();
   });
 }

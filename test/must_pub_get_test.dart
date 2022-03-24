@@ -213,7 +213,7 @@ void main() {
           d.appPubspec({'foo': '1.0.0'})
         ]).create();
 
-        await pubGet(args: ['--legacy-packages-file']);
+        await pubGet();
 
         deleteEntry(p.join(d.sandbox, cachePath));
 
@@ -235,7 +235,7 @@ void main() {
           })
         ]).create();
 
-        await pubGet(args: ['--legacy-packages-file']);
+        await pubGet();
 
         await createPackagesFile(appPath);
 
@@ -257,7 +257,7 @@ void main() {
           })
         ]).create();
 
-        await pubGet(args: ['--legacy-packages-file']);
+        await pubGet();
 
         await d.dir(appPath, [
           d.file('.packages', '''
@@ -284,7 +284,7 @@ foo:http://example.com/
           })
         ]).create();
 
-        await pubGet(args: ['--legacy-packages-file']);
+        await pubGet();
 
         await createPackagesFile(appPath, dependenciesInSandBox: ['foo']);
 
@@ -452,7 +452,7 @@ foo:http://example.com/
   group("doesn't require the user to run pub get first if", () {
     group(
         'the pubspec is older than the lockfile which is older than the '
-        'package-config, even if the contents are wrong', () {
+        'packages file, even if the contents are wrong', () {
       setUp(() async {
         await d.dir(appPath, [
           d.appPubspec({'foo': '1.0.0'})
@@ -461,6 +461,7 @@ foo:http://example.com/
         await _touch('pubspec.yaml');
 
         await _touch('pubspec.lock');
+        await _touch('.packages');
         await _touch('.dart_tool/package_config.json');
       });
 
@@ -599,11 +600,14 @@ void _runsSuccessfully({bool runDeps = true}) {
           File(p.join(d.sandbox, 'myapp/pubspec.yaml')).lastModifiedSync();
       var lockFileModified =
           File(p.join(d.sandbox, 'myapp/pubspec.lock')).lastModifiedSync();
+      var packagesModified =
+          File(p.join(d.sandbox, 'myapp/.packages')).lastModifiedSync();
       var packageConfigModified =
           File(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
               .lastModifiedSync();
 
       expect(!pubspecModified.isAfter(lockFileModified), isTrue);
+      expect(!lockFileModified.isAfter(packagesModified), isTrue);
       expect(!lockFileModified.isAfter(packageConfigModified), isTrue);
     });
   }

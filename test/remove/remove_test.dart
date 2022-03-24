@@ -21,7 +21,7 @@ void main() {
     await pubRemove(args: ['foo']);
 
     await d.cacheDir({}).validate();
-    await d.appPackageConfigFile([]).validate();
+    await d.appPackagesFile({}).validate();
     await d.appDir().validate();
   });
 
@@ -49,9 +49,7 @@ environment:
     await pubRemove(args: ['foo']);
 
     await d.cacheDir({'bar': '2.0.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'bar', version: '2.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'bar': '2.0.0'}).validate();
 
     await d.dir(appPath, [
       d.pubspec({
@@ -115,7 +113,7 @@ environment:
     await pubRemove(args: ['foo']);
 
     await d.cacheDir({}).validate();
-    await d.appPackageConfigFile([]).validate();
+    await d.appPackagesFile({}).validate();
 
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'})
@@ -142,10 +140,7 @@ environment:
     await pubRemove(args: ['foo', 'bar', 'baz']);
 
     await d.cacheDir({'jfj': '0.2.1'}).validate();
-
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'jfj', version: '0.2.1'),
-    ]).validate();
+    await d.appPackagesFile({'jfj': '0.2.1'}).validate();
 
     await d.dir(appPath, [
       d.pubspec({
@@ -175,10 +170,7 @@ environment:
     await pubGet();
 
     await pubRemove(args: ['foo']);
-
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'bar', version: '1.2.3'),
-    ]).validate();
+    await d.appPackagesFile({'bar': '1.2.3'}).validate();
     await d.appDir({'bar': '1.2.3'}).validate();
   });
 
@@ -196,9 +188,7 @@ environment:
     await pubGet();
 
     await pubRemove(args: ['foo']);
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'bar', version: '1.2.3'),
-    ]).validate();
+    await d.appPackagesFile({'bar': '1.2.3'}).validate();
     await d.appDir({'bar': '1.2.3'}).validate();
   });
 
@@ -220,9 +210,7 @@ environment:
     await pubGet();
 
     await pubRemove(args: ['foo']);
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'bar', version: '2.0.1'),
-    ]).validate();
+    await d.appPackagesFile({'bar': '2.0.1'}).validate();
     await d.appDir({'bar': '2.0.1'}).validate();
   });
 

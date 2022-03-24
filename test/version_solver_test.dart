@@ -1926,6 +1926,44 @@ void override() {
 
     await expectResolves(result: {'foo': '1.2.3', 'bar': '0.0.1'});
   });
+
+  test('overrides in pubspec_overrides.yaml', () async {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'a': '1.0.0'},
+      }),
+      d.pubspecOverrides({
+        'dependency_overrides': {'a': '2.0.0'}
+      }),
+    ]).create();
+
+    await expectResolves(result: {'a': '2.0.0'});
+  });
+
+  test('pubspec_overrides.yaml takes precedence over pubspec.yaml', () async {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
+      ..serve('a', '3.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'a': '1.0.0'},
+        'dependency_overrides': {'a': '2.0.0'}
+      }),
+      d.pubspecOverrides({
+        'dependency_overrides': {'a': '3.0.0'}
+      }),
+    ]).create();
+
+    await expectResolves(result: {'a': '3.0.0'});
+  });
 }
 
 void downgrade() {

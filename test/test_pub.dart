@@ -975,3 +975,30 @@ Future<PackageServer> startPackageServer() async {
   });
   return server;
 }
+
+/// Create temporary folder 'bin/' containing a 'git' script in [sandbox]
+/// By adding the bin/ folder to the search `$PATH` we can prevent `pub` from
+/// detecting the installed 'git' binary and we can test that it prints
+/// a useful error message.
+Future<void> setUpFakeGitScript(
+    {required String bash, required String batch}) async {
+  await d.dir('bin', [
+    if (!Platform.isWindows) d.file('git', bash),
+    if (Platform.isWindows) d.file('git.bat', batch),
+  ]).create();
+  if (!Platform.isWindows) {
+    // Make the script executable.
+    await runProcess('chmod', ['+x', p.join(d.sandbox, 'bin', 'git')]);
+  }
+}
+
+/// Returns an environment where PATH is extended with `$sandbox/bin`.
+Map<String, String> extendedPathEnv() {
+  final separator = Platform.isWindows ? ';' : ':';
+  final binFolder = p.join(d.sandbox, 'bin');
+
+  return {
+    // Override 'PATH' to ensure that we can't detect a working "git" binary
+    'PATH': '$binFolder$separator${Platform.environment['PATH']}',
+  };
+}

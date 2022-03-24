@@ -38,11 +38,9 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')
+    }).validate();
   });
 
   test('depends on a package in a deep subdirectory', () async {
@@ -74,12 +72,9 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path:
-              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
+    }).validate();
 
     final lockFile = LockFile.load(
         p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
@@ -124,12 +119,9 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path:
-              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
+    }).validate();
 
     final lockFile = LockFile.load(
         p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
@@ -173,14 +165,10 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub1',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1')),
-      d.packageConfigEntry(
-          name: 'sub2',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub1': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1'),
+      'sub2': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2')
+    }).validate();
   });
 
   test('depends on packages in the same subdirectory at different revisions',
@@ -225,11 +213,9 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub1', path: pathInCache('git/foo-$oldRevision/subdir')),
-      d.packageConfigEntry(
-          name: 'sub2', path: pathInCache('git/foo-$newRevision/subdir')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub1': pathInCache('git/foo-$oldRevision/subdir'),
+      'sub2': pathInCache('git/foo-$newRevision/subdir')
+    }).validate();
   });
 }

@@ -5,41 +5,10 @@
 @TestOn('linux')
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-import 'package:pub/src/io.dart' show runProcess;
 import 'package:test/test.dart';
-import 'package:test_descriptor/test_descriptor.dart' show sandbox;
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
-
-/// Create temporary folder 'bin/' containing a 'git' script in [sandbox]
-/// By adding the bin/ folder to the search `$PATH` we can prevent `pub` from
-/// detecting the installed 'git' binary and we can test that it prints
-/// a useful error message.
-Future<void> setUpFakeGitScript(
-    {required String bash, required String batch}) async {
-  await d.dir('bin', [
-    if (!Platform.isWindows) d.file('git', bash),
-    if (Platform.isWindows) d.file('git.bat', batch),
-  ]).create();
-  if (!Platform.isWindows) {
-    // Make the script executable.
-
-    await runProcess('chmod', ['+x', p.join(sandbox, 'bin', 'git')]);
-  }
-}
-
-/// Returns an environment where PATH is extended with `$sandbox/bin`.
-Map<String, String> extendedPathEnv() {
-  final separator = Platform.isWindows ? ';' : ':';
-  final binFolder = p.join(sandbox, 'bin');
-
-  return {
-    // Override 'PATH' to ensure that we can't detect a working "git" binary
-    'PATH': '$binFolder$separator${Platform.environment['PATH']}',
-  };
-}
 
 void main() {
   test('reports failure if Git is not installed', () async {

@@ -89,6 +89,8 @@ class GlobalPackages {
     String repo,
     List<String>? executables, {
     required bool overwriteBinStubs,
+    String? path,
+    String? ref,
   }) async {
     var name = await cache.git.getPackageNameFromRepo(repo, cache);
 
@@ -96,14 +98,21 @@ class GlobalPackages {
     // dependencies. Their executables shouldn't be cached, and there should
     // be a mechanism for redoing dependency resolution if a path pubspec has
     // changed (see also issue 20499).
-    PackageRef ref;
+    PackageRef packageRef;
     try {
-      ref = cache.git.parseRef(name, {'url': repo}, containingDir: '.');
+      packageRef = cache.git.parseRef(
+          name,
+          {
+            'url': repo,
+            if (path != null) 'path': path,
+            if (ref != null) 'ref': ref,
+          },
+          containingDir: '.');
     } on FormatException catch (e) {
       throw ApplicationException(e.message);
     }
     await _installInCache(
-      ref.withConstraint(VersionConstraint.any),
+      packageRef.withConstraint(VersionConstraint.any),
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
@@ -150,11 +159,7 @@ class GlobalPackages {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(
-      SolveType.get,
-      analytics: analytics,
-      generateDotPackages: false,
-    );
+    await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
     var name = entrypoint.root.name;
     _describeActive(name, cache);
 
