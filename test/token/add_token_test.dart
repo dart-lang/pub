@@ -155,7 +155,7 @@ void main() {
     await runPub(
       args: ['token', 'add', 'https://pub.dev'],
       input: ['auth-token'],
-      output: contains(
+      silent: contains(
           'Using https://pub.dartlang.org instead of https://pub.dev.'),
     );
 
