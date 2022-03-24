@@ -48,6 +48,15 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
   Uri u;
   try {
     u = Uri.parse(hostedUrl);
+
+    // pub.dev and pub.dartlang.org are identical.
+    //
+    // We rewrite here to avoid caching both, and to avoid having different
+    // credentials for these two.
+    if (u == Uri.parse('https://pub.dev')) {
+      log.message('Using https://pub.dartlang.org instead of https://pub.dev.');
+      u = Uri.parse('https://pub.dartlang.org');
+    }
   } on FormatException catch (e) {
     throw FormatException(
       'invalid url: ${e.message}',
