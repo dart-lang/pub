@@ -14,12 +14,13 @@ import '../test_pub.dart';
 Future<void> expectValidation(
   error,
   int exitCode, {
+  Map<String, String> environment = const {},
   String? workingDirectory,
 }) async {
   await runPub(
     error: error,
     args: ['publish', '--dry-run'],
-    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'},
+    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0', ...environment},
     workingDirectory: workingDirectory ?? d.path(appPath),
     exitCode: exitCode,
   );
@@ -50,6 +51,20 @@ void main() {
               'Consider adjusting your `.gitignore` files to not ignore those files'),
         ]),
         exit_codes.DATA);
+  });
+
+  test('should not fail on missing git', () async {
+    await d.git('myapp', [
+      ...d.validPackage.contents,
+      d.file('.gitignore', '*.txt'),
+      d.file('foo.txt'),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
+    await setUpFakeGitScript(bash: 'echo "Not git"', batch: 'echo "Not git"');
+    await expectValidation(
+        allOf([contains('Package has 0 warnings.')]), exit_codes.SUCCESS,
+        environment: extendedPathEnv());
   });
 
   test('Should also consider gitignores from above the package root', () async {
