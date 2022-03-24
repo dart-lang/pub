@@ -50,7 +50,7 @@ class PackageLister {
   final DependencyType _dependencyType;
 
   /// The set of packages that were overridden by the root package.
-  final Set<PackageRange> _overriddenPackages;
+  final Set<String> _overriddenPackages;
 
   /// Whether this is a downgrade, in which case the package priority should be
   /// reversed.
@@ -119,7 +119,7 @@ class PackageLister {
         _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
         _overriddenPackages =
-            Set.unmodifiable(package.dependencyOverrides.values),
+            Set.unmodifiable(package.dependencyOverrides.keys),
         _isDowngrade = false,
         _allowedRetractedVersion = null;
 
@@ -208,9 +208,6 @@ class PackageLister {
       ];
     }
 
-    late final overriddenPackageNames =
-        _overriddenPackages.map((package) => package.name).toSet();
-
     if (_cachedVersions == null &&
         _locked != null &&
         id.version == _locked!.version) {
@@ -231,23 +228,23 @@ class PackageLister {
         var incompatibilities = <Incompatibility>[];
 
         for (var range in pubspec.dependencies.values) {
-          if (overriddenPackageNames.contains(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 
         for (var range in pubspec.devDependencies.values) {
-          if (overriddenPackageNames.contains(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 
-        for (var range in _overriddenPackages) {
+        for (var range in pubspec.dependencyOverrides.values) {
           incompatibilities.add(_dependency(depender, range));
         }
 
         return incompatibilities;
       } else {
         return pubspec.dependencies.values
-            .where((range) => !overriddenPackageNames.contains(range.name))
+            .where((range) => !_overriddenPackages.contains(range.name))
             .map((range) => _dependency(depender, range))
             .toList();
       }
@@ -268,7 +265,7 @@ class PackageLister {
     // Don't recompute dependencies that have already been emitted.
     var dependencies = Map<String, PackageRange>.from(pubspec.dependencies);
     for (var package in dependencies.keys.toList()) {
-      if (overriddenPackageNames.contains(package)) {
+      if (_overriddenPackages.contains(package)) {
         dependencies.remove(package);
         continue;
       }
@@ -426,9 +423,7 @@ class PackageLister {
   /// Returns whether [pubspec]'s constraint on [sdk] matches the current
   /// version.
   bool _matchesSdkConstraint(Pubspec pubspec, Sdk sdk) {
-    if (_overriddenPackages
-        .map((package) => package.name)
-        .contains(pubspec.name)) return true;
+    if (_overriddenPackages.contains(pubspec.name)) return true;
 
     var constraint = pubspec.sdkConstraints[sdk.identifier];
     if (constraint == null) return true;

@@ -470,17 +470,12 @@ class VersionSolver {
       var locked = _getLocked(ref.name);
       if (locked != null && !locked.samePackage(ref)) locked = null;
 
-      final Set<PackageRange> overridden;
-      if (_dependencyOverrides.containsKey(package.name)) {
+      final overridden = <String>{
+        ..._dependencyOverrides.keys,
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
-        overridden = Set.unmodifiable({
-          ..._dependencyOverrides.values,
-          PackageRange.root(_root),
-        });
-      } else {
-        overridden = Set.unmodifiable(_dependencyOverrides.values);
-      }
+        if (_dependencyOverrides.containsKey(package.name)) _root.name
+      };
 
       return PackageLister(
           _systemCache,
