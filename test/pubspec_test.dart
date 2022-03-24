@@ -896,6 +896,12 @@ dependency_overrides:
 dependency_overrides: false
 ''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
       });
+
+      test('throws if overrides contain an unknown field', () {
+        expectPubspecOverridesException('''
+name: 'foo'
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
+      });
     });
   });
 }

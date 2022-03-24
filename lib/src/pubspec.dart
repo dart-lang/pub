@@ -132,17 +132,26 @@ class Pubspec extends PubspecBase {
   Map<String, PackageRange> get dependencyOverrides {
     if (_dependencyOverrides != null) return _dependencyOverrides!;
     final pubspecOverridesFields = _overridesFileFields;
-    if (pubspecOverridesFields != null &&
-        pubspecOverridesFields.containsKey('dependency_overrides')) {
-      _dependencyOverrides = _parseDependencies(
-        'dependency_overrides',
-        pubspecOverridesFields.nodes['dependency_overrides'],
-        _sources,
-        languageVersion,
-        _packageName,
-        _location,
-        fileType: _FileType.pubspecOverrides,
-      );
+    if (pubspecOverridesFields != null) {
+      pubspecOverridesFields.nodes.forEach((key, _) {
+        if (!const {'dependency_overrides'}.contains(key.value)) {
+          throw PubspecException(
+            'pubspec_overrides.yaml only supports the `dependency_overrides` field.',
+            key.span,
+          );
+        }
+      });
+      if (pubspecOverridesFields.containsKey('dependency_overrides')) {
+        _dependencyOverrides = _parseDependencies(
+          'dependency_overrides',
+          pubspecOverridesFields.nodes['dependency_overrides'],
+          _sources,
+          languageVersion,
+          _packageName,
+          _location,
+          fileType: _FileType.pubspecOverrides,
+        );
+      }
     }
     return _dependencyOverrides ??= _parseDependencies(
       'dependency_overrides',
