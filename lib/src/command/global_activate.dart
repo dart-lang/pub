@@ -27,11 +27,10 @@ class GlobalActivateCommand extends PubCommand {
         allowed: ['git', 'hosted', 'path'],
         defaultsTo: 'hosted');
 
-    argParser.addOption('git-path',
-        help: 'The relative path inside the the git repo');
+    argParser.addOption('git-path', help: 'Path of git package in repository');
 
     argParser.addOption('git-ref',
-        help: 'The ref to resolve for the git source');
+        help: 'Git branch or commit to be retrieved');
 
     argParser.addMultiOption('features',
         abbr: 'f', help: 'Feature(s) to enable.', hide: true);
