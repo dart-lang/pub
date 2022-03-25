@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import '../git.dart' as git;
 import '../ignore.dart';
 import '../io.dart';
+import '../log.dart' as log;
 import '../utils.dart';
 import '../validator.dart';
 
@@ -20,12 +21,21 @@ class GitignoreValidator extends Validator {
   @override
   Future<void> validate() async {
     if (entrypoint.root.inGitRepo) {
-      final checkedIntoGit = git.runSync([
-        'ls-files',
-        '--cached',
-        '--exclude-standard',
-        '--recurse-submodules'
-      ], workingDir: entrypoint.root.dir);
+      late final List<String> checkedIntoGit;
+      try {
+        checkedIntoGit = git.runSync([
+          'ls-files',
+          '--cached',
+          '--exclude-standard',
+          '--recurse-submodules'
+        ], workingDir: entrypoint.root.dir);
+      } on git.GitException catch (e) {
+        log.fine('Could not run `git ls-files` files in repo (${e.message}).');
+        // This validation is only a warning.
+        // If git is not supported on the platform, or too old to support
+        // --recurse-submodules we just continue silently.
+        return;
+      }
       final root = git.repoRoot(entrypoint.root.dir) ?? entrypoint.root.dir;
       var beneath = p.posix.joinAll(
           p.split(p.normalize(p.relative(entrypoint.root.dir, from: root))));

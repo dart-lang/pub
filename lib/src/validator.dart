@@ -205,6 +205,7 @@ abstract class Validator {
 
   /// Returns the [files] that are inside [dir] (relative to the package
   /// entrypoint).
+  // TODO(sigurdm): Consider moving this to a more central location.
   List<String> filesBeneath(String dir, {required bool recursive}) {
     final base = p.canonicalize(p.join(entrypoint.root.dir, dir));
     return files

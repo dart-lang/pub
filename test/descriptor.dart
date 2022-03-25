@@ -107,6 +107,16 @@ Descriptor libPubspec(String name, String version,
   return pubspec(map);
 }
 
+/// Describes a file named `pubspec_overrides.yaml` by default, with the given
+/// YAML-serialized [contents], which should be a serializable object.
+///
+/// [contents] may contain [Future]s that resolve to serializable objects,
+/// which may in turn contain [Future]s recursively.
+Descriptor pubspecOverrides(Map<String, Object> contents) => YamlDescriptor(
+      'pubspec_overrides.yaml',
+      yaml(contents),
+    );
+
 /// Describes a directory named `lib` containing a single dart file named
 /// `<name>.dart` that contains a line of Dart code.
 Descriptor libDir(String name, [String? code]) {
@@ -277,23 +287,6 @@ Descriptor packageConfigFile(
 }) =>
     PackageConfigFileDescriptor(packages, generatorVersion);
 
-Descriptor appPackageConfigFile(
-  List<PackageConfigEntry> packages, {
-  String generatorVersion = '0.1.2+3',
-}) =>
-    dir(
-      appPath,
-      [
-        packageConfigFile(
-          [
-            packageConfigEntry(name: 'myapp', path: '.'),
-            ...packages,
-          ],
-          generatorVersion: generatorVersion,
-        ),
-      ],
-    );
-
 /// Create a [PackageConfigEntry] which assumes package with [name] is either
 /// a cached package with given [version] or a path dependency at given [path].
 PackageConfigEntry packageConfigEntry({
@@ -301,7 +294,6 @@ PackageConfigEntry packageConfigEntry({
   String? version,
   String? path,
   String? languageVersion,
-  PackageServer? server,
 }) {
   if (version != null && path != null) {
     throw ArgumentError.value(
@@ -313,7 +305,7 @@ PackageConfigEntry packageConfigEntry({
   }
   Uri rootUri;
   if (version != null) {
-    rootUri = p.toUri((server ?? globalServer).pathInCache(name, version));
+    rootUri = p.toUri(globalServer.pathInCache(name, version));
   } else {
     rootUri = p.toUri(p.join('..', path));
   }

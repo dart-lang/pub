@@ -29,13 +29,10 @@ class DependencyValidator extends Validator {
     /// Whether any dependency has a caret constraint.
     var _hasCaretDep = false;
 
-    /// Whether any dependency depends on package features.
-    var _hasFeatures = false;
-
     /// Emit an error for dependencies from unknown SDKs or without appropriate
     /// constraints on the Dart SDK.
     void _warnAboutSdkSource(PackageRange dep) {
-      var identifier = dep.description as String;
+      var identifier = (dep.description as SdkDescription).sdk;
       var sdk = sdks[identifier];
       if (sdk == null) {
         errors.add('Unknown SDK "$identifier" for dependency "${dep.name}".');
@@ -50,8 +47,8 @@ class DependencyValidator extends Validator {
     Future _warnAboutSource(PackageRange dep) async {
       List<Version> versions;
       try {
-        var ids = await entrypoint.cache.hosted
-            .getVersions(entrypoint.cache.sources.hosted.refFor(dep.name));
+        var ids = await entrypoint.cache
+            .getVersions(entrypoint.cache.hosted.refFor(dep.name));
         versions = ids.map((id) => id.version).toList();
       } on ApplicationException catch (_) {
         versions = [];
@@ -197,8 +194,8 @@ class DependencyValidator extends Validator {
         } else if (dependency.source is! HostedSource) {
           await _warnAboutSource(dependency);
 
-          if (dependency.source is GitSource &&
-              dependency.description['path'] != '.') {
+          final description = dependency.description;
+          if (description is GitDescription && description.path != '.') {
             validateSdkConstraint(_firstGitPathVersion,
                 "Older versions of pub don't support Git path dependencies.");
           }
@@ -220,32 +217,14 @@ class DependencyValidator extends Validator {
                 _hasCaretDep || constraint.toString().startsWith('^');
           }
         }
-
-        _hasFeatures = _hasFeatures || dependency.features.isNotEmpty;
       }
     }
 
     await _validateDependencies(entrypoint.root.pubspec.dependencies.values);
 
-    for (var feature in entrypoint.root.pubspec.features.values) {
-      // Allow off-by-default features, since older pubs will just ignore them
-      // anyway.
-      _hasFeatures = _hasFeatures || feature.onByDefault;
-
-      await _validateDependencies(feature.dependencies);
-    }
-
     if (_hasCaretDep) {
       validateSdkConstraint(_firstCaretVersion,
           "Older versions of pub don't support ^ version constraints.");
-    }
-
-    if (_hasFeatures) {
-      // TODO(nweiz): Allow packages with features to be published when we have
-      // analyzer support for telling the user that a given import requires a
-      // given feature. When we do this, verify that packages with features have
-      // an SDK constraint that's at least >=2.0.0-dev.11.0.
-      errors.add('Packages with package features may not be published yet.');
     }
   }
 }

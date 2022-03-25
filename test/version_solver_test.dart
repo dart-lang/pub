@@ -9,7 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -1926,6 +1926,44 @@ void override() {
 
     await expectResolves(result: {'foo': '1.2.3', 'bar': '0.0.1'});
   });
+
+  test('overrides in pubspec_overrides.yaml', () async {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'a': '1.0.0'},
+      }),
+      d.pubspecOverrides({
+        'dependency_overrides': {'a': '2.0.0'}
+      }),
+    ]).create();
+
+    await expectResolves(result: {'a': '2.0.0'});
+  });
+
+  test('pubspec_overrides.yaml takes precedence over pubspec.yaml', () async {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
+      ..serve('a', '3.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'a': '1.0.0'},
+        'dependency_overrides': {'a': '2.0.0'}
+      }),
+      d.pubspecOverrides({
+        'dependency_overrides': {'a': '3.0.0'}
+      }),
+    ]).create();
+
+    await expectResolves(result: {'a': '3.0.0'});
+  });
 }
 
 void downgrade() {
@@ -2859,7 +2897,8 @@ Future expectResolves(
 
   if (result == null) return;
 
-  var registry = SourceRegistry();
+  var cache = SystemCache();
+  var registry = cache.sources;
   var lockFile =
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
   var resultPubspec = Pubspec.fromMap({'dependencies': result}, registry);
@@ -2868,13 +2907,13 @@ Future expectResolves(
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
     var id = ids.remove(dep.name);
-    final source = dep.source;
-
-    if (source is HostedSource && (dep.description.uri == source.defaultUrl)) {
+    final description = dep.description;
+    if (description is HostedDescription &&
+        (description.url == SystemCache().hosted.defaultUrl)) {
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
-      dep = registry.hosted
-          .refFor(dep.name, url: Uri.parse(globalServer.url))
+      dep = cache.hosted
+          .refFor(dep.name, url: globalServer.url)
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');

@@ -56,9 +56,6 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
-    argParser.addFlag('legacy-packages-file',
-        help: 'Generate the legacy ".packages" file', negatable: false);
-
     argParser.addFlag(
       'major-versions',
       help: 'Upgrades packages to their latest resolvable versions, '
@@ -82,8 +79,6 @@ class UpgradeCommand extends PubCommand {
   bool get _dryRun => argResults['dry-run'];
 
   bool get _precompile => argResults['precompile'];
-
-  bool get _packagesFile => argResults['legacy-packages-file'];
 
   bool get _upgradeNullSafety =>
       argResults['nullsafety'] || argResults['null-safety'];
@@ -131,7 +126,6 @@ class UpgradeCommand extends PubCommand {
       dryRun: _dryRun,
       precompile: _precompile,
       onlyReportSuccessOrFailure: onlySummary,
-      generateDotPackages: _packagesFile,
       analytics: analytics,
     );
     _showOfflineWarning();
@@ -220,9 +214,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
-      changes[dep] = dep.withConstraint(VersionConstraint.compatibleWith(
-        resolvedPackage.version,
-      ));
+      changes[dep] = dep.toRef().withConstraint(
+            VersionConstraint.compatibleWith(
+              resolvedPackage.version,
+            ),
+          );
     }
     final newPubspecText = _updatePubspec(changes);
 
@@ -241,7 +237,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         dryRun: true,
         precompile: _precompile,
         analytics: null, // No analytics for dry-run
-        generateDotPackages: false,
       );
     } else {
       if (changes.isNotEmpty) {
@@ -254,7 +249,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.get,
         precompile: _precompile,
         analytics: analytics,
-        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 
@@ -321,7 +315,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
-      changes[dep] = dep.withConstraint(constraint);
+      changes[dep] = dep.toRef().withConstraint(constraint);
     }
 
     final newPubspecText = _updatePubspec(changes);
@@ -339,7 +333,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         dryRun: true,
         precompile: _precompile,
         analytics: null,
-        generateDotPackages: false,
       );
     } else {
       if (changes.isNotEmpty) {
@@ -352,7 +345,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
-        generateDotPackages: argResults['legacy-packages-file'],
       );
     }
 
@@ -372,8 +364,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     await Future.wait(directDeps.map((name) async {
       final resolvedPackage = resolvedPackages[name]!;
 
-      final boundSource = resolvedPackage.source!.bind(cache);
-      final pubspec = await boundSource.describe(resolvedPackage);
+      final pubspec = await cache.describe(resolvedPackage);
       if (!pubspec.languageVersion.supportsNullSafety) {
         nonMigratedDirectDeps.add(name);
       }
@@ -480,24 +471,23 @@ You may have to:
             return dep;
           }
 
-          final boundSource = dep.source!.bind(cache);
-          final packages = await boundSource.getVersions(dep.toRef());
+          final packages = await cache.getVersions(dep.toRef());
           packages.sort((a, b) => a.version.compareTo(b.version));
 
           for (final package in packages) {
-            final pubspec = await boundSource.describe(package);
+            final pubspec = await cache.describe(package);
             if (pubspec.languageVersion.supportsNullSafety) {
               hasNullSafetyVersions.add(dep.name);
-              return dep.withConstraint(
-                VersionRange(min: package.version, includeMin: true),
-              );
+              return dep.toRef().withConstraint(
+                    VersionRange(min: package.version, includeMin: true),
+                  );
             }
           }
 
           hasNoNullSafetyVersions.add(dep.name);
           // This value is never used. We will throw an exception because
           //`hasNonNullSafetyVersions` is not empty.
-          return dep.withConstraint(VersionConstraint.empty);
+          return dep.toRef().withConstraint(VersionConstraint.empty);
         }));
 
     final deps = _removeUpperConstraints(original.dependencies.values);

@@ -26,22 +26,14 @@ class CacheRepairCommand extends PubCommand {
     // Delete any eventual temp-files left in the cache.
     cache.deleteTempDir();
     // Repair every cached source.
-    final repairResults = (await Future.wait(
-            cache.sources.all.map(cache.source).map((source) async {
-      return source is CachedSource
-          ? await source.repairCachedPackages()
-          : <RepairResult>[];
-    })))
-        .expand((x) => x);
+    final repairResults =
+        (await Future.wait(<CachedSource>[cache.hosted, cache.git].map(
+      (source) => source.repairCachedPackages(cache),
+    )))
+            .expand((x) => x);
 
-    final successes = [
-      for (final result in repairResults)
-        if (result.success) result.package
-    ];
-    final failures = [
-      for (final result in repairResults)
-        if (!result.success) result.package
-    ];
+    final successes = repairResults.where((result) => result.success);
+    final failures = repairResults.where((result) => !result.success);
 
     if (successes.isNotEmpty) {
       var packages = pluralize('package', successes.length);
@@ -53,10 +45,10 @@ class CacheRepairCommand extends PubCommand {
       var buffer = StringBuffer(
           'Failed to reinstall ${log.red(failures.length)} $packages:\n');
 
-      for (var id in failures) {
-        buffer.write('- ${log.bold(id.name)} ${id.version}');
-        if (id.source != cache.sources.defaultSource) {
-          buffer.write(' from ${id.source}');
+      for (var failure in failures) {
+        buffer.write('- ${log.bold(failure.packageName)} ${failure.version}');
+        if (failure.source != cache.defaultSource) {
+          buffer.write(' from ${failure.source}');
         }
         buffer.writeln();
       }

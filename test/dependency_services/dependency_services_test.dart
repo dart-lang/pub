@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -110,7 +111,7 @@ Future<void> main() async {
   });
 
   testWithGolden('Removing transitive', (context) async {
-    (await servePackages())
+    final server = (await servePackages())
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('foo', '2.2.3')
       ..serve('transitive', '1.0.0');
@@ -124,6 +125,7 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
+    server.dontAllowDownloads();
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', null)
@@ -146,6 +148,7 @@ Future<void> main() async {
       ..serve('bar', '1.2.3')
       ..serve('bar', '2.2.3')
       ..serve('boo', '1.2.3');
+
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
@@ -160,6 +163,8 @@ Future<void> main() async {
     server.serve('foo', '1.2.4');
     server.serve('boo', '1.2.4');
 
+    server.dontAllowDownloads();
+
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('1.2.4')),
     ], reportAssertions: (report) {
@@ -171,7 +176,7 @@ Future<void> main() async {
   });
 
   testWithGolden('Adding transitive', (context) async {
-    (await servePackages())
+    final server = (await servePackages())
       ..serve('foo', '1.2.3')
       ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('transitive', '1.0.0');
@@ -185,6 +190,8 @@ Future<void> main() async {
       })
     ]).create();
     await pubGet();
+    server.dontAllowDownloads();
+
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('2.2.3')),
       _PackageVersion('transitive', Version.parse('1.0.0'))
@@ -203,7 +210,8 @@ Future<void> main() async {
   testWithGolden('multibreaking', (context) async {
     final server = (await servePackages())
       ..serve('foo', '1.0.0')
-      ..serve('bar', '1.0.0');
+      ..serve('bar', '1.0.0')
+      ..serve('baz', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -211,6 +219,8 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
+          // Pinned version. See that the widened constraint is correct.
+          'baz': '1.0.0',
         },
       })
     ]).create();
@@ -221,7 +231,10 @@ Future<void> main() async {
       ..serve('foo', '3.0.0', deps: {'bar': '^2.0.0'}) // multi breaking
       ..serve('foo', '3.0.1', deps: {'bar': '^2.0.0'})
       ..serve('bar', '2.0.0', deps: {'foo': '^3.0.0'})
-      ..serve('transitive', '1.0.0');
+      ..serve('baz', '1.1.0');
+
+    server.dontAllowDownloads();
+
     await listReportApply(context, [
       _PackageVersion('foo', Version.parse('3.0.1'),
           constraint: VersionConstraint.parse('^3.0.0')),
@@ -255,4 +268,18 @@ class _PackageVersion {
         'version': version?.toString(),
         if (constraint != null) 'constraint': constraint.toString()
       };
+}
+
+extension on PackageServer {
+  ///Check that nothing is downloaded.
+  void dontAllowDownloads() {
+    // This testing logic is a bit fragile, if we change the pattern for pattern
+    // for the download URL then this will pass silently. There isn't much we
+    // can / should do about it. Just accept the limitations, and remove it if
+    // the test becomes useless.
+    handle(RegExp(r'/.+\.tar\.gz'), (request) {
+      return shelf.Response.notFound(
+          'This test should not download archives! Requested ${request.url}');
+    });
+  }
 }

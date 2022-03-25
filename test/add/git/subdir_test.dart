@@ -30,11 +30,10 @@ void main() {
         ])
       ])
     ]).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
-    ]).validate();
+
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')
+    }).validate();
 
     await d.appDir({
       'sub': {
@@ -69,11 +68,9 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')
+    }).validate();
 
     await d.appDir({
       'sub': {

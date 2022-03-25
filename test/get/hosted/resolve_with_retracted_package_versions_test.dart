@@ -23,10 +23,7 @@ void main() {
     await pubGet();
 
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
   });
 
   test('Error when the only available package version is retracted', () async {
@@ -56,34 +53,22 @@ void main() {
 
     await pubGet();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
     server.retractPackageVersion('bar', '1.1.0');
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
     server.serve('bar', '2.0.0');
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
     server.serve('bar', '1.2.0');
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.2.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
   });
 
   test('Offline versions of pub commands also handle retracted packages',
@@ -117,10 +102,7 @@ void main() {
     await pubUpgrade(args: ['--offline']);
 
     // We choose bar 1.1.0 since we already have it in pubspec.lock
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
     // Delete lockfile so that retracted versions are not considered.
     final lockFile = p.join(d.sandbox, appPath, 'pubspec.lock');
@@ -128,10 +110,7 @@ void main() {
     deleteEntry(lockFile);
 
     await pubGet(args: ['--offline']);
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
   });
 
   test('Allow retracted version when pinned in dependency_overrides', () async {
@@ -151,9 +130,7 @@ void main() {
     server.retractPackageVersion('foo', '2.0.0');
 
     await pubGet();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '2.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '2.0.0'}).validate();
   });
 
   test('Prefer retracted version in dependency_overrides over pubspec.lock',
@@ -170,9 +147,7 @@ void main() {
     server.retractPackageVersion('foo', '3.0.0');
 
     await pubUpgrade();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '3.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '3.0.0'}).validate();
 
     await d.dir(appPath, [
       d.pubspec({
@@ -183,8 +158,6 @@ void main() {
     ]).create();
 
     await pubUpgrade();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '2.0.0'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '2.0.0'}).validate();
   });
 }

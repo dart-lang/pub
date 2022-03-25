@@ -13,9 +13,9 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../io.dart';
+import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -90,7 +90,7 @@ class DependencyServicesReportCommand extends PubCommand {
       if (dependencySet != null) {
         // Force the version to be the new version.
         dependencySet[package.name] =
-            package.toRange().withConstraint(package.toRange().constraint);
+            package.toRef().withConstraint(package.toRange().constraint);
       }
 
       final resolution = await tryResolveVersions(
@@ -177,7 +177,7 @@ class DependencyServicesReportCommand extends PubCommand {
       PackageId? singleBreakingVersion;
       if (dependencySet != null) {
         dependencySet[package.name] = package
-            .toRange()
+            .toRef()
             .withConstraint(stripUpperBound(package.toRange().constraint));
         final singleBreakingPackagesResult =
             await _tryResolve(singleBreakingPubspec, cache);
@@ -188,7 +188,10 @@ class DependencyServicesReportCommand extends PubCommand {
         'name': package.name,
         'version': package.version.toString(),
         'kind': kind,
-        'latest': (await cache.getLatest(package))?.version.toString(),
+        'latest':
+            (await cache.getLatest(package.toRef(), version: package.version))
+                ?.version
+                .toString(),
         'constraint':
             _constraintOf(compatiblePubspec, package.name)?.toString(),
         if (compatibleVersion != null)
@@ -275,10 +278,10 @@ class DependencyServicesListCommand extends PubCommand {
 }
 
 enum UpgradeType {
-  /// Only upgrade pubspec.lock
+  /// Only upgrade pubspec.lock.
   compatible,
 
-  /// Unlock at most one dependency in pubspec.yaml
+  /// Unlock at most one dependency in pubspec.yaml.
   singleBreaking,
 
   /// Unlock any dependencies in pubspec.yaml needed for getting the
@@ -292,7 +295,7 @@ class DependencyServicesApplyCommand extends PubCommand {
 
   @override
   String get description =>
-      'Output a machine digestible listing of all dependencies';
+      'Updates pubspec.yaml and pubspec.lock according to input.';
 
   @override
   bool get takesArguments => true;
@@ -362,17 +365,32 @@ class DependencyServicesApplyCommand extends PubCommand {
       }
     }
 
-    if (pubspecEditor.edits.isNotEmpty) {
-      writeTextFile(entrypoint.pubspecPath, pubspecEditor.toString());
-    }
-    if (lockFileEditor != null && lockFileEditor.edits.isNotEmpty) {
-      writeTextFile(entrypoint.lockFilePath, lockFileEditor.toString());
-    }
+    final updatedLockfile = lockFileEditor == null
+        ? null
+        : LockFile.parse(lockFileEditor.toString(), cache.sources);
     await log.warningsOnlyUnlessTerminal(
       () async {
-        // This will fail if the new configuration does not resolve.
-        await Entrypoint(directory, cache).acquireDependencies(SolveType.get,
-            analytics: null, generateDotPackages: false);
+        final updatedPubspec = pubspecEditor.toString();
+        // Resolve versions, this will update transitive dependencies that were
+        // not passed in the input. And also counts as a validation of the input
+        // by ensuring the resolution is valid.
+        //
+        // We don't use `acquireDependencies` as that downloads all the archives
+        // to cache.
+        // TODO: Handle HTTP exceptions gracefully!
+        final solveResult = await resolveVersions(
+          SolveType.get,
+          cache,
+          Package.inMemory(Pubspec.parse(updatedPubspec, cache.sources)),
+          lockFile: updatedLockfile,
+        );
+        if (pubspecEditor.edits.isNotEmpty) {
+          writeTextFile(entrypoint.pubspecPath, updatedPubspec);
+        }
+        // Only if we originally had a lock-file we write the resulting lockfile back.
+        if (lockFileEditor != null) {
+          entrypoint.saveLockFile(solveResult);
+        }
       },
     );
     // Dummy message.
@@ -388,7 +406,7 @@ class _PackageVersion {
 }
 
 Map<String, PackageRange>? dependencySetOfPackage(
-    Pubspec pubspec, PackageName package) {
+    Pubspec pubspec, PackageId package) {
   return pubspec.dependencies.containsKey(package.name)
       ? pubspec.dependencies
       : pubspec.devDependencies.containsKey(package.name)
@@ -403,22 +421,34 @@ VersionConstraint _widenConstraint(
     final min = original.min;
     final max = original.max;
     if (max != null && newVersion >= max) {
-      return VersionRange(
-        min: min,
-        includeMin: original.includeMin,
-        max: newVersion.nextBreaking.firstPreRelease,
+      return compatibleWithIfPossible(
+        VersionRange(
+          min: min,
+          includeMin: original.includeMin,
+          max: newVersion.nextBreaking.firstPreRelease,
+        ),
       );
     }
     if (min != null && newVersion <= min) {
-      return VersionRange(
-          min: newVersion,
-          includeMin: true,
-          max: max,
-          includeMax: original.includeMax);
+      return compatibleWithIfPossible(
+        VersionRange(
+            min: newVersion,
+            includeMin: true,
+            max: max,
+            includeMax: original.includeMax),
+      );
     }
   }
 
   if (original.isEmpty) return newVersion;
   throw ArgumentError.value(
       original, 'original', 'Must be a Version range or empty');
+}
+
+VersionConstraint compatibleWithIfPossible(VersionRange versionRange) {
+  final min = versionRange.min;
+  if (min != null && min.nextBreaking.firstPreRelease == versionRange.max) {
+    return VersionConstraint.compatibleWith(min);
+  }
+  return versionRange;
 }

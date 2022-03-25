@@ -19,9 +19,7 @@ void main() {
 
     await pubAdd(args: ['foo', '--path', '../foo']);
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../foo'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '../foo'}).validate();
 
     await d.appDir({
       'foo': {'path': '../foo'}
@@ -40,9 +38,7 @@ void main() {
       output: contains('Changed 1 dependency in myapp!'),
     );
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../foo'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '../foo'}).validate();
 
     await d.appDir({
       'foo': {'path': '../foo'}
@@ -122,9 +118,7 @@ void main() {
     await pubAdd(args: ['foo', '--path', '../foo']);
 
     await d.cacheDir({'foo': '1.2.2'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.2'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.2.2'}).validate();
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',

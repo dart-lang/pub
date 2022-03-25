@@ -14,7 +14,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await servePackages();
+    final server = await startPackageServer();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
@@ -26,9 +26,9 @@ void main() {
     await pubAdd(args: ['foo:1.2.3', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-    ]).validate();
+
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+
     await d.appDir({
       'foo': {
         'version': '1.2.3',
@@ -42,7 +42,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await servePackages();
+    final server = await startPackageServer();
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
     server.serve('bar', '0.2.5');
@@ -59,11 +59,10 @@ void main() {
 
     await d.cacheDir({'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'},
         port: server.port).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-      d.packageConfigEntry(name: 'bar', version: '3.2.3'),
-      d.packageConfigEntry(name: 'baz', version: '1.3.5'),
-    ]).validate();
+
+    await d.appPackagesFile(
+        {'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'}).validate();
+
     await d.appDir({
       'foo': {
         'version': '1.2.3',
@@ -110,7 +109,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await servePackages();
+    final server = await startPackageServer();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
@@ -122,9 +121,7 @@ void main() {
     await pubAdd(args: ['foo', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
     await d.appDir({
       'foo': {
         'version': '^1.2.3',
@@ -139,7 +136,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    final server = await servePackages();
+    final server = await startPackageServer();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
@@ -151,9 +148,7 @@ void main() {
     await pubAdd(args: ['foo', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
     await d.appDir({
       'foo': {
         'version': '^1.2.3',
@@ -168,7 +163,8 @@ void main() {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
     (await servePackages()).serveErrors();
-    final server = await servePackages();
+
+    final server = await startPackageServer();
     server.serve('foo', '0.2.5');
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
@@ -180,9 +176,7 @@ void main() {
     await pubAdd(args: ['foo:any', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '1.2.3'}).validate();
     await d.appDir({
       'foo': {
         'version': 'any',

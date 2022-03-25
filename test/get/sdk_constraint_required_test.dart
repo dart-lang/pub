@@ -25,8 +25,8 @@ void main() {
       d.nothing('pubspec.lock'),
       // The "packages" directory should not have been generated.
       d.nothing('packages'),
-      // The package config file should not have been created.
-      d.nothing('.dart_tool/package_config.json'),
+      // The ".packages" file should not have been created.
+      d.nothing('.packages'),
     ]).validate();
   });
 }

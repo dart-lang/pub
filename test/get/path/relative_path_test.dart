@@ -4,7 +4,8 @@
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/source/path.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -23,9 +24,7 @@ void main() {
 
     await pubGet();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../foo'),
-    ]).validate();
+    await d.appPackagesFile({'foo': '../foo'}).validate();
   });
 
   test('path is relative to containing pubspec', () async {
@@ -47,10 +46,8 @@ void main() {
 
     await pubGet();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
-      d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
-    ]).validate();
+    await d.appPackagesFile(
+        {'foo': '../relative/foo', 'bar': '../relative/bar'}).validate();
   });
 
   test('path is relative to containing pubspec when using --directory',
@@ -76,10 +73,9 @@ void main() {
         workingDirectory: d.sandbox,
         output: contains('Changed 2 dependencies in myapp!'));
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
-      d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
-    ]).validate();
+    await d.appPackagesFile(
+      {'foo': '../relative/foo', 'bar': '../relative/bar'},
+    ).validate();
   });
 
   test('relative path preserved in the lockfile', () async {
@@ -95,10 +91,11 @@ void main() {
     await pubGet();
 
     var lockfilePath = path.join(d.sandbox, appPath, 'pubspec.lock');
-    var lockfile = LockFile.load(lockfilePath, SourceRegistry());
-    var description = lockfile.packages['foo']!.description;
+    var lockfile = LockFile.load(lockfilePath, SystemCache().sources);
+    var description =
+        lockfile.packages['foo']!.description.description as PathDescription;
 
-    expect(description['relative'], isTrue);
-    expect(description['path'], path.join(d.sandbox, 'foo'));
+    expect(description.relative, isTrue);
+    expect(description.path, path.join(d.sandbox, 'foo'));
   });
 }

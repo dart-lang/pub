@@ -5,7 +5,8 @@
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/source/git.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -37,11 +38,9 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')
+    }).validate();
   });
 
   test('depends on a package in a deep subdirectory', () async {
@@ -73,17 +72,17 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path:
-              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
+    }).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
 
-    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
+    expect(
+        (lockFile.packages['sub']!.description.description as GitDescription)
+            .path,
+        'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
   });
 
@@ -120,17 +119,17 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub',
-          path:
-              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
+    }).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
 
-    expect(lockFile.packages['sub']!.description['path'], 'sub/dir%25',
+    expect(
+        (lockFile.packages['sub']!.description.description as GitDescription)
+            .path,
+        'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
   });
 
@@ -166,14 +165,10 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub1',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1')),
-      d.packageConfigEntry(
-          name: 'sub2',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub1': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1'),
+      'sub2': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2')
+    }).validate();
   });
 
   test('depends on packages in the same subdirectory at different revisions',
@@ -218,11 +213,9 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-          name: 'sub1', path: pathInCache('git/foo-$oldRevision/subdir')),
-      d.packageConfigEntry(
-          name: 'sub2', path: pathInCache('git/foo-$newRevision/subdir')),
-    ]).validate();
+    await d.appPackagesFile({
+      'sub1': pathInCache('git/foo-$oldRevision/subdir'),
+      'sub2': pathInCache('git/foo-$newRevision/subdir')
+    }).validate();
   });
 }
