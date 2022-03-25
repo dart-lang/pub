@@ -97,7 +97,7 @@ void main() {
 
       await pubGet(
         error: contains(
-          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path url.',
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path URL.',
         ),
         exitCode: exit_codes.DATA,
       );
