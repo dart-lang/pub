@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -25,7 +24,7 @@ void main() {
             // Specific revision number goes here.
             endsWith('Building package executables...\n'
                 'Built foo:foo.\n'
-                'Activated foo 1.0.0 from Git repository "..${p.separator}foo.git".')));
+                'Activated foo 1.0.0 from Git repository "../foo.git".')));
   });
 
   test('activates a package from a Git repo with path and ref', () async {
@@ -77,7 +76,7 @@ void main() {
         contains('in sub'),
         endsWith('Building package executables...\n'
             'Built foo:foo.\n'
-            'Activated foo 2.0.0 from Git repository "..${p.separator}foo.git".'),
+            'Activated foo 2.0.0 from Git repository "../foo.git".'),
       ),
     );
     await runPub(
