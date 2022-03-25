@@ -72,12 +72,12 @@ void main() {
       ],
       output: allOf(
         startsWith('Resolving dependencies...\n'
-            '+ foo 2.0.0 from git ../foo.git at'),
+            '+ foo 2.0.0 from git ..${p.separator}foo.git at'),
         // Specific revision number goes here.
         contains('in sub'),
         endsWith('Building package executables...\n'
             'Built foo:foo.\n'
-            'Activated foo 2.0.0 from Git repository "../foo.git".'),
+            'Activated foo 2.0.0 from Git repository "..${p.separator}foo.git".'),
       ),
     );
     await runPub(
