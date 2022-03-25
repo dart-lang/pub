@@ -6,14 +6,11 @@ import 'dart:async';
 
 import 'package:path/path.dart' as path;
 
-import '../entrypoint.dart';
 import '../io.dart';
 import '../validator.dart';
 
 /// A validator that validates a package's top-level directories.
 class DirectoryValidator extends Validator {
-  DirectoryValidator(Entrypoint entrypoint) : super(entrypoint);
-
   static final _pluralNames = [
     'benchmarks',
     'docs',
@@ -27,7 +24,7 @@ class DirectoryValidator extends Validator {
   @override
   Future<void> validate() async {
     final visited = <String>{};
-    for (final file in entrypoint.root.listFiles()) {
+    for (final file in files) {
       // Find the topmost directory name of [file].
       final dir = path.join(entrypoint.root.dir,
           path.split(path.relative(file, from: entrypoint.root.dir)).first);

@@ -4,14 +4,11 @@
 
 import 'dart:async';
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 /// A validator that validates that a pubspec is not including deprecated fields
 /// which are no longer read.
 class DeprecatedFieldsValidator extends Validator {
-  DeprecatedFieldsValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
   Future validate() async {
     if (entrypoint.root.pubspec.fields.containsKey('transformers')) {

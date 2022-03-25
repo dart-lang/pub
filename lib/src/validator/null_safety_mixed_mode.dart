@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:path/path.dart' as p;
 
-import '../entrypoint.dart';
 import '../null_safety_analysis.dart';
 import '../package_name.dart';
 import '../source/path.dart';
@@ -15,8 +14,6 @@ import '../validator.dart';
 /// Gives a warning when publishing a new version, if this package opts into
 /// null safety, but any of the dependencies do not.
 class NullSafetyMixedModeValidator extends Validator {
-  NullSafetyMixedModeValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
   Future<void> validate() async {
     final pubspec = entrypoint.root.pubspec;

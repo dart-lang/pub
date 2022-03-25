@@ -229,8 +229,8 @@ the \$PUB_HOSTED_URL environment variable.''',
         createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
 
     // Validate the package.
-    var isValid =
-        await _validate(packageBytesFuture.then((bytes) => bytes.length));
+    var isValid = await _validate(
+        packageBytesFuture.then((bytes) => bytes.length), files);
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;
@@ -251,7 +251,7 @@ the \$PUB_HOSTED_URL environment variable.''',
 
   /// Validates the package. Completes to false if the upload should not
   /// proceed.
-  Future<bool> _validate(Future<int> packageSize) async {
+  Future<bool> _validate(Future<int> packageSize, List<String> files) async {
     final hints = <String>[];
     final warnings = <String>[];
     final errors = <String>[];
@@ -260,6 +260,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       entrypoint,
       packageSize,
       host,
+      files,
       hints: hints,
       warnings: warnings,
       errors: errors,

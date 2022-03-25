@@ -10,8 +10,8 @@ import '../test_pub.dart';
 // That would make them more robust, and test actual end2end behaviour.
 
 Future<void> expectValidation(ValidatorCreator fn,
-    {hints, warnings, errors}) async {
-  final validator = await validatePackage(fn);
+    {hints, warnings, errors, int? size}) async {
+  final validator = await validatePackage(fn, size);
   expect(validator.errors, errors ?? isEmpty);
   expect(validator.warnings, warnings ?? isEmpty);
   expect(validator.hints, hints ?? isEmpty);

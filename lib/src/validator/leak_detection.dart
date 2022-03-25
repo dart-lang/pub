@@ -12,7 +12,6 @@ import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:source_span/source_span.dart';
 
-import '../entrypoint.dart';
 import '../ignore.dart';
 import '../validator.dart';
 
@@ -26,8 +25,6 @@ const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
 /// accidentally leaked.
 @sealed
 class LeakDetectionValidator extends Validator {
-  LeakDetectionValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
   Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
@@ -37,7 +34,7 @@ class LeakDetectionValidator extends Validator {
     );
 
     final pool = Pool(20); // don't read more than 20 files concurrently!
-    final leaks = await Future.wait(entrypoint.root.listFiles().map((f) async {
+    final leaks = await Future.wait(files.map((f) async {
       final relPath = entrypoint.root.relative(f);
 
       // Skip files matching patterns in `false_secrets`

@@ -6,12 +6,10 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 /// Validates that a package's flutter constraint doesn't contain an upper bound
 class FlutterConstraintValidator extends Validator {
-  FlutterConstraintValidator(Entrypoint entrypoint) : super(entrypoint);
   static const explanationUrl =
       'https://dart.dev/go/flutter-upper-bound-deprecation';
 

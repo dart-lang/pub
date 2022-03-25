@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
-import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/strict_dependencies.dart';
 import 'package:test/test.dart';
@@ -12,8 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator strictDeps(Entrypoint entrypoint) =>
-    StrictDependenciesValidator(entrypoint);
+Validator strictDeps() => StrictDependenciesValidator();
 
 void main() {
   group('should consider a package valid if it', () {

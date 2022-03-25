@@ -11,7 +11,6 @@ import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../dart.dart';
-import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -19,19 +18,16 @@ import '../validator.dart';
 
 /// Validates that Dart source files only import declared dependencies.
 class StrictDependenciesValidator extends Validator {
-  final AnalysisContextManager analysisContextManager =
-      AnalysisContextManager();
-
-  StrictDependenciesValidator(Entrypoint entrypoint) : super(entrypoint) {
-    var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
-    analysisContextManager.createContextsForDirectory(packagePath);
-  }
-
   /// Lazily returns all dependency uses in [files].
   ///
   /// Files that do not parse and directives that don't import or export
   /// `package:` URLs are ignored.
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
+    final packagePath = p.normalize(p.absolute(entrypoint.root.dir));
+    final AnalysisContextManager analysisContextManager =
+        AnalysisContextManager();
+    analysisContextManager.createContextsForDirectory(packagePath);
+
     for (var file in files) {
       List<UriBasedDirective> directives;
       var contents = readTextFile(file);
@@ -105,10 +101,16 @@ class StrictDependenciesValidator extends Validator {
     }
   }
 
-  Iterable<_Usage> _usagesBeneath(List<String> paths) => _findPackages(paths
-      .map((path) => entrypoint.root.listFiles(beneath: path))
-      .expand((files) => files)
-      .where((String file) => p.extension(file) == '.dart'));
+  Iterable<_Usage> _usagesBeneath(List<String> paths) {
+    return _findPackages(
+      paths.expand(
+        (path) {
+          return filesBeneath(path, recursive: true)
+              .where((file) => p.extension(file) == '.dart');
+        },
+      ),
+    );
+  }
 }
 
 /// A parsed import or export directive in a D source file.
