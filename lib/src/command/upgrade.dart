@@ -214,9 +214,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
-      changes[dep] = dep.withConstraint(VersionConstraint.compatibleWith(
-        resolvedPackage.version,
-      ));
+      changes[dep] = dep.toRef().withConstraint(
+            VersionConstraint.compatibleWith(
+              resolvedPackage.version,
+            ),
+          );
     }
     final newPubspecText = _updatePubspec(changes);
 
@@ -313,7 +315,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
-      changes[dep] = dep.withConstraint(constraint);
+      changes[dep] = dep.toRef().withConstraint(constraint);
     }
 
     final newPubspecText = _updatePubspec(changes);
@@ -362,8 +364,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     await Future.wait(directDeps.map((name) async {
       final resolvedPackage = resolvedPackages[name]!;
 
-      final boundSource = resolvedPackage.source!.bind(cache);
-      final pubspec = await boundSource.describe(resolvedPackage);
+      final pubspec = await cache.describe(resolvedPackage);
       if (!pubspec.languageVersion.supportsNullSafety) {
         nonMigratedDirectDeps.add(name);
       }
@@ -470,24 +471,23 @@ You may have to:
             return dep;
           }
 
-          final boundSource = dep.source!.bind(cache);
-          final packages = await boundSource.getVersions(dep.toRef());
+          final packages = await cache.getVersions(dep.toRef());
           packages.sort((a, b) => a.version.compareTo(b.version));
 
           for (final package in packages) {
-            final pubspec = await boundSource.describe(package);
+            final pubspec = await cache.describe(package);
             if (pubspec.languageVersion.supportsNullSafety) {
               hasNullSafetyVersions.add(dep.name);
-              return dep.withConstraint(
-                VersionRange(min: package.version, includeMin: true),
-              );
+              return dep.toRef().withConstraint(
+                    VersionRange(min: package.version, includeMin: true),
+                  );
             }
           }
 
           hasNoNullSafetyVersions.add(dep.name);
           // This value is never used. We will throw an exception because
           //`hasNonNullSafetyVersions` is not empty.
-          return dep.withConstraint(VersionConstraint.empty);
+          return dep.toRef().withConstraint(VersionConstraint.empty);
         }));
 
     final deps = _removeUpperConstraints(original.dependencies.values);

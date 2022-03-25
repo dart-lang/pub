@@ -150,4 +150,20 @@ void main() {
       includeParentEnvironment: false,
     );
   });
+
+  test('with https://pub.dev rewrites to https://pub.dartlang.org', () async {
+    await runPub(
+      args: ['token', 'add', 'https://pub.dev'],
+      input: ['auth-token'],
+      silent: contains(
+          'Using https://pub.dartlang.org instead of https://pub.dev.'),
+    );
+
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': 'https://pub.dartlang.org', 'token': 'auth-token'}
+      ]
+    }).validate();
+  });
 }
