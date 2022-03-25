@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
@@ -80,7 +79,7 @@ class VersionSolver {
 
   VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
       Iterable<String> unlock)
-      : _dependencyOverrides = _root.pubspec.dependencyOverrides,
+      : _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
@@ -326,7 +325,7 @@ class VersionSolver {
     for (var candidate in unsatisfied) {
       if (candidate.source is! UnknownSource) continue;
       _addIncompatibility(Incompatibility(
-          [Term(candidate.withConstraint(VersionConstraint.any), true)],
+          [Term(candidate.toRef().withConstraint(VersionConstraint.any), true)],
           IncompatibilityCause.unknownSource));
       return candidate.name;
     }
@@ -345,7 +344,7 @@ class VersionSolver {
       version = await _packageLister(package).bestVersion(package.constraint);
     } on PackageNotFoundException catch (error) {
       _addIncompatibility(Incompatibility(
-          [Term(package.withConstraint(VersionConstraint.any), true)],
+          [Term(package.toRef().withConstraint(VersionConstraint.any), true)],
           PackageNotFoundCause(error)));
       return package.name;
     }
@@ -412,12 +411,11 @@ class VersionSolver {
       if (id.isRoot) {
         pubspecs[id.name] = _root.pubspec;
       } else {
-        pubspecs[id.name] = await _systemCache.source(id.source).describe(id);
+        pubspecs[id.name] = await _systemCache.describe(id);
       }
     }
 
     return SolveResult(
-      _systemCache.sources,
       _root,
       _lockFile,
       decisions,
@@ -448,9 +446,8 @@ class VersionSolver {
       List<PackageId> ids;
       try {
         ids = package.source is HostedSource
-            ? (await _systemCache
-                .source(package.source)
-                .getVersions(package.toRef(), maxAge: Duration(days: 3)))
+            ? await _systemCache.getVersions(package.toRef(),
+                maxAge: Duration(days: 3))
             : [package];
       } on Exception {
         ids = <PackageId>[package];
@@ -463,20 +460,20 @@ class VersionSolver {
   }
 
   /// Returns the package lister for [package], creating it if necessary.
-  PackageLister _packageLister(PackageName package) {
+  PackageLister _packageLister(PackageRange package) {
     var ref = package.toRef();
     return _packageListers.putIfAbsent(ref, () {
-      if (ref.isRoot) return PackageLister.root(_root);
+      if (ref.isRoot) return PackageLister.root(_root, _systemCache);
 
       var locked = _getLocked(ref.name);
-      if (locked != null && !locked.samePackage(ref)) locked = null;
+      if (locked != null && locked.toRef() != ref) locked = null;
 
-      Set<String> overridden = MapKeySet(_dependencyOverrides);
-      if (overridden.contains(package.name)) {
+      final overridden = <String>{
+        ..._dependencyOverrides.keys,
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
-        overridden = Set.from(overridden)..add(_root.name);
-      }
+        if (_dependencyOverrides.containsKey(package.name)) _root.name
+      };
 
       return PackageLister(
           _systemCache,
@@ -485,7 +482,7 @@ class VersionSolver {
           _root.dependencyType(package.name),
           overridden,
           _getAllowedRetracted(ref.name),
-          downgrade: _type == SolveType.DOWNGRADE);
+          downgrade: _type == SolveType.downgrade);
     });
   }
 
@@ -493,7 +490,7 @@ class VersionSolver {
   ///
   /// Returns `null` if it isn't in the lockfile (or has been unlocked).
   PackageId? _getLocked(String? package) {
-    if (_type == SolveType.GET) {
+    if (_type == SolveType.get) {
       if (_unlock.contains(package)) {
         return null;
       }
@@ -503,9 +500,9 @@ class VersionSolver {
     // When downgrading, we don't want to force the latest versions of
     // non-hosted packages, since they don't support multiple versions and thus
     // can't be downgraded.
-    if (_type == SolveType.DOWNGRADE) {
+    if (_type == SolveType.downgrade) {
       var locked = _lockFile.packages[package];
-      if (locked != null && !locked.source!.hasMultipleVersions) return locked;
+      if (locked != null && !locked.source.hasMultipleVersions) return locked;
     }
 
     if (_unlock.isEmpty || _unlock.contains(package)) return null;

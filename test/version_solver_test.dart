@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:io';
 
@@ -11,7 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -42,14 +40,13 @@ void basicGraph() {
   });
 
   test('simple dependency tree', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'aa': '1.0.0', 'ab': '1.0.0'});
-      builder.serve('aa', '1.0.0');
-      builder.serve('ab', '1.0.0');
-      builder.serve('b', '1.0.0', deps: {'ba': '1.0.0', 'bb': '1.0.0'});
-      builder.serve('ba', '1.0.0');
-      builder.serve('bb', '1.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'aa': '1.0.0', 'ab': '1.0.0'})
+      ..serve('aa', '1.0.0')
+      ..serve('ab', '1.0.0')
+      ..serve('b', '1.0.0', deps: {'ba': '1.0.0', 'bb': '1.0.0'})
+      ..serve('ba', '1.0.0')
+      ..serve('bb', '1.0.0');
 
     await d.appDir({'a': '1.0.0', 'b': '1.0.0'}).create();
     await expectResolves(result: {
@@ -63,15 +60,14 @@ void basicGraph() {
   });
 
   test('shared dependency with overlapping constraints', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'shared': '>=2.0.0 <4.0.0'});
-      builder.serve('b', '1.0.0', deps: {'shared': '>=3.0.0 <5.0.0'});
-      builder.serve('shared', '2.0.0');
-      builder.serve('shared', '3.0.0');
-      builder.serve('shared', '3.6.9');
-      builder.serve('shared', '4.0.0');
-      builder.serve('shared', '5.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'shared': '>=2.0.0 <4.0.0'})
+      ..serve('b', '1.0.0', deps: {'shared': '>=3.0.0 <5.0.0'})
+      ..serve('shared', '2.0.0')
+      ..serve('shared', '3.0.0')
+      ..serve('shared', '3.6.9')
+      ..serve('shared', '4.0.0')
+      ..serve('shared', '5.0.0');
 
     await d.appDir({'a': '1.0.0', 'b': '1.0.0'}).create();
     await expectResolves(
@@ -81,16 +77,15 @@ void basicGraph() {
   test(
       'shared dependency where dependent version in turn affects other '
       'dependencies', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '1.0.1', deps: {'bang': '1.0.0'});
-      builder.serve('foo', '1.0.2', deps: {'whoop': '1.0.0'});
-      builder.serve('foo', '1.0.3', deps: {'zoop': '1.0.0'});
-      builder.serve('bar', '1.0.0', deps: {'foo': '<=1.0.1'});
-      builder.serve('bang', '1.0.0');
-      builder.serve('whoop', '1.0.0');
-      builder.serve('zoop', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '1.0.1', deps: {'bang': '1.0.0'})
+      ..serve('foo', '1.0.2', deps: {'whoop': '1.0.0'})
+      ..serve('foo', '1.0.3', deps: {'zoop': '1.0.0'})
+      ..serve('bar', '1.0.0', deps: {'foo': '<=1.0.1'})
+      ..serve('bang', '1.0.0')
+      ..serve('whoop', '1.0.0')
+      ..serve('zoop', '1.0.0');
 
     await d.appDir({'foo': '<=1.0.2', 'bar': '1.0.0'}).create();
     await expectResolves(
@@ -98,23 +93,21 @@ void basicGraph() {
   });
 
   test('circular dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('bar', '1.0.0', deps: {'foo': '1.0.0'});
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('bar', '1.0.0', deps: {'foo': '1.0.0'});
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
   test('removed dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '2.0.0', deps: {'baz': '1.0.0'});
-      builder.serve('baz', '1.0.0', deps: {'foo': '2.0.0'});
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0')
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '2.0.0', deps: {'baz': '1.0.0'})
+      ..serve('baz', '1.0.0', deps: {'foo': '2.0.0'});
 
     await d.appDir({'foo': '1.0.0', 'bar': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'}, tries: 2);
@@ -123,14 +116,13 @@ void basicGraph() {
 
 void withLockFile() {
   test('with compatible locked dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('foo', '1.0.1', deps: {'bar': '1.0.1'});
-      builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('foo', '1.0.1', deps: {'bar': '1.0.1'})
+      ..serve('foo', '1.0.2', deps: {'bar': '1.0.2'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '1.0.1')
+      ..serve('bar', '1.0.2');
 
     await d.appDir({'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
@@ -140,14 +132,13 @@ void withLockFile() {
   });
 
   test('with incompatible locked dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('foo', '1.0.1', deps: {'bar': '1.0.1'});
-      builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('foo', '1.0.1', deps: {'bar': '1.0.1'})
+      ..serve('foo', '1.0.2', deps: {'bar': '1.0.2'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '1.0.1')
+      ..serve('bar', '1.0.2');
 
     await d.appDir({'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
@@ -157,15 +148,14 @@ void withLockFile() {
   });
 
   test('with unrelated locked dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('foo', '1.0.1', deps: {'bar': '1.0.1'});
-      builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2');
-      builder.serve('baz', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('foo', '1.0.1', deps: {'bar': '1.0.1'})
+      ..serve('foo', '1.0.2', deps: {'bar': '1.0.2'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '1.0.1')
+      ..serve('bar', '1.0.2')
+      ..serve('baz', '1.0.0');
 
     await d.appDir({'baz': '1.0.0'}).create();
     await expectResolves(result: {'baz': '1.0.0'});
@@ -177,17 +167,16 @@ void withLockFile() {
   test(
       'unlocks dependencies if necessary to ensure that a new '
       'dependency is satisfied', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
-      builder.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
-      builder.serve('baz', '1.0.0', deps: {'qux': '<2.0.0'});
-      builder.serve('qux', '1.0.0');
-      builder.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
-      builder.serve('bar', '2.0.0', deps: {'baz': '<3.0.0'});
-      builder.serve('baz', '2.0.0', deps: {'qux': '<3.0.0'});
-      builder.serve('qux', '2.0.0');
-      builder.serve('newdep', '2.0.0', deps: {'baz': '>=1.5.0'});
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '<2.0.0'})
+      ..serve('bar', '1.0.0', deps: {'baz': '<2.0.0'})
+      ..serve('baz', '1.0.0', deps: {'qux': '<2.0.0'})
+      ..serve('qux', '1.0.0')
+      ..serve('foo', '2.0.0', deps: {'bar': '<3.0.0'})
+      ..serve('bar', '2.0.0', deps: {'baz': '<3.0.0'})
+      ..serve('baz', '2.0.0', deps: {'qux': '<3.0.0'})
+      ..serve('qux', '2.0.0')
+      ..serve('newdep', '2.0.0', deps: {'baz': '>=1.5.0'});
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(result: {
@@ -211,11 +200,10 @@ void withLockFile() {
   test(
       "produces a nice message for a locked dependency that's the only "
       'version of its package', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'});
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '2.0.0');
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
@@ -231,30 +219,27 @@ void withLockFile() {
 
 void rootDependency() {
   test('with root source', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'myapp': 'any'});
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'myapp': 'any'});
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
   test('with mismatched sources', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'myapp': 'any'});
-      builder.serve('bar', '1.0.0', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'myapp': 'any'})
+      ..serve('bar', '1.0.0', deps: {
         'myapp': {'git': 'http://nowhere.com/'}
       });
-    });
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
   test('with wrong version', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'myapp': '>0.0.0'});
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'myapp': '>0.0.0'});
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -267,10 +252,9 @@ void rootDependency() {
 
 void devDependency() {
   test("includes root package's dev dependencies", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('bar', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -283,10 +267,9 @@ void devDependency() {
   });
 
   test("includes dev dependency's transitive dependencies", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('bar', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -299,10 +282,9 @@ void devDependency() {
   });
 
   test("ignores transitive dependency's dev dependencies", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'dev_dependencies': {'bar': '1.0.0'}
-      });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'dev_dependencies': {'bar': '1.0.0'}
     });
 
     await d.appDir({'foo': '1.0.0'}).create();
@@ -311,11 +293,10 @@ void devDependency() {
 
   group('with both a dev and regular dependency', () {
     test('succeeds when both are satisfied', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('foo', '2.0.0');
-        builder.serve('foo', '3.0.0');
-      });
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0')
+        ..serve('foo', '3.0.0');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -329,9 +310,8 @@ void devDependency() {
     });
 
     test("fails when main dependency isn't satisfied", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '3.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '3.0.0');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -349,9 +329,8 @@ void devDependency() {
     });
 
     test("fails when dev dependency isn't satisfied", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -369,9 +348,8 @@ void devDependency() {
     });
 
     test('fails when dev and main constraints are incompatible', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -388,9 +366,8 @@ void devDependency() {
     });
 
     test('fails when dev and main sources are incompatible', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -409,9 +386,8 @@ void devDependency() {
     });
 
     test('fails when dev and main descriptions are incompatible', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
 
       await d.dir(appPath, [
         d.pubspec({
@@ -435,10 +411,9 @@ void devDependency() {
 
 void unsolvable() {
   test('no version that matches constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '2.1.3');
-    });
+    await servePackages()
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '2.1.3');
 
     await d.appDir({'foo': '>=1.0.0 <2.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
@@ -448,12 +423,11 @@ void unsolvable() {
   });
 
   test('no version that matches combined constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'shared': '>=2.0.0 <3.0.0'});
-      builder.serve('bar', '1.0.0', deps: {'shared': '>=2.9.0 <4.0.0'});
-      builder.serve('shared', '2.5.0');
-      builder.serve('shared', '3.5.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'shared': '>=2.0.0 <3.0.0'})
+      ..serve('bar', '1.0.0', deps: {'shared': '>=2.9.0 <4.0.0'})
+      ..serve('shared', '2.5.0')
+      ..serve('shared', '3.5.0');
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -468,12 +442,11 @@ void unsolvable() {
   });
 
   test('disjoint constraints', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'shared': '<=2.0.0'});
-      builder.serve('bar', '1.0.0', deps: {'shared': '>3.0.0'});
-      builder.serve('shared', '2.0.0');
-      builder.serve('shared', '4.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'shared': '<=2.0.0'})
+      ..serve('bar', '1.0.0', deps: {'shared': '>3.0.0'})
+      ..serve('shared', '2.0.0')
+      ..serve('shared', '4.0.0');
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -485,20 +458,18 @@ void unsolvable() {
   });
 
   test('mismatched descriptions', () async {
-    var otherServer = await PackageServer.start((builder) {
-      builder.serve('shared', '1.0.0');
-    });
+    var otherServer = await startPackageServer();
+    otherServer.serve('shared', '1.0.0');
 
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'shared': '1.0.0'});
-      builder.serve('bar', '1.0.0', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'shared': '1.0.0'})
+      ..serve('bar', '1.0.0', deps: {
         'shared': {
           'hosted': {'name': 'shared', 'url': otherServer.url},
           'version': '1.0.0'
         }
-      });
-      builder.serve('shared', '1.0.0');
-    });
+      })
+      ..serve('shared', '1.0.0');
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
 
@@ -517,13 +488,12 @@ void unsolvable() {
   test('mismatched sources', () async {
     await d.dir('shared', [d.libPubspec('shared', '1.0.0')]).create();
 
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'shared': '1.0.0'});
-      builder.serve('bar', '1.0.0', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'shared': '1.0.0'})
+      ..serve('bar', '1.0.0', deps: {
         'shared': {'path': p.join(d.sandbox, 'shared')}
-      });
-      builder.serve('shared', '1.0.0');
-    });
+      })
+      ..serve('shared', '1.0.0');
 
     await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -536,12 +506,11 @@ void unsolvable() {
   });
 
   test('no valid solution', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'b': '1.0.0'});
-      builder.serve('a', '2.0.0', deps: {'b': '2.0.0'});
-      builder.serve('b', '1.0.0', deps: {'a': '2.0.0'});
-      builder.serve('b', '2.0.0', deps: {'a': '1.0.0'});
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'b': '1.0.0'})
+      ..serve('a', '2.0.0', deps: {'b': '2.0.0'})
+      ..serve('b', '1.0.0', deps: {'a': '2.0.0'})
+      ..serve('b', '2.0.0', deps: {'a': '1.0.0'});
 
     await d.appDir({'a': 'any', 'b': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -556,10 +525,9 @@ void unsolvable() {
 
   // This is a regression test for #15550.
   test('no version that matches while backtracking', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('b', '1.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('b', '1.0.0');
 
     await d.appDir({'a': 'any', 'b': '>1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
@@ -570,19 +538,18 @@ void unsolvable() {
 
   // This is a regression test for #18300.
   test('issue 18300', () async {
-    await servePackages((builder) {
-      builder.serve('analyzer', '0.12.2');
-      builder.serve('angular', '0.10.0',
-          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'});
-      builder.serve('angular', '0.9.11',
-          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'});
-      builder.serve('angular', '0.9.10',
-          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'});
-      builder.serve('collection', '0.9.0');
-      builder.serve('collection', '0.9.1');
-      builder.serve('di', '0.0.37', deps: {'analyzer': '>=0.13.0 <0.14.0'});
-      builder.serve('di', '0.0.36', deps: {'analyzer': '>=0.13.0 <0.14.0'});
-    });
+    await servePackages()
+      ..serve('analyzer', '0.12.2')
+      ..serve('angular', '0.10.0',
+          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'})
+      ..serve('angular', '0.9.11',
+          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'})
+      ..serve('angular', '0.9.10',
+          deps: {'di': '>=0.0.32 <0.1.0', 'collection': '>=0.9.1 <1.0.0'})
+      ..serve('collection', '0.9.0')
+      ..serve('collection', '0.9.1')
+      ..serve('di', '0.0.37', deps: {'analyzer': '>=0.13.0 <0.14.0'})
+      ..serve('di', '0.0.36', deps: {'analyzer': '>=0.13.0 <0.14.0'});
 
     await d.appDir({'angular': 'any', 'collection': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -622,17 +589,16 @@ void badSource() {
   });
 
   test('fail if all versions have bad source in dep', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {
         'bar': {'bad': 'any'}
-      });
-      builder.serve('foo', '1.0.1', deps: {
+      })
+      ..serve('foo', '1.0.1', deps: {
         'baz': {'bad': 'any'}
-      });
-      builder.serve('foo', '1.0.2', deps: {
+      })
+      ..serve('foo', '1.0.2', deps: {
         'bang': {'bad': 'any'}
       });
-    });
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -648,16 +614,15 @@ void badSource() {
   });
 
   test('ignore versions with bad source in dep', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('foo', '1.0.1', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': 'any'})
+      ..serve('foo', '1.0.1', deps: {
         'bar': {'bad': 'any'}
-      });
-      builder.serve('foo', '1.0.2', deps: {
+      })
+      ..serve('foo', '1.0.2', deps: {
         'bar': {'bad': 'any'}
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'}, tries: 2);
@@ -665,11 +630,10 @@ void badSource() {
 
   // Issue 1853
   test('reports a nice error across a collapsed cause', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('bar', '1.0.0', deps: {'baz': 'any'});
-      builder.serve('baz', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': 'any'})
+      ..serve('bar', '1.0.0', deps: {'baz': 'any'})
+      ..serve('baz', '1.0.0');
     await d.dir('baz', [d.libPubspec('baz', '1.0.0')]).create();
 
     await d.appDir({
@@ -687,28 +651,24 @@ void badSource() {
 
 void backtracking() {
   test('circular dependency on older version', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '2.0.0', deps: {'b': '1.0.0'});
-      builder.serve('b', '1.0.0', deps: {'a': '1.0.0'});
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0', deps: {'b': '1.0.0'})
+      ..serve('b', '1.0.0', deps: {'a': '1.0.0'});
 
     await d.appDir({'a': '>=1.0.0'}).create();
     await expectResolves(result: {'a': '1.0.0'}, tries: 2);
   });
 
   test('diamond dependency graph', () async {
-    await servePackages((builder) {
-      builder.serve('a', '2.0.0', deps: {'c': '^1.0.0'});
-      builder.serve('a', '1.0.0');
-
-      builder.serve('b', '2.0.0', deps: {'c': '^3.0.0'});
-      builder.serve('b', '1.0.0', deps: {'c': '^2.0.0'});
-
-      builder.serve('c', '3.0.0');
-      builder.serve('c', '2.0.0');
-      builder.serve('c', '1.0.0');
-    });
+    await servePackages()
+      ..serve('a', '2.0.0', deps: {'c': '^1.0.0'})
+      ..serve('a', '1.0.0')
+      ..serve('b', '2.0.0', deps: {'c': '^3.0.0'})
+      ..serve('b', '1.0.0', deps: {'c': '^2.0.0'})
+      ..serve('c', '3.0.0')
+      ..serve('c', '2.0.0')
+      ..serve('c', '1.0.0');
 
     await d.appDir({'a': 'any', 'b': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0', 'b': '2.0.0', 'c': '3.0.0'});
@@ -718,20 +678,16 @@ void backtracking() {
   // requirement only exists because of both a and b. The solver should be able
   // to deduce c 2.0.0's incompatibility and select c 1.0.0 instead.
   test('backjumps after a partial satisfier', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'x': '>=1.0.0'});
-      builder.serve('b', '1.0.0', deps: {'x': '<2.0.0'});
-
-      builder.serve('c', '1.0.0');
-      builder.serve('c', '2.0.0', deps: {'a': 'any', 'b': 'any'});
-
-      builder.serve('x', '0.0.0');
-      builder.serve('x', '1.0.0', deps: {'y': '1.0.0'});
-      builder.serve('x', '2.0.0');
-
-      builder.serve('y', '1.0.0');
-      builder.serve('y', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'x': '>=1.0.0'})
+      ..serve('b', '1.0.0', deps: {'x': '<2.0.0'})
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0', deps: {'a': 'any', 'b': 'any'})
+      ..serve('x', '0.0.0')
+      ..serve('x', '1.0.0', deps: {'y': '1.0.0'})
+      ..serve('x', '2.0.0')
+      ..serve('y', '1.0.0')
+      ..serve('y', '2.0.0');
 
     await d.appDir({'c': 'any', 'y': '^2.0.0'}).create();
     await expectResolves(result: {'c': '1.0.0', 'y': '2.0.0'}, tries: 2);
@@ -740,16 +696,15 @@ void backtracking() {
   // This matches the Branching Error Reporting example in the version solver
   // documentation, and tests that we display line numbers correctly.
   test('branching error reporting', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'a': '^1.0.0', 'b': '^1.0.0'});
-      builder.serve('foo', '1.1.0', deps: {'x': '^1.0.0', 'y': '^1.0.0'});
-      builder.serve('a', '1.0.0', deps: {'b': '^2.0.0'});
-      builder.serve('b', '1.0.0');
-      builder.serve('b', '2.0.0');
-      builder.serve('x', '1.0.0', deps: {'y': '^2.0.0'});
-      builder.serve('y', '1.0.0');
-      builder.serve('y', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'a': '^1.0.0', 'b': '^1.0.0'})
+      ..serve('foo', '1.1.0', deps: {'x': '^1.0.0', 'y': '^1.0.0'})
+      ..serve('a', '1.0.0', deps: {'b': '^2.0.0'})
+      ..serve('b', '1.0.0')
+      ..serve('b', '2.0.0')
+      ..serve('x', '1.0.0', deps: {'y': '^2.0.0'})
+      ..serve('y', '1.0.0')
+      ..serve('y', '2.0.0');
 
     await d.appDir({'foo': '^1.0.0'}).create();
     await expectResolves(
@@ -774,14 +729,13 @@ void backtracking() {
   // will resolve the problem. This test validates that b, which is farther
   // in the dependency graph from myapp is downgraded first.
   test('rolls back leaf versions first', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'b': 'any'});
-      builder.serve('a', '2.0.0', deps: {'b': 'any', 'c': '2.0.0'});
-      builder.serve('b', '1.0.0');
-      builder.serve('b', '2.0.0', deps: {'c': '1.0.0'});
-      builder.serve('c', '1.0.0');
-      builder.serve('c', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'b': 'any'})
+      ..serve('a', '2.0.0', deps: {'b': 'any', 'c': '2.0.0'})
+      ..serve('b', '1.0.0')
+      ..serve('b', '2.0.0', deps: {'c': '1.0.0'})
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0');
 
     await d.appDir({'a': 'any'}).create();
     await expectResolves(result: {'a': '2.0.0', 'b': '1.0.0', 'c': '2.0.0'});
@@ -790,15 +744,14 @@ void backtracking() {
   // Only one version of baz, so foo and bar will have to downgrade until they
   // reach it.
   test('simple transitive', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('foo', '2.0.0', deps: {'bar': '2.0.0'});
-      builder.serve('foo', '3.0.0', deps: {'bar': '3.0.0'});
-      builder.serve('bar', '1.0.0', deps: {'baz': 'any'});
-      builder.serve('bar', '2.0.0', deps: {'baz': '2.0.0'});
-      builder.serve('bar', '3.0.0', deps: {'baz': '3.0.0'});
-      builder.serve('baz', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('foo', '2.0.0', deps: {'bar': '2.0.0'})
+      ..serve('foo', '3.0.0', deps: {'bar': '3.0.0'})
+      ..serve('bar', '1.0.0', deps: {'baz': 'any'})
+      ..serve('bar', '2.0.0', deps: {'baz': '2.0.0'})
+      ..serve('bar', '3.0.0', deps: {'baz': '3.0.0'})
+      ..serve('baz', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(
@@ -810,14 +763,13 @@ void backtracking() {
   // make sure b has more versions than a so that the solver tries a first
   // since it sorts sibling dependencies by number of versions.
   test('backjump to nearer unsatisfied package', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'c': '1.0.0'});
-      builder.serve('a', '2.0.0', deps: {'c': '2.0.0-nonexistent'});
-      builder.serve('b', '1.0.0');
-      builder.serve('b', '2.0.0');
-      builder.serve('b', '3.0.0');
-      builder.serve('c', '1.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'c': '1.0.0'})
+      ..serve('a', '2.0.0', deps: {'c': '2.0.0-nonexistent'})
+      ..serve('b', '1.0.0')
+      ..serve('b', '2.0.0')
+      ..serve('b', '3.0.0')
+      ..serve('c', '1.0.0');
 
     await d.appDir({'a': 'any', 'b': 'any'}).create();
     await expectResolves(
@@ -841,18 +793,17 @@ void backtracking() {
   test('successful backjump to conflicting source', () async {
     await d.dir('a', [d.libPubspec('a', '1.0.0')]).create();
 
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('b', '1.0.0', deps: {'a': 'any'});
-      builder.serve('b', '2.0.0', deps: {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('b', '1.0.0', deps: {'a': 'any'})
+      ..serve('b', '2.0.0', deps: {
         'a': {'path': p.join(d.sandbox, 'a')}
-      });
-      builder.serve('c', '1.0.0');
-      builder.serve('c', '2.0.0');
-      builder.serve('c', '3.0.0');
-      builder.serve('c', '4.0.0');
-      builder.serve('c', '5.0.0');
-    });
+      })
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0')
+      ..serve('c', '3.0.0')
+      ..serve('c', '4.0.0')
+      ..serve('c', '5.0.0');
 
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'c': '5.0.0'});
@@ -860,24 +811,22 @@ void backtracking() {
 
   // Like the above test, but for a conflicting description.
   test('successful backjump to conflicting description', () async {
-    var otherServer = await PackageServer.start((builder) {
-      builder.serve('a', '1.0.0');
-    });
+    var otherServer = await startPackageServer();
+    otherServer.serve('a', '1.0.0');
 
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('b', '1.0.0', deps: {'a': 'any'});
-      builder.serve('b', '2.0.0', deps: {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('b', '1.0.0', deps: {'a': 'any'})
+      ..serve('b', '2.0.0', deps: {
         'a': {
           'hosted': {'name': 'a', 'url': otherServer.url}
         }
-      });
-      builder.serve('c', '1.0.0');
-      builder.serve('c', '2.0.0');
-      builder.serve('c', '3.0.0');
-      builder.serve('c', '4.0.0');
-      builder.serve('c', '5.0.0');
-    });
+      })
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0')
+      ..serve('c', '3.0.0')
+      ..serve('c', '4.0.0')
+      ..serve('c', '5.0.0');
 
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'c': '5.0.0'});
@@ -888,17 +837,16 @@ void backtracking() {
   test('failing backjump to conflicting source', () async {
     await d.dir('a', [d.libPubspec('a', '1.0.0')]).create();
 
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('b', '1.0.0', deps: {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('b', '1.0.0', deps: {
         'a': {'path': p.join(d.sandbox, 'shared')}
-      });
-      builder.serve('c', '1.0.0');
-      builder.serve('c', '2.0.0');
-      builder.serve('c', '3.0.0');
-      builder.serve('c', '4.0.0');
-      builder.serve('c', '5.0.0');
-    });
+      })
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0')
+      ..serve('c', '3.0.0')
+      ..serve('c', '4.0.0')
+      ..serve('c', '5.0.0');
 
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -909,23 +857,21 @@ void backtracking() {
   });
 
   test('failing backjump to conflicting description', () async {
-    var otherServer = await PackageServer.start((builder) {
-      builder.serve('a', '1.0.0');
-    });
+    var otherServer = await startPackageServer();
+    otherServer.serve('a', '1.0.0');
 
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('b', '1.0.0', deps: {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('b', '1.0.0', deps: {
         'a': {
           'hosted': {'name': 'a', 'url': otherServer.url}
         }
-      });
-      builder.serve('c', '1.0.0');
-      builder.serve('c', '2.0.0');
-      builder.serve('c', '3.0.0');
-      builder.serve('c', '4.0.0');
-      builder.serve('c', '5.0.0');
-    });
+      })
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0')
+      ..serve('c', '3.0.0')
+      ..serve('c', '4.0.0')
+      ..serve('c', '5.0.0');
 
     await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(
@@ -944,39 +890,37 @@ void backtracking() {
   // Since b has fewer versions, it will be traversed first, which means a will
   // come later. Since later selections are revised first, a gets downgraded.
   test('traverse into package with fewer versions first', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'c': 'any'});
-      builder.serve('a', '2.0.0', deps: {'c': 'any'});
-      builder.serve('a', '3.0.0', deps: {'c': 'any'});
-      builder.serve('a', '4.0.0', deps: {'c': 'any'});
-      builder.serve('a', '5.0.0', deps: {'c': '1.0.0'});
-      builder.serve('b', '1.0.0', deps: {'c': 'any'});
-      builder.serve('b', '2.0.0', deps: {'c': 'any'});
-      builder.serve('b', '3.0.0', deps: {'c': 'any'});
-      builder.serve('b', '4.0.0', deps: {'c': '2.0.0'});
-      builder.serve('c', '1.0.0');
-      builder.serve('c', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'c': 'any'})
+      ..serve('a', '2.0.0', deps: {'c': 'any'})
+      ..serve('a', '3.0.0', deps: {'c': 'any'})
+      ..serve('a', '4.0.0', deps: {'c': 'any'})
+      ..serve('a', '5.0.0', deps: {'c': '1.0.0'})
+      ..serve('b', '1.0.0', deps: {'c': 'any'})
+      ..serve('b', '2.0.0', deps: {'c': 'any'})
+      ..serve('b', '3.0.0', deps: {'c': 'any'})
+      ..serve('b', '4.0.0', deps: {'c': '2.0.0'})
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0');
 
     await d.appDir({'a': 'any', 'b': 'any'}).create();
     await expectResolves(result: {'a': '4.0.0', 'b': '4.0.0', 'c': '2.0.0'});
   });
 
   test('complex backtrack', () async {
-    await servePackages((builder) {
-      // This sets up a hundred versions of foo and bar, 0.0.0 through 9.9.0. Each
-      // version of foo depends on a baz with the same major version. Each version
-      // of bar depends on a baz with the same minor version. There is only one
-      // version of baz, 0.0.0, so only older versions of foo and bar will
-      // satisfy it.
-      builder.serve('baz', '0.0.0');
-      for (var i = 0; i < 10; i++) {
-        for (var j = 0; j < 10; j++) {
-          builder.serve('foo', '$i.$j.0', deps: {'baz': '$i.0.0'});
-          builder.serve('bar', '$i.$j.0', deps: {'baz': '0.$j.0'});
-        }
+    final server = await servePackages();
+    // This sets up a hundred versions of foo and bar, 0.0.0 through 9.9.0. Each
+    // version of foo depends on a baz with the same major version. Each version
+    // of bar depends on a baz with the same minor version. There is only one
+    // version of baz, 0.0.0, so only older versions of foo and bar will
+    // satisfy it.
+    server.serve('baz', '0.0.0');
+    for (var i = 0; i < 10; i++) {
+      for (var j = 0; j < 10; j++) {
+        server.serve('foo', '$i.$j.0', deps: {'baz': '$i.0.0'});
+        server.serve('bar', '$i.$j.0', deps: {'baz': '0.$j.0'});
       }
-    });
+    }
 
     await d.appDir({'foo': 'any', 'bar': 'any'}).create();
     await expectResolves(
@@ -987,19 +931,18 @@ void backtracking() {
   // versions of it is a waste of time: no possible versions can match. We need
   // to jump past it to the most recent package that affected the constraint.
   test('backjump past failed package on disjoint constraint', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {
         'foo': 'any' // ok
-      });
-      builder.serve('a', '2.0.0', deps: {
+      })
+      ..serve('a', '2.0.0', deps: {
         'foo': '<1.0.0' // disjoint with myapp's constraint on foo
-      });
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '2.0.1');
-      builder.serve('foo', '2.0.2');
-      builder.serve('foo', '2.0.3');
-      builder.serve('foo', '2.0.4');
-    });
+      })
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '2.0.1')
+      ..serve('foo', '2.0.2')
+      ..serve('foo', '2.0.3')
+      ..serve('foo', '2.0.4');
 
     await d.appDir({'a': 'any', 'foo': '>2.0.0'}).create();
     await expectResolves(result: {'a': '1.0.0', 'foo': '2.0.4'});
@@ -1010,14 +953,13 @@ void backtracking() {
   // would backtrack over the failed package instead of trying different
   // versions of it.
   test('finds solution with less strict constraint', () async {
-    await servePackages((builder) {
-      builder.serve('a', '2.0.0');
-      builder.serve('a', '1.0.0');
-      builder.serve('b', '1.0.0', deps: {'a': '1.0.0'});
-      builder.serve('c', '1.0.0', deps: {'b': 'any'});
-      builder.serve('d', '2.0.0', deps: {'myapp': 'any'});
-      builder.serve('d', '1.0.0', deps: {'myapp': '<1.0.0'});
-    });
+    await servePackages()
+      ..serve('a', '2.0.0')
+      ..serve('a', '1.0.0')
+      ..serve('b', '1.0.0', deps: {'a': '1.0.0'})
+      ..serve('c', '1.0.0', deps: {'b': 'any'})
+      ..serve('d', '2.0.0', deps: {'myapp': 'any'})
+      ..serve('d', '1.0.0', deps: {'myapp': '<1.0.0'});
 
     await d.appDir({'a': 'any', 'c': 'any', 'd': 'any'}).create();
     await expectResolves(
@@ -1053,10 +995,9 @@ void dartSdkConstraint() {
   });
 
   test('dependency does not match SDK', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.0.0'}
-      });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'environment': {'sdk': '0.0.0'}
     });
 
     await d.appDir({'foo': 'any'}).create();
@@ -1069,12 +1010,11 @@ void dartSdkConstraint() {
   });
 
   test('transitive dependency does not match SDK', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('bar', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': 'any'})
+      ..serve('bar', '1.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
       });
-    });
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -1087,41 +1027,39 @@ void dartSdkConstraint() {
   });
 
   test('selects a dependency version that allows the SDK', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '0.1.2+3'}
-      });
-      builder.serve('foo', '2.0.0', pubspec: {
+      })
+      ..serve('foo', '2.0.0', pubspec: {
         'environment': {'sdk': '0.1.2+3'}
-      });
-      builder.serve('foo', '3.0.0', pubspec: {
+      })
+      ..serve('foo', '3.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      })
+      ..serve('foo', '4.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
       });
-      builder.serve('foo', '4.0.0', pubspec: {
-        'environment': {'sdk': '0.0.0'}
-      });
-    });
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(result: {'foo': '2.0.0'});
   });
 
   test('selects a transitive dependency version that allows the SDK', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': 'any'});
-      builder.serve('bar', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': 'any'})
+      ..serve('bar', '1.0.0', pubspec: {
         'environment': {'sdk': '0.1.2+3'}
-      });
-      builder.serve('bar', '2.0.0', pubspec: {
+      })
+      ..serve('bar', '2.0.0', pubspec: {
         'environment': {'sdk': '0.1.2+3'}
-      });
-      builder.serve('bar', '3.0.0', pubspec: {
+      })
+      ..serve('bar', '3.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      })
+      ..serve('bar', '4.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
       });
-      builder.serve('bar', '4.0.0', pubspec: {
-        'environment': {'sdk': '0.0.0'}
-      });
-    });
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
@@ -1130,24 +1068,23 @@ void dartSdkConstraint() {
   test(
       'selects a dependency version that allows a transitive '
       'dependency that allows the SDK', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('foo', '2.0.0', deps: {'bar': '2.0.0'});
-      builder.serve('foo', '3.0.0', deps: {'bar': '3.0.0'});
-      builder.serve('foo', '4.0.0', deps: {'bar': '4.0.0'});
-      builder.serve('bar', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('foo', '2.0.0', deps: {'bar': '2.0.0'})
+      ..serve('foo', '3.0.0', deps: {'bar': '3.0.0'})
+      ..serve('foo', '4.0.0', deps: {'bar': '4.0.0'})
+      ..serve('bar', '1.0.0', pubspec: {
         'environment': {'sdk': '0.1.2+3'}
-      });
-      builder.serve('bar', '2.0.0', pubspec: {
+      })
+      ..serve('bar', '2.0.0', pubspec: {
         'environment': {'sdk': '0.1.2+3'}
-      });
-      builder.serve('bar', '3.0.0', pubspec: {
+      })
+      ..serve('bar', '3.0.0', pubspec: {
+        'environment': {'sdk': '0.0.0'}
+      })
+      ..serve('bar', '4.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
       });
-      builder.serve('bar', '4.0.0', pubspec: {
-        'environment': {'sdk': '0.0.0'}
-      });
-    });
 
     await d.appDir({'foo': 'any'}).create();
     await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 2);
@@ -1465,10 +1402,9 @@ void sdkConstraint() {
     });
 
     test('fails for a dependency', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
-          'environment': {'flutter': '0.0.0'}
-        });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', pubspec: {
+        'environment': {'flutter': '0.0.0'}
       });
 
       await d.appDir({'foo': 'any'}).create();
@@ -1481,13 +1417,12 @@ void sdkConstraint() {
     });
 
     test("chooses a version that doesn't need Flutter", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-        builder.serve('foo', '2.0.0');
-        builder.serve('foo', '3.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0')
+        ..serve('foo', '3.0.0', pubspec: {
           'environment': {'flutter': '0.0.0'}
         });
-      });
 
       await d.appDir({'foo': 'any'}).create();
       await expectResolves(result: {'foo': '2.0.0'});
@@ -1614,17 +1549,16 @@ void sdkConstraint() {
     });
 
     test('selects the latest dependency with a matching constraint', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'environment': {'flutter': '^0.0.0'}
-        });
-        builder.serve('foo', '2.0.0', pubspec: {
+        })
+        ..serve('foo', '2.0.0', pubspec: {
           'environment': {'flutter': '^1.0.0'}
-        });
-        builder.serve('foo', '3.0.0', pubspec: {
+        })
+        ..serve('foo', '3.0.0', pubspec: {
           'environment': {'flutter': '^2.0.0'}
         });
-      });
 
       await d.appDir({'foo': 'any'}).create();
       await expectResolves(
@@ -1636,36 +1570,33 @@ void sdkConstraint() {
 
 void prerelease() {
   test('prefer stable versions over unstable', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '1.1.0-dev');
-      builder.serve('a', '2.0.0-dev');
-      builder.serve('a', '3.0.0-dev');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '1.1.0-dev')
+      ..serve('a', '2.0.0-dev')
+      ..serve('a', '3.0.0-dev');
 
     await d.appDir({'a': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0'});
   });
 
   test('use latest allowed prerelease if no stable versions match', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0-dev');
-      builder.serve('a', '1.1.0-dev');
-      builder.serve('a', '1.9.0-dev');
-      builder.serve('a', '3.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0-dev')
+      ..serve('a', '1.1.0-dev')
+      ..serve('a', '1.9.0-dev')
+      ..serve('a', '3.0.0');
 
     await d.appDir({'a': '<2.0.0'}).create();
     await expectResolves(result: {'a': '1.9.0-dev'});
   });
 
   test('use an earlier stable version on a < constraint', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '1.1.0');
-      builder.serve('a', '2.0.0-dev');
-      builder.serve('a', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '1.1.0')
+      ..serve('a', '2.0.0-dev')
+      ..serve('a', '2.0.0');
 
     await d.appDir({'a': '<2.0.0'}).create();
     await expectResolves(result: {'a': '1.1.0'});
@@ -1673,33 +1604,30 @@ void prerelease() {
 
   test('prefer a stable version even if constraint mentions unstable',
       () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '1.1.0');
-      builder.serve('a', '2.0.0-dev');
-      builder.serve('a', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '1.1.0')
+      ..serve('a', '2.0.0-dev')
+      ..serve('a', '2.0.0');
 
     await d.appDir({'a': '<=2.0.0-dev'}).create();
     await expectResolves(result: {'a': '1.1.0'});
   });
 
   test('use pre-release when desired', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '1.1.0-dev');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '1.1.0-dev');
 
     await d.appDir({'a': '^1.1.0-dev'}).create();
     await expectResolves(result: {'a': '1.1.0-dev'});
   });
 
   test('can upgrade from pre-release', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '1.1.0-dev');
-      builder.serve('a', '1.1.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '1.1.0-dev')
+      ..serve('a', '1.1.0');
 
     await d.appDir({'a': '^1.1.0-dev'}).create();
     await expectResolves(result: {'a': '1.1.0'});
@@ -1708,12 +1636,11 @@ void prerelease() {
   test('will use pre-release if depended on in stable release', () async {
     // This behavior is desired because a stable package has dependency on a
     // pre-release.
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'b': '^1.0.0'});
-      builder.serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'});
-      builder.serve('b', '1.0.0');
-      builder.serve('b', '1.1.0-dev');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'b': '^1.0.0'})
+      ..serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'})
+      ..serve('b', '1.0.0')
+      ..serve('b', '1.1.0-dev');
 
     await d.appDir({'a': '^1.0.0'}).create();
     await expectResolves(result: {
@@ -1723,12 +1650,11 @@ void prerelease() {
   });
 
   test('backtracks pre-release choice with direct dependency', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'b': '^1.0.0'});
-      builder.serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'});
-      builder.serve('b', '1.0.0');
-      builder.serve('b', '1.1.0-dev');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'b': '^1.0.0'})
+      ..serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'})
+      ..serve('b', '1.0.0')
+      ..serve('b', '1.1.0-dev');
 
     await d.appDir({
       'a': '^1.0.0',
@@ -1743,13 +1669,12 @@ void prerelease() {
   test('backtracking pre-release fails with indirect dependency', () async {
     // NOTE: This behavior is not necessarily desired.
     //       If feasible it might worth changing this behavior in the future.
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'b': '^1.0.0'});
-      builder.serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'});
-      builder.serve('b', '1.0.0');
-      builder.serve('b', '1.1.0-dev');
-      builder.serve('c', '1.0.0', deps: {'b': '^1.0.0'});
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'b': '^1.0.0'})
+      ..serve('a', '1.1.0', deps: {'b': '^1.1.0-dev'})
+      ..serve('b', '1.0.0')
+      ..serve('b', '1.1.0-dev')
+      ..serve('c', '1.0.0', deps: {'b': '^1.0.0'});
 
     await d.appDir({
       'a': '^1.0.0',
@@ -1764,14 +1689,13 @@ void prerelease() {
 
   test('https://github.com/dart-lang/pub/issues/3057 regression', () async {
     // This used to cause an infinite loop.
-    await servePackages((builder) {
-      builder.serve('a', '0.12.0', deps: {});
-      builder.serve('b', '0.1.0', deps: {'c': '2.0.0'});
-      builder.serve('b', '0.9.0-1', deps: {'c': '^1.6.0'});
-      builder.serve('b', '0.10.0', deps: {'a': '1.0.0'});
-      builder.serve('b', '0.17.0', deps: {'a': '1.0.0'});
-      builder.serve('c', '2.0.1', deps: {});
-    });
+    await servePackages()
+      ..serve('a', '0.12.0', deps: {})
+      ..serve('b', '0.1.0', deps: {'c': '2.0.0'})
+      ..serve('b', '0.9.0-1', deps: {'c': '^1.6.0'})
+      ..serve('b', '0.10.0', deps: {'a': '1.0.0'})
+      ..serve('b', '0.17.0', deps: {'a': '1.0.0'})
+      ..serve('c', '2.0.1', deps: {});
 
     await d.appDir(
       {
@@ -1786,13 +1710,12 @@ void prerelease() {
   });
 
   test('https://github.com/dart-lang/pub/pull/3038 regression', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.1.0', deps: {'b': '^1.0.0'});
-      builder.serve('b', '1.0.0', deps: {'c': '^1.0.0'});
-      builder.serve('c', '0.9.0');
-      builder.serve('b', '1.1.0-alpha');
-      builder.serve('a', '1.0.0', deps: {'b': '^1.1.0-alpha'});
-    });
+    await servePackages()
+      ..serve('a', '1.1.0', deps: {'b': '^1.0.0'})
+      ..serve('b', '1.0.0', deps: {'c': '^1.0.0'})
+      ..serve('c', '0.9.0')
+      ..serve('b', '1.1.0-alpha')
+      ..serve('a', '1.0.0', deps: {'b': '^1.1.0-alpha'});
 
     await d.appDir({
       'a': '^1.0.0',
@@ -1803,11 +1726,10 @@ void prerelease() {
 
 void override() {
   test('chooses best version matching override constraint', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '2.0.0');
-      builder.serve('a', '3.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
+      ..serve('a', '3.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1821,11 +1743,10 @@ void override() {
   });
 
   test('uses override as dependency', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '2.0.0');
-      builder.serve('a', '3.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
+      ..serve('a', '3.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1838,13 +1759,12 @@ void override() {
   });
 
   test('ignores other constraints on overridden package', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '2.0.0');
-      builder.serve('a', '3.0.0');
-      builder.serve('b', '1.0.0', deps: {'a': '1.0.0'});
-      builder.serve('c', '1.0.0', deps: {'a': '3.0.0'});
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
+      ..serve('a', '3.0.0')
+      ..serve('b', '1.0.0', deps: {'a': '1.0.0'})
+      ..serve('c', '1.0.0', deps: {'a': '3.0.0'});
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1858,12 +1778,11 @@ void override() {
   });
 
   test('backtracks on overidden package for its constraints', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0', deps: {'shared': 'any'});
-      builder.serve('a', '2.0.0', deps: {'shared': '1.0.0'});
-      builder.serve('shared', '1.0.0');
-      builder.serve('shared', '2.0.0');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'shared': 'any'})
+      ..serve('a', '2.0.0', deps: {'shared': '1.0.0'})
+      ..serve('shared', '1.0.0')
+      ..serve('shared', '2.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1877,14 +1796,13 @@ void override() {
   });
 
   test('override compatible with locked dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('foo', '1.0.1', deps: {'bar': '1.0.1'});
-      builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('foo', '1.0.1', deps: {'bar': '1.0.1'})
+      ..serve('foo', '1.0.2', deps: {'bar': '1.0.2'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '1.0.1')
+      ..serve('bar', '1.0.2');
 
     await d.appDir({'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
@@ -1900,14 +1818,13 @@ void override() {
   });
 
   test('override incompatible with locked dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
-      builder.serve('foo', '1.0.1', deps: {'bar': '1.0.1'});
-      builder.serve('foo', '1.0.2', deps: {'bar': '1.0.2'});
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '1.0.1');
-      builder.serve('bar', '1.0.2');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
+      ..serve('foo', '1.0.1', deps: {'bar': '1.0.1'})
+      ..serve('foo', '1.0.2', deps: {'bar': '1.0.2'})
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '1.0.1')
+      ..serve('bar', '1.0.2');
 
     await d.appDir({'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
@@ -1923,10 +1840,9 @@ void override() {
   });
 
   test('no version that matches override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '2.1.3');
-    });
+    await servePackages()
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '2.1.3');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1942,9 +1858,8 @@ void override() {
   });
 
   test('overrides a bad source without error', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '0.0.0');
-    });
+    final server = await servePackages();
+    server.serve('foo', '0.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1960,10 +1875,9 @@ void override() {
   });
 
   test('overrides an unmatched SDK constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '0.0.0', pubspec: {
-        'environment': {'sdk': '0.0.0'}
-      });
+    final server = await servePackages();
+    server.serve('foo', '0.0.0', pubspec: {
+      'environment': {'sdk': '0.0.0'}
     });
 
     await d.dir(appPath, [
@@ -1977,9 +1891,8 @@ void override() {
   });
 
   test('overrides an unmatched root dependency', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '0.0.0', deps: {'myapp': '1.0.0'});
-    });
+    final server = await servePackages();
+    server.serve('foo', '0.0.0', deps: {'myapp': '1.0.0'});
 
     await d.dir(appPath, [
       d.pubspec({
@@ -1994,11 +1907,10 @@ void override() {
 
   // Regression test for #1853
   test("overrides a locked package's dependency", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.3', deps: {'bar': '1.2.3'});
-      builder.serve('bar', '1.2.3');
-      builder.serve('bar', '0.0.1');
-    });
+    await servePackages()
+      ..serve('foo', '1.2.3', deps: {'bar': '1.2.3'})
+      ..serve('bar', '1.2.3')
+      ..serve('bar', '0.0.1');
 
     await d.appDir({'foo': 'any'}).create();
 
@@ -2014,16 +1926,53 @@ void override() {
 
     await expectResolves(result: {'foo': '1.2.3', 'bar': '0.0.1'});
   });
+
+  test('overrides in pubspec_overrides.yaml', () async {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'a': '1.0.0'},
+      }),
+      d.pubspecOverrides({
+        'dependency_overrides': {'a': '2.0.0'}
+      }),
+    ]).create();
+
+    await expectResolves(result: {'a': '2.0.0'});
+  });
+
+  test('pubspec_overrides.yaml takes precedence over pubspec.yaml', () async {
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
+      ..serve('a', '3.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'a': '1.0.0'},
+        'dependency_overrides': {'a': '2.0.0'}
+      }),
+      d.pubspecOverrides({
+        'dependency_overrides': {'a': '3.0.0'}
+      }),
+    ]).create();
+
+    await expectResolves(result: {'a': '3.0.0'});
+  });
 }
 
 void downgrade() {
   test('downgrades a dependency to the lowest matching version', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0-dev');
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '2.1.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0-dev')
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '2.1.0');
 
     await d.appDir({'foo': '2.1.0'}).create();
     await expectResolves(result: {'foo': '2.1.0'});
@@ -2035,12 +1984,11 @@ void downgrade() {
   test(
       'use earliest allowed prerelease if no stable versions match '
       'while downgrading', () async {
-    await servePackages((builder) {
-      builder.serve('a', '1.0.0');
-      builder.serve('a', '2.0.0-dev.1');
-      builder.serve('a', '2.0.0-dev.2');
-      builder.serve('a', '2.0.0-dev.3');
-    });
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0-dev.1')
+      ..serve('a', '2.0.0-dev.2')
+      ..serve('a', '2.0.0-dev.3');
 
     await d.appDir({'a': '>=2.0.0-dev.1 <3.0.0'}).create();
     await expectResolves(result: {'a': '2.0.0-dev.1'}, downgrade: true);
@@ -2049,67 +1997,63 @@ void downgrade() {
 
 void features() {
   test("doesn't enable an opt-in feature by default", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
   test('enables an opt-out feature by default', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': true,
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
   test('features are opt-out by default', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.appDir({'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
   test("enables an opt-in feature if it's required", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.appDir({
       'foo': {
@@ -2121,16 +2065,15 @@ void features() {
   });
 
   test("doesn't enable an opt-out feature if it's disabled", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.appDir({
       'foo': {
@@ -2142,22 +2085,21 @@ void features() {
   });
 
   test('opting in takes precedence over opting out', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-      builder.serve('baz', '1.0.0', deps: {
+      })
+      ..serve('bar', '1.0.0')
+      ..serve('baz', '1.0.0', deps: {
         'foo': {
           'version': '1.0.0',
           'features': {'stuff': true}
         }
       });
-    });
 
     await d.appDir({
       'foo': {
@@ -2171,21 +2113,20 @@ void features() {
   });
 
   test('implicitly opting in takes precedence over opting out', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-      builder.serve('baz', '1.0.0', deps: {
+      })
+      ..serve('bar', '1.0.0')
+      ..serve('baz', '1.0.0', deps: {
         'foo': {
           'version': '1.0.0',
         }
       });
-    });
 
     await d.appDir({
       'foo': {
@@ -2199,18 +2140,17 @@ void features() {
   });
 
   test("doesn't select a version with an unavailable feature", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('foo', '1.1.0');
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('foo', '1.1.0')
+      ..serve('bar', '1.0.0');
 
     await d.appDir({
       'foo': {
@@ -2222,26 +2162,25 @@ void features() {
   });
 
   test("doesn't select a version with an incompatible feature", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('foo', '1.1.0', pubspec: {
+      })
+      ..serve('foo', '1.1.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '2.0.0'}
           }
         }
-      });
-      builder.serve('bar', '1.0.0');
-      builder.serve('bar', '2.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0')
+      ..serve('bar', '2.0.0');
 
     await d.appDir({
       'foo': {
@@ -2256,8 +2195,8 @@ void features() {
   test(
       'backtracks if a feature is transitively incompatible with another '
       'feature', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
@@ -2269,27 +2208,24 @@ void features() {
             }
           }
         }
-      });
-      builder.serve('foo', '1.1.0', pubspec: {
+      })
+      ..serve('foo', '1.1.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-
-      builder.serve('bar', '1.0.0', pubspec: {
+      })
+      ..serve('bar', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'dependencies': {'baz': '1.0.0'}
           }
         }
-      });
-
-      builder.serve('baz', '1.0.0');
-      builder.serve('baz', '2.0.0');
-    });
+      })
+      ..serve('baz', '1.0.0')
+      ..serve('baz', '2.0.0');
 
     await d.appDir({
       'foo': {
@@ -2304,30 +2240,27 @@ void features() {
 
   test("backtracks if a feature's dependencies are transitively incompatible",
       () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
+    await servePackages()
+      ..serve('foo', '1.0.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '1.0.0'}
           }
         }
-      });
-      builder.serve('foo', '1.1.0', pubspec: {
+      })
+      ..serve('foo', '1.1.0', pubspec: {
         'features': {
           'stuff': {
             'default': false,
             'dependencies': {'bar': '2.0.0'}
           }
         }
-      });
-
-      builder.serve('bar', '1.0.0', deps: {'baz': '1.0.0'});
-      builder.serve('bar', '2.0.0', deps: {'baz': '2.0.0'});
-
-      builder.serve('baz', '1.0.0');
-      builder.serve('baz', '2.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0', deps: {'baz': '1.0.0'})
+      ..serve('bar', '2.0.0', deps: {'baz': '2.0.0'})
+      ..serve('baz', '1.0.0')
+      ..serve('baz', '2.0.0');
 
     await d.appDir({
       'foo': {
@@ -2341,9 +2274,9 @@ void features() {
   });
 
   test('disables a feature when it backtracks', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'myapp': '0.0.0'});
-      builder.serve('foo', '1.1.0', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'myapp': '0.0.0'})
+      ..serve('foo', '1.1.0', deps: {
         // This is a transitively incompatible dependency with myapp, which will
         // force the solver to backtrack and unselect foo 1.1.0.
         'bar': '1.0.0',
@@ -2351,15 +2284,11 @@ void features() {
           'version': '0.0.0',
           'features': {'stuff': true}
         }
-      });
-
-      builder.serve('bar', '1.0.0', deps: {'baz': '2.0.0'});
-
-      builder.serve('baz', '1.0.0');
-      builder.serve('baz', '2.0.0');
-
-      builder.serve('qux', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0', deps: {'baz': '2.0.0'})
+      ..serve('baz', '1.0.0')
+      ..serve('baz', '2.0.0')
+      ..serve('qux', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -2377,10 +2306,9 @@ void features() {
   });
 
   test("the root package's features are opt-out by default", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('bar', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -2397,10 +2325,9 @@ void features() {
   });
 
   test("the root package's features can be made opt-in", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('bar', '1.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -2423,14 +2350,13 @@ void features() {
   // increases the total number of dependencies.
   test("the root package's features can't be disabled by dependencies",
       () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {
         'myapp': {
           'features': {'stuff': false}
         }
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -2447,14 +2373,13 @@ void features() {
   });
 
   test("the root package's features can be enabled by dependencies", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {
         'myapp': {
           'features': {'stuff': true}
         }
-      });
-      builder.serve('bar', '1.0.0');
-    });
+      })
+      ..serve('bar', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -2472,9 +2397,8 @@ void features() {
   });
 
   test("resolution fails because a feature doesn't exist", () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -2494,17 +2418,16 @@ void features() {
 
   group('an "if available" dependency', () {
     test('enables an opt-in feature', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'features': {
             'stuff': {
               'default': false,
               'dependencies': {'bar': '1.0.0'}
             }
           }
-        });
-        builder.serve('bar', '1.0.0');
-      });
+        })
+        ..serve('bar', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -2516,9 +2439,8 @@ void features() {
     });
 
     test("is compatible with a feature that doesn't exist", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -2537,14 +2459,13 @@ void features() {
 
     group('succeeds when', () {
       test('a Dart SDK constraint is matched', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0', pubspec: {
-            'features': {
-              'stuff': {
-                'environment': {'sdk': '^0.1.0'}
-              }
+        final server = await servePackages();
+        server.serve('foo', '1.0.0', pubspec: {
+          'features': {
+            'stuff': {
+              'environment': {'sdk': '^0.1.0'}
             }
-          });
+          }
         });
 
         await d.dir(appPath, [
@@ -2558,14 +2479,13 @@ void features() {
       });
 
       test('a Flutter SDK constraint is matched', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0', pubspec: {
-            'features': {
-              'stuff': {
-                'environment': {'flutter': '^1.0.0'}
-              }
+        final server = await servePackages();
+        server.serve('foo', '1.0.0', pubspec: {
+          'features': {
+            'stuff': {
+              'environment': {'flutter': '^1.0.0'}
             }
-          });
+          }
         });
 
         await d.dir(appPath, [
@@ -2583,16 +2503,15 @@ void features() {
 
     group("doesn't choose a version because", () {
       test("a Dart SDK constraint isn't matched", () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0');
-          builder.serve('foo', '1.1.0', pubspec: {
+        await servePackages()
+          ..serve('foo', '1.0.0')
+          ..serve('foo', '1.1.0', pubspec: {
             'features': {
               'stuff': {
                 'environment': {'sdk': '0.0.1'}
               }
             }
           });
-        });
 
         await d.dir(appPath, [
           d.pubspec({
@@ -2605,16 +2524,15 @@ void features() {
       });
 
       test("Flutter isn't available", () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0');
-          builder.serve('foo', '1.1.0', pubspec: {
+        await servePackages()
+          ..serve('foo', '1.0.0')
+          ..serve('foo', '1.1.0', pubspec: {
             'features': {
               'stuff': {
                 'environment': {'flutter': '1.0.0'}
               }
             }
           });
-        });
 
         await d.dir(appPath, [
           d.pubspec({
@@ -2627,16 +2545,15 @@ void features() {
       });
 
       test("a Flutter SDK constraint isn't matched", () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0');
-          builder.serve('foo', '1.1.0', pubspec: {
+        await servePackages()
+          ..serve('foo', '1.0.0')
+          ..serve('foo', '1.1.0', pubspec: {
             'features': {
               'stuff': {
                 'environment': {'flutter': '^2.0.0'}
               }
             }
           });
-        });
 
         await d.dir(appPath, [
           d.pubspec({
@@ -2653,14 +2570,13 @@ void features() {
 
     group('resolution fails because', () {
       test("a Dart SDK constraint isn't matched", () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0', pubspec: {
-            'features': {
-              'stuff': {
-                'environment': {'sdk': '0.0.1'}
-              }
+        final server = await servePackages();
+        server.serve('foo', '1.0.0', pubspec: {
+          'features': {
+            'stuff': {
+              'environment': {'sdk': '0.0.1'}
             }
-          });
+          }
         });
 
         await d.dir(appPath, [
@@ -2677,14 +2593,13 @@ void features() {
       });
 
       test("Flutter isn't available", () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0', pubspec: {
-            'features': {
-              'stuff': {
-                'environment': {'flutter': '1.0.0'}
-              }
+        final server = await servePackages();
+        server.serve('foo', '1.0.0', pubspec: {
+          'features': {
+            'stuff': {
+              'environment': {'flutter': '1.0.0'}
             }
-          });
+          }
         });
 
         await d.dir(appPath, [
@@ -2700,14 +2615,13 @@ void features() {
       });
 
       test("a Flutter SDK constraint isn't matched", () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.0.0', pubspec: {
-            'features': {
-              'stuff': {
-                'environment': {'flutter': '^2.0.0'}
-              }
+        final server = await servePackages();
+        server.serve('foo', '1.0.0', pubspec: {
+          'features': {
+            'stuff': {
+              'environment': {'flutter': '^2.0.0'}
             }
-          });
+          }
         });
 
         await d.dir(appPath, [
@@ -2727,8 +2641,8 @@ void features() {
 
   group('with overlapping dependencies', () {
     test('can enable extra features', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'dependencies': {'bar': '1.0.0'},
           'features': {
             'stuff': {
@@ -2740,19 +2654,16 @@ void features() {
               }
             }
           }
-        });
-
-        builder.serve('bar', '1.0.0', pubspec: {
+        })
+        ..serve('bar', '1.0.0', pubspec: {
           'features': {
             'stuff': {
               'default': false,
               'dependencies': {'baz': '1.0.0'}
             }
           }
-        });
-
-        builder.serve('baz', '1.0.0');
-      });
+        })
+        ..serve('baz', '1.0.0');
 
       await d.appDir({
         'foo': {'version': '1.0.0'}
@@ -2770,8 +2681,8 @@ void features() {
     });
 
     test("can't disable features", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'dependencies': {
             'bar': {
               'version': '1.0.0',
@@ -2788,19 +2699,16 @@ void features() {
               }
             }
           }
-        });
-
-        builder.serve('bar', '1.0.0', pubspec: {
+        })
+        ..serve('bar', '1.0.0', pubspec: {
           'features': {
             'stuff': {
               'default': true,
               'dependencies': {'baz': '1.0.0'}
             }
           }
-        });
-
-        builder.serve('baz', '1.0.0');
-      });
+        })
+        ..serve('baz', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -2815,8 +2723,8 @@ void features() {
 
   group('with required features', () {
     test('enables those features', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'features': {
             'main': {
               'default': false,
@@ -2831,10 +2739,9 @@ void features() {
               'dependencies': {'baz': '1.0.0'}
             }
           }
-        });
-        builder.serve('bar', '1.0.0');
-        builder.serve('baz', '1.0.0');
-      });
+        })
+        ..serve('bar', '1.0.0')
+        ..serve('baz', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -2847,8 +2754,8 @@ void features() {
     });
 
     test('enables those features by default', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'features': {
             'main': {
               'requires': ['required1', 'required2']
@@ -2862,10 +2769,9 @@ void features() {
               'dependencies': {'baz': '1.0.0'}
             }
           }
-        });
-        builder.serve('bar', '1.0.0');
-        builder.serve('baz', '1.0.0');
-      });
+        })
+        ..serve('bar', '1.0.0')
+        ..serve('baz', '1.0.0');
 
       await d.appDir({'foo': '1.0.0'}).create();
       await expectResolves(
@@ -2873,8 +2779,8 @@ void features() {
     });
 
     test("doesn't enable those features if it's disabled", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'features': {
             'main': {
               'requires': ['required']
@@ -2884,9 +2790,8 @@ void features() {
               'dependencies': {'bar': '1.0.0'}
             }
           }
-        });
-        builder.serve('bar', '1.0.0');
-      });
+        })
+        ..serve('bar', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -2899,8 +2804,8 @@ void features() {
 
     test("enables those features even if they'd otherwise be disabled",
         () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'features': {
             'main': {
               'requires': ['required']
@@ -2910,9 +2815,8 @@ void features() {
               'dependencies': {'bar': '1.0.0'}
             }
           }
-        });
-        builder.serve('bar', '1.0.0');
-      });
+        })
+        ..serve('bar', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -2924,8 +2828,8 @@ void features() {
     });
 
     test('enables features transitively', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.0.0', pubspec: {
+      await servePackages()
+        ..serve('foo', '1.0.0', pubspec: {
           'features': {
             'main': {
               'requires': ['required1']
@@ -2939,9 +2843,8 @@ void features() {
               'dependencies': {'bar': '1.0.0'}
             }
           }
-        });
-        builder.serve('bar', '1.0.0');
-      });
+        })
+        ..serve('bar', '1.0.0');
 
       await d.appDir({
         'foo': {
@@ -2974,11 +2877,11 @@ void features() {
 ///
 /// If [downgrade] is `true`, this runs "pub downgrade" instead of "pub get".
 Future expectResolves(
-    {Map result,
+    {Map? result,
     error,
     output,
-    int tries,
-    Map<String, String> environment,
+    int? tries,
+    Map<String, String>? environment,
     bool downgrade = false}) async {
   await runPub(
       args: [downgrade ? 'downgrade' : 'get'],
@@ -2994,7 +2897,8 @@ Future expectResolves(
 
   if (result == null) return;
 
-  var registry = SourceRegistry();
+  var cache = SystemCache();
+  var registry = cache.sources;
   var lockFile =
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
   var resultPubspec = Pubspec.fromMap({'dependencies': result}, registry);
@@ -3003,13 +2907,13 @@ Future expectResolves(
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
     var id = ids.remove(dep.name);
-    final source = dep.source;
-
-    if (source is HostedSource && (dep.description.uri == source.defaultUrl)) {
+    final description = dep.description;
+    if (description is HostedDescription &&
+        (description.url == SystemCache().hosted.defaultUrl)) {
       // If the dep uses the default hosted source, grab it from the test
       // package server rather than pub.dartlang.org.
-      dep = registry.hosted
-          .refFor(dep.name, url: Uri.parse(globalPackageServer.url))
+      dep = cache.hosted
+          .refFor(dep.name, url: globalServer.url)
           .withConstraint(dep.constraint);
     }
     expect(dep.allows(id), isTrue, reason: 'Expected $id to match $dep.');
@@ -3020,14 +2924,12 @@ Future expectResolves(
 
 void regressions() {
   test('reformatRanges with a build', () async {
-    await servePackages((b) {
-      b.serve('integration_test', '1.0.1',
-          deps: {'vm_service': '>= 4.2.0 <6.0.0'});
-      b.serve('integration_test', '1.0.2+2',
-          deps: {'vm_service': '>= 4.2.0 <7.0.0'});
-
-      b.serve('vm_service', '7.3.0');
-    });
+    await servePackages()
+      ..serve('integration_test', '1.0.1',
+          deps: {'vm_service': '>= 4.2.0 <6.0.0'})
+      ..serve('integration_test', '1.0.2+2',
+          deps: {'vm_service': '>= 4.2.0 <7.0.0'})
+      ..serve('vm_service', '7.3.0');
     await d.appDir({'integration_test': '^1.0.2'}).create();
     await expectResolves(
       error: contains(

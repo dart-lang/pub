@@ -13,14 +13,13 @@ import '../../test_pub.dart';
 
 void main() {
   test('Do not consider retracted packages', () async {
-    await servePackages((builder) => builder
+    final server = await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0')
-      ..serve('bar', '1.1.0'));
+      ..serve('bar', '1.1.0');
     await d.appDir({'foo': '1.0.0'}).create();
 
-    globalPackageServer!
-        .add((builder) => builder..retractPackageVersion('bar', '1.1.0'));
+    server.retractPackageVersion('bar', '1.1.0');
     await pubGet();
 
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.0.0'}).validate();
@@ -28,13 +27,12 @@ void main() {
   });
 
   test('Error when the only available package version is retracted', () async {
-    await servePackages((builder) => builder
+    final server = await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
-      ..serve('bar', '1.0.0'));
+      ..serve('bar', '1.0.0');
     await d.appDir({'foo': '1.0.0'}).create();
 
-    globalPackageServer!
-        .add((builder) => builder..retractPackageVersion('bar', '1.0.0'));
+    server.retractPackageVersion('bar', '1.0.0');
     await pubGet(
         error:
             '''Because every version of foo depends on bar ^1.0.0 which doesn't match any versions, foo is forbidden. 
@@ -47,28 +45,27 @@ void main() {
   // In this case we expect a newer version to be published at some point which
   // will then cause pub upgrade to choose that one.
   test('Allow retracted version when it was already in pubspec.lock', () async {
-    await servePackages((builder) => builder
+    final server = await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0')
-      ..serve('bar', '1.1.0'));
+      ..serve('bar', '1.1.0');
     await d.appDir({'foo': '1.0.0'}).create();
 
     await pubGet();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
-    globalPackageServer!
-        .add((builder) => builder..retractPackageVersion('bar', '1.1.0'));
+    server.retractPackageVersion('bar', '1.1.0');
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
-    globalPackageServer!.add((builder) => builder..serve('bar', '2.0.0'));
+    server.serve('bar', '2.0.0');
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
 
-    globalPackageServer!.add((builder) => builder..serve('bar', '1.2.0'));
+    server.serve('bar', '1.2.0');
     await pubUpgrade();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
     await d.appPackagesFile({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
@@ -76,10 +73,11 @@ void main() {
 
   test('Offline versions of pub commands also handle retracted packages',
       () async {
+    final server = await servePackages();
     await populateCache({
       'foo': ['1.0.0'],
       'bar': ['1.0.0', '1.1.0']
-    });
+    }, server);
 
     await d.cacheDir({
       'foo': '1.0.0',
@@ -87,18 +85,17 @@ void main() {
     }).validate();
 
     final barVersionsCache =
-        p.join(globalPackageServer!.cachingPath, '.cache', 'bar-versions.json');
+        p.join(globalServer.cachingPath, '.cache', 'bar-versions.json');
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
 
-    globalPackageServer!
-        .add((builder) => builder..retractPackageVersion('bar', '1.1.0'));
+    server.retractPackageVersion('bar', '1.1.0');
     await pubGet();
 
     await d.cacheDir({'bar': '1.1.0'}).validate();
 
     // Now serve only errors - to validate we are truly offline.
-    await serveErrors();
+    server.serveErrors();
 
     await d.appDir({'foo': '1.0.0', 'bar': '^1.0.0'}).create();
 
@@ -117,11 +114,10 @@ void main() {
   });
 
   test('Allow retracted version when pinned in dependency_overrides', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '3.0.0');
-    });
+    final server = await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '3.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -131,8 +127,7 @@ void main() {
       })
     ]).create();
 
-    globalPackageServer!
-        .add((builder) => builder..retractPackageVersion('foo', '2.0.0'));
+    server.retractPackageVersion('foo', '2.0.0');
 
     await pubGet();
     await d.appPackagesFile({'foo': '2.0.0'}).validate();
@@ -140,19 +135,16 @@ void main() {
 
   test('Prefer retracted version in dependency_overrides over pubspec.lock',
       () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-      builder.serve('foo', '3.0.0');
-    });
+    final server = await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0')
+      ..serve('foo', '3.0.0');
 
     await d.appDir({'foo': 'any'}).create();
     await pubGet();
 
-    globalPackageServer!
-        .add((builder) => builder..retractPackageVersion('foo', '2.0.0'));
-    globalPackageServer!
-        .add((builder) => builder..retractPackageVersion('foo', '3.0.0'));
+    server.retractPackageVersion('foo', '2.0.0');
+    server.retractPackageVersion('foo', '3.0.0');
 
     await pubUpgrade();
     await d.appPackagesFile({'foo': '3.0.0'}).validate();

@@ -2,58 +2,17 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
-import 'package:pub/src/language_version.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/package_name.dart';
-import 'package:pub/src/source.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:test/test.dart';
+import 'package:test/test.dart' hide Description;
 import 'package:yaml/yaml.dart';
 
-class FakeSource extends Source {
-  @override
-  final String name = 'fake';
-
-  @override
-  BoundSource bind(SystemCache cache) =>
-      throw UnsupportedError('Cannot download fake packages.');
-
-  @override
-  PackageRef parseRef(String name, description,
-      {String containingPath, LanguageVersion languageVersion}) {
-    if (!description.endsWith(' desc')) throw FormatException('Bad');
-    return PackageRef(name, this, description);
-  }
-
-  @override
-  PackageId parseId(String name, Version version, description,
-      {String containingPath}) {
-    if (!description.endsWith(' desc')) throw FormatException('Bad');
-    return PackageId(name, this, version, description);
-  }
-
-  @override
-  bool descriptionsEqual(description1, description2) =>
-      description1 == description2;
-
-  @override
-  int hashDescription(description) => description.hashCode;
-
-  String packageName(String description) {
-    // Strip off ' desc'.
-    return description.substring(0, description.length - 5);
-  }
-}
-
 void main() {
-  var sources = SourceRegistry();
-  var fakeSource = FakeSource();
-  sources.register(fakeSource);
-
+  final cache = SystemCache();
+  final sources = cache.sources;
   group('LockFile', () {
     group('parse()', () {
       test('returns an empty lockfile if the contents are empty', () {
@@ -71,27 +30,33 @@ void main() {
 packages:
   bar:
     version: 1.2.3
-    source: fake
-    description: bar desc
+    source: hosted
+    description:
+      name: bar
+      url: https://bar.com
   foo:
     version: 2.3.4
-    source: fake
-    description: foo desc
-''', sources);
+    source: hosted
+    description:
+      name: foo
+      url: https://foo.com
+''', cache.sources);
 
         expect(lockFile.packages.length, equals(2));
 
-        var bar = lockFile.packages['bar'];
+        var bar = lockFile.packages['bar']!;
         expect(bar.name, equals('bar'));
         expect(bar.version, equals(Version(1, 2, 3)));
-        expect(bar.source, equals(fakeSource));
-        expect(bar.description, equals('bar desc'));
+        expect(bar.source, equals(cache.hosted));
+        expect((bar.description.description as HostedDescription).url,
+            equals('https://bar.com'));
 
-        var foo = lockFile.packages['foo'];
+        var foo = lockFile.packages['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.version, equals(Version(2, 3, 4)));
-        expect(foo.source, equals(fakeSource));
-        expect(foo.description, equals('foo desc'));
+        expect(foo.source, equals(cache.hosted));
+        expect((foo.description.description as HostedDescription).url,
+            equals('https://foo.com'));
       });
 
       test('allows an unknown source', () {
@@ -101,9 +66,9 @@ packages:
     source: bad
     version: 1.2.3
     description: foo desc
-''', sources);
-        var foo = lockFile.packages['foo'];
-        expect(foo.source, equals(sources['bad']));
+''', cache.sources);
+        var foo = lockFile.packages['foo']!;
+        expect(foo.source, equals(sources('bad')));
       });
 
       test('allows an empty dependency map', () {
@@ -203,8 +168,8 @@ packages:
 packages:
   foo:
     version: 1.2.3
-    source: fake
-    description: foo desc is bad
+    source: hosted
+    description: foam
 ''', sources);
         }, throwsFormatException);
       });
@@ -256,27 +221,35 @@ packages:
 
     test('serialize() dumps the lockfile to YAML', () {
       var lockfile = LockFile([
-        PackageId('foo', fakeSource, Version.parse('1.2.3'), 'foo desc'),
-        PackageId('bar', fakeSource, Version.parse('3.2.1'), 'bar desc')
+        PackageId(
+            'foo',
+            Version.parse('1.2.3'),
+            ResolvedHostedDescription(
+                HostedDescription('foo', 'https://foo.com'))),
+        PackageId(
+            'bar',
+            Version.parse('3.2.1'),
+            ResolvedHostedDescription(
+                HostedDescription('bar', 'https://bar.com'))),
       ], devDependencies: {
         'bar'
       });
 
       expect(
-          loadYaml(lockfile.serialize(null)),
+          loadYaml(lockfile.serialize('')),
           equals({
             'sdks': {'dart': 'any'},
             'packages': {
               'foo': {
                 'version': '1.2.3',
-                'source': 'fake',
-                'description': 'foo desc',
+                'source': 'hosted',
+                'description': {'name': 'foo', 'url': 'https://foo.com'},
                 'dependency': 'transitive'
               },
               'bar': {
                 'version': '3.2.1',
-                'source': 'fake',
-                'description': 'bar desc',
+                'source': 'hosted',
+                'description': {'name': 'bar', 'url': 'https://bar.com'},
                 'dependency': 'direct dev'
               }
             }

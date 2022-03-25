@@ -50,7 +50,7 @@ class GetCommand extends PubCommand {
           'The --packages-dir flag is no longer used and does nothing.'));
     }
     await entrypoint.acquireDependencies(
-      SolveType.GET,
+      SolveType.get,
       dryRun: argResults['dry-run'],
       precompile: argResults['precompile'],
       analytics: analytics,
@@ -58,7 +58,7 @@ class GetCommand extends PubCommand {
 
     var example = entrypoint.example;
     if (argResults['example'] && example != null) {
-      await example.acquireDependencies(SolveType.GET,
+      await example.acquireDependencies(SolveType.get,
           dryRun: argResults['dry-run'],
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,

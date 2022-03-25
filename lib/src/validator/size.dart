@@ -10,7 +10,7 @@ import '../io.dart';
 import '../validator.dart';
 
 /// The maximum size of the package to upload (100 MB).
-const _MAX_SIZE = 100 * 1024 * 1024;
+const _maxSize = 100 * 1024 * 1024;
 
 /// A validator that validates that a package isn't too big.
 class SizeValidator extends Validator {
@@ -21,7 +21,7 @@ class SizeValidator extends Validator {
   @override
   Future validate() {
     return packageSize.then((size) {
-      if (size <= _MAX_SIZE) return;
+      if (size <= _maxSize) return;
       var sizeInMb = (size / math.pow(2, 20)).toStringAsPrecision(4);
       // Current implementation of Package.listFiles skips hidden files
       var ignoreExists = fileExists(entrypoint.root.path('.gitignore'));

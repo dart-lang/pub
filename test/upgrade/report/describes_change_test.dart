@@ -9,11 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('Shows count of discontinued packages', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '2.0.0');
-    });
+    final server = await servePackages();
 
-    globalPackageServer!.add((builder) => builder..discontinue('foo'));
+    server.serve('foo', '2.0.0');
+
+    server.discontinue('foo');
 
     // Create the first lockfile.
     await d.appDir({'foo': '2.0.0'}).create();
@@ -33,12 +33,11 @@ void main() {
   });
 
   test('shows how package changed from previous lockfile', () async {
-    await servePackages((builder) {
-      builder.serve('unchanged', '1.0.0');
-      builder.serve('version_changed', '1.0.0');
-      builder.serve('version_changed', '2.0.0');
-      builder.serve('source_changed', '1.0.0');
-    });
+    await servePackages()
+      ..serve('unchanged', '1.0.0')
+      ..serve('version_changed', '1.0.0')
+      ..serve('version_changed', '2.0.0')
+      ..serve('source_changed', '1.0.0');
 
     await d.dir('source_changed', [
       d.libDir('source_changed'),

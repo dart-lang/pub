@@ -10,7 +10,7 @@ import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
-import '../source_registry.dart';
+import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'result.dart';
@@ -23,7 +23,6 @@ import 'type.dart';
 /// It's a report builder.
 class SolveReport {
   final SolveType _type;
-  final SourceRegistry _sources;
   final Package _root;
   final LockFile _previousLockFile;
   final SolveResult _result;
@@ -34,8 +33,8 @@ class SolveReport {
 
   final _output = StringBuffer();
 
-  SolveReport(this._type, this._sources, this._root, this._previousLockFile,
-      this._result, this._cache) {
+  SolveReport(this._type, this._root, this._previousLockFile, this._result,
+      this._cache) {
     // Fill the map so we can use it later.
     for (var id in _result.packages) {
       _dependencies[id.name] = id;
@@ -89,7 +88,7 @@ class SolveReport {
       }
     } else {
       if (numChanged == 0) {
-        if (_type == SolveType.GET) {
+        if (_type == SolveType.get) {
           log.message('Got dependencies$suffix!');
         } else {
           log.message('No dependencies changed$suffix.');
@@ -148,9 +147,9 @@ class SolveReport {
   Future<void> reportDiscontinued() async {
     var numDiscontinued = 0;
     for (var id in _result.packages) {
-      if (id.source == null) continue;
+      if (id.description is RootDescription) continue;
       final status =
-          await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
+          await id.source.status(id, _cache, maxAge: Duration(days: 3));
       if (status.isDiscontinued &&
           (_root.dependencyType(id.name) == DependencyType.direct ||
               _root.dependencyType(id.name) == DependencyType.dev)) {
@@ -229,7 +228,7 @@ class SolveReport {
     } else if (oldId == null) {
       icon = log.green('+ ');
       addedOrRemoved = true;
-    } else if (!oldId.samePackage(newId)) {
+    } else if (oldId.description != newId.description) {
       icon = log.cyan('* ');
       changed = true;
     } else if (oldId.version < newId.version) {
@@ -245,7 +244,7 @@ class SolveReport {
     String? message;
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
-    if (newId != null && _type != SolveType.DOWNGRADE) {
+    if (newId != null && _type != SolveType.downgrade) {
       var versions = _result.availableVersions[newId.name]!;
 
       var newerStable = false;
@@ -261,7 +260,7 @@ class SolveReport {
         }
       }
       final status =
-          await _cache.source(id.source).status(id, maxAge: Duration(days: 3));
+          await id.source.status(id, _cache, maxAge: Duration(days: 3));
 
       if (status.isRetracted) {
         if (newerStable) {
@@ -292,7 +291,7 @@ class SolveReport {
       }
     }
 
-    if (_type == SolveType.GET &&
+    if (_type == SolveType.get &&
         !(alwaysShow || changed || addedOrRemoved || message != null)) {
       return;
     }
@@ -323,8 +322,8 @@ class SolveReport {
   void _writeId(PackageId id) {
     _output.write(id.version);
 
-    if (id.source != _sources.defaultSource) {
-      var description = id.source!.formatDescription(id.description);
+    if (id.source != _cache.defaultSource) {
+      var description = id.description.format();
       _output.write(' from ${id.source} $description');
     }
   }

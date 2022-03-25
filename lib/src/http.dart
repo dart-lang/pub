@@ -10,7 +10,6 @@ import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 

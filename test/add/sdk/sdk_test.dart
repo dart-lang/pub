@@ -11,9 +11,8 @@ import '../../test_pub.dart';
 
 void main() {
   setUp(() async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
 
     await d.dir('flutter', [
       d.dir('packages', [
@@ -40,7 +39,7 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'sdk': 'flutter', 'version': '^0.0.1'}
+          'foo': {'sdk': 'flutter'}
         }
       }),
       d.packagesFile({

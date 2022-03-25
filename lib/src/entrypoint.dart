@@ -10,12 +10,12 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml/yaml.dart';
 
 import 'command_runner.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
-import 'http.dart' as http;
 import 'io.dart';
 import 'language_version.dart';
 import 'lock_file.dart';
@@ -72,7 +72,13 @@ final _sdkConstraint = () {
 /// but may be the entrypoint when you're running its tests.
 class Entrypoint {
   /// The root package this entrypoint is associated with.
+  ///
+  /// For a global package, this is the activated package.
   final Package root;
+
+  /// For a global package, this is the directory that the package is installed
+  /// in. Non-global packages have null.
+  final String? globalDir;
 
   /// The system-wide cache which caches packages that need to be fetched over
   /// the network.
@@ -82,7 +88,8 @@ class Entrypoint {
   bool get isCached => !root.isInMemory && p.isWithin(cache.rootDir, root.dir);
 
   /// Whether this is an entrypoint for a globally-activated package.
-  final bool isGlobal;
+  // final bool isGlobal;
+  bool get isGlobal => globalDir != null;
 
   /// The lockfile for the entrypoint.
   ///
@@ -122,8 +129,7 @@ class Entrypoint {
   ///
   /// Global packages (except those from path source)
   /// store these in the global cache.
-  String? get _configRoot =>
-      isCached ? p.join(cache.rootDir, 'global_packages', root.name) : root.dir;
+  String? get _configRoot => isCached ? globalDir : root.dir;
 
   /// The path to the entrypoint's ".packages" file.
   ///
@@ -139,6 +145,14 @@ class Entrypoint {
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
 
+  /// Whether the entrypoint package contains a `pubspec_overrides.yaml` file.
+  bool get hasPubspecOverrides =>
+      !root.isInMemory && fileExists(pubspecOverridesPath);
+
+  /// The path to the entrypoint package's pubspec overrides file.
+  String get pubspecOverridesPath =>
+      p.normalize(root.path('pubspec_overrides.yaml'));
+
   /// The path to the entrypoint package's lockfile.
   String get lockFilePath => p.normalize(p.join(_configRoot!, 'pubspec.lock'));
 
@@ -152,11 +166,7 @@ class Entrypoint {
   /// but the configuration is stored at the package itself.
   String get cachePath {
     if (isGlobal) {
-      return p.join(
-        cache.rootDir,
-        'global_packages',
-        root.name,
-      );
+      return globalDir!;
     } else {
       var newPath = root.path('.dart_tool/pub');
       var oldPath = root.path('.pub');
@@ -173,15 +183,26 @@ class Entrypoint {
   String get _incrementalDillsPath => p.join(cachePath, 'incremental');
 
   /// Loads the entrypoint from a package at [rootDir].
-  Entrypoint(String rootDir, this.cache)
-      : root = Package.load(null, rootDir, cache.sources),
-        isGlobal = false;
+  Entrypoint(
+    String rootDir,
+    this.cache,
+  )   : root = Package.load(null, rootDir, cache.sources,
+            withPubspecOverrides: true),
+        globalDir = null;
+
+  Entrypoint.inMemory(this.root, this.cache,
+      {required LockFile? lockFile, SolveResult? solveResult})
+      : _lockFile = lockFile,
+        globalDir = null {
+    if (solveResult != null) {
+      _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
+    }
+  }
 
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passed as an optimization.
-  Entrypoint.global(this.root, this._lockFile, this.cache,
-      {SolveResult? solveResult})
-      : isGlobal = true {
+  Entrypoint.global(this.globalDir, this.root, this._lockFile, this.cache,
+      {SolveResult? solveResult}) {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
     }
@@ -202,18 +223,20 @@ class Entrypoint {
 
   /// Writes .packages and .dart_tool/package_config.json
   Future<void> writePackagesFiles() async {
+    final entrypointName = isGlobal ? null : root.name;
     writeTextFile(
         packagesFile,
         lockFile.packagesFile(cache,
-            entrypoint: root.name, relativeFrom: root.dir));
+            entrypoint: entrypointName,
+            relativeFrom: isGlobal ? null : root.dir));
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
         await lockFile.packageConfigFile(cache,
-            entrypoint: root.name,
+            entrypoint: entrypointName,
             entrypointSdkConstraint:
                 root.pubspec.sdkConstraints[sdk.identifier],
-            relativeFrom: root.dir));
+            relativeFrom: isGlobal ? null : root.dir));
   }
 
   /// Gets all dependencies of the [root] package.
@@ -246,12 +269,16 @@ class Entrypoint {
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
+    if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
+      log.warning(
+          'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
+    }
+
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
-        // We require an SDK constraint lower-bound as of Dart 2.12.0
-        _checkSdkConstraintIsDefined(root.pubspec);
+        _checkSdkConstraint(root.pubspec);
         return resolveVersions(
           type,
           cache,
@@ -294,8 +321,8 @@ class Entrypoint {
       await result.showReport(type, cache);
     }
     if (!dryRun) {
-      await Future.wait(result.packages.map(_get));
-      _saveLockFile(result);
+      await result.downloadCachedPackages(cache);
+      saveLockFile(result);
     }
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
@@ -387,10 +414,11 @@ class Entrypoint {
 
   Future<void> _precompileExecutable(Executable executable) async {
     final package = executable.package;
+
     await dart.precompile(
         executablePath: resolveExecutable(executable),
         outputPath: pathOfExecutable(executable),
-        incrementalDillOutputPath: incrementalDillPathOfExecutable(executable),
+        incrementalDillPath: incrementalDillPathOfExecutable(executable),
         packageConfigPath: packageConfigFile,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
@@ -470,21 +498,6 @@ class Entrypoint {
     }
   }
 
-  /// Makes sure the package at [id] is locally available.
-  ///
-  /// This automatically downloads the package to the system-wide cache as well
-  /// if it requires network access to retrieve (specifically, if the package's
-  /// source is a [CachedSource]).
-  Future<void> _get(PackageId id) async {
-    return await http.withDependencyType(root.dependencyType(id.name),
-        () async {
-      if (id.isRoot) return;
-
-      var source = cache.source(id.source);
-      if (source is CachedSource) await source.downloadToSystemCache(id);
-    });
-  }
-
   /// Throws a [DataError] if the `.dart_tool/package_config.json` file doesn't
   /// exist or if it's out-of-date relative to the lockfile or the pubspec.
   ///
@@ -514,11 +527,22 @@ class Entrypoint {
     var pubspecModified = File(pubspecPath).lastModifiedSync();
     var lockFileModified = File(lockFilePath).lastModifiedSync();
 
+    var pubspecChanged = lockFileModified.isBefore(pubspecModified);
+    var pubspecOverridesChanged = false;
+
+    if (hasPubspecOverrides) {
+      var pubspecOverridesModified =
+          File(pubspecOverridesPath).lastModifiedSync();
+      pubspecOverridesChanged =
+          lockFileModified.isBefore(pubspecOverridesModified);
+    }
+
     var touchedLockFile = false;
-    if (lockFileModified.isBefore(pubspecModified) || hasPathDependencies) {
-      // If `pubspec.lock` is newer than `pubspec.yaml` or we have path
-      // dependencies, then we check that `pubspec.lock` is a correct solution
-      // for the requirements in `pubspec.yaml`. This aims to:
+    if (pubspecChanged || pubspecOverridesChanged || hasPathDependencies) {
+      // If `pubspec.lock` is older than `pubspec.yaml` or
+      // `pubspec_overrides.yaml`, or we have path dependencies, then we check
+      // that `pubspec.lock` is a correct solution for the requirements in
+      // `pubspec.yaml` and `pubspec_overrides.yaml`. This aims to:
       //  * Prevent missing packages when `pubspec.lock` is checked into git.
       //  * Mitigate missing transitive dependencies when the `pubspec.yaml` in
       //    a path dependency is changed.
@@ -527,7 +551,8 @@ class Entrypoint {
         touchedLockFile = true;
         touch(lockFilePath);
       } else {
-        dataError('The $pubspecPath file has changed since the $lockFilePath '
+        var filePath = pubspecChanged ? pubspecPath : pubspecOverridesPath;
+        dataError('The $filePath file has changed since the $lockFilePath '
             'file was generated, please run "$topLevelProgram pub get" again.');
       }
     }
@@ -545,11 +570,11 @@ class Entrypoint {
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
     if (packageConfigModified.isBefore(lockFileModified) ||
         hasPathDependencies) {
-      // If `package_config.json` is newer than `pubspec.lock` or we have
+      // If `package_config.json` is older than `pubspec.lock` or we have
       // path dependencies, then we check that `package_config.json` is a
       // correct configuration on the local machine. This aims to:
       //  * Mitigate issues when copying a folder from one machine to another.
-      //  * Force `pub get` if a path dependency has changed language verison.
+      //  * Force `pub get` if a path dependency has changed language version.
       _checkPackageConfigUpToDate();
       touch(packageConfigFile);
     } else if (touchedLockFile) {
@@ -592,7 +617,7 @@ class Entrypoint {
     // Check that uncached dependencies' pubspecs are also still satisfied,
     // since they're mutable and may have changed since the last get.
     for (var id in lockFile.packages.values) {
-      var source = cache.source(id.source);
+      final source = id.source;
       if (source is CachedSource) continue;
 
       try {
@@ -605,7 +630,7 @@ class Entrypoint {
       }
 
       final relativePubspecPath =
-          p.join(source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
+          p.join(cache.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
       dataError('$relativePubspecPath has '
           'changed since the $lockFilePath file was generated, please run '
           '"$topLevelProgram pub get" again.');
@@ -629,11 +654,11 @@ class Entrypoint {
       // We only care about cached sources. Uncached sources aren't "installed".
       // If one of those is missing, we want to show the user the file not
       // found error later since installing won't accomplish anything.
-      var source = cache.source(package.source);
+      var source = package.source;
       if (source is! CachedSource) return true;
 
       // Get the directory.
-      var dir = source.getDirectory(package, relativeFrom: '.');
+      var dir = cache.getDirectory(package, relativeFrom: '.');
       // See if the directory is there and looks like a package.
       return fileExists(p.join(dir, 'pubspec.yaml'));
     });
@@ -672,9 +697,9 @@ class Entrypoint {
         return false;
       }
 
-      final source = cache.source(lockFileId.source);
+      final source = lockFileId.source;
       final lockFilePackagePath = root.path(
-        source.getDirectory(lockFileId, relativeFrom: root.dir),
+        cache.getDirectory(lockFileId, relativeFrom: root.dir),
       );
 
       // Make sure that the packagePath agrees with the lock file about the
@@ -811,7 +836,7 @@ class Entrypoint {
 
       // If a package is cached, then it's universally immutable and we need
       // not check if the language version is correct.
-      final source = cache.source(id.source);
+      final source = id.source;
       if (source is CachedSource) {
         continue;
       }
@@ -824,7 +849,9 @@ class Entrypoint {
         );
         if (pkg.languageVersion != languageVersion) {
           final relativePubspecPath = p.join(
-              source.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
+            cache.getDirectory(id, relativeFrom: '.'),
+            'pubspec.yaml',
+          );
           dataError('$relativePubspecPath has '
               'changed since the $lockFilePath file was generated, please run '
               '"$topLevelProgram pub get" again.');
@@ -840,7 +867,7 @@ class Entrypoint {
   ///
   /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
   /// uses that.
-  void _saveLockFile(SolveResult result) {
+  void saveLockFile(SolveResult result) {
     _lockFile = result.lockFile;
 
     final windowsLineEndings = fileExists(lockFilePath) &&
@@ -872,7 +899,9 @@ class Entrypoint {
   }
 
   /// We require an SDK constraint lower-bound as of Dart 2.12.0
-  void _checkSdkConstraintIsDefined(Pubspec pubspec) {
+  ///
+  /// We don't allow unknown sdks.
+  void _checkSdkConstraint(Pubspec pubspec) {
     final dartSdkConstraint = pubspec.sdkConstraints['dart'];
     if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
       // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
@@ -901,6 +930,24 @@ environment:
 
 See https://dart.dev/go/sdk-constraint
 ''');
+    }
+    for (final sdk in pubspec.sdkConstraints.keys) {
+      if (!sdks.containsKey(sdk)) {
+        final environment = pubspec.fields.nodes['environment'] as YamlMap;
+        final keyNode = environment.nodes.entries
+            .firstWhere((e) => (e.key as YamlNode).value == sdk)
+            .key as YamlNode;
+        throw PubspecException('''
+$pubspecPath refers to an unknown sdk '$sdk'.
+
+Did you mean to add it as a dependency?
+
+Either remove the constraint, or upgrade to a version of pub that supports the
+given sdk.
+
+See https://dart.dev/go/sdk-constraint
+''', keyNode.span);
+      }
     }
   }
 }

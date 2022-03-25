@@ -25,12 +25,12 @@ class RelativeVersionNumberingValidator extends Validator {
 
   @override
   Future<void> validate() async {
-    final hostedSource = entrypoint.cache.sources.hosted;
+    final hostedSource = entrypoint.cache.hosted;
     List<PackageId> existingVersions;
     try {
-      existingVersions = await hostedSource
-          .bind(entrypoint.cache)
-          .getVersions(hostedSource.refFor(entrypoint.root.name, url: _server));
+      existingVersions = await entrypoint.cache.getVersions(
+        hostedSource.refFor(entrypoint.root.name, url: _server.toString()),
+      );
     } on PackageNotFoundException {
       existingVersions = [];
     }
@@ -39,8 +39,7 @@ class RelativeVersionNumberingValidator extends Validator {
         .lastWhereOrNull((id) => id.version < entrypoint.root.version);
     if (previousVersion == null) return;
 
-    final previousPubspec =
-        await hostedSource.bind(entrypoint.cache).describe(previousVersion);
+    final previousPubspec = await entrypoint.cache.describe(previousVersion);
 
     final currentOptedIn =
         entrypoint.root.pubspec.languageVersion.supportsNullSafety;

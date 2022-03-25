@@ -15,7 +15,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'source_registry.dart';
+import 'system_cache.dart';
 import 'utils.dart';
 
 final _readmeRegexp = RegExp(r'^README($|\.)', caseSensitive: false);
@@ -68,7 +68,8 @@ class Package {
   /// The immediate dev dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get devDependencies => pubspec.devDependencies;
 
-  /// The dependency overrides this package specifies in its pubspec.
+  /// The dependency overrides this package specifies in its pubspec or pubspec
+  /// overrides.
   Map<String, PackageRange> get dependencyOverrides =>
       pubspec.dependencyOverrides;
 
@@ -83,10 +84,12 @@ class Package {
       ..addAll(dependencyOverrides);
   }
 
-  /// Returns a list of asset ids for all Dart executables in this package's bin
+  /// Returns a list of paths to all Dart executables in this package's bin
   /// directory.
   List<String> get executablePaths {
-    return ordered(listFiles(beneath: 'bin', recursive: false))
+    final binDir = p.join(dir, 'bin');
+    if (!dirExists(binDir)) return <String>[];
+    return ordered(listDir(p.join(dir, 'bin'), includeDirs: false))
         .where((executable) => p.extension(executable) == '.dart')
         .map((executable) => p.relative(executable, from: dir))
         .toList();
@@ -145,8 +148,24 @@ class Package {
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  Package.load(String? name, String this._dir, SourceRegistry sources)
-      : pubspec = Pubspec.load(_dir, sources, expectedName: name);
+  ///
+  /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
+  /// `true`.
+  factory Package.load(
+    String? name,
+    String dir,
+    SourceRegistry sources, {
+    bool withPubspecOverrides = false,
+  }) {
+    final pubspec = Pubspec.load(dir, sources,
+        expectedName: name, allowOverridesFile: withPubspecOverrides);
+    return Package._(dir, pubspec);
+  }
+
+  Package._(
+    this._dir,
+    this.pubspec,
+  );
 
   /// Constructs a package with the given pubspec.
   ///
@@ -220,8 +239,11 @@ class Package {
   ///
   /// For each directory a .pubignore takes precedence over a .gitignore.
   ///
-  /// Note that the returned paths won't always be beneath [dir]. To safely
-  /// convert them to paths relative to the package root, use [relative].
+  /// Note that the returned paths will be always be below [dir], and will
+  /// always start with [dir] (thus alway be relative to current working
+  /// directory or absolute id [dir] is absolute.
+  ///
+  /// To convert them to paths relative to the package root, use [p.relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
     // An in-memory package has no files.
     if (isInMemory) return [];

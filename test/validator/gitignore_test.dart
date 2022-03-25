@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
@@ -12,12 +14,13 @@ import '../test_pub.dart';
 Future<void> expectValidation(
   error,
   int exitCode, {
+  Map<String, String> environment = const {},
   String? workingDirectory,
 }) async {
   await runPub(
     error: error,
     args: ['publish', '--dry-run'],
-    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'},
+    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0', ...environment},
     workingDirectory: workingDirectory ?? d.path(appPath),
     exitCode: exitCode,
   );
@@ -50,6 +53,20 @@ void main() {
         exit_codes.DATA);
   });
 
+  test('should not fail on missing git', () async {
+    await d.git('myapp', [
+      ...d.validPackage.contents,
+      d.file('.gitignore', '*.txt'),
+      d.file('foo.txt'),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
+    await setUpFakeGitScript(bash: 'echo "Not git"', batch: 'echo "Not git"');
+    await expectValidation(
+        allOf([contains('Package has 0 warnings.')]), exit_codes.SUCCESS,
+        environment: extendedPathEnv());
+  });
+
   test('Should also consider gitignores from above the package root', () async {
     await d.git('reporoot', [
       d.dir(
@@ -80,6 +97,24 @@ void main() {
               'Consider adjusting your `.gitignore` files to not ignore those files'),
         ]),
         exit_codes.DATA,
+        workingDirectory: packageRoot);
+  });
+
+  test('Should not follow symlinks', () async {
+    await d.git('myapp', [
+      ...d.validPackage.contents,
+    ]).create();
+    final packageRoot = p.join(d.sandbox, 'myapp');
+    await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
+        workingDirectory: packageRoot);
+
+    Link(p.join(packageRoot, '.abc', 'itself')).createSync(
+      packageRoot,
+      recursive: true,
+    );
+
+    await expectValidation(contains('Package has 0 warnings.'), 0,
         workingDirectory: packageRoot);
   });
 }

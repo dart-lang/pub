@@ -5,8 +5,11 @@
 /// Helper functionality for invoking Git.
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub_semver/pub_semver.dart';
 
+import 'command_runner.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
@@ -86,24 +89,9 @@ List<String> runSync(List<String> args,
   return result.stdout;
 }
 
-/// Returns the name of the git command-line app, or `null` if Git could not be
-/// found on the user's PATH.
-String? get command {
-  if (_commandCache != null) return _commandCache;
-
-  if (_tryGitCommand('git')) {
-    _commandCache = 'git';
-  } else if (_tryGitCommand('git.cmd')) {
-    _commandCache = 'git.cmd';
-  } else {
-    return null;
-  }
-
-  log.fine('Determined git command $_commandCache.');
-  return _commandCache;
-}
-
-String? _commandCache;
+/// The name of the git command-line app, or `null` if Git could not be found on
+/// the user's PATH.
+final String? command = ['git', 'git.cmd'].firstWhereOrNull(_tryGitCommand);
 
 /// Returns the root of the git repo [dir] belongs to. Returns `null` if not
 /// in a git repo or git is not installed.
@@ -121,13 +109,35 @@ String? repoRoot(String dir) {
   return null;
 }
 
+/// '--recourse-submodules' was introduced in Git 2.14
+/// (https://git-scm.com/book/en/v2/Git-Tools-Submodules).
+final _minSupportedGitVersion = Version(2, 14, 0);
+
 /// Checks whether [command] is the Git command for this computer.
 bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
     var result = runProcessSync(command, ['--version']);
-    var regexp = RegExp('^git version');
-    return result.stdout.length == 1 && regexp.hasMatch(result.stdout.single);
+
+    if (result.stdout.length != 1) return false;
+    final output = result.stdout.single;
+    final match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(output);
+
+    if (match == null) return false;
+    // Git seems to use many parts in the version number. We just check the
+    // first two.
+    final major = int.parse(match[1]!);
+    final minor = int.parse(match[2]!);
+    if (Version(major, minor, 0) < _minSupportedGitVersion) {
+      // We just warn here, as some features might work with older versions of
+      // git.
+      log.warning('''
+You have a very old version of git (version ${output.substring('git version '.length)}),
+for $topLevelProgram it is recommended to use git version 2.14 or newer.
+''');
+    }
+    log.fine('Determined git command $command.');
+    return true;
   } on RunProcessException catch (err) {
     // If the process failed, they probably don't have it.
     log.error('Git command is not "$command": $err');

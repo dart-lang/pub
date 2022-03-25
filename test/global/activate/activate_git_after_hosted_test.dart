@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -11,11 +12,10 @@ void main() {
   test('activating a Git package deactivates the hosted one', () async {
     ensureGit();
 
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+    ]);
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
@@ -29,11 +29,11 @@ void main() {
         output: allOf(
             startsWith('Package foo is currently active at version 1.0.0.\n'
                 'Resolving dependencies...\n'
-                '+ foo 1.0.0 from git ../foo.git at '),
+                '+ foo 1.0.0 from git ..${separator}foo.git at '),
             // Specific revision number goes here.
             endsWith('Building package executables...\n'
                 'Built foo:foo.\n'
-                'Activated foo 1.0.0 from Git repository "../foo.git".')));
+                'Activated foo 1.0.0 from Git repository "..${separator}foo.git".')));
 
     // Should now run the git one.
     var pub = await pubRun(global: true, args: ['foo']);

@@ -11,14 +11,15 @@ void main() {
   test(
       'upgrades a locked pub server package with a new incompatible '
       'constraint', () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet();
 
     await d.appPackagesFile({'foo': '1.0.0'}).validate();
-    globalPackageServer!.add((builder) => builder.serve('foo', '1.0.1'));
+    server.serve('foo', '1.0.1');
     await d.appDir({'foo': '>1.0.0'}).create();
 
     await pubGet();

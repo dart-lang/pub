@@ -107,6 +107,16 @@ Descriptor libPubspec(String name, String version,
   return pubspec(map);
 }
 
+/// Describes a file named `pubspec_overrides.yaml` by default, with the given
+/// YAML-serialized [contents], which should be a serializable object.
+///
+/// [contents] may contain [Future]s that resolve to serializable objects,
+/// which may in turn contain [Future]s recursively.
+Descriptor pubspecOverrides(Map<String, Object> contents) => YamlDescriptor(
+      'pubspec_overrides.yaml',
+      yaml(contents),
+    );
+
 /// Describes a directory named `lib` containing a single dart file named
 /// `<name>.dart` that contains a line of Dart code.
 Descriptor libDir(String name, [String? code]) {
@@ -179,7 +189,7 @@ Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
 /// that this cache represents. It defaults to [globalServer.port].
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(cachePath, [
-    dir('hosted', [dir('localhost%58${port ?? globalServer?.port}', contents)])
+    dir('hosted', [dir('localhost%58${port ?? globalServer.port}', contents)])
   ]);
 }
 
@@ -295,7 +305,7 @@ PackageConfigEntry packageConfigEntry({
   }
   Uri rootUri;
   if (version != null) {
-    rootUri = p.toUri(globalPackageServer!.pathInCache(name, version));
+    rootUri = p.toUri(globalServer.pathInCache(name, version));
   } else {
     rootUri = p.toUri(p.join('..', path));
   }

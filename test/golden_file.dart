@@ -151,6 +151,7 @@ class GoldenTestContext {
     List<String> args, {
     Map<String, String>? environment,
     String? workingDirectory,
+    String? stdin,
   }) async {
     // Create new section index number (before doing anything async)
     final sectionIndex = _nextSectionIndex++;
@@ -161,6 +162,7 @@ class GoldenTestContext {
       s,
       environment: environment,
       workingDirectory: workingDirectory,
+      stdin: stdin,
     );
 
     _expectSection(sectionIndex, s.toString());

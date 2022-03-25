@@ -10,11 +10,11 @@ void main() {
   testWithGolden(
       'pub upgrade --major-versions does not update major versions in example/',
       (ctx) async {
-    await servePackages((b) => b
+    await servePackages()
       ..serve('foo', '1.0.0')
       ..serve('foo', '2.0.0')
       ..serve('bar', '1.0.0')
-      ..serve('bar', '2.0.0'));
+      ..serve('bar', '2.0.0');
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -39,7 +39,7 @@ void main() {
   testWithGolden(
       'pub upgrade --null-safety does not update null-safety of dependencies in example/',
       (ctx) async {
-    await servePackages((b) => b
+    await servePackages()
       ..serve('foo', '1.0.0', pubspec: {
         'environment': {'sdk': '>=2.7.0 <3.0.0'},
       })
@@ -51,7 +51,7 @@ void main() {
       })
       ..serve('bar', '2.0.0', pubspec: {
         'environment': {'sdk': '>=2.12.0 <3.0.0'},
-      }));
+      });
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',

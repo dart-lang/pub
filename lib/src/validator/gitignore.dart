@@ -11,6 +11,7 @@ import '../entrypoint.dart';
 import '../git.dart' as git;
 import '../ignore.dart';
 import '../io.dart';
+import '../log.dart' as log;
 import '../utils.dart';
 import '../validator.dart';
 
@@ -23,12 +24,21 @@ class GitignoreValidator extends Validator {
   @override
   Future<void> validate() async {
     if (entrypoint.root.inGitRepo) {
-      final checkedIntoGit = git.runSync([
-        'ls-files',
-        '--cached',
-        '--exclude-standard',
-        '--recurse-submodules'
-      ], workingDir: entrypoint.root.dir);
+      late final List<String> checkedIntoGit;
+      try {
+        checkedIntoGit = git.runSync([
+          'ls-files',
+          '--cached',
+          '--exclude-standard',
+          '--recurse-submodules'
+        ], workingDir: entrypoint.root.dir);
+      } on git.GitException catch (e) {
+        log.fine('Could not run `git ls-files` files in repo (${e.message}).');
+        // This validation is only a warning.
+        // If git is not supported on the platform, or too old to support
+        // --recurse-submodules we just continue silently.
+        return;
+      }
       final root = git.repoRoot(entrypoint.root.dir) ?? entrypoint.root.dir;
       var beneath = p.posix.joinAll(
           p.split(p.normalize(p.relative(entrypoint.root.dir, from: root))));
@@ -46,8 +56,10 @@ class GitignoreValidator extends Validator {
         beneath: beneath,
         listDir: (dir) {
           var contents = Directory(resolve(dir)).listSync();
-          return contents.map((entity) =>
-              p.posix.joinAll(p.split(p.relative(entity.path, from: root))));
+          return contents
+              .where((e) => !(linkExists(e.path) && dirExists(e.path)))
+              .map((entity) => p.posix
+                  .joinAll(p.split(p.relative(entity.path, from: root))));
         },
         ignoreForDir: (dir) {
           final gitIgnore = resolve('$dir/.gitignore');
@@ -69,7 +81,7 @@ class GitignoreValidator extends Validator {
 
       if (ignoredFilesCheckedIn.isNotEmpty) {
         warnings.add('''
-${ignoredFilesCheckedIn.length} checked in ${pluralize('file', ignoredFilesCheckedIn.length)} ${ignoredFilesCheckedIn.length == 1 ? 'is' : 'are'} ignored by a `.gitignore`.
+${ignoredFilesCheckedIn.length} checked-in ${pluralize('file', ignoredFilesCheckedIn.length)} ${ignoredFilesCheckedIn.length == 1 ? 'is' : 'are'} ignored by a `.gitignore`.
 Previous versions of Pub would include those in the published package.
 
 Consider adjusting your `.gitignore` files to not ignore those files, and if you do not wish to

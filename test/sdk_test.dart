@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
@@ -15,9 +13,8 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     setUp(() async {
-      await servePackages((builder) {
-        builder.serve('bar', '1.0.0');
-      });
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
 
       await d.dir('flutter', [
         d.dir('packages', [

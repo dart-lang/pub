@@ -4,7 +4,6 @@
 
 import 'dart:async';
 
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package_name.dart';
@@ -46,7 +45,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
   Future<VersionConstraint> constrainToFirstWithNullSafety(
       PackageRange packageRange) async {
     final ref = packageRange.toRef();
-    final available = await cache.source(ref.source).getVersions(ref);
+    final available = await cache.getVersions(ref);
     if (available.isEmpty) {
       return stripUpperBound(packageRange.constraint);
     }
@@ -54,7 +53,7 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
     available.sort((x, y) => x.version.compareTo(y.version));
 
     for (final p in available) {
-      final pubspec = await cache.source(ref.source).describe(p);
+      final pubspec = await cache.describe(p);
       if (pubspec.languageVersion.supportsNullSafety) {
         return VersionRange(min: p.version, includeMin: true);
       }
@@ -70,13 +69,11 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
       var unconstrainedRange = packageRange;
 
       /// We only need to remove the upper bound if it is a hosted package.
-      if (packageRange.source is HostedSource) {
+      if (packageRange.description is HostedDescription) {
         unconstrainedRange = PackageRange(
-            packageRange.name,
-            packageRange.source,
-            await constrainToFirstWithNullSafety(packageRange),
-            packageRange.description,
-            features: packageRange.features);
+          packageRange.toRef(),
+          await constrainToFirstWithNullSafety(packageRange),
+        );
       }
       return unconstrainedRange;
     }));
@@ -121,14 +118,12 @@ Pubspec stripVersionUpperBounds(Pubspec original,
       var unconstrainedRange = packageRange;
 
       /// We only need to remove the upper bound if it is a hosted package.
-      if (packageRange.source is HostedSource &&
+      if (packageRange.description is HostedDescription &&
           (stripOnly!.isEmpty || stripOnly.contains(packageRange.name))) {
         unconstrainedRange = PackageRange(
-            packageRange.name,
-            packageRange.source,
-            stripUpperBound(packageRange.constraint),
-            packageRange.description,
-            features: packageRange.features);
+          packageRange.toRef(),
+          stripUpperBound(packageRange.constraint),
+        );
       }
       result.add(unconstrainedRange);
     }
@@ -148,7 +143,6 @@ Pubspec stripVersionUpperBounds(Pubspec original,
 
 /// Removes the upper bound of [constraint]. If [constraint] is the
 /// empty version constraint, [VersionConstraint.empty] will be returned.
-@visibleForTesting
 VersionConstraint stripUpperBound(VersionConstraint constraint) {
   ArgumentError.checkNotNull(constraint, 'constraint');
 

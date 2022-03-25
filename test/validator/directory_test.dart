@@ -21,7 +21,19 @@ void main() {
 
     test('has a nested directory named "tools"', () async {
       await d.dir(appPath, [
-        d.dir('foo', [d.dir('tools')])
+        d.dir('foo', [
+          d.dir('tools', [d.file('empty')])
+        ])
+      ]).create();
+      await expectValidation(directory);
+    });
+
+    test('is pubignoring the folder', () async {
+      await d.dir(appPath, [
+        d.file('.pubignore', 'tools/\n'),
+        d.dir('foo', [
+          d.dir('tools', [d.file('empty')])
+        ])
       ]).create();
       await expectValidation(directory);
     });
@@ -44,7 +56,9 @@ void main() {
 
     for (var name in names) {
       test('"$name"', () async {
-        await d.dir(appPath, [d.dir(name)]).create();
+        await d.dir(appPath, [
+          d.dir(name, [d.file('empty')])
+        ]).create();
         await expectValidation(directory, warnings: isNotEmpty);
       });
     }

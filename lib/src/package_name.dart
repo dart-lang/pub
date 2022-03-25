@@ -2,89 +2,32 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package.dart';
 import 'source.dart';
 import 'source/hosted.dart';
-import 'utils.dart';
-
-/// The equality to use when comparing the feature sets of two package names.
-const _featureEquality = MapEquality<String, FeatureDependency>();
-
-/// The base class of [PackageRef], [PackageId], and [PackageRange].
-abstract class PackageName {
-  /// The name of the package being identified.
-  final String name;
-
-  /// The [Source] used to look up this package.
-  ///
-  /// If this is a root package, this will be `null`.
-  final Source? source;
-
-  /// The metadata used by the package's [source] to identify and locate it.
-  ///
-  /// It contains whatever [Source]-specific data it needs to be able to get
-  /// the package. For example, the description of a git sourced package might
-  /// by the URL "git://github.com/dart/uilib.git".
-  final dynamic description;
-
-  /// Whether this package is the root package.
-  bool get isRoot => source == null;
-
-  PackageName._(this.name, this.source, this.description);
-
-  /// Returns a [PackageRef] with this one's [name], [source], and
-  /// [description].
-  PackageRef toRef() => PackageRef(name, source, description);
-
-  /// Returns a [PackageRange] for this package with the given version constraint.
-  PackageRange withConstraint(VersionConstraint constraint) =>
-      PackageRange(name, source, constraint, description);
-
-  /// Returns whether this refers to the same package as [other].
-  ///
-  /// This doesn't compare any constraint information; it's equivalent to
-  /// `this.toRef() == other.toRef()`.
-  bool samePackage(PackageName other) {
-    if (other.name != name) return false;
-    var thisSource = source;
-    if (thisSource == null) return other.source == null;
-
-    return other.source == thisSource &&
-        thisSource.descriptionsEqual(description, other.description);
-  }
-
-  @override
-  int get hashCode {
-    var thisSource = source;
-    if (thisSource == null) return name.hashCode;
-    return name.hashCode ^
-        thisSource.hashCode ^
-        thisSource.hashDescription(description);
-  }
-
-  /// Returns a string representation of this package name.
-  ///
-  /// If [detail] is passed, it controls exactly which details are included.
-  @override
-  String toString([PackageDetail? detail]);
-}
+import 'source/root.dart';
+import 'system_cache.dart';
 
 /// A reference to a [Package], but not any particular version(s) of it.
-class PackageRef extends PackageName {
-  /// Creates a reference to a package with the given [name], [source], and
+///
+/// It knows the [name] of a package and a [Description] that is connected
+/// with a certain [Source]. This is what you need for listing available
+/// versions of a package. See [SystemCache.getVersions].
+class PackageRef {
+  final String name;
+  final Description description;
+  bool get isRoot => description is RootDescription;
+  Source get source => description.source;
+
+  /// Creates a reference to a package with the given [name], and
   /// [description].
-  ///
-  /// Since an ID's description is an implementation detail of its source, this
-  /// should generally not be called outside of [Source] subclasses. A reference
-  /// can be obtained from a user-supplied description using [Source.parseRef].
-  PackageRef(String name, Source? source, description)
-      : super._(name, source, description);
+  PackageRef(this.name, this.description);
 
   /// Creates a reference to the given root package.
-  PackageRef.root(Package package) : super._(package.name, null, package.name);
+  static PackageRef root(Package package) =>
+      PackageRef(package.name, RootDescription(package));
 
   @override
   String toString([PackageDetail? detail]) {
@@ -92,59 +35,73 @@ class PackageRef extends PackageName {
     if (isRoot) return name;
 
     var buffer = StringBuffer(name);
-    if (detail.showSource ?? source is! HostedSource) {
-      buffer.write(' from $source');
+    if (detail.showSource ?? description is! HostedDescription) {
+      buffer.write(' from ${description.source}');
       if (detail.showDescription) {
-        buffer.write(' ${source!.formatDescription(description)}');
+        buffer.write(' ${description.format()}');
       }
     }
 
     return buffer.toString();
   }
 
+  PackageRange withConstraint(VersionConstraint constraint) =>
+      PackageRange(this, constraint);
+
   @override
-  bool operator ==(other) => other is PackageRef && samePackage(other);
+  bool operator ==(other) =>
+      other is PackageRef &&
+      name == other.name &&
+      description == other.description;
+
+  @override
+  int get hashCode => Object.hash(name, description);
 }
 
 /// A reference to a specific version of a package.
 ///
-/// A package ID contains enough information to correctly get the package.
+/// A package ID contains enough information to correctly retrieve the package.
 ///
 /// It's possible for multiple distinct package IDs to point to different
 /// packages that have identical contents. For example, the same package may be
 /// available from multiple sources. As far as Pub is concerned, those packages
 /// are different.
 ///
-/// Note that a package ID's [description] field has a different structure than
-/// the [PackageRef.description] or [PackageRange.description] fields for some
-/// sources. For example, the `git` source adds revision information to the
-/// description to ensure that the same ID always points to the same source.
-class PackageId extends PackageName {
-  /// The package's version.
+/// Note that a package ID's [description] field is a [ResolvedDescription]
+/// while [PackageRef.description] and [PackageRange.description] are
+/// [Description]s.
+class PackageId {
+  final String name;
   final Version version;
+  final ResolvedDescription description;
+  bool get isRoot => description is ResolvedRootDescription;
+  Source get source => description.description.source;
 
   /// Creates an ID for a package with the given [name], [source], [version],
   /// and [description].
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageId(String name, Source? source, this.version, description)
-      : super._(name, source, description);
+  PackageId(this.name, this.version, this.description);
 
   /// Creates an ID for the given root package.
-  PackageId.root(Package package)
-      : version = package.version,
-        super._(package.name, null, package.name);
+  static PackageId root(Package package) => PackageId(package.name,
+      package.version, ResolvedRootDescription(RootDescription(package)));
 
   @override
-  int get hashCode => super.hashCode ^ version.hashCode;
+  int get hashCode => Object.hash(name, version, description);
 
   @override
   bool operator ==(other) =>
-      other is PackageId && samePackage(other) && other.version == version;
+      other is PackageId &&
+      name == other.name &&
+      version == other.version &&
+      description == other.description;
 
   /// Returns a [PackageRange] that allows only [version] of this package.
-  PackageRange toRange() => withConstraint(version);
+  PackageRange toRange() => PackageRange(toRef(), version);
+
+  PackageRef toRef() => PackageRef(name, description.description);
 
   @override
   String toString([PackageDetail? detail]) {
@@ -153,10 +110,11 @@ class PackageId extends PackageName {
     var buffer = StringBuffer(name);
     if (detail.showVersion ?? !isRoot) buffer.write(' $version');
 
-    if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
-      buffer.write(' from $source');
+    if (!isRoot &&
+        (detail.showSource ?? description is! ResolvedHostedDescription)) {
+      buffer.write(' from ${description.description.source}');
       if (detail.showDescription) {
-        buffer.write(' ${source!.formatDescription(description)}');
+        buffer.write(' ${description.format()}');
       }
     }
 
@@ -165,57 +123,31 @@ class PackageId extends PackageName {
 }
 
 /// A reference to a constrained range of versions of one package.
-class PackageRange extends PackageName {
+///
+/// This is represented as a [PackageRef] and a [VersionConstraint].
+class PackageRange {
+  final PackageRef _ref;
+
   /// The allowed package versions.
   final VersionConstraint constraint;
 
-  /// The dependencies declared on features of the target package.
-  final Map<String, FeatureDependency> features;
+  String get name => _ref.name;
+  Description get description => _ref.description;
+  bool get isRoot => _ref.isRoot;
+  Source get source => _ref.source;
 
   /// Creates a reference to package with the given [name], [source],
   /// [constraint], and [description].
   ///
   /// Since an ID's description is an implementation detail of its source, this
   /// should generally not be called outside of [Source] subclasses.
-  PackageRange(String name, Source? source, this.constraint, description,
-      {Map<String, FeatureDependency>? features})
-      : features = features == null
-            ? const {}
-            : UnmodifiableMapView(Map.from(features)),
-        super._(name, source, description);
+  PackageRange(this._ref, this.constraint);
 
   /// Creates a range that selects the root package.
-  PackageRange.root(Package package)
-      : constraint = package.version,
-        features = const {},
-        super._(package.name, null, package.name);
+  static PackageRange root(Package package) =>
+      PackageRange(PackageRef.root(package), package.version);
 
-  /// Returns a description of [features], or the empty string if [features] is
-  /// empty.
-  String get featureDescription {
-    if (features.isEmpty) return '';
-
-    var enabledFeatures = <String>[];
-    var disabledFeatures = <String>[];
-    features.forEach((name, type) {
-      if (type == FeatureDependency.unused) {
-        disabledFeatures.add(name);
-      } else {
-        enabledFeatures.add(name);
-      }
-    });
-
-    var description = '';
-    if (enabledFeatures.isNotEmpty) {
-      description += 'with ${toSentence(enabledFeatures)}';
-      if (disabledFeatures.isNotEmpty) description += ', ';
-    }
-
-    if (disabledFeatures.isNotEmpty) {
-      description += 'without ${toSentence(disabledFeatures)}';
-    }
-    return description;
-  }
+  PackageRef toRef() => _ref;
 
   @override
   String toString([PackageDetail? detail]) {
@@ -226,17 +158,12 @@ class PackageRange extends PackageName {
       buffer.write(' $constraint');
     }
 
-    if (!isRoot && (detail.showSource ?? source is! HostedSource)) {
-      buffer.write(' from $source');
+    if (!isRoot && (detail.showSource ?? description is! HostedDescription)) {
+      buffer.write(' from ${description.source.name}');
       if (detail.showDescription) {
-        buffer.write(' ${source!.formatDescription(description)}');
+        buffer.write(' ${description.format()}');
       }
     }
-
-    if (detail.showFeatures && features.isNotEmpty) {
-      buffer.write(' $featureDescription');
-    }
-
     return buffer.toString();
   }
 
@@ -244,14 +171,7 @@ class PackageRange extends PackageName {
   bool get _showVersionConstraint {
     if (isRoot) return false;
     if (!constraint.isAny) return true;
-    return source!.hasMultipleVersions;
-  }
-
-  /// Returns a new [PackageRange] with [features] merged with [this.features].
-  PackageRange withFeatures(Map<String, FeatureDependency> features) {
-    if (features.isEmpty) return this;
-    return PackageRange(name, source, constraint, description,
-        features: Map.from(this.features)..addAll(features));
+    return description.source.hasMultipleVersions;
   }
 
   /// Returns a copy of [this] with the same semantics, but with a `^`-style
@@ -266,7 +186,7 @@ class PackageRange extends PackageName {
     var min = range.min;
     if (min == null) return this;
     if (range.max == min.nextBreaking.firstPreRelease) {
-      return withConstraint(VersionConstraint.compatibleWith(min));
+      return PackageRange(_ref, VersionConstraint.compatibleWith(min));
     } else {
       return this;
     }
@@ -276,42 +196,19 @@ class PackageRange extends PackageName {
   ///
   /// Specifically, whether [id] refers to the same package as [this] *and*
   /// [constraint] allows `id.version`.
-  bool allows(PackageId id) => samePackage(id) && constraint.allows(id.version);
+  bool allows(PackageId id) =>
+      name == id.name &&
+      description == id.description.description &&
+      constraint.allows(id.version);
 
   @override
-  int get hashCode =>
-      super.hashCode ^ constraint.hashCode ^ _featureEquality.hash(features);
+  int get hashCode => Object.hash(_ref, constraint);
 
   @override
   bool operator ==(other) =>
       other is PackageRange &&
-      samePackage(other) &&
-      other.constraint == constraint &&
-      _featureEquality.equals(other.features, features);
-}
-
-/// An enum of types of dependencies on a [Feature].
-class FeatureDependency {
-  /// The feature must exist and be enabled for this dependency to be satisfied.
-  static const required = FeatureDependency._('required');
-
-  /// The feature must be enabled if it exists, but is not required to exist for
-  /// this dependency to be satisfied.
-  static const ifAvailable = FeatureDependency._('if available');
-
-  /// The feature is neither required to exist nor to be enabled for this
-  /// feature to be satisfied.
-  static const unused = FeatureDependency._('unused');
-
-  final String _name;
-
-  /// Whether this type of dependency enables the feature it depends on.
-  bool get isEnabled => this != unused;
-
-  const FeatureDependency._(this._name);
-
-  @override
-  String toString() => _name;
+      _ref == other._ref &&
+      other.constraint == constraint;
 }
 
 /// An enum of different levels of detail that can be used when displaying a
@@ -338,25 +235,15 @@ class PackageDetail {
   /// This defaults to `false`.
   final bool showDescription;
 
-  /// Whether to show the package features.
-  ///
-  /// This defaults to `true`.
-  final bool showFeatures;
-
   const PackageDetail(
-      {this.showVersion,
-      bool? showSource,
-      bool? showDescription,
-      bool? showFeatures})
+      {this.showVersion, bool? showSource, bool? showDescription})
       : showSource = showDescription == true ? true : showSource,
-        showDescription = showDescription ?? false,
-        showFeatures = showFeatures ?? true;
+        showDescription = showDescription ?? false;
 
   /// Returns a [PackageDetail] with the maximum amount of detail between [this]
   /// and [other].
   PackageDetail max(PackageDetail other) => PackageDetail(
       showVersion: showVersion! || other.showVersion!,
       showSource: showSource! || other.showSource!,
-      showDescription: showDescription || other.showDescription,
-      showFeatures: showFeatures || other.showFeatures);
+      showDescription: showDescription || other.showDescription);
 }

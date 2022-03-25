@@ -12,9 +12,8 @@ import '../test_pub.dart';
 
 void main() {
   test('lists an activated hosted package', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await runPub(args: ['global', 'activate', 'foo']);
 
@@ -33,7 +32,7 @@ void main() {
 
     await runPub(
         args: ['global', 'list'],
-        output: 'foo 1.0.0 from Git repository "../foo.git"');
+        output: 'foo 1.0.0 from Git repository "..${p.separator}foo.git"');
   });
 
   test('lists an activated Path package', () async {
@@ -49,11 +48,10 @@ void main() {
   });
 
   test('lists activated packages in alphabetical order', () async {
-    await servePackages((builder) {
-      builder.serve('aaa', '1.0.0');
-      builder.serve('bbb', '1.0.0');
-      builder.serve('ccc', '1.0.0');
-    });
+    await servePackages()
+      ..serve('aaa', '1.0.0')
+      ..serve('bbb', '1.0.0')
+      ..serve('ccc', '1.0.0');
 
     await runPub(args: ['global', 'activate', 'ccc']);
     await runPub(args: ['global', 'activate', 'aaa']);

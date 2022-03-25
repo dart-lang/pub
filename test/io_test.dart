@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -293,7 +291,7 @@ void main() {
     test(
       'applies executable bits from tar file',
       () => withTempDir((tempDir) async {
-        final entry = Stream.value(TarEntry.data(
+        final entry = Stream<TarEntry>.value(TarEntry.data(
             TarHeader(
               name: 'weird_exe',
               typeFlag: TypeFlag.reg,
@@ -311,7 +309,7 @@ void main() {
 
     test('extracts files and links', () {
       return withTempDir((tempDir) async {
-        final entries = Stream.fromIterable([
+        final entries = Stream<TarEntry>.fromIterable([
           TarEntry.data(
             TarHeader(name: 'lib/main.txt', typeFlag: TypeFlag.reg),
             utf8.encode('text content'),
@@ -351,7 +349,7 @@ void main() {
 
     test('preserves empty directories', () {
       return withTempDir((tempDir) async {
-        final entry = Stream.value(TarEntry.data(
+        final entry = Stream<TarEntry>.value(TarEntry.data(
             TarHeader(
               name: 'bin/',
               typeFlag: TypeFlag.dir,
@@ -370,7 +368,7 @@ void main() {
 
     test('throws for entries escaping the tar file', () {
       return withTempDir((tempDir) async {
-        final entry = Stream.value(TarEntry.data(
+        final entry = Stream<TarEntry>.value(TarEntry.data(
             TarHeader(
               name: '../other_package-1.2.3/lib/file.dart',
               typeFlag: TypeFlag.reg,
@@ -388,7 +386,7 @@ void main() {
 
     test('skips symlinks escaping the tar file', () {
       return withTempDir((tempDir) async {
-        final entry = Stream.value(TarEntry.data(
+        final entry = Stream<TarEntry>.value(TarEntry.data(
             TarHeader(
               name: 'nested/bad_link',
               typeFlag: TypeFlag.symlink,
@@ -405,7 +403,7 @@ void main() {
 
     test('skips hardlinks escaping the tar file', () {
       return withTempDir((tempDir) async {
-        final entry = Stream.value(TarEntry.data(
+        final entry = Stream<TarEntry>.value(TarEntry.data(
             TarHeader(
               name: 'nested/bad_link',
               typeFlag: TypeFlag.link,
@@ -463,14 +461,14 @@ void main() {
 }
 
 void testExistencePredicate(String name, bool Function(String path) predicate,
-    {bool forFile,
-    bool forFileSymlink,
-    bool forMultiLevelFileSymlink,
-    bool forDirectory,
-    bool forDirectorySymlink,
-    bool forMultiLevelDirectorySymlink,
-    bool forBrokenSymlink,
-    bool forMultiLevelBrokenSymlink}) {
+    {required bool forFile,
+    required bool forFileSymlink,
+    required bool forMultiLevelFileSymlink,
+    required bool forDirectory,
+    required bool forDirectorySymlink,
+    required bool forMultiLevelDirectorySymlink,
+    required bool forBrokenSymlink,
+    required bool forMultiLevelBrokenSymlink}) {
   group(name, () {
     test('returns $forFile for a file', () {
       expect(withTempDir((temp) {

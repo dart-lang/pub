@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
 
 /// Handles rate-limited scheduling of tasks.
@@ -92,7 +91,9 @@ class RateLimitedScheduler<J, V> {
     // become uncaught.
     //
     // They will still show up for other listeners of the future.
-    await completer.future.catchError((_) {});
+    try {
+      await completer.future;
+    } catch (_) {}
   }
 
   /// Calls [callback] with a function that can pre-schedule jobs.

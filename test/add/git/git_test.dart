@@ -156,9 +156,8 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.2');
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
@@ -184,5 +183,19 @@ void main() {
         'dependency_overrides': {'foo': '1.2.2'}
       })
     ]).validate();
+  });
+
+  test('fails if multiple packages passed for git source', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
+        exitCode: exit_codes.USAGE,
+        error: contains('Can only add a single git package at a time.'));
   });
 }
