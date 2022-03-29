@@ -2937,4 +2937,25 @@ void regressions() {
       ),
     );
   });
+
+  test('diamond sdk deps', () async {
+    await d.dir('flutter', [
+      d.dir('bin/cache/pkg', [
+        d.dir(
+            'baz', [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')])
+      ]),
+      d.file('version', '1.2.3')
+    ]).create();
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {
+        'baz': {'sdk': 'flutter'}
+      })
+      ..serve('bar', '1.0.0', deps: {
+        'baz': {'sdk': 'flutter'}
+      });
+    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await expectResolves(
+      environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+    );
+  });
 }

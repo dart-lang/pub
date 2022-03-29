@@ -141,6 +141,14 @@ class SdkDescription extends Description {
 
   @override
   Source get source => SdkSource.instance;
+
+  @override
+  int get hashCode => sdk.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SdkDescription && other.sdk == sdk;
+  }
 }
 
 class ResolvedSdkDescription extends ResolvedDescription {
@@ -152,5 +160,13 @@ class ResolvedSdkDescription extends ResolvedDescription {
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     return description.sdk;
+  }
+
+  @override
+  int get hashCode => description.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is ResolvedSdkDescription && other.description == description;
   }
 }
