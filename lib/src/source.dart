@@ -169,6 +169,13 @@ abstract class Description {
   ///
   /// Paths are always relative to current dir.
   String format();
+
+  @override
+  bool operator ==(other) =>
+      throw UnimplementedError('Subclasses must override');
+
+  @override
+  int get hashCode => throw UnimplementedError('Subclasses must override');
 }
 
 /// A resolved description is a [Description] plus whatever information you need
@@ -193,6 +200,13 @@ abstract class ResolvedDescription {
   ///
   /// Paths are always relative to current dir.
   String format() => description.format();
+
+  @override
+  bool operator ==(other) =>
+      throw UnimplementedError('Subclasses must override');
+
+  @override
+  int get hashCode => throw UnimplementedError('Subclasses must override');
 }
 
 /// Metadata about a [PackageId].
