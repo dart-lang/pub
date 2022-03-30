@@ -22,20 +22,6 @@ import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 
-/// Returns whether [dart] looks like an entrypoint file.
-bool isEntrypoint(CompilationUnit dart) {
-  // Allow two or fewer arguments so that entrypoints intended for use with
-  // [spawnUri] get counted.
-  //
-  // TODO(nweiz): this misses the case where a Dart file doesn't contain main(),
-  // but it parts in another file that does.
-  return dart.declarations.any((node) {
-    return node is FunctionDeclaration &&
-        node.name.name == 'main' &&
-        (node.functionExpression.parameters?.parameters.length ?? 0) <= 2;
-  });
-}
-
 class AnalysisContextManager {
   /// The map from a context root directory to to the context.
   final Map<String, AnalysisContext> _contexts = {};
