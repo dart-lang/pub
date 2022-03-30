@@ -18,10 +18,7 @@ import 'package:http/testing.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-// TODO(rnystrom): Using "gitlib" as the prefix here is ugly, but "git" collides
-// with the git descriptor method. Maybe we should try to clean up the top level
-// scope a bit?
-import 'package:pub/src/git.dart' as gitlib;
+import 'package:pub/src/git.dart' as git;
 import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
@@ -594,7 +591,7 @@ class PubProcess extends TestProcess {
 /// validation gives an easier-to-understand error when that requirement isn't
 /// met than just failing in the middle of a test when pub invokes git.
 void ensureGit() {
-  if (!gitlib.isInstalled) fail('Git must be installed to run this test.');
+  if (!git.isInstalled) fail('Git must be installed to run this test.');
 }
 
 /// Creates a lock file for [package] without running `pub get`.
