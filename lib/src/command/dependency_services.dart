@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:path/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
@@ -367,7 +368,11 @@ class DependencyServicesApplyCommand extends PubCommand {
 
     final updatedLockfile = lockFileEditor == null
         ? null
-        : LockFile.parse(lockFileEditor.toString(), cache.sources);
+        : LockFile.parse(
+            lockFileEditor.toString(),
+            cache.sources,
+            filePath: entrypoint.lockFilePath,
+          );
     await log.warningsOnlyUnlessTerminal(
       () async {
         final updatedPubspec = pubspecEditor.toString();
@@ -381,7 +386,8 @@ class DependencyServicesApplyCommand extends PubCommand {
         final solveResult = await resolveVersions(
           SolveType.get,
           cache,
-          Package.inMemory(Pubspec.parse(updatedPubspec, cache.sources)),
+          Package.inMemory(Pubspec.parse(updatedPubspec, cache.sources,
+              location: toUri(entrypoint.pubspecPath))),
           lockFile: updatedLockfile,
         );
         if (pubspecEditor.edits.isNotEmpty) {

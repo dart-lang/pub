@@ -81,8 +81,12 @@ class LockFile {
   }
 
   /// Parses a lockfile whose text is [contents].
-  factory LockFile.parse(String contents, SourceRegistry sources) {
-    return LockFile._parse(null, contents, sources);
+  ///
+  /// If [filePath] is given, path-dependencies will be interpreted relative to
+  /// that.
+  factory LockFile.parse(String contents, SourceRegistry sources,
+      {String? filePath}) {
+    return LockFile._parse(filePath, contents, sources);
   }
 
   /// Parses the lockfile whose text is [contents].
