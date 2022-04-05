@@ -641,6 +641,9 @@ class GitDescription extends Description {
   /// If the url was relative in the pubspec.yaml it will be resolved relative
   /// to the pubspec location, and stored here as an absolute file url, and
   /// [relative] will be true.
+  ///
+  /// This will not always parse as a [Uri] due the fact that `Uri.parse` does not allow strings of
+  /// the form: 'git@github.com:dart-lang/pub.git'.
   final String url;
 
   /// `true` if [url] was parsed from a relative url.
@@ -679,7 +682,7 @@ class GitDescription extends Description {
 
   @override
   String format() {
-    var result = '${p.prettyUri(url)} at '
+    var result = '${prettyUri(url)} at '
         '$ref';
     if (path != '.') result += ' in $path';
     return result;
@@ -715,6 +718,18 @@ class GitDescription extends Description {
 
   @override
   int get hashCode => Object.hash(url, ref, path);
+
+  // Similar in intend to [p.prettyUri] but does not fail if the input doesn't
+  // parse with [Uri.parse].
+  static String prettyUri(String url) {
+    // HACK: Working around the fact that `Uri.parse` does not allow strings of
+    // the form: 'git@github.com:dart-lang/pub.git'.
+    final parsedAsUri = Uri.tryParse(url);
+    if (parsedAsUri == null) {
+      return url;
+    }
+    return p.prettyUri(url);
+  }
 }
 
 class GitResolvedDescription extends ResolvedDescription {
@@ -727,7 +742,7 @@ class GitResolvedDescription extends ResolvedDescription {
 
   @override
   String format() {
-    var result = '${p.prettyUri(description.url)} at '
+    var result = '${GitDescription.prettyUri(description.url)} at '
         '${resolvedRef.substring(0, 6)}';
     if (description.path != '.') result += ' in ${description.path}';
     return result;
