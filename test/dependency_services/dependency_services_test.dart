@@ -250,6 +250,28 @@ Future<void> main() async {
       );
     });
   });
+  testWithGolden('Relative paths are allowed', (context) async {
+    // We cannot update path-dependencies, but they should be allowed.
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
+
+    await d.appDir({
+      'foo': '^1.0.0',
+      'bar': {'path': '../bar'}
+    }).create();
+    await pubGet();
+    server.serve('foo', '2.0.0');
+    await listReportApply(context, [
+      _PackageVersion('foo', Version.parse('2.0.0'),
+          constraint: VersionConstraint.parse('^2.0.0')),
+    ], reportAssertions: (report) {
+      expect(
+        findChangeVersion(report, 'multiBreaking', 'foo'),
+        '2.0.0',
+      );
+    });
+  });
 }
 
 dynamic findChangeVersion(dynamic json, String updateType, String name) {
