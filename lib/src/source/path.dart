@@ -239,7 +239,9 @@ class ResolvedPathDescription extends ResolvedDescription {
   Object? serializeForLockfile({required String? containingDir}) {
     if (description.relative) {
       return {
-        'path': p.relative(description.path, from: containingDir),
+        'path': PathSource.relativePathWithPosixSeparators(
+          p.relative(description.path, from: containingDir),
+        ),
         'relative': true
       };
     }
