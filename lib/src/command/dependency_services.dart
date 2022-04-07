@@ -23,6 +23,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../source/git.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 
@@ -110,14 +111,13 @@ class DependencyServicesReportCommand extends PubCommand {
         ...resolution.packages.where((r) {
           if (r.name == rootPubspec.name) return false;
           final originalVersion = currentPackages[r.name];
-          return originalVersion == null ||
-              r.version != originalVersion.version;
+          return originalVersion == null || r != originalVersion;
         }).map((p) {
           final depset = dependencySetOfPackage(rootPubspec, p);
           final originalConstraint = depset?[p.name]?.constraint;
           return {
             'name': p.name,
-            'version': p.version.toString(),
+            'version': p.versionOrHash(),
             'kind': _kindString(pubspec, p.name),
             'constraintBumped': originalConstraint == null
                 ? null
@@ -138,7 +138,7 @@ class DependencyServicesReportCommand extends PubCommand {
                         ? originalConstraint.toString()
                         : VersionConstraint.compatibleWith(p.version)
                             .toString(),
-            'previousVersion': currentPackages[p.name]?.version.toString(),
+            'previousVersion': currentPackages[p.name]?.versionOrHash(),
             'previousConstraint': originalConstraint?.toString(),
           };
         }),
@@ -154,7 +154,7 @@ class DependencyServicesReportCommand extends PubCommand {
               'constraintWidened': null,
               'constraintBumpedIfNeeded': null,
               'previousVersion':
-                  currentPackages[oldPackageName]?.version.toString(),
+                  currentPackages[oldPackageName]?.versionOrHash(),
               'previousConstraint': null,
             },
       ];
@@ -269,12 +269,23 @@ class DependencyServicesListCommand extends PubCommand {
     for (final package in currentPackages) {
       dependencies.add({
         'name': package.name,
-        'version': package.version.toString(),
+        'version': package.versionOrHash(),
         'kind': _kindString(pubspec, package.name),
         'constraint': _constraintOf(pubspec, package.name).toString(),
       });
     }
     log.message(JsonEncoder.withIndent('  ').convert(result));
+  }
+}
+
+extension on PackageId {
+  String versionOrHash() {
+    final description = this.description;
+    if (description is GitResolvedDescription) {
+      return description.resolvedRef;
+    } else {
+      return version.toString();
+    }
   }
 }
 
@@ -315,7 +326,7 @@ class DependencyServicesApplyCommand extends PubCommand {
       toApply.add(
         _PackageVersion(
           change['name'],
-          change['version'] != null ? Version.parse(change['version']) : null,
+          change['version'],
           change['constraint'] != null
               ? VersionConstraint.parse(change['constraint'])
               : null,
@@ -333,6 +344,8 @@ class DependencyServicesApplyCommand extends PubCommand {
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
+      final targetGitRevision = p.gitRevision;
+
       final targetConstraint = p.constraint;
 
       if (targetConstraint != null) {
@@ -357,7 +370,20 @@ class DependencyServicesApplyCommand extends PubCommand {
         lockFileEditor.update(
             ['packages', targetPackage, 'version'], targetVersion.toString());
       }
+      if (targetGitRevision != null &&
+          lockFileEditor != null &&
+          lockFileYaml['packages'].containsKey(targetPackage)) {
+        if (lockFileYaml['packages'][targetPackage]['source'] != 'git') {
+          dataError(
+              'Trying to update the git revision of a non-git package $targetPackage');
+        }
+        lockFileEditor.update(
+          ['packages', targetPackage, 'description', 'resolved-ref'],
+          targetGitRevision,
+        );
+      }
       if (targetVersion == null &&
+          targetGitRevision == null &&
           lockFileEditor != null &&
           !lockFileYaml['packages'].containsKey(targetPackage)) {
         dataError(
@@ -407,8 +433,27 @@ class DependencyServicesApplyCommand extends PubCommand {
 class _PackageVersion {
   String name;
   Version? version;
+  String? gitRevision;
   VersionConstraint? constraint;
-  _PackageVersion(this.name, this.version, this.constraint);
+  _PackageVersion(this.name, String? versionOrHash, this.constraint)
+      : version = versionOrHash == null ? null : tryParseVersion(versionOrHash),
+        gitRevision =
+            versionOrHash == null ? null : tryParseHash(versionOrHash);
+}
+
+Version? tryParseVersion(String v) {
+  try {
+    return Version.parse(v);
+  } on FormatException {
+    return null;
+  }
+}
+
+String? tryParseHash(String v) {
+  if (RegExp(r'^[a-fA-F0-9]+$').hasMatch(v)) {
+    return v;
+  }
+  return null;
 }
 
 Map<String, PackageRange>? dependencySetOfPackage(
