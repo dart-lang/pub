@@ -751,8 +751,8 @@ class GitResolvedDescription extends ResolvedDescription {
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     final url = description.relative && containingDir != null
-        ? p.url
-            .relative(description.url, from: Uri.file(containingDir).toString())
+        ? p.url.relative(description.url,
+            from: Uri.file(p.absolute(containingDir)).toString())
         : description.url;
     return {
       'url': url,

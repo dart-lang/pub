@@ -12,7 +12,7 @@ packages:
       path: "."
       ref: HEAD
       resolved-ref: "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba"
-      url: "file://$SANDBOX/foo.git"
+      url: "../foo.git"
     source: git
     version: "1.0.0"
 sdks:
@@ -104,7 +104,7 @@ packages:
       path: "."
       ref: HEAD
       resolved-ref: ad2d659389d4475f6c3a34282e2204160b753fd9
-      url: "file://$SANDBOX/foo.git"
+      url: "../foo.git"
     source: git
     version: "2.0.0"
 sdks:
