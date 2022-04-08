@@ -274,23 +274,23 @@ Future<void> main() async {
   });
 
   testWithGolden('Can update a git package', (context) async {
-    await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
+    await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.appDir({
-      'bar': {
-        'git': {'url': '../bar.git'}
+      'foo': {
+        'git': {'url': '../foo.git'}
       }
     }).create();
     await pubGet();
-    final secondVersion = d.git('bar.git', [d.libPubspec('bar', '2.0.0')]);
+    final secondVersion = d.git('foo.git', [d.libPubspec('foo', '2.0.0')]);
     await secondVersion.commit();
     final newRef = await secondVersion.revParse('HEAD');
 
     await listReportApply(context, [
-      _PackageVersion('bar', newRef),
+      _PackageVersion('foo', newRef),
     ], reportAssertions: (report) {
       expect(
-        findChangeVersion(report, 'compatible', 'bar'),
+        findChangeVersion(report, 'compatible', 'foo'),
         newRef,
       );
     });
@@ -298,7 +298,8 @@ Future<void> main() async {
 }
 
 dynamic findChangeVersion(dynamic json, String updateType, String name) {
-  final dep = json['dependencies'].firstWhere((p) => p['name'] == name);
+  final dep = json['dependencies'].firstWhere((p) => p['name'] == 'foo');
+  if (dep == null) return null;
   return dep[updateType].firstWhere((p) => p['name'] == name)['version'];
 }
 
