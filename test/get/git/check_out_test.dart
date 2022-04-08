@@ -9,6 +9,7 @@ import 'package:pub/src/io.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -25,6 +26,12 @@ void main() {
     }).create();
 
     await pubGet();
+
+    final lockfile = loadYaml(
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+    expect(lockfile['packages']['foo']['description']['url'], '../foo.git',
+        reason:
+            'The relative path should be preserved, and be a url (forward slashes on all platforms)');
 
     await d.dir(cachePath, [
       d.dir('git', [
