@@ -42,11 +42,9 @@ class StrictDependenciesValidator extends Validator {
 
       for (var directive in directives) {
         Uri? url;
-        try {
-          url = Uri.parse(directive.uri.stringValue!);
-        } on FormatException catch (_) {
-          // Ignore a format exception. [url] will be null, and we'll emit an
-          // "Invalid URL" warning below.
+        final uriString = directive.uri.stringValue;
+        if (uriString != null) {
+          url = Uri.tryParse(uriString);
         }
 
         // If the URL could not be parsed or it is a `package:` URL AND there

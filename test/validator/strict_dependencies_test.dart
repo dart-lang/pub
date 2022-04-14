@@ -183,6 +183,14 @@ linter:
   group('should consider a package invalid if it', () {
     setUp(d.validPackage.create);
 
+    test('has an invalid String value', () async {
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+        import 'package:$bad';
+      ''').create();
+
+      await expectValidation(strictDeps, errors: [matches('Invalid URL.')]);
+    });
+
     test('does not declare an "import" as a dependency', () async {
       await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:silly_monkey/silly_monkey.dart';
