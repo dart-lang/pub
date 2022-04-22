@@ -403,8 +403,6 @@ class Entrypoint {
       final pool = Pool(max(Platform.numberOfProcessors - 1, 1));
       return waitAndPrintErrors(executables.map((executable) async {
         await pool.withResource(() async {
-          var dir = p.dirname(pathOfExecutable(executable));
-          cleanDir(dir);
           return _precompileExecutable(executable);
         });
       }));
