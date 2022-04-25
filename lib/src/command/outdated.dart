@@ -211,6 +211,9 @@ class OutdatedCommand extends PubCommand {
         latestIsOverridden = true;
       }
 
+      final discontinued =
+          (await current?.source.status(current, cache))?.isDiscontinued;
+
       return _PackageDetails(
         name,
         await _describeVersion(
@@ -230,6 +233,7 @@ class OutdatedCommand extends PubCommand {
           latestIsOverridden,
         ),
         _kind(name, entrypoint, nonDevDependencies),
+        discontinued ?? false,
       );
     }
 
@@ -401,6 +405,7 @@ Future<void> _outputJson(
           ...(rows..sort((a, b) => a.name.compareTo(b.name)))
               .map((packageDetails) => {
                     'package': packageDetails.name,
+                    'isDiscontinued': packageDetails.isDiscontinued,
                     'current': markedRows[packageDetails]![0].toJson(),
                     'upgradable': markedRows[packageDetails]![1].toJson(),
                     'resolvable': markedRows[packageDetails]![2].toJson(),
@@ -427,14 +432,22 @@ Future<void> _outputHuman(
   required String directory,
 }) async {
   final directoryDesc = directory == '.' ? '' : ' in $directory';
-  log.message(mode.explanation(directoryDesc) + '\n');
+
+  log.message(mode.explanation(directoryDesc));
+  if (rows.firstWhereOrNull((package) => package.isDiscontinued) != null) {
+    log.message('(D) indicates packages that are discontinued.');
+  }
+  log.message('\n');
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
-  List<_FormattedString> formatted(_PackageDetails package) => [
-        _FormattedString(package.name),
-        ...markedRows[package]!.map((m) => m.toHuman()),
-      ];
+  List<_FormattedString> formatted(_PackageDetails package) {
+    final suffix = package.isDiscontinued ? ' (D)' : '';
+    return [
+      _FormattedString('${package.name}$suffix'),
+      ...markedRows[package]!.map((m) => m.toHuman()),
+    ];
+  }
 
   if (!showAll) {
     rows.removeWhere((row) => markedRows[row]![0].asDesired);
@@ -818,9 +831,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final _VersionDetails? resolvable;
   final _VersionDetails? latest;
   final _DependencyKind kind;
+  final bool isDiscontinued;
 
   _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
-      this.latest, this.kind);
+      this.latest, this.kind, this.isDiscontinued);
 
   @override
   int compareTo(_PackageDetails other) {
