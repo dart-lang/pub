@@ -5,10 +5,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
+import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
@@ -396,10 +398,13 @@ class Entrypoint {
       } else {
         ensureDir(_snapshotPath);
       }
-      return waitAndPrintErrors(executables.map((executable) {
-        var dir = p.dirname(pathOfExecutable(executable));
-        cleanDir(dir);
-        return _precompileExecutable(executable);
+      // Don't do more than `Platform.numberOfProcessors - 1` compilations
+      // concurrently. Though at least one.
+      final pool = Pool(max(Platform.numberOfProcessors - 1, 1));
+      return waitAndPrintErrors(executables.map((executable) async {
+        await pool.withResource(() async {
+          return _precompileExecutable(executable);
+        });
       }));
     });
   }
