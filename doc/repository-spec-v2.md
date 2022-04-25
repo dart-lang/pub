@@ -78,7 +78,7 @@ allows _package repository operators_ to identify which client a request is
 coming from. Including a URL allowing operators to reach owners/authors of the
 client is good practice.
 
- * `User-Agent: my-pub-bot/1.2.3 (+https://github.com/organization/<repository)`
+ * `User-Agent: my-pub-bot/1.2.3 (+https://github.com/organization/<repository>)`
 
 The `User-Agent` header also allows package repository to determine how many
 different clients would be affected by an API change.
