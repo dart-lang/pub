@@ -22,6 +22,6 @@ void main() {
         'SYSTEMROOT': Platform.environment['SYSTEMROOT'],
         'TMP': Platform.environment['TMP'],
       },
-    }, includeParentEnvironment: false);
+    }, includeParentHomeAndPath: false);
   });
 }

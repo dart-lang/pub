@@ -130,7 +130,7 @@ Future<void> pubCommand(
   int? exitCode,
   Map<String, String?>? environment,
   String? workingDirectory,
-  includeParentEnvironment = true,
+  includeParentHomeAndPath = true,
 }) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
@@ -155,7 +155,7 @@ Future<void> pubCommand(
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
-      includeParentEnvironment: includeParentEnvironment);
+      includeParentHomeAndPath: includeParentHomeAndPath);
 }
 
 Future<void> pubAdd({
@@ -186,7 +186,7 @@ Future<void> pubGet({
   int? exitCode,
   Map<String, String?>? environment,
   String? workingDirectory,
-  bool includeParentEnvironment = true,
+  bool includeParentHomeAndPath = true,
 }) async =>
     await pubCommand(
       RunCommand.get,
@@ -197,7 +197,7 @@ Future<void> pubGet({
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
-      includeParentEnvironment: includeParentEnvironment,
+      includeParentHomeAndPath: includeParentHomeAndPath,
     );
 
 Future<void> pubUpgrade(
@@ -322,7 +322,7 @@ Future<void> runPub(
     String? workingDirectory,
     Map<String, String?>? environment,
     List<String>? input,
-    includeParentEnvironment = true}) async {
+    includeParentHomeAndPath = true}) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
@@ -331,7 +331,7 @@ Future<void> runPub(
     args: args,
     workingDirectory: workingDirectory,
     environment: environment,
-    includeParentEnvironment: includeParentEnvironment,
+    includeParentHomeAndPath: includeParentHomeAndPath,
   );
 
   if (input != null) {
@@ -446,7 +446,7 @@ Future<PubProcess> startPub(
     String? workingDirectory,
     Map<String, String?>? environment,
     bool verbose = true,
-    includeParentEnvironment = true}) async {
+    includeParentHomeAndPath = true}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
@@ -468,7 +468,13 @@ Future<PubProcess> startPub(
     ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
     ..addAll(args);
 
-  final mergedEnvironment = getPubTestEnvironment(tokenEndpoint);
+  final mergedEnvironment = {
+    if (includeParentHomeAndPath) ...{
+      'HOME': Platform.environment['HOME'] ?? '',
+      'PATH': Platform.environment['PATH'] ?? '',
+    },
+    ...getPubTestEnvironment(tokenEndpoint)
+  };
   for (final e in (environment ?? {}).entries) {
     var value = e.value;
     if (value == null) {
@@ -482,7 +488,7 @@ Future<PubProcess> startPub(
       environment: mergedEnvironment,
       workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
       description: args.isEmpty ? 'pub' : 'pub ${args.first}',
-      includeParentEnvironment: includeParentEnvironment);
+      includeParentEnvironment: false);
 }
 
 /// A subclass of [TestProcess] that parses pub's verbose logging output and
