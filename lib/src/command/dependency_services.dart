@@ -115,10 +115,12 @@ class DependencyServicesReportCommand extends PubCommand {
         }).map((p) {
           final depset = dependencySetOfPackage(rootPubspec, p);
           final originalConstraint = depset?[p.name]?.constraint;
+          final currentPackage = currentPackages[p.name];
           return {
             'name': p.name,
             'version': p.versionOrHash(),
             'kind': _kindString(pubspec, p.name),
+            'source': _source(p, containingDir: directory),
             'constraintBumped': originalConstraint == null
                 ? null
                 : upgradeType == UpgradeType.compatible
@@ -138,10 +140,14 @@ class DependencyServicesReportCommand extends PubCommand {
                         ? originalConstraint.toString()
                         : VersionConstraint.compatibleWith(p.version)
                             .toString(),
-            'previousVersion': currentPackages[p.name]?.versionOrHash(),
+            'previousVersion': currentPackage?.versionOrHash(),
             'previousConstraint': originalConstraint?.toString(),
+            'previousSource': currentPackage == null
+                ? null
+                : _source(currentPackage, containingDir: directory),
           };
         }),
+        // Find packages that were removed by the resolution
         for (final oldPackageName in lockFile.packages.keys)
           if (!resolution.packages
               .any((newPackage) => newPackage.name == oldPackageName))
@@ -156,6 +162,8 @@ class DependencyServicesReportCommand extends PubCommand {
               'previousVersion':
                   currentPackages[oldPackageName]?.versionOrHash(),
               'previousConstraint': null,
+              'previous': _source(currentPackages[oldPackageName]!,
+                  containingDir: directory)
             },
       ];
     }
@@ -187,18 +195,17 @@ class DependencyServicesReportCommand extends PubCommand {
       }
       dependencies.add({
         'name': package.name,
-        'version': package.version.toString(),
+        'version': package.versionOrHash(),
         'kind': kind,
+        'source': _source(package, containingDir: directory),
         'latest':
             (await cache.getLatest(package.toRef(), version: package.version))
-                ?.version
-                .toString(),
+                ?.versionOrHash(),
         'constraint':
             _constraintOf(compatiblePubspec, package.name)?.toString(),
-        if (compatibleVersion != null)
-          'compatible': await _computeUpgradeSet(
-              compatiblePubspec, compatibleVersion,
-              upgradeType: UpgradeType.compatible),
+        'compatible': await _computeUpgradeSet(
+            compatiblePubspec, compatibleVersion,
+            upgradeType: UpgradeType.compatible),
         'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
             ? []
             : await _computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
@@ -225,6 +232,14 @@ String _kindString(Pubspec pubspec, String packageName) {
       : pubspec.devDependencies.containsKey(packageName)
           ? 'dev'
           : 'transitive';
+}
+
+Map<String, Object?> _source(PackageId id, {required String containingDir}) {
+  return {
+    'type': id.source.name,
+    'description':
+        id.description.serializeForLockfile(containingDir: containingDir),
+  };
 }
 
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
@@ -272,6 +287,7 @@ class DependencyServicesListCommand extends PubCommand {
         'version': package.versionOrHash(),
         'kind': _kindString(pubspec, package.name),
         'constraint': _constraintOf(pubspec, package.name).toString(),
+        'source': _source(package, containingDir: directory),
       });
     }
     log.message(JsonEncoder.withIndent('  ').convert(result));
@@ -344,16 +360,25 @@ class DependencyServicesApplyCommand extends PubCommand {
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
-      final targetGitRevision = p.gitRevision;
-
       final targetConstraint = p.constraint;
+      final targetRevision = p.gitRevision;
 
       if (targetConstraint != null) {
         final section = pubspec.dependencies[targetPackage] != null
             ? 'dependencies'
             : 'dev_dependencies';
-        pubspecEditor
-            .update([section, targetPackage], targetConstraint.toString());
+        final packageConfig =
+            pubspecEditor.parseAt([section, targetPackage]).value;
+        if (packageConfig == null || packageConfig is String) {
+          pubspecEditor
+              .update([section, targetPackage], targetConstraint.toString());
+        } else if (packageConfig is Map) {
+          pubspecEditor.update(
+              [section, targetPackage, 'version'], targetConstraint.toString());
+        } else {
+          fail(
+              'The dependency $targetPackage does not have a map or string as a description');
+        }
       } else if (targetVersion != null) {
         final constraint = _constraintOf(pubspec, targetPackage);
         if (constraint != null && !constraint.allows(targetVersion)) {
@@ -364,31 +389,43 @@ class DependencyServicesApplyCommand extends PubCommand {
               VersionConstraint.compatibleWith(targetVersion).toString());
         }
       }
-      if (targetVersion != null &&
-          lockFileEditor != null &&
-          lockFileYaml['packages'].containsKey(targetPackage)) {
-        lockFileEditor.update(
-            ['packages', targetPackage, 'version'], targetVersion.toString());
-      }
-      if (targetGitRevision != null &&
-          lockFileEditor != null &&
-          lockFileYaml['packages'].containsKey(targetPackage)) {
-        if (lockFileYaml['packages'][targetPackage]['source'] != 'git') {
+      if (lockFileEditor != null) {
+        if (targetVersion != null &&
+            lockFileYaml['packages'].containsKey(targetPackage)) {
+          lockFileEditor.update(
+              ['packages', targetPackage, 'version'], targetVersion.toString());
+        } else if (targetRevision != null &&
+            lockFileYaml['packages'].containsKey(targetPackage)) {
+          final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
+          final currentDescription = ref.description as GitDescription;
+          final updatedRef = PackageRef(
+              targetPackage,
+              GitDescription(
+                  url: currentDescription.url,
+                  path: currentDescription.path,
+                  ref: targetRevision,
+                  containingDir: directory));
+          final versions = await cache.getVersions(updatedRef);
+          if (versions.isEmpty) {
+            dataError(
+                'Found no versions of $targetPackage with git revision `$targetRevision`.');
+          }
+          // GitSource can only return a single version.
+          assert(versions.length == 1);
+
+          lockFileEditor.update(['packages', targetPackage, 'version'],
+              versions.single.version.toString());
+          lockFileEditor.update(
+            ['packages', targetPackage, 'description', 'resolved-ref'],
+            targetRevision,
+          );
+        } else if (targetVersion == null &&
+            targetRevision == null &&
+            !lockFileYaml['packages'].containsKey(targetPackage)) {
           dataError(
-              'Trying to update the git revision of a non-git package $targetPackage');
+            'Trying to remove non-existing transitive dependency $targetPackage.',
+          );
         }
-        lockFileEditor.update(
-          ['packages', targetPackage, 'description', 'resolved-ref'],
-          targetGitRevision,
-        );
-      }
-      if (targetVersion == null &&
-          targetGitRevision == null &&
-          lockFileEditor != null &&
-          !lockFileYaml['packages'].containsKey(targetPackage)) {
-        dataError(
-          'Trying to remove non-existing transitive dependency $targetPackage.',
-        );
       }
     }
 

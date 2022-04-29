@@ -25,7 +25,14 @@ $ dependency_services list
       "name": "foo",
       "version": "1.2.3",
       "kind": "direct",
-      "constraint": "^1.0.0"
+      "constraint": "^1.0.0",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "foo",
+          "url": "http://localhost:$PORT"
+        }
+      }
     }
   ]
 }
@@ -40,6 +47,13 @@ $ dependency_services report
       "name": "foo",
       "version": "1.2.3",
       "kind": "direct",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "foo",
+          "url": "http://localhost:$PORT"
+        }
+      },
       "latest": "2.2.3",
       "constraint": "^1.0.0",
       "compatible": [],
@@ -48,21 +62,43 @@ $ dependency_services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^2.2.3",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         },
         {
           "name": "transitive",
           "version": "1.0.0",
           "kind": "transitive",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "transitive",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": null,
           "constraintWidened": null,
           "constraintBumpedIfNeeded": null,
           "previousVersion": null,
-          "previousConstraint": null
+          "previousConstraint": null,
+          "previousSource": null
         }
       ],
       "multiBreaking": [
@@ -70,21 +106,43 @@ $ dependency_services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^2.2.3",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         },
         {
           "name": "transitive",
           "version": "1.0.0",
           "kind": "transitive",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "transitive",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": null,
           "constraintWidened": null,
           "constraintBumpedIfNeeded": null,
           "previousVersion": null,
-          "previousConstraint": null
+          "previousConstraint": null,
+          "previousSource": null
         }
       ]
     }

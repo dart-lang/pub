@@ -117,9 +117,7 @@ Pubspec stripVersionUpperBounds(Pubspec original,
       final packageRange = constrained[name]!;
       var unconstrainedRange = packageRange;
 
-      /// We only need to remove the upper bound if it is a hosted package.
-      if (packageRange.description is HostedDescription &&
-          (stripOnly!.isEmpty || stripOnly.contains(packageRange.name))) {
+      if (stripOnly!.isEmpty || stripOnly.contains(packageRange.name)) {
         unconstrainedRange = PackageRange(
           packageRange.toRef(),
           stripUpperBound(packageRange.constraint),

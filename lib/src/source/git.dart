@@ -716,6 +716,13 @@ class GitDescription extends Description {
         other.path == path;
   }
 
+  GitDescription withRef(String newRef) => GitDescription._(
+        url: url,
+        relative: relative,
+        ref: newRef,
+        path: path,
+      );
+
   @override
   int get hashCode => Object.hash(url, ref, path);
 
