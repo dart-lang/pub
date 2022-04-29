@@ -196,11 +196,13 @@ class GitSource extends CachedSource {
 
   /// Given a Git repo that contains a pub package, gets the name of the pub
   /// package.
-  Future<String> getPackageNameFromRepo(String repo, SystemCache cache) {
+  Future<String> getPackageNameFromRepo(
+      String repo, String? ref, String? path, SystemCache cache) {
     // Clone the repo to a temp directory.
     return withTempDir((tempDir) async {
       await _clone(repo, tempDir, shallow: true);
-      var pubspec = Pubspec.load(tempDir, cache.sources);
+      if (ref != null) await _checkOut(tempDir, ref);
+      var pubspec = Pubspec.load(p.join(tempDir, path), cache.sources);
       return pubspec.name;
     });
   }
