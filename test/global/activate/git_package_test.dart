@@ -38,7 +38,7 @@ void main() {
         'sub',
         [
           d.libPubspec('foo', '1.0.0'),
-          d.dir('bin', [d.file('foo.dart', "main() => print('1');")])
+          d.dir('bin', [d.file('sub.dart', "main() => print('1');")])
         ],
       ),
     ]).create();
@@ -46,8 +46,8 @@ void main() {
       d.dir(
         'sub',
         [
-          d.libPubspec('foo', '2.0.0'),
-          d.dir('bin', [d.file('foo.dart', "main() => print('2');")])
+          d.libPubspec('sub', '2.0.0'),
+          d.dir('bin', [d.file('sub.dart', "main() => print('2');")])
         ],
       ),
     ]).commit();
@@ -55,8 +55,8 @@ void main() {
       d.dir(
         'sub',
         [
-          d.libPubspec('foo', '3.0.0'),
-          d.dir('bin', [d.file('foo.dart', "main() => print('3');")])
+          d.libPubspec('sub', '3.0.0'),
+          d.dir('bin', [d.file('sub.dart', "main() => print('3');")])
         ],
       ),
     ]).commit();
@@ -72,19 +72,19 @@ void main() {
       ],
       output: allOf(
         startsWith('Resolving dependencies...\n'
-            '+ foo 2.0.0 from git ..${p.separator}foo.git at'),
+            '+ sub 2.0.0 from git ..${p.separator}foo.git at'),
         // Specific revision number goes here.
         contains('in sub'),
         endsWith('Building package executables...\n'
-            'Built foo:foo.\n'
-            'Activated foo 2.0.0 from Git repository "..${p.separator}foo.git".'),
+            'Built sub:sub.\n'
+            'Activated sub 2.0.0 from Git repository "..${p.separator}foo.git".'),
       ),
     );
     await runPub(
       args: [
         'global',
         'run',
-        'foo',
+        'sub',
       ],
       output: contains('2'),
     );
