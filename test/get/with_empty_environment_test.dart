@@ -18,10 +18,6 @@ void main() {
 
     await pubGet(environment: {
       '_PUB_TEST_CONFIG_DIR': null,
-      if (Platform.isWindows) ...{
-        'SYSTEMROOT': Platform.environment['SYSTEMROOT'],
-        'TMP': Platform.environment['TMP'],
-      },
     }, includeParentHomeAndPath: false);
   });
 }

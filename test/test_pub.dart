@@ -473,6 +473,11 @@ Future<PubProcess> startPub(
       'HOME': Platform.environment['HOME'] ?? '',
       'PATH': Platform.environment['PATH'] ?? '',
     },
+    // These seem to be needed for networking to work.
+    if (Platform.isWindows) ...{
+      'SYSTEMROOT': Platform.environment['SYSTEMROOT'],
+      'TMP': Platform.environment['TMP'],
+    },
     ...getPubTestEnvironment(tokenEndpoint)
   };
   for (final e in (environment ?? {}).entries) {
