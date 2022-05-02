@@ -211,8 +211,10 @@ class OutdatedCommand extends PubCommand {
         latestIsOverridden = true;
       }
 
+      final packageStatus = await current?.source.status(current, cache);
       final discontinued =
-          (await current?.source.status(current, cache))?.isDiscontinued;
+          packageStatus == null ? false : packageStatus.isDiscontinued;
+      final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
 
       return _PackageDetails(
         name,
@@ -233,7 +235,8 @@ class OutdatedCommand extends PubCommand {
           latestIsOverridden,
         ),
         _kind(name, entrypoint, nonDevDependencies),
-        discontinued ?? false,
+        discontinued,
+        discontinuedReplacedBy,
       );
     }
 
@@ -432,22 +435,15 @@ Future<void> _outputHuman(
   required String directory,
 }) async {
   final directoryDesc = directory == '.' ? '' : ' in $directory';
+  log.message(mode.explanation(directoryDesc) + '\n');
 
-  log.message(mode.explanation(directoryDesc));
-  if (rows.firstWhereOrNull((package) => package.isDiscontinued) != null) {
-    log.message('(D) indicates packages that are discontinued.');
-  }
-  log.message('\n');
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
-  List<_FormattedString> formatted(_PackageDetails package) {
-    final suffix = package.isDiscontinued ? ' (D)' : '';
-    return [
-      _FormattedString('${package.name}$suffix'),
-      ...markedRows[package]!.map((m) => m.toHuman()),
-    ];
-  }
+  List<_FormattedString> formatted(_PackageDetails package) => [
+        _FormattedString(package.name),
+        ...markedRows[package]!.map((m) => m.toHuman()),
+      ];
 
   if (!showAll) {
     rows.removeWhere((row) => markedRows[row]![0].asDesired);
@@ -588,6 +584,14 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
+
+  for (var package in rows.where((package) => package.isDiscontinued)) {
+    log.message(log.bold(package.name));
+    final replacedByText = package.discontinuedReplacedBy != null
+        ? ', replaced by ${package.discontinuedReplacedBy}.'
+        : '';
+    log.message('    discontinued$replacedByText');
+  }
 }
 
 abstract class Mode {
@@ -646,12 +650,17 @@ Showing outdated packages$directoryDescription.
       ]) {
         String Function(String)? color;
         String? prefix;
+        String? suffix;
         var asDesired = false;
         if (versionDetails != null) {
           final isLatest = versionDetails == packageDetails.latest;
           if (isLatest) {
             color = versionDetails == previous ? color = log.gray : null;
             asDesired = true;
+            if (packageDetails.isDiscontinued &&
+                identical(versionDetails, packageDetails.latest)) {
+              suffix = ' (discontinued)';
+            }
           } else {
             color = log.red;
           }
@@ -663,6 +672,7 @@ Showing outdated packages$directoryDescription.
             asDesired: asDesired,
             format: color,
             prefix: prefix,
+            suffix: suffix,
           ),
         );
         previous = versionDetails;
@@ -832,9 +842,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final _VersionDetails? latest;
   final _DependencyKind kind;
   final bool isDiscontinued;
+  final String? discontinuedReplacedBy;
 
   _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
-      this.latest, this.kind, this.isDiscontinued);
+      this.latest, this.kind, this.isDiscontinued, this.discontinuedReplacedBy);
 
   @override
   int compareTo(_PackageDetails other) {
@@ -851,6 +862,8 @@ class _PackageDetails implements Comparable<_PackageDetails> {
       'upgradable': upgradable?.toJson(),
       'resolvable': resolvable?.toJson(),
       'latest': latest?.toJson(),
+      'isDiscontinued': isDiscontinued,
+      'discontinuedReplacedBy': discontinuedReplacedBy,
     };
   }
 }
@@ -894,6 +907,7 @@ class _MarkedVersionDetails {
   final _VersionDetails? _versionDetails;
   final String Function(String)? _format;
   final String? _prefix;
+  final String? _suffix;
 
   /// This should be true if the mode creating this consideres the version as
   /// "good".
@@ -907,15 +921,18 @@ class _MarkedVersionDetails {
     required this.asDesired,
     format,
     prefix = '',
+    suffix = '',
     jsonExplanation,
   })  : _format = format,
         _prefix = prefix,
+        _suffix = suffix,
         _jsonExplanation = jsonExplanation;
 
   _FormattedString toHuman() => _FormattedString(
         _versionDetails?.describe ?? '-',
         format: _format,
         prefix: _prefix,
+        suffix: _suffix,
       );
 
   Object? toJson() {
@@ -937,16 +954,22 @@ class _FormattedString {
   /// A prefix for marking this string if colors are not used.
   final String _prefix;
 
-  _FormattedString(this.value, {String Function(String)? format, prefix})
+  final String _suffix;
+
+  _FormattedString(this.value,
+      {String Function(String)? format, prefix, suffix})
       : _format = format ?? _noFormat,
-        _prefix = prefix ?? '';
+        _prefix = prefix ?? '',
+        _suffix = suffix ?? '';
 
   String formatted({required bool useColors}) {
-    return useColors ? _format(_prefix + value) : _prefix + value;
+    return useColors
+        ? _format(_prefix + value + _suffix)
+        : _prefix + value + _suffix;
   }
 
   int computeLength({required bool? useColors}) {
-    return _prefix.length + value.length;
+    return _prefix.length + value.length + _suffix.length;
   }
 
   static String _noFormat(String x) => x;
