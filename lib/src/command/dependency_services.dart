@@ -75,11 +75,11 @@ class DependencyServicesReportCommand extends PubCommand {
     Future<List<Object>> _computeUpgradeSet(
       Pubspec rootPubspec,
       PackageId? package, {
-      required UpgradeType upgradeType,
+      required _UpgradeType upgradeType,
     }) async {
       if (package == null) return [];
       final lockFile = entrypoint.lockFile;
-      final pubspec = upgradeType == UpgradeType.multiBreaking
+      final pubspec = upgradeType == _UpgradeType.multiBreaking
           ? stripVersionUpperBounds(rootPubspec)
           : Pubspec(
               rootPubspec.name,
@@ -88,7 +88,7 @@ class DependencyServicesReportCommand extends PubCommand {
               sdkConstraints: rootPubspec.sdkConstraints,
             );
 
-      final dependencySet = dependencySetOfPackage(pubspec, package);
+      final dependencySet = _dependencySetOfPackage(pubspec, package);
       if (dependencySet != null) {
         // Force the version to be the new version.
         dependencySet[package.name] =
@@ -113,7 +113,7 @@ class DependencyServicesReportCommand extends PubCommand {
           final originalVersion = currentPackages[r.name];
           return originalVersion == null || r != originalVersion;
         }).map((p) {
-          final depset = dependencySetOfPackage(rootPubspec, p);
+          final depset = _dependencySetOfPackage(rootPubspec, p);
           final originalConstraint = depset?[p.name]?.constraint;
           final currentPackage = currentPackages[p.name];
           return {
@@ -123,18 +123,18 @@ class DependencyServicesReportCommand extends PubCommand {
             'source': _source(p, containingDir: directory),
             'constraintBumped': originalConstraint == null
                 ? null
-                : upgradeType == UpgradeType.compatible
+                : upgradeType == _UpgradeType.compatible
                     ? originalConstraint.toString()
                     : VersionConstraint.compatibleWith(p.version).toString(),
             'constraintWidened': originalConstraint == null
                 ? null
-                : upgradeType == UpgradeType.compatible
+                : upgradeType == _UpgradeType.compatible
                     ? originalConstraint.toString()
                     : _widenConstraint(originalConstraint, p.version)
                         .toString(),
             'constraintBumpedIfNeeded': originalConstraint == null
                 ? null
-                : upgradeType == UpgradeType.compatible
+                : upgradeType == _UpgradeType.compatible
                     ? originalConstraint.toString()
                     : originalConstraint.allows(p.version)
                         ? originalConstraint.toString()
@@ -181,7 +181,7 @@ class DependencyServicesReportCommand extends PubCommand {
         devDependencies: compatiblePubspec.devDependencies.values,
       );
       final dependencySet =
-          dependencySetOfPackage(singleBreakingPubspec, package);
+          _dependencySetOfPackage(singleBreakingPubspec, package);
       final kind = _kindString(compatiblePubspec, package.name);
       PackageId? singleBreakingVersion;
       if (dependencySet != null) {
@@ -205,14 +205,14 @@ class DependencyServicesReportCommand extends PubCommand {
             _constraintOf(compatiblePubspec, package.name)?.toString(),
         'compatible': await _computeUpgradeSet(
             compatiblePubspec, compatibleVersion,
-            upgradeType: UpgradeType.compatible),
+            upgradeType: _UpgradeType.compatible),
         'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
             ? []
             : await _computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
-                upgradeType: UpgradeType.singleBreaking),
+                upgradeType: _UpgradeType.singleBreaking),
         'multiBreaking': kind != 'transitive' && multiBreakingVersion != null
             ? await _computeUpgradeSet(compatiblePubspec, multiBreakingVersion,
-                upgradeType: UpgradeType.multiBreaking)
+                upgradeType: _UpgradeType.multiBreaking)
             : [],
       });
     }
@@ -305,7 +305,7 @@ extension on PackageId {
   }
 }
 
-enum UpgradeType {
+enum _UpgradeType {
   /// Only upgrade pubspec.lock.
   compatible,
 
@@ -473,12 +473,13 @@ class _PackageVersion {
   String? gitRevision;
   VersionConstraint? constraint;
   _PackageVersion(this.name, String? versionOrHash, this.constraint)
-      : version = versionOrHash == null ? null : tryParseVersion(versionOrHash),
+      : version =
+            versionOrHash == null ? null : _tryParseVersion(versionOrHash),
         gitRevision =
-            versionOrHash == null ? null : tryParseHash(versionOrHash);
+            versionOrHash == null ? null : _tryParseHash(versionOrHash);
 }
 
-Version? tryParseVersion(String v) {
+Version? _tryParseVersion(String v) {
   try {
     return Version.parse(v);
   } on FormatException {
@@ -486,14 +487,14 @@ Version? tryParseVersion(String v) {
   }
 }
 
-String? tryParseHash(String v) {
+String? _tryParseHash(String v) {
   if (RegExp(r'^[a-fA-F0-9]+$').hasMatch(v)) {
     return v;
   }
   return null;
 }
 
-Map<String, PackageRange>? dependencySetOfPackage(
+Map<String, PackageRange>? _dependencySetOfPackage(
     Pubspec pubspec, PackageId package) {
   return pubspec.dependencies.containsKey(package.name)
       ? pubspec.dependencies
@@ -509,7 +510,7 @@ VersionConstraint _widenConstraint(
     final min = original.min;
     final max = original.max;
     if (max != null && newVersion >= max) {
-      return compatibleWithIfPossible(
+      return _compatibleWithIfPossible(
         VersionRange(
           min: min,
           includeMin: original.includeMin,
@@ -518,7 +519,7 @@ VersionConstraint _widenConstraint(
       );
     }
     if (min != null && newVersion <= min) {
-      return compatibleWithIfPossible(
+      return _compatibleWithIfPossible(
         VersionRange(
             min: newVersion,
             includeMin: true,
@@ -533,7 +534,7 @@ VersionConstraint _widenConstraint(
       original, 'original', 'Must be a Version range or empty');
 }
 
-VersionConstraint compatibleWithIfPossible(VersionRange versionRange) {
+VersionConstraint _compatibleWithIfPossible(VersionRange versionRange) {
   final min = versionRange.min;
   if (min != null && min.nextBreaking.firstPreRelease == versionRange.max) {
     return VersionConstraint.compatibleWith(min);
