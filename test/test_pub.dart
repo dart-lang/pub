@@ -468,6 +468,9 @@ Future<PubProcess> startPub(
     ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
     ..addAll(args);
 
+  final systemRoot = Platform.environment['SYSTEMROOT'];
+  final tmp = Platform.environment['TMP'];
+
   final mergedEnvironment = {
     if (includeParentHomeAndPath) ...{
       'HOME': Platform.environment['HOME'] ?? '',
@@ -475,8 +478,8 @@ Future<PubProcess> startPub(
     },
     // These seem to be needed for networking to work.
     if (Platform.isWindows) ...{
-      'SYSTEMROOT': Platform.environment['SYSTEMROOT'],
-      'TMP': Platform.environment['TMP'],
+      if (systemRoot != null) 'SYSTEMROOT': systemRoot,
+      if (tmp != null) 'TMP': tmp,
     },
     ...getPubTestEnvironment(tokenEndpoint)
   };
