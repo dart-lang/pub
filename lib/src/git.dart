@@ -62,7 +62,6 @@ Future<List<String>> run(List<String> args,
         workingDir: workingDir,
         environment: {...?environment, 'LANG': 'en_GB'});
     if (!result.success) {
-      print(result.stderr);
       throw GitException(args, result.stdout.join('\n'),
           result.stderr.join('\n'), result.exitCode);
     }

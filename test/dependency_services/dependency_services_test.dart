@@ -307,7 +307,6 @@ Future<void> main() async {
 }
 
 dynamic findChangeVersion(dynamic json, String updateType, String name) {
-  print(JsonEncoder.withIndent('  ').convert(json));
   final dep = json['dependencies'].firstWhere((p) => p['name'] == 'foo');
   if (dep == null) return null;
   return dep[updateType].firstWhere((p) => p['name'] == name)['version'];
