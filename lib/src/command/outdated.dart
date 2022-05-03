@@ -583,14 +583,16 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
-  log.message('\n');
-  for (var package in rows.where((package) => package.isDiscontinued)) {
-    log.message(log.bold(package.name));
-    final replacedByText = package.discontinuedReplacedBy != null
-        ? ', replaced by ${package.discontinuedReplacedBy}.'
-        : '.';
-    log.message(
-        '    Package ${package.name} has been discontinued$replacedByText');
+  if (rows.any((package) => package.isDiscontinued)) {
+    log.message('\n');
+    for (var package in rows.where((package) => package.isDiscontinued)) {
+      log.message(log.bold(package.name));
+      final replacedByText = package.discontinuedReplacedBy != null
+          ? ', replaced by ${package.discontinuedReplacedBy}.'
+          : '.';
+      log.message(
+          '    Package ${package.name} has been discontinued$replacedByText');
+    }
   }
 }
 
