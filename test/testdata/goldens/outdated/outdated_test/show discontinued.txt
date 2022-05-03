@@ -35,14 +35,18 @@ Package Name  Current  Upgradable  Resolvable  Latest
 
 direct dependencies:
 bar           1.0.0    1.0.0       1.0.0       1.0.0                 
+baz           1.0.0    1.0.0       1.0.0       1.0.0 (discontinued)  
 foo           1.2.3    1.2.3       1.2.3       1.2.3 (discontinued)  
 
 transitive dependencies:
 transitive    1.2.3    1.2.3       1.2.3       1.2.3                 
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
 foo
-    discontinued
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -83,11 +87,15 @@ Package Name  Current  Upgradable  Resolvable  Latest
 
 direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
+baz           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
 foo           ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
 foo
-    discontinued
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -101,14 +109,18 @@ Package Name  Current  Upgradable  Resolvable  Latest
 
 direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
+baz           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
 foo           ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3  
 
 transitive dependencies:
 transitive    ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
 foo
-    discontinued
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -122,11 +134,15 @@ Package Name  Current  Upgradable  Resolvable  Latest
 
 direct dependencies:
 bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
+baz           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0  
 foo           ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
 foo
-    discontinued
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -137,6 +153,26 @@ $ pub outdated --json --mode=null-safety
     {
       "package": "bar",
       "isDiscontinued": false,
+      "current": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "1.0.0",
+        "nullSafety": false
+      }
+    },
+    {
+      "package": "baz",
+      "isDiscontinued": true,
       "current": {
         "version": "1.0.0",
         "nullSafety": false

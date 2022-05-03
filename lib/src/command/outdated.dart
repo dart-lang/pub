@@ -436,7 +436,6 @@ Future<void> _outputHuman(
 }) async {
   final directoryDesc = directory == '.' ? '' : ' in $directory';
   log.message(mode.explanation(directoryDesc) + '\n');
-
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
@@ -584,13 +583,14 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
-
+  log.message('\n');
   for (var package in rows.where((package) => package.isDiscontinued)) {
     log.message(log.bold(package.name));
     final replacedByText = package.discontinuedReplacedBy != null
         ? ', replaced by ${package.discontinuedReplacedBy}.'
-        : '';
-    log.message('    discontinued$replacedByText');
+        : '.';
+    log.message(
+        '    Package ${package.name} has been discontinued$replacedByText');
   }
 }
 

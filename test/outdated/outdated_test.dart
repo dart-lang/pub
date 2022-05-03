@@ -114,6 +114,7 @@ Future<void> main() async {
     builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.0.0')
+      ..serve('baz', '1.0.0')
       ..serve('transitive', '1.2.3');
 
     await d.dir(appPath, [
@@ -122,11 +123,13 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
+          'baz': '^1.0.0',
         },
       })
     ]).create();
     await pubGet();
     builder.discontinue('foo');
+    builder.discontinue('baz', replacementText: 'newbaz');
     await ctx.runOutdatedTests();
   });
 
