@@ -27,7 +27,9 @@ void main() {
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
 
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
 
     await d.appDir({
       'foo': {
@@ -62,6 +64,12 @@ void main() {
 
     await d.appPackagesFile(
         {'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'}).validate();
+
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      d.packageConfigEntry(name: 'bar', version: '3.2.3'),
+      d.packageConfigEntry(name: 'baz', version: '1.3.5'),
+    ]).validate();
 
     await d.appDir({
       'foo': {
@@ -121,7 +129,9 @@ void main() {
     await pubAdd(args: ['foo', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({
       'foo': {
         'version': '^1.2.3',
@@ -148,7 +158,9 @@ void main() {
     await pubAdd(args: ['foo', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({
       'foo': {
         'version': '^1.2.3',
@@ -176,7 +188,9 @@ void main() {
     await pubAdd(args: ['foo:any', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
     await d.appDir({
       'foo': {
         'version': 'any',

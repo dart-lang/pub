@@ -224,13 +224,17 @@ class Entrypoint {
   Entrypoint? _example;
 
   /// Writes .packages and .dart_tool/package_config.json
-  Future<void> writePackagesFiles() async {
+  Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
     final entrypointName = isGlobal ? null : root.name;
-    writeTextFile(
-        packagesFile,
-        lockFile.packagesFile(cache,
-            entrypoint: entrypointName,
-            relativeFrom: isGlobal ? null : root.dir));
+    if (generateDotPackages) {
+      writeTextFile(
+          packagesFile,
+          lockFile.packagesFile(cache,
+              entrypoint: entrypointName,
+              relativeFrom: isGlobal ? null : root.dir));
+    } else {
+      tryDeleteEntry(packagesFile);
+    }
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
         packageConfigFile,
@@ -268,6 +272,7 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
+    required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
@@ -341,7 +346,7 @@ class Entrypoint {
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-      await writePackagesFiles();
+      await writePackagesFiles(generateDotPackages: generateDotPackages);
 
       try {
         if (precompile) {

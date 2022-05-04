@@ -21,11 +21,15 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+    ]).validate();
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
   });
 }
