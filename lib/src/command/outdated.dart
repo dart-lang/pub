@@ -761,9 +761,14 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
           (versionDetails) {
             String Function(String)? color;
             String? prefix;
+            String? suffix;
             MapEntry<String, Object>? jsonExplanation;
             var asDesired = false;
             if (versionDetails != null) {
+              if (packageDetails.isDiscontinued &&
+                  identical(versionDetails, packageDetails.latest)) {
+                suffix = ' (discontinued)';
+              }
               if (nullSafetyMap[versionDetails._id]!) {
                 color = log.green;
                 prefix = _compliantEmoji;
@@ -780,6 +785,7 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
               asDesired: asDesired,
               format: color,
               prefix: prefix,
+              suffix: suffix,
               jsonExplanation: jsonExplanation,
             );
           },
