@@ -109,6 +109,30 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
+  testWithGolden('show discontinued', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
+      ..serve('bar', '1.0.0')
+      ..serve('baz', '1.0.0')
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+          'baz': '^1.0.0',
+        },
+      })
+    ]).create();
+    await pubGet();
+    builder.discontinue('foo');
+    builder.discontinue('baz', replacementText: 'newbaz');
+    await ctx.runOutdatedTests();
+  });
+
   testWithGolden('circular dependency on root', (ctx) async {
     final server = await servePackages();
     server.serve('foo', '1.2.3', deps: {'app': '^1.0.0'});

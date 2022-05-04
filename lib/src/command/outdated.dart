@@ -211,6 +211,11 @@ class OutdatedCommand extends PubCommand {
         latestIsOverridden = true;
       }
 
+      final packageStatus = await current?.source.status(current, cache);
+      final discontinued =
+          packageStatus == null ? false : packageStatus.isDiscontinued;
+      final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
+
       return _PackageDetails(
         name,
         await _describeVersion(
@@ -230,6 +235,8 @@ class OutdatedCommand extends PubCommand {
           latestIsOverridden,
         ),
         _kind(name, entrypoint, nonDevDependencies),
+        discontinued,
+        discontinuedReplacedBy,
       );
     }
 
@@ -401,6 +408,7 @@ Future<void> _outputJson(
           ...(rows..sort((a, b) => a.name.compareTo(b.name)))
               .map((packageDetails) => {
                     'package': packageDetails.name,
+                    'isDiscontinued': packageDetails.isDiscontinued,
                     'current': markedRows[packageDetails]![0].toJson(),
                     'upgradable': markedRows[packageDetails]![1].toJson(),
                     'resolvable': markedRows[packageDetails]![2].toJson(),
@@ -575,6 +583,17 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
+  if (rows.any((package) => package.isDiscontinued)) {
+    log.message('\n');
+    for (var package in rows.where((package) => package.isDiscontinued)) {
+      log.message(log.bold(package.name));
+      final replacedByText = package.discontinuedReplacedBy != null
+          ? ', replaced by ${package.discontinuedReplacedBy}.'
+          : '.';
+      log.message(
+          '    Package ${package.name} has been discontinued$replacedByText');
+    }
+  }
 }
 
 abstract class Mode {
@@ -633,12 +652,17 @@ Showing outdated packages$directoryDescription.
       ]) {
         String Function(String)? color;
         String? prefix;
+        String? suffix;
         var asDesired = false;
         if (versionDetails != null) {
           final isLatest = versionDetails == packageDetails.latest;
           if (isLatest) {
             color = versionDetails == previous ? color = log.gray : null;
             asDesired = true;
+            if (packageDetails.isDiscontinued &&
+                identical(versionDetails, packageDetails.latest)) {
+              suffix = ' (discontinued)';
+            }
           } else {
             color = log.red;
           }
@@ -650,6 +674,7 @@ Showing outdated packages$directoryDescription.
             asDesired: asDesired,
             format: color,
             prefix: prefix,
+            suffix: suffix,
           ),
         );
         previous = versionDetails;
@@ -736,9 +761,14 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
           (versionDetails) {
             String Function(String)? color;
             String? prefix;
+            String? suffix;
             MapEntry<String, Object>? jsonExplanation;
             var asDesired = false;
             if (versionDetails != null) {
+              if (packageDetails.isDiscontinued &&
+                  identical(versionDetails, packageDetails.latest)) {
+                suffix = ' (discontinued)';
+              }
               if (nullSafetyMap[versionDetails._id]!) {
                 color = log.green;
                 prefix = _compliantEmoji;
@@ -755,6 +785,7 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
               asDesired: asDesired,
               format: color,
               prefix: prefix,
+              suffix: suffix,
               jsonExplanation: jsonExplanation,
             );
           },
@@ -818,9 +849,11 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final _VersionDetails? resolvable;
   final _VersionDetails? latest;
   final _DependencyKind kind;
+  final bool isDiscontinued;
+  final String? discontinuedReplacedBy;
 
   _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
-      this.latest, this.kind);
+      this.latest, this.kind, this.isDiscontinued, this.discontinuedReplacedBy);
 
   @override
   int compareTo(_PackageDetails other) {
@@ -837,6 +870,8 @@ class _PackageDetails implements Comparable<_PackageDetails> {
       'upgradable': upgradable?.toJson(),
       'resolvable': resolvable?.toJson(),
       'latest': latest?.toJson(),
+      'isDiscontinued': isDiscontinued,
+      'discontinuedReplacedBy': discontinuedReplacedBy,
     };
   }
 }
@@ -880,6 +915,7 @@ class _MarkedVersionDetails {
   final _VersionDetails? _versionDetails;
   final String Function(String)? _format;
   final String? _prefix;
+  final String? _suffix;
 
   /// This should be true if the mode creating this consideres the version as
   /// "good".
@@ -893,15 +929,18 @@ class _MarkedVersionDetails {
     required this.asDesired,
     format,
     prefix = '',
+    suffix = '',
     jsonExplanation,
   })  : _format = format,
         _prefix = prefix,
+        _suffix = suffix,
         _jsonExplanation = jsonExplanation;
 
   _FormattedString toHuman() => _FormattedString(
         _versionDetails?.describe ?? '-',
         format: _format,
         prefix: _prefix,
+        suffix: _suffix,
       );
 
   Object? toJson() {
@@ -923,16 +962,22 @@ class _FormattedString {
   /// A prefix for marking this string if colors are not used.
   final String _prefix;
 
-  _FormattedString(this.value, {String Function(String)? format, prefix})
+  final String _suffix;
+
+  _FormattedString(this.value,
+      {String Function(String)? format, prefix, suffix})
       : _format = format ?? _noFormat,
-        _prefix = prefix ?? '';
+        _prefix = prefix ?? '',
+        _suffix = suffix ?? '';
 
   String formatted({required bool useColors}) {
-    return useColors ? _format(_prefix + value) : _prefix + value;
+    return useColors
+        ? _format(_prefix + value + _suffix)
+        : _prefix + value + _suffix;
   }
 
   int computeLength({required bool? useColors}) {
-    return _prefix.length + value.length;
+    return _prefix.length + value.length + _suffix.length;
   }
 
   static String _noFormat(String x) => x;

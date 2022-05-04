@@ -31,13 +31,22 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable  Resolvable  Latest                
 
 direct dependencies:
-bar           1.0.0    1.0.0       1.0.0       1.0.0   
-foo           1.0.0    1.0.0       1.0.0       1.0.0   
+bar           1.0.0    1.0.0       1.0.0       1.0.0                 
+baz           1.0.0    1.0.0       1.0.0       1.0.0 (discontinued)  
+foo           1.2.3    1.2.3       1.2.3       1.2.3 (discontinued)  
+
+transitive dependencies:
+transitive    1.2.3    1.2.3       1.2.3       1.2.3                 
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
+foo
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -46,13 +55,7 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest              
-
-direct dependencies:
-bar           *1.0.0   *1.0.0      *1.0.0      2.0.0-nullsafety.0  
-foo           *1.0.0   *1.0.0      *1.0.0      2.0.0-nullsafety.0  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+Found no outdated packages
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -80,12 +83,19 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest               
+Package Name  Current  Upgradable  Resolvable  Latest                 
 
 direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
-foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
-No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.
+bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0                 
+baz           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0 (discontinued)  
+foo           ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3 (discontinued)  
+You are already using the newest resolvable versions listed in the 'Resolvable' column.
+Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
+foo
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -95,12 +105,22 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest               
+Package Name  Current  Upgradable  Resolvable  Latest                 
 
 direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
-foo           ✗1.0.0   ✗1.0.0      -           ✓2.0.0-nullsafety.0  
-No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.
+bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0                 
+baz           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0 (discontinued)  
+foo           ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3 (discontinued)  
+
+transitive dependencies:
+transitive    ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3                 
+You are already using the newest resolvable versions listed in the 'Resolvable' column.
+Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
+foo
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -110,12 +130,19 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable  Resolvable  Latest                 
 
 direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      -           ✗1.0.0  
-foo           ✗1.0.0   ✗1.0.0      -           ✗1.0.0  
-No resolution was found. Try running `dart pub upgrade --null-safety --dry-run` to explore why.
+bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0                 
+baz           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗1.0.0 (discontinued)  
+foo           ✗1.2.3   ✗1.2.3      ✗1.2.3      ✗1.2.3 (discontinued)  
+You are already using the newest resolvable versions listed in the 'Resolvable' column.
+Newer versions, listed in 'Latest', may not be mutually compatible.
+
+baz
+    Package baz has been discontinued, replaced by newbaz.
+foo
+    Package foo has been discontinued.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -134,15 +161,18 @@ $ pub outdated --json --mode=null-safety
         "version": "1.0.0",
         "nullSafety": false
       },
-      "resolvable": null,
+      "resolvable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
       "latest": {
-        "version": "2.0.0-nullsafety.0",
-        "nullSafety": true
+        "version": "1.0.0",
+        "nullSafety": false
       }
     },
     {
-      "package": "foo",
-      "isDiscontinued": false,
+      "package": "baz",
+      "isDiscontinued": true,
       "current": {
         "version": "1.0.0",
         "nullSafety": false
@@ -151,10 +181,53 @@ $ pub outdated --json --mode=null-safety
         "version": "1.0.0",
         "nullSafety": false
       },
-      "resolvable": null,
+      "resolvable": {
+        "version": "1.0.0",
+        "nullSafety": false
+      },
       "latest": {
-        "version": "2.0.0-nullsafety.0",
-        "nullSafety": true
+        "version": "1.0.0",
+        "nullSafety": false
+      }
+    },
+    {
+      "package": "foo",
+      "isDiscontinued": true,
+      "current": {
+        "version": "1.2.3",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.2.3",
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "1.2.3",
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "1.2.3",
+        "nullSafety": false
+      }
+    },
+    {
+      "package": "transitive",
+      "isDiscontinued": false,
+      "current": {
+        "version": "1.2.3",
+        "nullSafety": false
+      },
+      "upgradable": {
+        "version": "1.2.3",
+        "nullSafety": false
+      },
+      "resolvable": {
+        "version": "1.2.3",
+        "nullSafety": false
+      },
+      "latest": {
+        "version": "1.2.3",
+        "nullSafety": false
       }
     }
   ]

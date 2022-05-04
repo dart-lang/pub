@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.1.0"
       },
@@ -189,6 +190,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "flutter_test",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "nullSafety": false
@@ -208,6 +210,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.1.0",
         "nullSafety": false
@@ -236,6 +239,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.1.0"
       },
