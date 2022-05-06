@@ -127,7 +127,7 @@ Future<void> main() async {
     await pubGet();
     server.dontAllowDownloads();
     await listReportApply(context, [
-      _PackageVersion('foo', Version.parse('2.2.3')),
+      _PackageVersion('foo', '2.2.3'),
       _PackageVersion('transitive', null)
     ], reportAssertions: (report) {
       expect(
@@ -166,7 +166,7 @@ Future<void> main() async {
     server.dontAllowDownloads();
 
     await listReportApply(context, [
-      _PackageVersion('foo', Version.parse('1.2.4')),
+      _PackageVersion('foo', '1.2.4'),
     ], reportAssertions: (report) {
       expect(
         findChangeVersion(report, 'compatible', 'foo'),
@@ -193,8 +193,8 @@ Future<void> main() async {
     server.dontAllowDownloads();
 
     await listReportApply(context, [
-      _PackageVersion('foo', Version.parse('2.2.3')),
-      _PackageVersion('transitive', Version.parse('1.0.0'))
+      _PackageVersion('foo', '2.2.3'),
+      _PackageVersion('transitive', '1.0.0')
     ], reportAssertions: (report) {
       expect(
         findChangeVersion(report, 'singleBreaking', 'foo'),
@@ -236,9 +236,9 @@ Future<void> main() async {
     server.dontAllowDownloads();
 
     await listReportApply(context, [
-      _PackageVersion('foo', Version.parse('3.0.1'),
+      _PackageVersion('foo', '3.0.1',
           constraint: VersionConstraint.parse('^3.0.0')),
-      _PackageVersion('bar', Version.parse('2.0.0'))
+      _PackageVersion('bar', '2.0.0')
     ], reportAssertions: (report) {
       expect(
         findChangeVersion(report, 'multiBreaking', 'foo'),
@@ -263,7 +263,7 @@ Future<void> main() async {
     await pubGet();
     server.serve('foo', '2.0.0');
     await listReportApply(context, [
-      _PackageVersion('foo', Version.parse('2.0.0'),
+      _PackageVersion('foo', '2.0.0',
           constraint: VersionConstraint.parse('^2.0.0')),
     ], reportAssertions: (report) {
       expect(
@@ -272,22 +272,55 @@ Future<void> main() async {
       );
     });
   });
+
+  testWithGolden('Can update a git package', (context) async {
+    await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
+    await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
+
+    await d.appDir({
+      'foo': {
+        'git': {'url': '../foo.git'}
+      },
+      'bar': {
+        // A git dependency with a version constraint.
+        'git': {'url': '../bar.git'},
+        'version': '^1.0.0',
+      }
+    }).create();
+    await pubGet();
+    final secondVersion = d.git('foo.git', [d.libPubspec('foo', '2.0.0')]);
+    await secondVersion.commit();
+    final newRef = await secondVersion.revParse('HEAD');
+
+    final barSecondVersion = d.git('bar.git', [d.libPubspec('bar', '2.0.0')]);
+    await barSecondVersion.commit();
+
+    await listReportApply(context, [
+      _PackageVersion('foo', newRef),
+    ], reportAssertions: (report) {
+      expect(
+        findChangeVersion(report, 'multiBreaking', 'foo'),
+        newRef,
+      );
+    });
+  });
 }
 
 dynamic findChangeVersion(dynamic json, String updateType, String name) {
   final dep = json['dependencies'].firstWhere((p) => p['name'] == 'foo');
+  if (dep == null) return null;
   return dep[updateType].firstWhere((p) => p['name'] == name)['version'];
 }
 
 class _PackageVersion {
   String name;
-  Version? version;
+  String? version;
   VersionConstraint? constraint;
   _PackageVersion(this.name, this.version, {this.constraint});
 
   Map<String, Object?> toJson() => {
         'name': name,
-        'version': version?.toString(),
+        'version': version,
         if (constraint != null) 'constraint': constraint.toString()
       };
 }

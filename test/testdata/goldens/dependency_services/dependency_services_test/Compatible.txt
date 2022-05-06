@@ -39,19 +39,40 @@ $ dependency_services list
       "name": "bar",
       "version": "1.2.3",
       "kind": "direct",
-      "constraint": "^1.0.0"
+      "constraint": "^1.0.0",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "bar",
+          "url": "http://localhost:$PORT"
+        }
+      }
     },
     {
       "name": "boo",
       "version": "1.2.3",
       "kind": "direct",
-      "constraint": "^1.0.0"
+      "constraint": "^1.0.0",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "boo",
+          "url": "http://localhost:$PORT"
+        }
+      }
     },
     {
       "name": "foo",
       "version": "1.2.3",
       "kind": "direct",
-      "constraint": "^1.0.0"
+      "constraint": "^1.0.0",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "foo",
+          "url": "http://localhost:$PORT"
+        }
+      }
     }
   ]
 }
@@ -66,6 +87,13 @@ $ dependency_services report
       "name": "bar",
       "version": "1.2.3",
       "kind": "direct",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "bar",
+          "url": "http://localhost:$PORT"
+        }
+      },
       "latest": "2.2.3",
       "constraint": "^1.0.0",
       "compatible": [],
@@ -74,11 +102,25 @@ $ dependency_services report
           "name": "bar",
           "version": "2.2.3",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "bar",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^2.2.3",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "bar",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ],
       "multiBreaking": [
@@ -86,11 +128,25 @@ $ dependency_services report
           "name": "bar",
           "version": "2.2.3",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "bar",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^2.2.3",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "bar",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ]
     },
@@ -98,6 +154,13 @@ $ dependency_services report
       "name": "boo",
       "version": "1.2.3",
       "kind": "direct",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "boo",
+          "url": "http://localhost:$PORT"
+        }
+      },
       "latest": "1.2.4",
       "constraint": "^1.0.0",
       "compatible": [
@@ -105,11 +168,25 @@ $ dependency_services report
           "name": "boo",
           "version": "1.2.4",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "boo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^1.0.0",
           "constraintWidened": "^1.0.0",
           "constraintBumpedIfNeeded": "^1.0.0",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "boo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ],
       "singleBreaking": [
@@ -117,11 +194,25 @@ $ dependency_services report
           "name": "boo",
           "version": "1.2.4",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "boo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^1.2.4",
           "constraintWidened": "^1.0.0",
           "constraintBumpedIfNeeded": "^1.0.0",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "boo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ],
       "multiBreaking": [
@@ -129,11 +220,25 @@ $ dependency_services report
           "name": "boo",
           "version": "1.2.4",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "boo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^1.2.4",
           "constraintWidened": "^1.0.0",
           "constraintBumpedIfNeeded": "^1.0.0",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "boo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ]
     },
@@ -141,6 +246,13 @@ $ dependency_services report
       "name": "foo",
       "version": "1.2.3",
       "kind": "direct",
+      "source": {
+        "type": "hosted",
+        "description": {
+          "name": "foo",
+          "url": "http://localhost:$PORT"
+        }
+      },
       "latest": "2.2.3",
       "constraint": "^1.0.0",
       "compatible": [
@@ -148,11 +260,25 @@ $ dependency_services report
           "name": "foo",
           "version": "1.2.4",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^1.0.0",
           "constraintWidened": "^1.0.0",
           "constraintBumpedIfNeeded": "^1.0.0",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ],
       "singleBreaking": [
@@ -160,11 +286,25 @@ $ dependency_services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^2.2.3",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ],
       "multiBreaking": [
@@ -172,11 +312,25 @@ $ dependency_services report
           "name": "foo",
           "version": "2.2.3",
           "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          },
           "constraintBumped": "^2.2.3",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.2.3",
           "previousVersion": "1.2.3",
-          "previousConstraint": "^1.0.0"
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT"
+            }
+          }
         }
       ]
     }
