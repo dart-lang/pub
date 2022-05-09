@@ -187,9 +187,10 @@ class Entrypoint {
   /// Loads the entrypoint from a package at [rootDir].
   Entrypoint(
     String rootDir,
-    this.cache,
-  )   : root = Package.load(null, rootDir, cache.sources,
-            withPubspecOverrides: true),
+    this.cache, {
+    bool withPubspecOverrides = true,
+  })  : root = Package.load(null, rootDir, cache.sources,
+            withPubspecOverrides: withPubspecOverrides),
         globalDir = null;
 
   Entrypoint.inMemory(this.root, this.cache,

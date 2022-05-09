@@ -32,6 +32,8 @@ class LishCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-lish';
   @override
   bool get takesArguments => false;
+  @override
+  bool get withPubspecOverrides => false;
 
   /// The URL of the server to which to upload the package.
   late final Uri host = () {
@@ -169,8 +171,8 @@ class LishCommand extends PubCommand {
       };
 
       // Using OAuth2 authentication client for the official pub servers
-      final isOfficalServer = officialPubServers.contains(host.toString());
-      if (isOfficalServer && !cache.tokenStore.hasCredential(host)) {
+      final isOfficialServer = officialPubServers.contains(host.toString());
+      if (isOfficialServer && !cache.tokenStore.hasCredential(host)) {
         // Using OAuth2 authentication client for the official pub servers, when
         // we don't have an explicit token from [TokenStore] to use instead.
         //
