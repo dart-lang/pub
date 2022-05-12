@@ -20,8 +20,9 @@ void main() {
 
     // This should lock the foo dependency to version 1.0.0.
     await pubGet();
-
-    await d.appPackagesFile({'foo': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+    ]).validate();
 
     // Delete the .dart_tool/package_config.json file to simulate a new checkout of the application.
     deleteEntry(path.join(d.sandbox, packageConfigFilePath));
@@ -32,6 +33,8 @@ void main() {
     // This shouldn't upgrade the foo dependency due to the lockfile.
     await pubGet();
 
-    await d.appPackagesFile({'foo': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+    ]).validate();
   });
 }

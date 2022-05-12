@@ -35,8 +35,11 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile(
-        {'foo': '../foo', 'bar': '../bar', 'shared': '../shared'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+      d.packageConfigEntry(name: 'shared', path: '../shared'),
+    ]).validate();
   });
 
   test('shared dependency with paths that normalize the same', () async {
@@ -66,7 +69,10 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile(
-        {'foo': '../foo', 'bar': '../bar', 'shared': '../shared'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+      d.packageConfigEntry(name: 'shared', path: '../shared'),
+    ]).validate();
   });
 }

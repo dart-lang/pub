@@ -27,7 +27,9 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+    ]).validate();
   });
 
   test('path is relative to containing pubspec', () async {
@@ -49,8 +51,10 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile(
-        {'foo': '../relative/foo', 'bar': '../relative/bar'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
+      d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
+    ]).validate();
   });
 
   test('path is relative to containing pubspec when using --directory',
@@ -76,9 +80,10 @@ void main() {
         workingDirectory: d.sandbox,
         output: contains('Changed 2 dependencies in myapp!'));
 
-    await d.appPackagesFile(
-      {'foo': '../relative/foo', 'bar': '../relative/bar'},
-    ).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
+      d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
+    ]).validate();
   });
 
   test('relative path preserved in the lockfile', () async {

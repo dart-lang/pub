@@ -22,7 +22,9 @@ void main() {
     server.requestedPaths.clear();
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
 
     // Run the solver again now that it's cached.
     await pubGet();

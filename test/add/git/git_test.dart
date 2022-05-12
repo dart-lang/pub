@@ -173,7 +173,9 @@ void main() {
     await pubAdd(args: ['foo', '--git-url', '../foo.git']);
 
     await d.cacheDir({'foo': '1.2.2'}).validate();
-    await d.appPackagesFile({'foo': '1.2.2'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+    ]).validate();
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',

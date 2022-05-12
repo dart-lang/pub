@@ -32,7 +32,10 @@ void main() {
 
     await d.appDir({'foo': '^3.5.0', 'bar': '1.0.0'}).validate();
     await d.cacheDir({'foo': '3.5.0', 'bar': '1.0.0'}).validate();
-    await d.appPackagesFile({'foo': '3.5.0', 'bar': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '3.5.0'),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+    ]).validate();
   });
 
   test('chooses the appropriate version to not break other dependencies',
@@ -54,7 +57,10 @@ void main() {
 
     await d.appDir({'foo': '^3.2.1', 'bar': '1.0.0'}).validate();
     await d.cacheDir({'foo': '3.2.1', 'bar': '1.0.0'}).validate();
-    await d.appPackagesFile({'foo': '3.2.1', 'bar': '1.0.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '3.2.1'),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+    ]).validate();
   });
 
   test('may upgrade other packages if they allow a later version to be chosen',
@@ -78,6 +84,9 @@ void main() {
 
     await d.appDir({'foo': '^4.0.0', 'bar': '^1.0.0'}).validate();
     await d.cacheDir({'foo': '4.0.0', 'bar': '1.5.0'}).validate();
-    await d.appPackagesFile({'foo': '4.0.0', 'bar': '1.5.0'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '4.0.0'),
+      d.packageConfigEntry(name: 'bar', version: '1.5.0'),
+    ]).validate();
   });
 }

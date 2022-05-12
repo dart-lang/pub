@@ -21,6 +21,8 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': path.join(d.sandbox, 'foo')}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: path.join(d.sandbox, 'foo')),
+    ]).validate();
   });
 }
