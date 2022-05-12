@@ -405,17 +405,23 @@ class AddCommand extends PubCommand {
             'version': versionConstraintString
         };
       }
-      final packagePath = [dependencyKey, name];
 
       if (yamlEditor.parseAt(
             [dependencyKey],
             orElse: () => YamlScalar.wrap(null),
           ).value ==
           null) {
-        // Insert dependencyKey: {} if it did not exist.
-        yamlEditor.update([dependencyKey], {});
+        // Handle the case where [dependencyKey] does not already exist.
+        // We ensure it is in Block-style by default.
+        yamlEditor.update(
+            [dependencyKey],
+            wrapAsYamlNode({name: pubspecInformation},
+                collectionStyle: CollectionStyle.BLOCK));
+      } else {
+        final packagePath = [dependencyKey, name];
+
+        yamlEditor.update(packagePath, pubspecInformation);
       }
-      yamlEditor.update(packagePath, pubspecInformation);
 
       /// Remove the package from dev_dependencies if we are adding it to
       /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
