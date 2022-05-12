@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -9,7 +10,7 @@ import 'test_pub.dart';
 
 void main() {
   forBothPubGetAndUpgrade((command) {
-    test('pubspec overrides', () async {
+    test('supports dependency_overrides', () async {
       await servePackages()
         ..serve('lib', '1.0.0')
         ..serve('lib', '2.0.0');
@@ -45,5 +46,19 @@ void main() {
         ])
       ]).validate();
     });
+  });
+
+  test('is ignored by publish command', () async {
+    await d.validPackage.create();
+    await d.dir(appPath, [
+      d.pubspecOverrides({
+        'dependency_overrides': {'lib': '1.0.0'}
+      }),
+    ]).create();
+
+    await runPub(
+      args: ['lish', '--dry-run'],
+      exitCode: exit_codes.SUCCESS,
+    );
   });
 }
