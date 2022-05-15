@@ -229,18 +229,20 @@ server, this could work in many different ways.
     "version": "<version>",
     "retracted": true || false, /* optional field, false if omitted */
     "archive_url": "https://.../archive.tar.gz",
+    "signature_url": "https://.../archive.tar.gz.asc" /* optional field */
     "pubspec": {
       /* pubspec contents as JSON object */
-    }
+    },
   },
   "versions": [
     {
       "version": "<package>",
       "retracted": true || false, /* optional field, false if omitted */
       "archive_url": "https://.../archive.tar.gz",
+      "signature_url": "https://.../archive.tar.gz.asc" /* optional field */
       "pubspec": {
         /* pubspec contents as JSON object */
-      }
+      },
     },
     /* additional versions */
   ]
@@ -264,6 +266,8 @@ an `archive_url = 'https://pub.example.com/path/...'` then the request for
 This would however, not be case if the same server returned
 `archive_url = 'https://pub.example.com/blob/...'`.
 
+`signature_url` may optionally point to a (detached) OpenPGP signature verifying
+the integrity and authenticity of the package's archive.
 
 ## Publishing Packages
 

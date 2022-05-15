@@ -8,6 +8,7 @@ analyzer:
     todo: ignore
   exclude:
    - lib/src/third_party/**
+   - lib/src/package_signing/gpgme.g.dart
 
 linter:
   rules:

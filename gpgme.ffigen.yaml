@@ -1,0 +1,20 @@
+output: 'lib/src/package_signing/gpgme.g.dart'
+headers:
+  entry-points:
+    - 'lib/src/third_party/gpgme/gpgme.h'
+macros:
+  include: ['gpgme.*']
+globals:
+  include: ['gpgme.*']
+structs:
+  include: ['gpgme.*']
+functions:
+  include: ['gpgme.*']
+  symbol-address:
+    include: [gpgme_release, gpgme_data_release]
+type-map:
+  native-types:
+    char:
+      lib: pkg_ffi
+      c-type: Utf8
+      dart-type: int
