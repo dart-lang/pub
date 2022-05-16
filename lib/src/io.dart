@@ -493,9 +493,9 @@ bool _isDirectoryNotEmptyException(FileSystemException e) {
       // #define	ENOTEMPTY	39	/* Directory not empty */
       // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
       (Platform.isLinux && errorCode == 39) ||
-          // On Windows this may fail with ERROR_DIR_NOT_EMPTY
+          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or ERROR_ALREADY_EXISTS
           // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
-          (Platform.isWindows && errorCode == 145) ||
+          (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
           // On MacOS rename will fail with ENOTEMPTY if directory exists.
           // #define ENOTEMPTY       66              /* Directory not empty */
           // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
