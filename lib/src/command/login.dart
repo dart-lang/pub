@@ -26,7 +26,12 @@ class LoginCommand extends PubCommand {
     final credentials = oauth2.loadCredentials(cache);
     if (credentials == null) {
       final userInfo = await _retrieveUserInfo();
-      log.message('You are now logged in as $userInfo');
+      if (userInfo == null) {
+        log.warning('Could not retrieve your user-details.\n'
+            'You might have to run `pub logout` to delete your credentials  and try again.');
+      } else {
+        log.message('You are now logged in as $userInfo');
+      }
     } else {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
@@ -47,8 +52,18 @@ class LoginCommand extends PubCommand {
       if (userInfoRequest.statusCode != 200) return null;
       try {
         final userInfo = json.decode(userInfoRequest.body);
-        return _UserInfo(userInfo['name'], userInfo['email']);
-      } on FormatException {
+        final name = userInfo['name'];
+        final email = userInfo['email'];
+        if (name is String && email is String) {
+          return _UserInfo(name, email);
+        } else {
+          log.fine(
+              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}');
+          return null;
+        }
+      } on FormatException catch (e) {
+        log.fine(
+            'Bad response from $userInfoEndpoint ($e): ${userInfoRequest.body}');
         return null;
       }
     });
