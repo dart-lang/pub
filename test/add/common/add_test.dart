@@ -7,6 +7,7 @@ import 'dart:io' show File;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -137,10 +138,47 @@ void main() {
       server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
-        d.pubspec({'name': 'myapp'})
+        d.file('pubspec.yaml', '''
+name: myapp
+environment:
+  "sdk": ">=0.1.2 <1.0.0"
+''')
       ]).create();
 
       await pubAdd(args: ['foo:1.2.3']);
+      print(
+          File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync());
+      final yaml = loadYaml(
+          File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync());
+
+      expect(((yaml as YamlMap).nodes['dependencies'] as YamlMap).style,
+          CollectionStyle.BLOCK,
+          reason: 'Should create the mapping with block-style by default');
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
+      await d.appDir({'foo': '1.2.3'}).validate();
+    });
+
+    test('Inserts correctly when the pubspec is flow-style at top-level',
+        () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+
+      await d.dir(appPath, [
+        d.file('pubspec.yaml',
+            '{"name":"myapp", "environment": {"sdk": ">=0.1.2 <1.0.0"}}')
+      ]).create();
+
+      await pubAdd(args: ['foo:1.2.3']);
+
+      final yaml = loadYaml(
+          File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync());
+
+      expect(((yaml as YamlMap).nodes['dependencies'] as YamlMap).style,
+          CollectionStyle.FLOW,
+          reason: 'Should not break a pubspec in flow-style');
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackageConfigFile([
