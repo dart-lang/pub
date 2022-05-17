@@ -61,8 +61,9 @@ enum SignatureVerificationMode {
 
     final checkedSignature = foundSignatures.single;
     if (checkedSignature.isValid) {
-      log.green('Package ${package.name}:${package.version} verified - '
-          'signed with ${checkedSignature.fingerprint}');
+      log.message(
+          log.green('Package ${package.name}:${package.version} verified - '
+              'signed with ${checkedSignature.fingerprint}'));
     } else {
       fail('Invalid signature ${checkedSignature.status}');
     }

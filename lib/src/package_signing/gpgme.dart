@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -28,7 +29,17 @@ class GpgmeBindings {
     );
   }
 
-  static GpgmeBindings? open() {}
+  static GpgmeBindings? open() {
+    try {
+      if (Platform.isLinux) {
+        return GpgmeBindings(DynamicLibrary.open('libgpgme.so'));
+      }
+      // ignore: avoid_catching_errors
+    } on ArgumentError {
+      // Can't open dynamic library
+      return null;
+    }
+  }
 
   void _handleError(int resultCode) {
     if (resultCode != 0) {
