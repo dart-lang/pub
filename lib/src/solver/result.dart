@@ -78,12 +78,13 @@ class SolveResult {
   final LockFile _previousLockFile;
 
   /// Downloads all cached packages in [packages].
-  Future<void> downloadCachedPackages(SystemCache cache) async {
+  Future<void> downloadCachedPackages(
+      SystemCache cache, DownloadOptions options) async {
     await Future.wait(packages.map((id) async {
       final source = id.source;
       if (source is! CachedSource) return;
       return await withDependencyType(_root.dependencyType(id.name), () async {
-        await source.downloadToSystemCache(id, cache);
+        await source.downloadToSystemCache(id, cache, options: options);
       });
     }));
   }

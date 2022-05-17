@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 
 import 'gpgme.g.dart';
+import 'verify.dart';
 
 class GpgmeBindings {
   final NativeLibrary _library;
@@ -27,6 +28,8 @@ class GpgmeBindings {
     );
   }
 
+  static GpgmeBindings? open() {}
+
   void _handleError(int resultCode) {
     if (resultCode != 0) {
       final msg = _library.gpgme_strerror(resultCode).toDartString();
@@ -45,6 +48,23 @@ class GpgmeBindings {
       return context;
     } finally {
       malloc.free(ptr);
+    }
+  }
+
+  GpgmeData dataFromFile(String path) {
+    final ptr = malloc<gpgme_data_t>();
+    final pathPtr = path.toNativeUtf8();
+
+    try {
+      _handleError(_library.gpgme_data_new_from_file(ptr, pathPtr, 1));
+      final data = GpgmeData._(ptr.value);
+      _releaseData.attach(data, data._data.cast());
+
+      return data;
+    } finally {
+      malloc
+        ..free(ptr)
+        ..free(pathPtr);
     }
   }
 
@@ -73,12 +93,13 @@ class GpgmeContext implements Finalizable {
 
   GpgmeContext._(this._context, this._bindings);
 
-  List<Signature> verifyDetached(GpgmeData plaintext, GpgmeData signature) {
+  List<PackageSignatureResult> verifyDetached(
+      GpgmeData plaintext, GpgmeData signature) {
     _bindings._handleError(_bindings._library.gpgme_op_verify(
         _context, signature._data, plaintext._data, _nullptr()));
 
     final result = _bindings._library.gpgme_op_verify_result(_context).ref;
-    final signatures = <Signature>[];
+    final signatures = <PackageSignatureResult>[];
 
     void addSignature(gpgme_signature_t signature) {
       if (signature.address == 0) return;
@@ -89,7 +110,8 @@ class GpgmeContext implements Finalizable {
       final status =
           _bindings._library.gpgme_strerror(ref.status).toDartString();
 
-      signatures.add(Signature._(isValid, status, ref.fpr.toDartString()));
+      signatures
+          .add(PackageSignatureResult(isValid, ref.fpr.toDartString(), status));
 
       addSignature(ref.next);
     }
@@ -103,30 +125,6 @@ class GpgmeData implements Finalizable {
   final gpgme_data_t _data;
 
   GpgmeData._(this._data);
-}
-
-class Signature {
-  /// Whether this signature is fully valid, meaning that:
-  ///
-  /// - the key with the given [fingerprint] is available in the local key
-  ///   chain.
-  /// - the signature matches the actual contents of the checked file.
-  final bool isValid;
-
-  /// The PGP fingerprint of the key used to sign the contents.
-  final String fingerprint;
-
-  /// A human-readable description of this signature's status.
-  ///
-  /// Pub will show this status as an explanation if [isValid] is `false`.
-  final String status;
-
-  Signature._(this.isValid, this.status, this.fingerprint);
-
-  @override
-  String toString() {
-    return 'Signature($fingerprint), valid = $isValid, status = $status';
-  }
 }
 
 class GpgmeException implements Exception {

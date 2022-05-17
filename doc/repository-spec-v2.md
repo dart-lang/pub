@@ -266,8 +266,13 @@ an `archive_url = 'https://pub.example.com/path/...'` then the request for
 This would however, not be case if the same server returned
 `archive_url = 'https://pub.example.com/blob/...'`.
 
-`signature_url` may optionally point to a (detached) OpenPGP signature verifying
-the integrity and authenticity of the package's archive.
+The `signature_url` may optionally point to a (detached) OpenPGP signature
+verifying the integrity and authenticity of the package's archive.
+This signature may either be a binary OpenPGP signature packet as defined in
+section 5.2 of RFC 4880 or an ASCII-armored representation thereof.
+When verifying package signatures, pub relies on the user's trusted PGP keys.
+Put mandates no specific set of signature algorithms, the only restriction
+comes from the user's PGP installation.
 
 ## Publishing Packages
 

@@ -20,9 +20,11 @@ import 'git.dart' as git;
 import 'global_packages.dart';
 import 'http.dart';
 import 'log.dart' as log;
+import 'package_signing/verify.dart';
 import 'pub_embeddable_command.dart';
 import 'sdk.dart';
 import 'solver.dart';
+import 'source/cached.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -61,9 +63,23 @@ abstract class PubCommand extends Command<int> {
           : null) ??
       _pubTopLevel.directory;
 
+  SignatureVerificationMode get _signatureVerificationMode {
+    if (argResults.options.contains('verify')) {
+      final result = argResults['verify']! as String;
+
+      return SignatureVerificationMode.values.byName(result);
+    } else {
+      // Fallback to the default
+      return const DownloadOptions().verifySignatures;
+    }
+  }
+
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
-  GlobalPackages get globals => _globals ??= GlobalPackages(cache);
+  GlobalPackages get globals => _globals ??= GlobalPackages(
+        cache,
+        options: DownloadOptions(verifySignatures: _signatureVerificationMode),
+      );
 
   GlobalPackages? _globals;
 
@@ -73,8 +89,12 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  late final Entrypoint entrypoint =
-      Entrypoint(directory, cache, withPubspecOverrides: withPubspecOverrides);
+  late final Entrypoint entrypoint = Entrypoint(
+    directory,
+    cache,
+    withPubspecOverrides: withPubspecOverrides,
+    options: DownloadOptions(verifySignatures: _signatureVerificationMode),
+  );
 
   /// Whether `pubspec_overrides.yaml` is taken into account, when creating
   /// [entrypoint].
@@ -333,4 +353,28 @@ abstract class PubTopLevel {
 
   /// The argResults from the level of parsing of the 'pub' command.
   ArgResults get argResults;
+}
+
+/// Common methods to define options used across pub commands.
+extension SharedOptions on ArgParser {
+  void addSignatureVerificationOption() {
+    addOption(
+      'verify',
+      help:
+          'If and how pub should verify the signatures of downloaded packages.',
+      allowedHelp: {
+        'ignore': "Don't verify package signatures at all.",
+        'softIfPresent': 'If a package has a signature, try to verify it and '
+            "print a warning if it can't be verified.",
+        'soft': 'In addition to `softIfPresent`, also emit a warning if a '
+            'package has no signature.',
+        'strict': "Refuse to download packages that don't have a signature or "
+            "have a signature that can't be verified.",
+      },
+      defaultsTo: const DownloadOptions().verifySignatures.name,
+      allowed: [
+        for (final option in SignatureVerificationMode.values) option.name,
+      ],
+    );
+  }
 }

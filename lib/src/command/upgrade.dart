@@ -72,8 +72,10 @@ class UpgradeCommand extends PubCommand {
       hide: true,
     );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser
+      ..addOption('directory',
+          abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir')
+      ..addSignatureVerificationOption();
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.

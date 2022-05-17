@@ -45,6 +45,7 @@ class RunCommand extends PubCommand {
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addSignatureVerificationOption();
   }
 
   @override

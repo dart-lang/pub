@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
     show maxBy, IterableNullableExtension;
@@ -21,6 +22,8 @@ import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../package_signing/gpgme.dart';
+import '../package_signing/verify.dart';
 import '../pubspec.dart';
 import '../rate_limited_scheduler.dart';
 import '../source.dart';
@@ -319,13 +322,21 @@ class HostedSource extends CachedSource {
             url: description.url,
           );
           var archiveUrl = map['archive_url'];
+          var signatureUrl = map['signature_url'];
           if (archiveUrl is String) {
             final status = PackageStatus(
                 isDiscontinued: body['isDiscontinued'] ?? false,
                 discontinuedReplacedBy: body['replacedBy'],
                 isRetracted: map['retracted'] ?? false);
             return MapEntry(
-                id, _VersionInfo(pubspec, Uri.parse(archiveUrl), status));
+              id,
+              _VersionInfo(
+                pubspec,
+                Uri.parse(archiveUrl),
+                signatureUrl != null ? Uri.parse(signatureUrl) : null,
+                status,
+              ),
+            );
           }
           throw FormatException('archive_url must be a String');
         }
@@ -659,14 +670,15 @@ class HostedSource extends CachedSource {
 
   /// Downloads the package identified by [id] to the system cache.
   @override
-  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache) async {
+  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache,
+      {DownloadOptions options = const DownloadOptions()}) async {
     if (!isInSystemCache(id, cache)) {
       if (cache.isOffline) {
         throw StateError('Cannot download packages when offline.');
       }
       var packageDir = getDirectoryInCache(id, cache);
       ensureDir(p.dirname(packageDir));
-      await _download(id, packageDir, cache);
+      await _download(id, packageDir, cache, options);
     }
 
     return Package.load(id.name, getDirectoryInCache(id, cache), cache.sources);
@@ -744,7 +756,7 @@ class HostedSource extends CachedSource {
             var id = idFor(package.name, package.version, url: url);
             try {
               deleteEntry(package.dir);
-              await _download(id, package.dir, cache);
+              await _download(id, package.dir, cache, const DownloadOptions());
               return RepairResult(id.name, id.version, this, success: true);
             } catch (error, stackTrace) {
               var message = 'Failed to repair ${log.bold(package.name)} '
@@ -828,6 +840,7 @@ class HostedSource extends CachedSource {
     PackageId id,
     String destPath,
     SystemCache cache,
+    DownloadOptions options,
   ) async {
     final description = id.description.description;
     if (description is! HostedDescription) {
@@ -855,6 +868,25 @@ class HostedSource extends CachedSource {
     log.io('Get package from $url.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
+    Uint8List? signatureBytes;
+
+    final signatureUri = versionInfo.signatureUrl;
+    if (signatureUri != null &&
+        options.verifySignatures != SignatureVerificationMode.ignore) {
+      final signatureResponse = await withAuthenticatedClient(cache,
+          Uri.parse(description.url), (client) => client.get(signatureUri));
+
+      if (signatureResponse.statusCode == 200) {
+        signatureBytes = signatureResponse.bodyBytes;
+      } else {
+        log.io('Could not find signature for $id at $signatureUri');
+      }
+    }
+
+    if (signatureBytes == null) {
+      options.verifySignatures.handleAbsentSignature(id);
+    }
+
     // Download and extract the archive to a temp directory.
     await withTempDir((tempDirForArchive) async {
       var archivePath =
@@ -870,6 +902,21 @@ class HostedSource extends CachedSource {
       // cancelling a http stream makes it not reusable.
       // There are ways around this, and we might revisit this later.
       await createFileFromStream(response.stream, archivePath);
+
+      // Verify signature of .tar.gz if there is one
+      if (signatureBytes != null) {
+        final gpg = GpgmeBindings.open();
+        if (gpg == null) {
+          options.verifySignatures.handleGpgNotAvailable(id);
+        } else {
+          final data = gpg.dataFromFile(archivePath);
+          final signature = gpg.dataFromBytes(signatureBytes);
+
+          final result = gpg.newContext().verifyDetached(data, signature);
+          options.verifySignatures.handleResults(id, result);
+        }
+      }
+
       var tempDir = cache.createTempDir();
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
@@ -1027,9 +1074,10 @@ class ResolvedHostedDescription extends ResolvedDescription {
 class _VersionInfo {
   final Pubspec pubspec;
   final Uri archiveUrl;
+  final Uri? signatureUrl;
   final PackageStatus status;
 
-  _VersionInfo(this.pubspec, this.archiveUrl, this.status);
+  _VersionInfo(this.pubspec, this.archiveUrl, this.signatureUrl, this.status);
 }
 
 /// Given a URL, returns a "normalized" string to be used as a directory name

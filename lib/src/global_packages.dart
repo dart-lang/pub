@@ -58,6 +58,9 @@ class GlobalPackages {
   /// The [SystemCache] containing the global packages.
   final SystemCache cache;
 
+  /// Download options used when downloading packages from remote sources.
+  final DownloadOptions options;
+
   /// The directory where the lockfiles for activated packages are stored.
   String get _directory => p.join(cache.rootDir, 'global_packages');
 
@@ -71,7 +74,7 @@ class GlobalPackages {
   ///
   /// The directory may not physically exist yet. If not, this will create it
   /// when needed.
-  GlobalPackages(this.cache);
+  GlobalPackages(this.cache, {this.options = const DownloadOptions()});
 
   /// Caches the package located in the Git repository [repo] and makes it the
   /// active global version.
@@ -156,7 +159,7 @@ class GlobalPackages {
   Future<void> activatePath(String path, List<String>? executables,
       {required bool overwriteBinStubs,
       required PubAnalytics? analytics}) async {
-    var entrypoint = Entrypoint(path, cache);
+    var entrypoint = Entrypoint(path, cache, options: options);
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(
@@ -237,7 +240,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       // Only precompile binaries if we have a new resolution.
       if (!silent) await result.showReport(SolveType.get, cache);
 
-      await result.downloadCachedPackages(cache);
+      await result.downloadCachedPackages(cache, options);
 
       final lockFile = result.lockFile;
       final tempDir = cache.createTempDir();
@@ -251,6 +254,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         lockFile,
         cache,
         solveResult: result,
+        options: options,
       );
 
       await entrypoint.writePackagesFiles();

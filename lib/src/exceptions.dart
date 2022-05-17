@@ -11,6 +11,7 @@ import 'package:stack_trace/stack_trace.dart';
 import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
+import 'package_signing/verify.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///
@@ -116,5 +117,6 @@ bool isUserFacingException(error) {
       error is IOException ||
       error is http.ClientException ||
       error is YamlException ||
-      error is UsageException;
+      error is UsageException ||
+      error is PackageSignatureException;
 }

@@ -42,8 +42,10 @@ class GetCommand extends PubCommand {
       hide: true,
     );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser
+      ..addOption('directory',
+          abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir')
+      ..addSignatureVerificationOption();
   }
 
   @override

@@ -86,6 +86,9 @@ class Entrypoint {
   /// the network.
   final SystemCache cache;
 
+  /// Options for dowloading packages from remote sources.
+  final DownloadOptions options;
+
   /// Whether this entrypoint exists within the package cache.
   bool get isCached => !root.isInMemory && p.isWithin(cache.rootDir, root.dir);
 
@@ -189,13 +192,18 @@ class Entrypoint {
     String rootDir,
     this.cache, {
     bool withPubspecOverrides = true,
+    this.options = const DownloadOptions(),
   })  : root = Package.load(null, rootDir, cache.sources,
             withPubspecOverrides: withPubspecOverrides),
         globalDir = null;
 
-  Entrypoint.inMemory(this.root, this.cache,
-      {required LockFile? lockFile, SolveResult? solveResult})
-      : _lockFile = lockFile,
+  Entrypoint.inMemory(
+    this.root,
+    this.cache, {
+    required LockFile? lockFile,
+    SolveResult? solveResult,
+    this.options = const DownloadOptions(),
+  })  : _lockFile = lockFile,
         globalDir = null {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
@@ -205,7 +213,7 @@ class Entrypoint {
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passed as an optimization.
   Entrypoint.global(this.globalDir, this.root, this._lockFile, this.cache,
-      {SolveResult? solveResult}) {
+      {SolveResult? solveResult, this.options = const DownloadOptions()}) {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
     }
@@ -329,7 +337,7 @@ class Entrypoint {
       await result.showReport(type, cache);
     }
     if (!dryRun) {
-      await result.downloadCachedPackages(cache);
+      await result.downloadCachedPackages(cache, options);
       saveLockFile(result);
     }
     if (onlyReportSuccessOrFailure) {

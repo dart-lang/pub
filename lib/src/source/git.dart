@@ -298,7 +298,8 @@ class GitSource extends CachedSource {
   /// itself; each of the commit-specific directories are clones of a directory
   /// in `cache/`.
   @override
-  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache) async {
+  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache,
+      {DownloadOptions options = const DownloadOptions()}) async {
     return await _pool.withResource(() async {
       final ref = id.toRef();
       final description = ref.description;
@@ -327,6 +328,9 @@ class GitSource extends CachedSource {
           _updatePackageList(revisionCachePath, path);
         }
       });
+
+      // todo: Depending on [options], we could check whether the latest
+      // revision is signed in git.
 
       return Package.load(
         id.name,

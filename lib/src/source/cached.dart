@@ -10,6 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../io.dart';
 import '../package.dart';
 import '../package_name.dart';
+import '../package_signing/verify.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
@@ -55,7 +56,8 @@ abstract class CachedSource extends Source {
       dirExists(getDirectoryInCache(id, cache));
 
   /// Downloads the package identified by [id] to the system cache.
-  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache);
+  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache,
+      {DownloadOptions options = const DownloadOptions()});
 
   /// Returns the [Package]s that have been downloaded to the system cache.
   List<Package> getCachedPackages(SystemCache cache);
@@ -66,6 +68,14 @@ abstract class CachedSource extends Source {
   /// Returns a list of results indicating for each if that package was
   /// successfully repaired.
   Future<Iterable<RepairResult>> repairCachedPackages(SystemCache cache);
+}
+
+class DownloadOptions {
+  final SignatureVerificationMode verifySignatures;
+
+  const DownloadOptions({
+    this.verifySignatures = SignatureVerificationMode.softIfPresent,
+  });
 }
 
 /// The result of repairing a single cache entry.

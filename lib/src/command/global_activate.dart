@@ -51,6 +51,8 @@ class GlobalActivateCommand extends PubCommand {
         abbr: 'u',
         help:
             'A custom pub server URL for the package. Only applies when using the `hosted` source.');
+
+    argParser.addSignatureVerificationOption();
   }
 
   @override

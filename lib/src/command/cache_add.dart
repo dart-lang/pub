@@ -27,6 +27,7 @@ class CacheAddCommand extends PubCommand {
         help: 'Install all matching versions.', negatable: false);
 
     argParser.addOption('version', abbr: 'v', help: 'Version constraint.');
+    argParser.addSignatureVerificationOption();
   }
 
   @override
