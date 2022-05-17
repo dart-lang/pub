@@ -232,7 +232,7 @@ server, this could work in many different ways.
     "signature_url": "https://.../archive.tar.gz.asc" /* optional field */
     "pubspec": {
       /* pubspec contents as JSON object */
-    },
+    }
   },
   "versions": [
     {
@@ -242,7 +242,7 @@ server, this could work in many different ways.
       "signature_url": "https://.../archive.tar.gz.asc" /* optional field */
       "pubspec": {
         /* pubspec contents as JSON object */
-      },
+      }
     },
     /* additional versions */
   ]
