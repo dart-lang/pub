@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../http.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
@@ -28,7 +29,7 @@ class LoginCommand extends PubCommand {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Could not retrieve your user-details.\n'
-            'You might have to run `pub logout` to delete your credentials  and try again.');
+            'You might have to run `$topLevelProgram pub logout` to delete your credentials and try again.');
       } else {
         log.message('You are now logged in as $userInfo');
       }
@@ -36,7 +37,7 @@ class LoginCommand extends PubCommand {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Your credentials seems broken.\n'
-            'Run `pub logout` to delete your credentials  and try again.');
+            'Run `$topLevelProgram pub logout` to delete your credentials and try again.');
       }
       log.warning('You are already logged in as $userInfo\n'
           'Run `pub logout` to log out and try again.');
