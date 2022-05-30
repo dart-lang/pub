@@ -281,7 +281,7 @@ class DependencyServicesListCommand extends PubCommand {
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
 
-    for (final package in currentPackages) {
+    for (final package in currentPackages.where((p) => !p.isRoot)) {
       dependencies.add({
         'name': package.name,
         'version': package.versionOrHash(),

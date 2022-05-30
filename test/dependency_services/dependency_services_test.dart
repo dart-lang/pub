@@ -17,12 +17,18 @@ import '../test_pub.dart';
 
 void manifestAndLockfile(GoldenTestContext context) {
   String catFile(String filename) {
-    final contents = filterUnstableLines(
-        File(p.join(d.sandbox, appPath, filename)).readAsLinesSync());
+    final path = p.join(d.sandbox, appPath, filename);
+    if (File(path).existsSync()) {
+      final contents = filterUnstableLines(File(path).readAsLinesSync());
 
-    return '''
+      return '''
 \$ cat $filename
 ${contents.join('\n')}''';
+    } else {
+      return '''
+\$ cat $filename
+No such file $filename.''';
+    }
   }
 
   context.expectNextSection('''
@@ -139,6 +145,36 @@ Future<void> main() async {
         null,
       );
     });
+  });
+
+  testWithGolden('No pubspec.lock', (context) async {
+    final server = (await servePackages())
+      ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
+      ..serve('foo', '2.2.3')
+      ..serve('transitive', '1.0.0');
+
+    await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': {
+            'git': {'url': '../bar.git'},
+          },
+        },
+      })
+    ]).create();
+
+    server.dontAllowDownloads();
+    await listReportApply(
+      context,
+      [
+        _PackageVersion('foo', '2.2.3'),
+        _PackageVersion('transitive', null),
+      ],
+    );
   });
 
   testWithGolden('Compatible', (context) async {
