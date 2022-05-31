@@ -55,7 +55,7 @@ class LoginCommand extends PubCommand {
         final userInfo = json.decode(userInfoRequest.body);
         final name = userInfo['name'];
         final email = userInfo['email'];
-        if (name is String && email is String) {
+        if (email is String) {
           return _UserInfo(name, email);
         } else {
           log.fine(
@@ -72,9 +72,9 @@ class LoginCommand extends PubCommand {
 }
 
 class _UserInfo {
-  final String name;
+  final String? name;
   final String email;
   _UserInfo(this.name, this.email);
   @override
-  String toString() => ['<$email>', name].join(' ');
+  String toString() => ['<$email>', name ?? ''].join(' ');
 }
