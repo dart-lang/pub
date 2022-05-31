@@ -296,7 +296,8 @@ the \$PUB_HOSTED_URL environment variable.''',
         '\nPolicy details are available at https://pub.dev/policy');
 
     final package = entrypoint.root;
-    var message = 'Do you want to publish ${package.name} ${package.version}';
+    var message =
+        'Do you want to publish ${package.name} ${package.version} to $host';
 
     if (warnings.isNotEmpty || hints.isNotEmpty) {
       final warning = formatWarningCount();
