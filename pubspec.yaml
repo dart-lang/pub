@@ -28,7 +28,7 @@ dependencies:
   yaml_edit: ^2.0.0
 
 dev_dependencies:
-  lints: ^1.0.1
+  lints: ^2.0.0
   shelf_test_handler: ^2.0.0
   test: ^1.17.3
   test_descriptor: ^2.0.0
