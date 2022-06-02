@@ -298,7 +298,7 @@ and attaching the relevant parts of that log file.
   ///
   /// For top-level commands, if an alias is used, the primary command name is
   /// returned. For instance `install` becomes `get`.
-  static late final String command = _command ?? '';
+  static final String command = _command ?? '';
 
   static void computeCommand(ArgResults argResults) {
     var list = <String?>[];

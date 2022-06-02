@@ -118,7 +118,7 @@ class SdkSource extends Source {
       // [PackageNotFoundException]s are uncapitalized and unpunctuated because
       // they're used within other sentences by the version solver, but
       // [ApplicationException]s should be full sentences.
-      throw ApplicationException(capitalize(error.message) + '.');
+      throw ApplicationException('${capitalize(error.message)}.');
     }
   }
 }

@@ -27,7 +27,7 @@ class DependencyValidator extends Validator {
   @override
   Future validate() async {
     /// Whether any dependency has a caret constraint.
-    var _hasCaretDep = false;
+    var hasCaretDep = false;
 
     /// Emit an error for dependencies from unknown SDKs or without appropriate
     /// constraints on the Dart SDK.
@@ -213,8 +213,8 @@ class DependencyValidator extends Validator {
                 _warnAboutNoConstraintUpperBound(dependency);
               }
             }
-            _hasCaretDep =
-                _hasCaretDep || constraint.toString().startsWith('^');
+            hasCaretDep =
+                hasCaretDep || constraint.toString().startsWith('^');
           }
         }
       }
@@ -222,7 +222,7 @@ class DependencyValidator extends Validator {
 
     await _validateDependencies(entrypoint.root.pubspec.dependencies.values);
 
-    if (_hasCaretDep) {
+    if (hasCaretDep) {
       validateSdkConstraint(_firstCaretVersion,
           "Older versions of pub don't support ^ version constraints.");
     }

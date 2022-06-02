@@ -42,7 +42,7 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url + '/'},
+            'hosted': {'name': 'foo', 'url': '${globalServer.url}/'},
           },
         }),
       ]).create();
@@ -65,7 +65,7 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url + '//'},
+            'hosted': {'name': 'foo', 'url': '${globalServer.url}//'},
           },
         }),
       ]).create();
@@ -90,7 +90,7 @@ void main() {
           }
           final path = r.requestedUri.path.substring('/my-folder/'.length);
           final res = await http.get(
-            Uri.parse(globalServer.url + '/$path'),
+            Uri.parse('${globalServer.url}/$path'),
           );
           return Response(res.statusCode, body: res.bodyBytes, headers: {
             'Content-Type': res.headers['content-type']!,
@@ -105,8 +105,8 @@ void main() {
       _proxyMyFolderToRoot();
 
       // testing with a normalized URL
-      final testUrl = globalServer.url + '/my-folder/';
-      final normalizedUrl = globalServer.url + '/my-folder/';
+      final testUrl = '${globalServer.url}/my-folder/';
+      final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
         d.appPubspec({
@@ -129,8 +129,8 @@ void main() {
       _proxyMyFolderToRoot();
 
       // Testing with a URL that is missing the slash.
-      final testUrl = globalServer.url + '/my-folder';
-      final normalizedUrl = globalServer.url + '/my-folder/';
+      final testUrl = '${globalServer.url}/my-folder';
+      final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
         d.appPubspec({

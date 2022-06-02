@@ -203,10 +203,8 @@ class _Writer {
       if (conflictLine != null && otherLine != null) {
         _write(
             incompatibility,
-            'Because ' +
-                conflictClause.conflict.andToString(conflictClause.other,
-                    detailsForCause, conflictLine, otherLine) +
-                ', $incompatibilityString.',
+            'Because ${conflictClause.conflict.andToString(conflictClause.other,
+                    detailsForCause, conflictLine, otherLine)}, $incompatibilityString.',
             numbered: numbered);
       } else if (conflictLine != null || otherLine != null) {
         Incompatibility withLine;
@@ -266,9 +264,7 @@ class _Writer {
       if (derivedLine != null) {
         _write(
             incompatibility,
-            'Because ' +
-                ext.andToString(derived, detailsForCause, null, derivedLine) +
-                ', $incompatibilityString.',
+            'Because ${ext.andToString(derived, detailsForCause, null, derivedLine)}, $incompatibilityString.',
             numbered: numbered);
       } else if (_isCollapsible(derived)) {
         var derivedCause = derived.cause as ConflictCause;

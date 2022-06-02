@@ -291,7 +291,7 @@ class AddCommand extends PubCommand {
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
   _ParseResult _parsePackage(String package, LanguageVersion languageVersion) {
-    final _conflictingFlagSets = [
+    final conflictingFlagSets = [
       ['git-url', 'git-ref', 'git-path'],
       ['hosted-url'],
       ['path'],
@@ -299,8 +299,8 @@ class AddCommand extends PubCommand {
     ];
 
     for (final flag
-        in _conflictingFlagSets.expand((s) => s).where(argResults.wasParsed)) {
-      final conflictingFlag = _conflictingFlagSets
+        in conflictingFlagSets.expand((s) => s).where(argResults.wasParsed)) {
+      final conflictingFlag = conflictingFlagSets
           .where((s) => !s.contains(flag))
           .expand((s) => s)
           .firstWhereOrNull(argResults.wasParsed);

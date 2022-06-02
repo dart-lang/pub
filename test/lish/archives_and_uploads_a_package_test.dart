@@ -67,7 +67,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url + '/sub/folder', 'env': 'TOKEN'},
+        {'url': '${globalServer.url}/sub/folder', 'env': 'TOKEN'},
       ]
     }).create();
     var pub = await startPublish(

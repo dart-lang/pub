@@ -144,12 +144,12 @@ void main() {
 
         for (final directory in c.patterns.keys) {
           final resolvedDirectory =
-              directory == '' ? tmp!.uri : tmp!.uri.resolve(directory + '/');
+              directory == '' ? tmp!.uri : tmp!.uri.resolve('$directory/');
           Directory.fromUri(resolvedDirectory).createSync(recursive: true);
           final gitIgnore =
               File.fromUri(resolvedDirectory.resolve('.gitignore'));
           gitIgnore.writeAsStringSync(
-            c.patterns[directory]!.join('\n') + '\n',
+            '${c.patterns[directory]!.join('\n')}\n',
           );
         }
         final process = runGit(

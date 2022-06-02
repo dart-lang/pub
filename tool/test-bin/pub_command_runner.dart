@@ -14,7 +14,7 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
 import 'package:usage/usage.dart';
 
-final _LoggingAnalytics loggingAnalytics = _LoggingAnalytics();
+final Analytics loggingAnalytics = _LoggingAnalytics();
 
 // A command for explicitly throwing an exception, to test the handling of
 // unexpected eceptions.

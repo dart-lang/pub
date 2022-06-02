@@ -84,7 +84,7 @@ Future<void> main() async {
                     .send(http.Request('GET', Uri.parse(archiveUrl)));
                 await extractTarGz(response.stream, tempDir);
                 print('Extracted $archiveUrl');
-              } catch (e, _) {
+              } catch (e) {
                 print('Failed to get and extract $archiveUrl $e');
                 failures.add({'archive': archiveUrl, 'error': e.toString()});
                 allVersionsGood = false;

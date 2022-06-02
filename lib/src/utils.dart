@@ -186,7 +186,7 @@ String namedSequence(String name, Iterable iter, [String? plural]) {
 /// commas and/or [conjunction] (`"and"` by default) where appropriate.
 String toSentence(Iterable iter, {String conjunction = 'and'}) {
   if (iter.length == 1) return iter.first.toString();
-  return iter.take(iter.length - 1).join(', ') + ' $conjunction ${iter.last}';
+  return '${iter.take(iter.length - 1).join(', ')} $conjunction ${iter.last}';
 }
 
 /// Returns [name] if [number] is 1, or the plural of [name] otherwise.

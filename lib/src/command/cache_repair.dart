@@ -66,10 +66,10 @@ class CacheRepairCommand extends PubCommand {
     if (globalRepairResults.last.isNotEmpty) {
       var packages = pluralize('package', globalRepairResults.last.length);
       log.message(
-          'Failed to reactivate ${log.red(globalRepairResults.last.length)} $packages:\n' +
-              globalRepairResults.last
-                  .map((name) => '- ${log.bold(name)}')
-                  .join('\n'));
+          'Failed to reactivate ${log.red(globalRepairResults.last.length)} $packages:');
+      log.message(globalRepairResults.last
+          .map((name) => '- ${log.bold(name)}')
+          .join('\n'));
     }
 
     if (successes.isEmpty && failures.isEmpty) {

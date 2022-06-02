@@ -82,7 +82,7 @@ Future<Iterable<String>> outputLines(Stream<List<int>> stream) async {
   return filterUnstableLines(s.split('\n'));
 }
 
-Future<void> listReportApply(
+Future<void> _listReportApply(
   GoldenTestContext context,
   List<_PackageVersion> upgrades, {
   void Function(Map)? reportAssertions,
@@ -132,7 +132,7 @@ Future<void> main() async {
     ]).create();
     await pubGet();
     server.dontAllowDownloads();
-    await listReportApply(context, [
+    await _listReportApply(context, [
       _PackageVersion('foo', '2.2.3'),
       _PackageVersion('transitive', null)
     ], reportAssertions: (report) {
@@ -168,7 +168,7 @@ Future<void> main() async {
     ]).create();
 
     server.dontAllowDownloads();
-    await listReportApply(
+    await _listReportApply(
       context,
       [
         _PackageVersion('foo', '2.2.3'),
@@ -201,7 +201,7 @@ Future<void> main() async {
 
     server.dontAllowDownloads();
 
-    await listReportApply(context, [
+    await _listReportApply(context, [
       _PackageVersion('foo', '1.2.4'),
     ], reportAssertions: (report) {
       expect(
@@ -228,7 +228,7 @@ Future<void> main() async {
     await pubGet();
     server.dontAllowDownloads();
 
-    await listReportApply(context, [
+    await _listReportApply(context, [
       _PackageVersion('foo', '2.2.3'),
       _PackageVersion('transitive', '1.0.0')
     ], reportAssertions: (report) {
@@ -271,7 +271,7 @@ Future<void> main() async {
 
     server.dontAllowDownloads();
 
-    await listReportApply(context, [
+    await _listReportApply(context, [
       _PackageVersion('foo', '3.0.1',
           constraint: VersionConstraint.parse('^3.0.0')),
       _PackageVersion('bar', '2.0.0')
@@ -298,7 +298,7 @@ Future<void> main() async {
     }).create();
     await pubGet();
     server.serve('foo', '2.0.0');
-    await listReportApply(context, [
+    await _listReportApply(context, [
       _PackageVersion('foo', '2.0.0',
           constraint: VersionConstraint.parse('^2.0.0')),
     ], reportAssertions: (report) {
@@ -331,7 +331,7 @@ Future<void> main() async {
     final barSecondVersion = d.git('bar.git', [d.libPubspec('bar', '2.0.0')]);
     await barSecondVersion.commit();
 
-    await listReportApply(context, [
+    await _listReportApply(context, [
       _PackageVersion('foo', newRef),
     ], reportAssertions: (report) {
       expect(
