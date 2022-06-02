@@ -224,8 +224,10 @@ the \$PUB_HOSTED_URL environment variable.''',
 
     // Show the package contents so the user can verify they look OK.
     var package = entrypoint.root;
-    log.message('Publishing ${package.name} ${package.version} to $host:\n'
-        '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
+    log.message(
+      'Publishing ${package.name} ${package.version} to $host:\n'
+      '${tree.fromFiles(files, baseDir: entrypoint.root.dir, showAllChildren: true)}',
+    );
 
     var packageBytesFuture =
         createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
@@ -294,7 +296,8 @@ the \$PUB_HOSTED_URL environment variable.''',
         '\nPolicy details are available at https://pub.dev/policy');
 
     final package = entrypoint.root;
-    var message = 'Do you want to publish ${package.name} ${package.version}';
+    var message =
+        'Do you want to publish ${package.name} ${package.version} to $host';
 
     if (warnings.isNotEmpty || hints.isNotEmpty) {
       final warning = formatWarningCount();

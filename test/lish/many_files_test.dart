@@ -11,6 +11,7 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
+import '../golden_file.dart';
 import '../test_pub.dart';
 import 'utils.dart';
 
@@ -27,6 +28,36 @@ import 'utils.dart';
 const _pathMax = 260 - 1;
 
 void main() {
+  testWithGolden('displays all files', (context) async {
+    await d.validPackage.create();
+    await d.dir(
+      appPath,
+      [
+        d.dir(
+          'lib',
+          List.generate(20, (i) => d.file('file_$i.dart')),
+        ),
+      ],
+    ).create();
+    await servePackages();
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
+    pub.stdin.writeln('y');
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
+
+    globalServer.expect('GET', '/create', (request) {
+      return shelf.Response.ok(jsonEncode({
+        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+      }));
+    });
+    await pub.shouldExit(exit_codes.SUCCESS);
+    final stdout = await pub.stdout.rest.toList();
+
+    context.expectNextSection(
+        stdout.join('\n').replaceAll(globalServer.port.toString(), r'$PORT'));
+  });
+
   test(
       'archives and uploads a package with more files than can fit on '
       'the command line', () async {
