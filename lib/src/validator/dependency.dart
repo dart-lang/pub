@@ -213,8 +213,7 @@ class DependencyValidator extends Validator {
                 _warnAboutNoConstraintUpperBound(dependency);
               }
             }
-            hasCaretDep =
-                hasCaretDep || constraint.toString().startsWith('^');
+            hasCaretDep = hasCaretDep || constraint.toString().startsWith('^');
           }
         }
       }

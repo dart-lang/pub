@@ -201,10 +201,8 @@ class _Writer {
       var conflictLine = _lineNumbers[conflictClause.conflict];
       var otherLine = _lineNumbers[conflictClause.other];
       if (conflictLine != null && otherLine != null) {
-        _write(
-            incompatibility,
-            'Because ${conflictClause.conflict.andToString(conflictClause.other,
-                    detailsForCause, conflictLine, otherLine)}, $incompatibilityString.',
+        _write(incompatibility,
+            'Because ${conflictClause.conflict.andToString(conflictClause.other, detailsForCause, conflictLine, otherLine)}, $incompatibilityString.',
             numbered: numbered);
       } else if (conflictLine != null || otherLine != null) {
         Incompatibility withLine;
@@ -262,8 +260,7 @@ class _Writer {
 
       var derivedLine = _lineNumbers[derived];
       if (derivedLine != null) {
-        _write(
-            incompatibility,
+        _write(incompatibility,
             'Because ${ext.andToString(derived, detailsForCause, null, derivedLine)}, $incompatibilityString.',
             numbered: numbered);
       } else if (_isCollapsible(derived)) {
