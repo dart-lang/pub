@@ -28,7 +28,7 @@ class TarFormat {
   int get hashCode => _value;
 
   @override
-  bool operator ==(Object? other) {
+  bool operator ==(Object other) {
     if (other is! TarFormat) return false;
 
     return _value == other._value;
