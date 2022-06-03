@@ -230,8 +230,8 @@ class Package {
       return p.join(root, path);
     }
 
-    // maintain list of visited links to detect cyclical symlinks
-    final linkTargets = <String>{};
+    // maintain list of resolved symlinks targets to detect cycles
+    final resolvedLinkTargets = <String>{};
 
     return Ignore.listFiles(
       beneath: beneath,
@@ -240,7 +240,10 @@ class Package {
 
         if (linkExists(resolvedDir)) {
           final link = Link(resolvedDir);
-          if (linkTargets.add(link.targetSync())) {
+          final linkTarget = Directory(link.targetSync());
+          final resolvedLinkTarget = linkTarget.resolveSymbolicLinksSync();
+          final wasVisited = resolvedLinkTargets.add(resolvedLinkTarget);
+          if (wasVisited) {
             throw DataException(
               'Pub does not support publishing packages with cyclical symlinks: '
               '`$resolvedDir` => `${link.targetSync()}`.',
