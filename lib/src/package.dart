@@ -231,7 +231,7 @@ class Package {
     }
 
     // maintain list of resolved symlinks targets to detect cycles
-    final resolvedLinkTargets = <String>{};
+    final resolvedTargetToLink = <String, Set<String>>{};
 
     return Ignore.listFiles(
       beneath: beneath,
@@ -240,14 +240,30 @@ class Package {
 
         if (linkExists(resolvedDir)) {
           final link = Link(resolvedDir);
-          final linkTarget = Directory(link.targetSync());
-          final resolvedLinkTarget = linkTarget.resolveSymbolicLinksSync();
-          final wasVisited = resolvedLinkTargets.add(resolvedLinkTarget);
-          if (wasVisited) {
+          final target = link.targetSync();
+          final String resolvedTarget;
+
+          // default try to resolve a link
+          try {
+            resolvedTarget = link.resolveSymbolicLinksSync();
+          } on FileSystemException catch (_) {
             throw DataException(
-              'Pub does not support publishing packages with cyclical symlinks: '
+              'Pub does not support publishing packages with non-resolving symlink: '
               '`$resolvedDir` => `${link.targetSync()}`.',
             );
+          }
+
+          // fallback for windows
+          if (Platform.isWindows) {
+            final isFirstOccurrence = resolvedTargetToLink
+                .putIfAbsent(resolvedTarget, () => <String>{})
+                .add(target);
+            if (!isFirstOccurrence) {
+              throw DataException(
+                'Pub does not support publishing packages with non-resolving symlinks: '
+                '`$resolvedDir` => `${link.targetSync()}`.',
+              );
+            }
           }
         }
 
