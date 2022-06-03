@@ -230,30 +230,26 @@ class Package {
       return p.join(root, path);
     }
 
+    // maintain list of visited links to detect cyclical symlinks
+    final linkTargets = <String>{};
+
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
         final resolvedDir = resolve(dir);
+
         if (linkExists(resolvedDir)) {
-          try {
-            Link(resolvedDir).resolveSymbolicLinksSync();
-          } on FileSystemException catch (_) {
-            final target = Link(resolvedDir).targetSync();
+          final link = Link(resolvedDir);
+          if (linkTargets.add(link.targetSync())) {
             throw DataException(
-                '''Pub does not support publishing packages with non-resolving symlink: `$path` => `$target`.''');
+              'Pub does not support publishing packages with cyclical symlinks: '
+              '`$resolvedDir` => `${link.targetSync()}`.',
+            );
           }
         }
-        List<FileSystemEntity> contents;
-        try {
-          contents = Directory(resolvedDir).listSync(followLinks: false);
-        } catch (e) {
-          log.warning('dir: $dir');
-          log.warning('resolvedDir: $resolvedDir');
-          log.warning('linkExists(resolvedDir): ${linkExists(resolvedDir)}');
-          log.warning(
-              'Link(resolvedDir).resolveSymbolicLinksSync(): ${Link(resolvedDir).resolveSymbolicLinksSync()}');
-          rethrow;
-        }
+
+        var contents = Directory(resolvedDir).listSync(followLinks: false);
+
         if (!recursive) {
           contents = contents
               .where(
@@ -328,16 +324,17 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).map((path) {
-      if (linkExists(path)) {
-        final target = Link(path).targetSync();
-        if (!fileExists(path)) {
-          throw DataException(
-              '''Pub does not support publishing packages with non-resolving symlink: `$path` => `$target`.''');
-        }
-      }
-      return path;
-    }).toList();
+    ).map(resolve).map(assertLinkResolvable).toList();
+  }
+
+  String assertLinkResolvable(String path) {
+    final target = Link(path).targetSync();
+    if (!fileExists(path)) {
+      throw DataException(
+          'Pub does not support publishing packages with non-resolving symlink: '
+          '`$path` => `$target`.');
+    }
+    return path;
   }
 }
 
