@@ -115,12 +115,41 @@ void main() {
               (e) => e.message,
               'message',
               contains(
-                'Pub does not support publishing packages with cyclical symlinks:',
+                'Pub does not support publishing packages with non-resolving symlink:',
               ),
             ),
           ),
         );
       });
+
+      test('throws on instant loop', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.dir('a', [d.file('file')]),
+          ]),
+        ]).create();
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'symlink');
+
+        createEntrypoint();
+
+        expect(
+          () => entrypoint!.root.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains(
+                'Pub does not support publishing packages with non-resolving symlink:',
+              ),
+            ),
+          ),
+        );
+      });
+
       test('not throws on ignored link', () async {
         await d.dir(appPath, [
           d.pubspec({'name': 'myapp'}),
@@ -181,6 +210,32 @@ void main() {
     ]).create();
     Link(p.join(d.sandbox, appPath, 'subdir', 'symlink'))
         .createSync('nonexisting');
+
+    createEntrypoint();
+
+    expect(
+      () => entrypoint!.root.listFiles(),
+      throwsA(
+        isA<DataException>().having(
+          (e) => e.message,
+          'message',
+          contains(
+              'Pub does not support publishing packages with non-resolving symlink:'),
+        ),
+      ),
+    );
+  });
+
+  test('throws on loop file symlinks', () async {
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp'}),
+      d.file('file1.txt', 'contents'),
+      d.file('file2.txt', 'contents'),
+      d.dir('subdir', [
+        d.dir('a', [d.file('file')])
+      ]),
+    ]).create();
+    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink')).createSync('symlink');
 
     createEntrypoint();
 
