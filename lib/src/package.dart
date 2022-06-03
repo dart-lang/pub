@@ -327,10 +327,13 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).map(assertLinkResolvable).toList();
+    ).map(resolve).map(assertLinksResolvable).toList();
   }
 
-  String assertLinkResolvable(String path) {
+  String assertLinksResolvable(String path) {
+    if (!linkExists(path)) {
+      return path;
+    }
     final target = Link(path).targetSync();
     if (!fileExists(path)) {
       throw DataException(
