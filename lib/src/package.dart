@@ -260,7 +260,7 @@ class Package {
                 .add(target);
             if (!isFirstOccurrence) {
               throw DataException(
-                'Pub does not support publishing packages with non-resolving symlinks: '
+                'Pub does not support publishing packages with non-resolving symlink: '
                 '`$resolvedDir` => `${link.targetSync()}`.',
               );
             }
