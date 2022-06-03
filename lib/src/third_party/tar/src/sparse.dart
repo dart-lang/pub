@@ -1,3 +1,4 @@
+@internal
 import 'package:async/async.dart';
 import 'package:meta/meta.dart';
 
@@ -21,7 +22,7 @@ class SparseEntry {
   String toString() => 'offset: $offset, length $length';
 
   @override
-  bool operator ==(Object? other) {
+  bool operator ==(Object other) {
     if (other is! SparseEntry) return false;
 
     return offset == other.offset && length == other.length;

@@ -1,3 +1,6 @@
+@internal
+import 'package:meta/meta.dart';
+
 /// "Line feed" control character.
 const int $lf = 0x0a;
 
