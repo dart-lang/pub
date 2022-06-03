@@ -45,7 +45,7 @@ class GoldenTestContext {
   late File _goldenFile;
   late String _header;
   final _results = <String>[];
-  late bool _goldenFileExists;
+  late bool _shouldRegenerateGolden;
   bool _generatedNewData = false; // track if new data is generated
   int _nextSectionIndex = 0;
 
@@ -67,10 +67,13 @@ class GoldenTestContext {
   }
 
   void _readGoldenFile() {
-    _goldenFileExists = _goldenFile.existsSync();
-
-    // Read the golden file for this test
-    if (_goldenFileExists) {
+    if (RegExp(r'^1|(?:true)$', caseSensitive: false)
+            .hasMatch(Platform.environment['_PUB_TEST_WRITE_GOLDEN'] ?? '') ||
+        !_goldenFile.existsSync()) {
+      _shouldRegenerateGolden = true;
+    } else {
+      _shouldRegenerateGolden = false;
+      // Read the golden file for this test
       var text = _goldenFile.readAsStringSync().replaceAll('\r\n', '\n');
       // Strip header line
       if (text.startsWith('#') && text.contains('\n\n')) {
@@ -82,7 +85,7 @@ class GoldenTestContext {
 
   /// Expect section [sectionIndex] to match [actual].
   void _expectSection(int sectionIndex, String actual) {
-    if (_goldenFileExists &&
+    if (!_shouldRegenerateGolden &&
         _results.length > sectionIndex &&
         _results[sectionIndex].isNotEmpty) {
       expect(
