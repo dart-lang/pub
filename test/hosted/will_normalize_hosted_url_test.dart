@@ -81,7 +81,7 @@ void main() {
     ///
     /// This is a bit of a hack, to easily test if hosted pub URLs with a path
     /// segment works and if the slashes are normalized.
-    void _proxyMyFolderToRoot() {
+    void proxyMyFolderToRoot() {
       globalServer.handle(
         RegExp('/my-folder/.*'),
         (r) async {
@@ -102,7 +102,7 @@ void main() {
     test('will use normalized url with path', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
-      _proxyMyFolderToRoot();
+      proxyMyFolderToRoot();
 
       // testing with a normalized URL
       final testUrl = '${globalServer.url}/my-folder/';
@@ -126,7 +126,7 @@ void main() {
     test('will normalize url with path by adding slash', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
-      _proxyMyFolderToRoot();
+      proxyMyFolderToRoot();
 
       // Testing with a URL that is missing the slash.
       final testUrl = '${globalServer.url}/my-folder';

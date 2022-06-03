@@ -86,8 +86,7 @@ class Pubspec extends PubspecBase {
   /// The registry of sources to use when parsing [dependencies] and
   /// [devDependencies].
   ///
-  /// This will be null if this was created using [new Pubspec] or [new
-  /// Pubspec.empty].
+  /// This will be null if this was created using [Pubspec] or [Pubspec.empty].
   final SourceRegistry _sources;
 
   /// The location from which the pubspec was loaded.
@@ -431,7 +430,7 @@ class Pubspec extends PubspecBase {
   /// This will return at most one error for each field.
   List<PubspecException> get allErrors {
     var errors = <PubspecException>[];
-    void _collectError(void Function() fn) {
+    void collectError(void Function() fn) {
       try {
         fn();
       } on PubspecException catch (e) {
@@ -439,14 +438,14 @@ class Pubspec extends PubspecBase {
       }
     }
 
-    _collectError(() => name);
-    _collectError(() => version);
-    _collectError(() => dependencies);
-    _collectError(() => devDependencies);
-    _collectError(() => publishTo);
-    _collectError(() => executables);
-    _collectError(() => falseSecrets);
-    _collectError(_ensureEnvironment);
+    collectError(() => name);
+    collectError(() => version);
+    collectError(() => dependencies);
+    collectError(() => devDependencies);
+    collectError(() => publishTo);
+    collectError(() => executables);
+    collectError(() => falseSecrets);
+    collectError(_ensureEnvironment);
     return errors;
   }
 }

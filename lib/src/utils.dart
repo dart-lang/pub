@@ -447,7 +447,7 @@ final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 String yamlToString(data) {
   var buffer = StringBuffer();
 
-  void _stringify(bool isMapValue, String indent, data) {
+  void stringify(bool isMapValue, String indent, data) {
     // TODO(nweiz): Serialize using the YAML library once it supports
     // serialization.
 
@@ -473,7 +473,7 @@ String yamlToString(data) {
         }
 
         buffer.write('$indent$keyString:');
-        _stringify(true, indent, data[key]);
+        stringify(true, indent, data[key]);
       }
 
       return;
@@ -495,7 +495,7 @@ String yamlToString(data) {
     }
   }
 
-  _stringify(false, '', data);
+  stringify(false, '', data);
   return buffer.toString();
 }
 

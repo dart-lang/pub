@@ -470,7 +470,7 @@ You may have to:
     final hasNoNullSafetyVersions = <String>{};
     final hasNullSafetyVersions = <String>{};
 
-    Future<Iterable<PackageRange>> _removeUpperConstraints(
+    Future<Iterable<PackageRange>> removeUpperConstraints(
       Iterable<PackageRange> dependencies,
     ) async =>
         await Future.wait(dependencies.map((dep) async {
@@ -500,8 +500,8 @@ You may have to:
           return dep.toRef().withConstraint(VersionConstraint.empty);
         }));
 
-    final deps = _removeUpperConstraints(original.dependencies.values);
-    final devDeps = _removeUpperConstraints(original.devDependencies.values);
+    final deps = removeUpperConstraints(original.dependencies.values);
+    final devDeps = removeUpperConstraints(original.devDependencies.values);
     await Future.wait([deps, devDeps]);
 
     if (hasNoNullSafetyVersions.isNotEmpty) {

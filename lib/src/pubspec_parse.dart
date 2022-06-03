@@ -136,7 +136,7 @@ abstract class PubspecBase {
       final falseSecrets = <String>[];
 
       // Throws a [PubspecException]
-      void _falseSecretsError(SourceSpan span) => _error(
+      void falseSecretsError(SourceSpan span) => _error(
             '"false_secrets" field must be a list of git-ignore style patterns',
             span,
           );
@@ -147,12 +147,12 @@ abstract class PubspecBase {
           for (final node in falseSecretsNode.nodes) {
             final value = node.value;
             if (value is! String) {
-              _falseSecretsError(node.span);
+              falseSecretsError(node.span);
             }
             falseSecrets.add(value);
           }
         } else {
-          _falseSecretsError(falseSecretsNode.span);
+          falseSecretsError(falseSecretsNode.span);
         }
       }
 

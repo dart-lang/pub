@@ -20,7 +20,7 @@ void main() {
   });
 
   group('pub', () {
-    void _testIgnorePath(
+    void testIgnorePath(
       TestData c,
       String path,
       bool expected,
@@ -87,10 +87,10 @@ void main() {
       c.paths.forEach((path, expected) {
         var ignoreCase = c.ignoreCase;
         if (ignoreCase == null) {
-          _testIgnorePath(c, path, expected, false);
-          _testIgnorePath(c, path, expected, true);
+          testIgnorePath(c, path, expected, false);
+          testIgnorePath(c, path, expected, true);
         } else {
-          _testIgnorePath(c, path, expected, ignoreCase);
+          testIgnorePath(c, path, expected, ignoreCase);
         }
       });
     }
@@ -124,7 +124,7 @@ void main() {
       runGit(['clean', '-f', '-d', '-x'], workingDirectory: tmp!.path);
     });
 
-    void _testIgnorePath(
+    void testIgnorePath(
       TestData c,
       String path,
       bool expected,
@@ -173,10 +173,10 @@ void main() {
       c.paths.forEach((path, expected) {
         var ignoreCase = c.ignoreCase;
         if (ignoreCase == null) {
-          _testIgnorePath(c, path, expected, false);
-          _testIgnorePath(c, path, expected, true);
+          testIgnorePath(c, path, expected, false);
+          testIgnorePath(c, path, expected, true);
         } else {
-          _testIgnorePath(c, path, expected, ignoreCase);
+          testIgnorePath(c, path, expected, ignoreCase);
         }
       });
     }

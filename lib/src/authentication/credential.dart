@@ -58,7 +58,7 @@ class Credential {
     /// doesn't contains [key].
     ///
     /// Throws [FormatException] if value type is not [String].
-    String? _string(String key) {
+    String? string(String key) {
       if (json.containsKey(key)) {
         if (json[key] is! String) {
           throw FormatException('Provided $key value should be string');
@@ -71,8 +71,8 @@ class Credential {
     return Credential._internal(
       url: hostedUrl,
       unknownFields: unknownFields,
-      token: _string('token'),
-      env: _string('env'),
+      token: string('token'),
+      env: string('env'),
     );
   }
 

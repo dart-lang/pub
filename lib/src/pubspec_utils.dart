@@ -108,7 +108,7 @@ Pubspec stripVersionUpperBounds(Pubspec original,
   ArgumentError.checkNotNull(original, 'original');
   stripOnly ??= [];
 
-  List<PackageRange> _stripUpperBounds(
+  List<PackageRange> stripUpperBounds(
     Map<String, PackageRange> constrained,
   ) {
     final result = <PackageRange>[];
@@ -133,8 +133,8 @@ Pubspec stripVersionUpperBounds(Pubspec original,
     original.name,
     version: original.version,
     sdkConstraints: original.sdkConstraints,
-    dependencies: _stripUpperBounds(original.dependencies),
-    devDependencies: _stripUpperBounds(original.devDependencies),
+    dependencies: stripUpperBounds(original.dependencies),
+    devDependencies: stripUpperBounds(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
   );
 }
