@@ -10,7 +10,6 @@ import 'dart:math';
 import 'package:collection/collection.dart'
     show IterableExtension, IterableNullableExtension;
 import 'package:path/path.dart' as path;
-import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -181,18 +180,24 @@ class OutdatedCommand extends PubCommand {
       PackageId? latest;
       // If not overridden in current resolution we can use this
       if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(current);
+        latest ??= await cache.getLatest(current?.toRef(),
+            version: current?.version, allowPrereleases: prereleases);
       }
       // If present as a dependency or dev_dependency we use this
-      latest ??= await _getLatest(rootPubspec.dependencies[name]);
-      latest ??= await _getLatest(rootPubspec.devDependencies[name]);
+      latest ??= await cache.getLatest(rootPubspec.dependencies[name]?.toRef(),
+          allowPrereleases: prereleases);
+      latest ??= await cache.getLatest(
+          rootPubspec.devDependencies[name]?.toRef(),
+          allowPrereleases: prereleases);
       // If not overridden and present in either upgradable or resolvable we
       // use this reference to find the latest
       if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(upgradable);
+        latest ??= await cache.getLatest(upgradable?.toRef(),
+            version: upgradable?.version, allowPrereleases: prereleases);
       }
       if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await _getLatest(resolvable);
+        latest ??= await cache.getLatest(resolvable?.toRef(),
+            version: resolvable?.version, allowPrereleases: prereleases);
       }
       // Otherwise, we might simply not have a latest, when a transitive
       // dependency is overridden the source can depend on which versions we
@@ -200,9 +205,16 @@ class OutdatedCommand extends PubCommand {
       // allow 3rd party pub servers, but other servers might. Hence, we choose
       // to fallback to using the overridden source for latest.
       if (latest == null) {
-        latest ??= await _getLatest(current ?? upgradable ?? resolvable);
+        final id = current ?? upgradable ?? resolvable;
+        latest ??= await cache.getLatest(id?.toRef(),
+            version: id?.version, allowPrereleases: prereleases);
         latestIsOverridden = true;
       }
+
+      final packageStatus = await current?.source.status(current, cache);
+      final discontinued =
+          packageStatus == null ? false : packageStatus.isDiscontinued;
+      final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
 
       return _PackageDetails(
         name,
@@ -223,6 +235,8 @@ class OutdatedCommand extends PubCommand {
           latestIsOverridden,
         ),
         _kind(name, entrypoint, nonDevDependencies),
+        discontinued,
+        discontinuedReplacedBy,
       );
     }
 
@@ -304,37 +318,6 @@ class OutdatedCommand extends PubCommand {
     return argResults['mode'] == 'null-safety';
   }();
 
-  /// Get the latest version of [package].
-  ///
-  /// Will include prereleases in the comparison if '--prereleases' was enabled
-  /// by the arguments.
-  ///
-  /// If [package] is a [PackageId] with a prerelease version and there are no
-  /// later stable version we return a prerelease version if it exists.
-  ///
-  /// Returns `null`, if unable to find the package.
-  Future<PackageId?> _getLatest(PackageName? package) async {
-    if (package == null) {
-      return null;
-    }
-    final ref = package.toRef();
-    final available = await cache.source(ref.source).getVersions(ref);
-    if (available.isEmpty) {
-      return null;
-    }
-
-    // TODO(sigurdm): Refactor this to share logic with report.dart.
-    available.sort(prereleases
-        ? (x, y) => x.version.compareTo(y.version)
-        : (x, y) => Version.prioritize(x.version, y.version));
-    if (package is PackageId &&
-        package.version.isPreRelease &&
-        package.version > available.last.version) {
-      available.sort((x, y) => x.version.compareTo(y.version));
-    }
-    return available.last;
-  }
-
   /// Retrieves the pubspec of package [name] in [version] from [source].
   ///
   /// Returns `null`, if given `null` as a convinience.
@@ -346,7 +329,7 @@ class OutdatedCommand extends PubCommand {
       return null;
     }
     return _VersionDetails(
-      await cache.source(id.source).describe(id),
+      await cache.describe(id),
       id,
       isOverridden,
     );
@@ -380,7 +363,7 @@ class OutdatedCommand extends PubCommand {
       if (id == null) {
         continue; // allow partial resolutions
       }
-      final pubspec = await cache.source(id.source).describe(id);
+      final pubspec = await cache.describe(id);
       queue.addAll(pubspec.dependencies.keys);
     }
 
@@ -392,7 +375,7 @@ class OutdatedCommand extends PubCommand {
 /// resolution was found.
 Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
   final solveResult = await tryResolveVersions(
-    SolveType.UPGRADE,
+    SolveType.upgrade,
     cache,
     Package.inMemory(pubspec),
   );
@@ -425,6 +408,7 @@ Future<void> _outputJson(
           ...(rows..sort((a, b) => a.name.compareTo(b.name)))
               .map((packageDetails) => {
                     'package': packageDetails.name,
+                    'isDiscontinued': packageDetails.isDiscontinued,
                     'current': markedRows[packageDetails]![0].toJson(),
                     'upgradable': markedRows[packageDetails]![1].toJson(),
                     'resolvable': markedRows[packageDetails]![2].toJson(),
@@ -599,6 +583,17 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
+  if (rows.any((package) => package.isDiscontinued)) {
+    log.message('\n');
+    for (var package in rows.where((package) => package.isDiscontinued)) {
+      log.message(log.bold(package.name));
+      final replacedByText = package.discontinuedReplacedBy != null
+          ? ', replaced by ${package.discontinuedReplacedBy}.'
+          : '.';
+      log.message(
+          '    Package ${package.name} has been discontinued$replacedByText');
+    }
+  }
 }
 
 abstract class Mode {
@@ -657,12 +652,17 @@ Showing outdated packages$directoryDescription.
       ]) {
         String Function(String)? color;
         String? prefix;
+        String? suffix;
         var asDesired = false;
         if (versionDetails != null) {
           final isLatest = versionDetails == packageDetails.latest;
           if (isLatest) {
             color = versionDetails == previous ? color = log.gray : null;
             asDesired = true;
+            if (packageDetails.isDiscontinued &&
+                identical(versionDetails, packageDetails.latest)) {
+              suffix = ' (discontinued)';
+            }
           } else {
             color = log.red;
           }
@@ -674,6 +674,7 @@ Showing outdated packages$directoryDescription.
             asDesired: asDesired,
             format: color,
             prefix: prefix,
+            suffix: suffix,
           ),
         );
         previous = versionDetails;
@@ -743,11 +744,8 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
       return Map.fromEntries(
         await Future.wait(
           ids.map(
-            (id) async => MapEntry(
-                id,
-                (await id.source!.bind(cache).describe(id))
-                    .languageVersion
-                    .supportsNullSafety),
+            (id) async => MapEntry(id,
+                (await cache.describe(id)).languageVersion.supportsNullSafety),
           ),
         ),
       );
@@ -763,9 +761,14 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
           (versionDetails) {
             String Function(String)? color;
             String? prefix;
+            String? suffix;
             MapEntry<String, Object>? jsonExplanation;
             var asDesired = false;
             if (versionDetails != null) {
+              if (packageDetails.isDiscontinued &&
+                  identical(versionDetails, packageDetails.latest)) {
+                suffix = ' (discontinued)';
+              }
               if (nullSafetyMap[versionDetails._id]!) {
                 color = log.green;
                 prefix = _compliantEmoji;
@@ -782,6 +785,7 @@ Showing dependencies$directoryDescription that are currently not opted in to nul
               asDesired: asDesired,
               format: color,
               prefix: prefix,
+              suffix: suffix,
               jsonExplanation: jsonExplanation,
             );
           },
@@ -833,6 +837,9 @@ class _VersionDetails {
           _overridden == other._overridden &&
           _id.source == other._id.source &&
           _pubspec.version == other._pubspec.version;
+
+  @override
+  int get hashCode => Object.hash(_pubspec.version, _id.source, _overridden);
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
@@ -842,9 +849,11 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final _VersionDetails? resolvable;
   final _VersionDetails? latest;
   final _DependencyKind kind;
+  final bool isDiscontinued;
+  final String? discontinuedReplacedBy;
 
   _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
-      this.latest, this.kind);
+      this.latest, this.kind, this.isDiscontinued, this.discontinuedReplacedBy);
 
   @override
   int compareTo(_PackageDetails other) {
@@ -861,6 +870,8 @@ class _PackageDetails implements Comparable<_PackageDetails> {
       'upgradable': upgradable?.toJson(),
       'resolvable': resolvable?.toJson(),
       'latest': latest?.toJson(),
+      'isDiscontinued': isDiscontinued,
+      'discontinuedReplacedBy': discontinuedReplacedBy,
     };
   }
 }
@@ -904,6 +915,7 @@ class _MarkedVersionDetails {
   final _VersionDetails? _versionDetails;
   final String Function(String)? _format;
   final String? _prefix;
+  final String? _suffix;
 
   /// This should be true if the mode creating this consideres the version as
   /// "good".
@@ -917,15 +929,18 @@ class _MarkedVersionDetails {
     required this.asDesired,
     format,
     prefix = '',
+    suffix = '',
     jsonExplanation,
   })  : _format = format,
         _prefix = prefix,
+        _suffix = suffix,
         _jsonExplanation = jsonExplanation;
 
   _FormattedString toHuman() => _FormattedString(
         _versionDetails?.describe ?? '-',
         format: _format,
         prefix: _prefix,
+        suffix: _suffix,
       );
 
   Object? toJson() {
@@ -947,16 +962,22 @@ class _FormattedString {
   /// A prefix for marking this string if colors are not used.
   final String _prefix;
 
-  _FormattedString(this.value, {String Function(String)? format, prefix})
+  final String _suffix;
+
+  _FormattedString(this.value,
+      {String Function(String)? format, prefix, suffix})
       : _format = format ?? _noFormat,
-        _prefix = prefix ?? '';
+        _prefix = prefix ?? '',
+        _suffix = suffix ?? '';
 
   String formatted({required bool useColors}) {
-    return useColors ? _format(_prefix + value) : _prefix + value;
+    return useColors
+        ? _format(_prefix + value + _suffix)
+        : _prefix + value + _suffix;
   }
 
   int computeLength({required bool? useColors}) {
-    return _prefix.length + value.length;
+    return _prefix.length + value.length + _suffix.length;
   }
 
   static String _noFormat(String x) => x;

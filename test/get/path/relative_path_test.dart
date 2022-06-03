@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
+import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/source/path.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -25,7 +27,9 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile({'foo': '../foo'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+    ]).validate();
   });
 
   test('path is relative to containing pubspec', () async {
@@ -47,8 +51,10 @@ void main() {
 
     await pubGet();
 
-    await d.appPackagesFile(
-        {'foo': '../relative/foo', 'bar': '../relative/bar'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
+      d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
+    ]).validate();
   });
 
   test('path is relative to containing pubspec when using --directory',
@@ -74,9 +80,10 @@ void main() {
         workingDirectory: d.sandbox,
         output: contains('Changed 2 dependencies in myapp!'));
 
-    await d.appPackagesFile(
-      {'foo': '../relative/foo', 'bar': '../relative/bar'},
-    ).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
+      d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
+    ]).validate();
   });
 
   test('relative path preserved in the lockfile', () async {
@@ -92,10 +99,17 @@ void main() {
     await pubGet();
 
     var lockfilePath = path.join(d.sandbox, appPath, 'pubspec.lock');
-    var lockfile = LockFile.load(lockfilePath, SourceRegistry());
-    var description = lockfile.packages['foo'].description;
+    final lockfileJson = loadYaml(File(lockfilePath).readAsStringSync());
+    expect(
+      lockfileJson['packages']['foo']['description']['path'],
+      '../foo',
+      reason: 'Should use `/` as separator on all platforms',
+    );
+    var lockfile = LockFile.load(lockfilePath, SystemCache().sources);
+    var description =
+        lockfile.packages['foo']!.description.description as PathDescription;
 
-    expect(description['relative'], isTrue);
-    expect(description['path'], path.join(d.sandbox, 'foo'));
+    expect(description.relative, isTrue);
+    expect(description.path, path.join(d.sandbox, 'foo'));
   });
 }

@@ -52,8 +52,17 @@ class TarEntry {
   TarEntry._(this.header, this.contents);
 
   /// Creates an in-memory tar entry from the [header] and the [data] to store.
-  factory TarEntry.data(TarHeader header, List<int> data) {
+  static SynchronousTarEntry data(TarHeader header, List<int> data) {
     (header as HeaderImpl).size = data.length;
-    return TarEntry(header, Stream.value(data));
+    return SynchronousTarEntry._(header, data);
   }
+}
+
+/// A tar entry stored in memory.
+class SynchronousTarEntry extends TarEntry {
+  /// The contents of this tar entry as a byte array.
+  final List<int> data;
+
+  SynchronousTarEntry._(TarHeader header, this.data)
+      : super._(header, Stream.value(data));
 }

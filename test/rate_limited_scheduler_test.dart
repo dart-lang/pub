@@ -2,11 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 
-import 'package:pedantic/pedantic.dart';
 import 'package:pub/src/rate_limited_scheduler.dart';
 import 'package:test/test.dart';
 
@@ -19,8 +16,8 @@ void main() {
     final isBeingProcessed = threeCompleters();
 
     Future<String> f(String i) async {
-      isBeingProcessed[i].complete();
-      await completers[i].future;
+      isBeingProcessed[i]!.complete();
+      await completers[i]!.future;
       return i.toUpperCase();
     }
 
@@ -30,11 +27,11 @@ void main() {
       preschedule('b');
       preschedule('c');
       await Future.wait(
-          [isBeingProcessed['a'].future, isBeingProcessed['b'].future]);
-      expect(isBeingProcessed['c'].isCompleted, isFalse);
-      completers['a'].complete();
-      await isBeingProcessed['c'].future;
-      completers['c'].complete();
+          [isBeingProcessed['a']!.future, isBeingProcessed['b']!.future]);
+      expect(isBeingProcessed['c']!.isCompleted, isFalse);
+      completers['a']!.complete();
+      await isBeingProcessed['c']!.future;
+      completers['c']!.complete();
       expect(await scheduler.schedule('c'), 'C');
     });
   });
@@ -45,8 +42,8 @@ void main() {
     final isBeingProcessed = threeCompleters();
 
     Future<String> f(String i) async {
-      isBeingProcessed[i].complete();
-      await completers[i].future;
+      isBeingProcessed[i]!.complete();
+      await completers[i]!.future;
       return i.toUpperCase();
     }
 
@@ -57,18 +54,18 @@ void main() {
         preschedule1('a');
         preschedule2('b');
         preschedule1('c');
-        await isBeingProcessed['a'].future;
+        await isBeingProcessed['a']!.future;
         // b, c should not start processing due to rate-limiting.
-        expect(isBeingProcessed['b'].isCompleted, isFalse);
-        expect(isBeingProcessed['c'].isCompleted, isFalse);
+        expect(isBeingProcessed['b']!.isCompleted, isFalse);
+        expect(isBeingProcessed['c']!.isCompleted, isFalse);
       });
-      completers['a'].complete();
+      completers['a']!.complete();
       // b is removed from the queue, now c should start processing.
-      await isBeingProcessed['c'].future;
-      completers['c'].complete();
+      await isBeingProcessed['c']!.future;
+      completers['c']!.complete();
       expect(await scheduler.schedule('c'), 'C');
       // b is not on the queue anymore.
-      expect(isBeingProcessed['b'].isCompleted, isFalse);
+      expect(isBeingProcessed['b']!.isCompleted, isFalse);
     });
   });
 
@@ -78,27 +75,27 @@ void main() {
     final isBeingProcessed = threeCompleters();
 
     Future<String> f(String i) async {
-      isBeingProcessed[i].complete();
-      await completers[i].future;
+      isBeingProcessed[i]!.complete();
+      await completers[i]!.future;
       return i.toUpperCase();
     }
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
 
-    Future b;
+    Future? b;
     await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
       preschedule('b');
-      await isBeingProcessed['a'].future;
+      await isBeingProcessed['a']!.future;
       // b should not start processing due to rate-limiting.
-      expect(isBeingProcessed['b'].isCompleted, isFalse);
+      expect(isBeingProcessed['b']!.isCompleted, isFalse);
       b = scheduler.schedule('b');
     });
-    completers['a'].complete();
+    completers['a']!.complete();
     expect(await scheduler.schedule('a'), 'A');
     // b was scheduled, so it should get processed now
-    await isBeingProcessed['b'].future;
-    completers['b'].complete();
+    await isBeingProcessed['b']!.future;
+    completers['b']!.complete();
     expect(await b, 'B');
   });
 
@@ -107,14 +104,14 @@ void main() {
     final isBeingProcessed = threeCompleters();
 
     Future<String> f(String i) async {
-      isBeingProcessed[i].complete();
-      await completers[i].future;
+      isBeingProcessed[i]!.complete();
+      await completers[i]!.future;
       return i.toUpperCase();
     }
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
 
-    completers['a'].complete();
+    completers['a']!.complete();
     expect(await scheduler.schedule('a'), 'A');
     // Would fail if isBeingProcessed['a'] was completed twice
     expect(await scheduler.schedule('a'), 'A');
@@ -125,8 +122,8 @@ void main() {
     final isBeingProcessed = threeCompleters();
 
     Future<String> f(String i) async {
-      isBeingProcessed[i].complete();
-      await completers[i].future;
+      isBeingProcessed[i]!.complete();
+      await completers[i]!.future;
       return i.toUpperCase();
     }
 
@@ -134,12 +131,12 @@ void main() {
     await scheduler.withPrescheduling((preschedule) async {
       preschedule('a');
       preschedule('b');
-      await isBeingProcessed['a'].future;
+      await isBeingProcessed['a']!.future;
       final cResult = scheduler.schedule('c');
-      expect(isBeingProcessed['b'].isCompleted, isFalse);
-      completers['a'].complete();
-      completers['c'].complete();
-      await isBeingProcessed['c'].future;
+      expect(isBeingProcessed['b']!.isCompleted, isFalse);
+      completers['a']!.complete();
+      completers['c']!.complete();
+      await isBeingProcessed['c']!.future;
       // 'c' is done before we allow 'b' to finish processing
       expect(await cResult, 'C');
     });
@@ -150,8 +147,8 @@ void main() {
     final isBeingProcessed = threeCompleters();
 
     Future<String> f(String i) async {
-      isBeingProcessed[i].complete();
-      await completers[i].future;
+      isBeingProcessed[i]!.complete();
+      await completers[i]!.future;
       return i.toUpperCase();
     }
 
@@ -161,14 +158,15 @@ void main() {
       preschedule('a');
       preschedule('b');
       preschedule('c');
-      await isBeingProcessed['a'].future;
-      await isBeingProcessed['b'].future;
-      expect(isBeingProcessed['c'].isCompleted, isFalse);
-      unawaited(completers['c'].future.catchError((_) {}));
-      completers['c'].completeError('errorC');
-      completers['a'].completeError('errorA');
-      await isBeingProcessed['c'].future;
-      completers['b'].completeError('errorB');
+
+      await isBeingProcessed['a']!.future;
+      await isBeingProcessed['b']!.future;
+      expect(isBeingProcessed['c']!.isCompleted, isFalse);
+      unawaited(completers['c']!.future.catchError((_) {}));
+      completers['c']!.completeError('errorC');
+      completers['a']!.completeError('errorA');
+      await isBeingProcessed['c']!.future;
+      completers['b']!.completeError('errorB');
       expect(() async => await scheduler.schedule('a'), throwsA('errorA'));
       expect(() async => await scheduler.schedule('b'), throwsA('errorB'));
       expect(() async => await scheduler.schedule('c'), throwsA('errorC'));
@@ -179,9 +177,9 @@ void main() {
     final completers = threeCompleters();
     final isBeingProcessed = threeCompleters();
 
-    Future<String> f(String i) async {
-      isBeingProcessed[i].complete();
-      await completers[i].future;
+    Future<String?> f(String i) async {
+      isBeingProcessed[i]!.complete();
+      await completers[i]!.future;
       return Zone.current['zoneValue'];
     }
 
@@ -198,16 +196,16 @@ void main() {
       }, zoneValues: {'zoneValue': 'C'});
 
       await runZoned(() async {
-        await isBeingProcessed['a'].future;
-        await isBeingProcessed['b'].future;
+        await isBeingProcessed['a']!.future;
+        await isBeingProcessed['b']!.future;
         // This will put 'c' in front of the queue, but in a zone with zoneValue
         // bound to S.
         final f = expectLater(scheduler.schedule('c'), completion('S'));
-        completers['a'].complete();
-        completers['b'].complete();
+        completers['a']!.complete();
+        completers['b']!.complete();
         expect(await scheduler.schedule('a'), 'A');
         expect(await scheduler.schedule('b'), 'B');
-        completers['c'].complete();
+        completers['c']!.complete();
         await f;
       }, zoneValues: {'zoneValue': 'S'});
     });

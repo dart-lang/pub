@@ -2,167 +2,137 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:path/path.dart' as path;
-import 'package:pub/src/entrypoint.dart';
-import 'package:pub/src/validator.dart';
-import 'package:pub/src/validator/dependency.dart';
+
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
-import 'utils.dart';
 
-Validator dependency(Entrypoint entrypoint) => DependencyValidator(entrypoint);
-
-Future<void> expectDependencyValidationError(String substring) =>
-    expectValidation(dependency, errors: anyElement(contains(substring)));
-
-Future<void> expectDependencyValidationWarning(String substring) =>
-    expectValidation(dependency, warnings: anyElement(contains(substring)));
-
-/// Sets up a test package with dependency [dep] and mocks a server with
-/// [hostedVersions] of the package available.
-Future setUpDependency(Map dep, {List<String> hostedVersions}) {
-  useMockClient(MockClient((request) {
-    expect(request.method, equals('GET'));
-    expect(request.url.path, equals('/api/packages/foo'));
-
-    if (hostedVersions == null) {
-      return Future.value(http.Response('not found', 404));
-    } else {
-      return Future.value(http.Response(
-          jsonEncode({
-            'name': 'foo',
-            'uploaders': ['nweiz@google.com'],
-            'versions': hostedVersions
-                .map((version) => packageVersionApiMap(
-                    'https://pub.dartlang.org', packageMap('foo', version)))
-                .toList()
-          }),
-          200));
-    }
-  }));
-
+d.DirectoryDescriptor package(
+    {String version = '1.0.0', Map? deps, String? sdk}) {
   return d.dir(appPath, [
-    d.libPubspec('test_pkg', '1.0.0', deps: {'foo': dep})
-  ]).create();
+    d.libPubspec('test_pkg', version,
+        sdk: sdk ?? '>=1.8.0 <=2.0.0', deps: deps),
+    d.file('LICENSE', 'Eh, do what you want.'),
+    d.file('README.md', "This package isn't real."),
+    d.file('CHANGELOG.md', '# $version\nFirst version\n'),
+    d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')])
+  ]);
+}
+
+Future<void> expectValidation({error, int exitCode = 0}) async {
+  await runPub(
+    error: error ?? contains('Package has 0 warnings.'),
+    args: ['publish', '--dry-run'],
+    // workingDirectory: d.path(appPath),
+    exitCode: exitCode,
+  );
+}
+
+Future<void> expectValidationWarning(error) async {
+  if (error is String) error = contains(error);
+  await expectValidation(
+      error: allOf([error, contains('Package has 1 warning.')]),
+      exitCode: DATA);
+}
+
+Future<void> expectValidationError(String text) async {
+  await expectValidation(
+      error: allOf([
+        contains(text),
+        contains('Package validation found the following error:')
+      ]),
+      exitCode: DATA);
+}
+
+Future<void> setUpDependency(dep,
+    {List<String> hostedVersions = const []}) async {
+  final server = await servePackages();
+  for (final version in hostedVersions) {
+    server.serve('foo', version);
+  }
+  await package(deps: {'foo': dep}).create();
 }
 
 void main() {
   group('should consider a package valid if it', () {
     test('looks normal', () async {
-      await d.validPackage.create();
-      await expectValidation(dependency);
+      await package().create();
+      await expectValidation();
     });
 
     test('has a ^ constraint with an appropriate SDK constraint', () async {
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0',
-            deps: {'foo': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0')
-      ]).create();
-      await expectValidation(dependency);
+      await package(deps: {'foo': '^1.2.3'}).create();
+      await expectValidation();
     });
 
     test('with a dependency on a pre-release while being one', () async {
-      await d.dir(appPath, [
-        d.libPubspec(
-          'test_pkg',
-          '1.0.0-dev',
-          deps: {'foo': '^1.2.3-dev'},
-          sdk: '>=1.19.0 <2.0.0',
-        )
-      ]).create();
+      await package(version: '1.0.0-dev', deps: {'foo': '^1.2.3-dev'}).create();
 
-      await expectValidation(dependency);
+      await expectValidation();
     });
 
     test('has a git path dependency with an appropriate SDK constraint',
         () async {
-      // Ensure we don't report anything from the real pub.dev.
-      await setUpDependency({});
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0',
-            deps: {
-              'foo': {
-                'git': {
-                  'url': 'git://github.com/dart-lang/foo',
-                  'path': 'subdir'
-                }
-              }
-            },
-            sdk: '>=2.0.0 <3.0.0')
-      ]).create();
+      await servePackages();
+      await package(deps: {
+        'foo': {
+          'git': {'url': 'git://github.com/dart-lang/foo', 'path': 'subdir'}
+        }
+      }, sdk: '>=2.0.0 <3.0.0')
+          .create();
 
       // We should get a warning for using a git dependency, but not an error.
-      await expectDependencyValidationWarning('  foo: any');
+      await expectValidationWarning('  foo: any');
     });
 
     test('depends on Flutter from an SDK source', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'sdk': '>=1.19.0 <2.0.0'},
-          'dependencies': {
-            'flutter': {'sdk': 'flutter'}
-          }
-        })
-      ]).create();
+      await package(deps: {
+        'flutter': {'sdk': 'flutter'}
+      }, sdk: '>=1.19.0 <2.0.0')
+          .create();
 
-      await expectValidation(dependency);
+      await expectValidation();
     });
 
     test(
         'depends on a package from Flutter with an appropriate Dart SDK '
         'constraint', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'sdk': '>=1.19.0 <2.0.0'},
-          'dependencies': {
-            'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'}
-          }
-        })
-      ]).create();
+      await package(
+        deps: {
+          'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'},
+        },
+        sdk: '>=1.19.0 <2.0.0',
+      ).create();
 
-      await expectValidation(dependency);
+      await expectValidation();
     });
 
     test(
         'depends on a package from Fuchsia with an appropriate Dart SDK '
         'constraint', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'sdk': '>=2.0.0-dev.51.0 <2.0.0'},
-          'dependencies': {
-            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
-          }
-        })
-      ]).create();
+      await package(sdk: '>=2.0.0-dev.51.0 <2.0.0', deps: {
+        'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
+      }).create();
+      await d.validPackage.create();
 
-      await expectValidation(dependency);
+      await expectValidation();
     });
   });
 
   group('should consider a package invalid if it', () {
-    setUp(d.validPackage.create);
-
+    setUp(package().create);
     group('has a git dependency', () {
       group('where a hosted version exists', () {
         test('and should suggest the hosted primary version', () async {
           await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0']);
-          await expectDependencyValidationWarning('  foo: ^2.0.0');
+          await expectValidationWarning('  foo: ^2.0.0');
         });
 
         test(
@@ -170,7 +140,7 @@ void main() {
             "it's the only version available", () async {
           await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ['3.0.0-pre', '2.0.0-pre']);
-          await expectDependencyValidationWarning('  foo: ^3.0.0-pre');
+          await expectValidationWarning('  foo: ^3.0.0-pre');
         });
 
         test(
@@ -178,7 +148,7 @@ void main() {
             'pre-1.0.0', () async {
           await setUpDependency({'git': 'git://github.com/dart-lang/foo'},
               hostedVersions: ['0.0.1', '0.0.2']);
-          await expectDependencyValidationWarning('  foo: ^0.0.2');
+          await expectValidationWarning('  foo: ^0.0.2');
         });
       });
 
@@ -188,7 +158,7 @@ void main() {
             'git': 'git://github.com/dart-lang/foo',
             'version': '>=1.0.0 <2.0.0'
           });
-          await expectDependencyValidationWarning('  foo: ">=1.0.0 <2.0.0"');
+          await expectValidationWarning('  foo: ">=1.0.0 <2.0.0"');
         });
 
         test(
@@ -196,7 +166,7 @@ void main() {
             'concrete', () async {
           await setUpDependency(
               {'git': 'git://github.com/dart-lang/foo', 'version': '0.2.3'});
-          await expectDependencyValidationWarning('  foo: 0.2.3');
+          await expectValidationWarning('  foo: 0.2.3');
         });
       });
     });
@@ -206,7 +176,7 @@ void main() {
         test('and should suggest the hosted primary version', () async {
           await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0']);
-          await expectDependencyValidationError('  foo: ^2.0.0');
+          await expectValidationError('  foo: ^2.0.0');
         });
 
         test(
@@ -214,7 +184,7 @@ void main() {
             "it's the only version available", () async {
           await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ['3.0.0-pre', '2.0.0-pre']);
-          await expectDependencyValidationError('  foo: ^3.0.0-pre');
+          await expectValidationError('  foo: ^3.0.0-pre');
         });
 
         test(
@@ -222,7 +192,7 @@ void main() {
             'pre-1.0.0', () async {
           await setUpDependency({'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ['0.0.1', '0.0.2']);
-          await expectDependencyValidationError('  foo: ^0.0.2');
+          await expectValidationError('  foo: ^0.0.2');
         });
       });
 
@@ -232,7 +202,7 @@ void main() {
             'path': path.join(d.sandbox, 'foo'),
             'version': '>=1.0.0 <2.0.0'
           });
-          await expectDependencyValidationError('  foo: ">=1.0.0 <2.0.0"');
+          await expectValidationError('  foo: ">=1.0.0 <2.0.0"');
         });
 
         test(
@@ -240,7 +210,7 @@ void main() {
             'concrete', () async {
           await setUpDependency(
               {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'});
-          await expectDependencyValidationError('  foo: 0.2.3');
+          await expectValidationError('  foo: 0.2.3');
         });
       });
     });
@@ -252,13 +222,11 @@ void main() {
             d.libPubspec('test_pkg', '1.0.0', deps: {'foo': 'any'})
           ]).create();
 
-          await expectValidation(dependency,
-              warnings: everyElement(isNot(contains('\n  foo:'))));
+          await expectValidationWarning(isNot(contains('\n  foo:')));
         });
 
-        test(
-            "if the lockfile doesn't have an entry for the "
-            'dependency', () async {
+        test("if the lockfile doesn't have an entry for the dependency",
+            () async {
           await d.dir(appPath, [
             d.libPubspec('test_pkg', '1.0.0', deps: {'foo': 'any'}),
             d.file(
@@ -277,8 +245,7 @@ void main() {
                 }))
           ]).create();
 
-          await expectValidation(dependency,
-              warnings: everyElement(isNot(contains('\n  foo:'))));
+          await expectValidationWarning(isNot(contains('\n  foo:')));
         });
       });
 
@@ -304,7 +271,7 @@ void main() {
                 }))
           ]).create();
 
-          await expectDependencyValidationWarning('  foo: ^1.2.3');
+          await expectValidationWarning('  foo: ^1.2.3');
         });
 
         test(
@@ -328,7 +295,7 @@ void main() {
                 }))
           ]).create();
 
-          await expectDependencyValidationWarning('  foo: ^0.1.2');
+          await expectValidationWarning('  foo: ^0.1.2');
         });
       });
     });
@@ -343,8 +310,7 @@ void main() {
         )
       ]).create();
 
-      await expectDependencyValidationWarning(
-          'Packages dependent on a pre-release');
+      await expectValidationWarning('Packages dependent on a pre-release');
     });
     test(
         'with a single-version dependency and it should suggest a '
@@ -353,7 +319,7 @@ void main() {
         d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '1.2.3'})
       ]).create();
 
-      await expectDependencyValidationWarning('  foo: ^1.2.3');
+      await expectValidationWarning('  foo: ^1.2.3');
     });
 
     group('has a dependency without a lower bound', () {
@@ -363,8 +329,7 @@ void main() {
             d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '<3.0.0'})
           ]).create();
 
-          await expectValidation(dependency,
-              warnings: everyElement(isNot(contains('\n  foo:'))));
+          await expectValidationWarning(isNot(contains('\n  foo:')));
         });
 
         test(
@@ -388,8 +353,7 @@ void main() {
                 }))
           ]).create();
 
-          await expectValidation(dependency,
-              warnings: everyElement(isNot(contains('\n  foo:'))));
+          await expectValidationWarning(isNot(contains('\n  foo:')));
         });
       });
 
@@ -415,7 +379,7 @@ void main() {
                 }))
           ]).create();
 
-          await expectDependencyValidationWarning('  foo: ">=1.2.3 <3.0.0"');
+          await expectValidationWarning('  foo: ">=1.2.3 <3.0.0"');
         });
 
         test('and it should preserve the upper-bound operator', () async {
@@ -437,7 +401,7 @@ void main() {
                 }))
           ]).create();
 
-          await expectDependencyValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
+          await expectValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
         });
 
         test(
@@ -461,7 +425,7 @@ void main() {
                 }))
           ]).create();
 
-          await expectDependencyValidationWarning('  foo: ^1.2.3');
+          await expectValidationWarning('  foo: ^1.2.3');
         });
       });
     });
@@ -473,7 +437,7 @@ void main() {
           d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>=1.2.3'})
         ]).create();
 
-        await expectDependencyValidationWarning('  foo: ^1.2.3');
+        await expectValidationWarning('  foo: ^1.2.3');
       });
 
       test('and it should preserve the lower-bound operator', () async {
@@ -481,7 +445,7 @@ void main() {
           d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>1.2.3'})
         ]).create();
 
-        await expectDependencyValidationWarning('  foo: ">1.2.3 <2.0.0"');
+        await expectValidationWarning('  foo: ">1.2.3 <2.0.0"');
       });
     });
 
@@ -491,7 +455,7 @@ void main() {
           d.libPubspec('integration_pkg', '1.0.0', deps: {'foo': '^1.2.3'})
         ]).create();
 
-        await expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
+        await expectValidationError('  sdk: ">=1.8.0 <2.0.0"');
       });
 
       test('with a too-broad SDK constraint', () async {
@@ -500,7 +464,7 @@ void main() {
               deps: {'foo': '^1.2.3'}, sdk: '>=1.5.0 <2.0.0')
         ]).create();
 
-        await expectDependencyValidationError('  sdk: ">=1.8.0 <2.0.0"');
+        await expectValidationError('  sdk: ">=1.8.0 <2.0.0"');
       });
     });
 
@@ -516,9 +480,11 @@ void main() {
           })
         ]).create();
 
-        await expectValidation(dependency,
-            errors: anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
-            warnings: anyElement(contains('  foo: any')));
+        await expectValidation(
+          error: allOf(
+              contains('  sdk: ">=2.0.0 <3.0.0"'), contains('  foo: any')),
+          exitCode: DATA,
+        );
       });
 
       test('with a too-broad SDK constraint', () async {
@@ -537,41 +503,14 @@ void main() {
               sdk: '>=1.24.0 <3.0.0')
         ]).create();
 
-        await expectValidation(dependency,
-            errors: anyElement(contains('  sdk: ">=2.0.0 <3.0.0"')),
-            warnings: anyElement(contains('  foo: any')));
+        await expectValidation(
+          error: allOf([
+            contains('  sdk: ">=2.0.0 <3.0.0"'),
+            contains('  foo: any'),
+          ]),
+          exitCode: DATA,
+        );
       });
-    });
-
-    test('has a feature dependency', () async {
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0', deps: {
-          'foo': {
-            'version': '^1.2.3',
-            'features': {'stuff': true}
-          }
-        })
-      ]).create();
-
-      await expectDependencyValidationError(
-          'Packages with package features may not be published yet.');
-    });
-
-    test('declares a feature', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'features': {
-            'stuff': {
-              'dependencies': {'foo': '^1.0.0'}
-            }
-          }
-        })
-      ]).create();
-
-      await expectDependencyValidationError(
-          'Packages with package features may not be published yet.');
     });
 
     test('depends on Flutter from a non-SDK source', () async {
@@ -579,82 +518,55 @@ void main() {
         d.libPubspec('test_pkg', '1.0.0', deps: {'flutter': '>=1.2.3 <2.0.0'})
       ]).create();
 
-      await expectDependencyValidationError('sdk: >=1.2.3 <2.0.0');
+      await expectValidationError('sdk: >=1.2.3 <2.0.0');
     });
 
     test('depends on a Flutter package from an unknown SDK', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'dependencies': {
-            'foo': {'sdk': 'fblthp', 'version': '>=1.2.3 <2.0.0'}
-          }
-        })
-      ]).create();
+      await package(deps: {
+        'foo': {'sdk': 'fblthp', 'version': '>=1.2.3 <2.0.0'}
+      }).create();
 
-      await expectDependencyValidationError(
-          'Unknown SDK "fblthp" for dependency "foo".');
+      await expectValidationError('Unknown SDK "fblthp" for dependency "foo".');
     });
 
     test('depends on a Flutter package with a too-broad SDK constraint',
         () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'sdk': '>=1.18.0 <2.0.0'},
-          'dependencies': {
-            'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'}
-          }
-        })
-      ]).create();
+      await package(
+        deps: {
+          'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'}
+        },
+        sdk: '>=1.18.0 <2.0.0',
+      ).create();
 
-      await expectDependencyValidationError('sdk: ">=1.19.0 <2.0.0"');
+      await expectValidationError('sdk: ">=1.19.0 <2.0.0"');
     });
 
     test('depends on a Flutter package with no SDK constraint', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'dependencies': {
-            'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'}
-          }
-        })
-      ]).create();
+      await package(sdk: '>=0.0.0 <=0.0.1', deps: {
+        'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'}
+      }).create();
 
-      await expectDependencyValidationError('sdk: ">=1.19.0 <2.0.0"');
+      await expectValidationError('sdk: ">=1.19.0 <2.0.0"');
     });
 
     test('depends on a Fuchsia package with a too-broad SDK constraint',
         () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'sdk': '>=2.0.0-dev.50.0 <2.0.0'},
-          'dependencies': {
-            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
-          }
-        })
-      ]).create();
+      await package(
+        sdk: '>=2.0.0-dev.50.0 <2.0.0',
+        deps: {
+          'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
+        },
+      ).create();
 
-      await expectDependencyValidationError('sdk: ">=2.0.0 <3.0.0"');
+      await expectValidationError('sdk: ">=2.0.0 <3.0.0"');
     });
 
     test('depends on a Fuchsia package with no SDK constraint', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'dependencies': {
-            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
-          }
-        })
-      ]).create();
+      await package(sdk: '>=0.0.0 <1.0.0', deps: {
+        'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
+      }).create();
 
-      await expectDependencyValidationError('sdk: ">=2.0.0 <3.0.0"');
+      await expectValidationError('sdk: ">=2.0.0 <3.0.0"');
     });
   });
 }

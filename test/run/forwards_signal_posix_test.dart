@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 // Windows doesn't support sending signals.
 // TODO(sigurdm): Test this when vm-args are provided.
 // This test doesn't work when we subprocess instead of an isolate
@@ -25,15 +23,15 @@ const _catchableSignals = [
   ProcessSignal.sigwinch,
 ];
 
-const SCRIPT = """
+const _script = """
 import 'dart:io';
 
 main() {
-  ProcessSignal.SIGHUP.watch().first.then(print);
-  ProcessSignal.SIGTERM.watch().first.then(print);
-  ProcessSignal.SIGUSR1.watch().first.then(print);
-  ProcessSignal.SIGUSR2.watch().first.then(print);
-  ProcessSignal.SIGWINCH.watch().first.then(print);
+  ProcessSignal.sighup.watch().first.then(print);
+  ProcessSignal.sigterm.watch().first.then(print);
+  ProcessSignal.sigusr1.watch().first.then(print);
+  ProcessSignal.sigusr2.watch().first.then(print);
+  ProcessSignal.sigwinch.watch().first.then(print);
 
   print("ready");
 }
@@ -43,7 +41,7 @@ void main() {
   test('forwards signals to the inner script', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('script.dart', SCRIPT)])
+      d.dir('bin', [d.file('script.dart', _script)])
     ]).create();
 
     await pubGet();

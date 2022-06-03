@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"
@@ -19,6 +20,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"
@@ -215,6 +217,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3",
@@ -231,6 +234,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3",
@@ -256,6 +260,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"
@@ -269,6 +274,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"

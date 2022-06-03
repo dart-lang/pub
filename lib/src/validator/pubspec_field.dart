@@ -4,16 +4,13 @@
 
 import 'dart:async';
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 /// A validator that checks that the pubspec has valid "author" and "homepage"
 /// fields.
 class PubspecFieldValidator extends Validator {
-  PubspecFieldValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
-  Future validate() {
+  Future<void> validate() {
     _validateFieldIsString('description');
     _validateFieldUrl('homepage');
     _validateFieldUrl('repository');

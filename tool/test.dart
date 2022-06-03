@@ -17,6 +17,11 @@ import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
+  if (Platform.environment['FLUTTER_ROOT'] != null) {
+    print(
+      'WARNING: The tests will not run correctly with dart from a flutter checkout!',
+    );
+  }
   Process? testProcess;
   final sub = ProcessSignal.sigint.watch().listen((signal) {
     testProcess?.kill(signal);
@@ -29,7 +34,7 @@ Future<void> main(List<String> args) async {
     await precompile(
         executablePath: path.join('bin', 'pub.dart'),
         outputPath: pubSnapshotFilename,
-        incrementalDillOutputPath: pubSnapshotIncrementalFilename,
+        incrementalDillPath: pubSnapshotIncrementalFilename,
         name: 'bin/pub.dart',
         packageConfigPath: path.join('.dart_tool', 'package_config.json'));
     testProcess = await Process.start(

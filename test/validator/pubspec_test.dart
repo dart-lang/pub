@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/validator/pubspec.dart';
 import 'package:test/test.dart';
 
@@ -15,7 +13,7 @@ void main() {
   test('should consider a package valid if it has a pubspec', () async {
     await d.validPackage.create();
 
-    await expectValidation((entrypoint) => PubspecValidator(entrypoint));
+    await expectValidation(() => PubspecValidator());
   });
 
   test('should consider a package invalid if it has a .gitignored pubspec',
@@ -24,7 +22,6 @@ void main() {
     await d.validPackage.create();
     await repo.create();
 
-    await expectValidation((entrypoint) => PubspecValidator(entrypoint),
-        errors: isNotEmpty);
+    await expectValidation(() => PubspecValidator(), errors: isNotEmpty);
   });
 }

@@ -5,6 +5,7 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../http.dart';
 import '../io.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
@@ -12,8 +13,8 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
+import '../source/cached.dart';
 import '../source/hosted.dart';
-import '../source_registry.dart';
 import '../system_cache.dart';
 import 'report.dart';
 import 'type.dart';
@@ -74,9 +75,18 @@ class SolveResult {
         overriddenDependencies: MapKeySet(_root.dependencyOverrides));
   }
 
-  final SourceRegistry _sources;
-
   final LockFile _previousLockFile;
+
+  /// Downloads all cached packages in [packages].
+  Future<void> downloadCachedPackages(SystemCache cache) async {
+    await Future.wait(packages.map((id) async {
+      final source = id.source;
+      if (source is! CachedSource) return;
+      return await withDependencyType(_root.dependencyType(id.name), () async {
+        await source.downloadToSystemCache(id, cache);
+      });
+    }));
+  }
 
   /// Returns the names of all packages that were changed.
   ///
@@ -92,22 +102,14 @@ class SolveResult {
         .toSet());
   }
 
-  SolveResult(
-      this._sources,
-      this._root,
-      this._previousLockFile,
-      this.packages,
-      this.pubspecs,
-      this.availableVersions,
-      this.attemptedSolutions,
-      this.resolutionTime);
+  SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
+      this.availableVersions, this.attemptedSolutions, this.resolutionTime);
 
   /// Displays a report of what changes were made to the lockfile.
   ///
   /// [type] is the type of version resolution that was run.
   Future<void> showReport(SolveType type, SystemCache cache) async {
-    await SolveReport(type, _sources, _root, _previousLockFile, this, cache)
-        .show();
+    await SolveReport(type, _root, _previousLockFile, this, cache).show();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -119,10 +121,9 @@ class SolveResult {
   /// [type] is the type of version resolution that was run.
   Future<void> summarizeChanges(SolveType type, SystemCache cache,
       {bool dryRun = false}) async {
-    final report =
-        SolveReport(type, _sources, _root, _previousLockFile, this, cache);
+    final report = SolveReport(type, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
-    if (type == SolveType.UPGRADE) {
+    if (type == SolveType.upgrade) {
       await report.reportDiscontinued();
       report.reportOutdated();
     }
@@ -136,11 +137,9 @@ class SolveResult {
 
     final dependenciesForAnalytics = <PackageId>[];
     for (final package in packages) {
-      final source = package.source;
       // Only send analytics for packages from pub.dev.
-      if (source is HostedSource &&
-          (runningFromTest ||
-              package.description['url'] == HostedSource.pubDevUrl)) {
+      if (HostedSource.isFromPubDev(package) ||
+          (package.source is HostedSource && runningFromTest)) {
         dependenciesForAnalytics.add(package);
       }
     }

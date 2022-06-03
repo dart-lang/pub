@@ -6,19 +6,16 @@ import 'dart:async';
 
 import 'package:path/path.dart' as path;
 
-import '../entrypoint.dart';
 import '../io.dart';
 import '../validator.dart';
 
 /// Validates that a package doesn't contain compiled Dartdoc
 /// output.
 class CompiledDartdocValidator extends Validator {
-  CompiledDartdocValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
   Future validate() {
     return Future.sync(() {
-      for (var entry in entrypoint.root.listFiles()) {
+      for (var entry in files) {
         if (path.basename(entry) != 'nav.json') continue;
         var dir = path.dirname(entry);
 

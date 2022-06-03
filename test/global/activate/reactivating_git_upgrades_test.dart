@@ -2,8 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
+import 'package:path/path.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -22,11 +21,11 @@ void main() {
         args: ['global', 'activate', '-sgit', '../foo.git'],
         output: allOf(
             startsWith('Resolving dependencies...\n'
-                '+ foo 1.0.0 from git ../foo.git at '),
+                '+ foo 1.0.0 from git ..${separator}foo.git at '),
             // Specific revision number goes here.
             endsWith('Building package executables...\n'
                 'Built foo:foo.\n'
-                'Activated foo 1.0.0 from Git repository "../foo.git".')));
+                'Activated foo 1.0.0 from Git repository "..${separator}foo.git".')));
 
     await d.git('foo.git', [d.libPubspec('foo', '1.0.1')]).commit();
 
@@ -35,12 +34,12 @@ void main() {
         args: ['global', 'activate', '-sgit', '../foo.git'],
         output: allOf(
             startsWith('Package foo is currently active from Git repository '
-                '"../foo.git".\n'
+                '"..${separator}foo.git".\n'
                 'Resolving dependencies...\n'
-                '+ foo 1.0.1 from git ../foo.git at '),
+                '+ foo 1.0.1 from git ..${separator}foo.git at '),
             // Specific revision number goes here.
             endsWith('Building package executables...\n'
                 'Built foo:foo.\n'
-                'Activated foo 1.0.1 from Git repository "../foo.git".')));
+                'Activated foo 1.0.1 from Git repository "..${separator}foo.git".')));
   });
 }

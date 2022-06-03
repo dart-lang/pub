@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -21,6 +22,7 @@ $ pub outdated --json
     },
     {
       "package": "fails_analysis",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -36,6 +38,7 @@ $ pub outdated --json
     },
     {
       "package": "fails_analysis_in_dependency",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -51,6 +54,7 @@ $ pub outdated --json
     },
     {
       "package": "file_in_dependency_opts_out",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -66,6 +70,7 @@ $ pub outdated --json
     },
     {
       "package": "file_opts_out",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -81,6 +86,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -276,6 +282,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "nullSafety": false
@@ -295,6 +302,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "nullSafety": false
@@ -323,6 +331,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -338,6 +347,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "fails_analysis",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -353,6 +363,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "fails_analysis_in_dependency",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -368,6 +379,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "file_in_dependency_opts_out",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -383,6 +395,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "file_opts_out",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -398,6 +411,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },

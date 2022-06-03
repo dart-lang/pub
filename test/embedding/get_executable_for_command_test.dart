@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' show separator;
@@ -23,11 +21,11 @@ Future<void> testGetExecutable(
   executable,
   packageConfig,
   errorMessage,
-  CommandResolutionIssue issue,
+  CommandResolutionIssue? issue,
 }) async {
   final _cachePath = getPubTestEnvironment()['PUB_CACHE'];
   final oldVerbosity = log.verbosity;
-  log.verbosity = log.Verbosity.NONE;
+  log.verbosity = log.Verbosity.none;
   if (executable == null) {
     expect(
       () => getExecutableForCommand(
@@ -131,7 +129,7 @@ Future<void> main() async {
       ])
     ]).create();
 
-    await serveNoPackages();
+    await servePackages();
     // The solver uses word-wrapping in its error message, so we use \s to
     // accomodate.
     await testGetExecutable(
@@ -168,7 +166,7 @@ Future<void> main() async {
       ])
     ]).create();
 
-    await serveNoPackages();
+    await servePackages();
     // The solver uses word-wrapping in its error message, so we use \s to
     // accomodate.
     await testGetExecutable(
@@ -180,15 +178,15 @@ Future<void> main() async {
   });
 
   test('Finds files', () async {
-    await servePackages((b) => b
-      ..serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=$_currentVersion <3.0.0'}
-      }, contents: [
-        d.dir('bin', [
-          d.file('foo.dart', 'main() {print(42);}'),
-          d.file('tool.dart', 'main() {print(42);}')
-        ])
-      ]));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'environment': {'sdk': '>=$_currentVersion <3.0.0'}
+    }, contents: [
+      d.dir('bin', [
+        d.file('foo.dart', 'main() {print(42);}'),
+        d.file('tool.dart', 'main() {print(42);}')
+      ])
+    ]);
 
     await d.dir(appPath, [
       d.pubspec({

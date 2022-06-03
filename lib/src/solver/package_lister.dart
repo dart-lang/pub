@@ -15,7 +15,6 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
-import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
@@ -43,13 +42,12 @@ class PackageLister {
   // This is `null` if there is no retracted version that can be allowed.
   final Version? _allowedRetractedVersion;
 
-  /// The source from which [_ref] comes.
-  final BoundSource _source;
+  final SystemCache _systemCache;
 
   /// The type of the dependency from the root package onto [_ref].
   final DependencyType _dependencyType;
 
-  /// The set of package names that were overridden by the root package.
+  /// The set of packages that were overridden by the root package.
   final Set<String> _overriddenPackages;
 
   /// Whether this is a downgrade, in which case the package priority should be
@@ -83,7 +81,7 @@ class PackageLister {
   Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
         var cachedVersions = (await withDependencyType(
             _dependencyType,
-            () => _source.getVersions(_ref,
+            () => _systemCache.getVersions(_ref,
                 allowedRetractedVersion: _allowedRetractedVersion)))
           ..sort((id1, id2) => id1.version.compareTo(id2.version));
         _cachedVersions = cachedVersions;
@@ -97,28 +95,27 @@ class PackageLister {
       _latestMemo.runOnce(() => bestVersion(VersionConstraint.any));
   final _latestMemo = AsyncMemoizer<PackageId?>();
 
-  /// Creates a package lister for the dependency identified by [ref].
+  /// Creates a package lister for the dependency identified by [_ref].
   PackageLister(
-      SystemCache cache,
+      this._systemCache,
       this._ref,
       this._locked,
       this._dependencyType,
       this._overriddenPackages,
       this._allowedRetractedVersion,
       {bool downgrade = false})
-      : _source = cache.source(_ref.source),
-        _isDowngrade = downgrade;
+      : _isDowngrade = downgrade;
 
   /// Creates a package lister for the root [package].
-  PackageLister.root(Package package)
+  PackageLister.root(Package package, this._systemCache)
       : _ref = PackageRef.root(package),
-        _source = _RootSource(package),
         // Treat the package as locked so we avoid the logic for finding the
         // boundaries of various constraints, which is useless for the root
         // package.
         _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
-        _overriddenPackages = const UnmodifiableSetView.empty(),
+        _overriddenPackages =
+            Set.unmodifiable(package.dependencyOverrides.keys),
         _isDowngrade = false,
         _allowedRetractedVersion = null;
 
@@ -144,7 +141,8 @@ class PackageLister {
   /// Throws a [PackageNotFoundException] if this lister's package doesn't
   /// exist.
   Future<PackageId?> bestVersion(VersionConstraint? constraint) async {
-    if (_locked != null && constraint!.allows(_locked!.version)) return _locked;
+    final locked = _locked;
+    if (locked != null && constraint!.allows(locked.version)) return locked;
 
     var versions = await _versions;
 
@@ -169,9 +167,12 @@ class PackageLister {
       if (isPastLimit(id.version)) break;
 
       if (!constraint!.allows(id.version)) continue;
-      if (!id.version.isPreRelease) return id;
+      if (!id.version.isPreRelease) {
+        return id;
+      }
       bestPrerelease ??= id;
     }
+
     return bestPrerelease;
   }
 
@@ -187,8 +188,8 @@ class PackageLister {
 
     Pubspec pubspec;
     try {
-      pubspec =
-          await withDependencyType(_dependencyType, () => _source.describe(id));
+      pubspec = await withDependencyType(
+          _dependencyType, () => _systemCache.describe(id));
     } on PubspecException catch (error) {
       // The lockfile for the pubspec couldn't be parsed,
       log.fine('Failed to parse pubspec for $id:\n$error');
@@ -227,12 +228,12 @@ class PackageLister {
         var incompatibilities = <Incompatibility>[];
 
         for (var range in pubspec.dependencies.values) {
-          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 
         for (var range in pubspec.devDependencies.values) {
-          if (pubspec.dependencyOverrides.containsKey(range.name)) continue;
+          if (_overriddenPackages.contains(range.name)) continue;
           incompatibilities.add(_dependency(depender, range));
         }
 
@@ -413,7 +414,7 @@ class PackageLister {
   Future<Pubspec> _describeSafe(PackageId id) async {
     try {
       return await withDependencyType(
-          _dependencyType, () => _source.describe(id));
+          _dependencyType, () => _systemCache.describe(id));
     } catch (_) {
       return Pubspec(id.name, version: id.version);
     }
@@ -429,45 +430,4 @@ class PackageLister {
 
     return sdk.isAvailable && constraint.allows(sdk.version!);
   }
-}
-
-/// A fake source that contains only the root package.
-///
-/// This only implements the subset of the [BoundSource] API that
-/// [PackageLister] uses to find information about packages.
-class _RootSource extends BoundSource {
-  /// An error to throw for unused source methods.
-  UnsupportedError get _unsupported =>
-      UnsupportedError('_RootSource is not a full source.');
-
-  /// The entrypoint package.
-  final Package _package;
-
-  _RootSource(this._package);
-
-  @override
-  Future<List<PackageId>> getVersions(PackageRef ref,
-      {Duration? maxAge, Version? allowedRetractedVersion}) {
-    assert(ref.isRoot);
-    return Future.value([PackageId.root(_package)]);
-  }
-
-  @override
-  Future<Pubspec> describe(PackageId id) {
-    assert(id.isRoot);
-    return Future.value(_package.pubspec);
-  }
-
-  @override
-  Source get source => throw _unsupported;
-  @override
-  SystemCache get systemCache => throw _unsupported;
-  @override
-  Future<List<PackageId>> doGetVersions(PackageRef ref, Duration? maxAge) =>
-      throw _unsupported;
-  @override
-  Future<Pubspec> doDescribe(PackageId id) => throw _unsupported;
-  @override
-  String getDirectory(PackageId id, {String? relativeFrom}) =>
-      throw _unsupported;
 }

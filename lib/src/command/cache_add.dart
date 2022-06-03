@@ -59,7 +59,7 @@ class CacheAddCommand extends PubCommand {
     var source = cache.hosted;
 
     // TODO(rnystrom): Allow specifying the server.
-    var ids = (await source.getVersions(cache.sources.hosted.refFor(package)))
+    var ids = (await cache.getVersions(source.refFor(package)))
         .where((id) => constraint.allows(id.version))
         .toList();
 
@@ -77,7 +77,7 @@ class CacheAddCommand extends PubCommand {
       }
 
       // Download it.
-      await source.downloadToSystemCache(id);
+      await cache.downloadPackage(id);
     }
 
     if (argResults['all']) {

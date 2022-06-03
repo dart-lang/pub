@@ -4,7 +4,6 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -15,11 +14,8 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'source_registry.dart';
+import 'system_cache.dart';
 import 'utils.dart';
-
-final _readmeRegexp = RegExp(r'^README($|\.)', caseSensitive: false);
-final _changelogRegexp = RegExp(r'^CHANGELOG($|\.)', caseSensitive: false);
 
 /// A named, versioned, unit of code and resource reuse.
 class Package {
@@ -68,7 +64,8 @@ class Package {
   /// The immediate dev dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get devDependencies => pubspec.devDependencies;
 
-  /// The dependency overrides this package specifies in its pubspec.
+  /// The dependency overrides this package specifies in its pubspec or pubspec
+  /// overrides.
   Map<String, PackageRange> get dependencyOverrides =>
       pubspec.dependencyOverrides;
 
@@ -83,10 +80,12 @@ class Package {
       ..addAll(dependencyOverrides);
   }
 
-  /// Returns a list of asset ids for all Dart executables in this package's bin
+  /// Returns a list of paths to all Dart executables in this package's bin
   /// directory.
   List<String> get executablePaths {
-    return ordered(listFiles(beneath: 'bin', recursive: false))
+    final binDir = p.join(dir, 'bin');
+    if (!dirExists(binDir)) return <String>[];
+    return ordered(listDir(p.join(dir, 'bin'), includeDirs: false))
         .where((executable) => p.extension(executable) == '.dart')
         .map((executable) => p.relative(executable, from: dir))
         .toList();
@@ -94,34 +93,6 @@ class Package {
 
   List<String> get executableNames =>
       executablePaths.map(p.basenameWithoutExtension).toList();
-
-  /// Returns the path to the README file at the root of the entrypoint, or null
-  /// if no README file is found.
-  ///
-  /// If multiple READMEs are found, this uses the same conventions as
-  /// pub.dartlang.org for choosing the primary one: the README with the fewest
-  /// extensions that is lexically ordered first is chosen.
-  String? get readmePath {
-    var readmes = listFiles(recursive: false)
-        .map(p.basename)
-        .where((entry) => entry.contains(_readmeRegexp));
-    if (readmes.isEmpty) return null;
-
-    return p.join(dir, readmes.reduce((readme1, readme2) {
-      var extensions1 = '.'.allMatches(readme1).length;
-      var extensions2 = '.'.allMatches(readme2).length;
-      var comparison = extensions1.compareTo(extensions2);
-      if (comparison == 0) comparison = readme1.compareTo(readme2);
-      return (comparison <= 0) ? readme1 : readme2;
-    }));
-  }
-
-  /// Returns the path to the CHANGELOG file at the root of the entrypoint, or
-  /// null if no CHANGELOG file is found.
-  String? get changelogPath {
-    return listFiles(recursive: false).firstWhereOrNull(
-        (entry) => p.basename(entry).contains(_changelogRegexp));
-  }
 
   /// Returns whether or not this package is in a Git repo.
   late final bool inGitRepo = computeInGitRepoCache();
@@ -145,8 +116,24 @@ class Package {
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
-  Package.load(String? name, String this._dir, SourceRegistry sources)
-      : pubspec = Pubspec.load(_dir, sources, expectedName: name);
+  ///
+  /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
+  /// `true`.
+  factory Package.load(
+    String? name,
+    String dir,
+    SourceRegistry sources, {
+    bool withPubspecOverrides = false,
+  }) {
+    final pubspec = Pubspec.load(dir, sources,
+        expectedName: name, allowOverridesFile: withPubspecOverrides);
+    return Package._(dir, pubspec);
+  }
+
+  Package._(
+    this._dir,
+    this.pubspec,
+  );
 
   /// Constructs a package with the given pubspec.
   ///
@@ -220,8 +207,11 @@ class Package {
   ///
   /// For each directory a .pubignore takes precedence over a .gitignore.
   ///
-  /// Note that the returned paths won't always be beneath [dir]. To safely
-  /// convert them to paths relative to the package root, use [relative].
+  /// Note that the returned paths will be always be below [dir], and will
+  /// always start with [dir] (thus alway be relative to current working
+  /// directory or absolute id [dir] is absolute.
+  ///
+  /// To convert them to paths relative to the package root, use [p.relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
     // An in-memory package has no files.
     if (isInMemory) return [];

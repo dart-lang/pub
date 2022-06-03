@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -149,7 +147,23 @@ void main() {
       error: contains('No config dir found.'),
       exitCode: exit_codes.DATA,
       environment: {'_PUB_TEST_CONFIG_DIR': null},
-      includeParentEnvironment: false,
+      includeParentHomeAndPath: false,
     );
+  });
+
+  test('with https://pub.dev rewrites to https://pub.dartlang.org', () async {
+    await runPub(
+      args: ['token', 'add', 'https://pub.dev'],
+      input: ['auth-token'],
+      silent: contains(
+          'Using https://pub.dartlang.org instead of https://pub.dev.'),
+    );
+
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': 'https://pub.dartlang.org', 'token': 'auth-token'}
+      ]
+    }).validate();
   });
 }

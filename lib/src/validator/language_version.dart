@@ -9,7 +9,6 @@ import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
 
 import '../dart.dart';
-import '../entrypoint.dart';
 import '../language_version.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -18,22 +17,18 @@ import '../validator.dart';
 /// Validates that libraries do not opt into newer language versions than what
 /// they declare in their pubspec.
 class LanguageVersionValidator extends Validator {
-  final AnalysisContextManager analysisContextManager =
-      AnalysisContextManager();
-
-  LanguageVersionValidator(Entrypoint entrypoint) : super(entrypoint) {
-    var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
-    analysisContextManager.createContextsForDirectory(packagePath);
-  }
-
   @override
   Future validate() async {
+    var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
+    final analysisContextManager = AnalysisContextManager()
+      ..createContextsForDirectory(packagePath);
+
     final declaredLanguageVersion = entrypoint.root.pubspec.languageVersion;
 
-    for (final path in ['lib', 'bin']
-        .map((path) => entrypoint.root.listFiles(beneath: path))
-        .expand((files) => files)
-        .where((String file) => p.extension(file) == '.dart')) {
+    for (final path in ['lib', 'bin'].expand((path) {
+      return filesBeneath(path, recursive: true)
+          .where((file) => p.extension(file) == '.dart');
+    })) {
       CompilationUnit unit;
       try {
         unit = analysisContextManager.parse(path);

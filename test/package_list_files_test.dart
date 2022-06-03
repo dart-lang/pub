@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -15,8 +13,8 @@ import 'package:test/test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-String root;
-Entrypoint entrypoint;
+late String root;
+Entrypoint? entrypoint;
 
 void main() {
   test('lists files recursively', () async {
@@ -35,7 +33,7 @@ void main() {
     createEntrypoint();
 
     expect(
-        entrypoint.root.listFiles(),
+        entrypoint!.root.listFiles(),
         unorderedEquals([
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'file1.txt'),
@@ -71,7 +69,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint.root.listFiles(),
+      () => entrypoint!.root.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
@@ -123,7 +121,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint.root.listFiles(),
+      () => entrypoint!.root.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
@@ -151,7 +149,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint.root.listFiles(),
+      () => entrypoint!.root.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
@@ -169,13 +167,13 @@ void main() {
       d.file('.foo', ''),
     ]).create();
     createEntrypoint();
-    expect(entrypoint.root.listFiles(), {
+    expect(entrypoint!.root.listFiles(), {
       p.join(root, '.foo'),
       p.join(root, 'pubspec.yaml'),
     });
   });
   group('with git', () {
-    d.GitRepoDescriptor repo;
+    late d.GitRepoDescriptor repo;
     setUp(() async {
       ensureGit();
       repo = d.git(appPath, [d.appPubspec()]);
@@ -193,7 +191,7 @@ void main() {
         ])
       ]).create();
 
-      expect(entrypoint.root.listFiles(), {
+      expect(entrypoint!.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file1.txt'),
         p.join(root, 'file2.txt'),
@@ -213,7 +211,7 @@ void main() {
         ])
       ]).create();
 
-      expect(entrypoint.root.listFiles(), {
+      expect(entrypoint!.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
         p.join(root, 'subdir', 'subfile2.text')
@@ -246,7 +244,7 @@ void main() {
 
       createEntrypoint(p.join(appPath, 'rep', 'sub'));
 
-      expect(entrypoint.root.listFiles(), {
+      expect(entrypoint!.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
         p.join(root, 'file4.gak'),
@@ -266,7 +264,7 @@ void main() {
 
       createEntrypoint(p.join(appPath, 'packages', 'app'));
 
-      expect(entrypoint.root.listFiles(), {
+      expect(entrypoint!.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
       });
     });
@@ -286,7 +284,7 @@ void main() {
       });
 
       test('respects its .gitignore with useGitIgnore', () {
-        expect(entrypoint.root.listFiles(), {
+        expect(entrypoint!.root.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'submodule', 'file2.text'),
         });
@@ -299,7 +297,7 @@ void main() {
         d.dir('subdir', [d.file('pubspec.lock')])
       ]).create();
 
-      expect(entrypoint.root.listFiles(), {p.join(root, 'pubspec.yaml')});
+      expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
     });
 
     test('ignores packages directories', () async {
@@ -310,7 +308,7 @@ void main() {
         ])
       ]).create();
 
-      expect(entrypoint.root.listFiles(), {p.join(root, 'pubspec.yaml')});
+      expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
     });
 
     test('allows pubspec.lock directories', () async {
@@ -320,7 +318,7 @@ void main() {
         ])
       ]).create();
 
-      expect(entrypoint.root.listFiles(), {
+      expect(entrypoint!.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'pubspec.lock', 'file.txt')
       });
@@ -341,7 +339,7 @@ void main() {
           ])
         ]).create();
 
-        expect(entrypoint.root.listFiles(beneath: 'subdir'), {
+        expect(entrypoint!.root.listFiles(beneath: 'subdir'), {
           p.join(root, 'subdir', 'subfile1.txt'),
           p.join(root, 'subdir', 'subfile2.txt'),
           p.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
@@ -360,7 +358,7 @@ void main() {
         d.dir('lib', [d.file('not_ignored.dart', 'content')]),
       ]).create();
       createEntrypoint();
-      expect(entrypoint.root.listFiles(), {
+      expect(entrypoint!.root.listFiles(), {
         p.join(root, 'LICENSE'),
         p.join(root, 'CHANGELOG.md'),
         p.join(root, 'README.md'),
@@ -412,7 +410,7 @@ void main() {
     ]).create();
 
     createEntrypoint();
-    expect(entrypoint.root.listFiles(), {
+    expect(entrypoint!.root.listFiles(), {
       p.join(root, 'pubspec.yaml'),
       p.join(root, 'not_ignored_by_gitignore.txt'),
       p.join(root, 'ignored_by_gitignore.txt'),
@@ -425,9 +423,173 @@ void main() {
       p.join(root, 'pubignoredir', 'b.txt'),
     });
   });
+
+  group('relative to current directory rules', () {
+    setUp(ensureGit);
+    group('delimiter in the beginning', () {
+      test('ignore directory in exact directory', () async {
+        final repo = d.git(appPath, [
+          d.dir('packages', [
+            d.dir('nested', [
+              d.file('.gitignore', '/bin/'),
+              d.appPubspec(),
+              d.dir('bin', [
+                d.file('run.dart'),
+              ]),
+            ]),
+          ]),
+        ]);
+        await repo.create();
+        createEntrypoint(p.join(appPath, 'packages', 'nested'));
+
+        expect(entrypoint!.root.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+        });
+      });
+
+      test('ignore directory in exact directory', () async {
+        final repo = d.git(appPath, [
+          d.dir('packages', [
+            d.dir('nested', [
+              d.file('.gitignore', '/bin/'),
+              d.appPubspec(),
+              d.file('bin'),
+            ]),
+          ]),
+        ]);
+        await repo.create();
+        createEntrypoint(p.join(appPath, 'packages', 'nested'));
+
+        expect(entrypoint!.root.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'bin'),
+        });
+      });
+
+      test('ignore file on exact directory', () async {
+        final repo = d.git(appPath, [
+          d.dir('packages', [
+            d.dir('nested', [
+              d.appPubspec(),
+              d.dir('bin', [
+                d.file('.gitignore', '/run.dart'),
+                d.file('run.dart'),
+              ]),
+            ]),
+          ]),
+        ]);
+        await repo.create();
+        createEntrypoint(p.join(appPath, 'packages', 'nested'));
+
+        expect(entrypoint!.root.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+        });
+      });
+
+      test('not ignore files beneath exact directory', () async {
+        final repo = d.git(appPath, [
+          d.dir('packages', [
+            d.dir('nested', [
+              d.appPubspec(),
+              d.dir('bin', [
+                d.file('.gitignore', '/run.dart'),
+                d.file('run.dart'),
+                d.dir('nested_again', [
+                  d.file('run.dart'),
+                ]),
+              ]),
+            ]),
+          ]),
+        ]);
+        await repo.create();
+        createEntrypoint(p.join(appPath, 'packages', 'nested'));
+
+        expect(entrypoint!.root.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'bin', 'nested_again', 'run.dart'),
+        });
+      });
+
+      test('disable ignore in exact directory', () async {
+        final repo = d.git(appPath, [
+          d.dir('packages', [
+            d.file('.gitignore', 'run.dart'),
+            d.dir('nested', [
+              d.appPubspec(),
+              d.dir('bin', [
+                d.file('.gitignore', '!/run.dart'),
+                d.file('run.dart'),
+                d.dir('nested_again', [
+                  d.file('run.dart'),
+                ]),
+              ]),
+            ]),
+          ]),
+        ]);
+        await repo.create();
+        createEntrypoint(p.join(appPath, 'packages', 'nested'));
+
+        expect(entrypoint!.root.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'bin', 'run.dart'),
+        });
+      });
+    });
+  });
+
+  group('delimiter in the middle', () {
+    test('should work with route relative to current directory ', () async {
+      final repo = d.git(appPath, [
+        d.dir('packages', [
+          d.file('.gitignore', 'nested/bin/run.dart'),
+          d.dir('nested', [
+            d.appPubspec(),
+            d.dir('bin', [
+              d.file('run.dart'),
+              d.dir('nested_again', [
+                d.file('run.dart'),
+              ]),
+            ]),
+          ]),
+        ]),
+      ]);
+      await repo.create();
+      createEntrypoint(p.join(appPath, 'packages', 'nested'));
+
+      expect(entrypoint!.root.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'bin', 'nested_again', 'run.dart'),
+      });
+    });
+
+    test('should not have effect in nested folders', () async {
+      final repo = d.git(appPath, [
+        d.dir('packages', [
+          d.file('.gitignore', 'bin/run.dart'),
+          d.dir('nested', [
+            d.appPubspec(),
+            d.dir('bin', [
+              d.file('run.dart'),
+              d.dir('nested_again', [
+                d.file('run.dart'),
+              ]),
+            ]),
+          ]),
+        ]),
+      ]);
+      await repo.create();
+      createEntrypoint(p.join(appPath, 'packages', 'nested'));
+
+      expect(entrypoint!.root.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'bin', 'run.dart'),
+        p.join(root, 'bin', 'nested_again', 'run.dart'),
+      });
+    });
+  });
 }
 
-void createEntrypoint([String path]) {
+void createEntrypoint([String? path]) {
   path ??= appPath;
   root = p.join(d.sandbox, path);
   entrypoint = Entrypoint(root, SystemCache(rootDir: root));

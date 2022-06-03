@@ -2,10 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
-import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/strict_dependencies.dart';
 import 'package:test/test.dart';
@@ -14,8 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator strictDeps(Entrypoint entrypoint) =>
-    StrictDependenciesValidator(entrypoint);
+Validator strictDeps() => StrictDependenciesValidator();
 
 void main() {
   group('should consider a package valid if it', () {
@@ -67,8 +63,8 @@ void main() {
 
     for (var port in ['import', 'export']) {
       for (var isDev in [false, true]) {
-        Map<String, String> deps;
-        Map<String, String> devDeps;
+        Map<String, String>? deps;
+        Map<String, String>? devDeps;
 
         if (isDev) {
           devDeps = {'silly_monkey': '^1.2.3'};
@@ -186,6 +182,14 @@ linter:
 
   group('should consider a package invalid if it', () {
     setUp(d.validPackage.create);
+
+    test('has an invalid String value', () async {
+      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+        import 'package:$bad';
+      ''').create();
+
+      await expectValidation(strictDeps, errors: [matches('Invalid URL.')]);
+    });
 
     test('does not declare an "import" as a dependency', () async {
       await d.file(path.join(appPath, 'lib', 'library.dart'), r'''

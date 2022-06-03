@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -32,10 +30,11 @@ void main() {
         ])
       ])
     ]).validate();
-
-    await d.appPackagesFile({
-      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'sub',
+          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
+    ]).validate();
 
     await d.appDir({
       'sub': {
@@ -70,9 +69,11 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackagesFile({
-      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'sub',
+          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')),
+    ]).validate();
 
     await d.appDir({
       'sub': {

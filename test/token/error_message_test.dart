@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
@@ -11,7 +9,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void respondWithWwwAuthenticate(String headerValue) {
-  globalPackageServer.expect('GET', '/api/packages/versions/new', (request) {
+  globalServer.expect('GET', '/api/packages/versions/new', (request) {
     return shelf.Response(403, headers: {'www-authenticate': headerValue});
   });
 }
@@ -20,7 +18,7 @@ Future<void> expectPubErrorMessage(dynamic matcher) {
   return runPub(
     args: ['lish'],
     environment: {
-      'PUB_HOSTED_URL': globalPackageServer.url,
+      'PUB_HOSTED_URL': globalServer.url,
       '_PUB_TEST_AUTH_METHOD': 'token',
     },
     exitCode: 65,
@@ -36,7 +34,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalPackageServer.url, 'token': 'access token'},
+        {'url': globalServer.url, 'token': 'access token'},
       ]
     }).create();
   });

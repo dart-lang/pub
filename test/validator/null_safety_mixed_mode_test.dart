@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -20,7 +18,7 @@ Future<void> expectValidation(error, int exitCode) async {
 }
 
 Future<void> setup({
-  String sdkConstraint,
+  required String sdkConstraint,
   Map dependencies = const {},
   Map devDependencies = const {},
   List<d.Descriptor> extraFiles = const [],
@@ -47,14 +45,13 @@ void main() {
   group('should consider a package valid if it', () {
     test('is not opting in to null-safety, but depends on package that is',
         () async {
-      await servePackages(
-        (server) => server.serve(
-          'foo',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
-          },
-        ),
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '0.0.1',
+        pubspec: {
+          'environment': {'sdk': '>=2.12.0<3.0.0'}
+        },
       );
 
       await setup(
@@ -63,14 +60,13 @@ void main() {
     });
     test('is opting in to null-safety and depends on package that is',
         () async {
-      await servePackages(
-        (server) => server.serve(
-          'foo',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
-          },
-        ),
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '0.0.1',
+        pubspec: {
+          'environment': {'sdk': '>=2.12.0<3.0.0'}
+        },
       );
 
       await setup(
@@ -80,14 +76,13 @@ void main() {
 
     test('is opting in to null-safety has dev_dependency that is not',
         () async {
-      await servePackages(
-        (server) => server.serve(
-          'foo',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
-          },
-        ),
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '0.0.1',
+        pubspec: {
+          'environment': {'sdk': '>=2.9.0<3.0.0'}
+        },
       );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0', devDependencies: {
@@ -100,14 +95,13 @@ void main() {
   group('should consider a package invalid if it', () {
     test('is opting in to null-safety, but depends on package that is not',
         () async {
-      await servePackages(
-        (server) => server.serve(
-          'foo',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
-          },
-        ),
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '0.0.1',
+        pubspec: {
+          'environment': {'sdk': '>=2.9.0<3.0.0'}
+        },
       );
 
       await setup(
@@ -136,17 +130,16 @@ void main() {
     test(
         'is opting in to null-safety, but depends on package has file opting out',
         () async {
-      await servePackages(
-        (server) => server.serve('foo', '0.0.1', pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'}
-        }, contents: [
-          d.dir('lib', [
-            d.file('foo.dart', '''
+      final server = await servePackages();
+      server.serve('foo', '0.0.1', pubspec: {
+        'environment': {'sdk': '>=2.12.0<3.0.0'}
+      }, contents: [
+        d.dir('lib', [
+          d.file('foo.dart', '''
 // @dart = 2.9
           ''')
-          ])
-        ]),
-      );
+        ])
+      ]);
 
       await setup(
           sdkConstraint: '>=2.12.0 <3.0.0', dependencies: {'foo': '^0.0.1'});

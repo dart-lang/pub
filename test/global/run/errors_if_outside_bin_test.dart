@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -12,11 +10,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('errors if the script is in a subdirectory.', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('example', [d.file('script.dart', "main(args) => print('ok');")])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('example', [d.file('script.dart', "main(args) => print('ok');")])
+    ]);
 
     await runPub(args: ['global', 'activate', 'foo']);
     await runPub(

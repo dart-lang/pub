@@ -2,11 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -14,6 +11,7 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
+import '../golden_file.dart';
 import '../test_pub.dart';
 import 'utils.dart';
 
@@ -30,6 +28,36 @@ import 'utils.dart';
 const _pathMax = 260 - 1;
 
 void main() {
+  testWithGolden('displays all files', (context) async {
+    await d.validPackage.create();
+    await d.dir(
+      appPath,
+      [
+        d.dir(
+          'lib',
+          List.generate(20, (i) => d.file('file_$i.dart')),
+        ),
+      ],
+    ).create();
+    await servePackages();
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
+    pub.stdin.writeln('y');
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
+
+    globalServer.expect('GET', '/create', (request) {
+      return shelf.Response.ok(jsonEncode({
+        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+      }));
+    });
+    await pub.shouldExit(exit_codes.SUCCESS);
+    final stdout = await pub.stdout.rest.toList();
+
+    context.expectNextSection(
+        stdout.join('\n').replaceAll(globalServer.port.toString(), r'$PORT'));
+  });
+
   test(
       'archives and uploads a package with more files than can fit on '
       'the command line', () async {
@@ -38,7 +66,7 @@ void main() {
     int argMax;
     if (Platform.isWindows) {
       // On Windows, the maximum argument list length is 8^5 bytes.
-      argMax = math.pow(8, 5);
+      argMax = 32768; // 8^5
     } else {
       // On POSIX, the maximum argument list length can be retrieved
       // automatically.
@@ -76,14 +104,14 @@ void main() {
     }
 
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
-    handleUploadForm(globalPackageServer);
-    handleUpload(globalPackageServer);
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
 
-    globalPackageServer.expect('GET', '/create', (request) {
+    globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));

@@ -78,7 +78,7 @@ allows _package repository operators_ to identify which client a request is
 coming from. Including a URL allowing operators to reach owners/authors of the
 client is good practice.
 
- * `User-Agent: my-pub-bot/1.2.3 (+https://github.com/organization/<repository)`
+ * `User-Agent: my-pub-bot/1.2.3 (+https://github.com/organization/<repository>)`
 
 The `User-Agent` header also allows package repository to determine how many
 different clients would be affected by an API change.
@@ -91,8 +91,8 @@ This aims to increase robustness against intermittent network issues, while not
 overloading servers that are partially failing.
 
 Clients are strongly encouraged to employ exponential backoff starting at 200ms,
-400ms, etc. stopping after 5-7 retries. Excessive can have negative impact on
-servers and network performance.
+400ms, etc. stopping after 5-7 retries. Excessive retries can have a negative impact
+on servers and network performance.
 
 
 ## Rejecting Requests
@@ -227,7 +227,7 @@ server, this could work in many different ways.
   "replacedBy": "<package>", /* optional field, if isDiscontinued == true */
   "latest": {
     "version": "<version>",
-    "isRetracted": true || false, /* optional field, false if omitted */
+    "retracted": true || false, /* optional field, false if omitted */
     "archive_url": "https://.../archive.tar.gz",
     "pubspec": {
       /* pubspec contents as JSON object */
@@ -236,7 +236,7 @@ server, this could work in many different ways.
   "versions": [
     {
       "version": "<package>",
-      "isRetracted": true || false, /* optional field, false if omitted */
+      "retracted": true || false, /* optional field, false if omitted */
       "archive_url": "https://.../archive.tar.gz",
       "pubspec": {
         /* pubspec contents as JSON object */
@@ -371,7 +371,9 @@ This can be used to forbid git-dependencies in published packages, limit the
 archive size, or enforce any other repository specific constraints.
 
 This upload flow allows for archives to be uploaded directly to a signed POST
-URL for S3, GCS or similar blob storage service. Both the
+URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
+[GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
+similar blob storage service. Both the
 `<multipart-upload-url>` and `<finalize-upload-url>` is allowed to contain
 query-string parameters, and both of these URLs need only be temporary.
 

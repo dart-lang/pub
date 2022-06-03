@@ -2,12 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/source_registry.dart';
+import 'package:pub/src/source/git.dart';
+import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -39,9 +39,11 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackagesFile({
-      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'sub',
+          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
+    ]).validate();
   });
 
   test('depends on a package in a deep subdirectory', () async {
@@ -73,15 +75,99 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackagesFile({
-      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'sub',
+          path:
+              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
+    ]).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
 
-    expect(lockFile.packages['sub'].description['path'], 'sub/dir%25',
+    expect(
+        (lockFile.packages['sub']!.description.description as GitDescription)
+            .path,
+        'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
+  });
+
+  group('requires path to be absolute', () {
+    test('absolute path', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': '/subdir'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path URL.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+    test('scheme', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'https://subdir'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path URL.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+    test('fragment', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'subdir/dir#fragment'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path URL.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+
+    test('query', () async {
+      await d.appDir({
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'subdir/dir?query'}
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path URL.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
+
+    test('authority', () async {
+      await d.appDir({
+        'sub': {
+          'git': {
+            'url': '../foo.git',
+            'path': 'bob:pwd@somewhere.example.com/subdir'
+          }
+        }
+      }).create();
+
+      await pubGet(
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "sub" dependency: The \'path\' field of the description must be a relative path URL.',
+        ),
+        exitCode: exit_codes.DATA,
+      );
+    });
   });
 
   test('depends on a package in a deep subdirectory, non-relative uri',
@@ -117,14 +203,20 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackagesFile({
-      'sub': pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'sub',
+          path:
+              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
+    ]).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SourceRegistry());
+        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
 
-    expect(lockFile.packages['sub'].description['path'], 'sub/dir%25',
+    expect(
+        (lockFile.packages['sub']!.description.description as GitDescription)
+            .path,
+        'sub/dir%25',
         reason: 'use uris to specify the path relative to the repo');
   });
 
@@ -160,10 +252,14 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackagesFile({
-      'sub1': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1'),
-      'sub2': pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2')
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'sub1',
+          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1')),
+      d.packageConfigEntry(
+          name: 'sub2',
+          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2')),
+    ]).validate();
   });
 
   test('depends on packages in the same subdirectory at different revisions',
@@ -208,9 +304,11 @@ void main() {
       ])
     ]).validate();
 
-    await d.appPackagesFile({
-      'sub1': pathInCache('git/foo-$oldRevision/subdir'),
-      'sub2': pathInCache('git/foo-$newRevision/subdir')
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'sub1', path: pathInCache('git/foo-$oldRevision/subdir')),
+      d.packageConfigEntry(
+          name: 'sub2', path: pathInCache('git/foo-$newRevision/subdir')),
+    ]).validate();
   });
 }

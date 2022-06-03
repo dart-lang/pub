@@ -2,15 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../test_pub.dart';
 
 void main() {
   test('deactivates an active hosted package', () async {
-    await servePackages((builder) => builder.serve('foo', '1.0.0'));
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
     await runPub(args: ['global', 'activate', 'foo']);
 
