@@ -230,42 +230,14 @@ class Package {
       return p.join(root, path);
     }
 
-    // maintain list of resolved symlinks targets to detect cycles
-    final resolvedTargetToLink = <String, Set<String>>{};
+    // maintain set of visited symlinks for every directory
+    final visitedSymlinks = <String, Set<String>>{resolve(beneath): {}};
 
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
         final resolvedDir = resolve(dir);
-
-        if (linkExists(resolvedDir)) {
-          final link = Link(resolvedDir);
-          final target = link.targetSync();
-          final String resolvedTarget;
-
-          // default try to resolve a link
-          try {
-            resolvedTarget = link.resolveSymbolicLinksSync();
-          } on FileSystemException catch (_) {
-            throw DataException(
-              'Pub does not support publishing packages with non-resolving symlink: '
-              '`$resolvedDir` => `${link.targetSync()}`.',
-            );
-          }
-
-          // fallback for windows
-          if (Platform.isWindows) {
-            final isFirstOccurrence = resolvedTargetToLink
-                .putIfAbsent(resolvedTarget, () => <String>{})
-                .add(target);
-            if (!isFirstOccurrence) {
-              throw DataException(
-                'Pub does not support publishing packages with non-resolving symlink: '
-                '`$resolvedDir` => `${link.targetSync()}`.',
-              );
-            }
-          }
-        }
+        assertSymlinkLoop(resolvedDir, visitedSymlinks);
 
         var contents = Directory(resolvedDir).listSync(followLinks: false);
 
@@ -283,6 +255,7 @@ class Package {
           if (Platform.isWindows) {
             return p.posix.joinAll(p.split(relative));
           }
+          visitedSymlinks[resolve(relative)] = visitedSymlinks[resolvedDir]!;
           return relative;
         });
       },
@@ -343,15 +316,41 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).map(assertLinksResolvable).toList();
+    ).map(resolve).map(assertFileLinksResolvable).toList();
   }
 
-  String assertLinksResolvable(String path) {
+  void assertSymlinkLoop(
+    String resolvedDir,
+    Map<String, Set<String>> visitedSymlinks,
+  ) {
+    final link = Link(resolvedDir);
+    if (link.existsSync()) {
+      // "normalize" link path by resolving all links above it.
+      final resolvedLinkPath = p.join(
+        link.parent.resolveSymbolicLinksSync(),
+        link.uri.pathSegments.last,
+      );
+
+      // copy on write
+      final currentSymlinks =
+          visitedSymlinks[resolvedDir] = visitedSymlinks[resolvedDir]!.toSet();
+      if (!currentSymlinks.add(resolvedLinkPath)) {
+        final link = Link(resolvedDir);
+        final target = link.targetSync();
+        throw DataException(
+          'Pub does not support publishing packages with non-resolving symlink: '
+          '`$resolvedDir` => `$target`.',
+        );
+      }
+    }
+  }
+
+  String assertFileLinksResolvable(String path) {
     if (!linkExists(path)) {
       return path;
     }
-    final target = Link(path).targetSync();
     if (!fileExists(path)) {
+      final target = Link(path).targetSync();
       throw DataException(
           'Pub does not support publishing packages with non-resolving symlink: '
           '`$path` => `$target`.');
