@@ -231,13 +231,12 @@ class Package {
     }
 
     // maintain set of visited symlinks for every directory
-    final visitedSymlinks = <String, Set<String>>{resolve(beneath): {}};
-
+    final visitedSymlinks = <String, Set<String>>{};
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
         final resolvedDir = resolve(dir);
-        assertSymlinkLoop(resolvedDir, visitedSymlinks);
+        assertSymlinkLoop(dir, resolvedDir, visitedSymlinks);
 
         var contents = Directory(resolvedDir).listSync(followLinks: false);
 
@@ -255,7 +254,6 @@ class Package {
           if (Platform.isWindows) {
             return p.posix.joinAll(p.split(relative));
           }
-          visitedSymlinks[resolve(relative)] = visitedSymlinks[resolvedDir]!;
           return relative;
         });
       },
@@ -320,6 +318,7 @@ class Package {
   }
 
   void assertSymlinkLoop(
+    String dir,
     String resolvedDir,
     Map<String, Set<String>> visitedSymlinks,
   ) {
@@ -328,12 +327,12 @@ class Package {
       // "normalize" link path by resolving all links above it.
       final resolvedLinkPath = p.join(
         link.parent.resolveSymbolicLinksSync(),
-        link.uri.pathSegments.last,
+        p.basename(resolvedDir),
       );
 
       // copy on write
-      final currentSymlinks =
-          visitedSymlinks[resolvedDir] = visitedSymlinks[resolvedDir]!.toSet();
+      final currentSymlinks = visitedSymlinks[p.dirname(dir)] ?? <String>{};
+      visitedSymlinks[dir] = currentSymlinks;
       if (!currentSymlinks.add(resolvedLinkPath)) {
         final link = Link(resolvedDir);
         final target = link.targetSync();
