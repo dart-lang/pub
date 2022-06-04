@@ -318,7 +318,7 @@ class Package {
   }
 
   void assertSymlinkLoop(
-    String dir,
+    String posixDir,
     String resolvedDir,
     Map<String, Set<String>> visitedSymlinks,
   ) {
@@ -331,8 +331,9 @@ class Package {
       );
 
       // copy on write
-      final currentSymlinks = visitedSymlinks[p.dirname(dir)] ?? <String>{};
-      visitedSymlinks[dir] = currentSymlinks;
+      final currentSymlinks =
+          visitedSymlinks[p.posix.dirname(posixDir)] ?? <String>{};
+      visitedSymlinks[posixDir] = currentSymlinks;
       if (!currentSymlinks.add(resolvedLinkPath)) {
         final link = Link(resolvedDir);
         final target = link.targetSync();
