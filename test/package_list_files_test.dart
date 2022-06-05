@@ -166,7 +166,7 @@ void main() {
               (e) => e.message,
               'message',
               contains(
-                'Pub does not support publishing packages with symlinks loop:',
+                'Pub does not support publishing packages with non-resolving symlink:',
               ),
             ),
           ),
