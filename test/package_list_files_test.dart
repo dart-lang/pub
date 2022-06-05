@@ -187,11 +187,17 @@ void main() {
         createDirectorySymlink(
             p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'a');
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'a', 'symlink1'), '../b');
+          p.join(d.sandbox, appPath, 'subdir', 'a', 'symlink1'),
+          p.join('..', 'b'),
+        );
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'b', 'symlink2'), '../c');
+          p.join(d.sandbox, appPath, 'subdir', 'b', 'symlink2'),
+          p.join('..', 'c'),
+        );
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'c', 'symlink3'), '../a');
+          p.join(d.sandbox, appPath, 'subdir', 'c', 'symlink3'),
+          p.join('..', 'a'),
+        );
 
         createEntrypoint();
 
