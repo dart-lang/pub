@@ -248,7 +248,7 @@ class Package {
       beneath: beneath,
       listDir: (dir) {
         final resolvedDir = resolve(dir);
-        assertSymlinkLoop(dir, resolvedDir, visitedSymlinks);
+        _assertSymlinkLoop(dir, resolvedDir, visitedSymlinks);
 
         var contents = Directory(resolvedDir).listSync(followLinks: false);
 
@@ -326,10 +326,10 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).map(assertFileLinksResolvable).toList();
+    ).map(resolve).map(_assertFileLinksResolvable).toList();
   }
 
-  static void assertSymlinkLoop(
+  static void _assertSymlinkLoop(
     String internalDir,
     String resolvedDir,
     Map<String, Set<String>> visitedSymlinks,
@@ -363,7 +363,7 @@ class Package {
     visitedSymlinks[internalDir] = currentSymlinks;
   }
 
-  static String assertFileLinksResolvable(String path) {
+  static String _assertFileLinksResolvable(String path) {
     if (!linkExists(path)) {
       return path;
     }
