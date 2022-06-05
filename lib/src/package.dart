@@ -230,8 +230,20 @@ class Package {
       return p.join(root, path);
     }
 
-    // maintain set of visited symlinks for every directory
+    // Maintain set of visited symlinks for every directory.
+    // If the same symlink is visited twice while moving down the tree,
+    // then we have faced a loop.
+    //
+    // additional complexity:
+    // N - number of directory symlinks
+    // memory and time complexity are roughly the same:
+    //   from O(N) (without nested symlinks):
+    //     single set is created for each symlink and never copied
+    //   up to O(N^2) (each symlink is nested in previous one):
+    //     for each symlink clone set with all visited symlinks.
+    //     i-th set contains i symlinks.
     final visitedSymlinks = <String, Set<String>>{};
+
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
