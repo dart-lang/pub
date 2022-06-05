@@ -323,17 +323,21 @@ class Package {
     Map<String, Set<String>> visitedSymlinks,
   ) {
     final link = Link(resolvedDir);
+
+    var currentSymlinks =
+        visitedSymlinks[p.posix.dirname(posixDir)] ?? <String>{};
+    visitedSymlinks[posixDir] = currentSymlinks;
+
     if (link.existsSync()) {
+      // copy on write
+      visitedSymlinks[posixDir] = currentSymlinks = currentSymlinks.toSet();
+
       // "normalize" link path by resolving all links above it.
       final resolvedLinkPath = p.join(
         link.parent.resolveSymbolicLinksSync(),
         p.basename(resolvedDir),
       );
 
-      // copy on write
-      final currentSymlinks =
-          visitedSymlinks[p.posix.dirname(posixDir)] ?? <String>{};
-      visitedSymlinks[posixDir] = currentSymlinks;
       if (!currentSymlinks.add(resolvedLinkPath)) {
         final link = Link(resolvedDir);
         final target = link.targetSync();
