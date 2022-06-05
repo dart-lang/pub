@@ -330,13 +330,13 @@ class Package {
   }
 
   static void assertSymlinkLoop(
-    String posixDir,
+    String internalDir,
     String resolvedDir,
     Map<String, Set<String>> visitedSymlinks,
   ) {
     final link = Link(resolvedDir);
 
-    var currentSymlinks = visitedSymlinks[p.posix.dirname(posixDir)];
+    var currentSymlinks = visitedSymlinks[p.posix.dirname(internalDir)];
     currentSymlinks ??= <String>{};
 
     if (link.existsSync()) {
@@ -360,7 +360,7 @@ class Package {
       }
     }
 
-    visitedSymlinks[posixDir] = currentSymlinks;
+    visitedSymlinks[internalDir] = currentSymlinks;
   }
 
   static String assertFileLinksResolvable(String path) {
