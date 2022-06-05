@@ -324,13 +324,12 @@ class Package {
   ) {
     final link = Link(resolvedDir);
 
-    var currentSymlinks =
-        visitedSymlinks[p.posix.dirname(posixDir)] ?? <String>{};
-    visitedSymlinks[posixDir] = currentSymlinks;
+    var currentSymlinks = visitedSymlinks[p.posix.dirname(posixDir)];
+    currentSymlinks ??= <String>{};
 
     if (link.existsSync()) {
       // copy on write
-      visitedSymlinks[posixDir] = currentSymlinks = currentSymlinks.toSet();
+      currentSymlinks = currentSymlinks.toSet();
 
       // "normalize" link path by resolving all links above it.
       final resolvedLinkPath = p.join(
@@ -347,6 +346,8 @@ class Package {
         );
       }
     }
+
+    visitedSymlinks[posixDir] = currentSymlinks;
   }
 
   String assertFileLinksResolvable(String path) {
