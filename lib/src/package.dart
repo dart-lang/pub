@@ -341,8 +341,9 @@ class Package {
         final link = Link(resolvedDir);
         final target = link.targetSync();
         throw DataException(
-          'Pub does not support publishing packages with non-resolving symlink: '
-          '`$resolvedDir` => `$target`.',
+          'Pub does not support publishing packages with symlinks loop: '
+          '`$resolvedDir` => `$target`. '
+          'Full list of visited symlinks: $currentSymlinks',
         );
       }
     }
