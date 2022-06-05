@@ -329,7 +329,7 @@ class Package {
     ).map(resolve).map(assertFileLinksResolvable).toList();
   }
 
-  void assertSymlinkLoop(
+  static void assertSymlinkLoop(
     String posixDir,
     String resolvedDir,
     Map<String, Set<String>> visitedSymlinks,
@@ -363,7 +363,7 @@ class Package {
     visitedSymlinks[posixDir] = currentSymlinks;
   }
 
-  String assertFileLinksResolvable(String path) {
+  static String assertFileLinksResolvable(String path) {
     if (!linkExists(path)) {
       return path;
     }
