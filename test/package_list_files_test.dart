@@ -173,6 +173,42 @@ void main() {
         );
       });
 
+      test('throws on nested loop', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.dir('a', [d.file('file')]),
+            d.dir('b'),
+            d.dir('c'),
+          ]),
+        ]).create();
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'a');
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'subdir', 'a', 'symlink1'), '../b');
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'subdir', 'b', 'symlink2'), '../c');
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'subdir', 'c', 'symlink3'), '../a');
+
+        createEntrypoint();
+
+        expect(
+          () => entrypoint!.root.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains(
+                'Pub does not support publishing packages with symlinks loop:',
+              ),
+            ),
+          ),
+        );
+      });
+
       test('not throws on ignored link', () async {
         await d.dir(appPath, [
           d.pubspec({'name': 'myapp'}),
