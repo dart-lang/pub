@@ -195,6 +195,35 @@ void main() {
           p.join(root, 'subdir', 'a', 'file'),
         });
       });
+
+      test('not throws on valid links to the same directory', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.dir('a', [d.file('file')]),
+          ]),
+        ]).create();
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'subdir', 'symlink1'), 'a');
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'subdir', 'symlink2'), 'a');
+        createDirectorySymlink(
+            p.join(d.sandbox, appPath, 'symlink3'), p.join('subdir', 'a'));
+
+        createEntrypoint();
+
+        expect(entrypoint!.root.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.txt'),
+          p.join(root, 'subdir', 'a', 'file'),
+          p.join(root, 'subdir', 'symlink1', 'file'),
+          p.join(root, 'subdir', 'symlink2', 'file'),
+          p.join(root, 'symlink3', 'file'),
+        });
+      });
     });
   });
 
