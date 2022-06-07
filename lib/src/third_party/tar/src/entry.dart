@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-import 'constants.dart';
 import 'header.dart';
 
 /// An entry in a tar file.

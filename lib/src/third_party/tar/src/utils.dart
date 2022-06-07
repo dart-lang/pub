@@ -1,7 +1,10 @@
+@internal
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
+
+import 'package:meta/meta.dart';
 
 import 'charcodes.dart';
 import 'constants.dart';
@@ -95,7 +98,7 @@ extension ByteBufferUtils on Uint8List {
   int computeUnsignedHeaderChecksum() {
     // Accessing the last element first helps the VM eliminate bounds checks in
     // the loops below.
-    this[blockSize - 1];
+    this[blockSize - 1]; // ignore: unnecessary_statements
     var result = checksumLength * _checksumPlaceholder;
 
     for (var i = 0; i < checksumOffset; i++) {
@@ -109,7 +112,7 @@ extension ByteBufferUtils on Uint8List {
   }
 
   int computeSignedHeaderChecksum() {
-    this[blockSize - 1];
+    this[blockSize - 1]; // ignore: unnecessary_statements
     // Note that _checksumPlaceholder.toSigned(8) == _checksumPlaceholder
     var result = checksumLength * _checksumPlaceholder;
 
@@ -445,7 +448,7 @@ class BlockReader {
 
     var state = _StreamState.initial;
 
-    /// Sends trailing data to the stream. Reeturns true if the subscription
+    /// Sends trailing data to the stream. Returns true if the subscription
     /// should still be resumed afterwards.
     bool emitTrailing() {
       // Attempt to serve requests from pending data first.
@@ -512,13 +515,25 @@ class BlockReader {
     controller
       ..onListen = scheduleInitialEmit
       ..onPause = () {
-        assert(state == _StreamState.initial || state == _StreamState.attached);
+        assert(
+            state == _StreamState.initial ||
+                state == _StreamState.attached ||
+                state == _StreamState.done,
+            'Unexpected pause event in $state ($_remainingBlocksInOutgoing blocks remaining).');
 
         if (state == _StreamState.initial) {
           state = _StreamState.pausedAfterInitial;
-        } else {
+        } else if (state == _StreamState.attached) {
           _pause();
           state = _StreamState.pausedAfterAttached;
+        } else if (state == _StreamState.done) {
+          // It may happen that onPause is called in a state where we believe
+          // the stream to be done already. After the stream is done, we close
+          // the controller in a new microtask. So if the subscription is paused
+          // after the last event it emitted but before we close the controller,
+          // we can get a pause event here.
+          // There's nothing to do in that case.
+          assert(_subscription?.isPaused != false);
         }
       }
       ..onResume = () {

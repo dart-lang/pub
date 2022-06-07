@@ -1,8 +1,11 @@
+@internal
 import 'dart:typed_data';
+
+import 'package:meta/meta.dart';
 
 import 'charcodes.dart';
 import 'exception.dart';
-import 'header.dart' show TarHeader; // for dartdoc
+import 'header.dart';
 
 // Magic values to help us identify the TAR header type.
 const magicGnu = [$u, $s, $t, $a, $r, $space]; // 'ustar '
@@ -10,74 +13,6 @@ const versionGnu = [$space, 0]; // ' \x00'
 const magicUstar = [$u, $s, $t, $a, $r, 0]; // 'ustar\x00'
 const versionUstar = [$0, $0]; // '00'
 const trailerStar = [$t, $a, $r, 0]; // 'tar\x00'
-
-/// Type flags for [TarHeader].
-///
-/// The type flag of a header indicates the kind of file associated with the
-/// entry. This enum contains the various type flags over the different TAR
-/// formats, and users should be careful that the type flag corresponds to the
-/// TAR format they are working with.
-enum TypeFlag {
-  /// [reg] indicates regular files.
-  ///
-  /// Old tar implementations have a seperate `TypeRegA` value. This library
-  /// will transparently read those as [regA].
-  reg,
-
-  /// Legacy-version of [reg] in old tar implementations.
-  ///
-  /// This is only used internally.
-  regA,
-
-  /// Hard link - header-only, may not have a data body
-  link,
-
-  /// Symbolic link - header-only, may not have a data body
-  symlink,
-
-  /// Character device node - header-only, may not have a data body
-  char,
-
-  /// Block device node - header-only, may not have a data body
-  block,
-
-  /// Directory - header-only, may not have a data body
-  dir,
-
-  /// FIFO node - header-only, may not have a data body
-  fifo,
-
-  /// Currently does not have any meaning, but is reserved for the future.
-  reserved,
-
-  /// Used by the PAX format to store key-value records that are only relevant
-  /// to the next file.
-  ///
-  /// This package transparently handles these types.
-  xHeader,
-
-  /// Used by the PAX format to store key-value records that are relevant to all
-  /// subsequent files.
-  ///
-  /// This package only supports parsing and composing such headers,
-  /// but does not currently support persisting the global state across files.
-  xGlobalHeader,
-
-  /// Indiates a sparse file in the GNU format
-  gnuSparse,
-
-  /// Used by the GNU format for a meta file to store the path or link name for
-  /// the next file.
-  /// This package transparently handles these types.
-  gnuLongName,
-  gnuLongLink,
-
-  /// Vendor specific typeflag, as defined in POSIX.1-1998. Seen as outdated but
-  /// may still exist on old files.
-  ///
-  /// This library uses a single enum to catch them all.
-  vendor
-}
 
 /// Generates the corresponding [TypeFlag] associated with [byte].
 TypeFlag typeflagFromByte(int byte) {
