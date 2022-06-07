@@ -242,13 +242,27 @@ class Package {
     //   up to O(N^2) (each symlink is nested in previous one):
     //     for each symlink clone set with all visited symlinks.
     //     i-th set contains i symlinks.
-    final visitedSymlinks = <String, Set<String>>{};
+    final visitedSymlinks = <String>{};
 
-    return Ignore.listFiles(
+    final result = Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
         final resolvedDir = resolve(dir);
-        _assertSymlinkLoop(dir, resolvedDir, visitedSymlinks);
+
+        if (Link(resolvedDir).existsSync()) {
+          final canonicalLink = p.canonicalize(
+            p.join(
+              Directory(p.dirname(resolvedDir)).resolveSymbolicLinksSync(),
+              p.basename(resolvedDir),
+            ),
+          );
+          if (!visitedSymlinks.add(canonicalLink)) {
+            throw DataException(
+              'Pub does not support publishing packages with symlinks loop: '
+              '`$resolvedDir` => `$canonicalLink`. ',
+            );
+          }
+        }
 
         var contents = Directory(resolvedDir).listSync(followLinks: false);
 
@@ -326,54 +340,19 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).map(_assertFileLinksResolvable).toList();
-  }
+    ).map(resolve).toList();
 
-  static void _assertSymlinkLoop(
-    String internalDir,
-    String resolvedDir,
-    Map<String, Set<String>> visitedSymlinks,
-  ) {
-    final link = Link(resolvedDir);
-
-    var currentSymlinks = visitedSymlinks[p.posix.dirname(internalDir)];
-    currentSymlinks ??= <String>{};
-
-    if (link.existsSync()) {
-      // copy on write
-      currentSymlinks = currentSymlinks.toSet();
-
-      // "normalize" link path by resolving all links above it.
-      final resolvedLinkPath = p.join(
-        link.parent.resolveSymbolicLinksSync(),
-        p.basename(resolvedDir),
-      );
-
-      if (!currentSymlinks.add(resolvedLinkPath)) {
-        final link = Link(resolvedDir);
-        final target = link.targetSync();
+    // Check that all symlinks in [result] are valid.
+    for (final file in result) {
+      try {
+        File(file).resolveSymbolicLinksSync();
+      } on IOException {
         throw DataException(
-          'Pub does not support publishing packages with symlinks loop: '
-          '`$resolvedDir` => `$target`. '
-          'Full list of visited symlinks: $currentSymlinks',
-        );
+            'Pub does not support publishing packages with non-resolving symlink: '
+            '`$path`');
       }
     }
-
-    visitedSymlinks[internalDir] = currentSymlinks;
-  }
-
-  static String _assertFileLinksResolvable(String path) {
-    if (!linkExists(path)) {
-      return path;
-    }
-    if (!fileExists(path)) {
-      final target = Link(path).targetSync();
-      throw DataException(
-          'Pub does not support publishing packages with non-resolving symlink: '
-          '`$path` => `$target`.');
-    }
-    return path;
+    return result;
   }
 }
 
