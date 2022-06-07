@@ -114,7 +114,7 @@ class OutdatedCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    final mode = <String, Mode>{
+    final mode = <String, _Mode>{
       'outdated': _OutdatedMode(),
       'null-safety': _NullSafetyMode(cache, entrypoint,
           shouldShowSpinner: _shouldShowSpinner),
@@ -385,7 +385,7 @@ Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
 
 Future<void> _outputJson(
   List<_PackageDetails> rows,
-  Mode mode, {
+  _Mode mode, {
   required bool showAll,
   required bool includeDevDependencies,
 }) async {
@@ -422,7 +422,7 @@ Future<void> _outputJson(
 
 Future<void> _outputHuman(
   List<_PackageDetails> rows,
-  Mode mode, {
+  _Mode mode, {
   required bool showAll,
   required bool useColors,
   required bool includeDevDependencies,
@@ -435,7 +435,7 @@ Future<void> _outputHuman(
   required String directory,
 }) async {
   final directoryDesc = directory == '.' ? '' : ' in $directory';
-  log.message(mode.explanation(directoryDesc) + '\n');
+  log.message('${mode.explanation(directoryDesc)}\n');
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
@@ -596,7 +596,7 @@ Future<void> _outputHuman(
   }
 }
 
-abstract class Mode {
+abstract class _Mode {
   /// Analyzes the [_PackageDetails] according to a --mode and outputs a
   /// corresponding list of the versions
   /// [current, upgradable, resolvable, latest].
@@ -613,7 +613,7 @@ abstract class Mode {
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
 
-class _OutdatedMode implements Mode {
+class _OutdatedMode implements _Mode {
   @override
   String explanation(String directoryDescription) => '''
 Showing outdated packages$directoryDescription.
@@ -690,7 +690,7 @@ Showing outdated packages$directoryDescription.
   }
 }
 
-class _NullSafetyMode implements Mode {
+class _NullSafetyMode implements _Mode {
   final SystemCache cache;
   final Entrypoint entrypoint;
   final bool shouldShowSpinner;

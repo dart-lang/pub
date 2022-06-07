@@ -23,7 +23,7 @@ Future<void> testGetExecutable(
   errorMessage,
   CommandResolutionIssue? issue,
 }) async {
-  final _cachePath = getPubTestEnvironment()['PUB_CACHE'];
+  final cachePath = getPubTestEnvironment()['PUB_CACHE'];
   final oldVerbosity = log.verbosity;
   log.verbosity = log.Verbosity.none;
   if (executable == null) {
@@ -31,7 +31,7 @@ Future<void> testGetExecutable(
       () => getExecutableForCommand(
         command,
         root: root,
-        pubCacheDir: _cachePath,
+        pubCacheDir: cachePath,
         allowSnapshot: allowSnapshot,
       ),
       throwsA(
@@ -44,7 +44,7 @@ Future<void> testGetExecutable(
     final e = await getExecutableForCommand(
       command,
       root: root,
-      pubCacheDir: _cachePath,
+      pubCacheDir: cachePath,
       allowSnapshot: allowSnapshot,
     );
     expect(

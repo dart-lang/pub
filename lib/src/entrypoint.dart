@@ -51,7 +51,7 @@ final _sdkConstraint = () {
   // sdks:
   //   dart: ">=1.2.3 <2.0.0"
   // ```
-  var sdkNames = sdks.keys.map((name) => '  ' + name).join('|');
+  var sdkNames = sdks.keys.map((name) => '  $name').join('|');
   return RegExp(r'^(' + sdkNames + r'|sdk): "?([^"]*)"?$', multiLine: true);
 }();
 

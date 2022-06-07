@@ -80,7 +80,7 @@ Map<String, Uri> parse(List<int> source, Uri baseLocation,
       packageLocation = baseLocation.resolve(packageValue);
       if (!packageLocation.path.endsWith('/')) {
         packageLocation =
-            packageLocation.replace(path: packageLocation.path + "/");
+            packageLocation.replace(path: "${packageLocation.path}/");
       }
     }
     if (result.containsKey(packageName)) {
@@ -162,7 +162,7 @@ void write(StringSink output, Map<String, Uri> packageMapping,
       uri = _relativize(uri, baseUri);
     }
     if (!uri.path.endsWith('/')) {
-      uri = uri.replace(path: uri.path + '/');
+      uri = uri.replace(path: '${uri.path}/');
     }
     output.write(uri);
     output.writeln();
@@ -251,7 +251,7 @@ String checkValidPackageUri(Uri packageUri, String name) {
     }
     assert(badIndex < packageName.length);
     var badCharCode = packageName.codeUnitAt(badIndex);
-    var badChar = "U+" + badCharCode.toRadixString(16).padLeft(4, '0');
+    var badChar = "U+${badCharCode.toRadixString(16).padLeft(4, '0')}";
     if (badCharCode >= 0x20 && badCharCode <= 0x7e) {
       // Printable character.
       badChar = "'${packageName[badIndex]}' ($badChar)";

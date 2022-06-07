@@ -133,7 +133,7 @@ class PackageConfigFileDescriptor extends Descriptor {
     final packageConfigFile = File(p.join(parent ?? sandbox, name));
     await packageConfigFile.parent.create();
     await packageConfigFile.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(_config.toJson()) + '\n',
+      '${const JsonEncoder.withIndent('  ').convert(_config.toJson())}\n',
     );
   }
 

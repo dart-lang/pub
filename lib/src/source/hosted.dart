@@ -77,7 +77,7 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
   }
   // If there is a path, and it doesn't end in a slash we normalize to slash
   if (u.path.isNotEmpty && !u.path.endsWith('/')) {
-    u = u.replace(path: u.path + '/');
+    u = u.replace(path: '${u.path}/');
   }
   // pub.dev and pub.dartlang.org are identical.
   //

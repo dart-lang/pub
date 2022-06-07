@@ -777,12 +777,12 @@ $invocation
         invocation = '''
 if [ -f $snapshot ]; then
   dart "$snapshot" "\$@"
-  # The VM exits with code 253 if the snapshot version is out-of-date.	
-  # If it is, we need to delete it and run "pub global" manually.	
-  exit_code=\$?	
-  if [ \$exit_code != 253 ]; then	
-    exit \$exit_code	
-  fi	
+  # The VM exits with code 253 if the snapshot version is out-of-date.
+  # If it is, we need to delete it and run "pub global" manually.
+  exit_code=\$?
+  if [ \$exit_code != 253 ]; then
+    exit \$exit_code
+  fi
   dart pub global run ${package.name}:$script "\$@"
 else
   dart pub global run ${package.name}:$script "\$@"
@@ -858,7 +858,7 @@ $invocation
     if (Platform.isWindows) {
       // See if the shell can find one of the binstubs.
       // "\q" means return exit code 0 if found or 1 if not.
-      var result = runProcessSync('where', [r'\q', installed + '.bat']);
+      var result = runProcessSync('where', [r'\q', '$installed.bat']);
       if (result.exitCode == 0) return;
 
       log.warning("${log.yellow('Warning:')} Pub installs executables into "

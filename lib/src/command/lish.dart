@@ -133,7 +133,7 @@ class LishCommand extends PubCommand {
             '    pub token add $host\n';
       }
       if (error.serverMessage != null) {
-        msg += '\n' + error.serverMessage! + '\n';
+        msg += '\n${error.serverMessage!}\n';
       }
       dataError(msg + log.red('Authentication failed!'));
     } on PubHttpException catch (error) {

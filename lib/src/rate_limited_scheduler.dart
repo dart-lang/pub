@@ -110,7 +110,7 @@ class RateLimitedScheduler<J, V> {
       return await callback((jobId) {
         if (_started.contains(jobId)) return;
         final task = _Task(jobId, Zone.current);
-        _cache.putIfAbsent(jobId, () => Completer());
+        _cache.putIfAbsent(jobId, Completer.new);
         _queue.addLast(task);
         prescheduled.add(task);
 
@@ -127,7 +127,7 @@ class RateLimitedScheduler<J, V> {
   /// If [jobId] is not yet running, it will go to the front of the work queue
   /// to be scheduled next when there are free resources.
   Future<V> schedule(J jobId) {
-    final completer = _cache.putIfAbsent(jobId, () => Completer());
+    final completer = _cache.putIfAbsent(jobId, Completer.new);
     if (!_started.contains(jobId)) {
       final task = _Task(jobId, Zone.current);
       _queue.addFirst(task);

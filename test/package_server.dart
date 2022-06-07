@@ -186,7 +186,7 @@ class PackageServer {
     contents ??= [d.libDir(name, '$name $version')];
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
-    var package = _packages.putIfAbsent(name, () => _ServedPackage());
+    var package = _packages.putIfAbsent(name, _ServedPackage.new);
     package.versions[version] = _ServedPackageVersion(
       pubspecFields,
       contents: () {

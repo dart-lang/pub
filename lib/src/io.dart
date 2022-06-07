@@ -702,7 +702,7 @@ Future<PubProcessResult> runProcess(
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 @visibleForTesting
-Future<_PubProcess> startProcess(
+Future<PubProcess> startProcess(
   String executable,
   List<String> args, {
   String? workingDir,
@@ -721,7 +721,7 @@ Future<_PubProcess> startProcess(
           'Pub failed to run subprocess `$executable`: $e');
     }
 
-    var process = _PubProcess(ioProcess);
+    var process = PubProcess(ioProcess);
     unawaited(process.exitCode.whenComplete(resource.release));
     return process;
   });
@@ -752,7 +752,7 @@ PubProcessResult runProcessSync(
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
-class _PubProcess {
+class PubProcess {
   /// The underlying `dart:io` [Process].
   final Process _process;
 
@@ -811,8 +811,8 @@ class _PubProcess {
   /// error handler unless nothing has handled it.
   Future<int> get exitCode => _exitCode;
 
-  /// Creates a new [_PubProcess] wrapping [process].
-  _PubProcess(Process process) : _process = process {
+  /// Creates a new [PubProcess] wrapping [process].
+  PubProcess(Process process) : _process = process {
     var errorGroup = ErrorGroup();
 
     var pair = _consumerToSink(process.stdin);

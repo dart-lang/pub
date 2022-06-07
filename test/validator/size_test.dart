@@ -13,7 +13,7 @@ import 'utils.dart';
 
 Future<void> expectSizeValidationError(Matcher matcher) async {
   await expectValidation(
-    () => SizeValidator(),
+    SizeValidator.new,
     size: 100 * (1 << 20) + 1,
     errors: contains(matcher),
   );
@@ -23,8 +23,8 @@ void main() {
   test('considers a package valid if it is <= 100 MB', () async {
     await d.validPackage.create();
 
-    await expectValidation(() => SizeValidator(), size: 100);
-    await expectValidation(() => SizeValidator(), size: 100 * (1 << 20));
+    await expectValidation(SizeValidator.new, size: 100);
+    await expectValidation(SizeValidator.new, size: 100 * (1 << 20));
   });
 
   group('considers a package invalid if it is more than 100 MB', () {

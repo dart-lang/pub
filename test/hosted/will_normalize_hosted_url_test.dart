@@ -42,7 +42,7 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url + '/'},
+            'hosted': {'name': 'foo', 'url': '${globalServer.url}/'},
           },
         }),
       ]).create();
@@ -65,7 +65,7 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec({
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url + '//'},
+            'hosted': {'name': 'foo', 'url': '${globalServer.url}//'},
           },
         }),
       ]).create();
@@ -81,7 +81,7 @@ void main() {
     ///
     /// This is a bit of a hack, to easily test if hosted pub URLs with a path
     /// segment works and if the slashes are normalized.
-    void _proxyMyFolderToRoot() {
+    void proxyMyFolderToRoot() {
       globalServer.handle(
         RegExp('/my-folder/.*'),
         (r) async {
@@ -90,7 +90,7 @@ void main() {
           }
           final path = r.requestedUri.path.substring('/my-folder/'.length);
           final res = await http.get(
-            Uri.parse(globalServer.url + '/$path'),
+            Uri.parse('${globalServer.url}/$path'),
           );
           return Response(res.statusCode, body: res.bodyBytes, headers: {
             'Content-Type': res.headers['content-type']!,
@@ -102,11 +102,11 @@ void main() {
     test('will use normalized url with path', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
-      _proxyMyFolderToRoot();
+      proxyMyFolderToRoot();
 
       // testing with a normalized URL
-      final testUrl = globalServer.url + '/my-folder/';
-      final normalizedUrl = globalServer.url + '/my-folder/';
+      final testUrl = '${globalServer.url}/my-folder/';
+      final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
         d.appPubspec({
@@ -126,11 +126,11 @@ void main() {
     test('will normalize url with path by adding slash', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
-      _proxyMyFolderToRoot();
+      proxyMyFolderToRoot();
 
       // Testing with a URL that is missing the slash.
-      final testUrl = globalServer.url + '/my-folder';
-      final normalizedUrl = globalServer.url + '/my-folder/';
+      final testUrl = '${globalServer.url}/my-folder';
+      final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
         d.appPubspec({

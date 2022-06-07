@@ -72,7 +72,7 @@ class DependencyServicesReportCommand extends PubCommand {
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
 
-    Future<List<Object>> _computeUpgradeSet(
+    Future<List<Object>> computeUpgradeSet(
       Pubspec rootPubspec,
       PackageId? package, {
       required _UpgradeType upgradeType,
@@ -203,15 +203,15 @@ class DependencyServicesReportCommand extends PubCommand {
                 ?.versionOrHash(),
         'constraint':
             _constraintOf(compatiblePubspec, package.name)?.toString(),
-        'compatible': await _computeUpgradeSet(
+        'compatible': await computeUpgradeSet(
             compatiblePubspec, compatibleVersion,
             upgradeType: _UpgradeType.compatible),
         'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
             ? []
-            : await _computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
+            : await computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
                 upgradeType: _UpgradeType.singleBreaking),
         'multiBreaking': kind != 'transitive' && multiBreakingVersion != null
-            ? await _computeUpgradeSet(compatiblePubspec, multiBreakingVersion,
+            ? await computeUpgradeSet(compatiblePubspec, multiBreakingVersion,
                 upgradeType: _UpgradeType.multiBreaking)
             : [],
       });
