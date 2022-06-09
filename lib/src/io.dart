@@ -390,7 +390,7 @@ void _attempt(String description, void Function() operation,
     return null;
   }
 
-  const maxRetries = 10;
+  const maxRetries = 50;
   for (var i = 0; i < maxRetries; i++) {
     try {
       operation();
@@ -400,10 +400,9 @@ void _attempt(String description, void Function() operation,
       if (reason == null) rethrow;
 
       if (i < maxRetries - 1) {
-        final delayMilliseconds = 50 * (i + 1);
         log.io('Pub failed to $description because $reason. '
-            'Retrying in ${delayMilliseconds}ms.');
-        sleep(Duration(milliseconds: delayMilliseconds));
+            'Retrying in 50ms.');
+        sleep(Duration(milliseconds: 50));
       } else {
         fail('Pub failed to $description because $reason.\n'
             'This may be caused by a virus scanner or having a file\n'
