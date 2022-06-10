@@ -98,6 +98,39 @@ class Entrypoint {
   /// If not provided to the entrypoint, it will be loaded lazily from disk.
   LockFile get lockFile => _lockFile ??= _loadLockFile();
 
+  late final PackageConfig packageConfig = _loadPackageConfig();
+
+  PackageConfig _loadPackageConfig() {
+    void badPackageConfig() {
+      dataError('The "$packageConfigFile" file is not recognized by '
+          '"pub" version, please run "$topLevelProgram pub get".');
+    }
+
+    late String packageConfigRaw;
+    try {
+      packageConfigRaw = readTextFile(packageConfigFile);
+    } on FileException {
+      dataError(
+          'The "$packageConfigFile" file does not exist, please run "$topLevelProgram pub get".');
+    }
+
+    late PackageConfig cfg;
+    try {
+      cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
+    } on FormatException {
+      badPackageConfig();
+    }
+
+    // Version 2 is the initial version number for `package_config.json`,
+    // because `.packages` was version 1 (even if it was a different file).
+    // If the version is different from 2, then it must be a newer incompatible
+    // version, hence, the user should run `pub get` with the downgraded SDK.
+    if (cfg.configVersion != 2) {
+      badPackageConfig();
+    }
+    return cfg;
+  }
+
   LockFile _loadLockFile() {
     if (!fileExists(lockFilePath)) {
       return _lockFile = LockFile.empty();
@@ -117,9 +150,21 @@ class Entrypoint {
 
   PackageGraph _createPackageGraph() {
     assertUpToDate();
-    var packages = {
-      for (var id in lockFile.packages.values) id.name: cache.load(id)
-    };
+
+    final packages = <String, Package>{};
+    for (var pkg in packageConfig.packages) {
+      // We only want to load packages from the lockfile, this will exclude
+      // the flutter_gen package.
+      if (lockFile.packages.containsKey(pkg.name)) {
+        final pubspecDir = p.normalize(
+          p.join(p.dirname(packageConfigFile), pkg.rootUri.toFilePath()),
+        );
+        packages[pkg.name] = Package(
+          Pubspec.load(pubspecDir, cache.sources),
+          pubspecDir,
+        );
+      }
+    }
     packages[root.name] = root;
 
     return PackageGraph(this, lockFile, packages);
@@ -780,33 +825,7 @@ class Entrypoint {
           'was generated, please run "$topLevelProgram pub get" again.');
     }
 
-    void badPackageConfig() {
-      dataError('The "$packageConfigFile" file is not recognized by '
-          '"pub" version, please run "$topLevelProgram pub get".');
-    }
-
-    late String packageConfigRaw;
-    try {
-      packageConfigRaw = readTextFile(packageConfigFile);
-    } on FileException {
-      dataError(
-          'The "$packageConfigFile" file does not exist, please run "$topLevelProgram pub get".');
-    }
-
-    late PackageConfig cfg;
-    try {
-      cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
-    } on FormatException {
-      badPackageConfig();
-    }
-
-    // Version 2 is the initial version number for `package_config.json`,
-    // because `.packages` was version 1 (even if it was a different file).
-    // If the version is different from 2, then it must be a newer incompatible
-    // version, hence, the user should run `pub get` with the downgraded SDK.
-    if (cfg.configVersion != 2) {
-      badPackageConfig();
-    }
+    final cfg = packageConfig;
 
     final packagePathsMapping = <String, String>{};
 
@@ -822,7 +841,8 @@ class Entrypoint {
     for (final pkg in packagesToCheck) {
       // Pub always makes a packageUri of lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
-        badPackageConfig();
+        dataError('The "$packageConfigFile" file is not recognized by '
+            '"pub" version, please run "$topLevelProgram pub get".');
       }
       packagePathsMapping[pkg.name] =
           root.path('.dart_tool', p.fromUri(pkg.rootUri));
