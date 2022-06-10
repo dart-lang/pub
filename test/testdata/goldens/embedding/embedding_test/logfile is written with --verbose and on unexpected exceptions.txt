@@ -289,7 +289,6 @@ ERR : Bad state: Pub has crashed
 FINE: Exception type: StateError
 ERR : tool/test-bin/pub_command_runner.dart $LINE:$COL   ThrowingCommand.runProtected
    | package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
-   | package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
    | dart:async   new Future.sync
    | package:pub/src/utils.dart $LINE:$COL   captureErrors.wrappedCallback
    | dart:async   runZonedGuarded

@@ -231,7 +231,7 @@ main() {
 }
 
 String _filter(String input) {
-  return input
+  final r = input
       .replaceAll(p.toUri(d.sandbox).toString(), r'file://$SANDBOX')
       .replaceAll(d.sandbox, r'$SANDBOX')
       .replaceAll(Platform.pathSeparator, '/')
@@ -326,5 +326,16 @@ String _filter(String input) {
       .replaceAll(
         RegExp(r'Writing \d+ characters', multiLine: true),
         r'Writing $N characters',
-      );
+      )
+
+      /// TODO(sigurdm): This hack suppresses differences in stack-traces
+      /// between dart 2.17 and 2.18. Remove when 2.18 is stable.
+      .replaceAllMapped(
+          RegExp(
+            r'(^(.*)pub/src/command.dart \$LINE:\$COL(.*)$)\n\1',
+            multiLine: true,
+          ),
+          (match) => match[1]!);
+  print(r);
+  return r;
 }
