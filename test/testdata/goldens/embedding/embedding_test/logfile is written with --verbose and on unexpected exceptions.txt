@@ -249,7 +249,6 @@ $ tool/test-bin/pub_command_runner.dart pub fail
 [E] Bad state: Pub has crashed
 [E]  tool/test-bin/pub_command_runner.dart $LINE:$COL   ThrowingCommand.runProtected
 [E] package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
-[E] package:pub/src/command.dart $LINE:$COL   PubCommand.run.<fn>
 [E] dart:async   new Future.sync
 [E] package:pub/src/utils.dart $LINE:$COL   captureErrors.wrappedCallback
 [E] dart:async   runZonedGuarded

@@ -39,10 +39,15 @@ Future<void> runEmbeddingToBuffer(
   );
   await process.shouldExit(exitCode);
 
+  final stdoutLines = await process.stdout.rest.toList();
+  final stderrLines = await process.stderr.rest.toList();
+
   buffer.writeln([
     '\$ $_commandRunner ${args.join(' ')}',
-    ...await process.stdout.rest.map(_filter).toList(),
-    ...await process.stderr.rest.map((e) => '[E] ${_filter(e)}').toList(),
+    if (stdoutLines.isNotEmpty) _filter(stdoutLines.join('\n')),
+    if (stderrLines.isNotEmpty)
+      _filter(stderrLines.join('\n'))
+          .replaceAll(RegExp('^', multiLine: true), '[E] '),
   ].join('\n'));
   buffer.write('\n');
 }
@@ -231,7 +236,7 @@ main() {
 }
 
 String _filter(String input) {
-  final r = input
+  return input
       .replaceAll(p.toUri(d.sandbox).toString(), r'file://$SANDBOX')
       .replaceAll(d.sandbox, r'$SANDBOX')
       .replaceAll(Platform.pathSeparator, '/')
@@ -336,6 +341,4 @@ String _filter(String input) {
             multiLine: true,
           ),
           (match) => match[1]!);
-  print(r);
-  return r;
 }
