@@ -390,7 +390,8 @@ void _attempt(String description, void Function() operation,
     return null;
   }
 
-  for (var i = 0; i < 3; i++) {
+  const maxRetries = 50;
+  for (var i = 0; i < maxRetries; i++) {
     try {
       operation();
       break;
@@ -398,7 +399,7 @@ void _attempt(String description, void Function() operation,
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      if (i < 2) {
+      if (i < maxRetries - 1) {
         log.io('Pub failed to $description because $reason. '
             'Retrying in 50ms.');
         sleep(Duration(milliseconds: 50));
