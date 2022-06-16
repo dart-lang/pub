@@ -228,6 +228,14 @@ main() {
     await runEmbeddingToBuffer(['--verbose', 'pub', 'logout'], buffer);
     expect(buffer.toString(), contains('FINE: Pub 0.1.2+3'));
   });
+
+  testWithGolden('--help', (context) async {
+    await servePackages();
+    await context.runEmbedding(
+      ['pub', '--help'],
+      workingDirectory: d.path('.'),
+    );
+  });
 }
 
 String _filter(String input) {

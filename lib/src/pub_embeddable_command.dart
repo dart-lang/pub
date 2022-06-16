@@ -61,8 +61,6 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   final bool Function() isVerbose;
 
   PubEmbeddableCommand(this.analytics, this.isVerbose) : super() {
-    argParser.addFlag('trace',
-        help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Print detailed logging.');
     argParser.addOption(
