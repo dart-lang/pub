@@ -47,13 +47,6 @@ class OutdatedCommand extends PubCommand {
 
   OutdatedCommand() {
     argParser.addFlag(
-      'color',
-      help: 'Whether to color the output.\n'
-          'Defaults to color when connected to a '
-          'terminal, and no-color otherwise.',
-    );
-
-    argParser.addFlag(
       'dependency-overrides',
       defaultsTo: true,
       help: 'Show resolutions with `dependency_overrides`.',
@@ -270,14 +263,8 @@ class OutdatedCommand extends PubCommand {
         includeDevDependencies: includeDevDependencies,
       );
     } else {
-      if (argResults.wasParsed('color')) {
-        forceColors = argResults['color'];
-      }
-      final useColors =
-          argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
-
       await _outputHuman(rows, mode,
-          useColors: useColors,
+          useColors: canUseAnsiCodes,
           showAll: showAll,
           includeDevDependencies: includeDevDependencies,
           lockFileExists: fileExists(entrypoint.lockFilePath),

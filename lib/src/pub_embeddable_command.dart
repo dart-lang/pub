@@ -65,6 +65,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
         help: 'Print debugging information when an error occurs.');
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Print detailed logging.');
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',

@@ -35,6 +35,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
+import 'utils.dart';
 
 /// The name of the program that is invoking pub
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
@@ -121,6 +122,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -155,7 +157,8 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
   Future<int> run(Iterable<String> args) async {
     try {
-      _argResults = parse(args);
+      final argResults = parse(args);
+      _argResults = argResults;
       return await runCommand(argResults) ?? exit_codes.SUCCESS;
     } on UsageException catch (error) {
       log.exception(error);

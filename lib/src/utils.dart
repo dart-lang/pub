@@ -389,8 +389,14 @@ String niceDuration(Duration duration) {
 String _urlDecode(String encoded) =>
     Uri.decodeComponent(encoded.replaceAll('+', ' '));
 
-/// Set to `true` if ANSI colors should be output regardless of terminalD
-bool forceColors = false;
+enum ForceColorOption {
+  always,
+  never,
+  auto,
+}
+
+/// Change to decide if ANSI colors should be output regardless of terminalD.
+ForceColorOption forceColors = ForceColorOption.auto;
 
 /// Whether ansi codes such as color escapes are safe to use.
 ///
@@ -398,8 +404,18 @@ bool forceColors = false;
 ///
 /// Tests should make sure to run the subprocess with or without an attached
 /// terminal to decide if colors will be provided.
-bool get canUseAnsiCodes =>
-    forceColors || (stdout.hasTerminal && stdout.supportsAnsiEscapes);
+bool get canUseAnsiCodes {
+  switch (forceColors) {
+    case ForceColorOption.always:
+      return true;
+    case ForceColorOption.never:
+      return false;
+    case ForceColorOption.auto:
+      return (!Platform.environment.containsKey('NO_COLOR')) &&
+          stdout.hasTerminal &&
+          stdout.supportsAnsiEscapes;
+  }
+}
 
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';

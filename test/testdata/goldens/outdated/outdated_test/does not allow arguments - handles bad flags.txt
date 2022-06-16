@@ -6,9 +6,6 @@ $ pub outdated random_argument
 [STDERR] 
 [STDERR] Usage: pub outdated [options]
 [STDERR] -h, --help                         Print this usage information.
-[STDERR]     --[no-]color                   Whether to color the output.
-[STDERR]                                    Defaults to color when connected to a
-[STDERR]                                    terminal, and no-color otherwise.
 [STDERR]     --[no-]dependency-overrides    Show resolutions with `dependency_overrides`.
 [STDERR]                                    (defaults to on)
 [STDERR]     --[no-]dev-dependencies        Take dev dependencies into account.
@@ -38,9 +35,6 @@ $ pub outdated --bad_flag
 [STDERR] 
 [STDERR] Usage: pub outdated [options]
 [STDERR] -h, --help                         Print this usage information.
-[STDERR]     --[no-]color                   Whether to color the output.
-[STDERR]                                    Defaults to color when connected to a
-[STDERR]                                    terminal, and no-color otherwise.
 [STDERR]     --[no-]dependency-overrides    Show resolutions with `dependency_overrides`.
 [STDERR]                                    (defaults to on)
 [STDERR]     --[no-]dev-dependencies        Take dev dependencies into account.

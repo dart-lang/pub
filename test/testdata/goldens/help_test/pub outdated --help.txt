@@ -6,9 +6,6 @@ Analyze your dependencies to find which ones can be upgraded.
 
 Usage: pub outdated [options]
 -h, --help                         Print this usage information.
-    --[no-]color                   Whether to color the output.
-                                   Defaults to color when connected to a
-                                   terminal, and no-color otherwise.
     --[no-]dependency-overrides    Show resolutions with `dependency_overrides`.
                                    (defaults to on)
     --[no-]dev-dependencies        Take dev dependencies into account.
