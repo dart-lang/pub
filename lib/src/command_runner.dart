@@ -35,7 +35,6 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
-import 'utils.dart';
 
 /// The name of the program that is invoking pub
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
