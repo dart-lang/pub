@@ -178,7 +178,8 @@ abstract class PubCommand extends Command<int> {
   @override
   @nonVirtual
   FutureOr<int> run() async {
-    computeCommand(_pubTopLevel.argResults);
+    _computeCommand(_pubTopLevel.argResults);
+    _decideOnColors(_pubTopLevel.argResults);
 
     log.verbosity = _pubTopLevel.verbosity;
     log.fine('Pub ${sdk.version}');
@@ -300,7 +301,17 @@ and attaching the relevant parts of that log file.
   /// returned. For instance `install` becomes `get`.
   static final String command = _command ?? '';
 
-  static void computeCommand(ArgResults argResults) {
+  static void _decideOnColors(ArgResults argResults) {
+    if (!argResults.wasParsed('color')) {
+      forceColors = ForceColorOption.auto;
+    } else {
+      forceColors = argResults['color'] as bool
+          ? ForceColorOption.always
+          : ForceColorOption.never;
+    }
+  }
+
+  static void _computeCommand(ArgResults argResults) {
     var list = <String?>[];
     for (var command = argResults.command;
         command != null;
@@ -329,6 +340,17 @@ abstract class PubTopLevel {
   bool get captureStackChains;
   log.Verbosity get verbosity;
   bool get trace;
+
+  static addColorFlag(ArgParser argParser) {
+    argParser.addFlag(
+      'color',
+      help: 'Use colors in terminal output.\n'
+          'Defaults to color when connected to a '
+          'terminal, and no-color otherwise.',
+    );
+  }
+
+  /// The directory containing the pubspec.yaml of the project to work on.
   String? get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.

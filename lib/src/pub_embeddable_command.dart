@@ -66,6 +66,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     argParser.addFlag('trace', hide: true);
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Print detailed logging.');
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',

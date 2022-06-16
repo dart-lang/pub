@@ -6,6 +6,9 @@ Work with packages.
 Usage: pub_command_runner pub [arguments...]
 -h, --help   Print this usage information.
 -v, --verbose   Print detailed logging.
+   --[no-]color   Use colors in terminal output.
+   Defaults to color when connected to a terminal, and
+   no-color otherwise.
 -C, --directory=<dir>   Run the subcommand in the directory<dir>.
    (defaults to ".")
 

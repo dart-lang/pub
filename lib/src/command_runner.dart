@@ -121,6 +121,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -155,7 +156,8 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
   Future<int> run(Iterable<String> args) async {
     try {
-      _argResults = parse(args);
+      final argResults = parse(args);
+      _argResults = argResults;
       return await runCommand(argResults) ?? exit_codes.SUCCESS;
     } on UsageException catch (error) {
       log.exception(error);

@@ -241,6 +241,23 @@ main() {
       workingDirectory: d.path('.'),
     );
   });
+
+  testWithGolden('--color forces colors', (context) async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    server.serve('foo', '2.0.0');
+    await d.appDir({'foo': '^1.0.0'}).create();
+    await context.runEmbedding(
+      ['pub', '--no-color', 'get'],
+      environment: getPubTestEnvironment(),
+      workingDirectory: d.path(appPath),
+    );
+    await context.runEmbedding(
+      ['pub', '--color', 'get'],
+      workingDirectory: d.path(appPath),
+      environment: getPubTestEnvironment(),
+    );
+  });
 }
 
 String _filter(String input) {
