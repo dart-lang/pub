@@ -39,10 +39,15 @@ Future<void> runEmbeddingToBuffer(
   );
   await process.shouldExit(exitCode);
 
+  final stdoutLines = await process.stdout.rest.toList();
+  final stderrLines = await process.stderr.rest.toList();
+
   buffer.writeln([
     '\$ $_commandRunner ${args.join(' ')}',
-    ...await process.stdout.rest.map(_filter).toList(),
-    ...await process.stderr.rest.map((e) => '[E] ${_filter(e)}').toList(),
+    if (stdoutLines.isNotEmpty) _filter(stdoutLines.join('\n')),
+    if (stderrLines.isNotEmpty)
+      _filter(stderrLines.join('\n'))
+          .replaceAll(RegExp('^', multiLine: true), '[E] '),
   ].join('\n'));
   buffer.write('\n');
 }
@@ -228,6 +233,14 @@ main() {
     await runEmbeddingToBuffer(['--verbose', 'pub', 'logout'], buffer);
     expect(buffer.toString(), contains('FINE: Pub 0.1.2+3'));
   });
+
+  testWithGolden('--help', (context) async {
+    await servePackages();
+    await context.runEmbedding(
+      ['pub', '--help'],
+      workingDirectory: d.path('.'),
+    );
+  });
 }
 
 String _filter(String input) {
@@ -326,5 +339,14 @@ String _filter(String input) {
       .replaceAll(
         RegExp(r'Writing \d+ characters', multiLine: true),
         r'Writing $N characters',
-      );
+      )
+
+      /// TODO(sigurdm): This hack suppresses differences in stack-traces
+      /// between dart 2.17 and 2.18. Remove when 2.18 is stable.
+      .replaceAllMapped(
+          RegExp(
+            r'(^(.*)pub/src/command.dart \$LINE:\$COL(.*)$)\n\1',
+            multiLine: true,
+          ),
+          (match) => match[1]!);
 }
