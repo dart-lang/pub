@@ -191,7 +191,11 @@ class Entrypoint {
     bool withPubspecOverrides = true,
   })  : root = Package.load(null, rootDir, cache.sources,
             withPubspecOverrides: withPubspecOverrides),
-        globalDir = null;
+        globalDir = null {
+    if (p.isWithin(cache.rootDir, rootDir)) {
+      fail('Cannot operate on packages inside the cache.');
+    }
+  }
 
   Entrypoint.inMemory(this.root, this.cache,
       {required LockFile? lockFile, SolveResult? solveResult})
