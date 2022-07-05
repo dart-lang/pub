@@ -6,8 +6,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/third_party/tar/tar.dart';
+import 'package:pub/src/utils.dart' show hexEncode;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -24,8 +26,11 @@ class PackageServer {
   /// Handlers of requests. Last matching handler will be used.
   final List<_PatternAndHandler> _handlers = [];
 
-  // A list of all the requests recieved up till now.
+  // A list of all the requests received up till now.
   final List<String> requestedPaths = <String>[];
+
+  // Setting this to true will make automatic calculation of content-hashes.
+  bool serveContentHashes = false;
 
   PackageServer._(this._inner) {
     _inner.mount((request) {
@@ -53,7 +58,7 @@ class PackageServer {
         PackageServer._(await shelf_io.IOServer.bind('localhost', 0));
     server.handle(
       _versionInfoPattern,
-      (shelf.Request request) {
+      (shelf.Request request) async {
         final parts = request.url.pathSegments;
         assert(parts[0] == 'api');
         assert(parts[1] == 'packages');
@@ -66,13 +71,20 @@ class PackageServer {
         return shelf.Response.ok(jsonEncode({
           'name': name,
           'uploaders': ['nweiz@google.com'],
-          'versions': package.versions.values
-              .map((version) => packageVersionApiMap(
-                    server._inner.url.toString(),
-                    version.pubspec,
-                    retracted: version.isRetracted,
-                  ))
-              .toList(),
+          'versions': [
+            for (final version in package.versions.values)
+              {
+                'pubspec': version.pubspec,
+                'version': version.version.toString(),
+                'archive_url':
+                    '${server.url}/packages/$name/versions/${version.version}.tar.gz',
+                if (version.isRetracted) 'retracted': true,
+                if (version.sha256 != null || server.serveContentHashes)
+                  'archive_sha256': version.sha256 ??
+                      hexEncode(
+                          (await sha256.bind(version.contents()).first).bytes)
+              }
+          ],
           if (package.isDiscontinued) 'isDiscontinued': true,
           if (package.discontinuedReplacementText != null)
             'replacedBy': package.discontinuedReplacementText,
@@ -207,7 +219,7 @@ class PackageServer {
                   // file mode
                   mode: 420,
                   // size: 100,
-                  modified: DateTime.now(),
+                  modified: DateTime.fromMicrosecondsSinceEpoch(0),
                   userName: 'pub',
                   groupName: 'pub',
                 ),
@@ -243,6 +255,16 @@ class PackageServer {
   void retractPackageVersion(String name, String version) {
     _packages[name]!.versions[version]!.isRetracted = true;
   }
+
+  /// Useful for testing handling of a wrong hash.
+  void setSha256(String name, String version, String sha256) {
+    _packages[name]!.versions[version]!.sha256 = sha256;
+  }
+
+  Future<String> getSha256(String name, String version) async {
+    final v = _packages[name]!.versions[version]!;
+    return v.sha256 ?? hexEncode((await sha256.bind(v.contents()).first).bytes);
+  }
 }
 
 class _ServedPackage {
@@ -256,6 +278,8 @@ class _ServedPackageVersion {
   final Map pubspec;
   final Stream<List<int>> Function() contents;
   bool isRetracted = false;
+  // Overrides the calculated sha256.
+  String? sha256;
 
   Version get version => Version.parse(pubspec['version']);
 

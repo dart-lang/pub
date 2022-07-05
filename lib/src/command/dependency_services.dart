@@ -24,6 +24,7 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/git.dart';
+import '../source/hosted.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 
@@ -394,6 +395,11 @@ class DependencyServicesApplyCommand extends PubCommand {
             lockFileYaml['packages'].containsKey(targetPackage)) {
           lockFileEditor.update(
               ['packages', targetPackage, 'version'], targetVersion.toString());
+          // Remove the now outdated content-hash - it will be restored below
+          // after resolution.
+          lockFileEditor.remove(
+            ['packages', targetPackage, 'description', 'sha256'],
+          );
         } else if (targetRevision != null &&
             lockFileYaml['packages'].containsKey(targetPackage)) {
           final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
@@ -457,8 +463,48 @@ class DependencyServicesApplyCommand extends PubCommand {
           writeTextFile(entrypoint.pubspecPath, updatedPubspec);
         }
         // Only if we originally had a lock-file we write the resulting lockfile back.
-        if (lockFileEditor != null) {
-          entrypoint.saveLockFile(solveResult);
+        if (updatedLockfile != null) {
+          final updatedPackages = <PackageId>[];
+          for (final package in solveResult.packages) {
+            if (package.isRoot) continue;
+            final description = package.description;
+            if (description is ResolvedHostedDescription &&
+                description.sha256 == null) {
+              // We removed the hash above before resolution - as we get the
+              // locked id back we need to find the content-hash from the
+              // version listing.
+              //
+              // `pub get` gets this version-listing from the downloaded archive
+              // but we don't want to download all archives - so we copy it from
+              // the version listing.
+              final listedId = (await cache.getVersions(package.toRef()))
+                  .firstWhere((id) => id == package);
+              if ((listedId.description as ResolvedHostedDescription).sha256 ==
+                  null) {
+                // This happens when we resolved a package from a server not
+                // providing archive_sha256. As a side-effect of downloading
+                // the package we compute and store the sha256, and that will
+                // be picked up by entrypoint.saveLockFile.
+                await cache.downloadPackage(
+                  package,
+                  allowOutdatedHashChecks: false,
+                );
+              }
+              updatedPackages.add(listedId);
+            } else {
+              updatedPackages.add(package);
+            }
+          }
+
+          final newLockFile = LockFile(
+            updatedPackages,
+            sdkConstraints: updatedLockfile.sdkConstraints,
+            mainDependencies: pubspec.dependencies.keys.toSet(),
+            devDependencies: pubspec.devDependencies.keys.toSet(),
+            overriddenDependencies: pubspec.dependencyOverrides.keys.toSet(),
+          );
+
+          newLockFile.writeToFile(entrypoint.lockFilePath, cache);
         }
       },
     );

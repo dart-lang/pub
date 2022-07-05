@@ -77,7 +77,7 @@ class CacheAddCommand extends PubCommand {
       }
 
       // Download it.
-      await cache.downloadPackage(id);
+      await cache.downloadPackage(id, allowOutdatedHashChecks: true);
     }
 
     if (argResults['all']) {

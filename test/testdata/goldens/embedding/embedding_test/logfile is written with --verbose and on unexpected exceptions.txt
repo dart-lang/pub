@@ -56,6 +56,9 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | x-content-type-options: nosniff
 [E]    | server: dart:io with Shelf
 [E] IO  : Creating $FILE from stream
+[E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.hashes/foo-1.0.0.sha256.
+[E] FINE: Contents:
+[E]    | 5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72
 [E] FINE: Created $FILE from stream
 [E] IO  : Created temp directory $DIR
 [E] IO  : Reading binary file $FILE.
@@ -76,6 +79,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   dependency: "direct main"
 [E]    |   description:
 [E]    |   name: foo
+[E]    |   sha256: "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
 [E]    |   url: "http://localhost:$PORT"
 [E]    |   source: hosted
 [E]    |   version: "1.0.0"
@@ -133,6 +137,7 @@ packages:
    dependency: "direct main"
    description:
    name: foo
+   sha256: "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
    url: "http://localhost:$PORT"
    source: hosted
    version: "1.0.0"
@@ -194,6 +199,9 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/
    | x-content-type-options: nosniff
    | server: dart:io with Shelf
 IO  : Creating $FILE from stream
+IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.hashes/foo-1.0.0.sha256.
+FINE: Contents:
+   | 5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72
 FINE: Created $FILE from stream
 IO  : Created temp directory $DIR
 IO  : Reading binary file $FILE.
@@ -214,6 +222,7 @@ FINE: Contents:
    |   dependency: "direct main"
    |   description:
    |   name: foo
+   |   sha256: "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
    |   url: "http://localhost:$PORT"
    |   source: hosted
    |   version: "1.0.0"

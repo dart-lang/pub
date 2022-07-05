@@ -12,6 +12,7 @@ import 'package:test/test.dart';
 void main() {
   final description = ResolvedHostedDescription(
     HostedDescription('foo', 'https://pub.dartlang.org'),
+    sha256: null,
   );
   test('reformatMax when max has a build identifier', () {
     expect(

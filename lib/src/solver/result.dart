@@ -5,7 +5,7 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import '../http.dart';
+import '../exceptions.dart';
 import '../io.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
@@ -13,9 +13,9 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
-import '../source/cached.dart';
 import '../source/hosted.dart';
 import '../system_cache.dart';
+import '../utils.dart';
 import 'report.dart';
 import 'type.dart';
 
@@ -77,17 +77,6 @@ class SolveResult {
 
   final LockFile _previousLockFile;
 
-  /// Downloads all cached packages in [packages].
-  Future<void> downloadCachedPackages(SystemCache cache) async {
-    await Future.wait(packages.map((id) async {
-      final source = id.source;
-      if (source is! CachedSource) return;
-      return await withDependencyType(_root.dependencyType(id.name), () async {
-        await source.downloadToSystemCache(id, cache);
-      });
-    }));
-  }
-
   /// Returns the names of all packages that were changed.
   ///
   /// This includes packages that were added or removed.
@@ -104,6 +93,35 @@ class SolveResult {
 
   SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
       this.availableVersions, this.attemptedSolutions, this.resolutionTime);
+
+  /// Checks that the SolveResult is compatible with [_previousLockfile]
+  ///
+  /// Throws if pubspec.yaml isn't satisfied.
+  Future<void> enforceLockfile() async {
+    for (final package in packages) {
+      if (package.isRoot) continue;
+      final previousPackage = _previousLockFile.packages[package.name];
+      if (previousPackage == null) {
+        throw ApplicationException(
+            'Dependency ${package.name} is not already locked in `pubspec.lock`.');
+      }
+      if (previousPackage != package) {
+        throw ApplicationException(
+            'Dependency ${package.name} is locked to $previousPackage in `pubspec.lock` but resolves to $package.');
+      }
+      final previousDescription = previousPackage.description;
+      final newDescription = package.description;
+
+      if (previousDescription is ResolvedHostedDescription) {
+        final newHash = (newDescription as ResolvedHostedDescription).sha256;
+
+        if (!bytesEquals(previousDescription.sha256, newHash)) {
+          throw ApplicationException(
+              'Dependency ${package.name} is locked to a different content-hash than what was resolved.');
+        }
+      }
+    }
+  }
 
   /// Displays a report of what changes were made to the lockfile.
   ///

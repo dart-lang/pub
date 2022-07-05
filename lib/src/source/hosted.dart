@@ -5,9 +5,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
-    show maxBy, IterableNullableExtension;
+    show IterableExtension, IterableNullableExtension, ListEquality, maxBy;
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -149,24 +152,6 @@ class HostedSource extends CachedSource {
     return PackageRef(name, d);
   }
 
-  /// Returns an ID for a hosted package named [name] at [version].
-  ///
-  /// If [url] is passed, it's the URL of the pub server from which the package
-  /// should be downloaded. [url] most be normalized and validated using
-  /// [validateAndNormalizeHostedUrl].
-  PackageId idFor(
-    String name,
-    Version version, {
-    String? url,
-  }) =>
-      PackageId(
-        name,
-        version,
-        ResolvedHostedDescription(
-          HostedDescription(name, url ?? defaultUrl.toString()),
-        ),
-      );
-
   /// Ensures that [description] is a valid hosted package description.
   ///
   /// Simple hosted dependencies only consist of a plain string, which is
@@ -196,7 +181,10 @@ class HostedSource extends CachedSource {
       return PackageId(
         name,
         version,
-        ResolvedHostedDescription(HostedDescription(name, defaultUrl)),
+        ResolvedHostedDescription(
+          HostedDescription(name, defaultUrl),
+          sha256: null,
+        ),
       );
     }
     if (description is! Map) {
@@ -205,6 +193,10 @@ class HostedSource extends CachedSource {
     final url = description['url'];
     if (url is! String) {
       throw FormatException('The url should be a string.');
+    }
+    final sha256 = description['sha256'];
+    if (sha256 != null && sha256 is! String) {
+      throw FormatException('The sha256 should be a string.');
     }
     final foundName = description['name'];
     if (foundName is! String) {
@@ -218,6 +210,7 @@ class HostedSource extends CachedSource {
       version,
       ResolvedHostedDescription(
         HostedDescription(name, Uri.parse(url).toString()),
+        sha256: sha256 == null ? null : hexDecode(sha256),
       ),
     );
   }
@@ -294,48 +287,53 @@ class HostedSource extends CachedSource {
   static final RegExp _looksLikePackageName =
       RegExp(r'^[a-zA-Z_]+[a-zA-Z0-9_]*$');
 
-  late final RateLimitedScheduler<_RefAndCache, Map<PackageId, _VersionInfo>?>
-      _scheduler = RateLimitedScheduler(
+  late final RateLimitedScheduler<_RefAndCache, List<_VersionInfo>> _scheduler =
+      RateLimitedScheduler(
     _fetchVersions,
     maxConcurrentOperations: 10,
   );
 
-  Map<PackageId, _VersionInfo> _versionInfoFromPackageListing(
+  List<_VersionInfo> _versionInfoFromPackageListing(
       Map body, PackageRef ref, Uri location, SystemCache cache) {
     final description = ref.description;
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
     }
     final versions = body['versions'];
-    if (versions is List) {
-      return Map.fromEntries(versions.map((map) {
-        final pubspecData = map['pubspec'];
-        if (pubspecData is Map) {
-          var pubspec = Pubspec.fromMap(pubspecData, cache.sources,
-              expectedName: ref.name, location: location);
-          var id = idFor(
-            ref.name,
-            pubspec.version,
-            url: description.url,
-          );
-          var archiveUrl = map['archive_url'];
-          if (archiveUrl is String) {
-            final status = PackageStatus(
-                isDiscontinued: body['isDiscontinued'] ?? false,
-                discontinuedReplacedBy: body['replacedBy'],
-                isRetracted: map['retracted'] ?? false);
-            return MapEntry(
-                id, _VersionInfo(pubspec, Uri.parse(archiveUrl), status));
-          }
-          throw FormatException('archive_url must be a String');
-        }
-        throw FormatException('pubspec must be a map');
-      }));
+    if (versions is! List) {
+      throw FormatException('versions must be a list');
     }
-    throw FormatException('versions must be a list');
+    return versions.map((map) {
+      final pubspecData = map['pubspec'];
+      if (pubspecData is! Map) {
+        throw FormatException('pubspec must be a map');
+      }
+      var pubspec = Pubspec.fromMap(pubspecData, cache.sources,
+          expectedName: ref.name, location: location);
+      final archiveSha256 = map['archive_sha256'];
+      if (archiveSha256 != null && archiveSha256 is! String) {
+        throw FormatException('archive_sha256 must be a String');
+      }
+      final archiveUrl = map['archive_url'];
+      if (archiveUrl is! String) {
+        throw FormatException('archive_url must be a String');
+      }
+      final status = PackageStatus(
+        isDiscontinued: body['isDiscontinued'] ?? false,
+        discontinuedReplacedBy: body['replacedBy'],
+        isRetracted: map['retracted'] ?? false,
+      );
+      return _VersionInfo(
+        pubspec.version,
+        pubspec,
+        Uri.parse(archiveUrl),
+        status,
+        archiveSha256 == null ? null : hexDecode(archiveSha256),
+      );
+    }).toList();
   }
 
-  Future<Map<PackageId, _VersionInfo>?> _fetchVersionsNoPrefetching(
+  Future<List<_VersionInfo>> _fetchVersionsNoPrefetching(
       PackageRef ref, SystemCache cache) async {
     final description = ref.description;
 
@@ -346,9 +344,9 @@ class HostedSource extends CachedSource {
     final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
 
-    late final String bodyText;
-    late final dynamic body;
-    late final Map<PackageId, _VersionInfo> result;
+    final String bodyText;
+    final dynamic body;
+    final List<_VersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
@@ -376,8 +374,7 @@ class HostedSource extends CachedSource {
     return result;
   }
 
-  Future<Map<PackageId, _VersionInfo>?> _fetchVersions(
-      _RefAndCache refAndCache) async {
+  Future<List<_VersionInfo>> _fetchVersions(_RefAndCache refAndCache) async {
     final ref = refAndCache.ref;
     final description = ref.description;
     if (description is! HostedDescription) {
@@ -389,16 +386,13 @@ class HostedSource extends CachedSource {
     /// Prefetch the dependencies of the latest version, we are likely to need
     /// them later.
     void prescheduleDependenciesOfLatest(
-      Map<PackageId, _VersionInfo>? listing,
+      List<_VersionInfo>? listing,
       SystemCache cache,
     ) {
-      if (listing == null) return;
+      if (listing == null || listing.isEmpty) return;
       final latestVersion =
-          maxBy(listing.keys.map((id) => id.version), (e) => e)!;
-      final latestVersionId = PackageId(
-          ref.name, latestVersion, ResolvedHostedDescription(description));
-      final dependencies =
-          listing[latestVersionId]?.pubspec.dependencies.values ?? [];
+          maxBy<_VersionInfo, Version>(listing, (e) => e.version)!;
+      final dependencies = latestVersion.pubspec.dependencies.values;
       unawaited(withDependencyType(DependencyType.none, () async {
         for (final packageRange in dependencies) {
           if (packageRange.source is HostedSource) {
@@ -431,8 +425,7 @@ class HostedSource extends CachedSource {
   /// Invariant: Entries in this cache are the parsed version of the exact same
   ///  information cached on disk. I.e. if the entry is present in this cache,
   /// there will not be a newer version on disk.
-  final Map<PackageRef, Pair<DateTime, Map<PackageId, _VersionInfo>>>
-      _responseCache = {};
+  final Map<PackageRef, Pair<DateTime, List<_VersionInfo>>> _responseCache = {};
 
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
@@ -441,7 +434,7 @@ class HostedSource extends CachedSource {
   ///
   /// If [maxAge] is not given, we will try to get the cached version no matter
   /// how old it is.
-  Future<Map<PackageId, _VersionInfo>?> _cachedVersionListingResponse(
+  Future<List<_VersionInfo>?> _cachedVersionListingResponse(
       PackageRef ref, SystemCache cache,
       {Duration? maxAge}) async {
     if (_responseCache.containsKey(ref)) {
@@ -519,26 +512,39 @@ class HostedSource extends CachedSource {
   }
 
   @override
-  Future<PackageStatus> status(PackageId id, SystemCache cache,
-      {Duration? maxAge}) async {
+  Future<PackageStatus> status(
+    PackageRef ref,
+    Version version,
+    SystemCache cache, {
+    Duration? maxAge,
+  }) async {
+    // If we don't have the specific version we return the empty response, since
+    // it is more or less harmless..
+    //
+    // This can happen if the connection is broken, or the server is faulty.
+    // We want to avoid a crash
+    //
+    // TODO(sigurdm): Consider representing the non-existence of the
+    // package-version in the return value.
+    return (await _versionInfo(ref, version, cache, maxAge: maxAge))?.status ??
+        PackageStatus();
+  }
+
+  Future<_VersionInfo?> _versionInfo(
+    PackageRef ref,
+    Version version,
+    SystemCache cache, {
+    Duration? maxAge,
+  }) async {
     if (cache.isOffline) {
       // Do we have a cached version response on disk?
-      final versionListing =
-          await _cachedVersionListingResponse(id.toRef(), cache);
+      final versionListing = await _cachedVersionListingResponse(ref, cache);
 
       if (versionListing == null) {
-        return PackageStatus();
+        return null;
       }
-      // If we don't have the specific version we return the empty response.
-      //
-      // This should not happen. But in production we want to avoid a crash, since
-      // it is more or less harmless.
-      //
-      // TODO(sigurdm): Consider representing the non-existence of the
-      // package-version in the return value.
-      return versionListing[id]?.status ?? PackageStatus();
+      return versionListing.firstWhereOrNull((l) => l.version == version);
     }
-    final ref = id.toRef();
     // Did we already get info for this package?
     var versionListing = _scheduler.peek(_RefAndCache(ref, cache));
     if (maxAge != null) {
@@ -551,20 +557,11 @@ class HostedSource extends CachedSource {
         .schedule(_RefAndCache(ref, cache))
         // Failures retrieving the listing here should just be ignored.
         .catchError(
-          (_) => <PackageId, _VersionInfo>{},
+          (_) async => <_VersionInfo>[],
           test: (error) => error is Exception,
         );
 
-    final listing = versionListing![id];
-    // If we don't have the specific version we return the empty response, since
-    // it is more or less harmless..
-    //
-    // This can happen if the connection is broken, or the server is faulty.
-    // We want to avoid a crash
-    //
-    // TODO(sigurdm): Consider representing the non-existence of the
-    // package-version in the return value.
-    return listing?.status ?? PackageStatus();
+    return versionListing.firstWhereOrNull((l) => l.version == version);
   }
 
   // The path where the response from the package-listing api is cached.
@@ -627,7 +624,18 @@ class HostedSource extends CachedSource {
           await _cachedVersionListingResponse(ref, cache, maxAge: maxAge);
     }
     versionListing ??= await _scheduler.schedule(_RefAndCache(ref, cache));
-    return versionListing!.keys.toList();
+    return versionListing
+        .map(
+          (i) => PackageId(
+            ref.name,
+            i.version,
+            ResolvedHostedDescription(
+              ref.description as HostedDescription,
+              sha256: i.archiveSha256,
+            ),
+          ),
+        )
+        .toList();
   }
 
   /// Parses [description] into its server and package name components, then
@@ -653,23 +661,83 @@ class HostedSource extends CachedSource {
     }
     final versions = await _scheduler.schedule(_RefAndCache(id.toRef(), cache));
     final url = _listVersionsUrl(id.toRef());
-    return versions![id]?.pubspec ??
+    return versions.firstWhereOrNull((i) => i.version == id.version)?.pubspec ??
         (throw PackageNotFoundException('Could not find package $id at $url'));
   }
 
-  /// Downloads the package identified by [id] to the system cache.
+  /// Downloads the package identified by [id] to the system cache if needed.
+  ///
+  /// Validates that the content hash of [id] corresponds to what is already in
+  /// cache, if not the file is redownloaded.
   @override
-  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache) async {
-    if (!isInSystemCache(id, cache)) {
+  Future<void> downloadToSystemCache(
+    PackageId id,
+    SystemCache cache, {
+    required bool allowOutdatedHashChecks,
+  }) async {
+    final packageDir = getDirectoryInCache(id, cache);
+
+    // Use the content-hash from the version-info to compare with what we
+    // already downloaded.
+    //
+    // The content-hash from [id] will be compared with that when the lockfile
+    // is written.
+    //
+    // We allow the version-listing to be a few days outdated in order for `pub
+    // get` with an existing working resolution and everything in cache to be
+    // fast.
+    final versionInfo = await _versionInfo(id.toRef(), id.version, cache,
+        maxAge: allowOutdatedHashChecks ? Duration(days: 3) : null);
+
+    final expectedContentHash = versionInfo?.archiveSha256 ??
+        // Handling of legacy server - we use the hash from the id (typically
+        // from the lockfile) to compare to the existing download.
+        (id.description as ResolvedHostedDescription).sha256;
+    if (!fileExists(hashPath(id, cache))) {
+      if (dirExists(packageDir) && !cache.isOffline) {
+        log.fine(
+            'Cache entry for ${id.name}-${id.version} has no content-hash - redownloading.');
+        deleteEntry(packageDir);
+      }
+    } else if (expectedContentHash == null) {
+      log.fine(
+          'Content-hash of ${id.name}-${id.version} not known from resolution.');
+    } else {
+      if (!bytesEquals(sha256FromCache(id, cache), expectedContentHash)) {
+        log.warning(
+            'Cached version of ${id.name}-${id.version} has wrong hash - redownloading.');
+        if (cache.isOffline) {
+          fail('Cannot redownload while offline - try again online.');
+        }
+        deleteEntry(packageDir);
+      }
+    }
+    if (!dirExists(packageDir)) {
       if (cache.isOffline) {
         throw StateError('Cannot download packages when offline.');
       }
-      var packageDir = getDirectoryInCache(id, cache);
-      ensureDir(p.dirname(packageDir));
       await _download(id, packageDir, cache);
     }
+  }
 
-    return Package.load(id.name, getDirectoryInCache(id, cache), cache.sources);
+  /// Determines if the package identified by [id] is already downloaded to the
+  /// system cache and has the expected content-hash.
+  @override
+  bool isInSystemCache(PackageId id, SystemCache cache) {
+    if ((id.description as ResolvedHostedDescription).sha256 != null) {
+      try {
+        final cachedSha256 = readTextFile(hashPath(id, cache));
+        if (!const ListEquality().equals(hexDecode(cachedSha256),
+            (id.description as ResolvedHostedDescription).sha256)) {
+          return false;
+        }
+      } on io.IOException {
+        // Most likely the hash file was not written, because we had a legacy
+        // entry.
+        return false;
+      }
+    }
+    return dirExists(getDirectoryInCache(id, cache));
   }
 
   /// The system cache directory for the hosted source contains subdirectories
@@ -687,6 +755,31 @@ class HostedSource extends CachedSource {
 
     var dir = _urlToDirectory(description.url);
     return p.join(rootDir, dir, '${id.name}-${id.version}');
+  }
+
+  /// The system cache directory for the hosted source contains subdirectories
+  /// for each separate repository URL that's used on the system.
+  ///
+  /// Each of these subdirectories then contains a `.hashes` directory with a
+  /// stored hash of all downloaded packages.
+  String hashPath(PackageId id, SystemCache cache) {
+    final description = id.description.description;
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
+    final rootDir = cache.rootDirForSource(this);
+
+    var dir = _urlToDirectory(description.url);
+    return p.join(rootDir, dir, '.hashes', '${id.name}-${id.version}.sha256');
+  }
+
+  /// Loads the hash at `hashPath(id)`.
+  Uint8List? sha256FromCache(PackageId id, SystemCache cache) {
+    try {
+      return hexDecode(readTextFile(hashPath(id, cache)));
+    } on IOException {
+      return null;
+    }
   }
 
   /// Re-downloads all packages that have been previously downloaded into the
@@ -741,7 +834,14 @@ class HostedSource extends CachedSource {
       return results
         ..addAll(await Future.wait(
           packages.map((package) async {
-            var id = idFor(package.name, package.version, url: url);
+            var id = PackageId(
+              package.name,
+              package.version,
+              ResolvedHostedDescription(
+                HostedDescription(package.name, url),
+                sha256: null,
+              ),
+            );
             try {
               deleteEntry(package.dir);
               await _download(id, package.dir, cache);
@@ -778,7 +878,7 @@ class HostedSource extends CachedSource {
     return PackageId(
       name,
       version,
-      ResolvedHostedDescription(HostedDescription(name, url)),
+      ResolvedHostedDescription(HostedDescription(name, url), sha256: null),
     );
   }
 
@@ -843,7 +943,8 @@ class HostedSource extends CachedSource {
     // query-string as is the case with signed S3 URLs. And we wish to allow for
     // such URLs to be used.
     final versions = await _scheduler.schedule(_RefAndCache(id.toRef(), cache));
-    final versionInfo = versions![id];
+    final versionInfo =
+        versions.firstWhereOrNull((i) => i.version == id.version);
     final packageName = id.name;
     final version = id.version;
     if (versionInfo == null) {
@@ -864,15 +965,49 @@ class HostedSource extends CachedSource {
           Uri.parse(description.url),
           (client) => client.send(http.Request('GET', url)));
 
+      Stream<List<int>> checkSha256(
+        Stream<List<int>> stream,
+        Digest? expectedHash,
+      ) async* {
+        final output = _SingleValueSink<Digest>();
+        final input = sha256.startChunkedConversion(output);
+        await for (final v in stream) {
+          input.add(v);
+          yield v;
+        }
+        input.close();
+        final actualHash = output.value;
+        if (expectedHash != null && output.value != expectedHash) {
+          log.fine(
+              'Expected content-hash $expectedHash actual: ${output.value}.');
+          throw FormatException(
+              'Downloaded archive for ${id.name}-${id.version} had wrong content-hash.');
+        }
+        final path = hashPath(id, cache);
+        ensureDir(p.dirname(path));
+        writeTextFile(
+          path,
+          hexEncode(actualHash.bytes),
+        );
+      }
+
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.
       // Package:tar cancels the stream when it reaches end-of-archive, and
       // cancelling a http stream makes it not reusable.
       // There are ways around this, and we might revisit this later.
-      await createFileFromStream(response.stream, archivePath);
-      var tempDir = cache.createTempDir();
-      await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
+      Stream<List<int>> stream = response.stream;
+      final expectedSha256 = versionInfo.archiveSha256;
 
+      stream = checkSha256(
+          stream, (expectedSha256 == null) ? null : Digest(expectedSha256));
+
+      await createFileFromStream(stream, archivePath);
+      final tempDir = cache.createTempDir();
+
+      await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
+
+      ensureDir(p.dirname(destPath));
       // Now that the get has succeeded, move it to the real location in the
       // cache.
       //
@@ -1000,7 +1135,22 @@ class ResolvedHostedDescription extends ResolvedDescription {
   @override
   HostedDescription get description => super.description as HostedDescription;
 
-  ResolvedHostedDescription(HostedDescription description) : super(description);
+  /// The content hash of the package archive (the `tar.gz` file) of the
+  /// PackageId described by this.
+  ///
+  /// This can be obtained in several ways:
+  /// * Reported from a server in the archive_sha256 field.
+  ///   (will be null if the server does not report this.)
+  /// * Obtained from a pubspec.lock
+  ///   (will be null for legacy lock-files).
+  /// * Read from the <PUB_CACHE>/hosted/.hashes/<package>-<version>.sha256 file.
+  ///   (will be null if the file doesn't exist for corrupt or legacy caches).
+  final Uint8List? sha256;
+
+  ResolvedHostedDescription(
+    HostedDescription description, {
+    required this.sha256,
+  }) : super(description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
@@ -1010,26 +1160,46 @@ class ResolvedHostedDescription extends ResolvedDescription {
     } on FormatException catch (e) {
       throw ArgumentError.value(url, 'url', 'url must be normalized: $e');
     }
-    return {'name': description.packageName, 'url': url.toString()};
+    final hash = sha256;
+    return {
+      'name': description.packageName,
+      'url': url.toString(),
+      if (hash != null) 'sha256': hexEncode(hash),
+    };
   }
 
   @override
+  // We do not include the sha256 in the hashCode because of the equality
+  // semantics.
   int get hashCode => description.hashCode;
 
   @override
   bool operator ==(Object other) {
     return other is ResolvedHostedDescription &&
-        other.description == description;
+        other.description == description &&
+        // A [sha256] of `null` means that we don't know the hash yet.
+        // Therefore we have to assume it is equal to any known value.
+        (sha256 == null ||
+            other.sha256 == null ||
+            const ListEquality<int>().equals(sha256, other.sha256));
   }
+
+  ResolvedHostedDescription withSha256(Uint8List? newSha256) =>
+      ResolvedHostedDescription(description, sha256: newSha256);
 }
 
 /// Information about a package version retrieved from /api/packages/$package<
 class _VersionInfo {
   final Pubspec pubspec;
   final Uri archiveUrl;
+  final Version version;
+
+  /// The sha256 digest of the archive according to the package-repository.
+  final Uint8List? archiveSha256;
   final PackageStatus status;
 
-  _VersionInfo(this.pubspec, this.archiveUrl, this.status);
+  _VersionInfo(this.version, this.pubspec, this.archiveUrl, this.status,
+      this.archiveSha256);
 }
 
 /// Given a URL, returns a "normalized" string to be used as a directory name
@@ -1099,4 +1269,18 @@ class _RefAndCache {
   int get hashCode => ref.hashCode;
   @override
   bool operator ==(Object other) => other is _RefAndCache && other.ref == ref;
+}
+
+/// A sink that can only have `add` called once, and that can retrieve the
+/// value.
+class _SingleValueSink<T> implements Sink<T> {
+  late final T value;
+
+  @override
+  void add(T data) {
+    value = data;
+  }
+
+  @override
+  void close() {}
 }

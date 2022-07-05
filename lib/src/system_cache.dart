@@ -10,6 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
 import 'exceptions.dart';
+import 'http.dart';
 import 'io.dart';
 import 'io.dart' as io show createTempDir;
 import 'log.dart' as log;
@@ -186,7 +187,12 @@ class SystemCache {
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
     versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await ref.source.status(id, this, maxAge: maxAge);
+      final packageStatus = await ref.source.status(
+        id.toRef(),
+        id.version,
+        this,
+        maxAge: maxAge,
+      );
       if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
         return id;
       }
@@ -208,10 +214,17 @@ class SystemCache {
     return id.source.doGetDirectory(id, this, relativeFrom: relativeFrom);
   }
 
-  Future<void> downloadPackage(PackageId id) async {
+  Future<void> downloadPackage(
+    PackageId id, {
+    required bool allowOutdatedHashChecks,
+  }) async {
     final source = id.source;
     assert(source is CachedSource);
-    await (source as CachedSource).downloadToSystemCache(id, this);
+    await (source as CachedSource).downloadToSystemCache(
+      id,
+      this,
+      allowOutdatedHashChecks: allowOutdatedHashChecks,
+    );
   }
 
   /// Get the latest version of [package].
@@ -250,6 +263,25 @@ class SystemCache {
     assert(available.where((id) => id.version == latest.version).length == 1);
 
     return latest;
+  }
+
+  /// Downloads all cached packages in [packages].
+  Future<void> downloadPackages(
+    Package root,
+    List<PackageId> packages, {
+    required bool allowOutdatedHashChecks,
+  }) async {
+    await Future.wait(packages.map((id) async {
+      if (id.source is! CachedSource) {
+        return;
+      }
+      return await withDependencyType(root.dependencyType(id.name), () async {
+        await downloadPackage(
+          id,
+          allowOutdatedHashChecks: allowOutdatedHashChecks,
+        );
+      });
+    }));
   }
 }
 

@@ -10,6 +10,7 @@ Usage: pub get <subcommand> [arguments...]
                               network.
 -n, --dry-run                 Report what dependencies would change but don't
                               change any.
+    --enforce-lockfile        Only use resolution in existing lockfile.
     --[no-]precompile         Build executables in immediate dependencies.
     --legacy-packages-file    Generate the legacy ".packages" file
 -C, --directory=<dir>         Run this in the directory<dir>.

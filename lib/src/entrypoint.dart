@@ -8,7 +8,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -250,11 +249,11 @@ class Entrypoint {
   ///
   /// Performs version resolution according to [SolveType].
   ///
-  /// [useLatest], if provided, defines a list of packages that will be
-  /// unlocked and forced to their latest versions. If [upgradeAll] is
-  /// true, the previous lockfile is ignored and all packages are re-resolved
-  /// from scratch. Otherwise, it will attempt to preserve the versions of all
-  /// previously locked packages.
+  /// [useLatest], if provided, defines a list of packages that will be unlocked
+  /// and forced to their latest versions. If [upgradeAll] is true, the previous
+  /// lockfile is ignored and all packages are re-resolved from scratch.
+  /// Otherwise, it will attempt to preserve the versions of all previously
+  /// locked packages.
   ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
@@ -264,10 +263,14 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
-  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be shown ---
-  /// in case of failure, a reproduction command is shown.
+  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be
+  /// shown --- in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
+  ///
+  /// If [enforceLockfile] is true no changes to the current lockfile are
+  /// allowed. Instead the existing lockfile is loaded, verified against
+  /// pubspec.yaml and all dependencies downloaded.
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String>? unlock,
@@ -276,7 +279,13 @@ class Entrypoint {
     required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
+    bool enforceLockfile = false,
   }) async {
+    if (enforceLockfile && !fileExists(lockFilePath)) {
+      throw ApplicationException(
+          'Retrieving dependencies failed. Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.');
+    }
+
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
       log.warning(
           'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
@@ -306,6 +315,7 @@ class Entrypoint {
         rethrow;
       }
     }
+    _lockFile = result.lockFile;
 
     // Log once about all overridden packages.
     if (warnAboutPreReleaseSdkOverrides) {
@@ -324,13 +334,24 @@ class Entrypoint {
             'by setting it to `quiet`.'));
       }
     }
+    if (enforceLockfile) {
+      await result.enforceLockfile();
+    }
 
     if (!onlyReportSuccessOrFailure) {
       await result.showReport(type, cache);
     }
     if (!dryRun) {
-      await result.downloadCachedPackages(cache);
-      saveLockFile(result);
+      await cache.downloadPackages(
+        root,
+        result.packages,
+        allowOutdatedHashChecks: !enforceLockfile,
+      );
+      if (enforceLockfile) {
+        result.lockFile.enforceContentHashes(cache);
+      } else {
+        result.lockFile.writeToFile(lockFilePath, cache);
+      }
     }
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
@@ -874,21 +895,6 @@ class Entrypoint {
     }
   }
 
-  /// Saves a list of concrete package versions to the `pubspec.lock` file.
-  ///
-  /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
-  /// uses that.
-  void saveLockFile(SolveResult result) {
-    _lockFile = result.lockFile;
-
-    final windowsLineEndings = fileExists(lockFilePath) &&
-        detectWindowsLineEndings(readTextFile(lockFilePath));
-
-    final serialized = lockFile.serialize(root.dir);
-    writeTextFile(lockFilePath,
-        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
-  }
-
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
   /// to the new-style `.dart_tool/pub` directory.
   void migrateCache() {
@@ -961,23 +967,4 @@ See https://dart.dev/go/sdk-constraint
       }
     }
   }
-}
-
-/// Returns `true` if the [text] looks like it uses windows line endings.
-///
-/// The heuristic used is to count all `\n` in the text and if stricly more than
-/// half of them are preceded by `\r` we report `true`.
-@visibleForTesting
-bool detectWindowsLineEndings(String text) {
-  var index = -1;
-  var unixNewlines = 0;
-  var windowsNewlines = 0;
-  while ((index = text.indexOf('\n', index + 1)) != -1) {
-    if (index != 0 && text[index - 1] == '\r') {
-      windowsNewlines++;
-    } else {
-      unixNewlines++;
-    }
-  }
-  return windowsNewlines > unixNewlines;
 }

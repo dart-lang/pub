@@ -148,8 +148,8 @@ class SolveReport {
     var numDiscontinued = 0;
     for (var id in _result.packages) {
       if (id.description is RootDescription) continue;
-      final status =
-          await id.source.status(id, _cache, maxAge: Duration(days: 3));
+      final status = await id.source
+          .status(id.toRef(), id.version, _cache, maxAge: Duration(days: 3));
       if (status.isDiscontinued &&
           (_root.dependencyType(id.name) == DependencyType.direct ||
               _root.dependencyType(id.name) == DependencyType.dev)) {
@@ -259,8 +259,12 @@ class SolveReport {
           }
         }
       }
-      final status =
-          await id.source.status(id, _cache, maxAge: Duration(days: 3));
+      final status = await id.source.status(
+        id.toRef(),
+        id.version,
+        _cache,
+        maxAge: Duration(days: 3),
+      );
 
       if (status.isRetracted) {
         if (newerStable) {

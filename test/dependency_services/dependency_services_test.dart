@@ -49,6 +49,7 @@ extension on GoldenTestContext {
       Platform.resolvedExecutable,
       [
         snapshot,
+        '--verbose',
         ...args,
       ],
       environment: getPubTestEnvironment(),
@@ -120,7 +121,8 @@ Future<void> main() async {
     final server = (await servePackages())
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('foo', '2.2.3')
-      ..serve('transitive', '1.0.0');
+      ..serve('transitive', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
@@ -151,7 +153,8 @@ Future<void> main() async {
     final server = (await servePackages())
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('foo', '2.2.3')
-      ..serve('transitive', '1.0.0');
+      ..serve('transitive', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
 
@@ -183,7 +186,8 @@ Future<void> main() async {
       ..serve('foo', '2.2.3')
       ..serve('bar', '1.2.3')
       ..serve('bar', '2.2.3')
-      ..serve('boo', '1.2.3');
+      ..serve('boo', '1.2.3')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
@@ -215,7 +219,8 @@ Future<void> main() async {
     final server = (await servePackages())
       ..serve('foo', '1.2.3')
       ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
-      ..serve('transitive', '1.0.0');
+      ..serve('transitive', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
@@ -247,7 +252,8 @@ Future<void> main() async {
     final server = (await servePackages())
       ..serve('foo', '1.0.0')
       ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0');
+      ..serve('baz', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({

@@ -7,7 +7,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -328,6 +330,47 @@ String replace(String source, Pattern matcher, String Function(Match) fn) {
 String sha1(String source) =>
     crypto.sha1.convert(utf8.encode(source)).toString();
 
+final _hexTable = [
+  '0', '1', '2', '3', '4', '5', '6', '7', //
+  '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+];
+
+final _hexTable2 = Map.fromIterables(_hexTable, List.generate(16, (i) => i));
+
+String hexEncode(List<int> bytes) {
+  const mask = (1 << 4) - 1;
+  final buffer = StringBuffer();
+  for (final byte in bytes) {
+    if (byte > 255 || byte < 0) {
+      throw FormatException('Bad value in byte list $byte.');
+    }
+    buffer.write(_hexTable[byte >> 4 & mask]);
+    buffer.write(_hexTable[byte & mask]);
+  }
+  return buffer.toString();
+}
+
+Uint8List hexDecode(String string) {
+  string = string.toLowerCase();
+  if (string.length % 2 != 0) {
+    throw FormatException(
+        'Bad hex encoding, must have an even number of characters');
+  }
+  final result = Uint8List(string.length ~/ 2);
+  for (var i = 0; i < result.length; i++) {
+    final v = _hexTable2[string[i * 2]];
+    if (v == null) {
+      throw FormatException('Bad char `${string[i * 2]}` in hex encoding');
+    }
+    final v2 = _hexTable2[string[i * 2 + 1]];
+    if (v2 == null) {
+      throw FormatException('Bad char `${string[i * 2 + 1]}` in hex encoding');
+    }
+    result[i] = (v << 4) | v2;
+  }
+  return result;
+}
+
 /// A regular expression matching a trailing CR character.
 final _trailingCR = RegExp(r'\r$');
 
@@ -621,4 +664,8 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
     for (var entry in map.entries)
       key(entry.key, entry.value): value(entry.key, entry.value),
   };
+}
+
+bool bytesEquals(List<int>? a, List<int>? b) {
+  return const ListEquality<int>().equals(a, b);
 }

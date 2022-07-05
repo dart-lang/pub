@@ -179,7 +179,7 @@ class GlobalPackages {
     final tempDir = cache.createTempDir();
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    _writeLockFile(tempDir, LockFile([id]));
+    _writeLockFile(tempDir, LockFile([id]), cache);
 
     tryDeleteEntry(_packageDir(name));
     tryRenameDir(tempDir, _packageDir(name));
@@ -237,11 +237,12 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       // Only precompile binaries if we have a new resolution.
       if (!silent) await result.showReport(SolveType.get, cache);
 
-      await result.downloadCachedPackages(cache);
+      await cache.downloadPackages(root, result.packages,
+          allowOutdatedHashChecks: true);
 
       final lockFile = result.lockFile;
       final tempDir = cache.createTempDir();
-      _writeLockFile(tempDir, lockFile);
+      _writeLockFile(tempDir, lockFile, cache);
 
       // Load the package graph from [result] so we don't need to re-parse all
       // the pubspecs.
@@ -278,8 +279,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   }
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
-  void _writeLockFile(String dir, LockFile lockFile) {
-    writeTextFile(p.join(dir, 'pubspec.lock'), lockFile.serialize(null));
+  void _writeLockFile(String dir, LockFile lockFile, SystemCache cache) {
+    writeTextFile(p.join(dir, 'pubspec.lock'), lockFile.serialize(null, cache));
   }
 
   /// Shows the user the currently active package with [name], if any.

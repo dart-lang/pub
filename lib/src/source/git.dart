@@ -188,7 +188,7 @@ class GitSource extends CachedSource {
   ///
   /// This lets us avoid race conditions when getting multiple different
   /// packages from the same repository.
-  final _revisionCacheClones = <String, Future>{};
+  final _revisionCacheClones = <String, Future<void>>{};
 
   /// The paths to the canonical clones of repositories for which "git fetch"
   /// has already been run during this run of pub.
@@ -298,7 +298,11 @@ class GitSource extends CachedSource {
   /// itself; each of the commit-specific directories are clones of a directory
   /// in `cache/`.
   @override
-  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache) async {
+  Future<void> downloadToSystemCache(
+    PackageId id,
+    SystemCache cache, {
+    required bool allowOutdatedHashChecks,
+  }) async {
     return await _pool.withResource(() async {
       final ref = id.toRef();
       final description = ref.description;
@@ -318,7 +322,8 @@ class GitSource extends CachedSource {
 
       var revisionCachePath = _revisionCachePath(id, cache);
       final path = description.path;
-      await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
+      return await _revisionCacheClones.putIfAbsent(revisionCachePath,
+          () async {
         if (!entryExists(revisionCachePath)) {
           await _clone(_repoCachePath(ref, cache), revisionCachePath);
           await _checkOut(revisionCachePath, resolvedRef);
@@ -327,12 +332,6 @@ class GitSource extends CachedSource {
           _updatePackageList(revisionCachePath, path);
         }
       });
-
-      return Package.load(
-        id.name,
-        p.join(revisionCachePath, p.fromUri(path)),
-        cache.sources,
-      );
     });
   }
 

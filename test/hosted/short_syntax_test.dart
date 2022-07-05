@@ -45,6 +45,7 @@ void main() {
         'description': {
           'name': 'foo',
           'url': globalServer.url,
+          'sha256': matches(RegExp(r'[0-9a-f]{64}'))
         },
         'version': '1.2.3',
       });

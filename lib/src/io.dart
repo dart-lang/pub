@@ -172,7 +172,7 @@ List<int> readBinaryFile(String file) {
 }
 
 /// Reads the contents of the binary file [file] as a [Stream].
-Stream<List<int>> readBinaryFileAsSream(String file) {
+Stream<List<int>> readBinaryFileAsStream(String file) {
   log.io('Reading binary file $file.');
   var contents = File(file).openRead();
   return contents;

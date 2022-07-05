@@ -7,6 +7,7 @@ import 'dart:async';
 import '../command.dart';
 import '../log.dart' as log;
 import '../solver.dart';
+import '../utils.dart';
 
 /// Handles the `get` pub command.
 class GetCommand extends PubCommand {
@@ -27,6 +28,9 @@ class GetCommand extends PubCommand {
         abbr: 'n',
         negatable: false,
         help: "Report what dependencies would change but don't change any.");
+
+    argParser.addFlag('enforce-lockfile',
+        negatable: false, help: 'Only use resolution in existing lockfile.');
 
     argParser.addFlag('precompile',
         help: 'Build executables in immediate dependencies.');
@@ -52,12 +56,17 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
+
+    if (argResults['dry-run'] && argResults['enforce-lockfile']) {
+      fail('Cannot do a dry-run with enforce-lockfile.');
+    }
     await entrypoint.acquireDependencies(
       SolveType.get,
       dryRun: argResults['dry-run'],
       precompile: argResults['precompile'],
       generateDotPackages: argResults['legacy-packages-file'],
       analytics: analytics,
+      enforceLockfile: argResults['enforce-lockfile'],
     );
 
     var example = entrypoint.example;
@@ -69,6 +78,7 @@ class GetCommand extends PubCommand {
         generateDotPackages: argResults['legacy-packages-file'],
         analytics: analytics,
         onlyReportSuccessOrFailure: true,
+        enforceLockfile: argResults['enforce-lockfile'],
       );
     }
   }

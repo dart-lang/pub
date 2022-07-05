@@ -10,6 +10,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
+      sha256: d13ce27ca2161ad3684af5fb44c823fc0890213e57b9e1eb9edc7252be7a35dd
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.2.3"
@@ -17,6 +18,7 @@ packages:
     dependency: transitive
     description:
       name: transitive
+      sha256: d8731eb2273b5ceef9c3ce3bbd2393801e6848503651d5d12ec05d803a0959d1
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
@@ -37,7 +39,8 @@ $ dependency_services list
         "type": "hosted",
         "description": {
           "name": "foo",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "d13ce27ca2161ad3684af5fb44c823fc0890213e57b9e1eb9edc7252be7a35dd"
         }
       }
     },
@@ -50,7 +53,8 @@ $ dependency_services list
         "type": "hosted",
         "description": {
           "name": "transitive",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "d8731eb2273b5ceef9c3ce3bbd2393801e6848503651d5d12ec05d803a0959d1"
         }
       }
     }
@@ -71,7 +75,8 @@ $ dependency_services report
         "type": "hosted",
         "description": {
           "name": "foo",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "d13ce27ca2161ad3684af5fb44c823fc0890213e57b9e1eb9edc7252be7a35dd"
         }
       },
       "latest": "2.2.3",
@@ -86,7 +91,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "0f9c20f8f3233b848d963ba59a227f4b87ce6155a40dec19f88275696bc3bff3"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -98,7 +104,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "d13ce27ca2161ad3684af5fb44c823fc0890213e57b9e1eb9edc7252be7a35dd"
             }
           }
         },
@@ -115,7 +122,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "transitive",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "d8731eb2273b5ceef9c3ce3bbd2393801e6848503651d5d12ec05d803a0959d1"
             }
           }
         }
@@ -129,7 +137,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "0f9c20f8f3233b848d963ba59a227f4b87ce6155a40dec19f88275696bc3bff3"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -141,7 +150,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "d13ce27ca2161ad3684af5fb44c823fc0890213e57b9e1eb9edc7252be7a35dd"
             }
           }
         },
@@ -158,7 +168,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "transitive",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "d8731eb2273b5ceef9c3ce3bbd2393801e6848503651d5d12ec05d803a0959d1"
             }
           }
         }
@@ -172,7 +183,8 @@ $ dependency_services report
         "type": "hosted",
         "description": {
           "name": "transitive",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "d8731eb2273b5ceef9c3ce3bbd2393801e6848503651d5d12ec05d803a0959d1"
         }
       },
       "latest": "1.0.0",
@@ -202,6 +214,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
+      sha256: "0f9c20f8f3233b848d963ba59a227f4b87ce6155a40dec19f88275696bc3bff3"
       url: "http://localhost:$PORT"
     source: hosted
     version: "2.2.3"

@@ -211,7 +211,11 @@ class OutdatedCommand extends PubCommand {
         latestIsOverridden = true;
       }
 
-      final packageStatus = await current?.source.status(current, cache);
+      final packageStatus = await current?.source.status(
+        current.toRef(),
+        current.version,
+        cache,
+      );
       final discontinued =
           packageStatus == null ? false : packageStatus.isDiscontinued;
       final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
