@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart' hide mapMap;
 import 'package:path/path.dart' as p;
