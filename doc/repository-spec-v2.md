@@ -120,7 +120,7 @@ parse the `<message>`.
 The `dart pub` client allows users to save an opaque `<token>` for each
 `<hosted-url>`. When the `dart pub` client makes a request to a `<hosted-url>`
 for which it has a `<token>` stored, it will attach an `Authorization` header
-as follows: 
+as follows:
 
  * `Authorization: Bearer <token>`
 
@@ -229,6 +229,7 @@ server, this could work in many different ways.
     "version": "<version>",
     "retracted": true || false, /* optional field, false if omitted */
     "archive_url": "https://.../archive.tar.gz",
+    "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
     "pubspec": {
       /* pubspec contents as JSON object */
     }
@@ -238,6 +239,7 @@ server, this could work in many different ways.
       "version": "<package>",
       "retracted": true || false, /* optional field, false if omitted */
       "archive_url": "https://.../archive.tar.gz",
+      "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
       "pubspec": {
         /* pubspec contents as JSON object */
       }
@@ -255,6 +257,15 @@ The `archive_url` may be temporary and is allowed to include query-string
 parameters. This allows for the server to return signed-URLs for S3, GCS or
 other blob storage service. If temporary URLs are returned it is wise to not set
 expiration to less than 25 minutes (to allow for retries and clock drift).
+
+The `archive_sha256` should be the hex-encoded sha256 checksum of the file are
+archive_url. It is an optional field that allows the pub client to verify the
+integrity of downloaded archive.
+
+The `archive_sha256` also provides an easy way for clients to detect if
+something has changed on the server. In the absense of this field the client can
+still download the archive to obtain a checksum and detect changes to the
+archive.
 
 If `<hosted-url>` for the server returning `archive_url` is a prefix of
 `archive_url`, then the `Authorization: Bearer <token>` is also included when
