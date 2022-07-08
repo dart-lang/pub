@@ -17,7 +17,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+      sha256: "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
@@ -52,7 +52,7 @@ $ dependency_services list
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+          "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
         }
       }
     }
@@ -91,7 +91,7 @@ $ dependency_services report
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+          "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
         }
       },
       "latest": "2.0.0",
@@ -119,7 +119,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+              "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
             }
           }
         }
@@ -146,7 +146,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+              "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
             }
           }
         }
@@ -180,7 +180,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "785f9e487af494545c823fd7bf0576c76eff1ec96ee00923038e9b13395f8886"
+      sha256: c3bda774737102f799574749076544dea1a4745b5c38d590d4f206f997bfe8a0
       url: "http://localhost:$PORT"
     source: hosted
     version: "2.0.0"

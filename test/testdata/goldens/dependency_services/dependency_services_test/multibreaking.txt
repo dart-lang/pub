@@ -10,7 +10,7 @@ packages:
     dependency: "direct main"
     description:
       name: bar
-      sha256: ae5907b5f0861b6000253fa396ab209effe18146c25e025c283bb61c0f4fbe34
+      sha256: "4de00552ae3719481f5f0e30b82ecb8b14a62907553b217e7ca178e80625329a"
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
@@ -18,7 +18,7 @@ packages:
     dependency: "direct main"
     description:
       name: baz
-      sha256: "28c999b54acd2f19431e094b1dbc6ada555d3badf55abcbbd5e0048d574fedb2"
+      sha256: "377433f0e0aff092191e57de97f5869cad0dd0779ee6d31e7096b84878ca41e8"
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
@@ -26,7 +26,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+      sha256: "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
@@ -48,7 +48,7 @@ $ dependency_services list
         "description": {
           "name": "bar",
           "url": "http://localhost:$PORT",
-          "sha256": "ae5907b5f0861b6000253fa396ab209effe18146c25e025c283bb61c0f4fbe34"
+          "sha256": "4de00552ae3719481f5f0e30b82ecb8b14a62907553b217e7ca178e80625329a"
         }
       }
     },
@@ -62,7 +62,7 @@ $ dependency_services list
         "description": {
           "name": "baz",
           "url": "http://localhost:$PORT",
-          "sha256": "28c999b54acd2f19431e094b1dbc6ada555d3badf55abcbbd5e0048d574fedb2"
+          "sha256": "377433f0e0aff092191e57de97f5869cad0dd0779ee6d31e7096b84878ca41e8"
         }
       }
     },
@@ -76,7 +76,7 @@ $ dependency_services list
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+          "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
         }
       }
     }
@@ -98,7 +98,7 @@ $ dependency_services report
         "description": {
           "name": "bar",
           "url": "http://localhost:$PORT",
-          "sha256": "ae5907b5f0861b6000253fa396ab209effe18146c25e025c283bb61c0f4fbe34"
+          "sha256": "4de00552ae3719481f5f0e30b82ecb8b14a62907553b217e7ca178e80625329a"
         }
       },
       "latest": "2.0.0",
@@ -115,7 +115,7 @@ $ dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "f8b42e4481e9043e6a3c23e02c4d3f6c0d5c3b3a250d2630cfbda7655acfc6bb"
+              "sha256": "b8187621010649d6385788d7630adcd88d6548a7938899b6f18820961df3b879"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -128,7 +128,7 @@ $ dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "ae5907b5f0861b6000253fa396ab209effe18146c25e025c283bb61c0f4fbe34"
+              "sha256": "4de00552ae3719481f5f0e30b82ecb8b14a62907553b217e7ca178e80625329a"
             }
           }
         },
@@ -141,7 +141,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "a5d5d4d235933e8327fc980fbd58ed6a41aa030fc25898963befb1ed24b01ffb"
+              "sha256": "2347a7792f73d0f8cc8aa41d4895317bd1745724b8bc77d8c03faf821c9059b7"
             }
           },
           "constraintBumped": "^3.0.1",
@@ -154,7 +154,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+              "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
             }
           }
         }
@@ -169,7 +169,7 @@ $ dependency_services report
         "description": {
           "name": "baz",
           "url": "http://localhost:$PORT",
-          "sha256": "28c999b54acd2f19431e094b1dbc6ada555d3badf55abcbbd5e0048d574fedb2"
+          "sha256": "377433f0e0aff092191e57de97f5869cad0dd0779ee6d31e7096b84878ca41e8"
         }
       },
       "latest": "1.1.0",
@@ -185,7 +185,7 @@ $ dependency_services report
             "description": {
               "name": "baz",
               "url": "http://localhost:$PORT",
-              "sha256": "7f4b0233fe5eae65af207f346e532c13c1a39fd8442fb64a02e83b73e4dcadb5"
+              "sha256": "7474da026b513eafecba9d1c79a8a3b4a9ef5158730e0968383063b3237c5dec"
             }
           },
           "constraintBumped": "^1.1.0",
@@ -198,7 +198,7 @@ $ dependency_services report
             "description": {
               "name": "baz",
               "url": "http://localhost:$PORT",
-              "sha256": "28c999b54acd2f19431e094b1dbc6ada555d3badf55abcbbd5e0048d574fedb2"
+              "sha256": "377433f0e0aff092191e57de97f5869cad0dd0779ee6d31e7096b84878ca41e8"
             }
           }
         }
@@ -213,7 +213,7 @@ $ dependency_services report
             "description": {
               "name": "baz",
               "url": "http://localhost:$PORT",
-              "sha256": "7f4b0233fe5eae65af207f346e532c13c1a39fd8442fb64a02e83b73e4dcadb5"
+              "sha256": "7474da026b513eafecba9d1c79a8a3b4a9ef5158730e0968383063b3237c5dec"
             }
           },
           "constraintBumped": "^1.1.0",
@@ -226,7 +226,7 @@ $ dependency_services report
             "description": {
               "name": "baz",
               "url": "http://localhost:$PORT",
-              "sha256": "28c999b54acd2f19431e094b1dbc6ada555d3badf55abcbbd5e0048d574fedb2"
+              "sha256": "377433f0e0aff092191e57de97f5869cad0dd0779ee6d31e7096b84878ca41e8"
             }
           }
         }
@@ -241,7 +241,7 @@ $ dependency_services report
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+          "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
         }
       },
       "latest": "3.0.1",
@@ -256,7 +256,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "bfb787d23489e4111a8f4a0940fd43169c49f6313c0c231e0ba73bc5e31d6704"
+              "sha256": "efa386ac7cc7698525e2e820a90e6bcee5d6c071de4315051a0fb2f3aff5d084"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -269,7 +269,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+              "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
             }
           }
         }
@@ -284,7 +284,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "785f9e487af494545c823fd7bf0576c76eff1ec96ee00923038e9b13395f8886"
+              "sha256": "c3bda774737102f799574749076544dea1a4745b5c38d590d4f206f997bfe8a0"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -297,7 +297,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+              "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
             }
           }
         }
@@ -312,7 +312,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "a5d5d4d235933e8327fc980fbd58ed6a41aa030fc25898963befb1ed24b01ffb"
+              "sha256": "2347a7792f73d0f8cc8aa41d4895317bd1745724b8bc77d8c03faf821c9059b7"
             }
           },
           "constraintBumped": "^3.0.1",
@@ -325,7 +325,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "5b4d3c47282cbb9f09f0c6a3570fe5dd1db39db04d6136ef7594fb2eeef8df72"
+              "sha256": "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
             }
           }
         },
@@ -338,7 +338,7 @@ $ dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "f8b42e4481e9043e6a3c23e02c4d3f6c0d5c3b3a250d2630cfbda7655acfc6bb"
+              "sha256": "b8187621010649d6385788d7630adcd88d6548a7938899b6f18820961df3b879"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -351,7 +351,7 @@ $ dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "ae5907b5f0861b6000253fa396ab209effe18146c25e025c283bb61c0f4fbe34"
+              "sha256": "4de00552ae3719481f5f0e30b82ecb8b14a62907553b217e7ca178e80625329a"
             }
           }
         }
@@ -378,7 +378,7 @@ packages:
     dependency: "direct main"
     description:
       name: bar
-      sha256: f8b42e4481e9043e6a3c23e02c4d3f6c0d5c3b3a250d2630cfbda7655acfc6bb
+      sha256: b8187621010649d6385788d7630adcd88d6548a7938899b6f18820961df3b879
       url: "http://localhost:$PORT"
     source: hosted
     version: "2.0.0"
@@ -386,7 +386,7 @@ packages:
     dependency: "direct main"
     description:
       name: baz
-      sha256: "28c999b54acd2f19431e094b1dbc6ada555d3badf55abcbbd5e0048d574fedb2"
+      sha256: "377433f0e0aff092191e57de97f5869cad0dd0779ee6d31e7096b84878ca41e8"
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
@@ -394,7 +394,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: a5d5d4d235933e8327fc980fbd58ed6a41aa030fc25898963befb1ed24b01ffb
+      sha256: "2347a7792f73d0f8cc8aa41d4895317bd1745724b8bc77d8c03faf821c9059b7"
       url: "http://localhost:$PORT"
     source: hosted
     version: "3.0.1"

@@ -68,6 +68,7 @@ class PackageServer {
         if (package == null) {
           return shelf.Response.notFound('No package named $name');
         }
+
         return shelf.Response.ok(jsonEncode({
           'name': name,
           'uploaders': ['nweiz@google.com'],
@@ -232,11 +233,28 @@ class PackageServer {
         for (final e in contents ?? <d.Descriptor>[]) {
           addDescriptor(e, '');
         }
-        return Stream.fromIterable(entries)
+        return replaceOs(Stream.fromIterable(entries)
             .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-            .transform(gzip.encoder);
+            .transform(gzip.encoder));
       },
     );
+  }
+
+  /// Replaces the 9th entry in [stream] with a 0. This replaces the os entry
+  /// of a gzip stream, giving us the same stream on all platforms.
+  Stream<List<int>> replaceOs(Stream<List<int>> stream) async* {
+    var i = 0;
+    await for (final t in stream) {
+      if (i > 9 || (i + t.length < 9)) {
+        yield t;
+        i += t.length;
+        continue;
+      }
+      yield t.sublist(0, 9 - i);
+      yield [0];
+      yield t.sublist(9 - i + 1);
+      i += t.length;
+    }
   }
 
   // Mark a package discontinued.
