@@ -40,7 +40,7 @@ class LoginCommand extends PubCommand {
             'Run `$topLevelProgram pub logout` to delete your credentials and try again.');
       }
       log.warning('You are already logged in as $userInfo\n'
-          'Run `pub logout` to log out and try again.');
+          'Run `dart pub logout` to log out and try again.');
     }
   }
 
