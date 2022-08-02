@@ -3,12 +3,19 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A simple library for rendering tree-like structures in ASCII.
+import 'dart:io';
+
 import 'package:path/path.dart' as path;
 
 import 'log.dart' as log;
 import 'utils.dart';
 
-/// Draws a tree for the given list of files. Given files like:
+/// Draws a tree for the given list of files, showing each file with the file
+/// size.
+///
+/// Stats each file in the list for finding the size.
+///
+/// Given files like:
 ///
 ///     TODO
 ///     example/console_example.dart
@@ -16,11 +23,6 @@ import 'utils.dart';
 ///     example/web copy/web_example.dart
 ///     test/absolute_test.dart
 ///     test/basename_test.dart
-///     test/dirname_test.dart
-///     test/extension_test.dart
-///     test/is_absolute_test.dart
-///     test/is_relative_test.dart
-///     test/join_test.dart
 ///     test/normalize_test.dart
 ///     test/relative_test.dart
 ///     test/split_test.dart
@@ -34,48 +36,48 @@ import 'utils.dart';
 ///
 /// this renders:
 ///
-///     |-- .gitignore
-///     |-- README.md
-///     |-- TODO
+///     |-- .gitignore (1 KB)
+///     |-- README.md (23 KB)
+///     |-- TODO (1 MB)
 ///     |-- example
-///     |   |-- console_example.dart
-///     |   |-- main.dart
+///     |   |-- console_example.dart (20 B)
+///     |   |-- main.dart (200 B)
 ///     |   '-- web copy
-///     |       '-- web_example.dart
+///     |       '-- web_example.dart (3 KB)
 ///     |-- lib
-///     |   '-- path.dart
-///     |-- pubspec.yaml
+///     |   '-- path.dart (4 KB)
+///     |-- pubspec.yaml (10 KB)
 ///     '-- test
-///         |-- absolute_test.dart
-///         |-- all_test.dart
-///         |-- basename_test.dart
-///         | (7 more...)
-///         |-- path_windows_test.dart
-///         |-- relative_test.dart
-///         '-- split_test.dart
+///         |-- absolute_test.dart (102 KB)
+///         |-- all_test.dart (100 KB)
+///         |-- basename_test.dart (4 KB)
+///         |-- path_windows_test.dart (2 KB)
+///         |-- relative_test.dart (10 KB)
+///         '-- split_test.dart (50 KB)
 ///
 /// If [baseDir] is passed, it will be used as the root of the tree.
-///
-/// If [showAllChildren] is `false`, then directories with more than ten items
-/// will have their contents truncated. Defaults to `false`.
+
 String fromFiles(
   List<String> files, {
   String? baseDir,
-  bool showAllChildren = false,
 }) {
   // Parse out the files into a tree of nested maps.
   var root = <String, Map>{};
   for (var file in files) {
+    final size = File(path.normalize(file)).statSync().size;
+    final sizeString = _readableFileSize(size);
     if (baseDir != null) file = path.relative(file, from: baseDir);
     var directory = root;
-    for (var part in path.split(file)) {
+    final parts = path.split(file);
+    parts.last = '${parts.last} $sizeString';
+    for (var part in parts) {
       directory = directory.putIfAbsent(part, () => <String, Map>{})
           as Map<String, Map>;
     }
   }
 
   // Walk the map recursively and render to a string.
-  return fromMap(root, showAllChildren: showAllChildren);
+  return fromMap(root);
 }
 
 /// Draws a tree from a nested map. Given a map like:
@@ -99,12 +101,9 @@ String fromFiles(
 ///     barback
 ///
 /// Items with no children should have an empty map as the value.
-///
-/// If [showAllChildren] is `false`, then directories with more than ten items
-/// will have their contents truncated. Defaults to `false`.
-String fromMap(Map<String, Map> map, {bool showAllChildren = false}) {
+String fromMap(Map<String, Map> map) {
   var buffer = StringBuffer();
-  _draw(buffer, '', null, map, showAllChildren: showAllChildren);
+  _draw(buffer, '', null, map);
   return buffer.toString();
 }
 
@@ -155,25 +154,19 @@ void _draw(
         showAllChildren: showAllChildren, isLast: isLastChild);
   }
 
-  if (name == null || showAllChildren || childNames.length <= 10) {
-    // Not too many, so show all the children.
-    for (var i = 0; i < childNames.length; i++) {
-      drawChild(i == childNames.length - 1, childNames[i]);
-    }
+  for (var i = 0; i < childNames.length; i++) {
+    drawChild(i == childNames.length - 1, childNames[i]);
+  }
+}
+
+String _readableFileSize(int size) {
+  if (size >= 1 << 30) {
+    return log.red('(${size ~/ (1 << 30)} GB)');
+  } else if (size >= 1 << 20) {
+    return log.yellow('(${size ~/ (1 << 20)} MB)');
+  } else if (size >= 1 << 10) {
+    return log.gray('(${size ~/ (1 << 10)} KB)');
   } else {
-    // Show the first few.
-    drawChild(false, childNames[0]);
-    drawChild(false, childNames[1]);
-    drawChild(false, childNames[2]);
-
-    // Elide the middle ones.
-    buffer.write(prefix);
-    buffer.write(_getPrefix(false, isLast));
-    buffer.writeln(log.gray('| (${childNames.length - 6} more...)'));
-
-    // Show the last few.
-    drawChild(false, childNames[childNames.length - 3]);
-    drawChild(false, childNames[childNames.length - 2]);
-    drawChild(true, childNames[childNames.length - 1]);
+    return log.gray('($size B)');
   }
 }

@@ -3,7 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:pub/src/ascii_tree.dart' as tree;
+import 'package:pub/src/package.dart';
 import 'package:test/test.dart';
+
+import 'descriptor.dart';
+import 'test_pub.dart';
 
 /// Removes ansi color codes from [s].
 String stripColors(String s) {
@@ -16,135 +20,71 @@ void main() {
       expect(stripColors(tree.fromFiles([])), equals(''));
     });
 
-    test('up to ten files in one directory are shown', () {
-      var files = [
-        'dir/a.dart',
-        'dir/b.dart',
-        'dir/c.dart',
-        'dir/d.dart',
-        'dir/e.dart',
-        'dir/f.dart',
-        'dir/g.dart',
-        'dir/h.dart',
-        'dir/i.dart',
-        'dir/j.dart'
-      ];
-      expect(stripColors(tree.fromFiles(files)), equals("""
-'-- dir
-    |-- a.dart
-    |-- b.dart
-    |-- c.dart
-    |-- d.dart
-    |-- e.dart
-    |-- f.dart
-    |-- g.dart
-    |-- h.dart
-    |-- i.dart
-    '-- j.dart
-"""));
-    });
-
-    test('files are elided if there are more than ten', () {
-      var files = [
-        'dir/a.dart',
-        'dir/b.dart',
-        'dir/c.dart',
-        'dir/d.dart',
-        'dir/e.dart',
-        'dir/f.dart',
-        'dir/g.dart',
-        'dir/h.dart',
-        'dir/i.dart',
-        'dir/j.dart',
-        'dir/k.dart'
-      ];
-      expect(stripColors(tree.fromFiles(files)), equals("""
-'-- dir
-    |-- a.dart
-    |-- b.dart
-    |-- c.dart
-    | (5 more...)
-    |-- i.dart
-    |-- j.dart
-    '-- k.dart
-"""));
-    });
-
-    test('files are not elided at the top level', () {
-      var files = [
-        'a.dart',
-        'b.dart',
-        'c.dart',
-        'd.dart',
-        'e.dart',
-        'f.dart',
-        'g.dart',
-        'h.dart',
-        'i.dart',
-        'j.dart',
-        'k.dart'
-      ];
-      expect(stripColors(tree.fromFiles(files)), equals("""
-|-- a.dart
-|-- b.dart
-|-- c.dart
-|-- d.dart
-|-- e.dart
-|-- f.dart
-|-- g.dart
-|-- h.dart
-|-- i.dart
-|-- j.dart
-'-- k.dart
-"""));
-    });
-
-    test('a complex example', () {
-      var files = [
-        'TODO',
-        'example/console_example.dart',
-        'example/main.dart',
-        'example/web copy/web_example.dart',
-        'test/absolute_test.dart',
-        'test/basename_test.dart',
-        'test/dirname_test.dart',
-        'test/extension_test.dart',
-        'test/is_absolute_test.dart',
-        'test/is_relative_test.dart',
-        'test/join_test.dart',
-        'test/normalize_test.dart',
-        'test/relative_test.dart',
-        'test/split_test.dart',
-        '.gitignore',
-        'README.md',
-        'lib/path.dart',
-        'pubspec.yaml',
-        'test/all_test.dart',
-        'test/path_posix_test.dart',
-        'test/path_windows_test.dart'
-      ];
-
-      expect(stripColors(tree.fromFiles(files)), equals("""
-|-- .gitignore
-|-- README.md
-|-- TODO
-|-- example
-|   |-- console_example.dart
-|   |-- main.dart
-|   '-- web copy
-|       '-- web_example.dart
-|-- lib
-|   '-- path.dart
-|-- pubspec.yaml
-'-- test
-    |-- absolute_test.dart
-    |-- all_test.dart
-    |-- basename_test.dart
-    | (7 more...)
-    |-- path_windows_test.dart
-    |-- relative_test.dart
-    '-- split_test.dart
-"""));
+    List<int> bytes(int size) => List.filled(size, 0);
+    test('a complex example', () async {
+      await dir(appPath, [
+        libPubspec('app', '1.0.0'),
+        file('TODO', bytes(10)),
+        dir('example', [
+          file('console_example.dart', bytes(1000)),
+          file('main.dart', bytes(1024)),
+          dir('web copy', [
+            file('web_example.dart', bytes(1025)),
+          ]),
+        ]),
+        dir('test', [
+          file('absolute_test.dart', bytes(0)),
+          file('basename_test.dart', bytes(1 << 20)),
+          file('dirname_test.dart', bytes((1 << 20) + 1)),
+          file('extension_test.dart', bytes(2300)),
+          file('is_absolute_test.dart', bytes(2400)),
+          file('is_relative_test.dart', bytes((1 << 20) * 25)),
+          file('join_test.dart', bytes(1023)),
+          file('normalize_test.dart', bytes((1 << 20) - 1)),
+          file('relative_test.dart', bytes(100)),
+          file('split_test.dart', bytes(1)),
+          file('all_test.dart', bytes(100)),
+          file('path_posix_test.dart', bytes(100)),
+          file('path_windows_test.dart', bytes(100)),
+        ]),
+        file('.gitignore', bytes(100)),
+        file('README.md', bytes(100)),
+        dir('lib', [
+          file('path.dart', bytes(100)),
+        ]),
+      ]).create();
+      var files = Package.load(
+        null,
+        path(appPath),
+        (name) => throw UnimplementedError(),
+      ).listFiles();
+      expect(stripColors(tree.fromFiles(files, baseDir: sandbox)), equals('''
+'-- myapp
+    |-- README.md (100 B)
+    |-- TODO (10 B)
+    |-- example
+    |   |-- console_example.dart (1000 B)
+    |   |-- main.dart (1 KB)
+    |   '-- web copy
+    |       '-- web_example.dart (1 KB)
+    |-- lib
+    |   '-- path.dart (100 B)
+    |-- pubspec.yaml (144 B)
+    '-- test
+        |-- absolute_test.dart (0 B)
+        |-- all_test.dart (100 B)
+        |-- basename_test.dart (1 MB)
+        |-- dirname_test.dart (1 MB)
+        |-- extension_test.dart (2 KB)
+        |-- is_absolute_test.dart (2 KB)
+        |-- is_relative_test.dart (25 MB)
+        |-- join_test.dart (1023 B)
+        |-- normalize_test.dart (1023 KB)
+        |-- path_posix_test.dart (100 B)
+        |-- path_windows_test.dart (100 B)
+        |-- relative_test.dart (100 B)
+        '-- split_test.dart (1 B)
+'''));
     });
   });
 
@@ -204,39 +144,5 @@ void main() {
     '-- split_test.dart
 """));
     });
-  });
-
-  test('does not elide children if showAllChildren is true', () {
-    var map = {
-      'dir': {
-        'a.dart': <String, Map>{},
-        'b.dart': <String, Map>{},
-        'c.dart': <String, Map>{},
-        'd.dart': <String, Map>{},
-        'e.dart': <String, Map>{},
-        'f.dart': <String, Map>{},
-        'g.dart': <String, Map>{},
-        'h.dart': <String, Map>{},
-        'i.dart': <String, Map>{},
-        'j.dart': <String, Map>{},
-        'k.dart': <String, Map>{},
-        'l.dart': <String, Map>{},
-      }
-    };
-    expect(stripColors(tree.fromMap(map, showAllChildren: true)), equals("""
-'-- dir
-    |-- a.dart
-    |-- b.dart
-    |-- c.dart
-    |-- d.dart
-    |-- e.dart
-    |-- f.dart
-    |-- g.dart
-    |-- h.dart
-    |-- i.dart
-    |-- j.dart
-    |-- k.dart
-    '-- l.dart
-"""));
   });
 }
