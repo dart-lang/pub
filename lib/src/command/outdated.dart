@@ -556,7 +556,7 @@ Future<void> _outputHuman(
     }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
-        'Run `pub get` to create a pubspec.lock with versions matching your '
+        'Run `dart pub get` to create a pubspec.lock with versions matching your '
         'pubspec.yaml.');
   }
   if (notAtResolvable != 0) {

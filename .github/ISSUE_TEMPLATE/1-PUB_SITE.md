@@ -1,6 +1,6 @@
 ---
 name: There is a problem with pub.dev
-about: A `pub get` fails because of an outage at `pub.dev`, the site
+about: A `dart pub get` fails because of an outage at `pub.dev`, the site
   cannot be loaded, or there is an issue with a particular package such as a
   request to have a published package removed.
 

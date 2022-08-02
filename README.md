@@ -64,7 +64,7 @@ user-visible pub commands. Each test has a file to itself, which is named after
 the test description. This is used when tests can take a long time to run to
 avoid having the tests time out when running on the build bots. For example,
 `tests/get/hosted/get_transitive_test.dart` tests the resolution of transitive
-hosted dependencies when using `pub get`.
+hosted dependencies when using `dart pub get`.
 
 ## Landing your patch
 

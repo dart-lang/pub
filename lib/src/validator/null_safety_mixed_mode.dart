@@ -44,8 +44,8 @@ change release.
 We highly recommend that you wait until all of your dependencies have been
 migrated before publishing.
 
-Run `pub outdated --mode=null-safety` for more information about the state of
-dependencies.
+Run `dart pub outdated --mode=null-safety` for more information about the state 
+of dependencies.
 
 See ${NullSafetyAnalysis.guideUrl}
 for more information about migrating.

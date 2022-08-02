@@ -6,7 +6,7 @@ about: The pub client is printing a stack trace or failing unexpectedly.
 
 # Environment
 
-- `pub version` or `flutter pub version`:
+- `dart pub version` or `flutter pub version`:
 - OS version:
 - Are you using the Chinese community mirror or a corporate firewall?
 
