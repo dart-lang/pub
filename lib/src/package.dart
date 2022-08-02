@@ -191,7 +191,7 @@ class Package {
     'packages/',
     'pubspec.lock',
     '!pubspec.lock/', // We allow a directory called pubspec lock.
-    'pubspec_overrides.yaml',
+    '/pubspec_overrides.yaml',
   ];
 
   /// Returns a list of files that are considered to be part of this package.
