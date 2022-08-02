@@ -162,7 +162,6 @@ class GlobalPackages {
     await entrypoint.acquireDependencies(
       SolveType.get,
       analytics: analytics,
-      generateDotPackages: false,
     );
     var name = entrypoint.root.name;
     _describeActive(name, cache);
@@ -253,7 +252,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         solveResult: result,
       );
 
-      await entrypoint.writePackagesFiles();
+      await entrypoint.writePackageConfigFile();
 
       await entrypoint.precompileExecutables();
 

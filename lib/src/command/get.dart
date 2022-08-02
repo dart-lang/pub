@@ -33,9 +33,6 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag('packages-dir', hide: true);
 
-    argParser.addFlag('legacy-packages-file',
-        help: 'Generate the legacy ".packages" file', negatable: false);
-
     argParser.addFlag(
       'example',
       help: 'Also run in `example/` (if it exists).',
@@ -56,7 +53,6 @@ class GetCommand extends PubCommand {
       SolveType.get,
       dryRun: argResults['dry-run'],
       precompile: argResults['precompile'],
-      generateDotPackages: argResults['legacy-packages-file'],
       analytics: analytics,
     );
 
@@ -66,7 +62,6 @@ class GetCommand extends PubCommand {
         SolveType.get,
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile'],
-        generateDotPackages: argResults['legacy-packages-file'],
         analytics: analytics,
         onlyReportSuccessOrFailure: true,
       );
