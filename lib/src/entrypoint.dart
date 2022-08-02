@@ -27,7 +27,6 @@ import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
-import 'packages_file.dart' as packages_file;
 import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
@@ -225,25 +224,18 @@ class Entrypoint {
   Entrypoint? _example;
 
   /// Writes .packages and .dart_tool/package_config.json
-  Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
+  Future<void> writePackageConfigFile() async {
     final entrypointName = isGlobal ? null : root.name;
-    if (generateDotPackages) {
-      writeTextFile(
-          packagesFile,
-          lockFile.packagesFile(cache,
-              entrypoint: entrypointName,
-              relativeFrom: isGlobal ? null : root.dir));
-    } else {
-      tryDeleteEntry(packagesFile);
-    }
     ensureDir(p.dirname(packageConfigFile));
     writeTextFile(
-        packageConfigFile,
-        await lockFile.packageConfigFile(cache,
-            entrypoint: entrypointName,
-            entrypointSdkConstraint:
-                root.pubspec.sdkConstraints[sdk.identifier],
-            relativeFrom: isGlobal ? null : root.dir));
+      packageConfigFile,
+      await lockFile.packageConfigFile(
+        cache,
+        entrypoint: entrypointName,
+        entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
+        relativeFrom: isGlobal ? null : root.dir,
+      ),
+    );
   }
 
   /// Gets all dependencies of the [root] package.
@@ -273,7 +265,6 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
-    required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
@@ -347,7 +338,7 @@ class Entrypoint {
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-      await writePackagesFiles(generateDotPackages: generateDotPackages);
+      await writePackageConfigFile();
 
       try {
         if (precompile) {
@@ -568,16 +559,6 @@ class Entrypoint {
       }
     }
 
-    if (fileExists(packagesFile)) {
-      var packagesModified = File(packagesFile).lastModifiedSync();
-      if (packagesModified.isBefore(lockFileModified)) {
-        _checkPackagesFileUpToDate();
-        touch(packagesFile);
-      } else if (touchedLockFile) {
-        touch(packagesFile);
-      }
-    }
-
     var packageConfigModified = File(packageConfigFile).lastModifiedSync();
     if (packageConfigModified.isBefore(lockFileModified) ||
         hasPathDependencies) {
@@ -729,39 +710,6 @@ class Entrypoint {
 
       return true;
     });
-  }
-
-  /// Checks whether or not the `.packages` file is out of date with respect
-  /// to the [lockfile].
-  ///
-  /// This will throw a [DataError] if [lockfile] contains dependencies that
-  /// are not in the `.packages` or that don't match what's in there.
-  void _checkPackagesFileUpToDate() {
-    void outOfDate() {
-      dataError('The $lockFilePath file has changed since the .packages file '
-          'was generated, please run "$topLevelProgram pub get" again.');
-    }
-
-    var packages = packages_file.parse(
-        File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
-
-    final packagePathsMapping = <String, String>{};
-    for (final package in packages.keys) {
-      final packageUri = packages[package]!;
-
-      // Pub only generates "file:" and relative URIs.
-      if (packageUri.scheme != 'file' && packageUri.scheme.isNotEmpty) {
-        outOfDate();
-      }
-
-      // Get the dirname of the .packages path, since it's pointing to lib/.
-      final packagePath = p.dirname(p.join(root.dir, p.fromUri(packageUri)));
-      packagePathsMapping[package] = packagePath;
-    }
-
-    if (!_isPackagePathsMappingUpToDateWithLockfile(packagePathsMapping)) {
-      outOfDate();
-    }
   }
 
   /// Checks whether or not the `.dart_tool/package_config.json` file is

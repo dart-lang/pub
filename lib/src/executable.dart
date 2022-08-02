@@ -308,7 +308,6 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
         () => entrypoint.acquireDependencies(
           SolveType.get,
           analytics: analytics,
-          generateDotPackages: false,
         ),
       );
     } on ApplicationException catch (e) {
