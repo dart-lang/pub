@@ -94,18 +94,18 @@ Hi
 ## Section 11
 $ pub publish -C myapp --dry-run
 Publishing test_pkg 1.0.0 to http://localhost:$PORT:
-|-- CHANGELOG.md
-|-- LICENSE
-|-- README.md
+|-- CHANGELOG.md (22 B)
+|-- LICENSE (21 B)
+|-- README.md (24 B)
 |-- bin
-|   '-- app.dart
+|   '-- app.dart (27 B)
 |-- example
-|   '-- pubspec.yaml
+|   '-- pubspec.yaml (100 B)
 |-- example2
-|   '-- pubspec.yaml
+|   '-- pubspec.yaml (97 B)
 |-- lib
-|   '-- test_pkg.dart
-'-- pubspec.yaml
+|   '-- test_pkg.dart (10 B)
+'-- pubspec.yaml (180 B)
 The server may enforce additional checks.
 [STDERR] 
 [STDERR] Package has 0 warnings.

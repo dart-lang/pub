@@ -2,12 +2,14 @@
 
 ## Section 0
 $ tree
-'-- myapp
-    |-- bin
-    |   |-- bar.sh
-    |   '-- foo.py
-    |-- pubspec.lock
-    '-- pubspec.yaml
+|-- myapp
+|   |-- bin
+|   |   |-- bar.sh (0 B)
+|   |   '-- foo.py (0 B)
+|   |-- bin (4 KB)
+|   |-- pubspec.lock (114 B)
+|   '-- pubspec.yaml (55 B)
+'-- myapp (4 KB)
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

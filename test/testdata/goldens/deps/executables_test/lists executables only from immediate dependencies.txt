@@ -4,15 +4,20 @@
 $ tree
 |-- baz
 |   |-- bin
-|   |   '-- qux.dart
-|   '-- pubspec.yaml
+|   |   '-- qux.dart (9 B)
+|   |-- bin (4 KB)
+|   '-- pubspec.yaml (144 B)
+|-- baz (4 KB)
 |-- foo
 |   |-- bin
-|   |   '-- bar.dart
-|   '-- pubspec.yaml
-'-- myapp
-    |-- pubspec.lock
-    '-- pubspec.yaml
+|   |   '-- bar.dart (9 B)
+|   |-- bin (4 KB)
+|   '-- pubspec.yaml (185 B)
+|-- foo (4 KB)
+|-- myapp
+|   |-- pubspec.lock (376 B)
+|   '-- pubspec.yaml (96 B)
+'-- myapp (4 KB)
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

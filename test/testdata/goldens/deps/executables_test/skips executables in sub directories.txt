@@ -2,13 +2,16 @@
 
 ## Section 0
 $ tree
-'-- myapp
-    |-- bin
-    |   |-- foo.dart
-    |   '-- sub
-    |       '-- bar.dart
-    |-- pubspec.lock
-    '-- pubspec.yaml
+|-- myapp
+|   |-- bin
+|   |   |-- foo.dart (9 B)
+|   |   |-- sub
+|   |   |   '-- bar.dart (9 B)
+|   |   '-- sub (4 KB)
+|   |-- bin (4 KB)
+|   |-- pubspec.lock (114 B)
+|   '-- pubspec.yaml (55 B)
+'-- myapp (4 KB)
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

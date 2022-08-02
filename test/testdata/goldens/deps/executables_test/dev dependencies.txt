@@ -4,11 +4,14 @@
 $ tree
 |-- foo
 |   |-- bin
-|   |   '-- bar.dart
-|   '-- pubspec.yaml
-'-- myapp
-    |-- pubspec.lock
-    '-- pubspec.yaml
+|   |   '-- bar.dart (9 B)
+|   |-- bin (4 KB)
+|   '-- pubspec.yaml (144 B)
+|-- foo (4 KB)
+|-- myapp
+|   |-- pubspec.lock (244 B)
+|   '-- pubspec.yaml (100 B)
+'-- myapp (4 KB)
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
