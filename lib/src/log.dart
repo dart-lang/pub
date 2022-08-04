@@ -348,7 +348,7 @@ String limitLength(String input, int limit) {
   if (input.length <= limit) return input;
   final half = (limit - snip.length) ~/ 2;
   final extra = (limit - snip.length).isOdd ? 1 : 0;
-  return '${input.substring(0, (half + extra))}'
+  return '${input.substring(0, half + extra)}'
       '$snip'
       '${input.substring(input.length - half)}';
 }
