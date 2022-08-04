@@ -186,7 +186,7 @@ Future<void> precompile({
     final result = await client.compile();
 
     final highlightedName = log.bold(name);
-    if (result?.errorCount == 0) {
+    if (result.errorCount == 0) {
       log.message('Built $highlightedName.');
       // By using rename we ensure atomicity. An external observer will either
       // see the old or the new snapshot.
@@ -200,7 +200,7 @@ Future<void> precompile({
 
       throw ApplicationException(
           log.yellow('Failed to build $highlightedName:\n') +
-              (result?.compilerOutputLines.join('\n') ?? ''));
+              (result.compilerOutputLines.join('\n') ?? ''));
     }
   } finally {
     client?.kill();
