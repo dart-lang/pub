@@ -340,7 +340,7 @@ void dumpTranscriptToStdErr() {
 /// Shortens [input] to at most [limit] characters by omitting the middle part
 /// replacing it with '[...]' if it is too long.
 ///
-/// If [limit] must be more than 5.
+/// [limit] must be more than 5.
 @visibleForTesting
 String limitLength(String input, int limit) {
   const snip = '[...]';
