@@ -17,7 +17,7 @@ String stripColors(String s) {
 void main() {
   group('tree.fromFiles', () {
     test('no files', () {
-      expect(stripColors(tree.fromFiles([])), equals(''));
+      expect(stripColors(tree.fromFiles([], showFileSizes: true)), equals(''));
     });
 
     List<int> bytes(int size) => List.filled(size, 0);
@@ -58,7 +58,10 @@ void main() {
         path(appPath),
         (name) => throw UnimplementedError(),
       ).listFiles();
-      expect(stripColors(tree.fromFiles(files, baseDir: sandbox)), equals('''
+      expect(
+          stripColors(
+              tree.fromFiles(files, baseDir: sandbox, showFileSizes: true)),
+          equals('''
 '-- myapp
     |-- README.md (100 B)
     |-- TODO (10 B)

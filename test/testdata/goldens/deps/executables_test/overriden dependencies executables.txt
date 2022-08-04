@@ -4,21 +4,16 @@
 $ tree
 |-- foo-1.0
 |   |-- bin
-|   |   '-- bar.dart (9 B)
-|   |-- bin (4 KB)
-|   '-- pubspec.yaml (144 B)
-|-- foo-1.0 (4 KB)
+|   |   '-- bar.dart
+|   '-- pubspec.yaml
 |-- foo-2.0
 |   |-- bin
-|   |   |-- bar.dart (9 B)
-|   |   '-- baz.dart (9 B)
-|   |-- bin (4 KB)
-|   '-- pubspec.yaml (144 B)
-|-- foo-2.0 (4 KB)
-|-- myapp
-|   |-- pubspec.lock (249 B)
-|   '-- pubspec.yaml (153 B)
-'-- myapp (4 KB)
+|   |   |-- bar.dart
+|   |   '-- baz.dart
+|   '-- pubspec.yaml
+'-- myapp
+    |-- pubspec.lock
+    '-- pubspec.yaml
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

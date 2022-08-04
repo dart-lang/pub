@@ -226,7 +226,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     var package = entrypoint.root;
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
-      '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}',
+      '${tree.fromFiles(files, baseDir: entrypoint.root.dir, showFileSizes: true)}',
     );
 
     var packageBytesFuture =

@@ -10,10 +10,10 @@ import 'package:path/path.dart' as path;
 import 'log.dart' as log;
 import 'utils.dart';
 
-/// Draws a tree for the given list of files, showing each file with the file
-/// size.
+/// Draws a tree for the given list of files
 ///
-/// Stats each file in the list for finding the size.
+/// Shows each file with the file size if [showFileSize] is `true`.
+/// This will stats each file in the list for finding the size.
 ///
 /// Given files like:
 ///
@@ -60,16 +60,19 @@ import 'utils.dart';
 String fromFiles(
   List<String> files, {
   String? baseDir,
+  required bool showFileSizes,
 }) {
   // Parse out the files into a tree of nested maps.
   var root = <String, Map>{};
   for (var file in files) {
-    final size = File(path.normalize(file)).statSync().size;
-    final sizeString = _readableFileSize(size);
     if (baseDir != null) file = path.relative(file, from: baseDir);
-    var directory = root;
     final parts = path.split(file);
-    parts.last = '${parts.last} $sizeString';
+    if (showFileSizes) {
+      final size = File(path.normalize(file)).statSync().size;
+      final sizeString = _readableFileSize(size);
+      parts.last = '${parts.last} $sizeString';
+    }
+    var directory = root;
     for (var part in parts) {
       directory = directory.putIfAbsent(part, () => <String, Map>{})
           as Map<String, Map>;
@@ -167,6 +170,6 @@ String _readableFileSize(int size) {
   } else if (size >= 1 << 10) {
     return log.gray('(${size ~/ (1 << 10)} KB)');
   } else {
-    return log.gray('($size B)');
+    return log.gray('(< 1 KB)');
   }
 }

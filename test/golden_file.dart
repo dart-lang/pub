@@ -187,6 +187,7 @@ class GoldenTestContext {
     s.writeln(stripColors(ascii_tree.fromFiles(
       listDir(target, recursive: true),
       baseDir: target,
+      showFileSizes: false,
     )));
 
     _expectSection(sectionIndex, s.toString());
