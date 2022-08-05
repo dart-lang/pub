@@ -30,7 +30,7 @@ class GetCommand extends PubCommand {
         help: "Report what dependencies would change but don't change any.");
 
     argParser.addFlag('enforce-lockfile',
-        negatable: false, help: 'Only use resolution in existing lockfile.');
+        negatable: false, help: 'Only use resolution from existing pubspec.lock.');
 
     argParser.addFlag('precompile',
         help: 'Build executables in immediate dependencies.');
