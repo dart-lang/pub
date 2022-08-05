@@ -149,7 +149,7 @@ class GoldenTestContext {
       _expectSection(_nextSectionIndex++, actual);
 
   /// Run `pub` [args] with [environment] variables in [workingDirectory], and
-  /// log stdout/stderr and exitcode to golden file.
+  /// log stdout/stderr and exit code to golden file.
   Future<void> run(
     List<String> args, {
     Map<String, String>? environment,
