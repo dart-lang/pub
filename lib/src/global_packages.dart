@@ -280,6 +280,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
   /// Finishes activating package [package] by saving [lockFile] in the cache.
   void _writeLockFile(String dir, LockFile lockFile, SystemCache cache) {
+    lockFile.checkContentHashes(cache);
     writeTextFile(p.join(dir, 'pubspec.lock'), lockFile.serialize(null, cache));
   }
 

@@ -669,6 +669,11 @@ class HostedSource extends CachedSource {
   ///
   /// Validates that the content hash of [id] corresponds to what is already in
   /// cache, if not the file is redownloaded.
+  ///
+  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
+  /// response if present instead of probing the server. Not probing allows for
+  /// `pub get` with a filled cache to be a fast case that doesn't require any
+  /// new version-listings.
   @override
   Future<void> downloadToSystemCache(
     PackageId id,

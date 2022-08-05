@@ -347,9 +347,8 @@ class Entrypoint {
         result.packages,
         allowOutdatedHashChecks: !enforceLockfile,
       );
-      if (enforceLockfile) {
-        result.lockFile.checkContentHashes(cache);
-      } else {
+      result.lockFile.checkContentHashes(cache);
+      if (!enforceLockfile) {
         result.lockFile.writeToFile(lockFilePath, cache);
       }
     }
