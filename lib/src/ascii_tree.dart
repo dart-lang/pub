@@ -65,8 +65,9 @@ String fromFiles(
   // Parse out the files into a tree of nested maps.
   var root = <String, Map>{};
   for (var file in files) {
-    if (baseDir != null) file = path.relative(file, from: baseDir);
-    final parts = path.split(file);
+    final relativeFile =
+        baseDir == null ? file : path.relative(file, from: baseDir);
+    final parts = path.split(relativeFile);
     if (showFileSizes) {
       final size = File(path.normalize(file)).statSync().size;
       final sizeString = _readableFileSize(size);
@@ -170,6 +171,6 @@ String _readableFileSize(int size) {
   } else if (size >= 1 << 10) {
     return log.gray('(${size ~/ (1 << 10)} KB)');
   } else {
-    return log.gray('(< 1 KB)');
+    return log.gray('(<1 KB)');
   }
 }
