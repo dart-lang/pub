@@ -296,7 +296,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
     if (description is GitDescription) {
       log.message('Package ${log.bold(name)} is currently active from Git '
-          'repository "${p.prettyUri(description.url)}".');
+          'repository "${GitDescription.prettyUri(description.url)}".');
     } else if (description is PathDescription) {
       log.message('Package ${log.bold(name)} is currently active at path '
           '"${description.path}".');
@@ -458,7 +458,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   String _formatPackage(PackageId id) {
     final description = id.description.description;
     if (description is GitDescription) {
-      var url = p.prettyUri(description.url);
+      var url = GitDescription.prettyUri(description.url);
       return '${log.bold(id.name)} ${id.version} from Git repository "$url"';
     } else if (description is PathDescription) {
       var path = description.path;
