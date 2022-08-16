@@ -19,14 +19,15 @@ import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
 import 'package.dart';
 import 'sdk.dart';
+import 'source/hosted.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
 const _censoredFields = ['refresh_token', 'authorization'];
 
-/// Headers required for pub.dartlang.org API requests.
+/// Headers required for pub.dev API requests.
 ///
-/// The Accept header tells pub.dartlang.org which version of the API we're
+/// The Accept header tells pub.dev which version of the API we're
 /// expecting, so it can either serve that version or give us a 406 error if
 /// it's not supported.
 const pubApiHeaders = {'Accept': 'application/vnd.pub.v2+json'};
@@ -79,7 +80,7 @@ class _PubHttpClient extends http.BaseClient {
         return false;
       }
     } else {
-      if (request.url.origin != 'https://pub.dartlang.org') return false;
+      if (!HostedSource.isPubDevUrl(request.url.toString())) return false;
     }
 
     if (Platform.environment.containsKey('CI') &&
@@ -222,7 +223,7 @@ class _ThrowingClient extends http.BaseClient {
     }
 
     if (status == 500 &&
-        (request.url.host == 'pub.dartlang.org' ||
+        (request.url.host == 'pub.dev' ||
             request.url.host == 'storage.googleapis.com')) {
       fail('HTTP error 500: Internal Server Error at ${request.url}.\n'
           'This is likely a transient error. Please try again later.');
@@ -281,7 +282,7 @@ final httpClient = _ThrottleClient(
 http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
 
-/// Runs [callback] in a zone where all HTTP requests sent to `pub.dartlang.org`
+/// Runs [callback] in a zone where all HTTP requests sent to `pub.dev`
 /// will indicate the [type] of the relationship between the root package and
 /// the package being requested.
 ///
@@ -293,7 +294,7 @@ Future<T> withDependencyType<T>(
   return runZoned(callback, zoneValues: {#_dependencyType: type});
 }
 
-/// Handles a successful JSON-formatted response from pub.dartlang.org.
+/// Handles a successful JSON-formatted response from pub.dev.
 ///
 /// These responses are expected to be of the form `{"success": {"message":
 /// "some message"}}`. If the format is correct, the message will be printed;
@@ -308,7 +309,7 @@ void handleJsonSuccess(http.Response response) {
   log.message(log.green(parsed['success']['message']));
 }
 
-/// Handles an unsuccessful JSON-formatted response from pub.dartlang.org.
+/// Handles an unsuccessful JSON-formatted response from pub.dev.
 ///
 /// These responses are expected to be of the form `{"error": {"message": "some
 /// message"}}`. If the format is correct, the message will be raised as an

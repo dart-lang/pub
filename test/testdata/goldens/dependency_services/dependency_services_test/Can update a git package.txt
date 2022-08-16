@@ -11,7 +11,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "92cdd4ac724a6da0db2a69ac149820aa220e8518"
+      resolved-ref: "5373af3230028f3e31e9ee39e326228db83710cb"
       url: "../bar.git"
     source: git
     version: "1.0.0"
@@ -20,7 +20,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba"
+      resolved-ref: "428f5dd6e627cb2384343eca6aed099f4f7d183d"
       url: "../foo.git"
     source: git
     version: "1.0.0"
@@ -34,7 +34,7 @@ $ dependency_services list
   "dependencies": [
     {
       "name": "bar",
-      "version": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+      "version": "5373af3230028f3e31e9ee39e326228db83710cb",
       "kind": "direct",
       "constraint": "^1.0.0",
       "source": {
@@ -42,14 +42,14 @@ $ dependency_services list
         "description": {
           "url": "../bar.git",
           "ref": "HEAD",
-          "resolved-ref": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+          "resolved-ref": "5373af3230028f3e31e9ee39e326228db83710cb",
           "path": "."
         }
       }
     },
     {
       "name": "foo",
-      "version": "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba",
+      "version": "428f5dd6e627cb2384343eca6aed099f4f7d183d",
       "kind": "direct",
       "constraint": "any",
       "source": {
@@ -57,7 +57,7 @@ $ dependency_services list
         "description": {
           "url": "../foo.git",
           "ref": "HEAD",
-          "resolved-ref": "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba",
+          "resolved-ref": "428f5dd6e627cb2384343eca6aed099f4f7d183d",
           "path": "."
         }
       }
@@ -73,45 +73,45 @@ $ dependency_services report
   "dependencies": [
     {
       "name": "bar",
-      "version": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+      "version": "5373af3230028f3e31e9ee39e326228db83710cb",
       "kind": "direct",
       "source": {
         "type": "git",
         "description": {
           "url": "../bar.git",
           "ref": "HEAD",
-          "resolved-ref": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+          "resolved-ref": "5373af3230028f3e31e9ee39e326228db83710cb",
           "path": "."
         }
       },
-      "latest": "cf473c33e39eeec4615bc2cde8bf68cbb10ad02c",
+      "latest": "40d0ffbfc376f2a796b0bbb928636c242285a01c",
       "constraint": "^1.0.0",
       "compatible": [],
       "singleBreaking": [
         {
           "name": "bar",
-          "version": "cf473c33e39eeec4615bc2cde8bf68cbb10ad02c",
+          "version": "40d0ffbfc376f2a796b0bbb928636c242285a01c",
           "kind": "direct",
           "source": {
             "type": "git",
             "description": {
               "url": "../bar.git",
               "ref": "HEAD",
-              "resolved-ref": "cf473c33e39eeec4615bc2cde8bf68cbb10ad02c",
+              "resolved-ref": "40d0ffbfc376f2a796b0bbb928636c242285a01c",
               "path": "."
             }
           },
           "constraintBumped": "^2.0.0",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.0.0",
-          "previousVersion": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+          "previousVersion": "5373af3230028f3e31e9ee39e326228db83710cb",
           "previousConstraint": "^1.0.0",
           "previousSource": {
             "type": "git",
             "description": {
               "url": "../bar.git",
               "ref": "HEAD",
-              "resolved-ref": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+              "resolved-ref": "5373af3230028f3e31e9ee39e326228db83710cb",
               "path": "."
             }
           }
@@ -120,28 +120,28 @@ $ dependency_services report
       "multiBreaking": [
         {
           "name": "bar",
-          "version": "cf473c33e39eeec4615bc2cde8bf68cbb10ad02c",
+          "version": "40d0ffbfc376f2a796b0bbb928636c242285a01c",
           "kind": "direct",
           "source": {
             "type": "git",
             "description": {
               "url": "../bar.git",
               "ref": "HEAD",
-              "resolved-ref": "cf473c33e39eeec4615bc2cde8bf68cbb10ad02c",
+              "resolved-ref": "40d0ffbfc376f2a796b0bbb928636c242285a01c",
               "path": "."
             }
           },
           "constraintBumped": "^2.0.0",
           "constraintWidened": ">=1.0.0 <3.0.0",
           "constraintBumpedIfNeeded": "^2.0.0",
-          "previousVersion": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+          "previousVersion": "5373af3230028f3e31e9ee39e326228db83710cb",
           "previousConstraint": "^1.0.0",
           "previousSource": {
             "type": "git",
             "description": {
               "url": "../bar.git",
               "ref": "HEAD",
-              "resolved-ref": "92cdd4ac724a6da0db2a69ac149820aa220e8518",
+              "resolved-ref": "5373af3230028f3e31e9ee39e326228db83710cb",
               "path": "."
             }
           }
@@ -150,46 +150,46 @@ $ dependency_services report
     },
     {
       "name": "foo",
-      "version": "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba",
+      "version": "428f5dd6e627cb2384343eca6aed099f4f7d183d",
       "kind": "direct",
       "source": {
         "type": "git",
         "description": {
           "url": "../foo.git",
           "ref": "HEAD",
-          "resolved-ref": "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba",
+          "resolved-ref": "428f5dd6e627cb2384343eca6aed099f4f7d183d",
           "path": "."
         }
       },
-      "latest": "ad2d659389d4475f6c3a34282e2204160b753fd9",
+      "latest": "40c4eb4fb235961264ee9cdbdfa54ef7f6aa5199",
       "constraint": "any",
       "compatible": [],
       "singleBreaking": [],
       "multiBreaking": [
         {
           "name": "foo",
-          "version": "ad2d659389d4475f6c3a34282e2204160b753fd9",
+          "version": "40c4eb4fb235961264ee9cdbdfa54ef7f6aa5199",
           "kind": "direct",
           "source": {
             "type": "git",
             "description": {
               "url": "../foo.git",
               "ref": "HEAD",
-              "resolved-ref": "ad2d659389d4475f6c3a34282e2204160b753fd9",
+              "resolved-ref": "40c4eb4fb235961264ee9cdbdfa54ef7f6aa5199",
               "path": "."
             }
           },
           "constraintBumped": "^2.0.0",
           "constraintWidened": "any",
           "constraintBumpedIfNeeded": "any",
-          "previousVersion": "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba",
+          "previousVersion": "428f5dd6e627cb2384343eca6aed099f4f7d183d",
           "previousConstraint": "any",
           "previousSource": {
             "type": "git",
             "description": {
               "url": "../foo.git",
               "ref": "HEAD",
-              "resolved-ref": "1ae220cc484311a7a1e2e31d1ccc6ea995acb6ba",
+              "resolved-ref": "428f5dd6e627cb2384343eca6aed099f4f7d183d",
               "path": "."
             }
           }
@@ -202,7 +202,7 @@ $ dependency_services report
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section apply
-$ echo '{"dependencyChanges":[{"name":"foo","version":"ad2d659389d4475f6c3a34282e2204160b753fd9"}]}' | dependency_services apply
+$ echo '{"dependencyChanges":[{"name":"foo","version":"40c4eb4fb235961264ee9cdbdfa54ef7f6aa5199"}]}' | dependency_services apply
 {"dependencies":[]}
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -218,7 +218,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "92cdd4ac724a6da0db2a69ac149820aa220e8518"
+      resolved-ref: "5373af3230028f3e31e9ee39e326228db83710cb"
       url: "../bar.git"
     source: git
     version: "1.0.0"
@@ -227,7 +227,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: ad2d659389d4475f6c3a34282e2204160b753fd9
+      resolved-ref: "40c4eb4fb235961264ee9cdbdfa54ef7f6aa5199"
       url: "../foo.git"
     source: git
     version: "2.0.0"

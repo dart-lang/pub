@@ -238,7 +238,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'bar',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'https://pub.dev'
                       }
                     }
                   }
@@ -264,7 +264,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'https://pub.dev'
                       }
                     }
                   }
@@ -288,7 +288,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'https://pub.dev'
                       }
                     }
                   }
@@ -346,7 +346,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'bar',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'https://pub.dev'
                       }
                     }
                   }
@@ -372,7 +372,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'https://pub.dev'
                       }
                     }
                   }
@@ -394,7 +394,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'https://pub.dev'
                       }
                     }
                   }
@@ -418,7 +418,7 @@ void main() {
                       'source': 'hosted',
                       'description': {
                         'name': 'foo',
-                        'url': 'http://pub.dartlang.org'
+                        'url': 'https://pub.dev'
                       }
                     }
                   }

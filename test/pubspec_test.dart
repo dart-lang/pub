@@ -370,7 +370,7 @@ dependencies:
             ResolvedHostedDescription(foo.description as HostedDescription)
                 .serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dartlang.org',
+              'url': 'https://pub.dev',
               'name': 'bar',
             });
       });
@@ -414,7 +414,7 @@ dependencies:
             ResolvedHostedDescription(foo.description as HostedDescription)
                 .serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dartlang.org',
+              'url': 'https://pub.dev',
               'name': 'foo',
             });
       });
@@ -622,7 +622,7 @@ publish_to: none
 
       test('throws on non-absolute URLs', () {
         expectPubspecException(
-            'publish_to: pub.dartlang.org', (pubspec) => pubspec.publishTo);
+            'publish_to: pub.dev', (pubspec) => pubspec.publishTo);
       });
     });
 

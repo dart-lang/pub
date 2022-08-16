@@ -4,12 +4,12 @@ This document specifies the REST API that a hosted pub _package repository_ must
 implement.
 
 A package repository is a server from which packages can be downloaded,
-the default package repository is `'https://pub.dartlang.org'`, with public
-interface hosted at [pub.dev](https://pub.dev).
+the default package repository is `'https://pub.dev'`.
+It used to be [pub.dartlang.org](https://pub.dartlang.org).
 
 ## Hosted URL
 A custom package repository is identified by a _hosted-url_, like
-`https://pub.dartlang.org` or `https://some-server.com/prefix/pub/`.
+`https://pub.dev` or `https://some-server.com/prefix/pub/`.
 The _hosted-url_ always includes protocol `http://` or `https://`.
 For the purpose of this specification the _hosted-url_ should always be
 normalized such that it doesn't end with a slash (`/`). As all URL end-points
@@ -17,7 +17,7 @@ described in this specification includes slash prefix.
 
 For the remainder of this specification the placeholder `<hosted-url>` will be
 used in place of a _hosted-url_ such as:
- * `https://pub.dartlang.org`
+ * `https://pub.dev`
  * `https://some-server.com/prefix/pub`
  * `https://pub.other-server.com/prefix`
  * `http://localhost:8080`

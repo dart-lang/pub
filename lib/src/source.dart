@@ -66,7 +66,7 @@ abstract class Source {
   /// [containingDir] is the path to the directory of the pubspec where this
   /// description appears. It may be `null` if the description is coming from
   /// some in-memory source (such as pulling down a pubspec from
-  /// pub.dartlang.org).
+  /// pub.dev).
   ///
   /// [languageVersion] is the minimum Dart version parsed from the pubspec's
   /// `environment` field. Source implementations may use this parameter to only
