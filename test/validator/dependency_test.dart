@@ -236,10 +236,7 @@ void main() {
                     'bar': {
                       'version': '1.2.3',
                       'source': 'hosted',
-                      'description': {
-                        'name': 'bar',
-                        'url': 'https://pub.dev'
-                      }
+                      'description': {'name': 'bar', 'url': 'https://pub.dev'}
                     }
                   }
                 }))
@@ -262,10 +259,7 @@ void main() {
                     'foo': {
                       'version': '1.2.3',
                       'source': 'hosted',
-                      'description': {
-                        'name': 'foo',
-                        'url': 'https://pub.dev'
-                      }
+                      'description': {'name': 'foo', 'url': 'https://pub.dev'}
                     }
                   }
                 }))
@@ -286,10 +280,7 @@ void main() {
                     'foo': {
                       'version': '0.1.2',
                       'source': 'hosted',
-                      'description': {
-                        'name': 'foo',
-                        'url': 'https://pub.dev'
-                      }
+                      'description': {'name': 'foo', 'url': 'https://pub.dev'}
                     }
                   }
                 }))
@@ -344,10 +335,7 @@ void main() {
                     'bar': {
                       'version': '1.2.3',
                       'source': 'hosted',
-                      'description': {
-                        'name': 'bar',
-                        'url': 'https://pub.dev'
-                      }
+                      'description': {'name': 'bar', 'url': 'https://pub.dev'}
                     }
                   }
                 }))
@@ -370,10 +358,7 @@ void main() {
                     'foo': {
                       'version': '1.2.3',
                       'source': 'hosted',
-                      'description': {
-                        'name': 'foo',
-                        'url': 'https://pub.dev'
-                      }
+                      'description': {'name': 'foo', 'url': 'https://pub.dev'}
                     }
                   }
                 }))
@@ -392,10 +377,7 @@ void main() {
                     'foo': {
                       'version': '1.2.3',
                       'source': 'hosted',
-                      'description': {
-                        'name': 'foo',
-                        'url': 'https://pub.dev'
-                      }
+                      'description': {'name': 'foo', 'url': 'https://pub.dev'}
                     }
                   }
                 }))
@@ -416,10 +398,7 @@ void main() {
                     'foo': {
                       'version': '1.2.3',
                       'source': 'hosted',
-                      'description': {
-                        'name': 'foo',
-                        'url': 'https://pub.dev'
-                      }
+                      'description': {'name': 'foo', 'url': 'https://pub.dev'}
                     }
                   }
                 }))
