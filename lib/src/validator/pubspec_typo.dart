@@ -68,4 +68,5 @@ const _validPubspecKeys = [
   'flutter',
   'screenshots',
   'platforms',
+  'funding',
 ];
