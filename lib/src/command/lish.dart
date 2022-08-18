@@ -154,7 +154,7 @@ class LishCommand extends PubCommand {
   Future<void> _publish(List<int> packageBytes) async {
     try {
       final officialPubServers = {
-        'https://dev',
+        'https://pub.dev',
         // [validateAndNormalizeHostedUrl] normalizes https://pub.dartlang.org
         // to https://pub.dev, so we don't need to do allow that here.
 
