@@ -4,9 +4,11 @@
 
 import 'dart:convert';
 
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'language_version.dart';
+import 'package.dart';
 
 /// Contents of a `.dart_tool/package_config.json` file.
 class PackageConfig {
@@ -139,6 +141,16 @@ class PackageConfig {
         'generator': generator,
         'generatorVersion': generatorVersion?.toString(),
       }..addAll(additionalProperties);
+
+  // We allow the package called 'flutter_gen' to be injected into
+  // package_config.
+  //
+  // This is somewhat a hack. But it allows flutter to generate code in a
+  // package as it likes.
+  //
+  // See https://github.com/flutter/flutter/issues/73870 .
+  Iterable<PackageConfigEntry> get nonInjectedPackages =>
+      packages.where((package) => package.name != 'flutter_gen');
 }
 
 class PackageConfigEntry {
@@ -259,5 +271,9 @@ class PackageConfigEntry {
   String toString() {
     // TODO: implement toString
     return JsonEncoder.withIndent('  ').convert(toJson());
+  }
+
+  String resolvedRootDir(String packageConfigPath) {
+    return p.join(p.dirname(packageConfigPath), p.fromUri(rootUri));
   }
 }
