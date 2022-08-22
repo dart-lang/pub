@@ -200,7 +200,7 @@ Future<void> precompile({
 
       throw ApplicationException(
           log.yellow('Failed to build $highlightedName:\n') +
-              (result.compilerOutputLines.join('\n') ?? ''));
+              result.compilerOutputLines.join('\n'));
     }
   } finally {
     client?.kill();
