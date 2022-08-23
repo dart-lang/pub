@@ -119,9 +119,9 @@ class Entrypoint {
       dataError(
           'The "$packageConfigPath" file does not exist, please run "$topLevelProgram pub get".');
     }
-    late PackageConfig cfg;
+    late PackageConfig result;
     try {
-      cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
+      result = PackageConfig.fromJson(json.decode(packageConfigRaw));
     } on FormatException {
       badPackageConfig();
     }
@@ -129,10 +129,10 @@ class Entrypoint {
     // because `.packages` was version 1 (even if it was a different file).
     // If the version is different from 2, then it must be a newer incompatible
     // version, hence, the user should run `pub get` with the downgraded SDK.
-    if (cfg.configVersion != 2) {
+    if (result.configVersion != 2) {
       badPackageConfig();
     }
-    return cfg;
+    return result;
   }();
 
   /// The package graph for the application and all of its transitive
