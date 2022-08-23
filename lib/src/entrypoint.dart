@@ -107,6 +107,10 @@ class Entrypoint {
 
   LockFile? _lockFile;
 
+  /// The `.dart_tool/package_config.json` package-config of this entrypoint.
+  ///
+  /// Lazily initialized. Will throw [DataError] when initializing if the
+  /// `.dart_tool/packageConfig.json` file doesn't exist or has a bad format .
   late PackageConfig packageConfig = () {
     late String packageConfigRaw;
     try {
