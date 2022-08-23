@@ -328,6 +328,7 @@ class Entrypoint {
             'by setting it to `quiet`.'));
       }
     }
+
     if (!onlyReportSuccessOrFailure) {
       await result.showReport(type, cache);
     }

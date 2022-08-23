@@ -96,27 +96,42 @@ class SolveResult {
 
   /// Checks that the SolveResult is compatible with [_previousLockfile]
   ///
-  /// Throws if pubspec.yaml isn't satisfied.
-  Future<void> enforceLockfile() async {
+  /// Throws [ApplicationException] if pubspec.yaml isn't satisfied.
+  Future<void> enforceLockfile(SystemCache cache,
+      {required bool dryRun}) async {
+    Never resolutionChanged(String detail) {
+      SolveReport(SolveType.get, _root, _previousLockFile, this, cache)
+          .summarize(dryRun: dryRun);
+      fail('Could not resolve to the exact same resolution. $detail');
+    }
+
+    for (final oldPackage in _previousLockFile.packages.keys) {
+      if (!packages.any((id) => id.name == oldPackage)) {
+        resolutionChanged('$oldPackage is no longer needed.');
+      }
+    }
     for (final package in packages) {
       if (package.isRoot) continue;
       final previousPackage = _previousLockFile.packages[package.name];
       if (previousPackage == null) {
-        throw ApplicationException(
-            'Dependency ${package.name} is not already locked in `pubspec.lock`.');
+        resolutionChanged(
+            'The dependency ${package.name} is not already locked in `pubspec.lock`.');
       }
       if (previousPackage != package) {
-        throw ApplicationException(
-            'Dependency ${package.name} is locked to $previousPackage in `pubspec.lock` but resolves to $package.');
+        resolutionChanged(
+            'Dependency ${package.name} is locked to $previousPackage in `pubspec.lock` but now resolves to $package.');
       }
       final previousDescription = previousPackage.description;
       final newDescription = package.description;
 
       if (previousDescription is ResolvedHostedDescription) {
         final newHash = (newDescription as ResolvedHostedDescription).sha256;
-
-        if (!bytesEquals(previousDescription.sha256, newHash)) {
-          throw ApplicationException(
+        // If there was no content-hash in the lock-file we just continue
+        // silently.
+        final hadContentHash = previousDescription.sha256 != null;
+        if (hadContentHash &&
+            !bytesEquals(previousDescription.sha256, newHash)) {
+          fail(
               'Dependency ${package.name} is locked to a different content-hash than what was resolved.');
         }
       }
