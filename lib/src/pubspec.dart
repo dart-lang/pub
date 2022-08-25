@@ -301,7 +301,6 @@ class Pubspec extends PubspecBase {
       {String? expectedName, bool allowOverridesFile = false}) {
     var pubspecPath = path.join(packageDir, pubspecYamlFilename);
     var overridesPath = path.join(packageDir, pubspecOverridesFilename);
-
     if (!fileExists(pubspecPath)) {
       throw FileException(
           // Make the package dir absolute because for the entrypoint it'll just

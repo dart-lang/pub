@@ -102,8 +102,7 @@ class DepsCommand extends PubCommand {
                     ? 'dev'
                     : 'transitive'));
         final source =
-            entrypoint.packageGraph.lockFile.packages[current]?.source.name ??
-                'root';
+            entrypoint.lockFile.packages[current]?.source.name ?? 'root';
         packagesJson.add({
           'name': current,
           'version': currentPackage.version.toString(),
