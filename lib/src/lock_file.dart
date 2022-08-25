@@ -45,6 +45,9 @@ class LockFile {
   /// `dependency_overrides` section.
   final Set<String> overriddenDependencies;
 
+  static const contentHashesDocumentationUrl =
+      'https://dart.dev/go/content-hashes';
+
   /// Creates a new lockfile containing [ids].
   ///
   /// If passed, [mainDependencies], [devDependencies], and
@@ -350,7 +353,7 @@ This might indicate
   on the server).
 * The pubspec.lock has an invalid content-hash.
 
-See: $contentHashDocumentationUrl.
+See: $contentHashesDocumentationUrl.
 ''');
           }
         }
