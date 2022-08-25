@@ -8,11 +8,11 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart' hide mapMap;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
-import 'package:pub/src/command_runner.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
+import 'command_runner.dart';
 import 'io.dart';
 import 'language_version.dart';
 import 'log.dart' as log;

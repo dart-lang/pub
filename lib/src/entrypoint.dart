@@ -279,13 +279,7 @@ class Entrypoint {
     required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
-    bool enforceLockfile = false,
   }) async {
-    if (enforceLockfile && !fileExists(lockFilePath)) {
-      throw ApplicationException(
-          'Retrieving dependencies failed. Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.');
-    }
-
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
       log.warning(
           'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
@@ -334,10 +328,6 @@ class Entrypoint {
             'by setting it to `quiet`.'));
       }
     }
-    if (enforceLockfile) {
-      await result.enforceLockfile();
-    }
-
     if (!onlyReportSuccessOrFailure) {
       await result.showReport(type, cache);
     }
@@ -345,12 +335,10 @@ class Entrypoint {
       await cache.downloadPackages(
         root,
         result.packages,
-        allowOutdatedHashChecks: !enforceLockfile,
+        allowOutdatedHashChecks: true,
       );
       result.lockFile.checkContentHashes(cache);
-      if (!enforceLockfile) {
-        result.lockFile.writeToFile(lockFilePath, cache);
-      }
+      result.lockFile.writeToFile(lockFilePath, cache);
     }
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');

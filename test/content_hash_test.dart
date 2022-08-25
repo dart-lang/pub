@@ -82,7 +82,7 @@ Future<void> main() async {
       error: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
-            'Cache entry for foo-1.0.0 does not have content-hash matching lockfile.'),
+            'Cache entry for foo-1.0.0 does not have content-hash matching pubspec.lock.'),
       ),
       exitCode: exit_codes.DATA,
     );
