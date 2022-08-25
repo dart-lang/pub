@@ -222,6 +222,14 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     }
     final newPubspecText = _updatePubspec(changes);
 
+    // When doing '--majorVersions' for specific packages we try to update other
+    // packages as little as possible to make a focused change (SolveType.get).
+    //
+    // But without a specific package we want to get as much non-major updates
+    // as possible (SolveType.upgrade).
+    final solveType =
+        argResults.rest.isEmpty ? SolveType.upgrade : SolveType.get;
+
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
@@ -233,7 +241,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         lockFile: entrypoint.lockFile,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.get,
+        solveType,
         dryRun: true,
         precompile: _precompile,
         analytics: null, // No analytics for dry-run
@@ -246,7 +254,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint(directory, cache).acquireDependencies(
-        SolveType.get,
+        solveType,
         precompile: _precompile,
         analytics: analytics,
       );
