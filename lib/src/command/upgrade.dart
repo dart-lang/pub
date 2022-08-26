@@ -225,7 +225,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // When doing '--majorVersions' for specific packages we try to update other
     // packages as little as possible to make a focused change (SolveType.get).
     //
-    // But without a specific package we want to get as much non-major updates
+    // But without a specific package we want to get as many non-major updates
     // as possible (SolveType.upgrade).
     final solveType =
         argResults.rest.isEmpty ? SolveType.upgrade : SolveType.get;
