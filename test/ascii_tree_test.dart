@@ -4,6 +4,7 @@
 
 import 'package:pub/src/ascii_tree.dart' as tree;
 import 'package:pub/src/package.dart';
+import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart';
@@ -16,6 +17,13 @@ String stripColors(String s) {
 }
 
 void main() {
+  setUp(() {
+    forceColors = ForceColorOption.always;
+  });
+
+  tearDown(() {
+    forceColors = ForceColorOption.auto;
+  });
   test('tree.fromFiles no files', () {
     expect(tree.fromFiles([], showFileSizes: true), equals(''));
   });
