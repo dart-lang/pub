@@ -2,12 +2,12 @@
 
 ## Section 0
 $ tree
-'-- myapp
-    |-- bin
-    |   |-- bar.sh
-    |   '-- foo.py
-    |-- pubspec.lock
-    '-- pubspec.yaml
+└──myapp
+    ├──bin
+    │   ├──bar.sh
+    │   └──foo.py
+    ├──pubspec.lock
+    └──pubspec.yaml
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

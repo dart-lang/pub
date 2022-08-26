@@ -2,13 +2,13 @@
 
 ## Section 0
 $ tree
-|-- foo
-|   |-- bin
-|   |   '-- bar.dart
-|   '-- pubspec.yaml
-'-- myapp
-    |-- pubspec.lock
-    '-- pubspec.yaml
+├──foo
+│   ├──bin
+│   │   └──bar.dart
+│   └──pubspec.yaml
+└──myapp
+    ├──pubspec.lock
+    └──pubspec.yaml
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
