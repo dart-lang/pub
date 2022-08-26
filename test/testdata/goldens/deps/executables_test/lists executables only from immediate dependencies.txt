@@ -2,17 +2,17 @@
 
 ## Section 0
 $ tree
-├──baz
-│   ├──bin
-│   │   └──qux.dart
-│   └──pubspec.yaml
-├──foo
-│   ├──bin
-│   │   └──bar.dart
-│   └──pubspec.yaml
-└──myapp
-    ├──pubspec.lock
-    └──pubspec.yaml
+├── baz
+│   ├── bin
+│   │   └── qux.dart
+│   └── pubspec.yaml
+├── foo
+│   ├── bin
+│   │   └── bar.dart
+│   └── pubspec.yaml
+└── myapp
+    ├── pubspec.lock
+    └── pubspec.yaml
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

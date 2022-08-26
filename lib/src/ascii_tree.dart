@@ -122,9 +122,9 @@ void _drawLine(
   buffer.write(prefix);
   if (name != null) {
     if (isLastChild) {
-      buffer.write(log.gray(emoji('└──', "'-- ")));
+      buffer.write(log.gray(emoji('└── ', "'-- ")));
     } else {
-      buffer.write(log.gray(emoji('├──', '|-- ')));
+      buffer.write(log.gray(emoji('├── ', '|-- ')));
     }
   }
 

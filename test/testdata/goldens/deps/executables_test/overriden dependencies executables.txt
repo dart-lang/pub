@@ -2,18 +2,18 @@
 
 ## Section 0
 $ tree
-├──foo-1.0
-│   ├──bin
-│   │   └──bar.dart
-│   └──pubspec.yaml
-├──foo-2.0
-│   ├──bin
-│   │   ├──bar.dart
-│   │   └──baz.dart
-│   └──pubspec.yaml
-└──myapp
-    ├──pubspec.lock
-    └──pubspec.yaml
+├── foo-1.0
+│   ├── bin
+│   │   └── bar.dart
+│   └── pubspec.yaml
+├── foo-2.0
+│   ├── bin
+│   │   ├── bar.dart
+│   │   └── baz.dart
+│   └── pubspec.yaml
+└── myapp
+    ├── pubspec.lock
+    └── pubspec.yaml
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
