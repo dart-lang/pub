@@ -287,7 +287,7 @@ class DepsCommand extends PubCommand {
       }
     }
 
-    _buffer.write(tree.fromMap(packageTree, showAllChildren: true));
+    _buffer.write(tree.fromMap(packageTree));
   }
 
   String _labelPackage(Package package) =>
