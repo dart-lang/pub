@@ -2,7 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// A simple library for rendering tree-like structures in ASCII.
+/// A simple library for rendering tree-like structures in Unicode symbols wiht
+/// a fallback to ASCII.
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -121,9 +122,9 @@ void _drawLine(
   buffer.write(prefix);
   if (name != null) {
     if (isLastChild) {
-      buffer.write(log.gray("'-- "));
+      buffer.write(log.gray(emoji('└──', "'-- ")));
     } else {
-      buffer.write(log.gray('|-- '));
+      buffer.write(log.gray(emoji('├──', '|-- ')));
     }
   }
 
@@ -134,7 +135,7 @@ void _drawLine(
 String _getPrefix(bool isRoot, bool isLast) {
   if (isRoot) return '';
   if (isLast) return '    ';
-  return log.gray('|   ');
+  return log.gray(emoji('│   ', '|   '));
 }
 
 void _draw(
