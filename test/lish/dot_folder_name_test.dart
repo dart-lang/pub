@@ -20,8 +20,8 @@ void main() {
     await runPub(
       args: ['lish', '--dry-run'],
       output: contains('''
-|-- .vscode
-|   '-- a'''),
+├── .vscode
+│   └── a'''),
       exitCode: exit_codes.SUCCESS,
     );
   });
