@@ -31,6 +31,8 @@ import '../system_cache.dart';
 import '../utils.dart';
 import 'cached.dart';
 
+const contentHashesDocumentationUrl = 'https://dart.dev/go/content-hashes';
+
 /// Validates and normalizes a [hostedUrl] which is pointing to a pub server.
 ///
 /// A [hostedUrl] is a URL pointing to a _hosted pub server_ as defined by the
@@ -959,7 +961,7 @@ class HostedSource extends CachedSource {
 
     var url = versionInfo.archiveUrl;
     log.io('Get package from $url.');
-    log.message('Downloading ${log.bold(id.name)} ${id.version}...');
+    log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
 
     // Download and extract the archive to a temp directory.
     await withTempDir((tempDirForArchive) async {
@@ -984,9 +986,14 @@ class HostedSource extends CachedSource {
         final actualHash = output.value;
         if (expectedHash != null && output.value != expectedHash) {
           log.fine(
-              'Expected content-hash $expectedHash actual: ${output.value}.');
-          throw FormatException(
-              'Downloaded archive for ${id.name}-${id.version} had wrong content-hash.');
+              'Expected content-hash for ${id.name}-${id.version} $expectedHash actual: ${output.value}.');
+          throw FormatException('''
+Downloaded archive for ${id.name}-${id.version} had wrong content-hash.
+
+This indicates a problem on the package repository: `${description.url}`.
+
+See $contentHashesDocumentationUrl.
+''');
         }
         final path = hashPath(id, cache);
         ensureDir(p.dirname(path));
@@ -1002,10 +1009,17 @@ class HostedSource extends CachedSource {
       // cancelling a http stream makes it not reusable.
       // There are ways around this, and we might revisit this later.
       Stream<List<int>> stream = response.stream;
+
+      // It is important that we do not compare against id.description.sha256,
+      // as we need to check against the newly fetched version listing to ensure
+      // that content changes result in updated lockfiles, not failure to
+      // download.
       final expectedSha256 = versionInfo.archiveSha256;
 
       stream = checkSha256(
-          stream, (expectedSha256 == null) ? null : Digest(expectedSha256));
+        stream,
+        (expectedSha256 == null) ? null : Digest(expectedSha256),
+      );
 
       await createFileFromStream(stream, archivePath);
       final tempDir = cache.createTempDir();

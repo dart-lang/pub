@@ -31,6 +31,7 @@ import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
+import 'solver/report.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -309,7 +310,6 @@ class Entrypoint {
         rethrow;
       }
     }
-    _lockFile = result.lockFile;
 
     // Log once about all overridden packages.
     if (warnAboutPreReleaseSdkOverrides) {
@@ -329,22 +329,32 @@ class Entrypoint {
       }
     }
 
+    // We have to download files also with --dry-run to ensure we know the
+    // archive hashes for downloaded files.
+    final newLockFile =
+        await result.downloadPackages(cache, allowOutdatedHashChecks: true);
+
+    final report = SolveReport(
+      type,
+      root,
+      lockFile,
+      newLockFile,
+      result.availableVersions,
+      cache,
+    );
     if (!onlyReportSuccessOrFailure) {
-      await result.showReport(type, cache);
+      await report.show();
     }
+    _lockFile = newLockFile;
+
     if (!dryRun) {
-      await cache.downloadPackages(
-        root,
-        result.packages,
-        allowOutdatedHashChecks: true,
-      );
-      result.lockFile.checkContentHashes(cache);
-      result.lockFile.writeToFile(lockFilePath, cache);
+      newLockFile.writeToFile(lockFilePath, cache);
     }
+
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
     } else {
-      await result.summarizeChanges(type, cache, dryRun: dryRun);
+      report.summarize(dryRun: dryRun);
     }
 
     if (!dryRun) {

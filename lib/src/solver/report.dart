@@ -25,21 +25,27 @@ class SolveReport {
   final SolveType _type;
   final Package _root;
   final LockFile _previousLockFile;
-  final SolveResult _result;
+  final LockFile _newLockFile;
   final SystemCache _cache;
 
-  /// The dependencies in [_result], keyed by package name.
-  final _dependencies = <String, PackageId>{};
+  /// The available versions of all selected packages from their source.
+  ///
+  /// An entry here may not include the full list of versions available if the
+  /// given package was locked and did not need to be unlocked during the solve.
+  ///
+  /// Version list will not contain any retracted package versions.
+  final Map<String, List<Version>> _availableVersions;
 
   final _output = StringBuffer();
 
-  SolveReport(this._type, this._root, this._previousLockFile, this._result,
-      this._cache) {
-    // Fill the map so we can use it later.
-    for (var id in _result.packages) {
-      _dependencies[id.name] = id;
-    }
-  }
+  SolveReport(
+    this._type,
+    this._root,
+    this._previousLockFile,
+    this._newLockFile,
+    this._availableVersions,
+    this._cache,
+  );
 
   /// Displays a report of the results of the version resolution relative to
   /// the previous lock file.
@@ -54,13 +60,13 @@ class SolveReport {
   /// If [dryRun] is true, describes it in terms of what would be done.
   void summarize({bool dryRun = false}) {
     // Count how many dependencies actually changed.
-    var dependencies = _dependencies.keys.toSet();
+    var dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
     dependencies.remove(_root.name);
 
     var numChanged = dependencies.where((name) {
       var oldId = _previousLockFile.packages[name];
-      var newId = _dependencies[name];
+      var newId = _newLockFile.packages[name];
 
       // Added or removed dependencies count.
       if (oldId == null) return true;
@@ -107,7 +113,7 @@ class SolveReport {
     _output.clear();
 
     // Show the new set of dependencies ordered by name.
-    var names = _result.packages.map((id) => id.name).toList();
+    var names = _newLockFile.packages.keys.toList();
     names.remove(_root.name);
     names.sort();
     for (final name in names) {
@@ -146,7 +152,7 @@ class SolveReport {
   /// if discontinued packages are detected.
   Future<void> reportDiscontinued() async {
     var numDiscontinued = 0;
-    for (var id in _result.packages) {
+    for (var id in _newLockFile.packages.values) {
       if (id.description is RootDescription) continue;
       final status = await id.source
           .status(id.toRef(), id.version, _cache, maxAge: Duration(days: 3));
@@ -168,8 +174,8 @@ class SolveReport {
   /// Displays a two-line message, number of outdated packages and an
   /// instruction to run `pub outdated` if outdated packages are detected.
   void reportOutdated() {
-    final outdatedPackagesCount = _result.packages.where((id) {
-      final versions = _result.availableVersions[id.name]!;
+    final outdatedPackagesCount = _newLockFile.packages.values.where((id) {
+      final versions = _availableVersions[id.name]!;
       // A version is counted:
       // - if there is a newer version which is not a pre-release and current
       // version is also not a pre-release or,
@@ -198,7 +204,7 @@ class SolveReport {
   /// "(override)" next to overridden packages.
   Future<void> _reportPackage(String name,
       {bool alwaysShow = false, bool highlightOverride = true}) async {
-    var newId = _dependencies[name];
+    var newId = _previousLockFile.packages[name];
     var oldId = _previousLockFile.packages[name];
     var id = newId ?? oldId!;
 
@@ -245,7 +251,7 @@ class SolveReport {
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
     if (newId != null && _type != SolveType.downgrade) {
-      var versions = _result.availableVersions[newId.name]!;
+      var versions = _availableVersions[newId.name]!;
 
       var newerStable = false;
       var newerUnstable = false;

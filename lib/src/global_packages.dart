@@ -23,6 +23,7 @@ import 'sdk.dart';
 import 'sdk/dart.dart';
 import 'solver.dart';
 import 'solver/incompatibility_cause.dart';
+import 'solver/report.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -224,10 +225,14 @@ class GlobalPackages {
     // We want the entrypoint to be rooted at 'dep' not the dummy-package.
     result.packages.removeWhere((id) => id.name == 'pub global activate');
 
-    final sameVersions = originalLockFile != null &&
-        originalLockFile.samePackageIds(result.lockFile);
+    final lockFile = await result.downloadPackages(
+      cache,
+      allowOutdatedHashChecks: true,
+    );
+    final sameVersions =
+        originalLockFile != null && originalLockFile.samePackageIds(lockFile);
 
-    final PackageId id = result.lockFile.packages[name]!;
+    final PackageId id = lockFile.packages[name]!;
     if (sameVersions) {
       log.message('''
 The package $name is already activated at newest available version.
@@ -235,12 +240,17 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 ''');
     } else {
       // Only precompile binaries if we have a new resolution.
-      if (!silent) await result.showReport(SolveType.get, cache);
+      if (!silent) {
+        await SolveReport(
+          SolveType.get,
+          root,
+          originalLockFile ?? LockFile.empty(),
+          lockFile,
+          result.availableVersions,
+          cache,
+        ).show();
+      }
 
-      await cache.downloadPackages(root, result.packages,
-          allowOutdatedHashChecks: true);
-
-      final lockFile = result.lockFile;
       final tempDir = cache.createTempDir();
       lockFile.writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
@@ -265,7 +275,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
     final entrypoint = Entrypoint.global(
       _packageDir(id.name),
       cache.loadCached(id),
-      result.lockFile,
+      lockFile,
       cache,
       solveResult: result,
     );

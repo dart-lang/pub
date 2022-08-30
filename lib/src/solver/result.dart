@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:typed_data';
+
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -50,9 +52,19 @@ class SolveResult {
   /// The wall clock time the resolution took.
   final Duration resolutionTime;
 
-  /// The [LockFile] representing the packages selected by this version
-  /// resolution.
-  LockFile get lockFile {
+  /// Downloads all the packages selected by this version.
+  ///
+  /// Returns the [LockFile] representing the packages selected by this version
+  /// resolution. Any resolved ids will correspond
+  Future<LockFile> downloadPackages(
+    SystemCache cache, {
+    required bool allowOutdatedHashChecks,
+  }) async {
+    await cache.downloadPackages(
+      _root,
+      packages,
+      allowOutdatedHashChecks: allowOutdatedHashChecks,
+    );
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
@@ -67,12 +79,29 @@ class SolveResult {
             .intersect(sdkConstraints[identifier] ?? VersionConstraint.any);
       });
     }
-
-    return LockFile(packages,
-        sdkConstraints: sdkConstraints,
-        mainDependencies: MapKeySet(_root.dependencies),
-        devDependencies: MapKeySet(_root.devDependencies),
-        overriddenDependencies: MapKeySet(_root.dependencyOverrides));
+    return LockFile(
+      packages.map((id) {
+        var description = id.description;
+        // Use the cached content-hashes after downloading to ensure that
+        // content-hashes from legacy servers gets used.
+        if (description is ResolvedHostedDescription) {
+          Uint8List? cachedHash =
+              description.description.source.sha256FromCache(id, cache);
+          if (cachedHash == null) {
+            // This should not happen.
+            throw StateError(
+                'Archive for ${id.name}-${id.version} has no content hash.');
+          }
+          return PackageId(
+              id.name, id.version, description.withSha256(cachedHash));
+        }
+        return id;
+      }).toList(),
+      sdkConstraints: sdkConstraints,
+      mainDependencies: MapKeySet(_root.dependencies),
+      devDependencies: MapKeySet(_root.devDependencies),
+      overriddenDependencies: MapKeySet(_root.dependencyOverrides),
+    );
   }
 
   final LockFile _previousLockFile;
@@ -94,55 +123,12 @@ class SolveResult {
   SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
       this.availableVersions, this.attemptedSolutions, this.resolutionTime);
 
-  /// Checks that the SolveResult is compatible with [_previousLockfile]
-  ///
-  /// Throws [ApplicationException] if pubspec.yaml isn't satisfied.
-  Future<void> enforceLockfile(SystemCache cache,
-      {required bool dryRun}) async {
-    Never resolutionChanged(String detail) {
-      SolveReport(SolveType.get, _root, _previousLockFile, this, cache)
-          .summarize(dryRun: dryRun);
-      fail('Could not resolve to the exact same resolution. $detail');
+  /// Warns if the content-hash of some hosted package locked
+  /// in this [lockFile] differs from the one in the [cache].
+  Future<void> checkContentHashes(LockFile lockFile, SystemCache cache) {
+    for (final package in lockFile.packages.values) {
+      if (package.description is ResolvedHostedDescription) {}
     }
-
-    for (final oldPackage in _previousLockFile.packages.keys) {
-      if (!packages.any((id) => id.name == oldPackage)) {
-        resolutionChanged('$oldPackage is no longer needed.');
-      }
-    }
-    for (final package in packages) {
-      if (package.isRoot) continue;
-      final previousPackage = _previousLockFile.packages[package.name];
-      if (previousPackage == null) {
-        resolutionChanged(
-            'The dependency ${package.name} is not already locked in `pubspec.lock`.');
-      }
-      if (previousPackage != package) {
-        resolutionChanged(
-            'Dependency ${package.name} is locked to $previousPackage in `pubspec.lock` but now resolves to $package.');
-      }
-      final previousDescription = previousPackage.description;
-      final newDescription = package.description;
-
-      if (previousDescription is ResolvedHostedDescription) {
-        final newHash = (newDescription as ResolvedHostedDescription).sha256;
-        // If there was no content-hash in the lock-file we just continue
-        // silently.
-        final hadContentHash = previousDescription.sha256 != null;
-        if (hadContentHash &&
-            !bytesEquals(previousDescription.sha256, newHash)) {
-          fail(
-              'Dependency ${package.name} is locked to a different content-hash than what was resolved.');
-        }
-      }
-    }
-  }
-
-  /// Displays a report of what changes were made to the lockfile.
-  ///
-  /// [type] is the type of version resolution that was run.
-  Future<void> showReport(SolveType type, SystemCache cache) async {
-    await SolveReport(type, _root, _previousLockFile, this, cache).show();
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -154,7 +140,6 @@ class SolveResult {
   /// [type] is the type of version resolution that was run.
   Future<void> summarizeChanges(SolveType type, SystemCache cache,
       {bool dryRun = false}) async {
-    final report = SolveReport(type, _root, _previousLockFile, this, cache);
     report.summarize(dryRun: dryRun);
     if (type == SolveType.upgrade) {
       await report.reportDiscontinued();

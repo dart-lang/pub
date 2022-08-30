@@ -64,7 +64,8 @@ Future<void> main() async {
     );
   });
 
-  test('If content is updated on server we refuse to continue', () async {
+  test('If content is updated on server we warn and update the lockfile',
+      () async {
     final server = await servePackages();
     server.serveContentHashes = true;
     server.serve('foo', '1.0.0');
@@ -74,18 +75,49 @@ Future<void> main() async {
         contents: [file('new_file.txt', 'This file could be malicious.')]);
     // Pub get will not revisit the file-listing if everything resolves, and only compare with a cached value.
     await pubGet();
-    // Deleting the version-listing cache will cause it to be refetched, and the error will happen.
+    // Deleting the version-listing cache will cause it to be refetched, and the
+    // warning will happen.
     File(p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'))
         .deleteSync();
-
     await pubGet(
-      error: allOf(
+      warning: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
             'Cache entry for foo-1.0.0 does not have content-hash matching pubspec.lock.'),
       ),
-      exitCode: exit_codes.DATA,
+      exitCode: exit_codes.SUCCESS,
     );
+    final lockfile = loadYaml(
+        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+    final newHash = lockfile['packages']['foo']['description']['sha256'];
+    expect(newHash, await server.getSha256('foo', '1.0.0'));
+  });
+
+  test(
+      'If content is updated on legacy server, and the download needs refreshing we warn and update the lockfile',
+      () async {
+    final server = await servePackages();
+    server.serveContentHashes = false;
+    server.serve('foo', '1.0.0');
+    await appDir({'foo': 'any'}).create();
+    await pubGet();
+    server.serve('foo', '1.0.0',
+        contents: [file('new_file.txt', 'This file could be malicious.')]);
+    // Deleting the hash-file cache will cause it to be refetched, and the
+    // warning will happen.
+    File(p.join(globalServer.cachingPath, '.hashes', 'foo-1.0.0.sha256'))
+        .deleteSync();
+
+    await pubGet(
+      warning: contains(
+        'Content of foo-1.0.0 has changed compared to your previous pubspec.lock.',
+      ),
+      exitCode: exit_codes.SUCCESS,
+    );
+    final lockfile = loadYaml(
+        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+    final newHash = lockfile['packages']['foo']['description']['sha256'];
+    expect(newHash, server.getSha256('foo', '1.0.0'));
   });
 
   test(
