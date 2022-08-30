@@ -12,6 +12,7 @@ analyzer:
 linter:
   rules:
     - avoid_catching_errors
+    - avoid_print
     - avoid_private_typedef_functions
     - avoid_redundant_argument_values
     - avoid_returning_null_for_future

@@ -5,22 +5,20 @@ $ pub add --help
 Add dependencies to pubspec.yaml.
 
 Usage: pub add <package>[:<constraint>] [<package2>[:<constraint2>]...] [options]
--h, --help                    Print this usage information.
--d, --dev                     Adds to the development dependencies instead.
-    --git-url                 Git URL of the package
-    --git-ref                 Git branch or commit to be retrieved
-    --git-path                Path of git package in repository
-    --hosted-url              URL of package host server
-    --path                    Add package from local path
-    --sdk=<[flutter]>         add package from SDK source
-                              [flutter]
-    --[no-]offline            Use cached packages instead of accessing the
-                              network.
--n, --dry-run                 Report what dependencies would change but don't
-                              change any.
-    --[no-]precompile         Build executables in immediate dependencies.
--C, --directory=<dir>         Run this in the directory <dir>.
-    --legacy-packages-file    Generate the legacy ".packages" file
+-h, --help               Print this usage information.
+-d, --dev                Adds to the development dependencies instead.
+    --git-url            Git URL of the package
+    --git-ref            Git branch or commit to be retrieved
+    --git-path           Path of git package in repository
+    --hosted-url         URL of package host server
+    --path               Add package from local path
+    --sdk=<[flutter]>    add package from SDK source
+                         [flutter]
+    --[no-]offline       Use cached packages instead of accessing the network.
+-n, --dry-run            Report what dependencies would change but don't change
+                         any.
+    --[no-]precompile    Build executables in immediate dependencies.
+-C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-add for detailed documentation.

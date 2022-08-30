@@ -275,7 +275,7 @@ class GitSource extends CachedSource {
           .run(['show', '$revision:$pubspecPath'], workingDir: repoPath);
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pubspecPath" in '
-          '${p.prettyUri(description.url)} $revision.');
+          '${GitDescription.prettyUri(description.url)} $revision.');
     }
 
     return Pubspec.parse(

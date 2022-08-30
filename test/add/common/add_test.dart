@@ -146,8 +146,6 @@ environment:
       ]).create();
 
       await pubAdd(args: ['foo:1.2.3']);
-      print(
-          File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync());
       final yaml = loadYaml(
           File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync());
 

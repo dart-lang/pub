@@ -94,8 +94,6 @@ class AddCommand extends PubCommand {
         help: 'Build executables in immediate dependencies.');
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
-    argParser.addFlag('legacy-packages-file',
-        help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
   @override
@@ -164,11 +162,12 @@ class AddCommand extends PubCommand {
 
       await Entrypoint.inMemory(newRoot, cache,
               solveResult: solveResult, lockFile: entrypoint.lockFile)
-          .acquireDependencies(SolveType.get,
-              dryRun: true,
-              precompile: argResults['precompile'],
-              analytics: analytics,
-              generateDotPackages: false);
+          .acquireDependencies(
+        SolveType.get,
+        dryRun: true,
+        precompile: argResults['precompile'],
+        analytics: analytics,
+      );
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
@@ -183,7 +182,6 @@ class AddCommand extends PubCommand {
         SolveType.get,
         precompile: argResults['precompile'],
         analytics: analytics,
-        generateDotPackages: argResults['legacy-packages-file'],
       );
 
       if (argResults['example'] && entrypoint.example != null) {
@@ -192,7 +190,6 @@ class AddCommand extends PubCommand {
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
           analytics: analytics,
-          generateDotPackages: argResults['legacy-packages-file'],
         );
       }
     }

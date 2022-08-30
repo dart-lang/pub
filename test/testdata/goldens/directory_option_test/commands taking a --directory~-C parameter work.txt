@@ -94,18 +94,18 @@ Hi
 ## Section 11
 $ pub publish -C myapp --dry-run
 Publishing test_pkg 1.0.0 to http://localhost:$PORT:
-|-- CHANGELOG.md
-|-- LICENSE
-|-- README.md
-|-- bin
-|   '-- app.dart
-|-- example
-|   '-- pubspec.yaml
-|-- example2
-|   '-- pubspec.yaml
-|-- lib
-|   '-- test_pkg.dart
-'-- pubspec.yaml
+├── CHANGELOG.md (<1 KB)
+├── LICENSE (<1 KB)
+├── README.md (<1 KB)
+├── bin
+│   └── app.dart (<1 KB)
+├── example
+│   └── pubspec.yaml (<1 KB)
+├── example2
+│   └── pubspec.yaml (<1 KB)
+├── lib
+│   └── test_pkg.dart (<1 KB)
+└── pubspec.yaml (<1 KB)
 The server may enforce additional checks.
 [STDERR] 
 [STDERR] Package has 0 warnings.
@@ -126,5 +126,5 @@ $ pub uploader -C myapp add sigurdm@google.com
 $ pub deps -C myapp
 Dart SDK 1.12.0
 test_pkg 1.0.0
-'-- foo 1.0.0
+└── foo 1.0.0
 

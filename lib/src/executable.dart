@@ -106,7 +106,7 @@ Future<int> runExecutable(
   // helpful for the subprocess to be able to spawn Dart with
   // Platform.executableArguments and have that work regardless of the working
   // directory.
-  final packageConfigAbsolute = p.absolute(entrypoint.packageConfigFile);
+  final packageConfigAbsolute = p.absolute(entrypoint.packageConfigPath);
 
   try {
     return await _runDartProgram(
@@ -308,7 +308,6 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
         () => entrypoint.acquireDependencies(
           SolveType.get,
           analytics: analytics,
-          generateDotPackages: false,
         ),
       );
     } on ApplicationException catch (e) {
@@ -336,14 +335,13 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     command = package;
   }
 
-  if (!entrypoint.packageGraph.packages.containsKey(package)) {
+  if (!entrypoint.packageConfig.packages.any((p) => p.name == package)) {
     throw CommandResolutionFailedException._(
       'Could not find package `$package` or file `$descriptor`',
       CommandResolutionIssue.packageNotFound,
     );
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
-  final packageConfig = p.join('.dart_tool', 'package_config.json');
 
   final path = entrypoint.resolveExecutable(executable);
   if (!fileExists(path)) {
@@ -352,10 +350,12 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       CommandResolutionIssue.noBinaryFound,
     );
   }
+  final packageConfigPath =
+      p.relative(entrypoint.packageConfigPath, from: root);
   if (!allowSnapshot) {
     return DartExecutableWithPackageConfig(
       executable: p.relative(path, from: root),
-      packageConfig: packageConfig,
+      packageConfig: packageConfigPath,
     );
   } else {
     final snapshotPath = entrypoint.pathOfExecutable(executable);
@@ -374,7 +374,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     }
     return DartExecutableWithPackageConfig(
       executable: p.relative(snapshotPath, from: root),
-      packageConfig: packageConfig,
+      packageConfig: packageConfigPath,
     );
   }
 }

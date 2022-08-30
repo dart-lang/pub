@@ -3,24 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart' hide mapMap;
+import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
-import 'lock_file.dart';
 import 'package.dart';
 import 'solver.dart';
-import 'source/cached.dart';
 import 'utils.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
 class PackageGraph {
   /// The entrypoint.
   final Entrypoint entrypoint;
-
-  /// The entrypoint's lockfile.
-  ///
-  /// This describes the sources and resolved descriptions of everything in
-  /// [packages].
-  final LockFile lockFile;
 
   /// The transitive dependencies of the entrypoint (including itself).
   ///
@@ -32,7 +25,7 @@ class PackageGraph {
   /// A map of transitive dependencies for each package.
   Map<String, Set<Package>>? _transitiveDependencies;
 
-  PackageGraph(this.entrypoint, this.lockFile, this.packages);
+  PackageGraph(this.entrypoint, this.packages);
 
   /// Creates a package graph using the data from [result].
   ///
@@ -50,7 +43,7 @@ class PackageGraph {
               )
     };
 
-    return PackageGraph(entrypoint, result.lockFile, packages);
+    return PackageGraph(entrypoint, packages);
   }
 
   /// Returns all transitive dependencies of [package].
@@ -81,12 +74,7 @@ class PackageGraph {
     // the entrypoint.
     // TODO(sigurdm): there should be a way to get the id of any package
     // including the root.
-    if (package == entrypoint.root.name) {
-      return entrypoint.isCached;
-    } else {
-      var id = lockFile.packages[package]!;
-      return id.source is CachedSource;
-    }
+    return p.isWithin(entrypoint.cache.rootDir, packages[package]!.dir);
   }
 
   /// Returns whether [package] is mutable.

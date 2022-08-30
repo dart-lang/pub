@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
+import 'package:pub/src/log.dart' as log;
 
 const statusFilename = 'extract_all_pub_status.json';
 
@@ -41,8 +42,8 @@ Future<void> main() async {
       failures.add(failure);
     }
   }
-  print('Already processed ${alreadyDonePackages.length} packages');
-  print('Already found ${alreadyDonePackages.length}');
+  log.message('Already processed ${alreadyDonePackages.length} packages');
+  log.message('Already found ${alreadyDonePackages.length}');
 
   void writeStatus() {
     writeTextFile(
@@ -52,7 +53,7 @@ Future<void> main() async {
         'failures': [...failures],
       }),
     );
-    print('Wrote status to $statusFilename');
+    log.message('Wrote status to $statusFilename');
   }
 
   ProcessSignal.sigint.watch().listen((_) {
@@ -65,10 +66,10 @@ Future<void> main() async {
   try {
     for (final packageName in await allPackageNames()) {
       if (alreadyDonePackages.contains(packageName)) {
-        print('Skipping $packageName - already done');
+        log.message('Skipping $packageName - already done');
         continue;
       }
-      print('Processing all versions of $packageName '
+      log.message('Processing all versions of $packageName '
           '[+${alreadyDonePackages.length}, - ${failures.length}]');
       final resource = await pool.request();
       scheduleMicrotask(() async {
@@ -77,15 +78,15 @@ Future<void> main() async {
           var allVersionsGood = true;
           await Future.wait(versions.map((archiveUrl) async {
             await withTempDir((tempDir) async {
-              print('downloading $archiveUrl');
+              log.message('downloading $archiveUrl');
               http.StreamedResponse response;
               try {
                 response = await httpClient
                     .send(http.Request('GET', Uri.parse(archiveUrl)));
                 await extractTarGz(response.stream, tempDir);
-                print('Extracted $archiveUrl');
+                log.message('Extracted $archiveUrl');
               } catch (e) {
-                print('Failed to get and extract $archiveUrl $e');
+                log.message('Failed to get and extract $archiveUrl $e');
                 failures.add({'archive': archiveUrl, 'error': e.toString()});
                 allVersionsGood = false;
                 return;

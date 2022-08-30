@@ -18,7 +18,7 @@ import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
   if (Platform.environment['FLUTTER_ROOT'] != null) {
-    print(
+    stderr.writeln(
       'WARNING: The tests will not run correctly with dart from a flutter checkout!',
     );
   }
@@ -30,7 +30,7 @@ Future<void> main(List<String> args) async {
       path.absolute(path.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
   final pubSnapshotIncrementalFilename = '$pubSnapshotFilename.incremental';
   try {
-    print('Building snapshot');
+    stderr.writeln('Building snapshot');
     await precompile(
         executablePath: path.join('bin', 'pub.dart'),
         outputPath: pubSnapshotFilename,
@@ -45,7 +45,7 @@ Future<void> main(List<String> args) async {
     );
     exitCode = await testProcess.exitCode;
   } on ApplicationException catch (e) {
-    print('Failed building snapshot: $e');
+    stderr.writeln('Failed building snapshot: $e');
     exitCode = 1;
   } finally {
     try {

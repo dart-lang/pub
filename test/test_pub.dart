@@ -626,38 +626,7 @@ Future<void> createLockFile(String package,
 
   await d.dir(package, [
     d.file(
-      'pubspec.lock',
-      lockFile.serialize(p.join(d.sandbox, package), cache),
-    ),
-    d.file(
-      '.packages',
-      lockFile.packagesFile(
-        cache,
-        entrypoint: package,
-        relativeFrom: p.join(d.sandbox, package),
-      ),
-    )
-  ]).create();
-}
-
-/// Like [createLockFile], but creates only a `.packages` file without a
-/// lockfile.
-Future<void> createPackagesFile(String package,
-    {Iterable<String>? dependenciesInSandBox,
-    Map<String, String>? hosted}) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var lockFile =
-      _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
-
-  await d.dir(package, [
-    d.file(
-      '.packages',
-      lockFile.packagesFile(
-        cache,
-        entrypoint: package,
-        relativeFrom: d.sandbox,
-      ),
-    )
+        'pubspec.lock', lockFile.serialize(p.join(d.sandbox, package), cache))
   ]).create();
 }
 
