@@ -151,18 +151,18 @@ void main() {
     );
   });
 
-  test('with https://pub.dartlang.org rewrites to https://pub.dev', () async {
+  test('with https://pub.dev rewrites to https://pub.dartlang.org', () async {
     await runPub(
-      args: ['token', 'add', 'https://pub.dartlang.org'],
+      args: ['token', 'add', 'https://pub.dev'],
       input: ['auth-token'],
       silent: contains(
-          'Using https://pub.dev instead of https://pub.dartlang.org.'),
+          'Using https://pub.dartlang.org instead of https://pub.dev.'),
     );
 
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': 'https://pub.dev', 'token': 'auth-token'}
+        {'url': 'https://pub.dartlang.org', 'token': 'auth-token'}
       ]
     }).validate();
   });

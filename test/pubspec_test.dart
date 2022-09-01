@@ -370,7 +370,7 @@ dependencies:
             ResolvedHostedDescription(foo.description as HostedDescription)
                 .serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dev',
+              'url': 'https://pub.dartlang.org',
               'name': 'bar',
             });
       });
@@ -414,7 +414,7 @@ dependencies:
             ResolvedHostedDescription(foo.description as HostedDescription)
                 .serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dev',
+              'url': 'https://pub.dartlang.org',
               'name': 'foo',
             });
       });
