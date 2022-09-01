@@ -83,7 +83,7 @@ Future<void> main() async {
       warning: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
-            'Cache entry for foo-1.0.0 does not have content-hash matching pubspec.lock.'),
+            'Content of foo-1.0.0 has changed compared to what was locked your pubspec.lock.'),
       ),
       exitCode: exit_codes.SUCCESS,
     );
@@ -110,14 +110,14 @@ Future<void> main() async {
 
     await pubGet(
       warning: contains(
-        'Content of foo-1.0.0 has changed compared to your previous pubspec.lock.',
+        'Content of foo-1.0.0 has changed compared to what was locked your pubspec.lock.',
       ),
       exitCode: exit_codes.SUCCESS,
     );
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
     final newHash = lockfile['packages']['foo']['description']['sha256'];
-    expect(newHash, server.getSha256('foo', '1.0.0'));
+    expect(newHash, await server.getSha256('foo', '1.0.0'));
   });
 
   test(

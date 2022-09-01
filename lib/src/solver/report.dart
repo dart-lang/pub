@@ -47,8 +47,8 @@ class SolveReport {
     this._cache,
   );
 
-  /// Displays a report of the results of the version resolution relative to
-  /// the previous lock file.
+  /// Displays a report of the results of the version resolution in
+  /// [_newLockFile] relative to the [_previousLockFile] file.
   Future<void> show() async {
     await _reportChanges();
     await _reportOverrides();
@@ -58,7 +58,13 @@ class SolveReport {
   /// be made) to the lockfile.
   ///
   /// If [dryRun] is true, describes it in terms of what would be done.
-  void summarize({bool dryRun = false}) {
+  ///
+  /// [type] is the type of version resolution that was run.
+
+  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages that
+  /// are not at the latest available version and the number of outdated
+  /// packages.
+  Future<void> summarize({bool dryRun = false}) async {
     // Count how many dependencies actually changed.
     var dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
@@ -104,6 +110,10 @@ class SolveReport {
       } else {
         log.message('Changed $numChanged dependencies$suffix!');
       }
+    }
+    if (_type == SolveType.upgrade) {
+      await reportDiscontinued();
+      reportOutdated();
     }
   }
 
@@ -204,7 +214,7 @@ class SolveReport {
   /// "(override)" next to overridden packages.
   Future<void> _reportPackage(String name,
       {bool alwaysShow = false, bool highlightOverride = true}) async {
-    var newId = _previousLockFile.packages[name];
+    var newId = _newLockFile.packages[name];
     var oldId = _previousLockFile.packages[name];
     var id = newId ?? oldId!;
 
@@ -224,6 +234,7 @@ class SolveReport {
     //     + The package was added.
     //     > The package was upgraded from a lower version.
     //     < The package was downgraded from a higher version.
+    //     ~ Package contents has changed, but not the version number.
     //     * Any other change between the old and new package.
     String icon;
     if (isOverridden) {
@@ -234,7 +245,8 @@ class SolveReport {
     } else if (oldId == null) {
       icon = log.green('+ ');
       addedOrRemoved = true;
-    } else if (oldId.description != newId.description) {
+    } else if (oldId.description.description != newId.description.description) {
+      // Eg. a changed source in pubspec.yaml.
       icon = log.cyan('* ');
       changed = true;
     } else if (oldId.version < newId.version) {
@@ -242,6 +254,10 @@ class SolveReport {
       changed = true;
     } else if (oldId.version > newId.version) {
       icon = log.cyan('< ');
+      changed = true;
+    } else if (oldId.description != newId.description) {
+      // Eg. a changed hash or revision.
+      icon = log.cyan('~ ');
       changed = true;
     } else {
       // Unchanged.

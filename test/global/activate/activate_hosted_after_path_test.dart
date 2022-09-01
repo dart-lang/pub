@@ -5,6 +5,7 @@
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -27,8 +28,7 @@ void main() {
     await runPub(args: ['global', 'activate', 'foo'], output: '''
         Package foo is currently active at path "$path".
         Resolving dependencies...
-        + foo 2.0.0
-        Downloading foo 2.0.0...
+        * foo 2.0.0 (was 1.0.0 from path $path)
         Building package executables...
         Built foo:foo.
         Activated foo 2.0.0.''');

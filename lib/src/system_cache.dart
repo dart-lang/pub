@@ -10,7 +10,6 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
 import 'exceptions.dart';
-import 'http.dart';
 import 'io.dart';
 import 'io.dart' as io show createTempDir;
 import 'log.dart' as log;
@@ -263,25 +262,6 @@ class SystemCache {
     assert(available.where((id) => id.version == latest.version).length == 1);
 
     return latest;
-  }
-
-  /// Downloads all cached packages in [packages].
-  Future<void> downloadPackages(
-    Package root,
-    List<PackageId> packages, {
-    required bool allowOutdatedHashChecks,
-  }) async {
-    await Future.wait(packages.map((id) async {
-      if (id.source is! CachedSource) {
-        return;
-      }
-      return await withDependencyType(root.dependencyType(id.name), () async {
-        await downloadPackage(
-          id,
-          allowOutdatedHashChecks: allowOutdatedHashChecks,
-        );
-      });
-    }));
   }
 }
 

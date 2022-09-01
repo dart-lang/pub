@@ -3,7 +3,6 @@
 $ tool/test-bin/pub_command_runner.dart pub --no-color get
 Resolving dependencies...
 + foo 1.0.0 (2.0.0 available)
-Downloading foo 1.0.0...
 Changed 1 dependency!
 
 -------------------------------- END OF OUTPUT ---------------------------------

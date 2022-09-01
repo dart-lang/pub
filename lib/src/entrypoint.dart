@@ -356,8 +356,8 @@ class Entrypoint {
 
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
-    final newLockFile =
-        await result.downloadPackages(cache, allowOutdatedHashChecks: true);
+    final newLockFile = await result.downloadCachedPackages(cache,
+        allowOutdatedHashChecks: true);
 
     final report = SolveReport(
       type,
@@ -379,7 +379,7 @@ class Entrypoint {
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
     } else {
-      report.summarize(dryRun: dryRun);
+      await report.summarize(dryRun: dryRun);
     }
 
     if (!dryRun) {

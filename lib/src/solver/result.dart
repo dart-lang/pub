@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import '../exceptions.dart';
+import '../http.dart';
 import '../io.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
@@ -15,11 +15,10 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
+import '../source/cached.dart';
 import '../source/hosted.dart';
 import '../system_cache.dart';
 import '../utils.dart';
-import 'report.dart';
-import 'type.dart';
 
 /// The result of a successful version resolution.
 class SolveResult {
@@ -52,19 +51,34 @@ class SolveResult {
   /// The wall clock time the resolution took.
   final Duration resolutionTime;
 
-  /// Downloads all the packages selected by this version.
+  /// Downloads all the cached packages selected by this version resolution.
+  ///
+  /// If some already cached package differs from what is provided by the server
+  /// (according to the content-hash) a warning is printed and the package is
+  /// redownloaded.
   ///
   /// Returns the [LockFile] representing the packages selected by this version
-  /// resolution. Any resolved ids will correspond
-  Future<LockFile> downloadPackages(
+  /// resolution. Any resolved [PackageId]s will correspond to those in the
+  /// cache (and thus to the one provided by the server).
+  ///
+  /// If there is a mismatch between the previous content-hash from pubspec.lock
+  /// and the new one a warning will be printed but the new one will be
+  /// returned.
+  Future<LockFile> downloadCachedPackages(
     SystemCache cache, {
     required bool allowOutdatedHashChecks,
   }) async {
-    await cache.downloadPackages(
-      _root,
-      packages,
-      allowOutdatedHashChecks: allowOutdatedHashChecks,
-    );
+    await Future.wait(packages.map((id) async {
+      if (id.source is CachedSource) {
+        await withDependencyType(_root.dependencyType(id.name), () async {
+          await cache.downloadPackage(
+            id,
+            allowOutdatedHashChecks: allowOutdatedHashChecks,
+          );
+        });
+      }
+    }));
+
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
@@ -92,6 +106,29 @@ class SolveResult {
             throw StateError(
                 'Archive for ${id.name}-${id.version} has no content hash.');
           }
+          final originalEntry = _previousLockFile.packages[id.name];
+          if (originalEntry != null && originalEntry.version == id.version) {
+            final originalDescription = originalEntry.description;
+            if (originalDescription is ResolvedHostedDescription) {
+              final Uint8List? originalHash = originalDescription.sha256;
+              if (originalHash != null) {
+                if (!bytesEquals(cachedHash, originalHash)) {
+                  log.warning('''
+Content of ${id.name}-${id.version} has changed compared to what was locked your pubspec.lock.
+
+This might indicate that:
+* The content has changed on the server since you created the pubspec.lock.
+* The pubspec.lock has been corrupted.
+
+Your pubspec.lock has been updated according to what is on your server.
+
+See $contentHashesDocumentationUrl for more information.
+''');
+                }
+              }
+            }
+          }
+
           return PackageId(
               id.name, id.version, description.withSha256(cachedHash));
         }
@@ -122,30 +159,6 @@ class SolveResult {
 
   SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
       this.availableVersions, this.attemptedSolutions, this.resolutionTime);
-
-  /// Warns if the content-hash of some hosted package locked
-  /// in this [lockFile] differs from the one in the [cache].
-  Future<void> checkContentHashes(LockFile lockFile, SystemCache cache) {
-    for (final package in lockFile.packages.values) {
-      if (package.description is ResolvedHostedDescription) {}
-    }
-  }
-
-  /// Displays a one-line message summarizing what changes were made (or would
-  /// be made) to the lockfile.
-  ///
-  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages
-  /// that are not at the latest available version.
-  ///
-  /// [type] is the type of version resolution that was run.
-  Future<void> summarizeChanges(SolveType type, SystemCache cache,
-      {bool dryRun = false}) async {
-    report.summarize(dryRun: dryRun);
-    if (type == SolveType.upgrade) {
-      await report.reportDiscontinued();
-      report.reportOutdated();
-    }
-  }
 
   /// Send analytics about the package resolution.
   void sendAnalytics(PubAnalytics pubAnalytics) {

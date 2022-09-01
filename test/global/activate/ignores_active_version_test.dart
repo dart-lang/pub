@@ -25,8 +25,7 @@ void main() {
     await runPub(args: ['global', 'activate', 'foo', '>1.0.0'], output: '''
         Package foo is currently active at version 1.2.3.
         Resolving dependencies...
-        + foo 1.3.0
-        Downloading foo 1.3.0...
+        > foo 1.3.0 (was 1.2.3)
         Building package executables...
         Built foo:foo.
         Activated foo 1.3.0.''');

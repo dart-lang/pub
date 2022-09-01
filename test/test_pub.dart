@@ -206,6 +206,7 @@ Future<void> pubUpgrade(
         Object? output,
         Object? error,
         Object? warning,
+        Object? silent,
         int? exitCode,
         Map<String, String>? environment,
         String? workingDirectory}) async =>
@@ -215,6 +216,7 @@ Future<void> pubUpgrade(
       output: output,
       error: error,
       warning: warning,
+      silent: silent,
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
@@ -862,9 +864,6 @@ StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
 /// Removes output from pub known to be unstable.
 Iterable<String> filterUnstableLines(List<String> input) {
   return input
-      // Downloading order is not deterministic, so to avoid flakiness we filter
-      // out these lines.
-      .where((line) => !line.startsWith('Downloading '))
       // Any paths in output should be relative to the sandbox and with forward
       // slashes to be stable across platforms.
       .map((line) {

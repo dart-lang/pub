@@ -224,7 +224,7 @@ class GlobalPackages {
     // We want the entrypoint to be rooted at 'dep' not the dummy-package.
     result.packages.removeWhere((id) => id.name == 'pub global activate');
 
-    final lockFile = await result.downloadPackages(
+    final lockFile = await result.downloadCachedPackages(
       cache,
       allowOutdatedHashChecks: true,
     );

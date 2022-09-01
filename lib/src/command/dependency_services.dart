@@ -477,17 +477,23 @@ class DependencyServicesApplyCommand extends PubCommand {
               // `pub get` gets this version-listing from the downloaded archive
               // but we don't want to download all archives - so we copy it from
               // the version listing.
-              final listedId = (await cache.getVersions(package.toRef()))
+              var listedId = (await cache.getVersions(package.toRef()))
                   .firstWhere((id) => id == package);
               if ((listedId.description as ResolvedHostedDescription).sha256 ==
                   null) {
-                // This happens when we resolved a package from a server not
-                // providing archive_sha256. As a side-effect of downloading
-                // the package we compute and store the sha256, and that will
-                // be picked up by entrypoint.saveLockFile.
+                // This happens when we resolved a package from a legacy server
+                // not providing archive_sha256. As a side-effect of downloading
+                // the package we compute and store the sha256.
                 await cache.downloadPackage(
                   package,
                   allowOutdatedHashChecks: false,
+                );
+                listedId = PackageId(
+                  listedId.name,
+                  listedId.version,
+                  description.withSha256(
+                    cache.hosted.sha256FromCache(listedId, cache),
+                  ),
                 );
               }
               updatedPackages.add(listedId);
