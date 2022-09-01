@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
     show maxBy, IterableNullableExtension;
@@ -12,8 +13,10 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 import '../authentication/client.dart';
+import '../crc32c.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
@@ -860,16 +863,27 @@ class HostedSource extends CachedSource {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
       var response = await withAuthenticatedClient(
-          cache,
-          Uri.parse(description.url),
-          (client) => client.send(http.Request('GET', url)));
+          cache, Uri.parse(description.url), (client) {
+        var req = http.Request('GET', url);
+        // TODO: How can we properly check if a request is GCS bound, so only
+        // those requests get this header? (for checksum validation)
+        req.headers['Cache-Control'] = 'no-transform';
+        return client.send(req);
+      });
+
+      Stream<List<int>> responseStream = response.stream;
+
+      if (response.isFromGCS) {
+        // Taps into response stream without starting consumption.
+        responseStream = response.streamWithGCSChecksumValidationTap();
+      }
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.
       // Package:tar cancels the stream when it reaches end-of-archive, and
       // cancelling a http stream makes it not reusable.
       // There are ways around this, and we might revisit this later.
-      await createFileFromStream(response.stream, archivePath);
+      await createFileFromStream(responseStream, archivePath);
       var tempDir = cache.createTempDir();
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 
@@ -1099,4 +1113,96 @@ class _RefAndCache {
   int get hashCode => ref.hashCode;
   @override
   bool operator ==(Object other) => other is _RefAndCache && other.ref == ref;
+}
+
+extension GCSChecksumValidation on http.StreamedResponse {
+  static const checksumsHeaderName = 'x-goog-hash';
+
+  bool get isFromGCS {
+    // TODO: Does this suffice as a heuristic?
+    return headers.containsKey(checksumsHeaderName);
+  }
+
+  /// Adds a checksum validation "tap" to the response stream and returns a
+  /// wrapped Stream object, which should be used to consume the incoming data.
+  ///
+  /// As chunks are received, a CRC32C checksum is updated.
+  /// Once the download is completed, the final checksum is compared with
+  /// the one present in the `x-goog-hash` response header from GCS.
+  ///
+  /// Throws [PackageIntegrityException] if anything is wrong with the checksum
+  /// or if there is a checksum mismatch.
+  Stream<List<int>> streamWithGCSChecksumValidationTap() {
+    if (gcsCrc32c == null) {
+      throw PackageIntegrityException(
+          'Package served from GCS is missing CRC32C checksum', request?.url);
+    }
+
+    final checksumComputer = Crc32c();
+
+    return stream.tap(checksumComputer.update, onDone: () {
+      var computedCrc32c = checksumComputer.finalize();
+
+      log.io(
+          'Computed checksum ($computedCrc32c) for package with GCS checksum of ($gcsCrc32c).');
+
+      if (gcsCrc32c != computedCrc32c) {
+        throw PackageIntegrityException(
+            'Package served from GCS has a CRC32C checksum mismatch; Computed checksum ($computedCrc32c) != GCS checksum ($gcsCrc32c)',
+            request?.url);
+      }
+    });
+  }
+
+  /// Parses GCS response headers and returns the package's CRC32C checksum.
+  int? get gcsCrc32c {
+    String? gcsChecksums = headers[checksumsHeaderName];
+    if (gcsChecksums == null) return null;
+
+    // In most cases, GCS provides both MD5 and CRC32C checksums in its response
+    // headers. It uses the header name "x-goog-hash" for these values. It has
+    // been documented and observed that GCS will send multiple response headers
+    // with the same "x-goog-hash" token as the key.
+    // https://cloud.google.com/storage/docs/xml-api/reference-headers#xgooghash
+
+    // Additionally, when the Dart http package encounters multiple response
+    // headers with the same key, it concatenates their values with a comma
+    // before inserting a single item with that key and concatenated value into
+    // its response "headers" Map. There is a TODO to refactor the
+    // response class to use a HttpHeaders object instead of a Map, but the
+    // person it was assigned to, nweiz@, has long since left the Dart team.
+    // https://github.com/dart-lang/http/issues/24
+    // https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
+
+    // Therefore, we need to use this roundabout method for parsing the
+    // CRC32C checksum.
+
+    final parts = gcsChecksums.split(',');
+    for (final part in parts) {
+      if (part.startsWith('crc32c=')) {
+        final undecoded = part.substring(7);
+        final rawBytes = base64.decode(undecoded);
+        return ByteData.view(rawBytes.buffer).getUint32(0);
+      }
+    }
+
+    return null;
+  }
+}
+
+/// Package checksum related exception.
+class PackageIntegrityException implements Exception {
+  const PackageIntegrityException(this.message, this.url);
+
+  final String message;
+  final Uri? url;
+
+  @override
+  String toString() {
+    var temp = message;
+    if (url != null) {
+      temp += ': $url';
+    }
+    return temp;
+  }
 }
