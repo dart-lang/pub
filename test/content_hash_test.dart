@@ -25,10 +25,8 @@ Future<void> main() async {
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
     final sha256 = lockfile['packages']['foo']['description']['sha256'];
     expect(sha256, hasLength(64));
-    await hostedCache([
-      dir('.hashes', [
-        file('foo-1.0.0.sha256', sha256),
-      ])
+    await hostedHashesCache([
+      file('foo-1.0.0.sha256', sha256),
     ]).validate();
   });
 
@@ -44,10 +42,8 @@ Future<void> main() async {
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
     final sha256 = lockfile['packages']['foo']['description']['sha256'];
     expect(sha256, hasLength(64));
-    await hostedCache([
-      dir('.hashes', [
-        file('foo-1.0.0.sha256', sha256),
-      ])
+    await hostedHashesCache([
+      file('foo-1.0.0.sha256', sha256),
     ]).validate();
   });
 
@@ -105,7 +101,7 @@ Future<void> main() async {
         contents: [file('new_file.txt', 'This file could be malicious.')]);
     // Deleting the hash-file cache will cause it to be refetched, and the
     // warning will happen.
-    File(p.join(globalServer.cachingPath, '.hashes', 'foo-1.0.0.sha256'))
+    File(p.join(globalServer.hashesCachingPath, '.hashes', 'foo-1.0.0.sha256'))
         .deleteSync();
 
     await pubGet(
@@ -132,19 +128,15 @@ Future<void> main() async {
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
     final originalHash = lockfile['packages']['foo']['description']['sha256'];
     // Create wrong hash on disk.
-    await hostedCache([
-      dir('.hashes', [
-        file('foo-1.0.0.sha256',
-            'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279'),
-      ])
+    await hostedHashesCache([
+      file('foo-1.0.0.sha256',
+          'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279'),
     ]).create();
 
     await pubGet(
         warning: 'Cached version of foo-1.0.0 has wrong hash - redownloading.');
-    await hostedCache([
-      dir('.hashes', [
-        file('foo-1.0.0.sha256', originalHash),
-      ])
+    await hostedHashesCache([
+      file('foo-1.0.0.sha256', originalHash),
     ]).validate();
   });
 
@@ -158,19 +150,15 @@ Future<void> main() async {
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
     final originalHash = lockfile['packages']['foo']['description']['sha256'];
-    await hostedCache([
-      dir('.hashes', [
-        file('foo-1.0.0.sha256',
-            'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279'),
-      ])
+    await hostedHashesCache([
+      file('foo-1.0.0.sha256',
+          'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279'),
     ]).create();
 
     await pubGet(
         warning: 'Cached version of foo-1.0.0 has wrong hash - redownloading.');
-    await hostedCache([
-      dir('.hashes', [
-        file('foo-1.0.0.sha256', originalHash),
-      ])
+    await hostedHashesCache([
+      file('foo-1.0.0.sha256', originalHash),
     ]).validate();
   });
   test(

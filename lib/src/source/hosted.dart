@@ -767,8 +767,8 @@ class HostedSource extends CachedSource {
   /// The system cache directory for the hosted source contains subdirectories
   /// for each separate repository URL that's used on the system.
   ///
-  /// Each of these subdirectories then contains a `.hashes` directory with a
-  /// stored hash of all downloaded packages.
+  /// Parallel to this there is a `hosted-hashes` directory with a stored hash
+  /// of all downloaded packages.
   String hashPath(PackageId id, SystemCache cache) {
     final description = id.description.description;
     if (description is! HostedDescription) {
@@ -776,8 +776,9 @@ class HostedSource extends CachedSource {
     }
     final rootDir = cache.rootDirForSource(this);
 
-    var dir = _urlToDirectory(description.url);
-    return p.join(rootDir, dir, '.hashes', '${id.name}-${id.version}.sha256');
+    var serverDir = _urlToDirectory(description.url);
+    return p.join(rootDir, 'hosted-hashes', serverDir, '.hashes',
+        '${id.name}-${id.version}.sha256');
   }
 
   /// Loads the hash at `hashPath(id)`.
@@ -1162,7 +1163,7 @@ class ResolvedHostedDescription extends ResolvedDescription {
   ///   (will be null if the server does not report this.)
   /// * Obtained from a pubspec.lock
   ///   (will be null for legacy lock-files).
-  /// * Read from the <PUB_CACHE>/hosted/.hashes/<package>-<version>.sha256 file.
+  /// * Read from the <PUB_CACHE>/hosted-hashes/<server>/<package>-<version>.sha256 file.
   ///   (will be null if the file doesn't exist for corrupt or legacy caches).
   final Uint8List? sha256;
 

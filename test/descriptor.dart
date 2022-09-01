@@ -193,6 +193,20 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
   ]);
 }
 
+/// Describes the hosted-hashes cache directory containing hashes of the hosted
+/// packages downloaded from the mock package server.
+///
+/// If [port] is passed, it's used as the port number of the local hosted server
+/// that this cache represents. It defaults to [globalServer.port].
+Descriptor hostedHashesCache(Iterable<Descriptor> contents, {int? port}) {
+  return dir(cachePath, [
+    dir(
+      'hosted-hashes',
+      [dir('localhost%58${port ?? globalServer.port}', contents)],
+    )
+  ]);
+}
+
 /// Describes the file that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.

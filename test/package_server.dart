@@ -178,6 +178,9 @@ class PackageServer {
   String get cachingPath =>
       p.join(d.sandbox, cachePath, 'hosted', 'localhost%58$port');
 
+  String get hashesCachingPath =>
+      p.join(d.sandbox, cachePath, 'hosted-hashes', 'localhost%58$port');
+
   /// A map from package names to the concrete packages to serve.
   final _packages = <String, _ServedPackage>{};
 
