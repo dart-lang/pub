@@ -774,11 +774,11 @@ class HostedSource extends CachedSource {
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
     }
-    final rootDir = cache.rootDirForSource(this);
+    final rootDir = cache.rootDir;
 
     var serverDir = _urlToDirectory(description.url);
-    return p.join(rootDir, 'hosted-hashes', serverDir, '.hashes',
-        '${id.name}-${id.version}.sha256');
+    return p.join(
+        rootDir, 'hosted-hashes', serverDir, '${id.name}-${id.version}.sha256');
   }
 
   /// Loads the hash at `hashPath(id)`.

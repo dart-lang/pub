@@ -101,7 +101,7 @@ Future<void> main() async {
         contents: [file('new_file.txt', 'This file could be malicious.')]);
     // Deleting the hash-file cache will cause it to be refetched, and the
     // warning will happen.
-    File(p.join(globalServer.hashesCachingPath, '.hashes', 'foo-1.0.0.sha256'))
+    File(p.join(globalServer.hashesCachingPath, 'foo-1.0.0.sha256'))
         .deleteSync();
 
     await pubGet(

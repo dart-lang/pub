@@ -56,7 +56,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
 [E] IO  : Creating $FILE from stream
-[E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted/hosted-hashes/localhost%58$PORT/.hashes/foo-1.0.0.sha256.
+[E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
 [E] FINE: Contents:
 [E]    | 439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb
 [E] FINE: Created $FILE from stream
@@ -198,7 +198,7 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
 IO  : Creating $FILE from stream
-IO  : Writing $N characters to text file $SANDBOX/cache/hosted/hosted-hashes/localhost%58$PORT/.hashes/foo-1.0.0.sha256.
+IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
 FINE: Contents:
    | 439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb
 FINE: Created $FILE from stream
