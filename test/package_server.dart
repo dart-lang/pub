@@ -29,8 +29,8 @@ class PackageServer {
   // A list of all the requests received up till now.
   final List<String> requestedPaths = <String>[];
 
-  // Setting this to true will make automatic calculation of content-hashes.
-  bool serveContentHashes = false;
+  // Setting this to false will disable automatic calculation of content-hashes.
+  bool serveContentHashes = true;
 
   PackageServer._(this._inner) {
     _inner.mount((request) {

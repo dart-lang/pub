@@ -106,7 +106,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "c3bda774737102f799574749076544dea1a4745b5c38d590d4f206f997bfe8a0"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -133,7 +134,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "c3bda774737102f799574749076544dea1a4745b5c38d590d4f206f997bfe8a0"
             }
           },
           "constraintBumped": "^2.0.0",

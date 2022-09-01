@@ -24,14 +24,14 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | took: $TIME
 [E]    | x-powered-by: Dart with package:shelf
 [E]    | date: $TIME
-[E]    | content-length: 197
+[E]    | content-length: 281
 [E]    | x-frame-options: SAMEORIGIN
 [E]    | content-type: text/plain; charset=utf-8
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 [E] FINE: Contents:
-[E]    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz"}],"_fetchedAt": "$TIME"}
+[E]    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"}],"_fetchedAt": "$TIME"}
 [E] SLVR:   selecting foo 1.0.0
 [E] SLVR: Version solving took: $TIME
 [E]    | Tried 1 solutions.
@@ -166,14 +166,14 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
    | took: $TIME
    | x-powered-by: Dart with package:shelf
    | date: $TIME
-   | content-length: 197
+   | content-length: 281
    | x-frame-options: SAMEORIGIN
    | content-type: text/plain; charset=utf-8
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
 IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 FINE: Contents:
-   | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz"}],"_fetchedAt": "$TIME"}
+   | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"}],"_fetchedAt": "$TIME"}
 SLVR:   selecting foo 1.0.0
 SLVR: Version solving took: $TIME
    | Tried 1 solutions.
