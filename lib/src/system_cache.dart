@@ -213,6 +213,14 @@ class SystemCache {
     return id.source.doGetDirectory(id, this, relativeFrom: relativeFrom);
   }
 
+  /// Downloads a cached package identified by [id] to the cache.
+  ///
+  /// [id] must refer to a cached package.
+  ///
+  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
+  /// response if present instead of probing the server. Not probing allows for
+  /// `pub get` with a filled cache to be a fast case that doesn't require any
+  /// new version-listings.
   Future<void> downloadPackage(
     PackageId id, {
     required bool allowOutdatedHashChecks,
