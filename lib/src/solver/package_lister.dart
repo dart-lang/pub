@@ -148,14 +148,14 @@ class PackageLister {
 
     // If [constraint] has a minimum (or a maximum in downgrade mode), we can
     // bail early once we're past it.
-    var isPastLimit = (Version? _) => false;
+    var isPastLimit = (Version _) => false;
     if (constraint is VersionRange) {
       if (_isDowngrade) {
         var max = constraint.max;
-        if (max != null) isPastLimit = (version) => version! > max;
+        if (max != null) isPastLimit = (version) => version > max;
       } else {
         var min = constraint.min;
-        if (min != null) isPastLimit = (version) => version! < min;
+        if (min != null) isPastLimit = (version) => version < min;
       }
     }
 
