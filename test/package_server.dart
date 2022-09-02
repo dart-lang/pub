@@ -243,8 +243,12 @@ class PackageServer {
     );
   }
 
-  /// Replaces the 9th entry in [stream] with a 0. This replaces the os entry
-  /// of a gzip stream, giving us the same stream on all platforms.
+  /// Replaces the 9th entry in [stream] with a 0. This replaces the os entry of
+  /// a gzip stream, giving us the same stream and thius stable testing on all
+  /// platforms.
+  ///
+  /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
+  /// about the OS header.
   Stream<List<int>> replaceOs(Stream<List<int>> stream) async* {
     var i = 0;
     await for (final t in stream) {
