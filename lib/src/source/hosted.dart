@@ -13,7 +13,6 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
-import 'package:stream_transform/stream_transform.dart';
 
 import '../authentication/client.dart';
 import '../crc32c.dart';
@@ -1140,7 +1139,9 @@ extension GCSChecksumValidation on http.StreamedResponse {
 
     final checksumComputer = Crc32c();
 
-    return stream.tap(checksumComputer.update, onDone: () {
+    return stream
+        .transform(onDataTransformer(checksumComputer.update))
+        .transform(onDoneTransformer(() {
       var computedCrc32c = checksumComputer.finalize();
 
       log.io(
@@ -1151,7 +1152,7 @@ extension GCSChecksumValidation on http.StreamedResponse {
             'Package served from GCS has a CRC32C checksum mismatch; Computed checksum ($computedCrc32c) != GCS checksum ($gcsCrc32c)',
             request?.url);
       }
-    });
+    }));
   }
 
   /// Parses GCS response headers and returns the package's CRC32C checksum.
