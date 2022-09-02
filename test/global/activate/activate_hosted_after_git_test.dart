@@ -25,7 +25,7 @@ void main() {
     await runPub(args: ['global', 'activate', 'foo'], output: '''
         Package foo is currently active from Git repository "..${separator}foo.git".
         Resolving dependencies...
-        * foo 2.0.0 (was 1.0.0 from git ../foo.git at 8162e8)
+        * foo 2.0.0 (was 1.0.0 from git ..${separator}foo.git at 8162e8)
         Building package executables...
         Built foo:foo.
         Activated foo 2.0.0.''');
