@@ -278,11 +278,11 @@ class PackageServer {
   }
 
   /// Useful for testing handling of a wrong hash.
-  void setSha256(String name, String version, String sha256) {
+  void overrideArchiveSha256(String name, String version, String sha256) {
     _packages[name]!.versions[version]!.sha256 = sha256;
   }
 
-  Future<String> getSha256(String name, String version) async {
+  Future<String> peekArchiveSha256(String name, String version) async {
     final v = _packages[name]!.versions[version]!;
     return v.sha256 ?? hexEncode((await sha256.bind(v.contents()).first).bytes);
   }

@@ -50,7 +50,7 @@ Future<void> main() async {
   test('archive_sha256 is checked on download', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
-    server.setSha256('foo', '1.0.0',
+    server.overrideArchiveSha256('foo', '1.0.0',
         'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279');
     await appDir({'foo': 'any'}).create();
     await pubGet(
@@ -86,7 +86,7 @@ Future<void> main() async {
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
     final newHash = lockfile['packages']['foo']['description']['sha256'];
-    expect(newHash, await server.getSha256('foo', '1.0.0'));
+    expect(newHash, await server.peekArchiveSha256('foo', '1.0.0'));
   });
 
   test(
@@ -113,7 +113,7 @@ Future<void> main() async {
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
     final newHash = lockfile['packages']['foo']['description']['sha256'];
-    expect(newHash, await server.getSha256('foo', '1.0.0'));
+    expect(newHash, await server.peekArchiveSha256('foo', '1.0.0'));
   });
 
   test(
