@@ -4,7 +4,8 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' hide BytesBuilder;
+import 'dart:typed_data' show BytesBuilder;
 
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
@@ -243,25 +244,20 @@ class PackageServer {
     );
   }
 
-  /// Replaces the 9th entry in [stream] with a 0. This replaces the os entry of
-  /// a gzip stream, giving us the same stream and thius stable testing on all
-  /// platforms.
+  /// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
+  /// entry of a gzip stream, giving us the same stream and thius stable testing
+  /// on all platforms.
   ///
   /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
   /// about the OS header.
   Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
-    var i = 0;
+    final bytesBuilder = BytesBuilder();
     await for (final t in stream) {
-      if (i > 9 || (i + t.length < 9)) {
-        yield t;
-        i += t.length;
-        continue;
-      }
-      yield t.sublist(0, 9 - i);
-      yield [0];
-      yield t.sublist(9 - i + 1);
-      i += t.length;
+      bytesBuilder.add(t);
     }
+    final result = bytesBuilder.toBytes();
+    result[9] = 0;
+    yield result;
   }
 
   // Mark a package discontinued.
