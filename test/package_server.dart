@@ -236,7 +236,7 @@ class PackageServer {
         for (final e in contents ?? <d.Descriptor>[]) {
           addDescriptor(e, '');
         }
-        return replaceOs(Stream.fromIterable(entries)
+        return _replaceOs(Stream.fromIterable(entries)
             .transform(tarWriterWith(format: OutputFormat.gnuLongName))
             .transform(gzip.encoder));
       },
@@ -249,7 +249,7 @@ class PackageServer {
   ///
   /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
   /// about the OS header.
-  Stream<List<int>> replaceOs(Stream<List<int>> stream) async* {
+  Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
     var i = 0;
     await for (final t in stream) {
       if (i > 9 || (i + t.length < 9)) {
