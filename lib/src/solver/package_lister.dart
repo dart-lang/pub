@@ -140,9 +140,9 @@ class PackageLister {
   ///
   /// Throws a [PackageNotFoundException] if this lister's package doesn't
   /// exist.
-  Future<PackageId?> bestVersion(VersionConstraint? constraint) async {
+  Future<PackageId?> bestVersion(VersionConstraint constraint) async {
     final locked = _locked;
-    if (locked != null && constraint!.allows(locked.version)) return locked;
+    if (locked != null && constraint.allows(locked.version)) return locked;
 
     var versions = await _versions;
 
@@ -166,7 +166,7 @@ class PackageLister {
     for (var id in _isDowngrade ? versions : versions.reversed) {
       if (isPastLimit(id.version)) break;
 
-      if (!constraint!.allows(id.version)) continue;
+      if (!constraint.allows(id.version)) continue;
       if (!id.version.isPreRelease) {
         return id;
       }
