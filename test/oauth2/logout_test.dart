@@ -16,8 +16,7 @@ void main() {
             expiration: DateTime.now().add(Duration(hours: 1)))
         .create();
 
-    await runPub(
-        args: ['logout'], output: contains('Logging out of pub.dartlang.org.'));
+    await runPub(args: ['logout'], output: contains('Logging out of pub.dev.'));
 
     await d.dir(configPath, [d.nothing('pub-credentials.json')]).validate();
   });
@@ -48,7 +47,7 @@ void main() {
       args: ['logout'],
       output: allOf(
         [
-          contains('Logging out of pub.dartlang.org.'),
+          contains('Logging out of pub.dev.'),
           contains('Also deleting legacy credentials at ')
         ],
       ),

@@ -20,7 +20,7 @@ void main() {
 
     test('has an HTTPS homepage URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
-      pkg['homepage'] = 'https://pub.dartlang.org';
+      pkg['homepage'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField);
@@ -29,7 +29,7 @@ void main() {
     test('has an HTTPS repository URL instead of homepage', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg.remove('homepage');
-      pkg['repository'] = 'https://pub.dartlang.org';
+      pkg['repository'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField);
@@ -37,7 +37,7 @@ void main() {
 
     test('has an HTTPS documentation URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
-      pkg['documentation'] = 'https://pub.dartlang.org';
+      pkg['documentation'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField);

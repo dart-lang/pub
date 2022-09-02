@@ -681,7 +681,7 @@ Map<String, Object> packageMap(
   var package = <String, Object>{
     'name': name,
     'version': version,
-    'homepage': 'http://pub.dartlang.org',
+    'homepage': 'http://pub.dev',
     'description': 'A package, I guess.'
   };
 
@@ -691,7 +691,7 @@ Map<String, Object> packageMap(
   return package;
 }
 
-/// Returns a Map in the format used by the pub.dartlang.org API to represent a
+/// Returns a Map in the format used by the pub.dev API to represent a
 /// package version.
 ///
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
@@ -946,8 +946,8 @@ Future<void> runPubIntoBuffer(
 PackageServer get globalServer => _globalServer!;
 PackageServer? _globalServer;
 
-/// Creates an HTTP server that replicates the structure of pub.dartlang.org and
-/// makes it the current [globalServer].
+/// Creates an HTTP server that replicates the structure of pub.dev and makes it
+/// the current [globalServer].
 Future<PackageServer> servePackages() async {
   final server = await startPackageServer();
   _globalServer = server;

@@ -15,7 +15,7 @@ void main() {
     await d.dir(appPath, [
       d.rawPubspec({
         'name': 'test_pkg',
-        'homepage': 'http://pub.dartlang.org',
+        'homepage': 'https://pub.dev',
         'version': '1.0.0',
       }),
     ]).create();

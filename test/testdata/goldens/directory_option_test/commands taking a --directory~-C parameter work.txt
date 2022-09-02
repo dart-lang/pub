@@ -53,7 +53,7 @@ $ pub get bar -C 'myapp/example2'
 Resolving dependencies in myapp/example2...
 [STDERR] Error on line 1, column 9 of myapp/pubspec.yaml: "name" field doesn't match expected name "myapp".
 [STDERR]   ╷
-[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dartlang.org","description":"A package, I guess.","environment":{"sdk":">=1.8.0 <=2.0.0"}, dependencies: { foo: ^1.0.0}}
+[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dev","description":"A package, I guess.","environment":{"sdk":">=1.8.0 <=2.0.0"}, dependencies: { foo: ^1.0.0}}
 [STDERR]   │         ^^^^^^^^^^
 [STDERR]   ╵
 [EXIT CODE] 65
