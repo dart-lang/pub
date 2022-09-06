@@ -1173,8 +1173,6 @@ extension GCSChecksumValidation on http.StreamedResponse {
     // See https://github.com/dart-lang/http/issues/24
     // https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
 
-    // Therefore, we need to use this roundabout method for parsing the
-    // CRC32C checksum.
 
     final parts = gcsChecksums.split(',');
     for (final part in parts) {
