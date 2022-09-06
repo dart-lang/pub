@@ -1177,7 +1177,7 @@ extension GCSChecksumValidation on http.StreamedResponse {
     final parts = gcsChecksums.split(',');
     for (final part in parts) {
       if (part.startsWith('crc32c=')) {
-        final undecoded = part.substring(7);
+        final undecoded = part.substring('crc32c='.length);
         final rawBytes = base64.decode(undecoded);
         return ByteData.view(rawBytes.buffer).getUint32(0);
       }
