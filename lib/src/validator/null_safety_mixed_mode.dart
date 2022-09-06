@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:path/path.dart' as p;
 
+import '../command_runner.dart';
 import '../null_safety_analysis.dart';
 import '../package_name.dart';
 import '../source/path.dart';
@@ -44,7 +45,7 @@ change release.
 We highly recommend that you wait until all of your dependencies have been
 migrated before publishing.
 
-Run `$topLevelProgram pub outdated --mode=null-safety` for more information about the state 
+Run `$topLevelProgram pub outdated --mode=null-safety` for more information about the state
 of dependencies.
 
 See ${NullSafetyAnalysis.guideUrl}
