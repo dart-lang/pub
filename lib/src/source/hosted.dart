@@ -1166,13 +1166,11 @@ extension GCSChecksumValidation on http.StreamedResponse {
     // with the same "x-goog-hash" token as the key.
     // https://cloud.google.com/storage/docs/xml-api/reference-headers#xgooghash
 
-    // Additionally, when the Dart http package encounters multiple response
+    // Additionally, when the Dart http client encounters multiple response
     // headers with the same key, it concatenates their values with a comma
     // before inserting a single item with that key and concatenated value into
-    // its response "headers" Map. There is a TODO to refactor the
-    // response class to use a HttpHeaders object instead of a Map, but the
-    // person it was assigned to, nweiz@, has long since left the Dart team.
-    // https://github.com/dart-lang/http/issues/24
+    // its response "headers" Map. 
+    // See https://github.com/dart-lang/http/issues/24
     // https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
 
     // Therefore, we need to use this roundabout method for parsing the
