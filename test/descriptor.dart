@@ -188,9 +188,7 @@ Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
 /// If [port] is passed, it's used as the port number of the local hosted server
 /// that this cache represents. It defaults to [globalServer.port].
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
-  return dir(cachePath, [
-    dir('hosted', [dir('localhost%58${port ?? globalServer.port}', contents)])
-  ]);
+  return dir(hostedCachePath(port: port), contents);
 }
 
 /// Describes the hosted-hashes cache directory containing hashes of the hosted
@@ -206,6 +204,9 @@ Descriptor hostedHashesCache(Iterable<Descriptor> contents, {int? port}) {
     )
   ]);
 }
+
+String hostedCachePath({int? port}) =>
+    p.join(cachePath, 'hosted', 'localhost%58${port ?? globalServer.port}');
 
 /// Describes the file that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token

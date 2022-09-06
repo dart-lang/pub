@@ -2911,7 +2911,7 @@ Future expectResolves(
     if (description is HostedDescription &&
         (description.url == SystemCache().hosted.defaultUrl)) {
       // If the dep uses the default hosted source, grab it from the test
-      // package server rather than pub.dartlang.org.
+      // package server rather than pub.dev.
       dep = cache.hosted
           .refFor(dep.name, url: globalServer.url)
           .withConstraint(dep.constraint);

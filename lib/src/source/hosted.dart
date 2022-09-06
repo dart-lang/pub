@@ -36,15 +36,18 @@ const contentHashesDocumentationUrl = 'https://dart.dev/go/content-hashes';
 /// Validates and normalizes a [hostedUrl] which is pointing to a pub server.
 ///
 /// A [hostedUrl] is a URL pointing to a _hosted pub server_ as defined by the
-/// [repository-spec-v2][1]. The default value is `pub.dartlang.org`, and can be
+/// [repository-spec-v2][1]. The default value is `pub.dev`, and can be
 /// overwritten using `PUB_HOSTED_URL`. It can also specified for individual
 /// hosted-dependencies in `pubspec.yaml`, and for the root package using the
 /// `publish_to` key.
 ///
 /// The [hostedUrl] is always normalized to a [Uri] with path that ends in slash
-/// unless the path is merely `/`, in which case we normalize to the bare domain
-/// this keeps the [hostedUrl] and maintains avoids unnecessary churn in
-/// `pubspec.lock` files which contain `https://pub.dartlang.org`.
+/// unless the path is merely `/`, in which case we normalize to the bare
+/// domain.
+///
+/// We change `https://pub.dev` to `https://pub.dartlang.org`, this  maintains
+/// avoids churn for `pubspec.lock`-files which contain
+/// `https://pub.dartlang.org`.
 ///
 /// Throws [FormatException] if there is anything wrong [hostedUrl].
 ///
@@ -88,6 +91,18 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
   //
   // We rewrite here to avoid caching both, and to avoid having different
   // credentials for these two.
+  //
+  // Changing this to pub.dev raises the following concerns:
+  //
+  //  1. It would blow through users caches.
+  //  2. It would cause conflicts for users checking pubspec.lock into git, if using
+  //     different versions of the dart-sdk / pub client.
+  //  3. It might cause other problems (investigation needed) for pubspec.lock across
+  //     different versions of the dart-sdk / pub client.
+  //  4. It would expand the API surface we're committed to supporting long-term.
+  //
+  // Clearly, a bit of investigation is necessary before we update this to
+  // pub.dev, it might be attractive to do next time we change the server API.
   if (u == Uri.parse('https://pub.dev')) {
     log.fine('Using https://pub.dartlang.org instead of https://pub.dev.');
     u = Uri.parse('https://pub.dartlang.org');
@@ -96,7 +111,7 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
 }
 
 /// A package source that gets packages from a package hosting site that uses
-/// the same API as pub.dartlang.org.
+/// the same API as pub.dev.
 class HostedSource extends CachedSource {
   static HostedSource instance = HostedSource._();
 
@@ -107,11 +122,17 @@ class HostedSource extends CachedSource {
   @override
   final hasMultipleVersions = true;
 
-  static String pubDevUrl = 'https://pub.dartlang.org';
+  static String pubDevUrl = 'https://pub.dev';
+  static String pubDartlangUrl = 'https://pub.dartlang.org';
+
+  static bool isPubDevUrl(String url) {
+    final origin = Uri.parse(url).origin;
+    return origin == pubDevUrl || origin == pubDartlangUrl;
+  }
 
   static bool isFromPubDev(PackageId id) {
     final description = id.description.description;
-    return description is HostedDescription && description.url == pubDevUrl;
+    return description is HostedDescription && isPubDevUrl(description.url);
   }
 
   /// Gets the default URL for the package server for hosted dependencies.
