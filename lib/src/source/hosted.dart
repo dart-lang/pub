@@ -861,21 +861,12 @@ class HostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
+      var request = _createArchiveRequest(url);
       var response = await withAuthenticatedClient(
-          cache, Uri.parse(description.url), (client) {
-        var req = http.Request('GET', url);
-        // TODO: How can we properly check if a request is GCS bound, so only
-        // those requests get this header? (for checksum validation)
-        req.headers['Cache-Control'] = 'no-transform';
-        return client.send(req);
-      });
-
-      Stream<List<int>> responseStream = response.stream;
-
-      if (response.isFromGCS) {
-        // Taps into response stream without starting consumption.
-        responseStream = response.streamWithGCSChecksumValidationTap();
-      }
+          cache, Uri.parse(description.url), (client) => client.send(request));
+      var responseStream = _hasChecksumHeader(response.headers)
+          ? _responseStreamWithChecksumValidationTap(response)
+          : response.stream;
 
       // We download the archive to disk instead of streaming it directly into
       // the tar unpacking. This simplifies stream handling.
@@ -894,6 +885,12 @@ class HostedSource extends CachedSource {
       // downloaded.
       tryRenameDir(tempDir, destPath);
     });
+  }
+
+  http.Request _createArchiveRequest(Uri url) {
+    var request = http.Request('GET', url);
+    request.headers[io.HttpHeaders.cacheControlHeader] = 'no-transform';
+    return request;
   }
 
   /// When an error occurs trying to read something about [package] from [hostedUrl],
@@ -1114,77 +1111,76 @@ class _RefAndCache {
   bool operator ==(Object other) => other is _RefAndCache && other.ref == ref;
 }
 
-extension GCSChecksumValidation on http.StreamedResponse {
-  static const checksumsHeaderName = 'x-goog-hash';
+const checksumHeaderName = 'x-goog-hash';
 
-  bool get isFromGCS {
-    // TODO: Does this suffice as a heuristic?
-    return headers.containsKey(checksumsHeaderName);
+bool _hasChecksumHeader(Map<String, String> headers) {
+  return headers.containsKey(checksumHeaderName);
+}
+
+/// Adds a checksum validation "tap" to the response stream and returns a
+/// wrapped Stream object, which should be used to consume the incoming data.
+///
+/// As chunks are received, a CRC32C checksum is updated.
+/// Once the download is completed, the final checksum is compared with
+/// the one present in the `x-goog-hash` response header.
+///
+/// Throws [PackageIntegrityException] if anything is wrong with the checksum
+/// or if there is a checksum mismatch.
+Stream<List<int>> _responseStreamWithChecksumValidationTap(
+    http.StreamedResponse response) {
+  final hostedChecksum = _parseChecksum(response.headers);
+  if (hostedChecksum == null) {
+    throw PackageIntegrityException(
+        'Package response headers are missing CRC32C checksum',
+        response.request?.url);
   }
 
-  /// Adds a checksum validation "tap" to the response stream and returns a
-  /// wrapped Stream object, which should be used to consume the incoming data.
-  ///
-  /// As chunks are received, a CRC32C checksum is updated.
-  /// Once the download is completed, the final checksum is compared with
-  /// the one present in the `x-goog-hash` response header from GCS.
-  ///
-  /// Throws [PackageIntegrityException] if anything is wrong with the checksum
-  /// or if there is a checksum mismatch.
-  Stream<List<int>> streamWithGCSChecksumValidationTap() {
-    if (gcsCrc32c == null) {
+  final checksumComputer = Crc32c();
+
+  return response.stream
+      .transform(onDataTransformer(checksumComputer.update))
+      .transform(onDoneTransformer(() {
+    var computedCrc32c = checksumComputer.finalize();
+
+    log.fine(
+        'Computed checksum ($computedCrc32c) for package with hosted checksum of ($hostedChecksum).');
+
+    if (hostedChecksum != computedCrc32c) {
       throw PackageIntegrityException(
-          'Package served from GCS is missing CRC32C checksum', request?.url);
+          'Package fetched from host has a CRC32C checksum mismatch; Computed checksum ($computedCrc32c) != Hosted checksum ($hostedChecksum)',
+          response.request?.url);
     }
+  }));
+}
 
-    final checksumComputer = Crc32c();
+/// Parses response headers and returns the package's CRC32C checksum.
+///
+/// In most cases, GCS provides both MD5 and CRC32C checksums in its response
+/// headers. It uses the header name "x-goog-hash" for these values. It has
+/// been documented and observed that GCS will send multiple response headers
+/// with the same "x-goog-hash" token as the key.
+/// https://cloud.google.com/storage/docs/xml-api/reference-headers#xgooghash
+///
+/// Additionally, when the Dart http client encounters multiple response
+/// headers with the same key, it concatenates their values with a comma
+/// before inserting a single item with that key and concatenated value into
+/// its response "headers" Map.
+/// See https://github.com/dart-lang/http/issues/24
+/// https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
+int? _parseChecksum(Map<String, String> responseHeaders) {
+  String? checksums = responseHeaders[checksumHeaderName];
+  if (checksums == null) return null;
 
-    return stream
-        .transform(onDataTransformer(checksumComputer.update))
-        .transform(onDoneTransformer(() {
-      var computedCrc32c = checksumComputer.finalize();
-
-      log.io(
-          'Computed checksum ($computedCrc32c) for package with GCS checksum of ($gcsCrc32c).');
-
-      if (gcsCrc32c != computedCrc32c) {
-        throw PackageIntegrityException(
-            'Package served from GCS has a CRC32C checksum mismatch; Computed checksum ($computedCrc32c) != GCS checksum ($gcsCrc32c)',
-            request?.url);
-      }
-    }));
+  final parts = checksums.split(',');
+  for (final part in parts) {
+    if (part.startsWith('crc32c=')) {
+      final undecoded = part.substring('crc32c='.length);
+      final rawBytes = base64.decode(undecoded);
+      return ByteData.view(rawBytes.buffer).getUint32(0);
+    }
   }
 
-  /// Parses GCS response headers and returns the package's CRC32C checksum.
-  int? get gcsCrc32c {
-    String? gcsChecksums = headers[checksumsHeaderName];
-    if (gcsChecksums == null) return null;
-
-    // In most cases, GCS provides both MD5 and CRC32C checksums in its response
-    // headers. It uses the header name "x-goog-hash" for these values. It has
-    // been documented and observed that GCS will send multiple response headers
-    // with the same "x-goog-hash" token as the key.
-    // https://cloud.google.com/storage/docs/xml-api/reference-headers#xgooghash
-
-    // Additionally, when the Dart http client encounters multiple response
-    // headers with the same key, it concatenates their values with a comma
-    // before inserting a single item with that key and concatenated value into
-    // its response "headers" Map. 
-    // See https://github.com/dart-lang/http/issues/24
-    // https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
-
-
-    final parts = gcsChecksums.split(',');
-    for (final part in parts) {
-      if (part.startsWith('crc32c=')) {
-        final undecoded = part.substring('crc32c='.length);
-        final rawBytes = base64.decode(undecoded);
-        return ByteData.view(rawBytes.buffer).getUint32(0);
-      }
-    }
-
-    return null;
-  }
+  return null;
 }
 
 /// Package checksum related exception.
