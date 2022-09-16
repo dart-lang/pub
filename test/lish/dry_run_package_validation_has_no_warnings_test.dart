@@ -10,12 +10,9 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
-  test('preview package validation has no warnings', () async {
-    var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
-    await d.dir(appPath, [d.pubspec(pkg)]).create();
+  test('--dry-run package validation on valid package has no warnings',
+      () async {
+    await d.validPackage.create();
 
     await servePackages();
     var pub = await startPublish(globalServer, args: ['--dry-run']);

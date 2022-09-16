@@ -11,17 +11,21 @@ Future<void> expectValidation(error, int exitCode) async {
   await runPub(
     error: error,
     args: ['publish', '--dry-run'],
-    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'},
+    environment: {
+      '_PUB_TEST_SDK_VERSION': '2.12.0',
+      'FLUTTER_ROOT': fakeFlutterRoot.io.path,
+    },
     workingDirectory: d.path(appPath),
     exitCode: exitCode,
   );
 }
 
+late d.DirectoryDescriptor fakeFlutterRoot;
+
 Future<void> setup({
   String? flutterConstraint,
 }) async {
-  final fakeFlutterRoot =
-      d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);
+  fakeFlutterRoot = d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);
   await fakeFlutterRoot.create();
   await d.validPackage.create();
   await d.dir(appPath, [

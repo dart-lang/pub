@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart' as shelf;
@@ -13,17 +14,16 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package validation has a warning and continues', () async {
-    var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
-    pkg['author'] = 'Natalie Weizenbaum';
-    await d.dir(appPath, [d.pubspec(pkg)]).create();
+    await servePackages();
+    await d.validPackage.create();
+    // Publishing without a README.md gives a warning.
+    File(d.path(appPath, 'README.md')).deleteSync();
 
     await servePackages();
     await d.credentialsFile(globalServer, 'access token').create();
     var pub = await startPublish(globalServer);
+    expect(pub.stdout, emitsThrough(startsWith('Package has 1 warning.')));
     pub.stdin.writeln('y');
     handleUploadForm(globalServer);
     handleUpload(globalServer);

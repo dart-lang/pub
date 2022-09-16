@@ -36,7 +36,7 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(dependencyOverride, errors: isNotEmpty);
+      await expectValidation(dependencyOverride, warnings: isNotEmpty);
     });
 
     test('it has any non-dev dependency overrides', () async {
@@ -51,7 +51,7 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(dependencyOverride, errors: isNotEmpty);
+      await expectValidation(dependencyOverride, warnings: isNotEmpty);
     });
   });
 }
