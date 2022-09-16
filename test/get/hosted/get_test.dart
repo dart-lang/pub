@@ -100,6 +100,60 @@ void main() {
             'Package fetched from host has a CRC32C checksum mismatch'));
   });
 
+  group('recognizes bad checksum header', () {
+    late PackageServer server;
+
+    setUp(() async {
+      server = await servePackages()
+        ..serve('foo', '1.2.3', headers: {
+          'x-goog-hash': ['']
+        })
+        ..serve('bar', '1.2.3', headers: {
+          'x-goog-hash': ['crc32c=,md5=']
+        })
+        ..serve('baz', '1.2.3', headers: {
+          'x-goog-hash': ['crc32c=loremipsum,md5=loremipsum']
+        });
+    });
+
+    test('when it is empty', () async {
+      await d.appDir({
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+        }
+      }).create();
+
+      await pubGet(
+          error: contains(
+              'Package response headers have an invalid or missing CRC32C checksum'));
+    });
+
+    test('when it is invalid', () async {
+      await d.appDir({
+        'bar': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+        }
+      }).create();
+
+      await pubGet(
+          error: contains(
+              'Package response headers have an invalid or missing CRC32C checksum'));
+
+      await d.appDir({
+        'baz': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+        }
+      }).create();
+
+      await pubGet(
+          error: contains(
+              'Package response headers have an invalid or missing CRC32C checksum'));
+    });
+  });
+
   group('categorizes dependency types in the lockfile', () {
     setUp(() async {
       await servePackages()

@@ -651,14 +651,29 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
   };
 }
 
-/// Converts `bytes` into an unsigned 32 bit integer.
+/// Converts [bytes] into an unsigned 32 bit integer.
+///
+/// Throws `RangeError` if [byteOffset] is negative, or `byteOffset + 4` is
+/// greater than the length of [bytes].
 int bytesToUint32(Uint8List bytes,
     [int byteOffset = 0, Endian endian = Endian.big]) {
-  return ByteData.view(bytes.buffer).getUint32(byteOffset, endian);
+  try {
+    return ByteData.view(bytes.buffer).getUint32(byteOffset, endian);
+  } catch (e) {
+    rethrow;
+  }
 }
 
-/// Converts `value` as an unsigned 32 bit integer to bytes.
+/// Converts [value] as an unsigned 32 bit integer to bytes.
+///
+/// Throws `RangeError` if [byteOffset] is negative, or `byteOffset + 4` is
+/// greater than the length of [value].
 Uint8List uint32ToBytes(int value,
     [int byteOffset = 0, Endian endian = Endian.big]) {
-  return Uint8List(4)..buffer.asByteData().setInt32(byteOffset, value, endian);
+  try {
+    return Uint8List(4)
+      ..buffer.asByteData().setUint32(byteOffset, value, endian);
+  } catch (e) {
+    rethrow;
+  }
 }

@@ -1130,8 +1130,8 @@ Stream<List<int>> _responseStreamWithChecksumValidationTap(
   final hostedCrc32c = _parseCrc32c(response.headers);
   if (hostedCrc32c == null) {
     throw PackageIntegrityException(
-        'Package response headers are missing CRC32C checksum',
-        response.request?.url);
+        'Package response headers have an invalid or missing CRC32C checksum',
+        url: response.request?.url);
   }
 
   return Crc32c.computeByTappingStream(response.stream, handleDone: (crc32c) {
@@ -1141,7 +1141,7 @@ Stream<List<int>> _responseStreamWithChecksumValidationTap(
     if (hostedCrc32c != crc32c) {
       throw PackageIntegrityException(
           'Package fetched from host has a CRC32C checksum mismatch; Computed checksum ($crc32c) != Hosted checksum ($hostedCrc32c)',
-          response.request?.url);
+          url: response.request?.url);
     }
   });
 }
@@ -1168,8 +1168,13 @@ int? _parseCrc32c(Map<String, String> responseHeaders) {
   for (final part in parts) {
     if (part.startsWith('crc32c=')) {
       final undecoded = part.substring('crc32c='.length);
-      final bytes = base64.decode(undecoded);
-      return bytesToUint32(bytes);
+
+      try {
+        final bytes = base64.decode(undecoded);
+        return bytesToUint32(bytes);
+      } catch (e) {
+        return null;
+      }
     }
   }
 
@@ -1178,7 +1183,7 @@ int? _parseCrc32c(Map<String, String> responseHeaders) {
 
 /// Package checksum related exception.
 class PackageIntegrityException implements Exception {
-  const PackageIntegrityException(this.message, this.url);
+  const PackageIntegrityException(this.message, {this.url});
 
   final String message;
   final Uri? url;
