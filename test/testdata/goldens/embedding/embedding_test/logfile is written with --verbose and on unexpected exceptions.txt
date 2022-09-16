@@ -50,13 +50,15 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
 [E]    | took: $TIME
 [E]    | x-powered-by: Dart with package:shelf
-[E]    | transfer-encoding: chunked
 [E]    | date: $TIME
+[E]    | transfer-encoding: chunked
+[E]    | x-goog-hash: $CHECKSUM_HEADER
 [E]    | x-frame-options: SAMEORIGIN
 [E]    | content-type: text/plain; charset=utf-8
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
 [E] IO  : Creating $FILE from stream
+[E] FINE: Computed CRC32C ($CRC32C) for package with hosted CRC32C of ($CRC32C)
 [E] FINE: Created $FILE from stream
 [E] IO  : Created temp directory $DIR
 [E] IO  : Reading binary file $FILE.
@@ -189,13 +191,15 @@ IO  : HTTP GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
 IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
    | took: $TIME
    | x-powered-by: Dart with package:shelf
-   | transfer-encoding: chunked
    | date: $TIME
+   | transfer-encoding: chunked
+   | x-goog-hash: $CHECKSUM_HEADER
    | x-frame-options: SAMEORIGIN
    | content-type: text/plain; charset=utf-8
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
 IO  : Creating $FILE from stream
+FINE: Computed CRC32C ($CRC32C) for package with hosted CRC32C of ($CRC32C)
 FINE: Created $FILE from stream
 IO  : Created temp directory $DIR
 IO  : Reading binary file $FILE.

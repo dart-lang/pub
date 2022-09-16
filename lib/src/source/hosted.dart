@@ -1136,7 +1136,7 @@ Stream<List<int>> _responseStreamWithChecksumValidationTap(
 
   return Crc32c.computeByTappingStream(response.stream, handleDone: (crc32c) {
     log.fine(
-        'Computed CRC32C ($crc32c) for package with hosted CRC32C of ($hostedCrc32c).');
+        'Computed CRC32C ($crc32c) for package with hosted CRC32C of ($hostedCrc32c)');
 
     if (hostedCrc32c != crc32c) {
       throw PackageIntegrityException(
