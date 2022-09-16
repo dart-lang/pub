@@ -7,7 +7,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/crc32c.dart';
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/third_party/tar/tar.dart';
+import 'package:pub/src/utils.dart' hide fail;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -26,6 +29,9 @@ class PackageServer {
 
   // A list of all the requests recieved up till now.
   final List<String> requestedPaths = <String>[];
+
+  // Setting this to false will disable automatic calculation of checksums.
+  bool serveChecksums = true;
 
   PackageServer._(this._inner) {
     _inner.mount((request) {
@@ -82,7 +88,7 @@ class PackageServer {
 
     server.handle(
       _downloadPattern,
-      (shelf.Request request) {
+      (shelf.Request request) async {
         final parts = request.url.pathSegments;
         assert(parts[0] == 'packages');
         final name = parts[1];
@@ -98,7 +104,18 @@ class PackageServer {
 
         for (final packageVersion in package.versions.values) {
           if (packageVersion.version == version) {
-            return shelf.Response.ok(packageVersion.contents());
+            final headers = packageVersion.headers ?? {};
+
+            // This gate enables tests to validate the CRC32C parser by
+            // passing in arbitrary values for the checksum header.
+            if (server.serveChecksums &&
+                !headers.containsKey(checksumHeaderName)) {
+              headers[checksumHeaderName] = composeChecksumHeader(
+                  crc32c: await packageVersion.computeArchiveCrc32c());
+            }
+
+            return shelf.Response.ok(packageVersion.contents(),
+                headers: headers);
           }
         }
         return shelf.Response.notFound('No version $version of $name');
@@ -178,7 +195,8 @@ class PackageServer {
   void serve(String name, String version,
       {Map<String, dynamic>? deps,
       Map<String, dynamic>? pubspec,
-      List<d.Descriptor>? contents}) {
+      List<d.Descriptor>? contents,
+      Map<String, List<String>>? headers}) {
     var pubspecFields = <String, dynamic>{'name': name, 'version': version};
     if (pubspec != null) pubspecFields.addAll(pubspec);
     if (deps != null) pubspecFields['dependencies'] = deps;
@@ -189,6 +207,7 @@ class PackageServer {
     var package = _packages.putIfAbsent(name, _ServedPackage.new);
     package.versions[version] = _ServedPackageVersion(
       pubspecFields,
+      headers: headers,
       contents: () {
         final entries = <TarEntry>[];
 
@@ -243,6 +262,29 @@ class PackageServer {
   void retractPackageVersion(String name, String version) {
     _packages[name]!.versions[version]!.isRetracted = true;
   }
+
+  Future<String?> peekArchiveChecksumHeader(String name, String version) async {
+    final v = _packages[name]!.versions[version]!;
+
+    // If the test configured an overriding header value.
+    var checksumHeader = v.headers?[checksumHeaderName];
+
+    // Otherwise, compute from package contents.
+    if (serveChecksums) {
+      checksumHeader ??=
+          composeChecksumHeader(crc32c: await v.computeArchiveCrc32c());
+    }
+
+    return checksumHeader?.join(',');
+  }
+
+  static List<String> composeChecksumHeader(
+      {int? crc32c, String? md5 = '5f4dcc3b5aa765d61d8327deb882cf99'}) {
+    return [
+      if (crc32c != null) 'crc32c=${base64.encode(uint32ToBytes(crc32c))}',
+      if (md5 != null) 'md5=${base64.encode(utf8.encode(md5))}'
+    ];
+  }
 }
 
 class _ServedPackage {
@@ -255,11 +297,16 @@ class _ServedPackage {
 class _ServedPackageVersion {
   final Map pubspec;
   final Stream<List<int>> Function() contents;
+  final Map<String, List<String>>? headers;
   bool isRetracted = false;
 
   Version get version => Version.parse(pubspec['version']);
 
-  _ServedPackageVersion(this.pubspec, {required this.contents});
+  _ServedPackageVersion(this.pubspec, {required this.contents, this.headers});
+
+  Future<int> computeArchiveCrc32c() async {
+    return await Crc32c.computeByConsumingStream(contents());
+  }
 }
 
 class _PatternAndHandler {

@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
     show maxBy, IterableNullableExtension;
@@ -1122,35 +1121,29 @@ bool _hasChecksumHeader(Map<String, String> headers) {
 ///
 /// As chunks are received, a CRC32C checksum is updated.
 /// Once the download is completed, the final checksum is compared with
-/// the one present in the `x-goog-hash` response header.
+/// the one present in the checksum response header.
 ///
 /// Throws [PackageIntegrityException] if anything is wrong with the checksum
 /// or if there is a checksum mismatch.
 Stream<List<int>> _responseStreamWithChecksumValidationTap(
     http.StreamedResponse response) {
-  final hostedChecksum = _parseChecksum(response.headers);
-  if (hostedChecksum == null) {
+  final hostedCrc32c = _parseCrc32c(response.headers);
+  if (hostedCrc32c == null) {
     throw PackageIntegrityException(
         'Package response headers are missing CRC32C checksum',
         response.request?.url);
   }
 
-  final checksumComputer = Crc32c();
-
-  return response.stream
-      .transform(onDataTransformer(checksumComputer.update))
-      .transform(onDoneTransformer(() {
-    var computedCrc32c = checksumComputer.finalize();
-
+  return Crc32c.computeByTappingStream(response.stream, handleDone: (crc32c) {
     log.fine(
-        'Computed checksum ($computedCrc32c) for package with hosted checksum of ($hostedChecksum).');
+        'Computed CRC32C ($crc32c) for package with hosted CRC32C of ($hostedCrc32c).');
 
-    if (hostedChecksum != computedCrc32c) {
+    if (hostedCrc32c != crc32c) {
       throw PackageIntegrityException(
-          'Package fetched from host has a CRC32C checksum mismatch; Computed checksum ($computedCrc32c) != Hosted checksum ($hostedChecksum)',
+          'Package fetched from host has a CRC32C checksum mismatch; Computed checksum ($crc32c) != Hosted checksum ($hostedCrc32c)',
           response.request?.url);
     }
-  }));
+  });
 }
 
 /// Parses response headers and returns the package's CRC32C checksum.
@@ -1167,7 +1160,7 @@ Stream<List<int>> _responseStreamWithChecksumValidationTap(
 /// its response "headers" Map.
 /// See https://github.com/dart-lang/http/issues/24
 /// https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
-int? _parseChecksum(Map<String, String> responseHeaders) {
+int? _parseCrc32c(Map<String, String> responseHeaders) {
   String? checksums = responseHeaders[checksumHeaderName];
   if (checksums == null) return null;
 
@@ -1175,8 +1168,8 @@ int? _parseChecksum(Map<String, String> responseHeaders) {
   for (final part in parts) {
     if (part.startsWith('crc32c=')) {
       final undecoded = part.substring('crc32c='.length);
-      final rawBytes = base64.decode(undecoded);
-      return ByteData.view(rawBytes.buffer).getUint32(0);
+      final bytes = base64.decode(undecoded);
+      return bytesToUint32(bytes);
     }
   }
 

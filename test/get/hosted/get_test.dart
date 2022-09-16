@@ -64,6 +64,42 @@ void main() {
     ]).validate();
   });
 
+  test('response with CRC32C checksum is validated', () async {
+    var server = await startPackageServer();
+
+    server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
+
+    await d.appDir({
+      'foo': {
+        'version': '1.2.3',
+        'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+      }
+    }).create();
+
+    await pubGet();
+  });
+
+  test('response with CRC32C checksum mismatch is caught', () async {
+    var server = await startPackageServer();
+
+    server.serve('foo', '1.2.3', headers: {
+      'x-goog-hash': PackageServer.composeChecksumHeader(crc32c: 3381945770)
+    });
+
+    await d.appDir({
+      'foo': {
+        'version': '1.2.3',
+        'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+      }
+    }).create();
+
+    await pubGet(
+        error: contains(
+            'Package fetched from host has a CRC32C checksum mismatch'));
+  });
+
   group('categorizes dependency types in the lockfile', () {
     setUp(() async {
       await servePackages()

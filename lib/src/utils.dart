@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
@@ -648,4 +649,16 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
     for (var entry in map.entries)
       key(entry.key, entry.value): value(entry.key, entry.value),
   };
+}
+
+/// Converts `bytes` into an unsigned 32 bit integer.
+int bytesToUint32(Uint8List bytes,
+    [int byteOffset = 0, Endian endian = Endian.big]) {
+  return ByteData.view(bytes.buffer).getUint32(byteOffset, endian);
+}
+
+/// Converts `value` as an unsigned 32 bit integer to bytes.
+Uint8List uint32ToBytes(int value,
+    [int byteOffset = 0, Endian endian = Endian.big]) {
+  return Uint8List(4)..buffer.asByteData().setInt32(byteOffset, value, endian);
 }
