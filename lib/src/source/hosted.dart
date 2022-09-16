@@ -858,13 +858,13 @@ class HostedSource extends CachedSource {
 
     // Download and extract the archive to a temp directory.
     await withTempDir((tempDirForArchive) async {
-      var archivePath =
-          p.join(tempDirForArchive, '$packageName-$version.tar.gz');
+      var fileName = '$packageName-$version.tar.gz';
+      var archivePath = p.join(tempDirForArchive, fileName);
       var request = _createArchiveRequest(url);
       var response = await withAuthenticatedClient(
           cache, Uri.parse(description.url), (client) => client.send(request));
       var responseStream = _hasChecksumHeader(response.headers)
-          ? _responseStreamWithChecksumValidationTap(response)
+          ? _responseStreamWithChecksumValidationTap(response, fileName)
           : response.stream;
 
       // We download the archive to disk instead of streaming it directly into
@@ -1126,7 +1126,7 @@ bool _hasChecksumHeader(Map<String, String> headers) {
 /// Throws [PackageIntegrityException] if anything is wrong with the checksum
 /// or if there is a checksum mismatch.
 Stream<List<int>> _responseStreamWithChecksumValidationTap(
-    http.StreamedResponse response) {
+    http.StreamedResponse response, String fileName) {
   final hostedCrc32c = _parseCrc32c(response.headers);
   if (hostedCrc32c == null) {
     throw PackageIntegrityException(
@@ -1136,7 +1136,7 @@ Stream<List<int>> _responseStreamWithChecksumValidationTap(
 
   return Crc32c.computeByTappingStream(response.stream, handleDone: (crc32c) {
     log.fine(
-        'Computed CRC32C ($crc32c) for package with hosted CRC32C of ($hostedCrc32c)');
+        'Computed CRC32C ($crc32c) for $fileName with hosted CRC32C of ($hostedCrc32c)');
 
     if (hostedCrc32c != crc32c) {
       throw PackageIntegrityException(
