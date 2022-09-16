@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -15,7 +16,7 @@ void main() {
     await servePackages();
     await d.validPackage.create();
     // It is an error to publish without a LICENSE file.
-    File(d.path(appPath, 'LICENSE')).deleteSync();
+    File(d.path(p.join(appPath, 'LICENSE'))).deleteSync();
 
     await servePackages();
     var pub = await startPublish(globalServer, args: ['--force']);

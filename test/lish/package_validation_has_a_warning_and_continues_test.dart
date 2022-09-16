@@ -5,6 +5,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
@@ -18,7 +19,7 @@ void main() {
     await servePackages();
     await d.validPackage.create();
     // Publishing without a README.md gives a warning.
-    File(d.path(appPath, 'README.md')).deleteSync();
+    File(d.path(p.join(appPath, 'README.md'))).deleteSync();
 
     await servePackages();
     await d.credentialsFile(globalServer, 'access token').create();
