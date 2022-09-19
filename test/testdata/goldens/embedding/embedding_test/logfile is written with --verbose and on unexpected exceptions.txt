@@ -58,7 +58,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
 [E] IO  : Creating $FILE from stream
-[E] FINE: Computed CRC32C ($CRC32C) for $FILENAME with hosted CRC32C of ($CRC32C)
+[E] FINE: Computed checksum $CRC32C for $FILENAME with expected CRC32C of $CRC32C
 [E] FINE: Created $FILE from stream
 [E] IO  : Created temp directory $DIR
 [E] IO  : Reading binary file $FILE.
@@ -199,7 +199,7 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
 IO  : Creating $FILE from stream
-FINE: Computed CRC32C ($CRC32C) for $FILENAME with hosted CRC32C of ($CRC32C)
+FINE: Computed checksum $CRC32C for $FILENAME with expected CRC32C of $CRC32C
 FINE: Created $FILE from stream
 IO  : Created temp directory $DIR
 IO  : Reading binary file $FILE.

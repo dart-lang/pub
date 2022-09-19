@@ -863,8 +863,10 @@ class HostedSource extends CachedSource {
       var request = _createArchiveRequest(url);
       var response = await withAuthenticatedClient(
           cache, Uri.parse(description.url), (client) => client.send(request));
-      var responseStream = _hasChecksumHeader(response.headers)
-          ? _responseStreamWithChecksumValidationTap(response, fileName)
+
+      final expectedChecksum = _parseCrc32c(response.headers, fileName);
+      final responseStream = expectedChecksum != null
+          ? _validateStream(response.stream, expectedChecksum, fileName)
           : response.stream;
 
       // We download the archive to disk instead of streaming it directly into
@@ -1119,41 +1121,29 @@ class _RefAndCache {
 
 const checksumHeaderName = 'x-goog-hash';
 
-bool _hasChecksumHeader(Map<String, String> headers) {
-  return headers.containsKey(checksumHeaderName);
-}
-
 /// Adds a checksum validation "tap" to the response stream and returns a
-/// wrapped Stream object, which should be used to consume the incoming data.
+/// wrapped `Stream` object, which should be used to consume the incoming data.
 ///
 /// As chunks are received, a CRC32C checksum is updated.
 /// Once the download is completed, the final checksum is compared with
 /// the one present in the checksum response header.
 ///
-/// Throws [PackageIntegrityException] if anything is wrong with the checksum
-/// or if there is a checksum mismatch.
-Stream<List<int>> _responseStreamWithChecksumValidationTap(
-    http.StreamedResponse response, String fileName) {
-  final hostedCrc32c = _parseCrc32c(response.headers);
-  if (hostedCrc32c == null) {
-    throw PackageIntegrityException(
-        'Package response headers have an invalid or missing CRC32C checksum',
-        url: response.request?.url);
-  }
-
-  return Crc32c.computeByTappingStream(response.stream, handleDone: (crc32c) {
+/// Throws [PackageIntegrityException] if there is a checksum mismatch.
+Stream<List<int>> _validateStream(
+    Stream<List<int>> stream, int expectedChecksum, String fileName) {
+  return Crc32c.computeByTappingStream(stream, handleDone: (actualChecksum) {
     log.fine(
-        'Computed CRC32C ($crc32c) for $fileName with hosted CRC32C of ($hostedCrc32c)');
+        'Computed checksum $actualChecksum for "$fileName" with expected CRC32C of $expectedChecksum');
 
-    if (hostedCrc32c != crc32c) {
+    if (actualChecksum != expectedChecksum) {
       throw PackageIntegrityException(
-          'Package fetched from host has a CRC32C checksum mismatch; Computed checksum ($crc32c) != Hosted checksum ($hostedCrc32c)',
-          url: response.request?.url);
+        'Package archive "$fileName" has a CRC32C checksum mismatch',
+      );
     }
   });
 }
 
-/// Parses response headers and returns the package's CRC32C checksum.
+/// Parses response [headers] and returns the archive's CRC32C checksum.
 ///
 /// In most cases, GCS provides both MD5 and CRC32C checksums in its response
 /// headers. It uses the header name "x-goog-hash" for these values. It has
@@ -1167,11 +1157,13 @@ Stream<List<int>> _responseStreamWithChecksumValidationTap(
 /// its response "headers" Map.
 /// See https://github.com/dart-lang/http/issues/24
 /// https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
-int? _parseCrc32c(Map<String, String> responseHeaders) {
-  String? checksums = responseHeaders[checksumHeaderName];
-  if (checksums == null) return null;
+///
+/// Throws [PackageIntegrityException] if the CRC32C checksum cannot be parsed.
+int? _parseCrc32c(Map<String, String> headers, String fileName) {
+  final checksumHeader = headers[checksumHeaderName];
+  if (checksumHeader == null) return null;
 
-  final parts = checksums.split(',');
+  final parts = checksumHeader.split(',');
   for (final part in parts) {
     if (part.startsWith('crc32c=')) {
       final undecoded = part.substring('crc32c='.length);
@@ -1179,28 +1171,30 @@ int? _parseCrc32c(Map<String, String> responseHeaders) {
       try {
         final bytes = base64.decode(undecoded);
         return bytesToUint32(bytes);
-      } catch (e) {
-        return null;
+
+        // Suppress lint because 1) we are dealing with arbitrary runtime values
+        // 2) we do not want to duplicate the validation logic that is already
+        // throwing the `RangeError`.
+        // ignore: avoid_catching_errors
+      } on RangeError {
+        continue;
+      } on FormatException {
+        continue;
       }
     }
   }
 
-  return null;
+  throw PackageIntegrityException(
+    'Package archive "$fileName" has a malformed CRC32C checksum in its response headers',
+  );
 }
 
 /// Package checksum related exception.
 class PackageIntegrityException implements Exception {
-  const PackageIntegrityException(this.message, {this.url});
-
   final String message;
-  final Uri? url;
+
+  PackageIntegrityException(this.message);
 
   @override
-  String toString() {
-    var temp = message;
-    if (url != null) {
-      temp += ': $url';
-    }
-    return temp;
-  }
+  String toString() => message;
 }

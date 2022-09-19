@@ -12,9 +12,28 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('gets a package from a pub server', () async {
+  test('gets a package from a pub server serving CRC32C checksums', () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
+
+    await d.appDir({'foo': '1.2.3'}).create();
+
+    await pubGet();
+
+    await d.cacheDir({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
+  });
+
+  test('gets a package from a pub server not serving checksums', () async {
+    final server = await servePackages();
+    server.serveChecksums = false;
+    server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
 
     await d.appDir({'foo': '1.2.3'}).create();
 
@@ -64,24 +83,9 @@ void main() {
     ]).validate();
   });
 
-  test('response with CRC32C checksum is validated', () async {
-    var server = await startPackageServer();
-
-    server.serve('foo', '1.2.3');
-
-    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
-
-    await d.appDir({
-      'foo': {
-        'version': '1.2.3',
-        'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-      }
-    }).create();
-
-    await pubGet();
-  });
-
-  test('response with CRC32C checksum mismatch is caught', () async {
+  test(
+      'recognizes a package\'s actual checksum did not match the expected checksum',
+      () async {
     var server = await startPackageServer();
 
     server.serve('foo', '1.2.3', headers: {
@@ -97,7 +101,7 @@ void main() {
 
     await pubGet(
         error: contains(
-            'Package fetched from host has a CRC32C checksum mismatch'));
+            'Package archive "foo-1.2.3.tar.gz" has a CRC32C checksum mismatch'));
   });
 
   group('recognizes bad checksum header', () {
@@ -126,31 +130,31 @@ void main() {
 
       await pubGet(
           error: contains(
-              'Package response headers have an invalid or missing CRC32C checksum'));
+              'Package archive "foo-1.2.3.tar.gz" has a malformed CRC32C checksum in its response headers'));
     });
 
-    test('when it is invalid', () async {
+    test('when it is malformed', () async {
       await d.appDir({
         'bar': {
           'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+          'hosted': {'name': 'bar', 'url': 'http://localhost:${server.port}'}
         }
       }).create();
 
       await pubGet(
           error: contains(
-              'Package response headers have an invalid or missing CRC32C checksum'));
+              'Package archive "bar-1.2.3.tar.gz" has a malformed CRC32C checksum in its response headers'));
 
       await d.appDir({
         'baz': {
           'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+          'hosted': {'name': 'baz', 'url': 'http://localhost:${server.port}'}
         }
       }).create();
 
       await pubGet(
           error: contains(
-              'Package response headers have an invalid or missing CRC32C checksum'));
+              'Package archive "baz-1.2.3.tar.gz" has a malformed CRC32C checksum in its response headers'));
     });
   });
 
