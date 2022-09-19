@@ -11,6 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
+import 'validator/analyze.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -130,6 +131,7 @@ abstract class Validator {
       required List<String> warnings,
       required List<String> errors}) async {
     var validators = [
+      AnalyzeValidator(),
       GitignoreValidator(),
       PubspecValidator(),
       LicenseValidator(),
