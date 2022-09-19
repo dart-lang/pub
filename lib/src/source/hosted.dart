@@ -886,9 +886,16 @@ class HostedSource extends CachedSource {
     });
   }
 
+  /// Creates a GET `Request` for [url] that will ask the host to prevent
+  /// decompressive transcoding.
+  ///
+  /// GCS docmentation indicates that you should do this when you want to
+  /// validate the object's checksum.
+  ///
+  /// See https://cloud.google.com/storage/docs/transcoding#decompressive_transcoding
   http.Request _createArchiveRequest(Uri url) {
     var request = http.Request('GET', url);
-    request.headers[io.HttpHeaders.cacheControlHeader] = 'no-transform';
+    request.headers[io.HttpHeaders.acceptEncodingHeader] = 'gzip';
     return request;
   }
 
