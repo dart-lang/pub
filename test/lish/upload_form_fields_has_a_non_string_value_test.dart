@@ -11,10 +11,9 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('upload form fields has a non-string value', () async {
     await servePackages();
+    await d.validPackage.create();
     await d.credentialsFile(globalServer, 'access token').create();
     var pub = await startPublish(globalServer);
 

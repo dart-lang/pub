@@ -20,7 +20,7 @@ Future<void> expectValidation(
   await runPub(
     error: error,
     args: ['publish', '--dry-run'],
-    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0', ...environment},
+    environment: environment,
     workingDirectory: workingDirectory ?? d.path(appPath),
     exitCode: exitCode,
   );
@@ -34,8 +34,6 @@ void main() {
       ...d.validPackage.contents,
       d.file('foo.txt'),
     ]).create();
-
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
 
     await expectValidation(contains('Package has 0 warnings.'), 0);
 
@@ -60,7 +58,7 @@ void main() {
       d.file('foo.txt'),
     ]).create();
 
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
+    await pubGet();
     await setUpFakeGitScript(bash: 'echo "Not git"', batch: 'echo "Not git"');
     await expectValidation(
         allOf([contains('Package has 0 warnings.')]), exit_codes.SUCCESS,
@@ -78,9 +76,7 @@ void main() {
       ),
     ]).create();
     final packageRoot = p.join(d.sandbox, 'reporoot', 'myapp');
-    await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
-        workingDirectory: packageRoot);
+    await pubGet(workingDirectory: packageRoot);
 
     await expectValidation(contains('Package has 0 warnings.'), 0,
         workingDirectory: packageRoot);
@@ -105,9 +101,7 @@ void main() {
       ...d.validPackage.contents,
     ]).create();
     final packageRoot = p.join(d.sandbox, 'myapp');
-    await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
-        workingDirectory: packageRoot);
+    await pubGet(workingDirectory: packageRoot);
 
     Link(p.join(packageRoot, '.abc', 'itself')).createSync(
       packageRoot,

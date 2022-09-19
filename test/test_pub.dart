@@ -74,7 +74,7 @@ Map<String, dynamic> packageSpec(String packageName) => json
         orElse: () => null) as Map<String, dynamic>;
 
 /// The suffix appended to a built snapshot.
-final versionSuffix = testVersion;
+const versionSuffix = testVersion;
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
@@ -391,7 +391,7 @@ Future<void> confirmPublish(TestProcess pub) async {
   // TODO(rnystrom): This is overly specific and inflexible regarding different
   // test packages. Should validate this a little more loosely.
   await expectLater(
-      pub.stdout, emits(startsWith('Publishing test_pkg 1.0.0 to ')));
+      pub.stdout, emitsThrough(startsWith('Publishing test_pkg 1.0.0 to ')));
   await expectLater(
       pub.stdout,
       emitsThrough(matches(
@@ -407,7 +407,7 @@ String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
-String testVersion = '0.1.2+3';
+const String testVersion = '0.1.2+3';
 
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {

@@ -10,7 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('preview shows an error if the package is private', () async {
+  test('dry-run shows an error if the package is private', () async {
     var pkg = packageMap('test_pkg', '1.0.0');
     pkg['publish_to'] = 'none';
     await d.dir(appPath, [d.pubspec(pkg)]).create();

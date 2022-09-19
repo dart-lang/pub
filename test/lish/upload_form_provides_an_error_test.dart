@@ -11,10 +11,9 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('upload form provides an error', () async {
     await servePackages();
+    await d.validPackage.create();
     await d.credentialsFile(globalServer, 'access token').create();
     var pub = await startPublish(globalServer);
 

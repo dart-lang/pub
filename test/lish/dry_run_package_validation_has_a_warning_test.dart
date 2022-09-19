@@ -10,28 +10,21 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
+  test('dry-run package validation gives a warning', () async {
+    (await servePackages()).serve('foo', '1.0.0');
+    await d.validPackage.create();
 
-  test('preview package validation has a warning', () async {
     var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
+        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=0.1.2 <0.2.0'});
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    await servePackages();
     var pub = await startPublish(globalServer, args: ['--dry-run']);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(
       pub.stderr,
-      emitsThrough('Package validation found the following potential issue:'),
+      emitsThrough('Package has 1 warning.'),
     );
-    expect(
-        pub.stderr,
-        emitsLines(
-            '* Your dependency on "foo" should have a version constraint.\n'
-            '  Without a constraint, you\'re promising to support all future versions of "foo".\n'
-            '\n'
-            'Package has 1 warning.'));
   });
 }

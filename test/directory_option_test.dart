@@ -34,13 +34,13 @@ Future<void> main() async {
     await dir(appPath, [
       dir('bin', [
         file('app.dart', '''
-main() => print('Hi');    
+main() => print('Hi');
 ''')
       ]),
       dir('example', [
         pubspec({
           'name': 'example',
-          'environment': {'sdk': '>=1.2.0 <2.0.0'},
+          'environment': {'sdk': '>=0.1.2 <0.2.0'},
           'dependencies': {
             'test_pkg': {'path': '../'}
           }
@@ -49,7 +49,7 @@ main() => print('Hi');
       dir('example2', [
         pubspec({
           'name': 'example',
-          'environment': {'sdk': '>=1.2.0 <2.0.0'},
+          'environment': {'sdk': '>=0.1.2 <0.2.0'},
           'dependencies': {
             'myapp': {'path': '../'} // Wrong name of dependency
           }
@@ -82,7 +82,6 @@ main() => print('Hi');
       await ctx.run(
         cases[i],
         workingDirectory: sandbox,
-        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
       );
     }
   });
