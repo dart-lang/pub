@@ -23,13 +23,13 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | user-agent: Dart pub 0.1.2+3
 [E] IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
 [E]    | took: $TIME
+[E]    | x-powered-by: Dart with package:shelf
 [E]    | date: $TIME
 [E]    | content-length: 197
 [E]    | x-frame-options: SAMEORIGIN
 [E]    | content-type: text/plain; charset=utf-8
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
-[E]    | server: dart:io with Shelf
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 [E] FINE: Contents:
 [E]    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz"}],"_fetchedAt": "$TIME"}
@@ -48,13 +48,13 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | user-agent: Dart pub 0.1.2+3
 [E] IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
 [E]    | took: $TIME
+[E]    | x-powered-by: Dart with package:shelf
 [E]    | transfer-encoding: chunked
 [E]    | date: $TIME
 [E]    | x-frame-options: SAMEORIGIN
 [E]    | content-type: text/plain; charset=utf-8
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
-[E]    | server: dart:io with Shelf
 [E] IO  : Creating $FILE from stream
 [E] FINE: Created $FILE from stream
 [E] IO  : Created temp directory $DIR
@@ -159,13 +159,13 @@ IO  : HTTP GET http://localhost:$PORT/api/packages/foo
    | user-agent: Dart pub 0.1.2+3
 IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
    | took: $TIME
+   | x-powered-by: Dart with package:shelf
    | date: $TIME
    | content-length: 197
    | x-frame-options: SAMEORIGIN
    | content-type: text/plain; charset=utf-8
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
-   | server: dart:io with Shelf
 IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 FINE: Contents:
    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz"}],"_fetchedAt": "$TIME"}
@@ -186,13 +186,13 @@ IO  : HTTP GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
    | user-agent: Dart pub 0.1.2+3
 IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
    | took: $TIME
+   | x-powered-by: Dart with package:shelf
    | transfer-encoding: chunked
    | date: $TIME
    | x-frame-options: SAMEORIGIN
    | content-type: text/plain; charset=utf-8
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
-   | server: dart:io with Shelf
 IO  : Creating $FILE from stream
 FINE: Created $FILE from stream
 IO  : Created temp directory $DIR
