@@ -169,7 +169,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = _directDependenciesToUpgrade();
 
-    final resolvablePubspec = stripVersionUpperBounds(
+    final resolvablePubspec = stripVersionBounds(
       entrypoint.root.pubspec,
       stripOnly: toUpgrade,
     );

@@ -18,6 +18,7 @@ import 'command_runner.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
+import 'flutter_releases.dart';
 import 'io.dart';
 import 'language_version.dart';
 import 'lock_file.dart';
@@ -29,8 +30,11 @@ import 'package_graph.dart';
 import 'package_name.dart';
 import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
+import 'pubspec_utils.dart';
 import 'sdk.dart';
 import 'solver.dart';
+import 'solver/incompatibility.dart';
+import 'solver/incompatibility_cause.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -332,6 +336,17 @@ class Entrypoint {
         throw ApplicationException(
             'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
       } else {
+        if (e is SolveFailure) {
+          throw ApplicationException(
+            e.message +
+                await _suggestResolutionAlternatives(
+                  type,
+                  e.incompatibility,
+                  unlock ?? [],
+                ),
+          );
+        }
+
         rethrow;
       }
     }
@@ -915,6 +930,113 @@ See https://dart.dev/go/sdk-constraint
   Never badPackageConfig() {
     dataError('The "$packageConfigPath" file is not recognized by '
         '"pub" version, please run "$topLevelProgram pub get".');
+  }
+
+  /// Looks through the root-[incompability] of a solve-failure and tries to see
+  /// if any single change can make a resolution go through. Returns a formatted
+  /// list of suggestions, or the empty String if no suggestions were found.
+  Future<String> _suggestResolutionAlternatives(SolveType type,
+      Incompatibility incompatibility, Iterable<String> unlock) async {
+    final b = StringBuffer();
+    final visited = <String>{};
+    final stopwatch = Stopwatch()..start();
+    var first = true;
+    void suggest(String suggestion) {
+      if (first) {
+        b.writeln(
+            '\nYou can try one of the following suggestion(s) to resolve the failure:');
+      }
+      b.writeln(suggestion);
+      first = false;
+    }
+
+    for (final externalIncompatibility
+        in incompatibility.externalIncompatibilities) {
+      if (stopwatch.elapsed > Duration(seconds: 3)) {
+        // Never spend more than 3 seconds computing suggestions.
+        break;
+      }
+      final cause = externalIncompatibility.cause;
+      if (cause is SdkCause) {
+        final sdkName = cause.sdk.identifier;
+        if (!(sdkName == 'dart' ||
+            (sdkName == 'flutter' && runningFromFlutter))) {
+          // Only make sdk upgrade suggestions for Flutter and Dart.
+          continue;
+        }
+
+        final constraint = cause.constraint;
+        if (constraint == null) continue;
+
+        /// Find the most relevant Flutter release fullfilling the constraint.
+        final bestRelease =
+            await inferBestFlutterRelease({cause.sdk.identifier: constraint});
+        if (bestRelease == null) continue;
+        try {
+          await resolveVersions(type, cache, root,
+              lockFile: lockFile,
+              unlock: unlock,
+              sdkOverrides: {
+                'dart': bestRelease.dartVersion,
+                'flutter': bestRelease.flutterVersion
+              });
+
+          if (runningFromFlutter) {
+            suggest(
+                '* Try using the Flutter SDK version: ${bestRelease.flutterVersion}. ');
+          } else {
+            // Here we assume that any Dart version included in a Flutter
+            // release can also be found as a released Dart SDK.
+            suggest(
+                '* Try using the Dart SDK version: ${bestRelease.dartVersion}. See https://dart.dev/get-dart.');
+          }
+        } on SolveFailure {
+          // Using a newer sdk didn't work.
+          // Nothing to report.
+        }
+      } else {
+        for (final term in externalIncompatibility.terms) {
+          final name = term.package.name;
+          if (!visited.add(name)) {
+            continue;
+          }
+          final originalConstraint =
+              (root.dependencies[name] ?? root.devDependencies[name])
+                  ?.constraint;
+          if (originalConstraint != null) {
+            final relaxedPubspec = stripVersionBounds(root.pubspec,
+                stripOnly: [name], stripLowerBound: true);
+
+            try {
+              final result = await resolveVersions(
+                  type, cache, Package.inMemory(relaxedPubspec),
+                  lockFile: lockFile, unlock: unlock);
+              final resolvedVersion =
+                  result.packages.firstWhere((p) => p.name == name).version;
+
+              final newConstraint =
+                  VersionConstraint.compatibleWith(resolvedVersion);
+
+              String updateDirection = 'updating';
+              if (originalConstraint is VersionRange) {
+                final min = originalConstraint.min;
+                if (min != null) {
+                  updateDirection =
+                      resolvedVersion < min ? 'downgrading' : 'upgrading';
+                }
+              }
+
+              suggest(
+                  '* Try $updateDirection your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`');
+            } on SolveFailure {
+              // Relaxing the constraint on this particular package didn't work.
+              // Nothing to report.
+            }
+          }
+        }
+      }
+    }
+    return b.toString();
   }
 }
 

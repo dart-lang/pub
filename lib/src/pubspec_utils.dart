@@ -103,12 +103,12 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
 /// [stripOnly] will have their upper bounds removed. If [stripOnly] is
 /// not specified or empty, then all packages will have their upper bounds
 /// removed.
-Pubspec stripVersionUpperBounds(Pubspec original,
-    {Iterable<String>? stripOnly}) {
+Pubspec stripVersionBounds(Pubspec original,
+    {Iterable<String>? stripOnly, bool stripLowerBound = false}) {
   ArgumentError.checkNotNull(original, 'original');
   stripOnly ??= [];
 
-  List<PackageRange> stripUpperBounds(
+  List<PackageRange> stripBounds(
     Map<String, PackageRange> constrained,
   ) {
     final result = <PackageRange>[];
@@ -120,7 +120,9 @@ Pubspec stripVersionUpperBounds(Pubspec original,
       if (stripOnly!.isEmpty || stripOnly.contains(packageRange.name)) {
         unconstrainedRange = PackageRange(
           packageRange.toRef(),
-          stripUpperBound(packageRange.constraint),
+          stripLowerBound
+              ? VersionConstraint.any
+              : stripUpperBound(packageRange.constraint),
         );
       }
       result.add(unconstrainedRange);
@@ -133,8 +135,8 @@ Pubspec stripVersionUpperBounds(Pubspec original,
     original.name,
     version: original.version,
     sdkConstraints: original.sdkConstraints,
-    dependencies: stripUpperBounds(original.dependencies),
-    devDependencies: stripUpperBounds(original.devDependencies),
+    dependencies: stripBounds(original.dependencies),
+    devDependencies: stripBounds(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
   );
 }

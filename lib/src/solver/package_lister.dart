@@ -54,6 +54,8 @@ class PackageLister {
   /// reversed.
   final bool _isDowngrade;
 
+  final Map<String, Version> sdkOverrides;
+
   /// A map from dependency names to constraints indicating which versions of
   /// [_ref] have already had their dependencies on the given versions returned
   /// by [incompatibilitiesFor].
@@ -97,17 +99,20 @@ class PackageLister {
 
   /// Creates a package lister for the dependency identified by [_ref].
   PackageLister(
-      this._systemCache,
-      this._ref,
-      this._locked,
-      this._dependencyType,
-      this._overriddenPackages,
-      this._allowedRetractedVersion,
-      {bool downgrade = false})
-      : _isDowngrade = downgrade;
+    this._systemCache,
+    this._ref,
+    this._locked,
+    this._dependencyType,
+    this._overriddenPackages,
+    this._allowedRetractedVersion, {
+    bool downgrade = false,
+    required Map<String, Version>? sdkOverrides,
+  })  : sdkOverrides = sdkOverrides ?? {},
+        _isDowngrade = downgrade;
 
   /// Creates a package lister for the root [package].
-  PackageLister.root(Package package, this._systemCache)
+  PackageLister.root(Package package, this._systemCache,
+      {required Map<String, Version>? sdkOverrides})
       : _ref = PackageRef.root(package),
         // Treat the package as locked so we avoid the logic for finding the
         // boundaries of various constraints, which is useless for the root
@@ -117,7 +122,8 @@ class PackageLister {
         _overriddenPackages =
             Set.unmodifiable(package.dependencyOverrides.keys),
         _isDowngrade = false,
-        _allowedRetractedVersion = null;
+        _allowedRetractedVersion = null,
+        sdkOverrides = sdkOverrides ?? {};
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -330,8 +336,9 @@ class PackageLister {
     });
 
     return Incompatibility(
-        [Term(_ref.withConstraint(incompatibleVersions), true)],
-        SdkCause(sdkConstraint, sdk));
+      [Term(_ref.withConstraint(incompatibleVersions), true)],
+      SdkCause(sdkConstraint, sdk),
+    );
   }
 
   /// Returns the first and last indices in [_versions] of the contiguous set of
@@ -428,6 +435,7 @@ class PackageLister {
     var constraint = pubspec.sdkConstraints[sdk.identifier];
     if (constraint == null) return true;
 
-    return sdk.isAvailable && constraint.allows(sdk.version!);
+    return sdk.isAvailable &&
+        constraint.allows(sdkOverrides[sdk.identifier] ?? sdk.version!);
   }
 }

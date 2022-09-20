@@ -75,11 +75,21 @@ class VersionSolver {
   /// The set of packages for which the lockfile should be ignored.
   final Set<String> _unlock;
 
+  /// If present these represents the version of an SDK to assume during
+  /// resolution.
+  final Map<String, Version>? _sdkOverrides;
+
   final _stopwatch = Stopwatch();
 
-  VersionSolver(this._type, this._systemCache, this._root, this._lockFile,
-      Iterable<String> unlock)
-      : _dependencyOverrides = _root.dependencyOverrides,
+  VersionSolver(
+    this._type,
+    this._systemCache,
+    this._root,
+    this._lockFile,
+    Iterable<String> unlock, {
+    Map<String, Version>? sdkOverrides,
+  })  : _sdkOverrides = sdkOverrides,
+        _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
@@ -463,7 +473,10 @@ class VersionSolver {
   PackageLister _packageLister(PackageRange package) {
     var ref = package.toRef();
     return _packageListers.putIfAbsent(ref, () {
-      if (ref.isRoot) return PackageLister.root(_root, _systemCache);
+      if (ref.isRoot) {
+        return PackageLister.root(_root, _systemCache,
+            sdkOverrides: _sdkOverrides);
+      }
 
       var locked = _getLocked(ref.name);
       if (locked != null && locked.toRef() != ref) locked = null;
@@ -482,7 +495,8 @@ class VersionSolver {
           _root.dependencyType(package.name),
           overridden,
           _getAllowedRetracted(ref.name),
-          downgrade: _type == SolveType.downgrade);
+          downgrade: _type == SolveType.downgrade,
+          sdkOverrides: _sdkOverrides);
     });
   }
 

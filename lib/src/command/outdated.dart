@@ -673,7 +673,7 @@ Showing outdated packages$directoryDescription.
 
   @override
   Future<Pubspec> resolvablePubspec(Pubspec? pubspec) async {
-    return stripVersionUpperBounds(pubspec!);
+    return stripVersionBounds(pubspec!);
   }
 }
 

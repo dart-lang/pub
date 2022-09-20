@@ -48,7 +48,7 @@ class DependencyServicesReportCommand extends PubCommand {
   Future<void> runProtected() async {
     final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
 
-    final breakingPubspec = stripVersionUpperBounds(compatiblePubspec);
+    final breakingPubspec = stripVersionBounds(compatiblePubspec);
 
     final compatiblePackagesResult =
         await _tryResolve(compatiblePubspec, cache);
@@ -80,7 +80,7 @@ class DependencyServicesReportCommand extends PubCommand {
       if (package == null) return [];
       final lockFile = entrypoint.lockFile;
       final pubspec = upgradeType == _UpgradeType.multiBreaking
-          ? stripVersionUpperBounds(rootPubspec)
+          ? stripVersionBounds(rootPubspec)
           : Pubspec(
               rootPubspec.name,
               dependencies: rootPubspec.dependencies.values,

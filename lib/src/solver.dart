@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:pub_semver/pub_semver.dart';
+
 import 'lock_file.dart';
 import 'package.dart';
 import 'solver/failure.dart';
@@ -28,12 +30,10 @@ export 'solver/type.dart';
 /// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
 Future<SolveResult> resolveVersions(
-  SolveType type,
-  SystemCache cache,
-  Package root, {
-  LockFile? lockFile,
-  Iterable<String> unlock = const [],
-}) {
+    SolveType type, SystemCache cache, Package root,
+    {LockFile? lockFile,
+    Iterable<String> unlock = const [],
+    Map<String, Version>? sdkOverrides}) {
   lockFile ??= LockFile.empty();
   return VersionSolver(
     type,
@@ -41,6 +41,7 @@ Future<SolveResult> resolveVersions(
     root,
     lockFile,
     unlock,
+    sdkOverrides: sdkOverrides,
   ).solve();
 }
 
