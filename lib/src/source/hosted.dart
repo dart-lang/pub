@@ -860,21 +860,41 @@ class HostedSource extends CachedSource {
     await withTempDir((tempDirForArchive) async {
       var fileName = '$packageName-$version.tar.gz';
       var archivePath = p.join(tempDirForArchive, fileName);
-      var request = _createArchiveRequest(url);
-      var response = await withAuthenticatedClient(
-          cache, Uri.parse(description.url), (client) => client.send(request));
 
-      final expectedChecksum = _parseCrc32c(response.headers, fileName);
-      final responseStream = expectedChecksum != null
-          ? _validateStream(response.stream, expectedChecksum, fileName)
-          : response.stream;
+      // The client from `withAuthenticatedClient` will retry HTTP requests.
+      // This wrapper is one layer up and will retry checksum validation errors.
+      await retry(
+        // Attempt to download archive and validate its checksum.
+        () async {
+          final request = _createArchiveRequest(url);
+          final response = await withAuthenticatedClient(cache,
+              Uri.parse(description.url), (client) => client.send(request));
+          final expectedChecksum = _parseCrc32c(response.headers, fileName);
 
-      // We download the archive to disk instead of streaming it directly into
-      // the tar unpacking. This simplifies stream handling.
-      // Package:tar cancels the stream when it reaches end-of-archive, and
-      // cancelling a http stream makes it not reusable.
-      // There are ways around this, and we might revisit this later.
-      await createFileFromStream(responseStream, archivePath);
+          // We download the archive to disk instead of streaming it directly
+          // into the tar unpacking. This simplifies stream handling.
+          // Package:tar cancels the stream when it reaches end-of-archive, and
+          // cancelling a http stream makes it not reusable.
+          // There are ways around this, and we might revisit this later.
+
+          if (expectedChecksum == null) {
+            // Skip validation if the checksum response header is not present.
+            await createFileFromStream(response.stream, archivePath);
+          } else {
+            // The checksum will be validated once this finishes consuming the
+            // stream. [PackageIntegrityException] will be thrown on failure.
+            await createFileFromStream(
+                _validateStream(response.stream, expectedChecksum, fileName),
+                archivePath);
+          }
+        },
+        // Retry if the checksum response header was malformed or the actual
+        // checksum did not match the expected checksum.
+        retryIf: (e) => e is PackageIntegrityException,
+        onRetry: (e, retryCount) => log.io(
+            'Retry #${retryCount + 1} for checksum error with "$fileName"...'),
+      );
+
       var tempDir = cache.createTempDir();
       await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
 

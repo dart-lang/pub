@@ -84,7 +84,7 @@ void main() {
   });
 
   test(
-      'recognizes a package\'s actual checksum did not match the expected checksum',
+      "recognizes a package's actual checksum did not match the expected checksum",
       () async {
     var server = await startPackageServer();
 
@@ -106,6 +106,8 @@ void main() {
 
   group('recognizes bad checksum header', () {
     late PackageServer server;
+
+    // TODO: test where server doesn't respond with md5 at all?
 
     setUp(() async {
       server = await servePackages()
