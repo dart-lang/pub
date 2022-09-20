@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
     show maxBy, IterableNullableExtension;
@@ -871,28 +872,24 @@ class HostedSource extends CachedSource {
               Uri.parse(description.url), (client) => client.send(request));
           final expectedChecksum = _parseCrc32c(response.headers, fileName);
 
+          Stream<List<int>> stream = response.stream;
+          if (expectedChecksum != null) {
+            stream =
+                _validateStream(response.stream, expectedChecksum, fileName);
+          }
+
           // We download the archive to disk instead of streaming it directly
           // into the tar unpacking. This simplifies stream handling.
           // Package:tar cancels the stream when it reaches end-of-archive, and
           // cancelling a http stream makes it not reusable.
           // There are ways around this, and we might revisit this later.
-
-          if (expectedChecksum == null) {
-            // Skip validation if the checksum response header is not present.
-            await createFileFromStream(response.stream, archivePath);
-          } else {
-            // The checksum will be validated once this finishes consuming the
-            // stream. [PackageIntegrityException] will be thrown on failure.
-            await createFileFromStream(
-                _validateStream(response.stream, expectedChecksum, fileName),
-                archivePath);
-          }
+          await createFileFromStream(stream, archivePath);
         },
         // Retry if the checksum response header was malformed or the actual
         // checksum did not match the expected checksum.
         retryIf: (e) => e is PackageIntegrityException,
         onRetry: (e, retryCount) => log.io(
-            'Retry #${retryCount + 1} for checksum error with "$fileName"...'),
+            'Retry #${retryCount + 1} because of checksum error with GET $url...'),
       );
 
       var tempDir = cache.createTempDir();
@@ -1150,17 +1147,25 @@ const checksumHeaderName = 'x-goog-hash';
 ///
 /// Throws [PackageIntegrityException] if there is a checksum mismatch.
 Stream<List<int>> _validateStream(
-    Stream<List<int>> stream, int expectedChecksum, String fileName) {
-  return Crc32c.computeByTappingStream(stream, handleDone: (actualChecksum) {
-    log.fine(
-        'Computed checksum $actualChecksum for "$fileName" with expected CRC32C of $expectedChecksum');
+    Stream<List<int>> stream, int expectedChecksum, String fileName) async* {
+  final crc32c = Crc32c();
 
-    if (actualChecksum != expectedChecksum) {
-      throw PackageIntegrityException(
-        'Package archive "$fileName" has a CRC32C checksum mismatch',
-      );
-    }
-  });
+  await for (final chunk in stream) {
+    crc32c.update(chunk);
+    yield chunk;
+  }
+
+  final actualChecksum = crc32c.finalize();
+
+  log.fine(
+      'Computed checksum $actualChecksum for "$fileName" with expected CRC32C '
+      'of $expectedChecksum');
+
+  if (actualChecksum != expectedChecksum) {
+    throw PackageIntegrityException(
+      'Package archive "$fileName" has a CRC32C checksum mismatch',
+    );
+  }
 }
 
 /// Parses response [headers] and returns the archive's CRC32C checksum.
@@ -1189,32 +1194,23 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
       final undecoded = part.substring('crc32c='.length);
 
       try {
-        final bytes = base64.decode(undecoded);
-        return bytesToUint32(bytes);
+        final bytes = base64Decode(undecoded);
 
-        // Suppress lint because 1) we are dealing with arbitrary runtime values
-        // 2) we do not want to duplicate the validation logic that is already
-        // throwing the `RangeError`.
-        // ignore: avoid_catching_errors
-      } on RangeError {
-        continue;
-      } on FormatException {
-        continue;
+        // CRC32C must be 32 bits, or 4 bytes.
+        if (bytes.length != 4) {
+          throw FormatException('CRC32C checksum has invalid length', bytes);
+        }
+
+        return ByteData.view(bytes.buffer).getUint32(0);
+      } on FormatException catch (e, s) {
+        throw PackageIntegrityException(
+            'Package archive "$fileName" has a malformed CRC32C checksum in '
+            'its response headers',
+            innerError: e,
+            innerTrace: s);
       }
     }
   }
 
-  throw PackageIntegrityException(
-    'Package archive "$fileName" has a malformed CRC32C checksum in its response headers',
-  );
-}
-
-/// Package checksum related exception.
-class PackageIntegrityException implements Exception {
-  final String message;
-
-  PackageIntegrityException(this.message);
-
-  @override
-  String toString() => message;
+  return null;
 }

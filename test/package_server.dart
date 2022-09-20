@@ -5,12 +5,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/crc32c.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/third_party/tar/tar.dart';
-import 'package:pub/src/utils.dart' hide fail;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -280,10 +280,18 @@ class PackageServer {
 
   static List<String> composeChecksumHeader(
       {int? crc32c, String? md5 = '5f4dcc3b5aa765d61d8327deb882cf99'}) {
-    return [
-      if (crc32c != null) 'crc32c=${base64.encode(uint32ToBytes(crc32c))}',
-      if (md5 != null) 'md5=${base64.encode(utf8.encode(md5))}'
-    ];
+    List<String> header = [];
+
+    if (crc32c != null) {
+      final bytes = Uint8List(4)..buffer.asByteData().setUint32(0, crc32c);
+      header.add('crc32c=${base64.encode(bytes)}');
+    }
+
+    if (md5 != null) {
+      header.add('md5=${base64.encode(utf8.encode(md5))}');
+    }
+
+    return header;
   }
 }
 

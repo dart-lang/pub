@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'utils.dart';
-
 /// Computes a crc32c checksum.
 class Crc32c {
   int _current = mask;
@@ -22,26 +20,13 @@ class Crc32c {
     return _current ^ mask & mask;
   }
 
-  /// Transforms `stream` with a tap that calculates a CRC32C checksum, which
-  /// is accessible through the `handleDone` method once the stream is finished.
-  static Stream<List<int>> computeByTappingStream(Stream<List<int>> stream,
-      {required void Function(int crc32c) handleDone}) {
-    final checksumComputer = Crc32c();
-
-    return stream
-        .transform(onDataTransformer(checksumComputer.update))
-        .transform(onDoneTransformer(() {
-      handleDone(checksumComputer.finalize());
-    }));
-  }
-
-  /// Consumes the entirety of `stream` and returns the CRC32C checksum of its
+  /// Consumes the entirety of "stream" and returns the CRC32C checksum of its
   /// data once the stream is finished.
   static Future<int> computeByConsumingStream(Stream<List<int>> stream) async {
     final checksumComputer = Crc32c();
 
-    await for (final data in stream) {
-      checksumComputer.update(data);
+    await for (final chunk in stream) {
+      checksumComputer.update(chunk);
     }
 
     return checksumComputer.finalize();
