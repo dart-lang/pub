@@ -97,12 +97,13 @@ Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
 }
 
 /// Returns new pubspec with the same dependencies as [original] but with the
-/// upper bounds of the constraints removed.
+/// the bounds of the constraints removed.
 ///
-/// If [stripOnly] is provided, only the packages whose names are in
-/// [stripOnly] will have their upper bounds removed. If [stripOnly] is
-/// not specified or empty, then all packages will have their upper bounds
-/// removed.
+/// If [stripLower] is `false` (the default) only the upper bound is removed.
+///
+/// If [stripOnly] is provided, only the packages whose names are in [stripOnly]
+/// will have their bounds removed. If [stripOnly] is not specified or empty,
+/// then all packages will have their bounds removed.
 Pubspec stripVersionBounds(Pubspec original,
     {Iterable<String>? stripOnly, bool stripLowerBound = false}) {
   ArgumentError.checkNotNull(original, 'original');
