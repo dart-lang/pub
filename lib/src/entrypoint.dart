@@ -937,19 +937,9 @@ See https://dart.dev/go/sdk-constraint
   /// list of suggestions, or the empty String if no suggestions were found.
   Future<String> _suggestResolutionAlternatives(SolveType type,
       Incompatibility incompatibility, Iterable<String> unlock) async {
-    final b = StringBuffer();
     final visited = <String>{};
     final stopwatch = Stopwatch()..start();
-    var first = true;
-    void suggest(String suggestion) {
-      if (first) {
-        b.writeln(
-            '\nYou can try one of the following suggestion(s) to resolve the failure:');
-      }
-      b.writeln(suggestion);
-      first = false;
-    }
-
+    final suggestions = <_ResolutionSuggestion>[];
     for (final externalIncompatibility
         in incompatibility.externalIncompatibilities) {
       if (stopwatch.elapsed > Duration(seconds: 3)) {
@@ -981,15 +971,16 @@ See https://dart.dev/go/sdk-constraint
                 'flutter': bestRelease.flutterVersion
               });
 
-          if (runningFromFlutter) {
-            suggest(
-                '* Try using the Flutter SDK version: ${bestRelease.flutterVersion}. ');
-          } else {
-            // Here we assume that any Dart version included in a Flutter
-            // release can also be found as a released Dart SDK.
-            suggest(
-                '* Try using the Dart SDK version: ${bestRelease.dartVersion}. See https://dart.dev/get-dart.');
-          }
+          suggestions.add(
+            _ResolutionSuggestion(
+              runningFromFlutter
+                  ? '* Try using the Flutter SDK version: ${bestRelease.flutterVersion}. '
+                  :
+                  // Here we assume that any Dart version included in a Flutter
+                  // release can also be found as a released Dart SDK.
+                  '* Try using the Dart SDK version: ${bestRelease.dartVersion}. See https://dart.dev/get-dart.',
+            ),
+          );
         } on SolveFailure {
           // Using a newer sdk didn't work.
           // Nothing to report.
@@ -1017,17 +1008,27 @@ See https://dart.dev/go/sdk-constraint
               final newConstraint =
                   VersionConstraint.compatibleWith(resolvedVersion);
 
-              String updateDirection = 'updating';
+              var priority = 1;
+              var updateDirection = 'updating';
               if (originalConstraint is VersionRange) {
                 final min = originalConstraint.min;
                 if (min != null) {
-                  updateDirection =
-                      resolvedVersion < min ? 'downgrading' : 'upgrading';
+                  if (resolvedVersion < min) {
+                    priority = 3;
+                    updateDirection = 'downgrading';
+                  } else {
+                    priority = 2;
+                    updateDirection = 'upgrading';
+                  }
                 }
               }
 
-              suggest(
-                  '* Try $updateDirection your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`');
+              suggestions.add(
+                _ResolutionSuggestion(
+                  '* Try $updateDirection your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`',
+                  priority: priority,
+                ),
+              );
             } on SolveFailure {
               // Relaxing the constraint on this particular package didn't work.
               // Nothing to report.
@@ -1036,7 +1037,14 @@ See https://dart.dev/go/sdk-constraint
         }
       }
     }
-    return b.toString();
+    if (suggestions.isEmpty) return '';
+    final tryOne = suggestions.length == 1
+        ? 'You can try  the following suggestion to make the pubspec resolve:'
+        : 'You can try one of the following suggestions to make the pubspec resolve:';
+
+    suggestions.sort((a, b) => a.priority.compareTo(b.priority));
+
+    return '\n$tryOne\n${suggestions.take(5).map((e) => e.suggestion).join('\n')}';
   }
 }
 
@@ -1057,4 +1065,10 @@ bool detectWindowsLineEndings(String text) {
     }
   }
   return windowsNewlines > unixNewlines;
+}
+
+class _ResolutionSuggestion {
+  final String suggestion;
+  final int priority;
+  _ResolutionSuggestion(this.suggestion, {this.priority = 0});
 }
