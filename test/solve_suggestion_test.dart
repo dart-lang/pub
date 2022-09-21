@@ -71,7 +71,7 @@ void main() {
       error: allOf(
         [
           contains(
-              '* Try downgrading your constraint on foo: `dart pub add foo:^0.9.0`'),
+              '* Consider downgrading your constraint on foo: `dart pub add foo:^0.9.0`'),
           contains(
               '* Try upgrading your constraint on bar: `dart pub add bar:^2.0.0`'),
         ],

@@ -1009,26 +1009,25 @@ See https://dart.dev/go/sdk-constraint
                   VersionConstraint.compatibleWith(resolvedVersion);
 
               var priority = 1;
-              var updateDirection = 'updating';
+              var suggestion =
+                  '* Try updating your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`';
               if (originalConstraint is VersionRange) {
                 final min = originalConstraint.min;
                 if (min != null) {
                   if (resolvedVersion < min) {
                     priority = 3;
-                    updateDirection = 'downgrading';
+                    suggestion =
+                        '* Consider downgrading your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`';
                   } else {
                     priority = 2;
-                    updateDirection = 'upgrading';
+                    suggestion =
+                        '* Try upgrading your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`';
                   }
                 }
               }
 
-              suggestions.add(
-                _ResolutionSuggestion(
-                  '* Try $updateDirection your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`',
-                  priority: priority,
-                ),
-              );
+              suggestions
+                  .add(_ResolutionSuggestion(suggestion, priority: priority));
             } on SolveFailure {
               // Relaxing the constraint on this particular package didn't work.
               // Nothing to report.
