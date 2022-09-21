@@ -148,17 +148,6 @@ Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
   });
 }
 
-/// Returns a [StreamTransformer] that will call [onData] for each data
-/// event of the stream.
-///
-/// The stream will be passed through unchanged.
-StreamTransformer<T, T> onDataTransformer<T>(void Function(T data) onData) {
-  return StreamTransformer<T, T>.fromHandlers(handleData: (data, sink) {
-    onData(data);
-    sink.add(data);
-  });
-}
-
 /// Returns a [StreamTransformer] that will call [onDone] when the stream
 /// completes.
 ///

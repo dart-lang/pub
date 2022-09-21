@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
@@ -890,6 +891,11 @@ class HostedSource extends CachedSource {
         retryIf: (e) => e is PackageIntegrityException,
         onRetry: (e, retryCount) => log.io(
             'Retry #${retryCount + 1} because of checksum error with GET $url...'),
+        maxAttempts: math.max(
+          1, // Having less than 1 retry is **always** wrong.
+          int.tryParse(io.Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ??
+              7,
+        ),
       );
 
       var tempDir = cache.createTempDir();
