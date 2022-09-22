@@ -12,7 +12,8 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('gets a package from a pub server serving CRC32C checksums', () async {
+  test('gets a package from a pub server and validates CRC32C checksum',
+      () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
@@ -28,21 +29,60 @@ void main() {
     ]).validate();
   });
 
-  test('gets a package from a pub server not serving checksums', () async {
-    final server = await servePackages();
-    server.serveChecksums = false;
-    server.serve('foo', '1.2.3');
+  group('gets a package from a pub server without validating checksum', () {
+    late PackageServer server;
 
-    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
+    setUp(() async {
+      server = await servePackages()
+        ..serveChecksums = false
+        ..serve('foo', '1.2.3')
+        ..serve('bar', '1.2.3', headers: {
+          'x-goog-hash': ['']
+        })
+        ..serve('baz', '1.2.3', headers: {
+          'x-goog-hash': ['md5=loremipsum']
+        });
+    });
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    test('because of missing checksum header', () async {
+      expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
 
-    await pubGet();
+      await d.appDir({'foo': '1.2.3'}).create();
 
-    await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
-    ]).validate();
+      await pubGet();
+
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
+    });
+
+    test('because of empty checksum header', () async {
+      expect(await server.peekArchiveChecksumHeader('bar', '1.2.3'), '');
+
+      await d.appDir({'bar': '1.2.3'}).create();
+
+      await pubGet();
+
+      await d.cacheDir({'bar': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'bar', version: '1.2.3'),
+      ]).validate();
+    });
+
+    test('because of missing CRC32C in checksum header', () async {
+      expect(await server.peekArchiveChecksumHeader('baz', '1.2.3'),
+          'md5=loremipsum');
+
+      await d.appDir({'baz': '1.2.3'}).create();
+
+      await pubGet();
+
+      await d.cacheDir({'baz': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'baz', version: '1.2.3'),
+      ]).validate();
+    });
   });
 
   test('URL encodes the package name', () async {
@@ -83,9 +123,7 @@ void main() {
     ]).validate();
   });
 
-  test(
-      "recognizes a package's actual checksum did not match the expected checksum",
-      () async {
+  test('recognizes a package with a CRC32C checksum mismatch', () async {
     var server = await startPackageServer();
 
     server.serve('foo', '1.2.3', headers: {
@@ -100,29 +138,31 @@ void main() {
     }).create();
 
     await pubGet(
-        error: contains(
-            'Package archive "foo-1.2.3.tar.gz" has a CRC32C checksum mismatch'));
+      error: contains(
+          'Package archive "foo-1.2.3.tar.gz" has a CRC32C checksum mismatch'),
+      environment: {
+        'PUB_MAX_HTTP_RETRIES': '1',
+      },
+    );
   });
 
   group('recognizes bad checksum header', () {
     late PackageServer server;
 
-    // TODO: test where server doesn't respond with md5 at all?
-
     setUp(() async {
       server = await servePackages()
         ..serve('foo', '1.2.3', headers: {
-          'x-goog-hash': ['']
-        })
-        ..serve('bar', '1.2.3', headers: {
           'x-goog-hash': ['crc32c=,md5=']
         })
-        ..serve('baz', '1.2.3', headers: {
+        ..serve('bar', '1.2.3', headers: {
           'x-goog-hash': ['crc32c=loremipsum,md5=loremipsum']
+        })
+        ..serve('baz', '1.2.3', headers: {
+          'x-goog-hash': ['crc32c=MTIzNDU=,md5=NTQzMjE=']
         });
     });
 
-    test('when it is empty', () async {
+    test('when CRC32C checksum is empty', () async {
       await d.appDir({
         'foo': {
           'version': '1.2.3',
@@ -131,11 +171,17 @@ void main() {
       }).create();
 
       await pubGet(
-          error: contains(
-              'Package archive "foo-1.2.3.tar.gz" has a malformed CRC32C checksum in its response headers'));
+        exitCode: exit_codes.DATA,
+        error: contains(
+            'Package archive "foo-1.2.3.tar.gz" has a malformed CRC32C '
+            'checksum in its response headers'),
+        environment: {
+          'PUB_MAX_HTTP_RETRIES': '1',
+        },
+      );
     });
 
-    test('when it is malformed', () async {
+    test('when CRC32C checksum has bad encoding', () async {
       await d.appDir({
         'bar': {
           'version': '1.2.3',
@@ -144,9 +190,17 @@ void main() {
       }).create();
 
       await pubGet(
-          error: contains(
-              'Package archive "bar-1.2.3.tar.gz" has a malformed CRC32C checksum in its response headers'));
+        exitCode: exit_codes.DATA,
+        error: contains(
+            'Package archive "bar-1.2.3.tar.gz" has a malformed CRC32C '
+            'checksum in its response headers'),
+        environment: {
+          'PUB_MAX_HTTP_RETRIES': '1',
+        },
+      );
+    });
 
+    test('when CRC32C checksum is malformed', () async {
       await d.appDir({
         'baz': {
           'version': '1.2.3',
@@ -155,8 +209,14 @@ void main() {
       }).create();
 
       await pubGet(
-          error: contains(
-              'Package archive "baz-1.2.3.tar.gz" has a malformed CRC32C checksum in its response headers'));
+        exitCode: exit_codes.DATA,
+        error: contains(
+            'Package archive "baz-1.2.3.tar.gz" has a malformed CRC32C '
+            'checksum in its response headers'),
+        environment: {
+          'PUB_MAX_HTTP_RETRIES': '1',
+        },
+      );
     });
   });
 
