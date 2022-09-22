@@ -362,9 +362,10 @@ String _filter(String input) {
         r'x-goog-hash: $CHECKSUM_HEADER',
       )
       .replaceAll(
-        RegExp(r'Computed checksum \d+ for "(.+)" with expected CRC32C of \d+',
+        RegExp(
+            r'Computed checksum \d+ for "(.+)" with expected CRC32C of \d+\.',
             multiLine: true),
-        r'Computed checksum $CRC32C for $FILENAME with expected CRC32C of $CRC32C',
+        r'Computed checksum $CRC32C for $FILENAME with expected CRC32C of $CRC32C.',
       )
 
       /// TODO(sigurdm): This hack suppresses differences in stack-traces

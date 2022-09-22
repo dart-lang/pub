@@ -868,7 +868,7 @@ class HostedSource extends CachedSource {
       await retry(
         // Attempt to download archive and validate its checksum.
         () async {
-          final request = _createArchiveRequest(url);
+          final request = http.Request('GET', url);
           final response = await withAuthenticatedClient(cache,
               Uri.parse(description.url), (client) => client.send(request));
           final expectedChecksum = _parseCrc32c(response.headers, fileName);
@@ -899,7 +899,7 @@ class HostedSource extends CachedSource {
       );
 
       var tempDir = cache.createTempDir();
-      await extractTarGz(readBinaryFileAsSream(archivePath), tempDir);
+      await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
 
       // Now that the get has succeeded, move it to the real location in the
       // cache.
@@ -909,19 +909,6 @@ class HostedSource extends CachedSource {
       // downloaded.
       tryRenameDir(tempDir, destPath);
     });
-  }
-
-  /// Creates a GET `Request` for [url] that will ask the host to prevent
-  /// decompressive transcoding.
-  ///
-  /// GCS docmentation indicates that you should do this when you want to
-  /// validate the object's checksum.
-  ///
-  /// See https://cloud.google.com/storage/docs/transcoding#decompressive_transcoding
-  http.Request _createArchiveRequest(Uri url) {
-    var request = http.Request('GET', url);
-    request.headers[io.HttpHeaders.acceptEncodingHeader] = 'gzip';
-    return request;
   }
 
   /// When an error occurs trying to read something about [package] from [hostedUrl],
@@ -1165,7 +1152,7 @@ Stream<List<int>> _validateStream(
 
   log.fine(
       'Computed checksum $actualChecksum for "$fileName" with expected CRC32C '
-      'of $expectedChecksum');
+      'of $expectedChecksum.');
 
   if (actualChecksum != expectedChecksum) {
     throw PackageIntegrityException(
