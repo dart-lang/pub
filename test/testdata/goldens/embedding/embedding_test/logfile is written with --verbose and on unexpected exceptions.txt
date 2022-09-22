@@ -40,7 +40,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] IO  : Get package from http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz.
 [E] IO  : Created temp directory $DIR
 [E] IO  : HTTP GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
-[E]    | cache-control: no-transform
+[E]    | accept-encoding: gzip
 [E]    | X-Pub-OS: $OS
 [E]    | X-Pub-Command: get
 [E]    | X-Pub-Session-ID: $ID
@@ -181,7 +181,7 @@ IO  : Get package from http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
 MSG : Downloading foo 1.0.0...
 IO  : Created temp directory $DIR
 IO  : HTTP GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
-   | cache-control: no-transform
+   | accept-encoding: gzip
    | X-Pub-OS: $OS
    | X-Pub-Command: get
    | X-Pub-Session-ID: $ID
