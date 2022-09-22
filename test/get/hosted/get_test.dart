@@ -123,7 +123,8 @@ void main() {
     ]).validate();
   });
 
-  test('recognizes a package with a CRC32C checksum mismatch', () async {
+  test('recognizes and retries a package with a CRC32C checksum mismatch',
+      () async {
     var server = await startPackageServer();
 
     server.serve('foo', '1.2.3', headers: {
@@ -140,13 +141,14 @@ void main() {
     await pubGet(
       error: contains(
           'Package archive "foo-1.2.3.tar.gz" has a CRC32C checksum mismatch'),
+      silent: contains('Retry #2 because of checksum error'),
       environment: {
-        'PUB_MAX_HTTP_RETRIES': '1',
+        'PUB_MAX_HTTP_RETRIES': '2',
       },
     );
   });
 
-  group('recognizes bad checksum header', () {
+  group('recognizes bad checksum header and retries', () {
     late PackageServer server;
 
     setUp(() async {
@@ -175,8 +177,9 @@ void main() {
         error: contains(
             'Package archive "foo-1.2.3.tar.gz" has a malformed CRC32C '
             'checksum in its response headers'),
+        silent: contains('Retry #2 because of checksum error'),
         environment: {
-          'PUB_MAX_HTTP_RETRIES': '1',
+          'PUB_MAX_HTTP_RETRIES': '2',
         },
       );
     });
@@ -194,8 +197,9 @@ void main() {
         error: contains(
             'Package archive "bar-1.2.3.tar.gz" has a malformed CRC32C '
             'checksum in its response headers'),
+        silent: contains('Retry #2 because of checksum error'),
         environment: {
-          'PUB_MAX_HTTP_RETRIES': '1',
+          'PUB_MAX_HTTP_RETRIES': '2',
         },
       );
     });
@@ -213,8 +217,9 @@ void main() {
         error: contains(
             'Package archive "baz-1.2.3.tar.gz" has a malformed CRC32C '
             'checksum in its response headers'),
+        silent: contains('Retry #2 because of checksum error'),
         environment: {
-          'PUB_MAX_HTTP_RETRIES': '1',
+          'PUB_MAX_HTTP_RETRIES': '2',
         },
       );
     });
