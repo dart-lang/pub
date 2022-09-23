@@ -181,7 +181,7 @@ Future<String> suggestResolutionAlternatives(
 
   if (suggestions.isEmpty) return '';
   final tryOne = suggestions.length == 1
-      ? 'You can try  the following suggestion to make the pubspec resolve:'
+      ? 'You can try the following suggestion to make the pubspec resolve:'
       : 'You can try one of the following suggestions to make the pubspec resolve:';
 
   suggestions.sort((a, b) => a.priority.compareTo(b.priority));
