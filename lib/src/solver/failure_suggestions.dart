@@ -77,25 +77,26 @@ Future<String> suggestResolutionAlternatives(
           type, cache, Package.inMemory(relaxedPubspec),
           lockFile: entrypoint.lockFile, unlock: unlock);
       if (result != null) {
-        final resolvedVersion =
-            result.packages.firstWhere((p) => p.name == name).version;
+        final resolvingPackage =
+            result.packages.firstWhere((p) => p.name == name);
 
-        final newConstraint = VersionConstraint.compatibleWith(resolvedVersion);
+        final addDescription =
+            packageAddDescription(entrypoint, resolvingPackage);
 
         var priority = 1;
         var suggestion =
-            '* Try updating your constraint on $name: $topLevelProgram pub add $name:$newConstraint';
+            '* Try updating your constraint on $name: $topLevelProgram pub add $addDescription';
         if (originalConstraint is VersionRange) {
           final min = originalConstraint.min;
           if (min != null) {
-            if (resolvedVersion < min) {
+            if (resolvingPackage.version < min) {
               priority = 3;
               suggestion =
-                  '* Consider downgrading your constraint on $name: $topLevelProgram pub add $name:$newConstraint';
+                  '* Consider downgrading your constraint on $name: $topLevelProgram pub add $addDescription';
             } else {
               priority = 2;
               suggestion =
-                  '* Try upgrading your constraint on $name: $topLevelProgram pub add $name:$newConstraint';
+                  '* Try upgrading your constraint on $name: $topLevelProgram pub add $addDescription';
             }
           }
         }
@@ -116,14 +117,13 @@ Future<String> suggestResolutionAlternatives(
         type, cache, Package.inMemory(relaxedPubspec),
         lockFile: entrypoint.lockFile, unlock: unlock);
     if (result != null) {
-      final updatedPackageVersions = <PackageRange>[];
+      final updatedPackageVersions = <PackageId>[];
       for (final id in result.packages) {
         final originalConstraint = (originalPubspec.dependencies[id.name] ??
                 originalPubspec.devDependencies[id.name])
             ?.constraint;
         if (originalConstraint != null) {
-          updatedPackageVersions.add(PackageRange(
-              id.toRef(), VersionConstraint.compatibleWith(id.version)));
+          updatedPackageVersions.add(id);
         }
       }
       if (stripLowerBound && updatedPackageVersions.length > 5) {
@@ -133,8 +133,8 @@ Future<String> suggestResolutionAlternatives(
       if (stripLowerBound) {
         updatedPackageVersions.sort((a, b) => a.name.compareTo(b.name));
         final formattedConstraints = updatedPackageVersions
-            .map((e) => '${e.name}:${e.constraint}')
-            .join(' ');
+            .map((e) => packageAddDescription(entrypoint, e))
+            .join(' -- ');
         return _ResolutionSuggestion(
             '* Try updating the following constraints: $topLevelProgram pub add $formattedConstraints',
             priority: 4);
@@ -205,4 +205,12 @@ Future<SolveResult?> tryResolve(SolveType type, SystemCache cache, Package root,
   } on SolveFailure {
     return null;
   }
+}
+
+String packageAddDescription(Entrypoint entrypoint, PackageId id) {
+  final name = id.name;
+  final isDev = entrypoint.root.pubspec.devDependencies.containsKey(name);
+  final constraint = VersionConstraint.compatibleWith(id.version);
+  final devPart = isDev ? '--dev ' : '';
+  return '$devPart$name:$constraint';
 }
