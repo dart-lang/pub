@@ -4,8 +4,9 @@
 $ pub add --help
 Add dependencies to pubspec.yaml.
 
-Usage: pub add <package>[:<constraint>] [<package2>[:<constraint2>]...] [options]
--h, --help               Print this usage information.
+Usage: pub add [options] <package>[:<constraint>] [<package2>[:<constraint2>]...] --
+       [package-options] <package3>[:<constraint>]
+Package options
 -d, --dev                Adds to the development dependencies instead.
     --git-url            Git URL of the package
     --git-ref            Git branch or commit to be retrieved
@@ -14,6 +15,8 @@ Usage: pub add <package>[:<constraint>] [<package2>[:<constraint2>]...] [options
     --path               Add package from local path
     --sdk=<[flutter]>    add package from SDK source
                          [flutter]
+
+Generic options
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.

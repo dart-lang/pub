@@ -190,14 +190,42 @@ void main() {
   test('fails if multiple packages passed for git source', () async {
     ensureGit();
 
-    await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
-
     await d.appDir({}).create();
 
     await pubAdd(
         args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
         exitCode: exit_codes.USAGE,
-        error: contains('Can only add a single git package at a time.'));
+        error: contains('Separate multiple git packages to add with "--".'));
+  });
+
+  test('Can add multiple git packages separated by --', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+    await d.git(
+        'bar.git', [d.libDir('foo'), d.libPubspec('bar', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(args: [
+      'foo',
+      '--git-url',
+      '../foo.git',
+      '--',
+      'bar',
+      '--git-url',
+      '../bar.git',
+    ]);
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'git': '../foo.git'},
+          'bar': {'git': '../bar.git'},
+        },
+      })
+    ]).validate();
   });
 }

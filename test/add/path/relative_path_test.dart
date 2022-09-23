@@ -135,4 +135,39 @@ void main() {
       })
     ]).validate();
   });
+
+  test('Can add multiple path packages separated by --', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d
+        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: [
+        '--directory',
+        appPath,
+        'foo',
+        '--path',
+        'foo',
+        '--',
+        'bar',
+        '--path',
+        'bar',
+      ],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 2 dependencies in myapp!'),
+    );
+
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+    ]).validate();
+
+    await d.appDir({
+      'foo': {'path': '../foo'},
+      'bar': {'path': '../bar'},
+    }).validate();
+  });
 }

@@ -517,6 +517,32 @@ environment:
       ]).validate();
     });
 
+    test('Can add both dev and regular dependencies using -- to separate',
+        () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+      server.serve('bar', '1.2.3');
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(args: ['--dev', 'foo:1.2.3', '--', 'bar:1.2.3']);
+
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+        d.packageConfigEntry(name: 'bar', version: '1.2.3'),
+      ]).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'bar': '1.2.3'},
+          'dev_dependencies': {'foo': '1.2.3'},
+        })
+      ]).validate();
+    });
+
     group('warns user to use pub upgrade if package exists', () {
       test('if package is added without a version constraint', () async {
         await servePackages()
