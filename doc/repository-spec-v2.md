@@ -258,7 +258,7 @@ parameters. This allows for the server to return signed-URLs for S3, GCS or
 other blob storage service. If temporary URLs are returned it is wise to not set
 expiration to less than 25 minutes (to allow for retries and clock drift).
 
-The `archive_sha256` should be the hex-encoded sha256 checksum of the file are
+The `archive_sha256` should be the hex-encoded sha256 checksum of the file at
 archive_url. It is an optional field that allows the pub client to verify the
 integrity of downloaded archive.
 
