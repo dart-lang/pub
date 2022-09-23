@@ -71,9 +71,9 @@ void main() {
       error: allOf(
         [
           contains(
-              '* Consider downgrading your constraint on foo: `dart pub add foo:^0.9.0`'),
+              '* Consider downgrading your constraint on foo: dart pub add foo:^0.9.0'),
           contains(
-              '* Try upgrading your constraint on bar: `dart pub add bar:^2.0.0`'),
+              '* Try upgrading your constraint on bar: dart pub add bar:^2.0.0'),
         ],
       ),
     );
@@ -94,8 +94,65 @@ void main() {
       error: allOf(
         [
           contains(
-              '* Try updating your constraint on foo: `dart pub add foo:^1.0.0`'),
+              '* Try updating your constraint on foo: dart pub add foo:^1.0.0'),
         ],
+      ),
+    );
+  });
+
+  test('suggests updates to multiple packages', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '2.0.0'});
+    server.serve('bar', '1.0.0', deps: {'foo': '2.0.0'});
+    server.serve('foo', '2.0.0', deps: {'bar': '2.0.0'});
+    server.serve('bar', '2.0.0', deps: {'foo': '2.0.0'});
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myApp',
+        '1.0.0',
+        deps: {'foo': '1.0.0', 'bar': '1.0.0'},
+      )
+    ]).create();
+    await pubGet(
+      error: contains(
+        '* Try updating the following constraints: dart pub add bar:^2.0.0 foo:^2.0.0',
+      ),
+    );
+  });
+
+  test('suggests a major upgrade if more than 5 needs to be updated', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '2.0.0'});
+    server.serve('bar', '1.0.0', deps: {'foo': '2.0.0'});
+    server.serve('foo', '2.0.0', deps: {'bar': '2.0.0'});
+    server.serve('bar', '2.0.0', deps: {'foo': '2.0.0'});
+    server.serve('foo1', '1.0.0', deps: {'bar1': '2.0.0'});
+    server.serve('bar1', '1.0.0', deps: {'foo1': '2.0.0'});
+    server.serve('foo1', '2.0.0', deps: {'bar1': '2.0.0'});
+    server.serve('bar1', '2.0.0', deps: {'foo1': '2.0.0'});
+    server.serve('foo2', '1.0.0', deps: {'bar2': '2.0.0'});
+    server.serve('bar2', '1.0.0', deps: {'foo2': '2.0.0'});
+    server.serve('foo2', '2.0.0', deps: {'bar2': '2.0.0'});
+    server.serve('bar2', '2.0.0', deps: {'foo2': '2.0.0'});
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myApp',
+        '1.0.0',
+        deps: {
+          'foo': '1.0.0',
+          'bar': '1.0.0',
+          'foo1': '1.0.0',
+          'bar1': '1.0.0',
+          'foo2': '1.0.0',
+          'bar2': '1.0.0',
+        },
+      )
+    ]).create();
+    await pubGet(
+      error: contains(
+        '* Try an upgrade of your constraints: dart pub upgrade --major-versions',
       ),
     );
   });

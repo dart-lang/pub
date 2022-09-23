@@ -18,23 +18,20 @@ import 'command_runner.dart';
 import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
-import 'flutter_releases.dart';
 import 'io.dart';
 import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
-import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
+import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
 import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
-import 'pubspec_utils.dart';
 import 'sdk.dart';
 import 'solver.dart';
-import 'solver/incompatibility.dart';
-import 'solver/incompatibility_cause.dart';
+import 'solver/failure_suggestions.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -339,10 +336,12 @@ class Entrypoint {
         if (e is SolveFailure) {
           throw ApplicationException(
             e.message +
-                await _suggestResolutionAlternatives(
+                await suggestResolutionAlternatives(
+                  this,
                   type,
                   e.incompatibility,
                   unlock ?? [],
+                  cache,
                 ),
           );
         }
@@ -931,120 +930,6 @@ See https://dart.dev/go/sdk-constraint
     dataError('The "$packageConfigPath" file is not recognized by '
         '"pub" version, please run "$topLevelProgram pub get".');
   }
-
-  /// Looks through the root-[incompability] of a solve-failure and tries to see
-  /// if any single change can make a resolution go through. Returns a formatted
-  /// list of suggestions, or the empty String if no suggestions were found.
-  Future<String> _suggestResolutionAlternatives(SolveType type,
-      Incompatibility incompatibility, Iterable<String> unlock) async {
-    final visited = <String>{};
-    final stopwatch = Stopwatch()..start();
-    final suggestions = <_ResolutionSuggestion>[];
-    for (final externalIncompatibility
-        in incompatibility.externalIncompatibilities) {
-      if (stopwatch.elapsed > Duration(seconds: 3)) {
-        // Never spend more than 3 seconds computing suggestions.
-        break;
-      }
-      final cause = externalIncompatibility.cause;
-      if (cause is SdkCause) {
-        final sdkName = cause.sdk.identifier;
-        if (!(sdkName == 'dart' ||
-            (sdkName == 'flutter' && runningFromFlutter))) {
-          // Only make sdk upgrade suggestions for Flutter and Dart.
-          continue;
-        }
-
-        final constraint = cause.constraint;
-        if (constraint == null) continue;
-
-        /// Find the most relevant Flutter release fullfilling the constraint.
-        final bestRelease =
-            await inferBestFlutterRelease({cause.sdk.identifier: constraint});
-        if (bestRelease == null) continue;
-        try {
-          await resolveVersions(type, cache, root,
-              lockFile: lockFile,
-              unlock: unlock,
-              sdkOverrides: {
-                'dart': bestRelease.dartVersion,
-                'flutter': bestRelease.flutterVersion
-              });
-
-          suggestions.add(
-            _ResolutionSuggestion(
-              runningFromFlutter
-                  ? '* Try using the Flutter SDK version: ${bestRelease.flutterVersion}. '
-                  :
-                  // Here we assume that any Dart version included in a Flutter
-                  // release can also be found as a released Dart SDK.
-                  '* Try using the Dart SDK version: ${bestRelease.dartVersion}. See https://dart.dev/get-dart.',
-            ),
-          );
-        } on SolveFailure {
-          // Using a newer sdk didn't work.
-          // Nothing to report.
-        }
-      } else {
-        for (final term in externalIncompatibility.terms) {
-          final name = term.package.name;
-          if (!visited.add(name)) {
-            continue;
-          }
-          final originalConstraint =
-              (root.dependencies[name] ?? root.devDependencies[name])
-                  ?.constraint;
-          if (originalConstraint != null) {
-            final relaxedPubspec = stripVersionBounds(root.pubspec,
-                stripOnly: [name], stripLowerBound: true);
-
-            try {
-              final result = await resolveVersions(
-                  type, cache, Package.inMemory(relaxedPubspec),
-                  lockFile: lockFile, unlock: unlock);
-              final resolvedVersion =
-                  result.packages.firstWhere((p) => p.name == name).version;
-
-              final newConstraint =
-                  VersionConstraint.compatibleWith(resolvedVersion);
-
-              var priority = 1;
-              var suggestion =
-                  '* Try updating your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`';
-              if (originalConstraint is VersionRange) {
-                final min = originalConstraint.min;
-                if (min != null) {
-                  if (resolvedVersion < min) {
-                    priority = 3;
-                    suggestion =
-                        '* Consider downgrading your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`';
-                  } else {
-                    priority = 2;
-                    suggestion =
-                        '* Try upgrading your constraint on $name: `$topLevelProgram pub add $name:$newConstraint`';
-                  }
-                }
-              }
-
-              suggestions
-                  .add(_ResolutionSuggestion(suggestion, priority: priority));
-            } on SolveFailure {
-              // Relaxing the constraint on this particular package didn't work.
-              // Nothing to report.
-            }
-          }
-        }
-      }
-    }
-    if (suggestions.isEmpty) return '';
-    final tryOne = suggestions.length == 1
-        ? 'You can try  the following suggestion to make the pubspec resolve:'
-        : 'You can try one of the following suggestions to make the pubspec resolve:';
-
-    suggestions.sort((a, b) => a.priority.compareTo(b.priority));
-
-    return '\n$tryOne\n${suggestions.take(5).map((e) => e.suggestion).join('\n')}';
-  }
 }
 
 /// Returns `true` if the [text] looks like it uses windows line endings.
@@ -1064,10 +949,4 @@ bool detectWindowsLineEndings(String text) {
     }
   }
   return windowsNewlines > unixNewlines;
-}
-
-class _ResolutionSuggestion {
-  final String suggestion;
-  final int priority;
-  _ResolutionSuggestion(this.suggestion, {this.priority = 0});
 }
