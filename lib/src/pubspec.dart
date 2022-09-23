@@ -263,11 +263,17 @@ class Pubspec extends PubspecBase {
 
     var constraints = {
       'dart': _parseVersionConstraint(
-          yaml.nodes['sdk'], _packageName, _FileType.pubspec,
-          defaultUpperBoundConstraint: _includeDefaultSdkConstraint
-              ? _defaultUpperBoundSdkConstraint
-              : null)
+        yaml.nodes['sdk'],
+        _packageName,
+        _FileType.pubspec,
+        defaultUpperBoundConstraint: _includeDefaultSdkConstraint
+            ? _defaultUpperBoundSdkConstraint
+            : null,
+        dart3UpperBoundHack: true,
+      )
     };
+    print(constraints);
+
     yaml.nodes.forEach((name, constraint) {
       if (name.value is! String) {
         _error('SDK names must be strings.', name.span);
@@ -282,7 +288,7 @@ class Pubspec extends PubspecBase {
               // using semantic versioning to mark breaking releases.
               ignoreUpperBound: name.value == 'flutter');
     });
-
+    print(constraints);
     return constraints;
   }
 
@@ -557,15 +563,19 @@ bool _isFileUri(Uri uri) => uri.scheme == 'file' || uri.scheme == '';
 
 /// Parses [node] to a [VersionConstraint].
 ///
-/// If or [defaultUpperBoundConstraint] is specified then it will be set as
-/// the max constraint if the original constraint doesn't have an upper
-/// bound and it is compatible with [defaultUpperBoundConstraint].
+/// If or [defaultUpperBoundConstraint] is specified then it will be set as the
+/// max constraint if the original constraint doesn't have an upper bound and it
+/// is compatible with [defaultUpperBoundConstraint].
 ///
 /// If [ignoreUpperBound] the max constraint is ignored.
+///
+/// If [dart3UpperBoundHack] an upper bound of '<3.0.0' is interpreted as
+/// '<4.0.0'. When when the language version supports null-safety.
 VersionConstraint _parseVersionConstraint(
     YamlNode? node, String? packageName, _FileType fileType,
     {VersionConstraint? defaultUpperBoundConstraint,
-    bool ignoreUpperBound = false}) {
+    bool ignoreUpperBound = false,
+    bool dart3UpperBoundHack: false}) {
   if (node?.value == null) {
     return defaultUpperBoundConstraint ?? VersionConstraint.any;
   }
@@ -581,6 +591,19 @@ VersionConstraint _parseVersionConstraint(
         defaultUpperBoundConstraint.allowsAny(constraint)) {
       constraint = VersionConstraint.intersection(
           [constraint, defaultUpperBoundConstraint]);
+    }
+    if (dart3UpperBoundHack) {
+      if (constraint is VersionRange &&
+          LanguageVersion.fromSdkConstraint(constraint) >=
+              LanguageVersion.firstVersionWithNullSafety &&
+          constraint.max == Version(3, 0, 0).firstPreRelease &&
+          constraint.includeMax == false) {
+        return VersionRange(
+          min: constraint.min,
+          includeMin: constraint.includeMin,
+          max: Version(4, 0, 0),
+        );
+      }
     }
     if (ignoreUpperBound && constraint is VersionRange) {
       return VersionRange(
