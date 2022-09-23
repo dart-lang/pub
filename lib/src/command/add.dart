@@ -252,11 +252,10 @@ class AddCommand extends PubCommand {
     final range =
         package.ref.withConstraint(package.constraint ?? VersionConstraint.any);
     if (package.isDev) {
-      /// TODO(walnut): Change the error message once pub upgrade --bump is
-      /// released
       if (devDependencyNames.contains(name)) {
-        dataError('"$name" is already in "dev_dependencies". '
-            'Use "pub upgrade $name" to upgrade to a later version!');
+        log.message('"$name" is already in "dev_dependencies". '
+            'Will try to update the constraint.');
+        devDependencies.removeWhere((element) => element.name == name);
       }
 
       /// If package is originally in dependencies and we wish to add it to
@@ -271,11 +270,10 @@ class AddCommand extends PubCommand {
 
       devDependencies.add(range);
     } else {
-      /// TODO(walnut): Change the error message once pub upgrade --bump is
-      /// released
       if (dependencyNames.contains(name)) {
-        dataError('"$name" is already in "dependencies". '
-            'Use "pub upgrade $name" to upgrade to a later version!');
+        log.message(
+            '"$name" is already in "dependencies". Will try to update the constraint.');
+        dependencies.removeWhere((element) => element.name == name);
       }
 
       /// If package is originally in dev_dependencies and we wish to add it to
@@ -284,7 +282,7 @@ class AddCommand extends PubCommand {
       if (devDependencyNames.contains(name)) {
         log.message('"$name" was found in dev_dependencies. '
             'Removing "$name" and adding it to dependencies instead.');
-        devDependencies = devDependencies.where((d) => d.name != name).toList();
+        devDependencies.removeWhere((element) => element.name == name);
       }
 
       dependencies.add(range);
