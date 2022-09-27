@@ -27,7 +27,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | date: $TIME
 [E]    | content-length: 197
 [E]    | x-frame-options: SAMEORIGIN
-[E]    | content-type: text/plain; charset=utf-8
+[E]    | content-type: application/vnd.pub.v2+json
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
@@ -53,7 +53,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | transfer-encoding: chunked
 [E]    | x-goog-hash: $CHECKSUM_HEADER
 [E]    | x-frame-options: SAMEORIGIN
-[E]    | content-type: text/plain; charset=utf-8
+[E]    | content-type: application/octet-stream
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
 [E] IO  : Creating $FILE from stream
@@ -165,7 +165,7 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
    | date: $TIME
    | content-length: 197
    | x-frame-options: SAMEORIGIN
-   | content-type: text/plain; charset=utf-8
+   | content-type: application/vnd.pub.v2+json
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
 IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
@@ -193,7 +193,7 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/
    | transfer-encoding: chunked
    | x-goog-hash: $CHECKSUM_HEADER
    | x-frame-options: SAMEORIGIN
-   | content-type: text/plain; charset=utf-8
+   | content-type: application/octet-stream
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
 IO  : Creating $FILE from stream

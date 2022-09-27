@@ -75,20 +75,24 @@ class PackageServer {
         if (package == null) {
           return shelf.Response.notFound('No package named $name');
         }
-        return shelf.Response.ok(jsonEncode({
-          'name': name,
-          'uploaders': ['nweiz@google.com'],
-          'versions': package.versions.values
-              .map((version) => packageVersionApiMap(
-                    server._inner.url.toString(),
-                    version.pubspec,
-                    retracted: version.isRetracted,
-                  ))
-              .toList(),
-          if (package.isDiscontinued) 'isDiscontinued': true,
-          if (package.discontinuedReplacementText != null)
-            'replacedBy': package.discontinuedReplacementText,
-        }));
+        return shelf.Response.ok(
+            jsonEncode({
+              'name': name,
+              'uploaders': ['nweiz@google.com'],
+              'versions': package.versions.values
+                  .map((version) => packageVersionApiMap(
+                        server._inner.url.toString(),
+                        version.pubspec,
+                        retracted: version.isRetracted,
+                      ))
+                  .toList(),
+              if (package.isDiscontinued) 'isDiscontinued': true,
+              if (package.discontinuedReplacementText != null)
+                'replacedBy': package.discontinuedReplacementText,
+            }),
+            headers: {
+              HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'
+            });
       },
     );
 
