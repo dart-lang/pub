@@ -9,9 +9,9 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('--force cannot be combined with --dry-run', () async {
+    await d.validPackage.create();
+
     await runPub(
       args: ['lish', '--force', '--dry-run'],
       error: contains('Cannot use both --force and --dry-run.'),

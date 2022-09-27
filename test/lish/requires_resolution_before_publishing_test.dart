@@ -9,19 +9,14 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('Can publish files in a .folder', () async {
-    await d.git(appPath).create();
+  test('does not publish if no resolution can be found', () async {
+    await servePackages(); // No packages.
     await d.validPackage.create();
-    await d.dir(appPath, [
-      d.dir('.vscode', [d.file('a')]),
-      d.file('.pubignore', '!.vscode/')
-    ]).create();
+    await d.appDir({'foo': '1.0.0'}).create();
     await runPub(
-      args: ['lish', '--dry-run'],
-      output: contains('''
-├── .vscode
-│   └── a'''),
-      exitCode: exit_codes.SUCCESS,
+      args: ['lish'],
+      error: contains("Because myapp depends on foo any which doesn't exist"),
+      exitCode: exit_codes.UNAVAILABLE,
     );
   });
 }

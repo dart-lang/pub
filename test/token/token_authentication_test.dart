@@ -9,10 +9,9 @@ import '../lish/utils.dart';
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('with a pre existing environment token authenticates', () async {
     await servePackages();
+    await d.validPackage.create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
@@ -33,6 +32,7 @@ void main() {
 
   test('with a pre existing opaque token authenticates', () async {
     await servePackages();
+    await d.validPackage.create();
     await d.tokensFile({
       'version': 1,
       'hosted': [

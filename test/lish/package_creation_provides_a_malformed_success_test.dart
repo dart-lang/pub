@@ -12,10 +12,9 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package creation provides a malformed success', () async {
     await servePackages();
+    await d.validPackage.create();
     await d.credentialsFile(globalServer, 'access token').create();
     var pub = await startPublish(globalServer);
 

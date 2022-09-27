@@ -18,7 +18,6 @@ void main() {
     var pkg = packageMap('test_pkg', '1.0.0');
     pkg['publish_to'] = 'http://pubspec.com';
     await d.dir(appPath, [d.pubspec(pkg)]).create();
-
     await runPub(
         args: ['lish', '--dry-run', '--server', packageServer.url],
         output: contains(packageServer.url),

@@ -33,7 +33,7 @@ TarFileDescriptor tar(String name, [List<Descriptor>? contents]) =>
 
 /// Describes a package that passes all validation.
 DirectoryDescriptor get validPackage => dir(appPath, [
-      libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      libPubspec('test_pkg', '1.0.0', sdk: '>=0.1.2 <=0.2.0'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),

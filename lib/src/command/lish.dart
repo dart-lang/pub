@@ -16,6 +16,7 @@ import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../solver/type.dart';
 import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
 import '../validator.dart';
@@ -218,6 +219,8 @@ the \$PUB_HOSTED_URL environment variable.''',
           'You can enable this by changing the "publish_to" field in your '
           'pubspec.');
     }
+
+    await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
 
     var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root.name}.');
