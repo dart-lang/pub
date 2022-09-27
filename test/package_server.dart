@@ -21,14 +21,20 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 class PackageServer {
-  /// The inner [DescriptorServer] that this uses to serve its descriptors.
-  final shelf.Server _inner;
+  /// The inner [IOServer] that this uses to serve its descriptors.
+  final shelf_io.IOServer _inner;
 
   /// Handlers of requests. Last matching handler will be used.
   final List<_PatternAndHandler> _handlers = [];
 
   // A list of all the requests recieved up till now.
   final List<String> requestedPaths = <String>[];
+
+  // Whether the [IOServer] should compress the content, if possible.
+  // See [HttpServer.autoCompress] for details.
+  bool get autoCompress => _inner.server.autoCompress;
+  set autoCompress(bool shouldAutoCompress) =>
+      _inner.server.autoCompress = shouldAutoCompress;
 
   // Setting this to false will disable automatic calculation of checksums.
   bool serveChecksums = true;
@@ -105,6 +111,9 @@ class PackageServer {
         for (final packageVersion in package.versions.values) {
           if (packageVersion.version == version) {
             final headers = packageVersion.headers ?? {};
+            headers[HttpHeaders.contentTypeHeader] ??= [
+              'application/octet-stream'
+            ];
 
             // This gate enables tests to validate the CRC32C parser by
             // passing in arbitrary values for the checksum header.

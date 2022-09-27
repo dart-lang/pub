@@ -12,7 +12,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('gets a package from a pub server and validates CRC32C checksum',
+  test('gets a package from a pub server and validates its CRC32C checksum',
       () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
@@ -29,7 +29,7 @@ void main() {
     ]).validate();
   });
 
-  group('gets a package from a pub server without validating checksum', () {
+  group('gets a package from a pub server without validating its checksum', () {
     late PackageServer server;
 
     setUp(() async {
@@ -44,7 +44,7 @@ void main() {
         });
     });
 
-    test('because of missing checksum header', () async {
+    test('because of omitted checksum header', () async {
       expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
 
       await d.appDir({'foo': '1.2.3'}).create();
@@ -164,7 +164,7 @@ void main() {
         });
     });
 
-    test('when CRC32C checksum is empty', () async {
+    test('when the CRC32C checksum is empty', () async {
       await d.appDir({
         'foo': {
           'version': '1.2.3',
@@ -184,7 +184,7 @@ void main() {
       );
     });
 
-    test('when CRC32C checksum has bad encoding', () async {
+    test('when the CRC32C checksum has bad encoding', () async {
       await d.appDir({
         'bar': {
           'version': '1.2.3',
@@ -204,7 +204,7 @@ void main() {
       );
     });
 
-    test('when CRC32C checksum is malformed', () async {
+    test('when the CRC32C checksum is malformed', () async {
       await d.appDir({
         'baz': {
           'version': '1.2.3',
@@ -223,6 +223,44 @@ void main() {
         },
       );
     });
+  });
+
+  test('gets a package from a pub server that uses gzip response compression',
+      () async {
+    final server = await servePackages();
+    server.autoCompress = true;
+    server.serveChecksums = false;
+    server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
+
+    await d.appDir({'foo': '1.2.3'}).create();
+
+    await pubGet();
+
+    await d.cacheDir({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
+  });
+
+  test(
+      'gets a package from a pub server that uses gzip response compression '
+      'and validates its CRC32C checksum', () async {
+    final server = await servePackages();
+    server.autoCompress = true;
+    server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
+
+    await d.appDir({'foo': '1.2.3'}).create();
+
+    await pubGet();
+
+    await d.cacheDir({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
   });
 
   group('categorizes dependency types in the lockfile', () {
