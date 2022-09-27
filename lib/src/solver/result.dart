@@ -120,7 +120,7 @@ This might indicate that:
 * The content has changed on the server since you created the pubspec.lock.
 * The pubspec.lock has been corrupted.
 
-Your pubspec.lock has been updated according to what is on your server.
+Your pubspec.lock has been updated according to what is on the server.
 
 See $contentHashesDocumentationUrl for more information.
 ''');
