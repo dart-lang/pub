@@ -19,6 +19,8 @@ class SolveFailure implements ApplicationException {
   /// it will have one term, which will be the root package.
   final Incompatibility incompatibility;
 
+  final String? suggestions;
+
   @override
   String get message => toString();
 
@@ -35,14 +37,17 @@ class SolveFailure implements ApplicationException {
     return null;
   }
 
-  SolveFailure(this.incompatibility)
+  SolveFailure(this.incompatibility, {this.suggestions})
       : assert(incompatibility.terms.isEmpty ||
             incompatibility.terms.single.package.isRoot);
 
   /// Describes how [incompatibility] was derived, and thus why version solving
   /// failed.
   @override
-  String toString() => _Writer(incompatibility).write();
+  String toString() => [
+        _Writer(incompatibility).write(),
+        if (suggestions != null) suggestions
+      ].join();
 }
 
 /// A class that writes a human-readable description of the cause of a

@@ -334,15 +334,15 @@ class Entrypoint {
             'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
       } else {
         if (e is SolveFailure) {
-          throw ApplicationException(
-            e.message +
-                await suggestResolutionAlternatives(
-                  this,
-                  type,
-                  e.incompatibility,
-                  unlock ?? [],
-                  cache,
-                ),
+          throw SolveFailure(
+            e.incompatibility,
+            suggestions: await suggestResolutionAlternatives(
+              this,
+              type,
+              e.incompatibility,
+              unlock ?? [],
+              cache,
+            ),
           );
         }
 
