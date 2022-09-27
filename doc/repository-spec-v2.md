@@ -260,7 +260,7 @@ expiration to less than 25 minutes (to allow for retries and clock drift).
 
 The `archive_sha256` should be the hex-encoded sha256 checksum of the file are
 archive_url. It is an optional field that allows the pub client to verify the
-integrity of downloaded archive.
+integrity of the downloaded archive.
 
 The `archive_sha256` also provides an easy way for clients to detect if
 something has changed on the server. In the absense of this field the client can
