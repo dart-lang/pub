@@ -114,7 +114,7 @@ class SolveResult {
               if (originalHash != null) {
                 if (!bytesEquals(cachedHash, originalHash)) {
                   log.warning('''
-Content of ${id.name}-${id.version} has changed compared to what was locked your pubspec.lock.
+The content of ${id.name}-${id.version} on the server doesn't match what was locked in your pubspec.lock.
 
 This might indicate that:
 * The content has changed on the server since you created the pubspec.lock.
