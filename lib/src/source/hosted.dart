@@ -892,7 +892,7 @@ class HostedSource extends CachedSource {
         onRetry: (e, retryCount) => log.io(
             'Retry #${retryCount + 1} because of checksum error with GET $url...'),
         maxAttempts: math.max(
-          1, // Having less than 1 retry is **always** wrong.
+          1, // Having less than 1 attempt doesn't make sense.
           int.tryParse(io.Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ??
               7,
         ),
