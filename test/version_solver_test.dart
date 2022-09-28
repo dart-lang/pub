@@ -198,23 +198,22 @@ void withLockFile() {
 
   // Issue 1853
   test(
-      "produces a nice message for a locked dependency that's the only "
-      'version of its package', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'})
-      ..serve('bar', '1.0.0')
-      ..serve('bar', '2.0.0');
+    "produces a nice message for a locked dependency that's the only version of its package",
+    () async {
+      await servePackages()
+        ..serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'})
+        ..serve('bar', '1.0.0')
+        ..serve('bar', '2.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
-    await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
+      await d.appDir({'foo': 'any'}).create();
+      await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
 
-    await d.appDir({'foo': 'any', 'bar': '<2.0.0'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace('''
-      Because myapp depends on foo any which depends on bar >=2.0.0,
-        bar >=2.0.0 is required.
-      So, because myapp depends on bar <2.0.0, version solving failed.
-    '''));
-  });
+      await d.appDir({'foo': 'any', 'bar': '<2.0.0'}).create();
+      await expectResolves(error: contains('''
+Because myapp depends on foo any which depends on bar >=2.0.0, bar >=2.0.0 is required.
+So, because myapp depends on bar <2.0.0, version solving failed.'''));
+    },
+  );
 }
 
 void rootDependency() {
@@ -321,11 +320,9 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace('''
-        Because no versions of foo match ^2.0.0 and myapp depends on foo
-          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
-        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
-      '''));
+      await expectResolves(error: contains('''
+Because no versions of foo match ^2.0.0 and myapp depends on foo >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''));
     });
 
     test("fails when dev dependency isn't satisfied", () async {
@@ -340,11 +337,9 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace('''
-        Because no versions of foo match ^2.0.0 and myapp depends on foo
-          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
-        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
-      '''));
+      await expectResolves(error: contains('''
+Because no versions of foo match ^2.0.0 and myapp depends on foo >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''));
     });
 
     test('fails when dev and main constraints are incompatible', () async {
@@ -359,10 +354,9 @@ void devDependency() {
         })
       ]).create();
 
-      await expectResolves(error: equalsIgnoringWhitespace('''
-        Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version
-          solving failed.
-      '''));
+      await expectResolves(
+          error: contains(
+              'Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version solving failed.'));
     });
 
     test('fails when dev and main sources are incompatible', () async {
@@ -416,10 +410,8 @@ void unsolvable() {
       ..serve('foo', '2.1.3');
 
     await d.appDir({'foo': '>=1.0.0 <2.0.0'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
-      Because myapp depends on foo ^1.0.0 which doesn't match any versions,
-        version solving failed.
-    """));
+    await expectResolves(error: contains('''
+Because myapp depends on foo ^1.0.0 which doesn't match any versions, version solving failed.'''));
   });
 
   test('no version that matches combined constraint', () async {
@@ -530,10 +522,8 @@ void unsolvable() {
       ..serve('b', '1.0.0');
 
     await d.appDir({'a': 'any', 'b': '>1.0.0'}).create();
-    await expectResolves(error: equalsIgnoringWhitespace("""
-      Because myapp depends on b >1.0.0 which doesn't match any versions,
-        version solving failed.
-    """));
+    await expectResolves(error: contains('''
+Because myapp depends on b >1.0.0 which doesn't match any versions, version solving failed.'''));
   });
 
   // This is a regression test for #18300.
