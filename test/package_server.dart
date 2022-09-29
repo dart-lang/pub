@@ -30,8 +30,9 @@ class PackageServer {
   // A list of all the requests recieved up till now.
   final List<String> requestedPaths = <String>[];
 
-  // Whether the [IOServer] should compress the content, if possible.
-  // See [HttpServer.autoCompress] for details.
+  /// Whether the [IOServer] should compress the content, if possible.
+  /// The default value is `false` (compression disabled).
+  /// See [HttpServer.autoCompress] for details.
   bool get autoCompress => _inner.server.autoCompress;
   set autoCompress(bool shouldAutoCompress) =>
       _inner.server.autoCompress = shouldAutoCompress;
