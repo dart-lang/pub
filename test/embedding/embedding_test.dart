@@ -363,9 +363,11 @@ String _filter(String input) {
       )
       .replaceAll(
         RegExp(
-            r'Computed checksum \d+ for "(.+)" with expected CRC32C of \d+\.',
+            r'Computed checksum \d+ for foo 1.0.0 with expected CRC32C of '
+            r'\d+\.',
             multiLine: true),
-        r'Computed checksum $CRC32C for $FILENAME with expected CRC32C of $CRC32C.',
+        r'Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of '
+        r'$CRC32C.',
       )
 
       /// TODO(sigurdm): This hack suppresses differences in stack-traces

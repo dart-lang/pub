@@ -854,8 +854,8 @@ class HostedSource extends CachedSource {
           'Package $packageName has no version $version');
     }
 
-    var url = versionInfo.archiveUrl;
-    log.io('Get package from $url.');
+    final archiveUrl = versionInfo.archiveUrl;
+    log.io('Get package from $archiveUrl.');
     log.message('Downloading ${log.bold(id.name)} ${id.version}...');
 
     // Download and extract the archive to a temp directory.
@@ -868,15 +868,15 @@ class HostedSource extends CachedSource {
       await retry(
         // Attempt to download archive and validate its checksum.
         () async {
-          final request = http.Request('GET', url);
+          final request = http.Request('GET', archiveUrl);
           final response = await withAuthenticatedClient(cache,
               Uri.parse(description.url), (client) => client.send(request));
           final expectedChecksum = _parseCrc32c(response.headers, fileName);
 
           Stream<List<int>> stream = response.stream;
           if (expectedChecksum != null) {
-            stream =
-                _validateStream(response.stream, expectedChecksum, fileName);
+            stream = _validateStream(
+                response.stream, expectedChecksum, id, archiveUrl);
           }
 
           // We download the archive to disk instead of streaming it directly
@@ -889,8 +889,9 @@ class HostedSource extends CachedSource {
         // Retry if the checksum response header was malformed or the actual
         // checksum did not match the expected checksum.
         retryIf: (e) => e is PackageIntegrityException,
-        onRetry: (e, retryCount) => log.io(
-            'Retry #${retryCount + 1} because of checksum error with GET $url...'),
+        onRetry: (e, retryCount) => log
+            .io('Retry #${retryCount + 1} because of checksum error with GET '
+                '$archiveUrl...'),
         maxAttempts: math.max(
           1, // Having less than 1 attempt doesn't make sense.
           int.tryParse(io.Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ??
@@ -1139,8 +1140,8 @@ const checksumHeaderName = 'x-goog-hash';
 /// the one present in the checksum response header.
 ///
 /// Throws [PackageIntegrityException] if there is a checksum mismatch.
-Stream<List<int>> _validateStream(
-    Stream<List<int>> stream, int expectedChecksum, String fileName) async* {
+Stream<List<int>> _validateStream(Stream<List<int>> stream,
+    int expectedChecksum, PackageId id, Uri archiveUrl) async* {
   final crc32c = Crc32c();
 
   await for (final chunk in stream) {
@@ -1151,13 +1152,14 @@ Stream<List<int>> _validateStream(
   final actualChecksum = crc32c.finalize();
 
   log.fine(
-      'Computed checksum $actualChecksum for "$fileName" with expected CRC32C '
-      'of $expectedChecksum.');
+      'Computed checksum $actualChecksum for ${id.name} ${id.version} with '
+      'expected CRC32C of $expectedChecksum.');
 
   if (actualChecksum != expectedChecksum) {
     throw PackageIntegrityException(
-      'Package archive "$fileName" has a CRC32C checksum mismatch',
-    );
+        'Package archive for ${id.name} ${id.version} downloaded from '
+        '"$archiveUrl" has "x-goog-hash: crc32c=$expectedChecksum", which '
+        'doesn\'t match the checksum of the archive downloaded.');
   }
 }
 
