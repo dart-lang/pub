@@ -362,7 +362,9 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         dataError('${log.bold(name)} ${entrypoint.root.version} requires '
             'unknown SDK "$name".');
       } else if (sdkName == 'dart') {
-        if (constraint.allows((sdk as DartSdk).version)) return;
+        if (constraint.effectiveConstraint.allows((sdk as DartSdk).version)) {
+          return;
+        }
         dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
             'support Dart ${sdk.version}.');
       } else {

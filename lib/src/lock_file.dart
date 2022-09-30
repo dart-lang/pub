@@ -241,12 +241,11 @@ class LockFile {
         rootUri = p.toUri(rootPath);
       }
       final pubspec = await cache.describe(id);
-      final sdkConstraint = pubspec.sdkConstraints[sdk.identifier];
       entries.add(PackageConfigEntry(
         name: name,
         rootUri: rootUri,
         packageUri: p.toUri('lib/'),
-        languageVersion: LanguageVersion.fromSdkConstraint(sdkConstraint),
+        languageVersion: pubspec.languageVersion,
       ));
     }
 

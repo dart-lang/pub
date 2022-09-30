@@ -218,8 +218,11 @@ class PackageLister {
       for (var sdk in sdks.values) {
         if (!_matchesSdkConstraint(pubspec, sdk)) {
           return [
-            Incompatibility([Term(depender, true)],
-                SdkCause(pubspec.sdkConstraints[sdk.identifier], sdk))
+            Incompatibility(
+                [Term(depender, true)],
+                SdkCause(
+                    pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
+                    sdk))
           ];
         }
       }
@@ -321,12 +324,13 @@ class PackageLister {
         alwaysIncludeMaxPreRelease: true);
     _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
-    var sdkConstraint = await foldAsync(
+    var sdkConstraint = await foldAsync<VersionConstraint, PackageId>(
         slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,
-        (dynamic previous, dynamic version) async {
+        (previous, version) async {
       var pubspec = await _describeSafe(version);
       return previous.union(
-          pubspec.sdkConstraints[sdk.identifier] ?? VersionConstraint.any);
+          pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint ??
+              VersionConstraint.any);
     });
 
     return Incompatibility(
@@ -428,6 +432,7 @@ class PackageLister {
     var constraint = pubspec.sdkConstraints[sdk.identifier];
     if (constraint == null) return true;
 
-    return sdk.isAvailable && constraint.allows(sdk.version!);
+    return sdk.isAvailable &&
+        constraint.effectiveConstraint.allows(sdk.version!);
   }
 }
