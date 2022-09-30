@@ -31,7 +31,7 @@ import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
-import 'solver/failure_suggestions.dart';
+import 'solver/solve_suggestions.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
