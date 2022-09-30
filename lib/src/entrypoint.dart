@@ -101,7 +101,16 @@ class Entrypoint {
     if (!fileExists(lockFilePath)) {
       return _lockFile = LockFile.empty();
     } else {
-      return _lockFile = LockFile.load(lockFilePath, cache.sources);
+      try {
+        return _lockFile = LockFile.load(lockFilePath, cache.sources);
+      } on FormatException catch (e) {
+        throw ApplicationException('''
+Failed parsing lock file:
+
+$e
+
+Consider deleting the file and running `$topLevelProgram pub get` to recreate it.''');
+      }
     }
   }
 
