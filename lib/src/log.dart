@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -336,12 +337,20 @@ void dumpTranscriptToStdErr() {
   stderr.writeln('---- End log transcript ----');
 }
 
-String _limit(String input, int limit) {
+/// Shortens [input] to at most [limit] characters by omitting the middle part
+/// replacing it with '[...]' if it is too long.
+///
+/// [limit] must be more than 5.
+@visibleForTesting
+String limitLength(String input, int limit) {
   const snip = '[...]';
-  if (input.length < limit - snip.length) return input;
-  return '${input.substring(0, limit ~/ 2 - snip.length)}'
+  assert(limit > snip.length);
+  if (input.length <= limit) return input;
+  final half = (limit - snip.length) ~/ 2;
+  final extra = (limit - snip.length).isOdd ? 1 : 0;
+  return '${input.substring(0, half + extra)}'
       '$snip'
-      '${input.substring(limit)}';
+      '${input.substring(input.length - half)}';
 }
 
 /// Prints relevant system information and the log transcript to [path].
@@ -350,7 +359,7 @@ void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
   buffer.writeln('''
 Information about the latest pub run.
 
-If you believe something is not working right, you can go to 
+If you believe something is not working right, you can go to
 https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
 
 Before making this file public, make sure to remove any sensitive information!
@@ -367,14 +376,14 @@ Platform: ${Platform.operatingSystem}
   if (entrypoint != null) {
     buffer.writeln('---- ${p.absolute(entrypoint.pubspecPath)} ----');
     if (fileExists(entrypoint.pubspecPath)) {
-      buffer.writeln(_limit(readTextFile(entrypoint.pubspecPath), 5000));
+      buffer.writeln(limitLength(readTextFile(entrypoint.pubspecPath), 5000));
     } else {
       buffer.writeln('<No pubspec.yaml>');
     }
     buffer.writeln('---- End pubspec.yaml ----');
     buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
     if (fileExists(entrypoint.lockFilePath)) {
-      buffer.writeln(_limit(readTextFile(entrypoint.lockFilePath), 5000));
+      buffer.writeln(limitLength(readTextFile(entrypoint.lockFilePath), 5000));
     } else {
       buffer.writeln('<No pubspec.lock>');
     }

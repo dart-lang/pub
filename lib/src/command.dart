@@ -165,7 +165,7 @@ abstract class PubCommand extends Command<int> {
 
   /// Override the exit code that would normally be used when exiting
   /// successfully. Intended to be used by subcommands like `run` that wishes
-  /// to control the top-level exitcode.
+  /// to control the top-level exit code.
   ///
   /// This may only be called once.
   @nonVirtual

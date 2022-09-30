@@ -94,8 +94,6 @@ class AddCommand extends PubCommand {
         help: 'Build executables in immediate dependencies.');
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
-    argParser.addFlag('legacy-packages-file',
-        help: 'Generate the legacy ".packages" file', negatable: false);
   }
 
   @override
@@ -164,11 +162,12 @@ class AddCommand extends PubCommand {
 
       await Entrypoint.inMemory(newRoot, cache,
               solveResult: solveResult, lockFile: entrypoint.lockFile)
-          .acquireDependencies(SolveType.get,
-              dryRun: true,
-              precompile: argResults['precompile'],
-              analytics: analytics,
-              generateDotPackages: false);
+          .acquireDependencies(
+        SolveType.get,
+        dryRun: true,
+        precompile: argResults['precompile'],
+        analytics: analytics,
+      );
     } else {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
@@ -183,7 +182,6 @@ class AddCommand extends PubCommand {
         SolveType.get,
         precompile: argResults['precompile'],
         analytics: analytics,
-        generateDotPackages: argResults['legacy-packages-file'],
       );
 
       if (argResults['example'] && entrypoint.example != null) {
@@ -192,7 +190,6 @@ class AddCommand extends PubCommand {
           precompile: argResults['precompile'],
           onlyReportSuccessOrFailure: true,
           analytics: analytics,
-          generateDotPackages: argResults['legacy-packages-file'],
         );
       }
     }
@@ -216,11 +213,10 @@ class AddCommand extends PubCommand {
     final range =
         package.ref.withConstraint(package.constraint ?? VersionConstraint.any);
     if (isDev) {
-      /// TODO(walnut): Change the error message once pub upgrade --bump is
-      /// released
       if (devDependencyNames.contains(name)) {
-        dataError('"$name" is already in "dev_dependencies". '
-            'Use "pub upgrade $name" to upgrade to a later version!');
+        log.message('"$name" is already in "dev_dependencies". '
+            'Will try to update the constraint.');
+        devDependencies.removeWhere((element) => element.name == name);
       }
 
       /// If package is originally in dependencies and we wish to add it to
@@ -235,11 +231,10 @@ class AddCommand extends PubCommand {
 
       devDependencies.add(range);
     } else {
-      /// TODO(walnut): Change the error message once pub upgrade --bump is
-      /// released
       if (dependencyNames.contains(name)) {
-        dataError('"$name" is already in "dependencies". '
-            'Use "pub upgrade $name" to upgrade to a later version!');
+        log.message(
+            '"$name" is already in "dependencies". Will try to update the constraint.');
+        dependencies.removeWhere((element) => element.name == name);
       }
 
       /// If package is originally in dev_dependencies and we wish to add it to
@@ -248,7 +243,7 @@ class AddCommand extends PubCommand {
       if (devDependencyNames.contains(name)) {
         log.message('"$name" was found in dev_dependencies. '
             'Removing "$name" and adding it to dependencies instead.');
-        devDependencies = devDependencies.where((d) => d.name != name).toList();
+        devDependencies.removeWhere((element) => element.name == name);
       }
 
       dependencies.add(range);

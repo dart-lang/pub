@@ -12,7 +12,7 @@ import 'package:pub/src/package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor/git.dart';
-import 'descriptor/packages.dart';
+import 'descriptor/package_config.dart';
 import 'descriptor/tar.dart';
 import 'descriptor/yaml.dart';
 import 'test_pub.dart';
@@ -20,7 +20,7 @@ import 'test_pub.dart';
 export 'package:test_descriptor/test_descriptor.dart';
 
 export 'descriptor/git.dart';
-export 'descriptor/packages.dart';
+export 'descriptor/package_config.dart';
 export 'descriptor/tar.dart';
 
 /// Creates a new [GitRepoDescriptor] with [name] and [contents].
@@ -33,7 +33,7 @@ TarFileDescriptor tar(String name, [List<Descriptor>? contents]) =>
 
 /// Describes a package that passes all validation.
 DirectoryDescriptor get validPackage => dir(appPath, [
-      libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      libPubspec('test_pkg', '1.0.0', sdk: '>=0.1.2 <=0.2.0'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
@@ -188,10 +188,11 @@ Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
 /// If [port] is passed, it's used as the port number of the local hosted server
 /// that this cache represents. It defaults to [globalServer.port].
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
-  return dir(cachePath, [
-    dir('hosted', [dir('localhost%58${port ?? globalServer.port}', contents)])
-  ]);
+  return dir(hostedCachePath(port: port), contents);
 }
+
+String hostedCachePath({int? port}) =>
+    p.join(cachePath, 'hosted', 'localhost%58${port ?? globalServer.port}');
 
 /// Describes the file that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
@@ -260,20 +261,6 @@ Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
 DirectoryDescriptor appDir([Map? dependencies]) =>
     dir(appPath, [appPubspec(dependencies)]);
 
-/// Describes a `.packages` file.
-///
-/// [dependencies] maps package names to strings describing where the packages
-/// are located on disk. If the strings are semantic versions, then the packages
-/// are located in the system cache; otherwise, the strings are interpreted as
-/// relative `file:` URLs.
-///
-/// Validation checks that the `.packages` file exists, has the expected
-/// entries (one per key in [dependencies]), each with a path that contains
-/// either the version string (for a reference to the pub cache) or a
-/// path to a path dependency, relative to the application directory.
-Descriptor packagesFile(Map<String, String> dependencies) =>
-    PackagesFileDescriptor(dependencies);
-
 /// Describes a `.dart_tools/package_config.json` file.
 ///
 /// [dependencies] is a list of packages included in the file.
@@ -334,12 +321,4 @@ PackageConfigEntry packageConfigEntry({
     languageVersion:
         languageVersion != null ? LanguageVersion.parse(languageVersion) : null,
   );
-}
-
-/// Describes a `.packages` file in the application directory, including the
-/// implicit entry for the app itself.
-Descriptor appPackagesFile(Map<String, String> dependencies) {
-  var copied = Map<String, String>.from(dependencies);
-  copied['myapp'] = '.';
-  return dir(appPath, [packagesFile(copied)]);
 }

@@ -112,20 +112,20 @@ void main() {
       await runPub(args: ['deps'], output: '''
           Dart SDK 0.1.2+3
           myapp 0.0.0
-          |-- from_path 1.2.3
-          |-- normal 1.2.3
-          |   |-- circular_a 1.2.3
-          |   |   '-- circular_b 1.2.3
-          |   |       '-- circular_a...
-          |   '-- transitive 1.2.3
-          |       '-- shared...
-          |-- overridden 2.0.0
-          |-- override_only 1.2.3
-          '-- unittest 1.2.3
-              |-- dev_only 1.2.3
-              '-- shared 1.2.3
-                  '-- other 1.0.0
-                      '-- myapp...
+          ├── from_path 1.2.3
+          ├── normal 1.2.3
+          │   ├── circular_a 1.2.3
+          │   │   └── circular_b 1.2.3
+          │   │       └── circular_a...
+          │   └── transitive 1.2.3
+          │       └── shared...
+          ├── overridden 2.0.0
+          ├── override_only 1.2.3
+          └── unittest 1.2.3
+              ├── dev_only 1.2.3
+              └── shared 1.2.3
+                  └── other 1.0.0
+                      └── myapp...
           ''');
     });
     test('in json form', () async {
@@ -333,17 +333,17 @@ void main() {
       await runPub(args: ['deps', '--no-dev'], output: '''
           Dart SDK 0.1.2+3
           myapp 0.0.0
-          |-- from_path 1.2.3
-          |-- normal 1.2.3
-          |   |-- circular_a 1.2.3
-          |   |   '-- circular_b 1.2.3
-          |   |       '-- circular_a...
-          |   '-- transitive 1.2.3
-          |       '-- shared 1.2.3
-          |           '-- other 1.0.0
-          |               '-- myapp...
-          |-- overridden 2.0.0
-          '-- override_only 1.2.3
+          ├── from_path 1.2.3
+          ├── normal 1.2.3
+          │   ├── circular_a 1.2.3
+          │   │   └── circular_b 1.2.3
+          │   │       └── circular_a...
+          │   └── transitive 1.2.3
+          │       └── shared 1.2.3
+          │           └── other 1.0.0
+          │               └── myapp...
+          ├── overridden 2.0.0
+          └── override_only 1.2.3
           ''');
     });
   });

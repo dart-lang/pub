@@ -15,8 +15,6 @@ import 'utils.dart';
 Validator readme() => ReadmeValidator();
 
 void main() {
-  setUp(d.validPackage.create);
-
   group('should consider a package valid if it', () {
     test('looks normal', () async {
       await d.validPackage.create();

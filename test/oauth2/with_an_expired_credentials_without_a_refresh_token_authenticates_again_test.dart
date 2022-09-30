@@ -13,9 +13,9 @@ void main() {
   test(
       'with an expired credentials.json without a refresh token, '
       'authenticates again and saves credentials.json', () async {
+    await servePackages();
     await d.validPackage.create();
 
-    await servePackages();
     await d
         .credentialsFile(globalServer, 'access token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))

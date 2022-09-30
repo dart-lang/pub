@@ -9,14 +9,13 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package validation has an error', () async {
     await d.dir(appPath, [
       d.rawPubspec({
         'name': 'test_pkg',
-        'homepage': 'http://pub.dartlang.org',
+        'homepage': 'https://pub.dev',
         'version': '1.0.0',
+        'environment': {'sdk': '>=0.1.2 <0.2.0'}
       }),
     ]).create();
 

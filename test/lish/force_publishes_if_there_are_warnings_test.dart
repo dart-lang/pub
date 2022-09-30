@@ -13,15 +13,15 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('--force publishes if there are warnings', () async {
+    await d.validPackage.create();
     var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
+        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=0.1.2 <0.2.0'});
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    await servePackages();
+    (await servePackages()).serve('foo', '1.0.0');
+
     await d.credentialsFile(globalServer, 'access token').create();
     var pub = await startPublish(globalServer, args: ['--force']);
 
@@ -35,15 +35,14 @@ void main() {
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
+    final stderrLines = await pub.stderr.rest.toList();
     expect(
-      pub.stderr,
-      emitsThrough('Package validation found the following potential issue:'),
-    );
-    expect(
-        pub.stderr,
-        emitsLines(
-            '* Your dependency on "foo" should have a version constraint.\n'
-            '  Without a constraint, you\'re promising to support all future versions of "foo".'));
+        stderrLines,
+        allOf([
+          contains('Package validation found the following potential issue:'),
+          contains(
+              '* Your dependency on "foo" should have a version constraint. For example:'),
+        ]));
     expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
   });
 }

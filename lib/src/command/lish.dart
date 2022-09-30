@@ -16,6 +16,7 @@ import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../solver/type.dart';
 import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
 import '../validator.dart';
@@ -25,7 +26,7 @@ class LishCommand extends PubCommand {
   @override
   String get name => 'publish';
   @override
-  String get description => 'Publish the current package to pub.dartlang.org.';
+  String get description => 'Publish the current package to pub.dev.';
   @override
   String get argumentsDescription => '[options]';
   @override
@@ -154,9 +155,9 @@ class LishCommand extends PubCommand {
   Future<void> _publish(List<int> packageBytes) async {
     try {
       final officialPubServers = {
-        'https://pub.dartlang.org',
-        // [validateAndNormalizeHostedUrl] normalizes https://pub.dev to
-        // https://pub.dartlang.org, so we don't need to do allow that here.
+        'https://pub.dev',
+        // [validateAndNormalizeHostedUrl] normalizes https://pub.dartlang.org
+        // to https://pub.dev, so we don't need to do allow that here.
 
         // Pub uses oauth2 credentials only for authenticating official pub
         // servers for security purposes (to not expose pub.dev access token to
@@ -219,6 +220,8 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
+    await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+
     var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root.name}.');
 
@@ -226,7 +229,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     var package = entrypoint.root;
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
-      '${tree.fromFiles(files, baseDir: entrypoint.root.dir, showAllChildren: true)}',
+      '${tree.fromFiles(files, baseDir: entrypoint.root.dir, showFileSizes: true)}',
     );
 
     var packageBytesFuture =

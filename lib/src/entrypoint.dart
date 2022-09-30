@@ -27,7 +27,6 @@ import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
 import 'package_graph.dart';
 import 'package_name.dart';
-import 'packages_file.dart' as packages_file;
 import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
@@ -108,6 +107,34 @@ class Entrypoint {
 
   LockFile? _lockFile;
 
+  /// The `.dart_tool/package_config.json` package-config of this entrypoint.
+  ///
+  /// Lazily initialized. Will throw [DataError] when initializing if the
+  /// `.dart_tool/packageConfig.json` file doesn't exist or has a bad format .
+  late PackageConfig packageConfig = () {
+    late String packageConfigRaw;
+    try {
+      packageConfigRaw = readTextFile(packageConfigPath);
+    } on FileException {
+      dataError(
+          'The "$packageConfigPath" file does not exist, please run "$topLevelProgram pub get".');
+    }
+    late PackageConfig result;
+    try {
+      result = PackageConfig.fromJson(json.decode(packageConfigRaw));
+    } on FormatException {
+      badPackageConfig();
+    }
+    // Version 2 is the initial version number for `package_config.json`,
+    // because `.packages` was version 1 (even if it was a different file).
+    // If the version is different from 2, then it must be a newer incompatible
+    // version, hence, the user should run `pub get` with the downgraded SDK.
+    if (result.configVersion != 2) {
+      badPackageConfig();
+    }
+    return result;
+  }();
+
   /// The package graph for the application and all of its transitive
   /// dependencies.
   ///
@@ -118,11 +145,16 @@ class Entrypoint {
   PackageGraph _createPackageGraph() {
     assertUpToDate();
     var packages = {
-      for (var id in lockFile.packages.values) id.name: cache.load(id)
+      for (var packageEntry in packageConfig.nonInjectedPackages)
+        packageEntry.name: Package.load(
+          packageEntry.name,
+          packageEntry.resolvedRootDir(packageConfigPath),
+          cache.sources,
+        ),
     };
     packages[root.name] = root;
 
-    return PackageGraph(this, lockFile, packages);
+    return PackageGraph(this, packages);
   }
 
   PackageGraph? _packageGraph;
@@ -140,9 +172,10 @@ class Entrypoint {
   /// not require it or make use of it within pub.
   String get packagesFile => p.normalize(p.join(_configRoot!, '.packages'));
 
-  /// The path to the entrypoint's ".dart_tool/package_config.json" file.
-  String get packageConfigFile =>
-      p.normalize(p.join(_configRoot!, '.dart_tool', 'package_config.json'));
+  /// The path to the entrypoint's ".dart_tool/package_config.json" file
+  /// relative to the current working directory .
+  late String packageConfigPath = p.relative(
+      p.normalize(p.join(_configRoot!, '.dart_tool', 'package_config.json')));
 
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
@@ -191,7 +224,11 @@ class Entrypoint {
     bool withPubspecOverrides = true,
   })  : root = Package.load(null, rootDir, cache.sources,
             withPubspecOverrides: withPubspecOverrides),
-        globalDir = null;
+        globalDir = null {
+    if (p.isWithin(cache.rootDir, rootDir)) {
+      fail('Cannot operate on packages inside the cache.');
+    }
+  }
 
   Entrypoint.inMemory(this.root, this.cache,
       {required LockFile? lockFile, SolveResult? solveResult})
@@ -225,25 +262,18 @@ class Entrypoint {
   Entrypoint? _example;
 
   /// Writes .packages and .dart_tool/package_config.json
-  Future<void> writePackagesFiles({bool generateDotPackages = false}) async {
+  Future<void> writePackageConfigFile() async {
     final entrypointName = isGlobal ? null : root.name;
-    if (generateDotPackages) {
-      writeTextFile(
-          packagesFile,
-          lockFile.packagesFile(cache,
-              entrypoint: entrypointName,
-              relativeFrom: isGlobal ? null : root.dir));
-    } else {
-      tryDeleteEntry(packagesFile);
-    }
-    ensureDir(p.dirname(packageConfigFile));
+    ensureDir(p.dirname(packageConfigPath));
     writeTextFile(
-        packageConfigFile,
-        await lockFile.packageConfigFile(cache,
-            entrypoint: entrypointName,
-            entrypointSdkConstraint:
-                root.pubspec.sdkConstraints[sdk.identifier],
-            relativeFrom: isGlobal ? null : root.dir));
+      packageConfigPath,
+      await lockFile.packageConfigFile(
+        cache,
+        entrypoint: entrypointName,
+        entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
+        relativeFrom: isGlobal ? null : root.dir,
+      ),
+    );
   }
 
   /// Gets all dependencies of the [root] package.
@@ -273,7 +303,6 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
-    required bool generateDotPackages,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
   }) async {
@@ -347,7 +376,7 @@ class Entrypoint {
       /// have to reload and reparse all the pubspecs.
       _packageGraph = PackageGraph.fromSolveResult(this, result);
 
-      await writePackagesFiles(generateDotPackages: generateDotPackages);
+      await writePackageConfigFile();
 
       try {
         if (precompile) {
@@ -430,7 +459,7 @@ class Entrypoint {
         executablePath: resolveExecutable(executable),
         outputPath: pathOfExecutable(executable),
         incrementalDillPath: incrementalDillPathOfExecutable(executable),
-        packageConfigPath: packageConfigFile,
+        packageConfigPath: packageConfigPath,
         name:
             '$package:${p.basenameWithoutExtension(executable.relativePath)}');
   }
@@ -521,9 +550,9 @@ class Entrypoint {
       dataError(
           'No $lockFilePath file found, please run "$topLevelProgram pub get" first.');
     }
-    if (!entryExists(packageConfigFile)) {
+    if (!entryExists(packageConfigPath)) {
       dataError(
-        'No $packageConfigFile file found, please run "$topLevelProgram pub get".\n'
+        'No $packageConfigPath file found, please run "$topLevelProgram pub get".\n'
         '\n'
         'Starting with Dart 2.7, the package_config.json file configures '
         'resolution of package import URIs; run "$topLevelProgram pub get" to generate it.',
@@ -568,17 +597,7 @@ class Entrypoint {
       }
     }
 
-    if (fileExists(packagesFile)) {
-      var packagesModified = File(packagesFile).lastModifiedSync();
-      if (packagesModified.isBefore(lockFileModified)) {
-        _checkPackagesFileUpToDate();
-        touch(packagesFile);
-      } else if (touchedLockFile) {
-        touch(packagesFile);
-      }
-    }
-
-    var packageConfigModified = File(packageConfigFile).lastModifiedSync();
+    var packageConfigModified = File(packageConfigPath).lastModifiedSync();
     if (packageConfigModified.isBefore(lockFileModified) ||
         hasPathDependencies) {
       // If `package_config.json` is older than `pubspec.lock` or we have
@@ -587,9 +606,9 @@ class Entrypoint {
       //  * Mitigate issues when copying a folder from one machine to another.
       //  * Force `pub get` if a path dependency has changed language version.
       _checkPackageConfigUpToDate();
-      touch(packageConfigFile);
+      touch(packageConfigPath);
     } else if (touchedLockFile) {
-      touch(packageConfigFile);
+      touch(packageConfigPath);
     }
 
     for (var match in _sdkConstraint.allMatches(lockFileText)) {
@@ -731,39 +750,6 @@ class Entrypoint {
     });
   }
 
-  /// Checks whether or not the `.packages` file is out of date with respect
-  /// to the [lockfile].
-  ///
-  /// This will throw a [DataError] if [lockfile] contains dependencies that
-  /// are not in the `.packages` or that don't match what's in there.
-  void _checkPackagesFileUpToDate() {
-    void outOfDate() {
-      dataError('The $lockFilePath file has changed since the .packages file '
-          'was generated, please run "$topLevelProgram pub get" again.');
-    }
-
-    var packages = packages_file.parse(
-        File(packagesFile).readAsBytesSync(), p.toUri(packagesFile));
-
-    final packagePathsMapping = <String, String>{};
-    for (final package in packages.keys) {
-      final packageUri = packages[package]!;
-
-      // Pub only generates "file:" and relative URIs.
-      if (packageUri.scheme != 'file' && packageUri.scheme.isNotEmpty) {
-        outOfDate();
-      }
-
-      // Get the dirname of the .packages path, since it's pointing to lib/.
-      final packagePath = p.dirname(p.join(root.dir, p.fromUri(packageUri)));
-      packagePathsMapping[package] = packagePath;
-    }
-
-    if (!_isPackagePathsMappingUpToDateWithLockfile(packagePathsMapping)) {
-      outOfDate();
-    }
-  }
-
   /// Checks whether or not the `.dart_tool/package_config.json` file is
   /// out of date with respect to the lockfile.
   ///
@@ -776,49 +762,13 @@ class Entrypoint {
   void _checkPackageConfigUpToDate() {
     void outOfDate() {
       dataError('The $lockFilePath file has changed since the '
-          '$packageConfigFile file '
+          '$packageConfigPath file '
           'was generated, please run "$topLevelProgram pub get" again.');
-    }
-
-    void badPackageConfig() {
-      dataError('The "$packageConfigFile" file is not recognized by '
-          '"pub" version, please run "$topLevelProgram pub get".');
-    }
-
-    late String packageConfigRaw;
-    try {
-      packageConfigRaw = readTextFile(packageConfigFile);
-    } on FileException {
-      dataError(
-          'The "$packageConfigFile" file does not exist, please run "$topLevelProgram pub get".');
-    }
-
-    late PackageConfig cfg;
-    try {
-      cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
-    } on FormatException {
-      badPackageConfig();
-    }
-
-    // Version 2 is the initial version number for `package_config.json`,
-    // because `.packages` was version 1 (even if it was a different file).
-    // If the version is different from 2, then it must be a newer incompatible
-    // version, hence, the user should run `pub get` with the downgraded SDK.
-    if (cfg.configVersion != 2) {
-      badPackageConfig();
     }
 
     final packagePathsMapping = <String, String>{};
 
-    // We allow the package called 'flutter_gen' to be injected into
-    // package_config.
-    //
-    // This is somewhat a hack. But it allows flutter to generate code in a
-    // package as it likes.
-    //
-    // See https://github.com/flutter/flutter/issues/73870 .
-    final packagesToCheck =
-        cfg.packages.where((package) => package.name != 'flutter_gen');
+    final packagesToCheck = packageConfig.nonInjectedPackages;
     for (final pkg in packagesToCheck) {
       // Pub always makes a packageUri of lib/
       if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
@@ -833,7 +783,7 @@ class Entrypoint {
 
     // Check if language version specified in the `package_config.json` is
     // correct. This is important for path dependencies as these can mutate.
-    for (final pkg in cfg.packages) {
+    for (final pkg in packageConfig.packages) {
       if (pkg.name == root.name || pkg.name == 'flutter_gen') continue;
       final id = lockFile.packages[pkg.name];
       if (id == null) {
@@ -960,6 +910,11 @@ See https://dart.dev/go/sdk-constraint
 ''', keyNode.span);
       }
     }
+  }
+
+  Never badPackageConfig() {
+    dataError('The "$packageConfigPath" file is not recognized by '
+        '"pub" version, please run "$topLevelProgram pub get".');
   }
 }
 

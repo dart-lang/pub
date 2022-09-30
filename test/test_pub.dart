@@ -74,7 +74,7 @@ Map<String, dynamic> packageSpec(String packageName) => json
         orElse: () => null) as Map<String, dynamic>;
 
 /// The suffix appended to a built snapshot.
-final versionSuffix = testVersion;
+const versionSuffix = testVersion;
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
@@ -391,7 +391,7 @@ Future<void> confirmPublish(TestProcess pub) async {
   // TODO(rnystrom): This is overly specific and inflexible regarding different
   // test packages. Should validate this a little more loosely.
   await expectLater(
-      pub.stdout, emits(startsWith('Publishing test_pkg 1.0.0 to ')));
+      pub.stdout, emitsThrough(startsWith('Publishing test_pkg 1.0.0 to ')));
   await expectLater(
       pub.stdout,
       emitsThrough(matches(
@@ -407,7 +407,7 @@ String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
-String testVersion = '0.1.2+3';
+const String testVersion = '0.1.2+3';
 
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
@@ -624,36 +624,7 @@ Future<void> createLockFile(String package,
       _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package))),
-    d.file(
-      '.packages',
-      lockFile.packagesFile(
-        cache,
-        entrypoint: package,
-        relativeFrom: p.join(d.sandbox, package),
-      ),
-    )
-  ]).create();
-}
-
-/// Like [createLockFile], but creates only a `.packages` file without a
-/// lockfile.
-Future<void> createPackagesFile(String package,
-    {Iterable<String>? dependenciesInSandBox,
-    Map<String, String>? hosted}) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var lockFile =
-      _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
-
-  await d.dir(package, [
-    d.file(
-      '.packages',
-      lockFile.packagesFile(
-        cache,
-        entrypoint: package,
-        relativeFrom: d.sandbox,
-      ),
-    )
+    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package)))
   ]).create();
 }
 
@@ -710,7 +681,7 @@ Map<String, Object> packageMap(
   var package = <String, Object>{
     'name': name,
     'version': version,
-    'homepage': 'http://pub.dartlang.org',
+    'homepage': 'http://pub.dev',
     'description': 'A package, I guess.'
   };
 
@@ -720,7 +691,7 @@ Map<String, Object> packageMap(
   return package;
 }
 
-/// Returns a Map in the format used by the pub.dartlang.org API to represent a
+/// Returns a Map in the format used by the pub.dev API to represent a
 /// package version.
 ///
 /// [pubspec] is the parsed pubspec of the package version. If [full] is true,
@@ -975,8 +946,8 @@ Future<void> runPubIntoBuffer(
 PackageServer get globalServer => _globalServer!;
 PackageServer? _globalServer;
 
-/// Creates an HTTP server that replicates the structure of pub.dartlang.org and
-/// makes it the current [globalServer].
+/// Creates an HTTP server that replicates the structure of pub.dev and makes it
+/// the current [globalServer].
 Future<PackageServer> servePackages() async {
   final server = await startPackageServer();
   _globalServer = server;
