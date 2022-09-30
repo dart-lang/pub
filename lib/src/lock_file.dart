@@ -10,6 +10,8 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
+import 'command_runner.dart';
+import 'exceptions.dart';
 import 'io.dart';
 import 'language_version.dart';
 import 'package_config.dart';
@@ -263,7 +265,12 @@ class LockFile {
   }
 
   static Never _failAt(String message, YamlNode node) {
-    throw SourceSpanFormatException(message, node.span);
+    throw ApplicationException('''
+Failed parsing lock file:
+
+${SourceSpanFormatException(message, node.span).toString()}
+
+Consider deleting the file and running `$topLevelProgram pub get` to recreate it.''');
   }
 
   /// Returns a copy of this LockFile with a package named [name] removed.
