@@ -689,6 +689,8 @@ class SdkConstraint {
   LanguageVersion get languageVersion =>
       LanguageVersion.fromSdkConstraint(originalConstraint);
 
+  // We currently don't call this anywhere - so this is only for debugging
+  // purposes.
   @override
   String toString() {
     if (effectiveConstraint != originalConstraint) {
