@@ -133,7 +133,7 @@ class Pubspec extends PubspecBase {
     if (pubspecOverridesFields != null) {
       pubspecOverridesFields.nodes.forEach((key, _) {
         if (!const {'dependency_overrides'}.contains(key.value)) {
-          throw PubspecException(
+          throw SourceSpanApplicationException(
             'pubspec_overrides.yaml only supports the `dependency_overrides` field.',
             key.span,
           );
@@ -293,7 +293,7 @@ class Pubspec extends PubspecBase {
   /// Loads the pubspec for a package located in [packageDir].
   ///
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
-  /// field, this will throw a [PubspecException].
+  /// field, this will throw a [SourceSpanApplicationException].
   ///
   /// If [allowOverridesFile] is `true` [pubspecOverridesFilename] is loaded and
   /// is allowed to override dependency_overrides from `pubspec.yaml`.
@@ -373,7 +373,7 @@ class Pubspec extends PubspecBase {
     if (expectedName == null) return;
     if (name == expectedName) return;
 
-    throw PubspecException(
+    throw SourceSpanApplicationException(
         '"name" field doesn\'t match expected name '
         '"$expectedName".',
         this.fields.nodes['name']!.span);
@@ -400,7 +400,7 @@ class Pubspec extends PubspecBase {
             loadYamlNode(overridesFileContents, sourceUrl: overridesLocation));
       }
     } on YamlException catch (error) {
-      throw PubspecException(error.message, error.span);
+      throw SourceSpanApplicationException(error.message, error.span);
     }
 
     return Pubspec.fromMap(pubspecMap, sources,
@@ -420,19 +420,20 @@ class Pubspec extends PubspecBase {
     } else if (node is YamlMap) {
       return node;
     } else {
-      throw PubspecException('The pubspec must be a YAML mapping.', node.span);
+      throw SourceSpanApplicationException(
+          'The pubspec must be a YAML mapping.', node.span);
     }
   }
 
   /// Returns a list of most errors in this pubspec.
   ///
   /// This will return at most one error for each field.
-  List<PubspecException> get allErrors {
-    var errors = <PubspecException>[];
+  List<SourceSpanApplicationException> get allErrors {
+    var errors = <SourceSpanApplicationException>[];
     void collectError(void Function() fn) {
       try {
         fn();
-      } on PubspecException catch (e) {
+      } on SourceSpanApplicationException catch (e) {
         errors.add(e);
       }
     }
@@ -591,7 +592,7 @@ VersionConstraint _parseVersionConstraint(
 }
 
 /// Runs [fn] and wraps any [FormatException] it throws in a
-/// [PubspecException].
+/// [SourceSpanApplicationException].
 ///
 /// [description] should be a noun phrase that describes whatever's being
 /// parsed or processed by [fn]. [span] should be the location of whatever's
@@ -611,7 +612,7 @@ T _wrapFormatException<T>(
     return fn();
   } on FormatException catch (e) {
     // If we already have a pub exception with a span, re-use that
-    if (e is PubspecException) rethrow;
+    if (e is SourceSpanApplicationException) rethrow;
 
     var msg = 'Invalid $description';
     final typeName = _fileTypeName(fileType);
@@ -624,9 +625,9 @@ T _wrapFormatException<T>(
   }
 }
 
-/// Throws a [PubspecException] with the given message.
+/// Throws a [SourceSpanApplicationException] with the given message.
 Never _error(String message, SourceSpan? span) {
-  throw PubspecException(message, span);
+  throw SourceSpanApplicationException(message, span);
 }
 
 enum _FileType {

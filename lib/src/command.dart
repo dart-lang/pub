@@ -194,7 +194,6 @@ abstract class PubCommand extends Command<int> {
       return exit_codes.SUCCESS;
     } catch (error, chain) {
       log.exception(error, chain);
-
       if (_pubTopLevel.trace) {
         log.dumpTranscriptToStdErr();
       } else if (!isUserFacingException(error)) {

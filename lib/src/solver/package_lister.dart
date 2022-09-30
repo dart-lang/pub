@@ -190,7 +190,7 @@ class PackageLister {
     try {
       pubspec = await withDependencyType(
           _dependencyType, () => _systemCache.describe(id));
-    } on PubspecException catch (error) {
+    } on SourceSpanApplicationException catch (error) {
       // The lockfile for the pubspec couldn't be parsed,
       log.fine('Failed to parse pubspec for $id:\n$error');
       _knownInvalidVersions = _knownInvalidVersions.union(id.version);

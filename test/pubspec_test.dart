@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source/hosted.dart';
@@ -15,11 +16,12 @@ void main() {
   group('parse()', () {
     final sources = SystemCache().sources;
 
-    var throwsPubspecException = throwsA(const TypeMatcher<PubspecException>());
+    var throwsPubspecException =
+        throwsA(const TypeMatcher<SourceSpanApplicationException>());
 
     void expectPubspecException(String contents, void Function(Pubspec) fn,
         [String? expectedContains]) {
-      var expectation = const TypeMatcher<PubspecException>();
+      var expectation = const TypeMatcher<SourceSpanApplicationException>();
       if (expectedContains != null) {
         expectation = expectation.having(
             (error) => error.message, 'message', contains(expectedContains));
@@ -390,7 +392,7 @@ dependencies:
           expect(
             () => pubspec.dependencies,
             throwsA(
-              isA<PubspecException>()
+              isA<SourceSpanApplicationException>()
                   .having((e) => e.span!.text, 'span.text', 'invalid value'),
             ),
           );
@@ -700,7 +702,7 @@ dependency_overrides:
         void Function(Pubspec) fn, [
         String? expectedContains,
       ]) {
-        var expectation = isA<PubspecException>();
+        var expectation = isA<SourceSpanApplicationException>();
         if (expectedContains != null) {
           expectation = expectation.having((error) => error.toString(),
               'toString()', contains(expectedContains));

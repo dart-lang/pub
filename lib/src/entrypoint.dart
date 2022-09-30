@@ -12,6 +12,7 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'command_runner.dart';
@@ -103,13 +104,14 @@ class Entrypoint {
     } else {
       try {
         return _lockFile = LockFile.load(lockFilePath, cache.sources);
-      } on FormatException catch (e) {
-        throw ApplicationException('''
-Failed parsing lock file:
-
-$e
-
-Consider deleting the file and running `$topLevelProgram pub get` to recreate it.''');
+      } on SourceSpanException catch (e) {
+        throw SourceSpanApplicationException(
+          e.message,
+          e.span,
+          explanation: 'Failed parsing lock file:',
+          hint:
+              'Consider deleting the file and running `$topLevelProgram pub get` to recreate it.',
+        );
       }
     }
   }
@@ -907,7 +909,7 @@ See https://dart.dev/go/sdk-constraint
         final keyNode = environment.nodes.entries
             .firstWhere((e) => (e.key as YamlNode).value == sdk)
             .key as YamlNode;
-        throw PubspecException('''
+        throw SourceSpanApplicationException('''
 $pubspecPath refers to an unknown sdk '$sdk'.
 
 Did you mean to add it as a dependency?
