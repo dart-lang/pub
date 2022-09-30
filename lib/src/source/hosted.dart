@@ -11,6 +11,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart'
     show maxBy, IterableNullableExtension;
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -1130,6 +1131,7 @@ class _RefAndCache {
   bool operator ==(Object other) => other is _RefAndCache && other.ref == ref;
 }
 
+@visibleForTesting
 const checksumHeaderName = 'x-goog-hash';
 
 /// Adds a checksum validation "tap" to the response stream and returns a
