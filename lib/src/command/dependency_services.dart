@@ -484,17 +484,7 @@ class DependencyServicesApplyCommand extends PubCommand {
                 // This happens when we resolved a package from a legacy server
                 // not providing archive_sha256. As a side-effect of downloading
                 // the package we compute and store the sha256.
-                await cache.downloadPackage(
-                  package,
-                  allowOutdatedHashChecks: false,
-                );
-                listedId = PackageId(
-                  listedId.name,
-                  listedId.version,
-                  description.withSha256(
-                    cache.hosted.sha256FromCache(listedId, cache),
-                  ),
-                );
+                listedId = await cache.downloadPackage(package);
               }
               updatedPackages.add(listedId);
             } else {

@@ -10,6 +10,7 @@ import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../source/hosted.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -27,6 +28,7 @@ class SolveReport {
   final LockFile _previousLockFile;
   final LockFile _newLockFile;
   final SystemCache _cache;
+  final bool _dryRun;
 
   /// The available versions of all selected packages from their source.
   ///
@@ -44,14 +46,50 @@ class SolveReport {
     this._previousLockFile,
     this._newLockFile,
     this._availableVersions,
-    this._cache,
-  );
+    this._cache, {
+    required bool dryRun,
+  }) : _dryRun = dryRun;
 
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
   Future<void> show() async {
     await _reportChanges();
     await _reportOverrides();
+    _checkContentHashesMatchOldLockfile();
+  }
+
+  _checkContentHashesMatchOldLockfile() {
+    for (final newId in _newLockFile.packages.values) {
+      var newDescription = newId.description;
+      // Use the cached content-hashes after downloading to ensure that
+      // content-hashes from legacy servers gets used.
+      if (newDescription is ResolvedHostedDescription) {
+        final cachedHash = newDescription.sha256;
+        assert(cachedHash != null);
+        final oldId = _previousLockFile.packages[newId.name];
+        if (oldId != null &&
+            cachedHash != null &&
+            oldId.version == newId.version) {
+          final oldDecription = oldId.description;
+          if (oldDecription is ResolvedHostedDescription &&
+              oldDecription.description == newDescription.description) {
+            final oldHash = oldDecription.sha256;
+            if (oldHash != null && !fixedTimeBytesEquals(cachedHash, oldHash)) {
+              log.warning('''
+The content of ${newId.name}-${newId.version} from ${newDescription.description.url} doesn't match the pubspec.lock.
+
+This indicates one of:
+* The content has changed on the server since you created the pubspec.lock.
+* The pubspec.lock has been corrupted.
+${_dryRun ? '' : '\nThe pubspec.lock has been updated.'}
+
+See $contentHashesDocumentationUrl for more information.
+''');
+            }
+          }
+        }
+      }
+    }
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
@@ -64,7 +102,7 @@ class SolveReport {
   /// If [type] is `SolveType.UPGRADE` it also shows the number of packages that
   /// are not at the latest available version and the number of outdated
   /// packages.
-  Future<void> summarize({bool dryRun = false}) async {
+  Future<void> summarize() async {
     // Count how many dependencies actually changed.
     var dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
@@ -90,7 +128,7 @@ class SolveReport {
       }
     }
 
-    if (dryRun) {
+    if (_dryRun) {
       if (numChanged == 0) {
         log.message('No dependencies would change$suffix.');
       } else if (numChanged == 1) {

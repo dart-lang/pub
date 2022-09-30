@@ -298,10 +298,6 @@ class Entrypoint {
   /// shown --- in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
-  ///
-  /// If [enforceLockfile] is true no changes to the current lockfile are
-  /// allowed. Instead the existing lockfile is loaded, verified against
-  /// pubspec.yaml and all dependencies downloaded.
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String>? unlock,
@@ -360,17 +356,11 @@ class Entrypoint {
 
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
-    final newLockFile = await result.downloadCachedPackages(cache,
-        allowOutdatedHashChecks: true);
+    final newLockFile = await result.downloadCachedPackages(cache);
 
     final report = SolveReport(
-      type,
-      root,
-      lockFile,
-      newLockFile,
-      result.availableVersions,
-      cache,
-    );
+        type, root, lockFile, newLockFile, result.availableVersions, cache,
+        dryRun: dryRun);
     if (!onlyReportSuccessOrFailure) {
       await report.show();
     }
@@ -383,7 +373,7 @@ class Entrypoint {
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
     } else {
-      await report.summarize(dryRun: dryRun);
+      await report.summarize();
     }
 
     if (!dryRun) {

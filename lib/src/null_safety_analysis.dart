@@ -171,11 +171,7 @@ class NullSafetyAnalysis {
 
         if (source is CachedSource) {
           // TODO(sigurdm): Consider using withDependencyType here.
-          await source.downloadToSystemCache(
-            dependencyId,
-            _systemCache,
-            allowOutdatedHashChecks: true,
-          );
+          await source.downloadToSystemCache(dependencyId, _systemCache);
         }
 
         final libDir =

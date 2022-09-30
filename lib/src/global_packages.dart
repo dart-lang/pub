@@ -224,10 +224,7 @@ class GlobalPackages {
     // We want the entrypoint to be rooted at 'dep' not the dummy-package.
     result.packages.removeWhere((id) => id.name == 'pub global activate');
 
-    final lockFile = await result.downloadCachedPackages(
-      cache,
-      allowOutdatedHashChecks: true,
-    );
+    final lockFile = await result.downloadCachedPackages(cache);
     final sameVersions =
         originalLockFile != null && originalLockFile.samePackageIds(lockFile);
 
@@ -247,6 +244,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           lockFile,
           result.availableVersions,
           cache,
+          dryRun: false,
         ).show();
       }
 

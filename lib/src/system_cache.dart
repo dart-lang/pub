@@ -221,16 +221,15 @@ class SystemCache {
   /// response if present instead of probing the server. Not probing allows for
   /// `pub get` with a filled cache to be a fast case that doesn't require any
   /// new version-listings.
-  Future<void> downloadPackage(
-    PackageId id, {
-    required bool allowOutdatedHashChecks,
-  }) async {
+  ///
+  /// Returns [id] with an updated [ResolvedDescription], this can be different
+  /// if the content-hash changed while downloading.
+  Future<PackageId> downloadPackage(PackageId id) async {
     final source = id.source;
     assert(source is CachedSource);
-    await (source as CachedSource).downloadToSystemCache(
+    return await (source as CachedSource).downloadToSystemCache(
       id,
       this,
-      allowOutdatedHashChecks: allowOutdatedHashChecks,
     );
   }
 

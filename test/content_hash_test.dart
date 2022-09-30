@@ -79,7 +79,7 @@ Future<void> main() async {
       warning: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
-            'Content of foo-1.0.0 has changed compared to what was locked your pubspec.lock.'),
+            'The content of foo-1.0.0 from ${globalServer.url} doesn\'t match the pubspec.lock.'),
       ),
       exitCode: exit_codes.SUCCESS,
     );
@@ -106,7 +106,7 @@ Future<void> main() async {
 
     await pubGet(
       warning: contains(
-        'Content of foo-1.0.0 has changed compared to what was locked your pubspec.lock.',
+        'The content of foo-1.0.0 from ${globalServer.url} doesn\'t match the pubspec.lock.',
       ),
       exitCode: exit_codes.SUCCESS,
     );

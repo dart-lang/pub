@@ -698,11 +698,8 @@ class HostedSource extends CachedSource {
   /// `pub get` with a filled cache to be a fast case that doesn't require any
   /// new version-listings.
   @override
-  Future<void> downloadToSystemCache(
-    PackageId id,
-    SystemCache cache, {
-    required bool allowOutdatedHashChecks,
-  }) async {
+  Future<PackageId> downloadToSystemCache(
+      PackageId id, SystemCache cache) async {
     final packageDir = getDirectoryInCache(id, cache);
 
     // Use the content-hash from the version-info to compare with what we
@@ -714,13 +711,18 @@ class HostedSource extends CachedSource {
     // We allow the version-listing to be a few days outdated in order for `pub
     // get` with an existing working resolution and everything in cache to be
     // fast.
-    final versionInfo = await _versionInfo(id.toRef(), id.version, cache,
-        maxAge: allowOutdatedHashChecks ? Duration(days: 3) : null);
+    final versionInfo = await _versionInfo(
+      id.toRef(),
+      id.version,
+      cache,
+      maxAge: Duration(days: 3),
+    );
 
     final expectedContentHash = versionInfo?.archiveSha256 ??
         // Handling of legacy server - we use the hash from the id (typically
         // from the lockfile) to compare to the existing download.
         (id.description as ResolvedHostedDescription).sha256;
+    Uint8List? contentHash;
     if (!fileExists(hashPath(id, cache))) {
       if (dirExists(packageDir) && !cache.isOffline) {
         log.fine(
@@ -728,24 +730,36 @@ class HostedSource extends CachedSource {
         deleteEntry(packageDir);
       }
     } else if (expectedContentHash == null) {
+      // Can happen with a legacy server combined with a legacy lock file.
       log.fine(
           'Content-hash of ${id.name}-${id.version} not known from resolution.');
     } else {
-      if (!bytesEquals(sha256FromCache(id, cache), expectedContentHash)) {
+      final hashFromCache = sha256FromCache(id, cache);
+      if (!fixedTimeBytesEquals(hashFromCache, expectedContentHash)) {
         log.warning(
             'Cached version of ${id.name}-${id.version} has wrong hash - redownloading.');
         if (cache.isOffline) {
-          fail('Cannot redownload while offline - try again online.');
+          fail('Cannot redownload while offline. Try again without --offline.');
         }
         deleteEntry(packageDir);
+      } else {
+        contentHash = hashFromCache;
       }
     }
-    if (!dirExists(packageDir)) {
+    if (dirExists(packageDir)) {
+      contentHash ??= sha256FromCache(id, cache);
+    } else {
       if (cache.isOffline) {
-        throw StateError('Cannot download packages when offline.');
+        fail(
+            'Missing package ${id.name}-${id.version}. Try again without --offline.');
       }
-      await _download(id, packageDir, cache);
+      contentHash = await _download(id, packageDir, cache);
     }
+    return PackageId(
+      id.name,
+      id.version,
+      (id.description as ResolvedHostedDescription).withSha256(contentHash),
+    );
   }
 
   /// Determines if the package identified by [id] is already downloaded to the
@@ -953,7 +967,9 @@ class HostedSource extends CachedSource {
   /// If there is no archive_url, try to fetch it from
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
-  Future _download(
+  ///
+  /// Returns the content-hash of the downloaded archive.
+  Future<Uint8List> _download(
     PackageId id,
     String destPath,
     SystemCache cache,
@@ -976,6 +992,7 @@ class HostedSource extends CachedSource {
         versions.firstWhereOrNull((i) => i.version == id.version);
     final packageName = id.name;
     final version = id.version;
+    late Uint8List contentHash;
     if (versionInfo == null) {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
@@ -986,7 +1003,7 @@ class HostedSource extends CachedSource {
     log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
 
     // Download and extract the archive to a temp directory.
-    await withTempDir((tempDirForArchive) async {
+    return await withTempDir((tempDirForArchive) async {
       var archivePath =
           p.join(tempDirForArchive, '$packageName-$version.tar.gz');
       var response = await withAuthenticatedClient(
@@ -1023,6 +1040,7 @@ See $contentHashesDocumentationUrl.
           path,
           hexEncode(actualHash.bytes),
         );
+        contentHash = Uint8List.fromList(actualHash.bytes);
       }
 
       // We download the archive to disk instead of streaming it directly into
@@ -1056,6 +1074,7 @@ See $contentHashesDocumentationUrl.
       // another pub process has installed the same package version while we
       // downloaded.
       tryRenameDir(tempDir, destPath);
+      return contentHash;
     });
   }
 

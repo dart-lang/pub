@@ -55,11 +55,7 @@ abstract class CachedSource extends Source {
       dirExists(getDirectoryInCache(id, cache));
 
   /// Downloads the package identified by [id] to the system cache.
-  Future<void> downloadToSystemCache(
-    PackageId id,
-    SystemCache cache, {
-    required bool allowOutdatedHashChecks,
-  });
+  Future<PackageId> downloadToSystemCache(PackageId id, SystemCache cache);
 
   /// Returns the [Package]s that have been downloaded to the system cache.
   List<Package> getCachedPackages(SystemCache cache);

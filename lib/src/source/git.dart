@@ -298,11 +298,10 @@ class GitSource extends CachedSource {
   /// itself; each of the commit-specific directories are clones of a directory
   /// in `cache/`.
   @override
-  Future<void> downloadToSystemCache(
+  Future<PackageId> downloadToSystemCache(
     PackageId id,
-    SystemCache cache, {
-    required bool allowOutdatedHashChecks,
-  }) async {
+    SystemCache cache,
+  ) async {
     return await _pool.withResource(() async {
       final ref = id.toRef();
       final description = ref.description;
@@ -322,8 +321,7 @@ class GitSource extends CachedSource {
 
       var revisionCachePath = _revisionCachePath(id, cache);
       final path = description.path;
-      return await _revisionCacheClones.putIfAbsent(revisionCachePath,
-          () async {
+      await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
         if (!entryExists(revisionCachePath)) {
           await _clone(_repoCachePath(ref, cache), revisionCachePath);
           await _checkOut(revisionCachePath, resolvedRef);
@@ -332,6 +330,7 @@ class GitSource extends CachedSource {
           _updatePackageList(revisionCachePath, path);
         }
       });
+      return id;
     });
   }
 

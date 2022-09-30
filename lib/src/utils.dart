@@ -9,7 +9,6 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:collection/collection.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
@@ -646,6 +645,15 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
   };
 }
 
-bool bytesEquals(List<int>? a, List<int>? b) {
-  return const ListEquality<int>().equals(a, b);
+/// Compares two lists. If the lists have equal length this comparison will
+/// iterate all elements, thus taking a fixed amount of time making timing
+/// attacks harder.
+bool fixedTimeBytesEquals(List<int>? a, List<int>? b) {
+  if (a == null || b == null) return a == b;
+  if (a.length != b.length) return false;
+  bool e = true;
+  for (var i = 0; i < a.length; i++) {
+    e &= a[i] == b[i];
+  }
+  return e;
 }

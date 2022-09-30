@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:typed_data';
-
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -18,7 +16,6 @@ import '../pubspec.dart';
 import '../source/cached.dart';
 import '../source/hosted.dart';
 import '../system_cache.dart';
-import '../utils.dart';
 
 /// The result of a successful version resolution.
 class SolveResult {
@@ -64,20 +61,23 @@ class SolveResult {
   /// If there is a mismatch between the previous content-hash from pubspec.lock
   /// and the new one a warning will be printed but the new one will be
   /// returned.
-  Future<LockFile> downloadCachedPackages(
-    SystemCache cache, {
-    required bool allowOutdatedHashChecks,
-  }) async {
-    await Future.wait(packages.map((id) async {
-      if (id.source is CachedSource) {
-        await withDependencyType(_root.dependencyType(id.name), () async {
-          await cache.downloadPackage(
-            id,
-            allowOutdatedHashChecks: allowOutdatedHashChecks,
-          );
-        });
-      }
-    }));
+  Future<LockFile> downloadCachedPackages(SystemCache cache) async {
+    final resolvedPackageIds = await Future.wait(
+      packages.map((id) async {
+        if (id.source is CachedSource) {
+          return await withDependencyType(_root.dependencyType(id.name),
+              () async {
+            return await cache.downloadPackage(
+              id,
+            );
+          });
+        }
+        return id;
+      }),
+    );
+
+    // Invariant: the content-hashes in PUB_CACHE matches those provided by the
+    // server.
 
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
@@ -94,46 +94,7 @@ class SolveResult {
       });
     }
     return LockFile(
-      packages.map((id) {
-        var description = id.description;
-        // Use the cached content-hashes after downloading to ensure that
-        // content-hashes from legacy servers gets used.
-        if (description is ResolvedHostedDescription) {
-          Uint8List? cachedHash =
-              description.description.source.sha256FromCache(id, cache);
-          if (cachedHash == null) {
-            // This should not happen.
-            throw StateError(
-                'Archive for ${id.name}-${id.version} has no content hash.');
-          }
-          final originalEntry = _previousLockFile.packages[id.name];
-          if (originalEntry != null && originalEntry.version == id.version) {
-            final originalDescription = originalEntry.description;
-            if (originalDescription is ResolvedHostedDescription) {
-              final Uint8List? originalHash = originalDescription.sha256;
-              if (originalHash != null) {
-                if (!bytesEquals(cachedHash, originalHash)) {
-                  log.warning('''
-The content of ${id.name}-${id.version} on the server doesn't match what was locked in your pubspec.lock.
-
-This might indicate that:
-* The content has changed on the server since you created the pubspec.lock.
-* The pubspec.lock has been corrupted.
-
-Your pubspec.lock has been updated according to what is on the server.
-
-See $contentHashesDocumentationUrl for more information.
-''');
-                }
-              }
-            }
-          }
-
-          return PackageId(
-              id.name, id.version, description.withSha256(cachedHash));
-        }
-        return id;
-      }).toList(),
+      resolvedPackageIds,
       sdkConstraints: sdkConstraints,
       mainDependencies: MapKeySet(_root.dependencies),
       devDependencies: MapKeySet(_root.devDependencies),
