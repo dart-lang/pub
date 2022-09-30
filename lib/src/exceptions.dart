@@ -145,7 +145,7 @@ class SourceSpanApplicationException extends SourceSpanFormatException
       if (explanation != null) explanation,
       span == null
           ? message
-          : 'Error on: ${span?.message(message, color: color)}',
+          : 'Error on ${span?.message(message, color: color)}',
       if (hint != null) hint,
     ].join('\n\n');
   }
