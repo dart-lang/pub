@@ -167,13 +167,13 @@ class LockFile {
         if (spec.containsKey('dependency')) {
           final dependencyKind = _getStringEntry(spec, 'dependency');
           switch (dependencyKind) {
-            case directMain:
+            case _directMain:
               mainDependencies.add(name);
               break;
-            case directDev:
+            case _directDev:
               devDependencies.add(name);
               break;
-            case directOverridden:
+            case _directOverridden:
               overriddenDependencies.add(name);
           }
         }
@@ -405,22 +405,22 @@ ${yamlToString(data)}
 ''';
   }
 
-  static const directMain = 'direct main';
-  static const directDev = 'direct dev';
-  static const directOverridden = 'direct overridden';
-  static const transitive = 'transitive';
+  static const _directMain = 'direct main';
+  static const _directDev = 'direct dev';
+  static const _directOverridden = 'direct overridden';
+  static const _transitive = 'transitive';
 
   /// Returns the dependency classification for [package].
   String _dependencyType(String package) {
-    if (_mainDependencies.contains(package)) return 'direct main';
-    if (_devDependencies.contains(package)) return 'direct dev';
+    if (_mainDependencies.contains(package)) return _directMain;
+    if (_devDependencies.contains(package)) return _directDev;
 
     // If a package appears in `dependency_overrides` and another dependency
     // section, the main section it appears in takes precedence.
     if (_overriddenDependencies.contains(package)) {
-      return 'direct overridden';
+      return _directOverridden;
     }
-    return transitive;
+    return _transitive;
   }
 
   /// `true` if [other] has the same packages as `this` in the same versions
