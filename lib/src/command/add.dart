@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:args/args.dart';
-import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
@@ -40,24 +39,50 @@ class AddCommand extends PubCommand {
   String get description => 'Add dependencies to pubspec.yaml.';
   @override
   String get argumentsDescription =>
-      '[options] <package>[:<constraint>] [<package2>[:<constraint2>]...] -- [package-options] <package3>[:<constraint>]';
+      '[options] ([dev:]<package>[:descriptor])+';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
-  // This will contain the results of parsing args before the first "--"
-  // separator.
-  ArgResults? _argResults;
+  AddCommand() {
+    argParser.addSeparator('Package options');
 
-  @override
-  get argResults => _argResults ?? super.argResults;
+    argParser.addFlag('dev',
+        abbr: 'd',
+        negatable: false,
+        help: 'Adds to the development dependencies instead.',
+        hide: true);
 
-  /// This will give the right usage string, but not do the correct parse.
-  @override
-  get argParser => _createFirstPartParser(allowTrailingOptions: false);
+    argParser.addOption('git-url', help: 'Git URL of the package');
+    argParser.addOption('git-ref',
+        help: 'Git branch or commit to be retrieved');
+    argParser.addOption('git-path', help: 'Path of git package in repository');
+    argParser.addOption('hosted-url', help: 'URL of package host server');
+    argParser.addOption('path', help: 'Add package from local path');
+    argParser.addOption('sdk',
+        help: 'add package from SDK source',
+        allowed: ['flutter'],
+        valueHelp: '[flutter]');
 
-  /// Parses the arguments that are allowed before the first "--".
-  late final firstPartArgParser =
-      _createFirstPartParser(allowTrailingOptions: true);
+    argParser.addSeparator('Generic options');
+    argParser.addFlag('offline',
+        help: 'Use cached packages instead of accessing the network.');
+
+    argParser.addFlag('dry-run',
+        abbr: 'n',
+        negatable: false,
+        help: "Report what dependencies would change but don't change any.");
+
+    argParser.addFlag('precompile',
+        help: 'Build executables in immediate dependencies.');
+    argParser.addOption('directory',
+        abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
+    argParser.addFlag(
+      'example',
+      help:
+          'Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).',
+      hide: true,
+    );
+  }
 
   /// Parses the arguments that are allowed after the first "--".
   late final followingPartsArgParser = () {
@@ -86,58 +111,17 @@ class AddCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    final args = argResults.arguments;
+    final languageVersion = entrypoint.root.pubspec.languageVersion;
 
-    final updates = <_ParseResult>[];
-    late final bool isDryRun;
-    late final bool isOffline;
-    late final bool shouldPrecompile;
-    late final bool example;
-
-    var first = true;
-    // Parses the args separated between one set of "--".
-    void parsePartial(List<String> args) {
-      final ArgResults partResults;
-      if (first) {
-        partResults = firstPartArgParser.parse(args);
-        isDryRun = partResults.isDryRun;
-        isOffline = partResults.isOffline;
-        shouldPrecompile = partResults['precompile'];
-        example = partResults['example'];
-        _argResults = partResults;
-        first = false;
-      } else {
-        partResults = followingPartsArgParser.parse(args);
-      }
-
-      if (partResults.rest.length > 1 && partResults.gitUrl != null) {
-        usageException('Separate multiple git packages to add with "--".');
-      } else if (partResults.rest.length > 1 && partResults.path != null) {
-        usageException('Separate multiple path packages to add with "--".');
-      }
-      // It is important that we only access entrypoint after _argResults is
-      // set.
-      final languageVersion = entrypoint.root.pubspec.languageVersion;
-
-      updates.addAll(
-        partResults.rest.map(
-          (p) => _parsePackage(
-            partResults,
-            p,
-            languageVersion,
-          ),
-        ),
-      );
+    if (argResults.rest.length > 1 && argResults.gitUrl != null) {
+      usageException('Specify multiple git packages with descriptors.');
+    } else if (argResults.rest.length > 1 && argResults.path != null) {
+      usageException('Separate multiple path packages to add with "--".');
     }
 
-    var start = 0;
-    for (var i = 0; i < args.length; i++) {
-      if (args[i] == '--') {
-        parsePartial(args.sublist(start, i));
-        start = i + 1;
-      }
-    }
-    parsePartial(args.sublist(start, args.length));
+    final updates = argResults.rest
+        .map((p) => _parsePackage(p, languageVersion, argResults))
+        .toList();
 
     if (updates.isEmpty) {
       usageException('Must specify at least one package to be added.');
@@ -188,7 +172,7 @@ class AddCommand extends PubCommand {
         }
       }
     }
-    if (isDryRun) {
+    if (argResults.isDryRun) {
       /// Even if it is a dry run, run `acquireDependencies` so that the user
       /// gets a report on the other packages that might change version due
       /// to this new dependency.
@@ -199,7 +183,7 @@ class AddCommand extends PubCommand {
           .acquireDependencies(
         SolveType.get,
         dryRun: true,
-        precompile: shouldPrecompile,
+        precompile: argResults.shouldPrecompile,
         analytics: analytics,
       );
     } else {
@@ -217,14 +201,14 @@ class AddCommand extends PubCommand {
       final updatedEntrypoint = Entrypoint(directory, cache);
       await updatedEntrypoint.acquireDependencies(
         SolveType.get,
-        precompile: shouldPrecompile,
+        precompile: argResults.shouldPrecompile,
         analytics: analytics,
       );
 
-      if (example && entrypoint.example != null) {
+      if (argResults.example && entrypoint.example != null) {
         await entrypoint.example!.acquireDependencies(
           SolveType.get,
-          precompile: shouldPrecompile,
+          precompile: argResults.shouldPrecompile,
           onlyReportSuccessOrFailure: true,
           analytics: analytics,
         );
@@ -324,54 +308,74 @@ class AddCommand extends PubCommand {
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  _ParseResult _parsePackage(ArgResults packageArgResults, String package,
-      LanguageVersion languageVersion) {
-    final conflictingFlagSets = [
-      ['git-url', 'git-ref', 'git-path'],
-      ['hosted-url'],
-      ['path'],
-      ['sdk'],
-    ];
-
-    for (final flag in conflictingFlagSets
-        .expand((s) => s)
-        .where(packageArgResults.wasParsed)) {
-      final conflictingFlag = conflictingFlagSets
-          .where((s) => !s.contains(flag))
-          .expand((s) => s)
-          .firstWhereOrNull(packageArgResults.wasParsed);
-      if (conflictingFlag != null) {
-        usageException(
-            'Packages can only have one source, "pub add" flags "--$flag" and '
-            '"--$conflictingFlag" are conflicting. Use "--" to separate packages from different sources');
-      }
+  _ParseResult _parsePackage(
+      String package, LanguageVersion languageVersion, ArgResults argResults) {
+    final match = RegExp(r'^(?<dev>dev:)?(?<name>[^:]*)(?<descriptor>:.*)?$')
+        .firstMatch(package);
+    if (match == null) {
+      usageException('$package is not a valid package specifier.');
     }
-
-    final splitPackage = package.split(':');
-    final packageName = splitPackage[0];
-
-    /// There shouldn't be more than one `:` in the package information
-    if (splitPackage.length > 2) {
-      usageException('Invalid package and version constraint: $package');
+    if (match.namedGroup('dev') != null && argResults.isDev) {
+      usageException('Cannot combine dev: with --dev');
     }
+    final isDev = match.namedGroup('dev') != null || argResults.isDev;
+    final packageName = match.namedGroup('name')!;
+    final descriptor = match.namedGroup('descriptor')?.substring(1);
 
     /// We want to allow for [constraint] to take on a `null` value here to
     /// preserve the fact that the user did not specify a constraint.
     VersionConstraint? constraint;
 
-    try {
-      constraint = splitPackage.length == 2
-          ? VersionConstraint.parse(splitPackage[1])
-          : null;
-    } on FormatException catch (e) {
-      usageException('Invalid version constraint: ${e.message}');
+    /// The package to be added.
+    PackageRef? ref;
+
+    if (descriptor != null) {
+      try {
+        // An unquoted version constraint is not always valid yaml.
+        // But we want to allow it here anyways.
+        constraint = VersionConstraint.parse(descriptor);
+      } on FormatException {
+        print('Parsing ref');
+        final parsedDescriptor = loadYaml(descriptor);
+        // Use the pubspec parsing mechanism for persing the descriptor.
+        final Pubspec dummyPubspec;
+        try {
+          dummyPubspec = Pubspec.fromMap({
+            'dependencies': {
+              packageName: parsedDescriptor,
+            }
+          }, cache.sources,
+              // Resolve relative paths relative to current, not where the pubspec-yaml is.
+              location: p.toUri(p.join(p.current, 'descriptor')));
+        } on FormatException catch (e) {
+          usageException('Failed parsing package specification: ${e.message}');
+        }
+        final range = dummyPubspec.dependencies[packageName]!;
+        if (parsedDescriptor is String) {
+          // To maintain backwards compatibility.
+          // Don't assign the ref here, but construct it below.
+        } else {
+          print('Using ref $range');
+
+          ref = range.toRef();
+        }
+        final hasExplicitConstraint = parsedDescriptor is String ||
+            (parsedDescriptor is Map &&
+                parsedDescriptor.containsKey('version'));
+        // If the descriptor has an explicit constraint, use that. Otherwise we
+        // infer it.
+        if (hasExplicitConstraint) {
+          constraint = range.constraint;
+        }
+      }
     }
 
-    /// The package to be added.
-    late final PackageRef ref;
-    final path = packageArgResults.path;
-    if (packageArgResults.hasGitOptions) {
-      final gitUrl = packageArgResults.gitUrl;
+    final path = argResults.path;
+    if (argResults.hasGitOptions) {
+      if (ref != null) {
+        usageException('Cannot use git-options with a package spec.');
+      }
+      final gitUrl = argResults.gitUrl;
       if (gitUrl == null) {
         usageException('The `--git-url` is required for git dependencies.');
       }
@@ -390,25 +394,34 @@ class AddCommand extends PubCommand {
         GitDescription(
           url: parsed.toString(),
           containingDir: p.current,
-          ref: packageArgResults.gitRef,
-          path: packageArgResults.gitPath,
+          ref: argResults.gitRef,
+          path: argResults.gitPath,
         ),
       );
     } else if (path != null) {
+      if (ref != null) {
+        usageException('Cannot use --path with a package spec.');
+      }
       ref = PackageRef(
           packageName, PathDescription(p.absolute(path), p.isRelative(path)));
-    } else if (packageArgResults.sdk != null) {
-      ref = cache.sdk.parseRef(packageName, packageArgResults.sdk);
+    } else if (argResults.sdk != null) {
+      if (ref != null) {
+        usageException('Cannot use --sdk with a package spec.');
+      }
+      ref = cache.sdk.parseRef(packageName, argResults.sdk);
     } else {
-      ref = PackageRef(
+      if (ref != null && argResults.hostUrl != null) {
+        usageException('Cannot use --host-url with a package spec.');
+      }
+      ref ??= PackageRef(
         packageName,
         HostedDescription(
           packageName,
-          packageArgResults.hostUrl ?? cache.hosted.defaultUrl,
+          argResults.hostUrl ?? cache.hosted.defaultUrl,
         ),
       );
     }
-    return _ParseResult(ref, constraint, isDev: packageArgResults.isDev);
+    return _ParseResult(ref, constraint, isDev: isDev);
   }
 
   /// Writes the changes to the pubspec file.
@@ -500,49 +513,7 @@ extension on ArgResults {
   String? get hostUrl => this['hosted-url'];
   String? get path => this['path'];
   String? get sdk => this['sdk'];
+  bool get shouldPrecompile => this['precompile'];
+  bool get example => this['example'];
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
-  bool get isOffline => this['offline'];
-}
-
-ArgParser _createFirstPartParser({required allowTrailingOptions}) {
-  final argParser = ArgParser(
-      allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
-
-  argParser.addSeparator('Package options');
-
-  argParser.addFlag('dev',
-      abbr: 'd',
-      negatable: false,
-      help: 'Adds to the development dependencies instead.');
-
-  argParser.addOption('git-url', help: 'Git URL of the package');
-  argParser.addOption('git-ref', help: 'Git branch or commit to be retrieved');
-  argParser.addOption('git-path', help: 'Path of git package in repository');
-  argParser.addOption('hosted-url', help: 'URL of package host server');
-  argParser.addOption('path', help: 'Add package from local path');
-  argParser.addOption('sdk',
-      help: 'add package from SDK source',
-      allowed: ['flutter'],
-      valueHelp: '[flutter]');
-
-  argParser.addSeparator('Generic options');
-  argParser.addFlag('offline',
-      help: 'Use cached packages instead of accessing the network.');
-
-  argParser.addFlag('dry-run',
-      abbr: 'n',
-      negatable: false,
-      help: "Report what dependencies would change but don't change any.");
-
-  argParser.addFlag('precompile',
-      help: 'Build executables in immediate dependencies.');
-  argParser.addOption('directory',
-      abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
-  argParser.addFlag(
-    'example',
-    help:
-        'Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).',
-    hide: true,
-  );
-  return argParser;
 }

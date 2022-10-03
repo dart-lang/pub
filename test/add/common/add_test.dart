@@ -84,7 +84,7 @@ void main() {
       await d.dir(appPath, [
         d.file('pubspec.yaml', '''
           name: myapp
-          dependencies: 
+          dependencies:
 
           dev_dependencies:
 
@@ -370,7 +370,7 @@ environment:
 
         await pubAdd(
             args: ['foo:one-two-three'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error: contains('Invalid version constraint: Could '
                 'not parse version "one-two-three".'));
 
@@ -515,7 +515,7 @@ environment:
       ]).validate();
     });
 
-    test('Can add both dev and regular dependencies using -- to separate',
+    test('Can add both dev and regular dependencies @dev to separate',
         () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
@@ -525,7 +525,7 @@ environment:
         d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
       ]).create();
 
-      await pubAdd(args: ['--dev', 'foo:1.2.3', '--', 'bar:1.2.3']);
+      await pubAdd(args: ['dev:foo:1.2.3', '--', 'bar:1.2.3']);
 
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.2.3'),

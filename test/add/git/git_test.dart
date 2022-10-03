@@ -4,7 +4,8 @@
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
-
+import 'package:path/path.dart' as p;
+import 'dart:io';
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
@@ -195,10 +196,32 @@ void main() {
     await pubAdd(
         args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
         exitCode: exit_codes.USAGE,
-        error: contains('Separate multiple git packages to add with "--".'));
+        error: contains('Specify multiple git packages with descriptors.'));
   });
 
-  test('Can add multiple git packages separated by --', () async {
+  test('Can add a package with a git descriptor and relative path', () async {
+    await d.git('foo.git', [
+      d.dir('subdir', [d.libPubspec('foo', '1.2.3')])
+    ]).create();
+    await d.appDir({}).create();
+    await pubAdd(
+      args: [
+        '--directory',
+        appPath,
+        'foo:{"git": {"url":"foo.git", "path":"subdir"}}',
+      ],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 1 dependency in myapp!'),
+    );
+
+    await d.appDir({
+      'foo': {
+        'git': {'url': '../foo.git', 'path': 'subdir'}
+      }
+    }).validate();
+  });
+
+  test('Can add multiple git packages using descriptors', () async {
     ensureGit();
 
     await d.git(
@@ -209,13 +232,8 @@ void main() {
     await d.appDir({}).create();
 
     await pubAdd(args: [
-      'foo',
-      '--git-url',
-      '../foo.git',
-      '--',
-      'bar',
-      '--git-url',
-      '../bar.git',
+      'foo:{"git":"../foo.git"}',
+      'bar:{"git":"../bar.git"}',
     ]);
 
     await d.dir(appPath, [
