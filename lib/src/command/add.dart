@@ -335,7 +335,6 @@ class AddCommand extends PubCommand {
         // But we want to allow it here anyways.
         constraint = VersionConstraint.parse(descriptor);
       } on FormatException {
-        print('Parsing ref');
         final parsedDescriptor = loadYaml(descriptor);
         // Use the pubspec parsing mechanism for persing the descriptor.
         final Pubspec dummyPubspec;
@@ -355,8 +354,6 @@ class AddCommand extends PubCommand {
           // To maintain backwards compatibility.
           // Don't assign the ref here, but construct it below.
         } else {
-          print('Using ref $range');
-
           ref = range.toRef();
         }
         final hasExplicitConstraint = parsedDescriptor is String ||
