@@ -657,3 +657,63 @@ bool fixedTimeBytesEquals(List<int>? a, List<int>? b) {
   }
   return e;
 }
+
+/// Call [fn] retrying so long as [retryIf] return `true` for the exception
+/// thrown, up-to [maxAttempts] times.
+///
+/// Defaults to 8 attempts, sleeping as following after 1st, 2nd, 3rd, ...,
+/// 7th attempt:
+///  1. 400 ms +/- 25%
+///  2. 800 ms +/- 25%
+///  3. 1600 ms +/- 25%
+///  4. 3200 ms +/- 25%
+///  5. 6400 ms +/- 25%
+///  6. 12800 ms +/- 25%
+///  7. 25600 ms +/- 25%
+///
+/// ```dart
+/// final response = await retry(
+///   // Make a GET request
+///   () => http.get('https://google.com').timeout(Duration(seconds: 5)),
+///   // Retry on SocketException or TimeoutException
+///   retryIf: (e) => e is SocketException || e is TimeoutException,
+/// );
+/// print(response.body);
+/// ```
+///
+/// If no [retryIf] function is given this will retry any for any [Exception]
+/// thrown. To retry on an [Error], the error must be caught and _rethrown_
+/// as an [Exception].
+///
+/// See https://github.com/google/dart-neats/blob/master/retry/lib/retry.dart
+Future<T> retry<T>(
+  FutureOr<T> Function() fn, {
+  Duration delayFactor = const Duration(milliseconds: 200),
+  double randomizationFactor = 0.25,
+  Duration maxDelay = const Duration(seconds: 30),
+  int maxAttempts = 8,
+  FutureOr<bool> Function(Exception)? retryIf,
+  FutureOr<void> Function(Exception, int retryCount)? onRetry,
+}) async {
+  var attempt = 0;
+  // ignore: literal_only_boolean_expressions
+  while (true) {
+    attempt++; // first invocation is the first attempt
+    try {
+      return await fn();
+    } on Exception catch (e) {
+      if (attempt >= maxAttempts || (retryIf != null && !(await retryIf(e)))) {
+        rethrow;
+      }
+      if (onRetry != null) {
+        await onRetry(e, attempt);
+      }
+    }
+
+    // Sleep for a delay
+    final rf = randomizationFactor * (random.nextDouble() * 2 - 1) + 1;
+    final exp = math.min(attempt, 31); // prevent overflows.
+    final delay = delayFactor * math.pow(2.0, exp) * rf;
+    await Future.delayed(delay < maxDelay ? delay : maxDelay);
+  }
+}

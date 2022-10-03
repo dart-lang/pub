@@ -104,6 +104,15 @@ class PackageNotFoundException extends WrappedException {
   String toString() => 'Package not available ($message).';
 }
 
+/// A class for exceptions where a package's checksum could not be validated.
+class PackageIntegrityException extends WrappedException {
+  PackageIntegrityException(
+    String message, {
+    Object? innerError,
+    StackTrace? innerTrace,
+  }) : super(message, innerError, innerTrace);
+}
+
 /// Returns whether [error] is a user-facing error object.
 ///
 /// This includes both [ApplicationException] and any dart:io errors.

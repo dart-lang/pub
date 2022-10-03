@@ -6,17 +6,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
     show IterableExtension, IterableNullableExtension, ListEquality, maxBy;
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../authentication/client.dart';
+import '../crc32c.dart';
 import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
@@ -998,20 +1001,16 @@ class HostedSource extends CachedSource {
           'Package $packageName has no version $version');
     }
 
-    var url = versionInfo.archiveUrl;
-    log.io('Get package from $url.');
+    final archiveUrl = versionInfo.archiveUrl;
+    log.io('Get package from $archiveUrl.');
     log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
 
     // Download and extract the archive to a temp directory.
     return await withTempDir((tempDirForArchive) async {
-      var archivePath =
-          p.join(tempDirForArchive, '$packageName-$version.tar.gz');
-      var response = await withAuthenticatedClient(
-          cache,
-          Uri.parse(description.url),
-          (client) => client.send(http.Request('GET', url)));
+      var fileName = '$packageName-$version.tar.gz';
+      var archivePath = p.join(tempDirForArchive, fileName);
 
-      Stream<List<int>> checkSha256(
+      Stream<List<int>> validateSha256(
         Stream<List<int>> stream,
         Digest? expectedHash,
       ) async* {
@@ -1043,27 +1042,51 @@ See $contentHashesDocumentationUrl.
         contentHash = Uint8List.fromList(actualHash.bytes);
       }
 
-      // We download the archive to disk instead of streaming it directly into
-      // the tar unpacking. This simplifies stream handling.
-      // Package:tar cancels the stream when it reaches end-of-archive, and
-      // cancelling a http stream makes it not reusable.
-      // There are ways around this, and we might revisit this later.
-      Stream<List<int>> stream = response.stream;
-
       // It is important that we do not compare against id.description.sha256,
       // as we need to check against the newly fetched version listing to ensure
       // that content changes result in updated lockfiles, not failure to
       // download.
       final expectedSha256 = versionInfo.archiveSha256;
 
-      stream = checkSha256(
-        stream,
-        (expectedSha256 == null) ? null : Digest(expectedSha256),
+      // The client from `withAuthenticatedClient` will retry HTTP requests.
+      // This wrapper is one layer up and will retry checksum validation errors.
+      await retry(
+        // Attempt to download archive and validate its checksum.
+        () async {
+          final request = http.Request('GET', archiveUrl);
+          final response = await withAuthenticatedClient(cache,
+              Uri.parse(description.url), (client) => client.send(request));
+          final expectedCrc32Checksum =
+              _parseCrc32c(response.headers, fileName);
+
+          Stream<List<int>> stream = response.stream;
+          if (expectedCrc32Checksum != null) {
+            stream = _validateStreamCrc32Checksum(
+                response.stream, expectedCrc32Checksum, id, archiveUrl);
+          }
+          stream = validateSha256(
+              stream, (expectedSha256 == null) ? null : Digest(expectedSha256));
+          // We download the archive to disk instead of streaming it directly
+          // into the tar unpacking. This simplifies stream handling.
+          // Package:tar cancels the stream when it reaches end-of-archive, and
+          // cancelling a http stream makes it not reusable.
+          // There are ways around this, and we might revisit this later.
+          await createFileFromStream(stream, archivePath);
+        },
+        // Retry if the checksum response header was malformed or the actual
+        // checksum did not match the expected checksum.
+        retryIf: (e) => e is PackageIntegrityException,
+        onRetry: (e, retryCount) => log
+            .io('Retry #${retryCount + 1} because of checksum error with GET '
+                '$archiveUrl...'),
+        maxAttempts: math.max(
+          1, // Having less than 1 attempt doesn't make sense.
+          int.tryParse(io.Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ??
+              7,
+        ),
       );
 
-      await createFileFromStream(stream, archivePath);
-      final tempDir = cache.createTempDir();
-
+      var tempDir = cache.createTempDir();
       await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
 
       ensureDir(p.dirname(destPath));
@@ -1343,4 +1366,85 @@ class _SingleValueSink<T> implements Sink<T> {
 
   @override
   void close() {}
+}
+
+@visibleForTesting
+const checksumHeaderName = 'x-goog-hash';
+
+/// Adds a checksum validation "tap" to the response stream and returns a
+/// wrapped `Stream` object, which should be used to consume the incoming data.
+///
+/// As chunks are received, a CRC32C checksum is updated.
+/// Once the download is completed, the final checksum is compared with
+/// the one present in the checksum response header.
+///
+/// Throws [PackageIntegrityException] if there is a checksum mismatch.
+Stream<List<int>> _validateStreamCrc32Checksum(Stream<List<int>> stream,
+    int expectedChecksum, PackageId id, Uri archiveUrl) async* {
+  final crc32c = Crc32c();
+
+  await for (final chunk in stream) {
+    crc32c.update(chunk);
+    yield chunk;
+  }
+
+  final actualChecksum = crc32c.finalize();
+
+  log.fine(
+      'Computed checksum $actualChecksum for ${id.name} ${id.version} with '
+      'expected CRC32C of $expectedChecksum.');
+
+  if (actualChecksum != expectedChecksum) {
+    throw PackageIntegrityException(
+        'Package archive for ${id.name} ${id.version} downloaded from '
+        '"$archiveUrl" has "x-goog-hash: crc32c=$expectedChecksum", which '
+        'doesn\'t match the checksum of the archive downloaded.');
+  }
+}
+
+/// Parses response [headers] and returns the archive's CRC32C checksum.
+///
+/// In most cases, GCS provides both MD5 and CRC32C checksums in its response
+/// headers. It uses the header name "x-goog-hash" for these values. It has
+/// been documented and observed that GCS will send multiple response headers
+/// with the same "x-goog-hash" token as the key.
+/// https://cloud.google.com/storage/docs/xml-api/reference-headers#xgooghash
+///
+/// Additionally, when the Dart http client encounters multiple response
+/// headers with the same key, it concatenates their values with a comma
+/// before inserting a single item with that key and concatenated value into
+/// its response "headers" Map.
+/// See https://github.com/dart-lang/http/issues/24
+/// https://github.com/dart-lang/http/blob/06649afbb5847dbb0293816ba8348766b116e419/pkgs/http/lib/src/base_response.dart#L29
+///
+/// Throws [PackageIntegrityException] if the CRC32C checksum cannot be parsed.
+int? _parseCrc32c(Map<String, String> headers, String fileName) {
+  final checksumHeader = headers[checksumHeaderName];
+  if (checksumHeader == null) return null;
+
+  final parts = checksumHeader.split(',');
+  for (final part in parts) {
+    if (part.startsWith('crc32c=')) {
+      final undecoded = part.substring('crc32c='.length);
+
+      try {
+        final bytes = base64Decode(undecoded);
+
+        // CRC32C must be 32 bits, or 4 bytes.
+        if (bytes.length != 4) {
+          throw FormatException('CRC32C checksum has invalid length', bytes);
+        }
+
+        return ByteData.view(bytes.buffer).getUint32(0);
+      } on FormatException catch (e, s) {
+        throw PackageIntegrityException(
+            'Package archive "$fileName" has a malformed CRC32C checksum in '
+            'its response headers',
+            innerError: e,
+            innerTrace: s);
+      }
+    }
+  }
+
+  return null;
 }

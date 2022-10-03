@@ -357,6 +357,18 @@ String _filter(String input) {
         RegExp(r'Writing \d+ characters', multiLine: true),
         r'Writing $N characters',
       )
+      .replaceAll(
+        RegExp(r'x-goog-hash(.*)$', multiLine: true),
+        r'x-goog-hash: $CHECKSUM_HEADER',
+      )
+      .replaceAll(
+        RegExp(
+            r'Computed checksum \d+ for foo 1.0.0 with expected CRC32C of '
+            r'\d+\.',
+            multiLine: true),
+        r'Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of '
+        r'$CRC32C.',
+      )
 
       /// TODO(sigurdm): This hack suppresses differences in stack-traces
       /// between dart 2.17 and 2.18. Remove when 2.18 is stable.
