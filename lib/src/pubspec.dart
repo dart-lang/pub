@@ -234,14 +234,21 @@ class Pubspec extends PubspecBase {
       constraint = VersionConstraint.intersection(
           [constraint, defaultUpperBoundConstraint]);
     }
+    // If a package is null safe it should also be compatible with dart 3.
+    // Therefore we rewrite a null-safety enabled constraint with the upper
+    // bound <3.0.0 to be have upper bound <4.0.0
     if (constraint is VersionRange &&
         LanguageVersion.fromSdkConstraint(constraint) >=
             LanguageVersion.firstVersionWithNullSafety &&
+        // <3.0.0 is parsed into a max of 3.0.0-0, so that is what we look for
+        // here.
         constraint.max == Version(3, 0, 0).firstPreRelease &&
         constraint.includeMax == false) {
       constraint = VersionRange(
         min: constraint.min,
         includeMin: constraint.includeMin,
+        // We don't have to use .firstPreRelease as the constructor will do that
+        // if needed.
         max: Version(4, 0, 0),
       );
     }
