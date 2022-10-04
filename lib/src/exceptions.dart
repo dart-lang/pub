@@ -127,7 +127,7 @@ bool isUserFacingException(error) {
 /// By being an [ApplicationException] this will not trigger a stack-trace on
 /// normal operations.
 ///
-/// Works as a SourceSpanFormatException, but can contain more context:
+/// Works as a [SourceSpanFormatException], but can contain more context:
 /// An optional [explanation] that explains the operation that failed.
 /// An optional [hint] that gives suggestions how to proceed.
 class SourceSpanApplicationException extends SourceSpanFormatException
