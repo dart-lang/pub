@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 
 import '../io.dart';
 
+import '../log.dart';
 import '../validator.dart';
 
 /// Runs `dart analyze` and gives a warning if it returns non-zero.
@@ -21,8 +22,9 @@ class AnalyzeValidator extends Validator {
       if (!p.equals(entrypoint.root.dir, p.current)) entrypoint.root.dir,
     ]);
     if (result.exitCode != 0) {
-      warnings.add(
-          '`dart analyze` found the following issue(s):\n${result.stdout.join('\n')}');
+      final limitedOutput = limitLength(result.stdout.join('\n'), 1000);
+      warnings
+          .add('`dart analyze` found the following issue(s):\n$limitedOutput');
     }
   }
 }
