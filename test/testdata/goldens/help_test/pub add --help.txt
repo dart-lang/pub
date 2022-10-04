@@ -4,10 +4,10 @@
 $ pub add --help
 Add dependencies to pubspec.yaml.
 
-Usage: pub add [options] <package>[:<constraint>] [<package2>[:<constraint2>]...] --
-       [package-options] <package3>[:<constraint>]
+Usage: pub add [options] ([dev:]<package>[:descriptor])+
+-h, --help               Print this usage information.
+
 Package options
--d, --dev                Adds to the development dependencies instead.
     --git-url            Git URL of the package
     --git-ref            Git branch or commit to be retrieved
     --git-path           Path of git package in repository
