@@ -341,7 +341,6 @@ void dumpTranscriptToStdErr() {
 /// replacing it with '[...]' if it is too long.
 ///
 /// [limit] must be more than 5.
-@visibleForTesting
 String limitLength(String input, int limit) {
   const snip = '[...]';
   assert(limit > snip.length);
