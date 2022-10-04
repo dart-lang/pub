@@ -515,8 +515,7 @@ environment:
       ]).validate();
     });
 
-    test('Can add both dev and regular dependencies @dev to separate',
-        () async {
+    test('Can add both dev and regular dependencies', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
       server.serve('bar', '1.2.3');
@@ -525,7 +524,7 @@ environment:
         d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
       ]).create();
 
-      await pubAdd(args: ['dev:foo:1.2.3', '--', 'bar:1.2.3']);
+      await pubAdd(args: ['dev:foo:1.2.3', 'bar:1.2.3']);
 
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.2.3'),

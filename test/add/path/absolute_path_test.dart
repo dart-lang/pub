@@ -54,7 +54,7 @@ void main() {
 
     await pubAdd(
         args: ['foo:2.0.0', 'bar:0.1.3', 'baz:1.3.1', '--path', absolutePath],
-        error: contains('Separate multiple path packages to add with "--".'),
+        error: contains('--path cannot be used with multiple packages.\.'),
         exitCode: exit_codes.USAGE);
 
     await d.appDir({}).validate();
