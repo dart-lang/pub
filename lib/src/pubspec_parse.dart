@@ -7,7 +7,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
-import 'exceptions.dart' show ApplicationException;
+import 'exceptions.dart';
 import 'utils.dart' show identifierRegExp, reservedWords;
 
 /// A regular expression matching allowed package names.
@@ -42,15 +42,18 @@ abstract class PubspecBase {
   String _lookupName() {
     final name = fields['name'];
     if (name == null) {
-      throw PubspecException('Missing the required "name" field.', fields.span);
+      throw SourceSpanApplicationException(
+          'Missing the required "name" field.', fields.span);
     } else if (name is! String) {
-      throw PubspecException(
+      throw SourceSpanApplicationException(
           '"name" field must be a string.', fields.nodes['name']?.span);
     } else if (!packageNameRegExp.hasMatch(name)) {
-      throw PubspecException('"name" field must be a valid Dart identifier.',
+      throw SourceSpanApplicationException(
+          '"name" field must be a valid Dart identifier.',
           fields.nodes['name']?.span);
     } else if (reservedWords.contains(name)) {
-      throw PubspecException('"name" field may not be a Dart reserved word.',
+      throw SourceSpanApplicationException(
+          '"name" field may not be a Dart reserved word.',
           fields.nodes['name']?.span);
     }
 
@@ -223,7 +226,7 @@ abstract class PubspecBase {
   bool get isPrivate => publishTo == 'none';
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
-  /// [PubspecException].
+  /// [SourceSpanApplicationException].
   ///
   /// [description] should be a noun phrase that describes whatever's being
   /// parsed or processed by [fn]. [span] should be the location of whatever's
@@ -242,21 +245,13 @@ abstract class PubspecBase {
         msg = '$msg in the "$name" pubspec on the "$targetPackage" dependency';
       }
       msg = '$msg: ${e.message}';
-      throw PubspecException(msg, span);
+      throw SourceSpanApplicationException(msg, span);
     }
   }
 
-  /// Throws a [PubspecException] with the given message.
+  /// Throws a [SourceSpanApplicationException] with the given message.
   @alwaysThrows
   void _error(String message, SourceSpan? span) {
-    throw PubspecException(message, span);
+    throw SourceSpanApplicationException(message, span);
   }
-}
-
-/// An exception thrown when parsing a pubspec.
-///
-/// These exceptions are often thrown lazily while accessing pubspec properties.
-class PubspecException extends SourceSpanFormatException
-    implements ApplicationException {
-  PubspecException(String message, SourceSpan? span) : super(message, span);
 }
