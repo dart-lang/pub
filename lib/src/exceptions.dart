@@ -120,7 +120,7 @@ bool isUserFacingException(error) {
       error is UsageException;
 }
 
-/// An exception thrown when parsing a pubspec.yaml or a pubspec.lock.
+/// An exception thrown when parsing a `pubspec.yaml` or a `pubspec.lock`.
 ///
 /// These exceptions are often thrown lazily while accessing pubspec properties.
 ///
