@@ -65,7 +65,7 @@ For example:
   * Add a git dependency:
     `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
-    `$topLevelProgram pub add 'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}\'`''';
+    `$topLevelProgram pub add 'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
