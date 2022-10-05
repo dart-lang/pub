@@ -63,7 +63,7 @@ class SolveResult {
     var sdkConstraints = <String, VersionConstraint>{};
     for (var pubspec in nonOverrides) {
       pubspec.sdkConstraints.forEach((identifier, constraint) {
-        sdkConstraints[identifier] = constraint
+        sdkConstraints[identifier] = constraint.effectiveConstraint
             .intersect(sdkConstraints[identifier] ?? VersionConstraint.any);
       });
     }

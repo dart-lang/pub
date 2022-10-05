@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/pubspec.dart';
-import 'package:pub/src/sdk.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -495,36 +494,23 @@ dependencies:
     });
 
     group('environment', () {
-      /// Checking for the default SDK constraint based on the current SDK.
-      void expectDefaultSdkConstraint(Pubspec pubspec) {
-        var sdkVersionString = sdk.version.toString();
-        if (sdkVersionString.startsWith('2.0.0') && sdk.version.isPreRelease) {
-          expect(
-              pubspec.sdkConstraints,
-              containsPair(
-                  'dart',
-                  VersionConstraint.parse(
-                      '${pubspec.sdkConstraints["dart"]} <=$sdkVersionString')));
-        } else {
-          expect(
-              pubspec.sdkConstraints,
-              containsPair(
-                  'dart',
-                  VersionConstraint.parse(
-                      "${pubspec.sdkConstraints["dart"]} <2.0.0")));
-        }
-      }
-
       test('allows an omitted environment', () {
         var pubspec = Pubspec.parse('name: testing', sources);
-        expectDefaultSdkConstraint(pubspec);
+        expect(
+          pubspec.dartSdkConstraint.effectiveConstraint,
+          VersionConstraint.parse('<2.0.0'),
+        );
+
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test('default SDK constraint can be omitted with empty environment', () {
         var pubspec = Pubspec.parse('', sources);
-        expectDefaultSdkConstraint(pubspec);
+        expect(
+          pubspec.dartSdkConstraint.effectiveConstraint,
+          VersionConstraint.parse('<2.0.0'),
+        );
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
@@ -535,7 +521,10 @@ dependencies:
   environment:
     sdk: ">1.0.0"
   ''', sources);
-        expectDefaultSdkConstraint(pubspec);
+        expect(
+          pubspec.dartSdkConstraint.effectiveConstraint,
+          VersionConstraint.parse('>1.0.0 <2.0.0'),
+        );
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
@@ -547,8 +536,12 @@ dependencies:
   environment:
     sdk: ">3.0.0"
   ''', sources);
-        expect(pubspec.sdkConstraints,
-            containsPair('dart', VersionConstraint.parse('>3.0.0')));
+        expect(
+            pubspec.sdkConstraints,
+            containsPair(
+              'dart',
+              SdkConstraint(VersionConstraint.parse('>3.0.0')),
+            ));
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
@@ -565,12 +558,23 @@ environment:
   flutter: ^0.1.2
   fuchsia: ^5.6.7
 ''', sources);
-        expect(pubspec.sdkConstraints,
-            containsPair('dart', VersionConstraint.parse('>=1.2.3 <2.3.4')));
-        expect(pubspec.sdkConstraints,
-            containsPair('flutter', VersionConstraint.parse('>=0.1.2')));
-        expect(pubspec.sdkConstraints,
-            containsPair('fuchsia', VersionConstraint.parse('^5.6.7')));
+        expect(
+            pubspec.sdkConstraints,
+            containsPair('dart',
+                SdkConstraint(VersionConstraint.parse('>=1.2.3 <2.3.4'))));
+        expect(
+            pubspec.sdkConstraints,
+            containsPair(
+                'flutter',
+                SdkConstraint(
+                  VersionConstraint.parse('>=0.1.2'),
+                  originalConstraint: VersionConstraint.parse('^0.1.2'),
+                )));
+        expect(
+          pubspec.sdkConstraints,
+          containsPair(
+              'fuchsia', SdkConstraint(VersionConstraint.parse('^5.6.7'))),
+        );
       });
 
       test("throws if the sdk isn't a string", () {
