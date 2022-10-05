@@ -659,7 +659,8 @@ bool fixedTimeBytesEquals(List<int>? a, List<int>? b) {
 }
 
 /// Call [fn] retrying so long as [retryIf] return `true` for the exception
-/// thrown, up-to [maxAttempts] times.
+/// thrown, up-to [maxAttempts] times. Optionally, pass [mapException] function
+/// to update or replace [Exception] before [retryIf] is invoked.
 ///
 /// Defaults to 8 attempts, sleeping as following after 1st, 2nd, 3rd, ...,
 /// 7th attempt:
@@ -692,7 +693,8 @@ Future<T> retry<T>(
   double randomizationFactor = 0.25,
   Duration maxDelay = const Duration(seconds: 30),
   int maxAttempts = 8,
-  FutureOr<bool> Function(Exception)? retryIf,
+  Exception Function(Exception, StackTrace)? mapException,
+  FutureOr<bool> Function(Exception, StackTrace)? retryIf,
   FutureOr<void> Function(Exception, int retryCount)? onRetry,
 }) async {
   var attempt = 0;
@@ -701,12 +703,16 @@ Future<T> retry<T>(
     attempt++; // first invocation is the first attempt
     try {
       return await fn();
-    } on Exception catch (e) {
-      if (attempt >= maxAttempts || (retryIf != null && !(await retryIf(e)))) {
+    } on Exception catch (e, stackTrace) {
+      late final exception = mapException?.call(e, stackTrace) ?? e;
+
+      if (attempt >= maxAttempts ||
+          (retryIf != null && !(await retryIf(exception, stackTrace)))) {
         rethrow;
       }
+
       if (onRetry != null) {
-        await onRetry(e, attempt);
+        await onRetry(exception, attempt);
       }
     }
 
