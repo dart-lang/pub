@@ -189,14 +189,10 @@ class _ThrowingClient extends http.BaseClient {
       // with a retry. Failing to retry intermittent issues is likely to cause
       // customers to wrap pub in a retry loop which will not improve the
       // end-user experience.
-      if (error.osError!.errorCode == 8 ||
-          error.osError!.errorCode == -2 ||
-          error.osError!.errorCode == -5 ||
-          error.osError!.errorCode == 11001 ||
-          error.osError!.errorCode == 11004) {
+      if (error.osError!.isDnsError) {
         fail('Could not resolve URL "${request.url.origin}".', error,
             stackTrace);
-      } else if (error.osError!.errorCode == -12276) {
+      } else if (error.osError!.isSslError) {
         fail(
             'Unable to validate SSL certificate for '
             '"${request.url.origin}".',
@@ -397,4 +393,22 @@ class _ThrottleClient extends http.BaseClient {
 
   @override
   void close() => _inner.close();
+}
+
+extension on OSError {
+  get isDnsError {
+    // See https://github.com/dart-lang/pub/pull/2254#pullrequestreview-314895700
+    const indeterminateOSCodes = [8, -2, -5];
+    const windowsCodes = [11001, 11004];
+
+    return indeterminateOSCodes.contains(errorCode) ||
+        windowsCodes.contains(errorCode);
+  }
+
+  get isSslError {
+    // TODO: does dart/pub use nspr anymore?
+    const nsprCodes = [-12276];
+
+    return nsprCodes.contains(errorCode);
+  }
 }
