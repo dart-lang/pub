@@ -78,6 +78,9 @@ For example:
       hide: true,
     );
 
+    // Following options are hidden/deprecated in favor of the new syntax: [dev:]<package>[:descriptor] ...
+    // To avoid breaking changes we keep supporting them, but hide them from --help to discourage
+    // further use. Combining these with new syntax will fail.
     argParser.addOption(
       'git-url',
       help: 'Git URL of the package',
