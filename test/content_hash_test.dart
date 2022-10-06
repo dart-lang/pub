@@ -161,6 +161,7 @@ Future<void> main() async {
       file('foo-1.0.0.sha256', originalHash),
     ]).validate();
   });
+
   test(
       'Legacy lockfile without content-hashes is updated with the hash on pub get on legacy server without content-hashes',
       () async {
