@@ -454,10 +454,10 @@ extension HttpRetrying on http.Client {
       int maxAttempts = 8,
       FutureOr<bool> Function(Exception, StackTrace)? retryIf,
       FutureOr<void> Function(Exception e, int retryCount, http.Request request,
-              http.StreamedResponse response)?
+              http.StreamedResponse? response)?
           onRetry}) async {
     late http.Request request;
-    late http.StreamedResponse response;
+    http.StreamedResponse? managedResponse;
 
     return await retry(() async {
       final resource = await _httpPool.request();
@@ -487,10 +487,11 @@ extension HttpRetrying on http.Client {
       // error.
       unawaited(directResponse.stream.pipe(responseController));
       unawaited(responseController.done.then((_) => resource.release()));
-      response = directResponse.replacingStream(responseController.stream);
+      managedResponse =
+          directResponse.replacingStream(responseController.stream);
 
       try {
-        return await onResponse(response);
+        return await onResponse(managedResponse!);
       } catch (_) {
         rethrow;
       } finally {
@@ -538,7 +539,7 @@ extension HttpRetrying on http.Client {
           (retryIf != null && await retryIf(e, stackTrace));
     }, onRetry: (exception, retryCount) async {
       if (onRetry != null) {
-        await onRetry(exception, retryCount, request, response);
+        await onRetry(exception, retryCount, request, managedResponse);
       } else {
         log.io('Retry #${retryCount + 1} for '
             '${request.method} ${request.url}...');
