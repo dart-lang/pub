@@ -58,37 +58,60 @@ class SolveReport {
     _checkContentHashesMatchOldLockfile();
   }
 
-  _checkContentHashesMatchOldLockfile() {
-    for (final newId in _newLockFile.packages.values) {
-      var newDescription = newId.description;
+_checkContentHashesMatchOldLockfile() {
+    final issues = <String>[];
+
+    final newPackageNames = _newLockFile.packages.keys.toSet();
+    final oldPackageNames = _previousLockFile.packages.keys.toSet();
+    // We only care about packages that exist in both new and old lockfile.
+    for (final name in newPackageNames.intersection(oldPackageNames)) {
+      final newId = _newLockFile.packages[name]!;
+      final oldId = _previousLockFile.packages[name]!;
+
+      // We only care about hosted packages
+      final newDescription = newId.description;
+      final oldDescription = oldId.description;
+      if (newDescription is! ResolvedHostedDescription ||
+          oldDescription is! ResolvedHostedDescription) {
+        continue;
+      }
+
+      // We don't care about changes in the hash if the version number changed!
+      if (newId.version != oldId.version) {
+        continue;
+      }
+
       // Use the cached content-hashes after downloading to ensure that
       // content-hashes from legacy servers gets used.
-      if (newDescription is ResolvedHostedDescription) {
-        final cachedHash = newDescription.sha256;
-        assert(cachedHash != null);
-        final oldId = _previousLockFile.packages[newId.name];
-        if (oldId != null &&
-            cachedHash != null &&
-            oldId.version == newId.version) {
-          final oldDecription = oldId.description;
-          if (oldDecription is ResolvedHostedDescription &&
-              oldDecription.description == newDescription.description) {
-            final oldHash = oldDecription.sha256;
-            if (oldHash != null && !fixedTimeBytesEquals(cachedHash, oldHash)) {
-              log.warning('''
-The content of ${newId.name}-${newId.version} from ${newDescription.description.url} doesn't match the pubspec.lock.
+      final cachedHash = newDescription.sha256;
+      assert(cachedHash != null);
+
+      // Ignore cases where the old lockfile doesn't have a content-hash
+      final oldHash = oldDescription.sha256;
+      if (oldHash == null) {
+        continue;
+      }
+
+      if (!fixedTimeBytesEquals(cachedHash, oldHash)) {
+        issues.add(
+          '$name-${newId.version} from "${newDescription.description.url}"',
+        );
+      }
+    }
+
+    if (issues.isNotEmpty) {
+      log.warning('''
+The existing content-hash from pubspec.lock doesn't match contents for:
+ * ${issues.join('\n * ')}
 
 This indicates one of:
-* The content has changed on the server since you created the pubspec.lock.
-* The pubspec.lock has been corrupted.
-${_dryRun ? '' : '\nThe pubspec.lock has been updated.'}
+ * The content has changed on the server since you created the pubspec.lock.
+ * The pubspec.lock has been corrupted.
+${_dryRun ? '' : '\nThe content-hashes in pubspec.lock has been updated.'}
 
-See $contentHashesDocumentationUrl for more information.
+For more information see:
+$contentHashesDocumentationUrl
 ''');
-            }
-          }
-        }
-      }
     }
   }
 
