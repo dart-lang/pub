@@ -55,11 +55,12 @@ abstract class PubCommand extends Command<int> {
     return a;
   }
 
-  String get directory =>
-      (argResults.options.contains('directory')
-          ? argResults['directory']
-          : null) ??
-      _pubTopLevel.directory;
+  String get directory {
+    return (argResults.options.contains('directory')
+            ? argResults['directory']
+            : null) ??
+        _pubTopLevel.directory;
+  }
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
@@ -350,7 +351,7 @@ abstract class PubTopLevel {
   }
 
   /// The directory containing the pubspec.yaml of the project to work on.
-  String? get directory;
+  String get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.
   ArgResults get argResults;
