@@ -337,7 +337,7 @@ class HostedSource extends CachedSource {
       var pubspec = Pubspec.fromMap(pubspecData, cache.sources,
           expectedName: ref.name, location: location);
       final archiveSha256 = map['archive_sha256'];
-      if (archiveSha256 is! String) {
+      if (archiveSha256 != null && archiveSha256 is! String) {
         throw FormatException('archive_sha256 must be a String');
       }
       final archiveUrl = map['archive_url'];
