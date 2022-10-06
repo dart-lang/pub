@@ -11,6 +11,7 @@ import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'command_runner.dart';
@@ -18,7 +19,6 @@ import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
 import 'io.dart';
-import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
@@ -101,7 +101,17 @@ class Entrypoint {
     if (!fileExists(lockFilePath)) {
       return _lockFile = LockFile.empty();
     } else {
-      return _lockFile = LockFile.load(lockFilePath, cache.sources);
+      try {
+        return _lockFile = LockFile.load(lockFilePath, cache.sources);
+      } on SourceSpanException catch (e) {
+        throw SourceSpanApplicationException(
+          e.message,
+          e.span,
+          explanation: 'Failed parsing lock file:',
+          hint:
+              'Consider deleting the file and running `$topLevelProgram pub get` to recreate it.',
+        );
+      }
     }
   }
 
@@ -270,7 +280,8 @@ class Entrypoint {
       await lockFile.packageConfigFile(
         cache,
         entrypoint: entrypointName,
-        entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
+        entrypointSdkConstraint:
+            root.pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
         relativeFrom: isGlobal ? null : root.dir,
       ),
     );
@@ -814,9 +825,7 @@ class Entrypoint {
       try {
         // Load `pubspec.yaml` and extract language version to compare with the
         // language version from `package_config.json`.
-        final languageVersion = LanguageVersion.fromSdkConstraint(
-          cache.load(id).pubspec.sdkConstraints[sdk.identifier],
-        );
+        final languageVersion = cache.load(id).pubspec.languageVersion;
         if (pkg.languageVersion != languageVersion) {
           final relativePubspecPath = p.join(
             cache.getDirectory(id, relativeFrom: '.'),
@@ -857,7 +866,7 @@ class Entrypoint {
   ///
   /// We don't allow unknown sdks.
   void _checkSdkConstraint(Pubspec pubspec) {
-    final dartSdkConstraint = pubspec.sdkConstraints['dart'];
+    final dartSdkConstraint = pubspec.dartSdkConstraint.effectiveConstraint;
     if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
       // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
       // [CompatibleWithVersionRange] because some pub versions don't support
@@ -892,7 +901,7 @@ See https://dart.dev/go/sdk-constraint
         final keyNode = environment.nodes.entries
             .firstWhere((e) => (e.key as YamlNode).value == sdk)
             .key as YamlNode;
-        throw PubspecException('''
+        throw SourceSpanApplicationException('''
 $pubspecPath refers to an unknown sdk '$sdk'.
 
 Did you mean to add it as a dependency?

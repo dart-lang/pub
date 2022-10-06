@@ -19,7 +19,7 @@ void main() {
       'list-package-dirs',
       '--format=json'
     ], outputJson: {
-      'error': contains('The lockfile must be a YAML mapping.'),
+      'error': contains('Expected a YAML mapping.'),
       'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock'))
     }, exitCode: exit_codes.DATA);
   });

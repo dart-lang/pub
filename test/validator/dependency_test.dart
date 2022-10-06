@@ -39,10 +39,10 @@ Future<void> expectValidation(
 }
 
 Future<void> expectValidationWarning(error,
-    {Map<String, String> environment = const {}}) async {
+    {int count = 1, Map<String, String> environment = const {}}) async {
   if (error is String) error = contains(error);
   await expectValidation(
-    error: allOf([error, contains('Package has 1 warning.')]),
+    error: allOf([error, contains('Package has $count warning')]),
     exitCode: DATA,
     environment: environment,
   );
@@ -106,7 +106,9 @@ void main() {
       await expectValidationWarning(
           allOf([
             contains('  foo: any'),
+            contains("Publishable packages can't have 'git' dependencies"),
           ]),
+          count: 2,
           environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
     });
 

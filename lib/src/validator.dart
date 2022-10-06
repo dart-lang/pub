@@ -11,6 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
+import 'validator/analyze.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -74,7 +75,7 @@ abstract class Validator {
   void validateSdkConstraint(Version firstSdkVersion, String message) {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
-    if (entrypoint.root.pubspec.originalDartSdkConstraint
+    if (entrypoint.root.pubspec.dartSdkConstraint.originalConstraint
         .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
@@ -95,7 +96,8 @@ abstract class Validator {
             ? firstSdkVersion.nextPatch
             : firstSdkVersion.nextBreaking);
 
-    var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint
+    var newSdkConstraint = entrypoint
+        .root.pubspec.dartSdkConstraint.originalConstraint
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
@@ -130,6 +132,7 @@ abstract class Validator {
       required List<String> warnings,
       required List<String> errors}) async {
     var validators = [
+      AnalyzeValidator(),
       GitignoreValidator(),
       PubspecValidator(),
       LicenseValidator(),

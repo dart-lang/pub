@@ -1172,7 +1172,7 @@ void dartSdkConstraint() {
 
         await expectResolves(
           environment: {'_PUB_TEST_SDK_VERSION': '2.0.0-dev.99'},
-          // Log output should mention the PUB_ALLOW_RELEASE_SDK environment
+          // Log output should mention the PUB_ALLOW_PRERELEASE_SDK environment
           // variable and mention the foo and bar packages specifically.
           output: allOf(contains('PUB_ALLOW_PRERELEASE_SDK'),
               anyOf(contains('bar, foo'))),
