@@ -15,7 +15,6 @@ import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../git.dart';
 import '../io.dart';
-import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -33,7 +32,11 @@ import '../utils.dart';
 /// the other dependencies in `pubspec.yaml`, and then enter that as the lower
 /// bound in a ^x.y.z constraint.
 ///
-/// Currently supports only adding one dependency at a time.
+/// The descriptor used to be given with args like --path, --sdk,
+/// --git-<option>.
+///
+/// We still support these arguments, but now the documented way to give the
+/// descriptor is to give a yaml-descriptor as in pubspec.yaml.
 class AddCommand extends PubCommand {
   @override
   String get name => 'add';
@@ -157,11 +160,25 @@ Specify multiple sdk packages with descriptors.''');
     }
 
     final updates = argResults.rest.map((p) {
-      if (argResults.hasOldStyleOptions) {
-        return _parsePackageOldStyleArgs(p, argResults);
-      } else {
-        return _parsePackage(p, argResults);
+      var isDev = argResults['dev'] as bool;
+      if (p.startsWith('dev:')) {
+        if (argResults.isDev) {
+          usageException("Cannot combine 'dev:' with --dev");
+        }
+        isDev = true;
+        p = p.substring('dev:'.length);
       }
+      var partial = _parsePackage(p, argResults);
+      if (partial.ref == null) {
+        // No yaml-style descriptor was given, parse old-style arguments.
+        partial = _parsePackageOldStyleArgs(p, argResults);
+      } else {
+        if (argResults.hasOldStyleOptions) {
+          usageException(
+              '--path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.');
+        }
+      }
+      return _ParseResult(partial.ref!, partial.constraint, isDev: isDev);
     }).toList();
 
     var updatedPubSpec = entrypoint.root.pubspec;
@@ -345,11 +362,12 @@ Specify multiple sdk packages with descriptors.''');
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  _ParseResult _parsePackageOldStyleArgs(
+  ///
+  /// The returned [_PartialParseResult]
+  _PartialParseResult _parsePackageOldStyleArgs(
     String package,
     ArgResults argResults,
   ) {
-    assert(argResults.hasOldStyleOptions);
     final conflictingFlagSets = [
       ['git-url', 'git-ref', 'git-path'],
       ['hosted-url'],
@@ -368,14 +386,6 @@ Specify multiple sdk packages with descriptors.''');
             'Packages can only have one source, "pub add" flags "--$flag" and '
             '"--$conflictingFlag" are conflicting.');
       }
-    }
-    var dev = argResults.isDev;
-    if (package.startsWith('dev:')) {
-      if (argResults.isDev) {
-        usageException('Cannot combine dev: with --dev');
-      }
-      dev = true;
-      package = package.substring('dev:'.length);
     }
 
     final splitPackage = package.split(':');
@@ -432,9 +442,15 @@ Specify multiple sdk packages with descriptors.''');
     } else if (argResults.sdk != null) {
       ref = cache.sdk.parseRef(packageName, argResults.sdk);
     } else {
-      throw StateError('old-style options were not given');
+      ref = PackageRef(
+        packageName,
+        HostedDescription(
+          packageName,
+          argResults.hostUrl ?? cache.hosted.defaultUrl,
+        ),
+      );
     }
-    return _ParseResult(ref, constraint, isDev: dev);
+    return _PartialParseResult(ref, constraint);
   }
 
   /// Parse [package] to return the corresponding [_ParseResult].
@@ -476,19 +492,10 @@ Specify multiple sdk packages with descriptors.''');
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  _ParseResult _parsePackage(String package, ArgResults argResults) {
-    assert(!argResults.hasOldStyleOptions);
-
-    var dev = argResults.isDev;
-
-    if (package.startsWith('dev:')) {
-      if (argResults.isDev) {
-        usageException('Cannot combine dev: with --dev');
-      }
-      dev = true;
-      package = package.substring('dev:'.length);
-    }
-
+  ///
+  /// Returns a `ref` of `null` if the descriptor did not specify a source.
+  /// Then the source will be determined by the old-style arguments.
+  _PartialParseResult _parsePackage(String package, ArgResults argResults) {
     final match =
         RegExp(r'^(?<name>[^:]*)(?<descriptor>:.*)?$').firstMatch(package);
     if (match == null) {
@@ -527,9 +534,8 @@ Specify multiple sdk packages with descriptors.''');
         }
         final range = dummyPubspec.dependencies[packageName]!;
         if (parsedDescriptor is String) {
-          // To maintain backwards compatibility.
-          // Don't assign the ref here, but construct it below.
-
+          // Ref will be parsed by `_parsePackageOldStyleArgs()`
+          ref = null;
         } else {
           ref = range.toRef();
         }
@@ -543,14 +549,8 @@ Specify multiple sdk packages with descriptors.''');
         }
       }
     }
-    ref ??= PackageRef(
-      packageName,
-      HostedDescription(
-        packageName,
-        argResults.hostUrl ?? cache.hosted.defaultUrl,
-      ),
-    );
-    return _ParseResult(ref, constraint, isDev: dev);
+    print(ref);
+    return _PartialParseResult(ref, constraint);
   }
 
   /// Writes the changes to the pubspec file.
@@ -624,6 +624,12 @@ Specify multiple sdk packages with descriptors.''');
     /// Windows line endings are already handled by [yamlEditor]
     writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
   }
+}
+
+class _PartialParseResult {
+  final PackageRef? ref;
+  final VersionConstraint? constraint;
+  _PartialParseResult(this.ref, this.constraint);
 }
 
 class _ParseResult {

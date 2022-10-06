@@ -492,6 +492,18 @@ environment:
     });
   });
 
+  test('Cannot combine descriptor with old-style args', () async {
+    await d.appDir().create();
+
+    await pubAdd(
+      args: ['foo:{"path":"../foo"}', '--path=../foo'],
+      error: contains(
+        '--path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a',
+      ),
+      exitCode: exit_codes.USAGE,
+    );
+  });
+
   group('--dev', () {
     test('--dev adds packages to dev_dependencies instead', () async {
       final server = await servePackages();
@@ -513,6 +525,67 @@ environment:
           'dev_dependencies': {'foo': '1.2.3'}
         })
       ]).validate();
+    });
+
+    test('--dev adds packages to dev_dependencies instead with a descriptor',
+        () async {
+      await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(args: ['--dev', 'foo:{"path":../foo}']);
+
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', path: '../foo'),
+      ]).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dev_dependencies': {
+            'foo': {'path': '../foo'}
+          },
+        })
+      ]).validate();
+    });
+
+    test('dev: adds packages to dev_dependencies instead without a descriptor',
+        () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(args: ['dev:foo:1.2.3']);
+
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dev_dependencies': {'foo': '1.2.3'}
+        })
+      ]).validate();
+    });
+
+    test('Cannot combine --dev and :dev', () async {
+      await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(
+        args: ['--dev', 'dev:foo:1.2.3'],
+        error: contains("Cannot combine 'dev:' with --dev"),
+        exitCode: exit_codes.USAGE,
+      );
     });
 
     test('Can add both dev and regular dependencies', () async {
