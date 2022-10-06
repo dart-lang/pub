@@ -1025,7 +1025,7 @@ class HostedSource extends CachedSource {
         if (expectedHash != null && output.value != expectedHash) {
           log.fine(
               'Expected content-hash for ${id.name}-${id.version} $expectedHash actual: ${output.value}.');
-          throw FormatException('''
+          throw PackageIntegrityException('''
 Downloaded archive for ${id.name}-${id.version} had wrong content-hash.
 
 This indicates a problem on the package repository: `${description.url}`.
