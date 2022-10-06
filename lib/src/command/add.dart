@@ -138,6 +138,7 @@ For example:
   Future<void> runProtected() async {
     final languageVersion = entrypoint.root.pubspec.languageVersion;
 
+    // We don't support using deprecated options with multiple arguments
     if (argResults.rest.length > 1 && argResults.gitUrl != null) {
       usageException('''
 --git-url cannot be used with multiple packages.
