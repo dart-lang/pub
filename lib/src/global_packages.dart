@@ -735,7 +735,9 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
     // To ensure that the byte-offsets of everything stays the same even if the
     // snapshot filename changes we insert some padding in lines containing the
     // snapshot.
-    final padding = ' ' * (200 - snapshot.length);
+    // 260 is the maximal short path length on Windows. Hopefully that is
+    // enough.
+    final padding = ' ' * (260 - snapshot.length);
     // We need an absolute path since relative ones won't be relative to the
     // right directory when the user runs this.
     snapshot = p.absolute(snapshot);
