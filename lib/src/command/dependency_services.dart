@@ -358,6 +358,7 @@ class DependencyServicesApplyCommand extends PubCommand {
         : null;
     final lockFileYaml = lockFile == null ? null : loadYaml(lockFile);
     final lockFileEditor = lockFile == null ? null : YamlEditor(lockFile);
+    final hasContentHashes = _lockFileHasContentHashes(lockFileYaml);
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
@@ -468,23 +469,30 @@ class DependencyServicesApplyCommand extends PubCommand {
           for (final package in solveResult.packages) {
             if (package.isRoot) continue;
             final description = package.description;
-            if (description is ResolvedHostedDescription &&
-                description.sha256 == null) {
-              // We removed the hash above before resolution - as we get the
-              // locked id back we need to find the content-hash from the
-              // version listing.
-              //
-              // `pub get` gets this version-listing from the downloaded archive
-              // but we don't want to download all archives - so we copy it from
-              // the version listing.
-              var listedId = (await cache.getVersions(package.toRef()))
-                  .firstWhere((id) => id == package, orElse: () => package);
-              if ((listedId.description as ResolvedHostedDescription).sha256 ==
-                  null) {
-                // This happens when we resolved a package from a legacy server
-                // not providing archive_sha256. As a side-effect of downloading
-                // the package we compute and store the sha256.
-                listedId = await cache.downloadPackage(package);
+
+            if (description is ResolvedHostedDescription) {
+              if (hasContentHashes) {
+                if (description.sha256 == null) {
+                  // We removed the hash above before resolution - as we get the
+                  // locked id back we need to find the content-hash from the
+                  // version listing.
+                  //
+                  // `pub get` gets this version-listing from the downloaded archive
+                  // but we don't want to download all archives - so we copy it from
+                  // the version listing.
+                  var listedId = (await cache.getVersions(package.toRef()))
+                      .firstWhere((id) => id == package, orElse: () => package);
+                  if ((listedId.description as ResolvedHostedDescription)
+                          .sha256 ==
+                      null) {
+                    // This happens when we resolved a package from a legacy server
+                    // not providing archive_sha256. As a side-effect of downloading
+                    // the package we compute and store the sha256.
+                    listedId = await cache.downloadPackage(package);
+                  }
+                }
+              } else {
+                listedId =
               }
               updatedPackages.add(listedId);
             } else {
@@ -582,4 +590,24 @@ VersionConstraint _compatibleWithIfPossible(VersionRange versionRange) {
     return VersionConstraint.compatibleWith(min);
   }
   return versionRange;
+}
+
+/// `true` iff any of the packages described by the [lockfile] has a
+/// content-hash.
+///
+/// Undefined for invalid lock files, but mostly `true`.
+bool _lockFileHasContentHashes(dynamic lockfile) {
+  if (lockfile is! Map) return true;
+  final packages = lockfile['packages'];
+  if (packages is! Map) return true;
+
+  /// We consider an empty lockfile ready to get content-hashes.
+  if (packages.isEmpty) return true;
+  for (final package in packages.values) {
+    if (package is! Map) return true;
+    final descriptor = package['description'];
+    if (descriptor is! Map) return true;
+    if (descriptor['sha256'] != null) return true;
+  }
+  return false;
 }
