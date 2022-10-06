@@ -82,7 +82,8 @@ Future<void> main() async {
       warning: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
-            'The content of foo-1.0.0 from ${globalServer.url} doesn\'t match the pubspec.lock.'),
+            'The existing content-hash from pubspec.lock doesn\'t match contents for:'),
+        contains('* foo-1.0.0 from "${server.url}"\n'),
       ),
       exitCode: exit_codes.SUCCESS,
     );
@@ -108,9 +109,12 @@ Future<void> main() async {
         .deleteSync();
 
     await pubGet(
-      warning: contains(
-        'The content of foo-1.0.0 from ${globalServer.url} doesn\'t match the pubspec.lock.',
-      ),
+      warning: allOf([
+        contains(
+          'The existing content-hash from pubspec.lock doesn\'t match contents for:',
+        ),
+        contains('* foo-1.0.0 from "${globalServer.url}"'),
+      ]),
       exitCode: exit_codes.SUCCESS,
     );
     final lockfile = loadYaml(
