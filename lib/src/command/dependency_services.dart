@@ -478,7 +478,7 @@ class DependencyServicesApplyCommand extends PubCommand {
               // but we don't want to download all archives - so we copy it from
               // the version listing.
               var listedId = (await cache.getVersions(package.toRef()))
-                  .firstWhere((id) => id == package);
+                  .firstWhere((id) => id == package, orElse: () => package);
               if ((listedId.description as ResolvedHostedDescription).sha256 ==
                   null) {
                 // This happens when we resolved a package from a legacy server
