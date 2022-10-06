@@ -57,9 +57,10 @@ abstract class PubCommand extends Command<int> {
 
   String get directory =>
       (argResults.options.contains('directory')
-          ? argResults['directory']
+          ? argResults['directory'] as String
           : null) ??
-      _pubTopLevel.directory;
+      _pubTopLevel.directory ??
+      p.current;
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
