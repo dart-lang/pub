@@ -45,7 +45,7 @@ bool _isrunningInsideFlutter =
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String? get directory => argResults['directory'];
+  String get directory => argResults['directory'];
 
   @override
   bool get captureStackChains {
