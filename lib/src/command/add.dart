@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:args/args.dart';
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
@@ -41,11 +42,7 @@ class AddCommand extends PubCommand {
 
 Invoking `dart pub add foo bar` will add `foo` and `bar` to `pubspec.yaml`
 
-with a default constraint derived from latest compatible version.''';
-
-  @override
-  String get argumentsDescription => '''
-[options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor] ...]
+with a default constraint derived from latest compatible version.
 
 For example:
   * Add a hosted dependency at newest compatible stable version:
@@ -66,6 +63,10 @@ For example:
     `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add 'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
+
+  @override
+  String get argumentsDescription =>
+      '[options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor] ...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
@@ -135,22 +136,32 @@ For example:
   Future<void> runProtected() async {
     final languageVersion = entrypoint.root.pubspec.languageVersion;
 
-    if (argResults.rest.length > 1 && argResults.gitUrl != null) {
-      usageException('''
+    if (argResults.rest.length > 1) {
+      if (argResults.gitUrl != null) {
+        usageException('''
 --git-url cannot be used with multiple packages.
 Specify multiple git packages with descriptors.''');
-    } else if (argResults.rest.length > 1 && argResults.path != null) {
-      usageException('''
+      } else if (argResults.path != null) {
+        usageException('''
 --path cannot be used with multiple packages.
 Specify multiple path packages with descriptors.''');
+      } else if (argResults.sdk != null) {
+        usageException('''
+--sdk cannot be used with multiple packages.
+Specify multiple sdk packages with descriptors.''');
+      }
     }
     if (argResults.rest.isEmpty) {
       usageException('Must specify at least one package to be added.');
     }
 
-    final updates = argResults.rest
-        .map((p) => _parsePackage(p, languageVersion, argResults))
-        .toList();
+    final updates = argResults.rest.map((p) {
+      if (argResults.hasOldStyleOptions) {
+        return _parsePackageOldStyleArgs(p, languageVersion, argResults);
+      } else {
+        return _parsePackage(p, languageVersion, argResults);
+      }
+    }).toList();
 
     var updatedPubSpec = entrypoint.root.pubspec;
     for (final update in updates) {
@@ -307,6 +318,125 @@ Specify multiple path packages with descriptors.''');
     );
   }
 
+  /// Parse [package] to return the corresponding [_ParseResult] using the
+  /// arguments given in [argResults].
+  ///
+  /// [package] must be written in the format
+  /// `[dev:]<package-name>[:<version-constraint>]`, where quotations should be
+  /// used if necessary.
+  ///
+  /// Examples:
+  /// ```
+  /// retry
+  /// retry:2.0.0
+  /// retry:^2.0.0
+  /// retry:'>=2.0.0'
+  /// retry:'>2.0.0 <3.0.1'
+  /// 'retry:>2.0.0 <3.0.1'
+  /// retry:any
+  /// ```
+  ///
+  /// If a version constraint is provided when the `--path` or any of the
+  /// `--git-<option>` options are used, a [UsageException] will be thrown.
+  ///
+  /// Packages must either be a git, hosted, sdk, or path package. Mixing of
+  /// options is not allowed and will cause a [UsageException] to be thrown.
+  ///
+  /// If any of the other git options are defined when `--git-url` is not
+  /// defined, an error will be thrown.
+  _ParseResult _parsePackageOldStyleArgs(
+    String package,
+    LanguageVersion languageVersion,
+    ArgResults argResults,
+  ) {
+    assert(argResults.hasOldStyleOptions);
+    final conflictingFlagSets = [
+      ['git-url', 'git-ref', 'git-path'],
+      ['hosted-url'],
+      ['path'],
+      ['sdk'],
+    ];
+
+    for (final flag
+        in conflictingFlagSets.expand((s) => s).where(argResults.wasParsed)) {
+      final conflictingFlag = conflictingFlagSets
+          .where((s) => !s.contains(flag))
+          .expand((s) => s)
+          .firstWhereOrNull(argResults.wasParsed);
+      if (conflictingFlag != null) {
+        usageException(
+            'Packages can only have one source, "pub add" flags "--$flag" and '
+            '"--$conflictingFlag" are conflicting.');
+      }
+    }
+    var dev = argResults.isDev;
+    if (package.startsWith('dev:')) {
+      if (argResults.isDev) {
+        usageException('Cannot combine dev: with --dev');
+      }
+      dev = true;
+      package = package.substring('dev:'.length);
+    }
+
+    final splitPackage = package.split(':');
+
+    final packageName = splitPackage[0];
+
+    /// There shouldn't be more than one `:` in the package information
+    if (splitPackage.length > 2) {
+      usageException('Invalid package and version constraint: $package');
+    }
+
+    /// We want to allow for [constraint] to take on a `null` value here to
+    /// preserve the fact that the user did not specify a constraint.
+    VersionConstraint? constraint;
+
+    try {
+      constraint = splitPackage.length == 2
+          ? VersionConstraint.parse(splitPackage[1])
+          : null;
+    } on FormatException catch (e) {
+      usageException('Invalid version constraint: ${e.message}');
+    }
+
+    /// The package to be added.
+    late final PackageRef ref;
+    final path = argResults.path;
+    if (argResults.hasGitOptions) {
+      final gitUrl = argResults.gitUrl;
+      if (gitUrl == null) {
+        usageException('The `--git-url` is required for git dependencies.');
+      }
+      Uri parsed;
+      try {
+        parsed = Uri.parse(gitUrl);
+      } on FormatException catch (e) {
+        usageException('The --git-url must be a valid url: ${e.message}.');
+      }
+
+      /// Process the git options to return the simplest representation to be
+      /// added to the pubspec.
+
+      ref = PackageRef(
+        packageName,
+        GitDescription(
+          url: parsed.toString(),
+          containingDir: p.current,
+          ref: argResults.gitRef,
+          path: argResults.gitPath,
+        ),
+      );
+    } else if (path != null) {
+      ref = PackageRef(
+          packageName, PathDescription(p.absolute(path), p.isRelative(path)));
+    } else if (argResults.sdk != null) {
+      ref = cache.sdk.parseRef(packageName, argResults.sdk);
+    } else {
+      throw StateError('old-style options were not given');
+    }
+    return _ParseResult(ref, constraint, isDev: dev);
+  }
+
   /// Parse [package] to return the corresponding [_ParseResult].
   ///
   /// [package] must be written in the format
@@ -315,6 +445,10 @@ Specify multiple path packages with descriptors.''');
   ///
   /// `descriptor` is what you would put in a pubspec.yaml in the dependencies
   /// section.
+  ///
+  /// Assumes that none of '--git-url', '--git-ref', '--git-path', '--path' and
+  /// '--sdk' are present in [argResults], but will obey '--dev'.
+  ///
   ///
   /// Examples:
   /// ```
@@ -344,15 +478,24 @@ Specify multiple path packages with descriptors.''');
   /// defined, an error will be thrown.
   _ParseResult _parsePackage(
       String package, LanguageVersion languageVersion, ArgResults argResults) {
-    final match = RegExp(r'^(?<dev>dev:)?(?<name>[^:]*)(?<descriptor>:.*)?$')
-        .firstMatch(package);
+    assert(!argResults.hasOldStyleOptions);
+
+    var dev = argResults.isDev;
+
+    if (package.startsWith('dev:')) {
+      if (argResults.isDev) {
+        usageException('Cannot combine dev: with --dev');
+      }
+      dev = true;
+      package = package.substring('dev:'.length);
+    }
+
+    final match =
+        RegExp(r'^(?<name>[^:]*)(?<descriptor>:.*)?$').firstMatch(package);
     if (match == null) {
       usageException('$package is not a valid package specifier.');
     }
-    if (match.namedGroup('dev') != null && argResults.isDev) {
-      usageException('Cannot combine dev: with --dev');
-    }
-    final isDev = match.namedGroup('dev') != null || argResults.isDev;
+
     final packageName = match.namedGroup('name')!;
     final descriptor = match.namedGroup('descriptor')?.substring(1);
 
@@ -387,6 +530,7 @@ Specify multiple path packages with descriptors.''');
         if (parsedDescriptor is String) {
           // To maintain backwards compatibility.
           // Don't assign the ref here, but construct it below.
+
         } else {
           ref = range.toRef();
         }
@@ -400,59 +544,14 @@ Specify multiple path packages with descriptors.''');
         }
       }
     }
-
-    final path = argResults.path;
-    if (argResults.hasGitOptions) {
-      if (ref != null) {
-        usageException('Cannot use git-options with a package descriptor.');
-      }
-      final gitUrl = argResults.gitUrl;
-      if (gitUrl == null) {
-        usageException('The `--git-url` is required for git dependencies.');
-      }
-      Uri parsed;
-      try {
-        parsed = Uri.parse(gitUrl);
-      } on FormatException catch (e) {
-        usageException('The --git-url must be a valid url: ${e.message}.');
-      }
-
-      /// Process the git options to return the simplest representation to be
-      /// added to the pubspec.
-
-      ref = PackageRef(
+    ref ??= PackageRef(
+      packageName,
+      HostedDescription(
         packageName,
-        GitDescription(
-          url: parsed.toString(),
-          containingDir: p.current,
-          ref: argResults.gitRef,
-          path: argResults.gitPath,
-        ),
-      );
-    } else if (path != null) {
-      if (ref != null) {
-        usageException('Cannot use --path with a package descriptor.');
-      }
-      ref = PackageRef(
-          packageName, PathDescription(p.absolute(path), p.isRelative(path)));
-    } else if (argResults.sdk != null) {
-      if (ref != null) {
-        usageException('Cannot use --sdk with a package descriptor.');
-      }
-      ref = cache.sdk.parseRef(packageName, argResults.sdk);
-    } else {
-      if (ref != null && argResults.hostUrl != null) {
-        usageException('Cannot use --host-url with a package descriptor.');
-      }
-      ref ??= PackageRef(
-        packageName,
-        HostedDescription(
-          packageName,
-          argResults.hostUrl ?? cache.hosted.defaultUrl,
-        ),
-      );
-    }
-    return _ParseResult(ref, constraint, isDev: isDev);
+        argResults.hostUrl ?? cache.hosted.defaultUrl,
+      ),
+    );
+    return _ParseResult(ref, constraint, isDev: dev);
   }
 
   /// Writes the changes to the pubspec file.
@@ -544,6 +643,7 @@ extension on ArgResults {
   String? get hostUrl => this['hosted-url'];
   String? get path => this['path'];
   String? get sdk => this['sdk'];
+  bool get hasOldStyleOptions => hasGitOptions || path != null || sdk != null;
   bool get shouldPrecompile => this['precompile'];
   bool get example => this['example'];
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;

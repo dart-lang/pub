@@ -8,9 +8,6 @@ Invoking `dart pub add foo bar` will add `foo` and `bar` to `pubspec.yaml`
 
 with a default constraint derived from latest compatible version.
 
-Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor]
-       ...]
-
 For example:
   * Add a hosted dependency at newest compatible stable version:
     `dart pub add foo`
@@ -30,7 +27,10 @@ For example:
     `dart pub add 'foo{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
     `dart pub add
-           'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
+    'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
+
+Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor]
+       ...]
 -h, --help               Print this usage information.
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
