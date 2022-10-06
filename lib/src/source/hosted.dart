@@ -1264,7 +1264,7 @@ class ResolvedHostedDescription extends ResolvedDescription {
         // Therefore we have to assume it is equal to any known value.
         (sha256 == null ||
             other.sha256 == null ||
-            const ListEquality<int>().equals(sha256, other.sha256));
+            fixedTimeBytesEquals(sha256, other.sha256));
   }
 
   ResolvedHostedDescription withSha256(Uint8List? newSha256) =>
