@@ -57,10 +57,9 @@ abstract class PubCommand extends Command<int> {
 
   String get directory =>
       (argResults.options.contains('directory')
-          ? argResults['directory'] as String
+          ? argResults['directory']
           : null) ??
-      _pubTopLevel.directory ??
-      p.current;
+      _pubTopLevel.directory;
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
@@ -88,15 +87,11 @@ abstract class PubCommand extends Command<int> {
   /// parsed after a non-option argument is parsed.
   bool get allowTrailingOptions => true;
 
-  @override
-  get argParser => _argParser;
-
   // Lazily initialize the parser because the superclass constructor requires
   // it but we want to initialize it based on [allowTrailingOptions].
-  late final ArgParser _argParser = ArgParser(
-    allowTrailingOptions: allowTrailingOptions,
-    usageLineLength: lineLength,
-  );
+  @override
+  late final ArgParser argParser = ArgParser(
+      allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
 
   /// Override this to use offline-only sources instead of hitting the network.
   ///
