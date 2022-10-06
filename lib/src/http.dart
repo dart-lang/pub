@@ -6,14 +6,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
+// import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
-import 'package:http/retry.dart';
+// import 'package:http/retry.dart';
 import 'package:pool/pool.dart';
-import 'package:stack_trace/stack_trace.dart';
+// import 'package:stack_trace/stack_trace.dart';
 
 import 'command.dart';
+import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
@@ -233,46 +234,47 @@ class _ThrowingClient extends http.BaseClient {
 }
 
 /// The HTTP client to use for all HTTP requests.
-final httpClient = _ThrottleClient(
-    16,
-    _ThrowingClient(RetryClient(_pubClient,
-        retries: math.max(
-          1, // Having less than 1 retry is **always** wrong.
-          int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
-        ),
-        when: (response) =>
-            const [500, 502, 503, 504].contains(response.statusCode),
-        whenError: (error, stackTrace) {
-          if (error is! IOException) return false;
+final httpClient = _pubClient;
+// final httpClient = _ThrottleClient(
+//     16,
+//     _ThrowingClient(RetryClient(_pubClient,
+//         retries: math.max(
+//           1, // Having less than 1 retry is **always** wrong.
+//           int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
+//         ),
+//         when: (response) =>
+//             const [500, 502, 503, 504].contains(response.statusCode),
+//         whenError: (error, stackTrace) {
+//           if (error is! IOException) return false;
 
-          var chain = Chain.forTrace(stackTrace);
-          log.io('HTTP error:\n$error\n\n${chain.terse}');
-          return true;
-        },
-        delay: (retryCount) {
-          if (retryCount < 3) {
-            // Retry quickly a couple times in case of a short transient error.
-            //
-            // Add a random delay to avoid retrying a bunch of parallel requests
-            // all at the same time.
-            return Duration(milliseconds: 500) * math.pow(1.5, retryCount) +
-                Duration(milliseconds: random.nextInt(500));
-          } else {
-            // If the error persists, wait a long time. This works around issues
-            // where an AppEngine instance will go down and need to be rebooted,
-            // which takes about a minute.
-            return Duration(seconds: 30);
-          }
-        },
-        onRetry: (request, response, retryCount) {
-          log.io('Retry #${retryCount + 1} for '
-              '${request.method} ${request.url}...');
-          if (retryCount != 3) return;
-          if (!_retriedHosts.add(request.url.host)) return;
-          log.message(
-              'It looks like ${request.url.host} is having some trouble.\n'
-              'Pub will wait for a while before trying to connect again.');
-        })));
+//           var chain = Chain.forTrace(stackTrace);
+//           log.io('HTTP error:\n$error\n\n${chain.terse}');
+//           return true;
+//         },
+//         delay: (retryCount) {
+//           if (retryCount < 3) {
+//             // Retry quickly a couple times in case of a short transient error.
+//             //
+//             // Add a random delay to avoid retrying a bunch of parallel requests
+//             // all at the same time.
+//             return Duration(milliseconds: 500) * math.pow(1.5, retryCount) +
+//                 Duration(milliseconds: random.nextInt(500));
+//           } else {
+//             // If the error persists, wait a long time. This works around issues
+//             // where an AppEngine instance will go down and need to be rebooted,
+//             // which takes about a minute.
+//             return Duration(seconds: 30);
+//           }
+//         },
+//         onRetry: (request, response, retryCount) {
+//           log.io('Retry #${retryCount + 1} for '
+//               '${request.method} ${request.url}...');
+//           if (retryCount != 3) return;
+//           if (!_retriedHosts.add(request.url.host)) return;
+//           log.message(
+//               'It looks like ${request.url.host} is having some trouble.\n'
+//               'Pub will wait for a while before trying to connect again.');
+//         })));
 
 /// The underlying HTTP client wrapped by [httpClient].
 http.Client get innerHttpClient => _pubClient._inner;
@@ -340,10 +342,26 @@ Never invalidServerResponse(http.Response response) =>
     fail(log.red('Invalid server response:\n${response.body}'));
 
 /// Exception thrown when an HTTP operation fails.
+class PubConnectException extends WrappedException {
+  final bool couldRetry;
+
+  PubConnectException(
+    String message, {
+    required this.couldRetry,
+    Object? innerError,
+    StackTrace? innerTrace,
+  }) : super(message, innerError, innerTrace);
+
+  @override
+  String toString() => 'Connection error: $message. Intermittent: $couldRetry';
+}
+
+/// Exception thrown when an HTTP operation fails.
 class PubHttpException implements Exception {
   final http.Response response;
+  final bool couldRetry;
 
-  const PubHttpException(this.response);
+  const PubHttpException(this.response, {this.couldRetry = false});
 
   @override
   String toString() => 'HTTP error ${response.statusCode}: '
@@ -410,5 +428,159 @@ extension on OSError {
     const nsprCodes = [-12276];
 
     return nsprCodes.contains(errorCode);
+  }
+}
+
+extension on http.StreamedResponse {
+  /// Creates a copy of this response with [newStream] as the stream.
+  http.StreamedResponse replacingStream(Stream<List<int>> newStream) {
+    return http.StreamedResponse(newStream, statusCode,
+        contentLength: contentLength,
+        request: request,
+        headers: headers,
+        isRedirect: isRedirect,
+        persistentConnection: persistentConnection,
+        reasonPhrase: reasonPhrase);
+  }
+}
+
+/// Program-wide limiter for concurrent network requests.
+final _httpPool = Pool(16);
+
+extension HttpRetrying on http.Client {
+  Future<T> sendWithRetries<T>(
+      {required FutureOr<http.Request> Function() composeRequest,
+      required Future<T> Function(http.StreamedResponse response) onResponse,
+      int maxAttempts = 8,
+      FutureOr<bool> Function(Exception, StackTrace)? retryIf,
+      FutureOr<void> Function(Exception e, int retryCount, http.Request request,
+              http.StreamedResponse response)?
+          onRetry}) async {
+    late http.Request request;
+    late http.StreamedResponse response;
+
+    return await retry(() async {
+      final resource = await _httpPool.request();
+      request = await composeRequest();
+
+      http.StreamedResponse directResponse;
+      try {
+        directResponse = await send(request);
+        directResponse.throwIfError();
+      } catch (_) {
+        resource.release();
+        rethrow;
+      }
+
+      // [PoolResource] has no knowledge of streams, so we must manually release
+      // the resource once the stream is canceled or done. We pipe the response
+      // stream through a [StreamController], which enables us to set up lifecycle
+      // hooks.
+      var didStreamActivate = false;
+      final responseController = StreamController<List<int>>(
+        sync: true,
+        onListen: () => didStreamActivate = true,
+      );
+
+      // TODO: does this need to be in a try block? this internally calls
+      // [addStream], which theoretically(?) could throw if the stream has an
+      // error.
+      unawaited(directResponse.stream.pipe(responseController));
+      unawaited(responseController.done.then((_) => resource.release()));
+      response = directResponse.replacingStream(responseController.stream);
+
+      try {
+        return await onResponse(response);
+      } catch (_) {
+        rethrow;
+      } finally {
+        if (!didStreamActivate) {
+          // Release resource if the stream was never subscribed to.
+          unawaited(responseController.stream.listen(null).cancel());
+        }
+      }
+    }, mapException: (e, stackTrace) {
+      if (e is SocketException) {
+        final osError = e.osError;
+        if (osError == null) return PubConnectException('', couldRetry: true);
+
+        // Handle error codes known to be related to DNS or SSL issues. While it
+        // is tempting to handle these error codes before retrying, saving time
+        // for the end-user, it is known that DNS lookups can fail intermittently
+        // in some cloud environments. Furthermore, since these error codes are
+        // platform-specific (undocumented) and essentially cargo-culted along
+        // skipping retries may lead to intermittent issues that could be fixed
+        // with a retry. Failing to retry intermittent issues is likely to cause
+        // customers to wrap pub in a retry loop which will not improve the
+        // end-user experience.
+
+        // TODO: should these return PubConnectException('msg', couldRetry: false)?
+        if (osError.isDnsError) {
+          fail('Could not resolve URL "${request.url.origin}".');
+        } else if (osError.isSslError) {
+          fail(
+              'Unable to validate SSL certificate for "${request.url.origin}".');
+        }
+      }
+
+      return e;
+    }, retryIf: (e, stackTrace) async {
+      // TODO: think about IOException. RetryClient used to catch IOException
+      // from _PubHttpClient.
+
+      if (e is PubConnectException && e.couldRetry) return true;
+      if (e is PubHttpException && e.couldRetry) return true;
+
+      return (e is PubHttpException && e.couldRetry) ||
+          e is HttpException ||
+          e is TimeoutException ||
+          e is FormatException ||
+          (retryIf != null && await retryIf(e, stackTrace));
+    }, onRetry: (exception, retryCount) async {
+      if (onRetry != null) {
+        await onRetry(exception, retryCount, request, response);
+      } else {
+        log.io('Retry #${retryCount + 1} for '
+            '${request.method} ${request.url}...');
+      }
+
+      if (retryCount != 3) return;
+      if (!_retriedHosts.add(request.url.host)) return;
+      log.message('It looks like ${request.url.host} is having some trouble.\n'
+          'Pub will wait for a while before trying to connect again.');
+    }, maxAttempts: maxAttempts);
+  }
+}
+
+extension on http.BaseResponse {
+  void throwIfError() {
+    // Retry if the response indicates a server error.
+    if ([500, 502, 503, 504].contains(statusCode)) {
+      throw PubHttpException(this as http.Response, couldRetry: true);
+    }
+
+    // 401 responses should be handled by the OAuth2 client. It's very
+    // unlikely that they'll be returned by non-OAuth2 requests. We also want
+    // to pass along 400 responses from the token endpoint.
+    var tokenRequest = request!.url == oauth2.tokenEndpoint;
+    if (statusCode < 400 ||
+        statusCode == 401 ||
+        (statusCode == 400 && tokenRequest)) {
+      return;
+    }
+
+    if (statusCode == 406 &&
+        request!.headers['Accept'] == pubApiHeaders['Accept']) {
+      fail('Pub ${sdk.version} is incompatible with the current version of '
+          '${request!.url.host}.\n'
+          'Upgrade pub to the latest version and try again.');
+    }
+
+    if (statusCode == 500 &&
+        (request!.url.host == 'pub.dartlang.org' ||
+            request!.url.host == 'storage.googleapis.com')) {
+      fail('HTTP error 500: Internal Server Error at ${request!.url}.\n'
+          'This is likely a transient error. Please try again later.');
+    }
   }
 }

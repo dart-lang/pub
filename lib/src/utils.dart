@@ -712,7 +712,7 @@ Future<T> retry<T>(
       }
 
       if (onRetry != null) {
-        await onRetry(exception, attempt);
+        await onRetry(exception, attempt - 1);
       }
     }
 
