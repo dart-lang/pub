@@ -651,11 +651,11 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
 bool fixedTimeBytesEquals(List<int>? a, List<int>? b) {
   if (a == null || b == null) return a == b;
   if (a.length != b.length) return false;
-  bool e = true;
+  var e = 0;
   for (var i = 0; i < a.length; i++) {
-    e &= a[i] == b[i];
+    e |= a[i] ^ b[i];
   }
-  return e;
+  return e == 0;
 }
 
 /// Call [fn] retrying so long as [retryIf] return `true` for the exception
