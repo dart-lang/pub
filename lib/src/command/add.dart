@@ -137,8 +137,6 @@ For example:
 
   @override
   Future<void> runProtected() async {
-    final languageVersion = entrypoint.root.pubspec.languageVersion;
-
     if (argResults.rest.length > 1) {
       if (argResults.gitUrl != null) {
         usageException('''
@@ -160,9 +158,9 @@ Specify multiple sdk packages with descriptors.''');
 
     final updates = argResults.rest.map((p) {
       if (argResults.hasOldStyleOptions) {
-        return _parsePackageOldStyleArgs(p, languageVersion, argResults);
+        return _parsePackageOldStyleArgs(p, argResults);
       } else {
-        return _parsePackage(p, languageVersion, argResults);
+        return _parsePackage(p, argResults);
       }
     }).toList();
 
@@ -322,7 +320,7 @@ Specify multiple sdk packages with descriptors.''');
   }
 
   /// Parse [package] to return the corresponding [_ParseResult] using the
-  /// arguments given in [argResults].
+  /// arguments given in [argResults] to configure the description.
   ///
   /// [package] must be written in the format
   /// `[dev:]<package-name>[:<version-constraint>]`, where quotations should be
@@ -349,7 +347,6 @@ Specify multiple sdk packages with descriptors.''');
   /// defined, an error will be thrown.
   _ParseResult _parsePackageOldStyleArgs(
     String package,
-    LanguageVersion languageVersion,
     ArgResults argResults,
   ) {
     assert(argResults.hasOldStyleOptions);
@@ -479,8 +476,7 @@ Specify multiple sdk packages with descriptors.''');
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
-  _ParseResult _parsePackage(
-      String package, LanguageVersion languageVersion, ArgResults argResults) {
+  _ParseResult _parsePackage(String package, ArgResults argResults) {
     assert(!argResults.hasOldStyleOptions);
 
     var dev = argResults.isDev;
