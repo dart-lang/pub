@@ -311,7 +311,7 @@ extension HttpRetrying on http.Client {
       http.StreamedResponse directResponse;
       try {
         directResponse = await send(request);
-        directResponse.throwIfError();
+        directResponse.throwIfNotOK();
       } catch (_) {
         resource.release();
         rethrow;
@@ -399,7 +399,7 @@ extension HttpRetrying on http.Client {
 }
 
 extension on http.BaseResponse {
-  void throwIfError() {
+  void throwIfNotOK() {
     // Retry if the response indicates a server error.
     if ([500, 502, 503, 504].contains(statusCode)) {
       throw PubHttpException(this as http.Response, couldRetry: true);
@@ -416,9 +416,9 @@ extension on http.BaseResponse {
     }
 
     if (statusCode == 406 &&
-        request!.headers['Accept'] == pubApiHeaders['Accept']) {
+        request?.headers['Accept'] == pubApiHeaders['Accept']) {
       fail('Pub ${sdk.version} is incompatible with the current version of '
-          '${request!.url.host}.\n'
+          '${request?.url.host}.\n'
           'Upgrade pub to the latest version and try again.');
     }
 
