@@ -14,7 +14,6 @@ import 'package:pool/pool.dart';
 // import 'package:stack_trace/stack_trace.dart';
 
 import 'command.dart';
-import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 import 'oauth2.dart' as oauth2;
@@ -232,30 +231,29 @@ Never invalidServerResponse(http.Response response) =>
     fail(log.red('Invalid server response:\n${response.body}'));
 
 /// Exception thrown when an HTTP operation fails.
-class PubConnectException extends WrappedException {
+class PubHttpException implements Exception {
+  final String message;
   final bool couldRetry;
 
-  PubConnectException(
-    String message, {
-    required this.couldRetry,
-    Object? innerError,
-    StackTrace? innerTrace,
-  }) : super(message, innerError, innerTrace);
-
-  @override
-  String toString() => 'Connection error: $message. Intermittent: $couldRetry';
+  PubHttpException(this.message, {this.couldRetry = false});
 }
 
-/// Exception thrown when an HTTP operation fails.
-class PubHttpException implements Exception {
+/// Exception thrown when an HTTP response is not OK.
+class PubHttpResponseException extends PubHttpException {
   final http.Response response;
-  final bool couldRetry;
 
-  const PubHttpException(this.response, {this.couldRetry = false});
+  PubHttpResponseException(this.response,
+      {String message = '', bool couldRetry = false})
+      : super(message, couldRetry: couldRetry);
 
   @override
-  String toString() => 'HTTP error ${response.statusCode}: '
-      '${response.reasonPhrase}';
+  String toString() {
+    var temp = 'HTTP error ${response.statusCode}: ${response.reasonPhrase}';
+    if (message != '') {
+      temp += ': $message';
+    }
+    return temp;
+  }
 }
 
 extension on OSError {
@@ -348,7 +346,9 @@ extension HttpRetrying on http.Client {
     }, mapException: (e, stackTrace) {
       if (e is SocketException) {
         final osError = e.osError;
-        if (osError == null) return PubConnectException('', couldRetry: true);
+        if (osError == null) {
+          return PubHttpException('Socket operation failure', couldRetry: true);
+        }
 
         // Handle error codes known to be related to DNS or SSL issues. While it
         // is tempting to handle these error codes before retrying, saving time
@@ -373,9 +373,6 @@ extension HttpRetrying on http.Client {
     }, retryIf: (e, stackTrace) async {
       // TODO: think about IOException. RetryClient used to catch IOException
       // from _PubHttpClient.
-
-      if (e is PubConnectException && e.couldRetry) return true;
-      if (e is PubHttpException && e.couldRetry) return true;
 
       return (e is PubHttpException && e.couldRetry) ||
           e is HttpException ||
@@ -402,7 +399,7 @@ extension on http.BaseResponse {
   void throwIfNotOK() {
     // Retry if the response indicates a server error.
     if ([500, 502, 503, 504].contains(statusCode)) {
-      throw PubHttpException(this as http.Response, couldRetry: true);
+      throw PubHttpResponseException(this as http.Response, couldRetry: true);
     }
 
     // 401 responses should be handled by the OAuth2 client. It's very

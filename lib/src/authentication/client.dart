@@ -55,7 +55,7 @@ class _AuthenticatedClient extends http.BaseClient {
         _throwAuthException(response);
       }
       return response;
-    } on PubHttpException catch (e) {
+    } on PubHttpResponseException catch (e) {
       if (e.response.statusCode == 403) {
         _throwAuthException(e.response);
       }

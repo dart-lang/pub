@@ -1110,7 +1110,7 @@ See $contentHashesDocumentationUrl.
     String package,
     String hostedUrl,
   ) {
-    if (error is PubHttpException) {
+    if (error is PubHttpResponseException) {
       if (error.response.statusCode == 404) {
         throw PackageNotFoundException(
             'could not find package $package at $hostedUrl',

@@ -118,7 +118,7 @@ class LishCommand extends PubCommand {
             await http.Response.fromStream(await client.send(request));
 
         var location = postResponse.headers['location'];
-        if (location == null) throw PubHttpException(postResponse);
+        if (location == null) throw PubHttpResponseException(postResponse);
         handleJsonSuccess(
             await client.get(Uri.parse(location), headers: pubApiHeaders));
       });
@@ -138,7 +138,7 @@ class LishCommand extends PubCommand {
         msg += '\n${error.serverMessage!}\n';
       }
       dataError(msg + log.red('Authentication failed!'));
-    } on PubHttpException catch (error) {
+    } on PubHttpResponseException catch (error) {
       var url = error.response.request!.url;
       if (url == cloudStorageUrl) {
         // TODO(nweiz): the response may have XML-formatted information about
@@ -189,7 +189,7 @@ class LishCommand extends PubCommand {
           return _publishUsingClient(packageBytes, client);
         });
       }
-    } on PubHttpException catch (error) {
+    } on PubHttpResponseException catch (error) {
       var url = error.response.request!.url;
       if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
