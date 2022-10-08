@@ -693,8 +693,8 @@ Future<T> retry<T>(
   double randomizationFactor = 0.25,
   Duration maxDelay = const Duration(seconds: 30),
   int maxAttempts = 8,
-  Exception Function(Exception, StackTrace)? mapException,
-  FutureOr<bool> Function(Exception, StackTrace)? retryIf,
+  Exception Function(Exception)? mapException,
+  FutureOr<bool> Function(Exception)? retryIf,
   FutureOr<void> Function(Exception, int retryCount)? onRetry,
 }) async {
   var attempt = 0;
@@ -703,11 +703,11 @@ Future<T> retry<T>(
     attempt++; // first invocation is the first attempt
     try {
       return await fn();
-    } on Exception catch (e, stackTrace) {
-      late final exception = mapException?.call(e, stackTrace) ?? e;
+    } on Exception catch (e) {
+      late final exception = mapException?.call(e) ?? e;
 
       if (attempt >= maxAttempts ||
-          (retryIf != null && !(await retryIf(exception, stackTrace)))) {
+          (retryIf != null && !(await retryIf(exception)))) {
         rethrow;
       }
 

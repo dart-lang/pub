@@ -295,7 +295,7 @@ extension HttpRetrying on http.Client {
       {required FutureOr<http.Request> Function() composeRequest,
       required Future<T> Function(http.StreamedResponse response) onResponse,
       int maxAttempts = 8,
-      FutureOr<bool> Function(Exception, StackTrace)? retryIf,
+      FutureOr<bool> Function(Exception)? retryIf,
       FutureOr<void> Function(Exception e, int retryCount, http.Request request,
               http.StreamedResponse? response)?
           onRetry}) async {
@@ -343,7 +343,7 @@ extension HttpRetrying on http.Client {
           unawaited(responseController.stream.listen(null).cancel());
         }
       }
-    }, mapException: (e, stackTrace) {
+    }, mapException: (e) {
       if (e is SocketException) {
         final osError = e.osError;
         if (osError == null) {
@@ -370,7 +370,7 @@ extension HttpRetrying on http.Client {
       }
 
       return e;
-    }, retryIf: (e, stackTrace) async {
+    }, retryIf: (e) async {
       // TODO: think about IOException. RetryClient used to catch IOException
       // from _PubHttpClient.
 
@@ -378,7 +378,7 @@ extension HttpRetrying on http.Client {
           e is HttpException ||
           e is TimeoutException ||
           e is FormatException ||
-          (retryIf != null && await retryIf(e, stackTrace));
+          (retryIf != null && await retryIf(e));
     }, onRetry: (exception, retryCount) async {
       if (onRetry != null) {
         await onRetry(exception, retryCount, request, managedResponse);
