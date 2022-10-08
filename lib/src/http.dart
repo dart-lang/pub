@@ -418,12 +418,5 @@ extension on http.BaseResponse {
           '${request?.url.host}.\n'
           'Upgrade pub to the latest version and try again.');
     }
-
-    if (statusCode == 500 &&
-        (request!.url.host == 'pub.dartlang.org' ||
-            request!.url.host == 'storage.googleapis.com')) {
-      fail('HTTP error 500: Internal Server Error at ${request!.url}.\n'
-          'This is likely a transient error. Please try again later.');
-    }
   }
 }
