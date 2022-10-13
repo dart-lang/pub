@@ -7,7 +7,7 @@ Resolving dependencies...
 [STDERR] 
 [STDERR] http://localhost:$PORT package repository requested authentication!
 [STDERR] You can provide credentials using:
-[STDERR]     pub token add http://localhost:$PORT
+[STDERR]     dart pub token add http://localhost:$PORT
 [STDERR] <message>
 [EXIT CODE] 69
 
