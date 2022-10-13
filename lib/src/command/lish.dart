@@ -126,12 +126,12 @@ class LishCommand extends PubCommand {
       if (error.statusCode == 401) {
         msg += '$host package repository requested authentication!\n'
             'You can provide credentials using:\n'
-            '    pub token add $host\n';
+            '    dart pub token add $host\n';
       }
       if (error.statusCode == 403) {
         msg += 'Insufficient permissions to the resource at the $host '
             'package repository.\nYou can modify credentials using:\n'
-            '    pub token add $host\n';
+            '    dart pub token add $host\n';
       }
       if (error.serverMessage != null) {
         msg += '\n${error.serverMessage!}\n';
