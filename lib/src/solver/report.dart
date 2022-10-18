@@ -58,7 +58,7 @@ class SolveReport {
     _checkContentHashesMatchOldLockfile();
   }
 
-  _checkContentHashesMatchOldLockfile() {
+  void _checkContentHashesMatchOldLockfile() {
     final issues = <String>[];
 
     final newPackageNames = _newLockFile.packages.keys.toSet();
