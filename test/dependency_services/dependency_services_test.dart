@@ -10,7 +10,6 @@ import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
-import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../descriptor.dart' as d;
