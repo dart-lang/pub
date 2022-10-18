@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -823,7 +822,7 @@ class HostedSource extends CachedSource {
   Uint8List? sha256FromCache(PackageId id, SystemCache cache) {
     try {
       return hexDecode(readTextFile(hashPath(id, cache)));
-    } on IOException {
+    } on io.IOException {
       return null;
     }
   }
