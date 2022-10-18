@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart' hide mapMap;
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -29,15 +30,15 @@ class LockFile {
 
   /// Dependency names that appeared in the root package's `dependencies`
   /// section.
-  final Set<String> _mainDependencies;
+  final Set<String> mainDependencies;
 
   /// Dependency names that appeared in the root package's `dev_dependencies`
   /// section.
-  final Set<String> _devDependencies;
+  final Set<String> devDependencies;
 
   /// Dependency names that appeared in the root package's
   /// `dependency_overrides` section.
-  final Set<String> _overriddenDependencies;
+  final Set<String> overriddenDependencies;
 
   /// Creates a new lockfile containing [ids].
   ///
@@ -59,20 +60,16 @@ class LockFile {
             devDependencies ?? const UnmodifiableSetView.empty(),
             overriddenDependencies ?? const UnmodifiableSetView.empty());
 
-  LockFile._(
-      Map<String, PackageId> packages,
-      this.sdkConstraints,
-      this._mainDependencies,
-      this._devDependencies,
-      this._overriddenDependencies)
+  LockFile._(Map<String, PackageId> packages, this.sdkConstraints,
+      this.mainDependencies, this.devDependencies, this.overriddenDependencies)
       : packages = UnmodifiableMapView(packages);
 
   LockFile.empty()
       : packages = const {},
         sdkConstraints = {'dart': VersionConstraint.any},
-        _mainDependencies = const UnmodifiableSetView.empty(),
-        _devDependencies = const UnmodifiableSetView.empty(),
-        _overriddenDependencies = const UnmodifiableSetView.empty();
+        mainDependencies = const UnmodifiableSetView.empty(),
+        devDependencies = const UnmodifiableSetView.empty(),
+        overriddenDependencies = const UnmodifiableSetView.empty();
 
   /// Loads a lockfile from [filePath].
   factory LockFile.load(String filePath, SourceRegistry sources) {
@@ -274,8 +271,13 @@ class LockFile {
 
     var packages = Map<String, PackageId>.from(this.packages);
     packages.remove(name);
-    return LockFile._(packages, sdkConstraints, _mainDependencies,
-        _devDependencies, _overriddenDependencies);
+    return LockFile._(
+      packages,
+      sdkConstraints,
+      mainDependencies,
+      devDependencies,
+      overriddenDependencies,
+    );
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
@@ -341,20 +343,18 @@ class LockFile {
   /// [packageDir] is the containing directory of the root package, used to
   /// serialize relative path package descriptions. If it is null, they will be
   /// serialized as absolute.
-  String serialize(String? packageDir) {
+  String serialize(String? packageDir, SystemCache cache) {
     // Convert the dependencies to a simple object.
     var packageMap = {};
-    packages.forEach((name, package) {
-      var description =
-          package.description.serializeForLockfile(containingDir: packageDir);
-
-      packageMap[name] = {
-        'version': package.version.toString(),
-        'source': package.source.name,
-        'description': description,
-        'dependency': _dependencyType(package.name)
+    for (final id in packages.values) {
+      packageMap[id.name] = {
+        'version': id.version.toString(),
+        'source': id.source.name,
+        'description':
+            id.description.serializeForLockfile(containingDir: packageDir),
+        'dependency': _dependencyType(id.name)
       };
-    });
+    }
 
     var data = {
       'sdks': mapMap(sdkConstraints,
@@ -368,6 +368,21 @@ ${yamlToString(data)}
 ''';
   }
 
+  /// Saves the list of concrete package versions to [lockFilePath].
+  ///
+  /// Will use Windows line endings (`\r\n`) if the file already exists, and
+  /// uses that.
+  ///
+  /// Relative paths will be resolved relative to [lockFilePath]
+  void writeToFile(String lockFilePath, SystemCache cache) {
+    final windowsLineEndings = fileExists(lockFilePath) &&
+        detectWindowsLineEndings(readTextFile(lockFilePath));
+
+    final serialized = serialize(p.dirname(lockFilePath), cache);
+    writeTextFile(lockFilePath,
+        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
+  }
+
   static const _directMain = 'direct main';
   static const _directDev = 'direct dev';
   static const _directOverridden = 'direct overridden';
@@ -375,12 +390,12 @@ ${yamlToString(data)}
 
   /// Returns the dependency classification for [package].
   String _dependencyType(String package) {
-    if (_mainDependencies.contains(package)) return _directMain;
-    if (_devDependencies.contains(package)) return _directDev;
+    if (mainDependencies.contains(package)) return _directMain;
+    if (devDependencies.contains(package)) return _directDev;
 
     // If a package appears in `dependency_overrides` and another dependency
     // section, the main section it appears in takes precedence.
-    if (_overriddenDependencies.contains(package)) {
+    if (overriddenDependencies.contains(package)) {
       return _directOverridden;
     }
     return _transitive;
@@ -398,4 +413,23 @@ ${yamlToString(data)}
     }
     return true;
   }
+}
+
+/// Returns `true` if the [text] looks like it uses windows line endings.
+///
+/// The heuristic used is to count all `\n` in the text and if stricly more than
+/// half of them are preceded by `\r` we report `true`.
+@visibleForTesting
+bool detectWindowsLineEndings(String text) {
+  var index = -1;
+  var unixNewlines = 0;
+  var windowsNewlines = 0;
+  while ((index = text.indexOf('\n', index + 1)) != -1) {
+    if (index != 0 && text[index - 1] == '\r') {
+      windowsNewlines++;
+    } else {
+      unixNewlines++;
+    }
+  }
+  return windowsNewlines > unixNewlines;
 }

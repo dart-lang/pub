@@ -23,6 +23,7 @@ import 'sdk.dart';
 import 'sdk/dart.dart';
 import 'solver.dart';
 import 'solver/incompatibility_cause.dart';
+import 'solver/report.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -178,7 +179,7 @@ class GlobalPackages {
     final tempDir = cache.createTempDir();
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    _writeLockFile(tempDir, LockFile([id]));
+    LockFile([id]).writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
     tryDeleteEntry(_packageDir(name));
     tryRenameDir(tempDir, _packageDir(name));
@@ -223,10 +224,11 @@ class GlobalPackages {
     // We want the entrypoint to be rooted at 'dep' not the dummy-package.
     result.packages.removeWhere((id) => id.name == 'pub global activate');
 
-    final sameVersions = originalLockFile != null &&
-        originalLockFile.samePackageIds(result.lockFile);
+    final lockFile = await result.downloadCachedPackages(cache);
+    final sameVersions =
+        originalLockFile != null && originalLockFile.samePackageIds(lockFile);
 
-    final PackageId id = result.lockFile.packages[name]!;
+    final PackageId id = lockFile.packages[name]!;
     if (sameVersions) {
       log.message('''
 The package $name is already activated at newest available version.
@@ -234,13 +236,20 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 ''');
     } else {
       // Only precompile binaries if we have a new resolution.
-      if (!silent) await result.showReport(SolveType.get, cache);
+      if (!silent) {
+        await SolveReport(
+          SolveType.get,
+          root,
+          originalLockFile ?? LockFile.empty(),
+          lockFile,
+          result.availableVersions,
+          cache,
+          dryRun: false,
+        ).show();
+      }
 
-      await result.downloadCachedPackages(cache);
-
-      final lockFile = result.lockFile;
       final tempDir = cache.createTempDir();
-      _writeLockFile(tempDir, lockFile);
+      lockFile.writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
       // Load the package graph from [result] so we don't need to re-parse all
       // the pubspecs.
@@ -263,7 +272,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
     final entrypoint = Entrypoint.global(
       _packageDir(id.name),
       cache.loadCached(id),
-      result.lockFile,
+      lockFile,
       cache,
       solveResult: result,
     );
@@ -274,11 +283,6 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       overwriteBinStubs: overwriteBinStubs,
     );
     if (!silent) log.message('Activated ${_formatPackage(id)}.');
-  }
-
-  /// Finishes activating package [package] by saving [lockFile] in the cache.
-  void _writeLockFile(String dir, LockFile lockFile) {
-    writeTextFile(p.join(dir, 'pubspec.lock'), lockFile.serialize(null));
   }
 
   /// Shows the user the currently active package with [name], if any.

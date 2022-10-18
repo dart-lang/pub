@@ -7,7 +7,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -328,6 +330,10 @@ String replace(String source, Pattern matcher, String Function(Match) fn) {
 String sha1(String source) =>
     crypto.sha1.convert(utf8.encode(source)).toString();
 
+String hexEncode(List<int> bytes) => hex.encode(bytes);
+
+Uint8List hexDecode(String string) => hex.decode(string) as Uint8List;
+
 /// A regular expression matching a trailing CR character.
 final _trailingCR = RegExp(r'\r$');
 
@@ -637,6 +643,19 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
     for (var entry in map.entries)
       key(entry.key, entry.value): value(entry.key, entry.value),
   };
+}
+
+/// Compares two lists. If the lists have equal length this comparison will
+/// iterate all elements, thus taking a fixed amount of time making timing
+/// attacks harder.
+bool fixedTimeBytesEquals(List<int>? a, List<int>? b) {
+  if (a == null || b == null) return a == b;
+  if (a.length != b.length) return false;
+  var e = 0;
+  for (var i = 0; i < a.length; i++) {
+    e |= a[i] ^ b[i];
+  }
+  return e == 0;
 }
 
 /// Call [fn] retrying so long as [retryIf] return `true` for the exception

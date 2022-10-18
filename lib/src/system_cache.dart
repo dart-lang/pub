@@ -186,7 +186,12 @@ class SystemCache {
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
     versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await ref.source.status(id, this, maxAge: maxAge);
+      final packageStatus = await ref.source.status(
+        id.toRef(),
+        id.version,
+        this,
+        maxAge: maxAge,
+      );
       if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
         return id;
       }
@@ -208,10 +213,24 @@ class SystemCache {
     return id.source.doGetDirectory(id, this, relativeFrom: relativeFrom);
   }
 
-  Future<void> downloadPackage(PackageId id) async {
+  /// Downloads a cached package identified by [id] to the cache.
+  ///
+  /// [id] must refer to a cached package.
+  ///
+  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
+  /// response if present instead of probing the server. Not probing allows for
+  /// `pub get` with a filled cache to be a fast case that doesn't require any
+  /// new version-listings.
+  ///
+  /// Returns [id] with an updated [ResolvedDescription], this can be different
+  /// if the content-hash changed while downloading.
+  Future<PackageId> downloadPackage(PackageId id) async {
     final source = id.source;
     assert(source is CachedSource);
-    await (source as CachedSource).downloadToSystemCache(id, this);
+    return await (source as CachedSource).downloadToSystemCache(
+      id,
+      this,
+    );
   }
 
   /// Get the latest version of [package].

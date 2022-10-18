@@ -3,7 +3,6 @@
 $ tool/test-bin/pub_command_runner.dart pub --verbose get
 MSG : Resolving dependencies...
 MSG : + foo 1.0.0
-MSG : Downloading foo 1.0.0...
 MSG : Changed 1 dependency!
 MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] FINE: Pub 0.1.2+3
@@ -25,19 +24,20 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | took: $TIME
 [E]    | x-powered-by: Dart with package:shelf
 [E]    | date: $TIME
-[E]    | content-length: 197
+[E]    | content-length: 281
 [E]    | x-frame-options: SAMEORIGIN
 [E]    | content-type: application/vnd.pub.v2+json
 [E]    | x-xss-protection: 1; mode=block
 [E]    | x-content-type-options: nosniff
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 [E] FINE: Contents:
-[E]    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz"}],"_fetchedAt": "$TIME"}
+[E]    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"}],"_fetchedAt": "$TIME"}
 [E] SLVR:   selecting foo 1.0.0
 [E] SLVR: Version solving took: $TIME
 [E]    | Tried 1 solutions.
 [E] FINE: Resolving dependencies finished ($TIME)
 [E] IO  : Get package from http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz.
+[E] FINE: Downloading foo 1.0.0...
 [E] IO  : Created temp directory $DIR
 [E] IO  : HTTP GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
 [E]    | X-Pub-OS: $OS
@@ -58,6 +58,9 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | x-content-type-options: nosniff
 [E] IO  : Creating $FILE from stream
 [E] FINE: Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of $CRC32C.
+[E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
+[E] FINE: Contents:
+[E]    | 439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb
 [E] FINE: Created $FILE from stream
 [E] IO  : Created temp directory $DIR
 [E] IO  : Reading binary file $FILE.
@@ -78,6 +81,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   dependency: "direct main"
 [E]    |   description:
 [E]    |   name: foo
+[E]    |   sha256: "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
 [E]    |   url: "http://localhost:$PORT"
 [E]    |   source: hosted
 [E]    |   version: "1.0.0"
@@ -135,6 +139,7 @@ packages:
    dependency: "direct main"
    description:
    name: foo
+   sha256: "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
    url: "http://localhost:$PORT"
    source: hosted
    version: "1.0.0"
@@ -163,21 +168,20 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
    | took: $TIME
    | x-powered-by: Dart with package:shelf
    | date: $TIME
-   | content-length: 197
+   | content-length: 281
    | x-frame-options: SAMEORIGIN
    | content-type: application/vnd.pub.v2+json
    | x-xss-protection: 1; mode=block
    | x-content-type-options: nosniff
 IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 FINE: Contents:
-   | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz"}],"_fetchedAt": "$TIME"}
+   | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0"},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"}],"_fetchedAt": "$TIME"}
 SLVR:   selecting foo 1.0.0
 SLVR: Version solving took: $TIME
    | Tried 1 solutions.
 FINE: Resolving dependencies finished ($TIME)
-MSG : + foo 1.0.0
 IO  : Get package from http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz.
-MSG : Downloading foo 1.0.0...
+FINE: Downloading foo 1.0.0...
 IO  : Created temp directory $DIR
 IO  : HTTP GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
    | X-Pub-OS: $OS
@@ -198,6 +202,9 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/
    | x-content-type-options: nosniff
 IO  : Creating $FILE from stream
 FINE: Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of $CRC32C.
+IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
+FINE: Contents:
+   | 439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb
 FINE: Created $FILE from stream
 IO  : Created temp directory $DIR
 IO  : Reading binary file $FILE.
@@ -209,6 +216,7 @@ FINE: Created $FILE from stream
 FINE: Extracted .tar.gz to $DIR
 IO  : Renaming directory $A to $B
 IO  : Deleting directory $DIR
+MSG : + foo 1.0.0
 IO  : Writing $N characters to text file pubspec.lock.
 FINE: Contents:
    | # Generated by pub
@@ -218,6 +226,7 @@ FINE: Contents:
    |   dependency: "direct main"
    |   description:
    |   name: foo
+   |   sha256: "439814f59cbc73e1c28ca5ac6e437d5f2af10dfd18db786ce46fe0663e605ccb"
    |   url: "http://localhost:$PORT"
    |   source: hosted
    |   version: "1.0.0"

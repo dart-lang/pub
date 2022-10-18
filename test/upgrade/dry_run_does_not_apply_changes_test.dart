@@ -68,6 +68,7 @@ void main() {
     // Do the dry run.
     await pubUpgrade(
       args: ['--dry-run', '--major-versions'],
+      silent: contains('Downloading foo 2.0.0...'),
       output: allOf([
         contains('Resolving dependencies...'),
         contains('> foo 2.0.0 (was 1.0.0)'),
@@ -92,7 +93,6 @@ void main() {
       output: allOf([
         contains('Resolving dependencies...'),
         contains('> foo 2.0.0 (was 1.0.0)'),
-        contains('Downloading foo 2.0.0...'),
         contains('Changed 1 dependency!'),
         contains('Changed 1 constraint in pubspec.yaml:'),
         contains('foo: ^1.0.0 -> ^2.0.0'),

@@ -20,8 +20,6 @@ void main() {
 
     var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);
     expect(pub.stdout, emitsThrough('Resolving dependencies in ../foo...'));
-    expect(pub.stdout, emitsThrough('Downloading bar 1.0.0...'));
-    expect(pub.stdout, emitsThrough('Downloading baz 2.0.0...'));
     expect(pub.stdout, emitsThrough(startsWith('Activated foo 0.0.0 at path')));
     await pub.shouldExit();
 

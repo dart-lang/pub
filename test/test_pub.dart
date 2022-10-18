@@ -24,6 +24,7 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
@@ -207,6 +208,7 @@ Future<void> pubUpgrade(
         Object? output,
         Object? error,
         Object? warning,
+        Object? silent,
         int? exitCode,
         Map<String, String>? environment,
         String? workingDirectory}) async =>
@@ -216,6 +218,7 @@ Future<void> pubUpgrade(
       output: output,
       error: error,
       warning: warning,
+      silent: silent,
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
@@ -626,7 +629,8 @@ Future<void> createLockFile(String package,
       _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package)))
+    d.file(
+        'pubspec.lock', lockFile.serialize(p.join(d.sandbox, package), cache))
   ]).create();
 }
 
@@ -653,7 +657,17 @@ LockFile _createLockFile(SystemCache cache,
         containingDir: p.join(d.sandbox, appPath))),
     if (hosted != null)
       ...hosted.entries.map(
-          (entry) => cache.hosted.idFor(entry.key, Version.parse(entry.value)))
+        (entry) => PackageId(
+          entry.key,
+          Version.parse(entry.value),
+          ResolvedHostedDescription(
+              HostedDescription(
+                entry.key,
+                'https://pub.dev',
+              ),
+              sha256: null),
+        ),
+      )
   ];
 
   return LockFile(packages);
@@ -691,38 +705,6 @@ Map<String, Object> packageMap(
   if (devDependencies != null) package['dev_dependencies'] = devDependencies;
   if (environment != null) package['environment'] = environment;
   return package;
-}
-
-/// Returns a Map in the format used by the pub.dev API to represent a
-/// package version.
-///
-/// [pubspec] is the parsed pubspec of the package version. If [full] is true,
-/// this returns the complete map, including metadata that's only included when
-/// requesting the package version directly.
-Map packageVersionApiMap(String hostedUrl, Map pubspec,
-    {bool retracted = false, bool full = false}) {
-  var name = pubspec['name'];
-  var version = pubspec['version'];
-  var map = {
-    'pubspec': pubspec,
-    'version': version,
-    'archive_url': '$hostedUrl/packages/$name/versions/$version.tar.gz',
-  };
-
-  if (retracted) {
-    map['retracted'] = true;
-  }
-
-  if (full) {
-    map.addAll({
-      'downloads': 0,
-      'created': '2012-09-25T18:38:28.685260',
-      'libraries': ['$name.dart'],
-      'uploader': ['nweiz@google.com']
-    });
-  }
-
-  return map;
 }
 
 /// Returns the name of the shell script for a binstub named [name].
@@ -884,9 +866,6 @@ StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
 /// Removes output from pub known to be unstable.
 Iterable<String> filterUnstableLines(List<String> input) {
   return input
-      // Downloading order is not deterministic, so to avoid flakiness we filter
-      // out these lines.
-      .where((line) => !line.startsWith('Downloading '))
       // Any paths in output should be relative to the sandbox and with forward
       // slashes to be stable across platforms.
       .map((line) {

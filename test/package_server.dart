@@ -7,10 +7,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/crc32c.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/third_party/tar/tar.dart';
+import 'package:pub/src/utils.dart' show hexEncode;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -27,8 +29,11 @@ class PackageServer {
   /// Handlers of requests. Last matching handler will be used.
   final List<_PatternAndHandler> _handlers = [];
 
-  // A list of all the requests recieved up till now.
+  // A list of all the requests received up till now.
   final List<String> requestedPaths = <String>[];
+
+  // Setting this to false will disable automatic calculation of content-hashes.
+  bool serveContentHashes = true;
 
   /// Whether the [IOServer] should compress the content, if possible.
   /// The default value is `false` (compression disabled).
@@ -66,7 +71,7 @@ class PackageServer {
         PackageServer._(await shelf_io.IOServer.bind('localhost', 0));
     server.handle(
       _versionInfoPattern,
-      (shelf.Request request) {
+      (shelf.Request request) async {
         final parts = request.url.pathSegments;
         assert(parts[0] == 'api');
         assert(parts[1] == 'packages');
@@ -76,17 +81,26 @@ class PackageServer {
         if (package == null) {
           return shelf.Response.notFound('No package named $name');
         }
+
         return shelf.Response.ok(
             jsonEncode({
               'name': name,
               'uploaders': ['nweiz@google.com'],
-              'versions': package.versions.values
-                  .map((version) => packageVersionApiMap(
-                        server._inner.url.toString(),
-                        version.pubspec,
-                        retracted: version.isRetracted,
-                      ))
-                  .toList(),
+              'versions': [
+                for (final version in package.versions.values)
+                  {
+                    'pubspec': version.pubspec,
+                    'version': version.version.toString(),
+                    'archive_url':
+                        '${server.url}/packages/$name/versions/${version.version}.tar.gz',
+                    if (version.isRetracted) 'retracted': true,
+                    if (version.sha256 != null || server.serveContentHashes)
+                      'archive_sha256': version.sha256 ??
+                          hexEncode(
+                              (await sha256.bind(version.contents()).first)
+                                  .bytes)
+                  }
+              ],
               if (package.isDiscontinued) 'isDiscontinued': true,
               if (package.discontinuedReplacementText != null)
                 'replacedBy': package.discontinuedReplacementText,
@@ -196,6 +210,9 @@ class PackageServer {
   String get cachingPath =>
       p.join(d.sandbox, cachePath, 'hosted', 'localhost%58$port');
 
+  String get hashesCachingPath =>
+      p.join(d.sandbox, cachePath, 'hosted-hashes', 'localhost%58$port');
+
   /// A map from package names to the concrete packages to serve.
   final _packages = <String, _ServedPackage>{};
 
@@ -240,7 +257,7 @@ class PackageServer {
                   // file mode
                   mode: 420,
                   // size: 100,
-                  modified: DateTime.now(),
+                  modified: DateTime.fromMicrosecondsSinceEpoch(0),
                   userName: 'pub',
                   groupName: 'pub',
                 ),
@@ -253,11 +270,27 @@ class PackageServer {
         for (final e in contents ?? <d.Descriptor>[]) {
           addDescriptor(e, '');
         }
-        return Stream.fromIterable(entries)
+        return _replaceOs(Stream.fromIterable(entries)
             .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-            .transform(gzip.encoder);
+            .transform(gzip.encoder));
       },
     );
+  }
+
+  /// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
+  /// entry of a gzip stream, giving us the same stream and thius stable testing
+  /// on all platforms.
+  ///
+  /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
+  /// about the OS header.
+  Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
+    final bytesBuilder = BytesBuilder();
+    await for (final t in stream) {
+      bytesBuilder.add(t);
+    }
+    final result = bytesBuilder.toBytes();
+    result[9] = 0;
+    yield result;
   }
 
   // Mark a package discontinued.
@@ -275,6 +308,16 @@ class PackageServer {
 
   void retractPackageVersion(String name, String version) {
     _packages[name]!.versions[version]!.isRetracted = true;
+  }
+
+  /// Useful for testing handling of a wrong hash.
+  void overrideArchiveSha256(String name, String version, String sha256) {
+    _packages[name]!.versions[version]!.sha256 = sha256;
+  }
+
+  Future<String> peekArchiveSha256(String name, String version) async {
+    final v = _packages[name]!.versions[version]!;
+    return v.sha256 ?? hexEncode((await sha256.bind(v.contents()).first).bytes);
   }
 
   Future<String?> peekArchiveChecksumHeader(String name, String version) async {
@@ -321,6 +364,8 @@ class _ServedPackageVersion {
   final Stream<List<int>> Function() contents;
   final Map<String, List<String>>? headers;
   bool isRetracted = false;
+  // Overrides the calculated sha256.
+  String? sha256;
 
   Version get version => Version.parse(pubspec['version']);
 

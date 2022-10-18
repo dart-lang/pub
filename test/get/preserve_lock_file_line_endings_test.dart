@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
-import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/lock_file.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;

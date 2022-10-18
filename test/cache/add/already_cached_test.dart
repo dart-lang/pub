@@ -14,7 +14,8 @@ void main() {
 
     // Run once to put it in the cache.
     await runPub(
-        args: ['cache', 'add', 'foo'], output: 'Downloading foo 1.2.3...');
+        args: ['cache', 'add', 'foo'],
+        silent: contains('Downloading foo 1.2.3...'));
 
     // Should be in the cache now.
     await runPub(

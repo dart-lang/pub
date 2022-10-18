@@ -8,7 +8,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -31,6 +30,7 @@ import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
+import 'solver/report.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -291,11 +291,11 @@ class Entrypoint {
   ///
   /// Performs version resolution according to [SolveType].
   ///
-  /// [useLatest], if provided, defines a list of packages that will be
-  /// unlocked and forced to their latest versions. If [upgradeAll] is
-  /// true, the previous lockfile is ignored and all packages are re-resolved
-  /// from scratch. Otherwise, it will attempt to preserve the versions of all
-  /// previously locked packages.
+  /// [useLatest], if provided, defines a list of packages that will be unlocked
+  /// and forced to their latest versions. If [upgradeAll] is true, the previous
+  /// lockfile is ignored and all packages are re-resolved from scratch.
+  /// Otherwise, it will attempt to preserve the versions of all previously
+  /// locked packages.
   ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
@@ -305,8 +305,8 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
-  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be shown ---
-  /// in case of failure, a reproduction command is shown.
+  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be
+  /// shown --- in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
   Future<void> acquireDependencies(
@@ -365,17 +365,26 @@ class Entrypoint {
       }
     }
 
+    // We have to download files also with --dry-run to ensure we know the
+    // archive hashes for downloaded files.
+    final newLockFile = await result.downloadCachedPackages(cache);
+
+    final report = SolveReport(
+        type, root, lockFile, newLockFile, result.availableVersions, cache,
+        dryRun: dryRun);
     if (!onlyReportSuccessOrFailure) {
-      await result.showReport(type, cache);
+      await report.show();
     }
+    _lockFile = newLockFile;
+
     if (!dryRun) {
-      await result.downloadCachedPackages(cache);
-      saveLockFile(result);
+      newLockFile.writeToFile(lockFilePath, cache);
     }
+
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
     } else {
-      await result.summarizeChanges(type, cache, dryRun: dryRun);
+      await report.summarize();
     }
 
     if (!dryRun) {
@@ -833,21 +842,6 @@ class Entrypoint {
     }
   }
 
-  /// Saves a list of concrete package versions to the `pubspec.lock` file.
-  ///
-  /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
-  /// uses that.
-  void saveLockFile(SolveResult result) {
-    _lockFile = result.lockFile;
-
-    final windowsLineEndings = fileExists(lockFilePath) &&
-        detectWindowsLineEndings(readTextFile(lockFilePath));
-
-    final serialized = lockFile.serialize(root.dir);
-    writeTextFile(lockFilePath,
-        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
-  }
-
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
   /// to the new-style `.dart_tool/pub` directory.
   void migrateCache() {
@@ -925,23 +919,4 @@ See https://dart.dev/go/sdk-constraint
     dataError('The "$packageConfigPath" file is not recognized by '
         '"pub" version, please run "$topLevelProgram pub get".');
   }
-}
-
-/// Returns `true` if the [text] looks like it uses windows line endings.
-///
-/// The heuristic used is to count all `\n` in the text and if stricly more than
-/// half of them are preceded by `\r` we report `true`.
-@visibleForTesting
-bool detectWindowsLineEndings(String text) {
-  var index = -1;
-  var unixNewlines = 0;
-  var windowsNewlines = 0;
-  while ((index = text.indexOf('\n', index + 1)) != -1) {
-    if (index != 0 && text[index - 1] == '\r') {
-      windowsNewlines++;
-    } else {
-      unixNewlines++;
-    }
-  }
-  return windowsNewlines > unixNewlines;
 }

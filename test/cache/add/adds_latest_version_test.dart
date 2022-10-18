@@ -15,7 +15,9 @@ void main() {
       ..serve('foo', '1.2.4-dev');
 
     await runPub(
-        args: ['cache', 'add', 'foo'], output: 'Downloading foo 1.2.3...');
+      args: ['cache', 'add', 'foo'],
+      silent: contains('Downloading foo 1.2.3...'),
+    );
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
   });

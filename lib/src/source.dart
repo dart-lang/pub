@@ -133,7 +133,7 @@ abstract class Source {
   String doGetDirectory(PackageId id, SystemCache cache,
       {String? relativeFrom});
 
-  /// Returns metadata about a given package.
+  /// Returns metadata about a given package-version.
   ///
   /// For remotely hosted packages, the information can be cached for up to
   /// [maxAge]. If [maxAge] is not given, the information is not cached.
@@ -141,7 +141,8 @@ abstract class Source {
   /// In the case of offline sources, [maxAge] is not used, since information is
   /// per definition cached.
   Future<PackageStatus> status(
-    PackageId id,
+    PackageRef ref,
+    Version version,
     SystemCache cache, {
     Duration? maxAge,
   }) async {

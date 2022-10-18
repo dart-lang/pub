@@ -188,7 +188,7 @@ class GitSource extends CachedSource {
   ///
   /// This lets us avoid race conditions when getting multiple different
   /// packages from the same repository.
-  final _revisionCacheClones = <String, Future>{};
+  final _revisionCacheClones = <String, Future<void>>{};
 
   /// The paths to the canonical clones of repositories for which "git fetch"
   /// has already been run during this run of pub.
@@ -298,7 +298,10 @@ class GitSource extends CachedSource {
   /// itself; each of the commit-specific directories are clones of a directory
   /// in `cache/`.
   @override
-  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache) async {
+  Future<PackageId> downloadToSystemCache(
+    PackageId id,
+    SystemCache cache,
+  ) async {
     return await _pool.withResource(() async {
       final ref = id.toRef();
       final description = ref.description;
@@ -327,12 +330,7 @@ class GitSource extends CachedSource {
           _updatePackageList(revisionCachePath, path);
         }
       });
-
-      return Package.load(
-        id.name,
-        p.join(revisionCachePath, p.fromUri(path)),
-        cache.sources,
-      );
+      return id;
     });
   }
 

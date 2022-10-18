@@ -292,8 +292,10 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://example.org/pub/',
               'name': 'bar',
@@ -318,8 +320,10 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://example.org/pub/',
               'name': 'foo',
@@ -343,8 +347,10 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://example.org/pub/',
               'name': 'foo',
@@ -368,8 +374,10 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://pub.dartlang.org',
               'name': 'bar',
@@ -412,8 +420,10 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://pub.dartlang.org',
               'name': 'foo',

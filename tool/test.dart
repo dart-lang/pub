@@ -39,7 +39,7 @@ Future<void> main(List<String> args) async {
         packageConfigPath: path.join('.dart_tool', 'package_config.json'));
     testProcess = await Process.start(
       Platform.resolvedExecutable,
-      ['run', 'test', '--chain-stack-traces', ...args],
+      ['run', 'test', ...args],
       environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename},
       mode: ProcessStartMode.inheritStdio,
     );
