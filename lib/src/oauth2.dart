@@ -212,7 +212,7 @@ String _legacyCredentialsFile(SystemCache cache) {
   return path.join(cache.rootDir, 'credentials.json');
 }
 
-/// Gets the user to authorize pub as a client of pub.dartlang.org via oauth2.
+/// Gets the user to authorize pub as a client of pub.dev via oauth2.
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
 Future<Client> _authorize() async {
@@ -241,7 +241,7 @@ Future<Client> _authorize() async {
     completer
         .complete(grant.handleAuthorizationResponse(queryToMap(queryString)));
 
-    return shelf.Response.found('https://pub.dartlang.org/authorized');
+    return shelf.Response.found('https://pub.dev/authorized');
   });
 
   var authUrl = grant.getAuthorizationUrl(

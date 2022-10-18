@@ -27,8 +27,7 @@ class UploaderCommand extends PubCommand {
 
   UploaderCommand() {
     argParser.addOption('server',
-        defaultsTo: Platform.environment['PUB_HOSTED_URL'] ??
-            'https://pub.dartlang.org',
+        defaultsTo: Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dev',
         help: 'The package server on which the package is hosted.\n',
         hide: true);
     argParser.addOption('package',
