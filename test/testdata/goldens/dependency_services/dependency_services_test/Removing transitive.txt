@@ -214,7 +214,6 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: bf378a3f6c4840f911d66ab375f6d3eae78a015a41f0b8b202c31d4af010892e
       url: "http://localhost:$PORT"
     source: hosted
     version: "2.2.3"

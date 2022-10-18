@@ -378,7 +378,6 @@ packages:
     dependency: "direct main"
     description:
       name: bar
-      sha256: b8187621010649d6385788d7630adcd88d6548a7938899b6f18820961df3b879
       url: "http://localhost:$PORT"
     source: hosted
     version: "2.0.0"
@@ -394,7 +393,6 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "2347a7792f73d0f8cc8aa41d4895317bd1745724b8bc77d8c03faf821c9059b7"
       url: "http://localhost:$PORT"
     source: hosted
     version: "3.0.1"
