@@ -47,8 +47,8 @@ const contentHashesDocumentationUrl = 'https://dart.dev/go/content-hashes';
 /// unless the path is merely `/`, in which case we normalize to the bare
 /// domain.
 ///
-/// We change `https://pub.dev` to `https://pub.dartlang.org`, this  maintains
-/// avoids churn for `pubspec.lock`-files which contain
+/// We change `https://pub.dartlang.org` to `https://pub.dev`, this  maintains
+/// backwards compatibility with `pubspec.lock`-files which contain
 /// `https://pub.dartlang.org`.
 ///
 /// Throws [FormatException] if there is anything wrong [hostedUrl].
@@ -105,9 +105,9 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
   //
   // Clearly, a bit of investigation is necessary before we update this to
   // pub.dev, it might be attractive to do next time we change the server API.
-  if (u == Uri.parse('https://pub.dev')) {
-    log.fine('Using https://pub.dartlang.org instead of https://pub.dev.');
-    u = Uri.parse('https://pub.dartlang.org');
+  if (u == Uri.parse('https://pub.dartlang.org')) {
+    log.fine('Using https://pub.dev instead of https://pub.dartlang.org.');
+    u = Uri.parse('https://pub.dev');
   }
   return u;
 }
@@ -151,7 +151,7 @@ class HostedSource extends CachedSource {
     // Clearly, a bit of investigation is necessary before we update this to
     // pub.dev, it might be attractive to do next time we change the server API.
     try {
-      var defaultHostedUrl = 'https://pub.dartlang.org';
+      var defaultHostedUrl = 'https://pub.dev';
       // Allow the defaultHostedUrl to be overriden when running from tests
       if (runningFromTest) {
         defaultHostedUrl =

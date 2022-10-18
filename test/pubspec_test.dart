@@ -379,7 +379,7 @@ dependencies:
               sha256: null,
             ).serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dartlang.org',
+              'url': 'https://pub.dev',
               'name': 'bar',
             });
       });
@@ -425,7 +425,7 @@ dependencies:
               sha256: null,
             ).serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dartlang.org',
+              'url': 'https://pub.dev',
               'name': 'foo',
             });
       });

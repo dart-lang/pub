@@ -156,9 +156,9 @@ class LishCommand extends PubCommand {
   Future<void> _publish(List<int> packageBytes) async {
     try {
       final officialPubServers = {
-        'https://pub.dartlang.org',
-        // [validateAndNormalizeHostedUrl] normalizes https://pub.dev
-        // to https://pub.dartlang.org, so we don't need to do allow that here.
+        'https://pub.dev',
+        // [validateAndNormalizeHostedUrl] normalizes https://pub.dartlang.org
+        // to https://pub.dev, so we don't need to do allow that here.
 
         // Pub uses oauth2 credentials only for authenticating official pub
         // servers for security purposes (to not expose pub.dev access token to
