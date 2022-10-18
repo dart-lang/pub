@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';
 import '../command.dart';
+import '../command_runner.dart';
 import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
@@ -126,12 +127,12 @@ class LishCommand extends PubCommand {
       if (error.statusCode == 401) {
         msg += '$host package repository requested authentication!\n'
             'You can provide credentials using:\n'
-            '    pub token add $host\n';
+            '    $topLevelProgram pub token add $host\n';
       }
       if (error.statusCode == 403) {
         msg += 'Insufficient permissions to the resource at the $host '
             'package repository.\nYou can modify credentials using:\n'
-            '    pub token add $host\n';
+            '    $topLevelProgram pub token add $host\n';
       }
       if (error.serverMessage != null) {
         msg += '\n${error.serverMessage!}\n';

@@ -1137,12 +1137,12 @@ See $contentHashesDocumentationUrl.
       if (error.statusCode == 401) {
         hint = '$hostedUrl package repository requested authentication!\n'
             'You can provide credentials using:\n'
-            '    pub token add $hostedUrl';
+            '    dart pub token add $hostedUrl';
       }
       if (error.statusCode == 403) {
         hint = 'Insufficient permissions to the resource at the $hostedUrl '
             'package repository.\nYou can modify credentials using:\n'
-            '    pub token add $hostedUrl';
+            '    dart pub token add $hostedUrl';
         message = 'authorization failed';
       }
 
