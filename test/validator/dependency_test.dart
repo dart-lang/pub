@@ -506,13 +506,13 @@ void main() {
       await fuschiaPackage('foo', sdk: '>=0.0.0 <3.0.0').create();
 
       await package(
-        sdk: '>=2.0.0-dev.50.0 <2.0.1',
+        sdk: '>=2.0.0-dev.50.0 <2.0.2',
         deps: {
           'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
         },
       ).create();
 
-      await expectValidationError('sdk: ">=2.0.0 <2.0.1"', environment: {
+      await expectValidationError('sdk: ">=2.0.0 <2.0.2"', environment: {
         'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
         '_PUB_TEST_SDK_VERSION': '2.0.1-dev.51.0',
       });
