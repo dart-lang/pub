@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';
 import '../command.dart';
+import '../command_runner.dart';
 import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
