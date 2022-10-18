@@ -347,24 +347,6 @@ class Entrypoint {
       }
     }
 
-    // Log once about all overridden packages.
-    if (warnAboutPreReleaseSdkOverrides) {
-      var overriddenPackages = (result.pubspecs.values
-              .where((pubspec) => pubspec.dartSdkWasOverridden)
-              .map((pubspec) => pubspec.name)
-              .toList()
-            ..sort())
-          .join(', ');
-      if (overriddenPackages.isNotEmpty) {
-        log.message(log.yellow(
-            'Overriding the upper bound Dart SDK constraint to <=${sdk.version} '
-            'for the following packages:\n\n$overriddenPackages\n\n'
-            'To disable this you can set the PUB_ALLOW_PRERELEASE_SDK system '
-            'environment variable to `false`, or you can silence this message '
-            'by setting it to `quiet`.'));
-      }
-    }
-
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
     final newLockFile = await result.downloadCachedPackages(cache);

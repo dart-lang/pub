@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:collection/collection.dart' hide mapMap;
 import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
@@ -13,12 +11,9 @@ import 'package:yaml/yaml.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'language_version.dart';
-import 'log.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
-import 'sdk.dart';
 import 'system_cache.dart';
-import 'utils.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
 
@@ -27,35 +22,6 @@ export 'pubspec_parse.dart' hide PubspecBase;
 /// This provides a sane default for packages that don't have an upper bound.
 final VersionRange _defaultUpperBoundSdkConstraint =
     VersionConstraint.parse('<2.0.0') as VersionRange;
-
-/// Whether or not to allow the pre-release SDK for packages that have an
-/// upper bound Dart SDK constraint of <2.0.0.
-///
-/// If enabled then a Dart SDK upper bound of <2.0.0 is always converted to
-/// <2.0.0-dev.infinity.
-///
-/// This has a default value of `true` but can be overridden with the
-/// PUB_ALLOW_PRERELEASE_SDK system environment variable.
-bool get _allowPreReleaseSdk => _allowPreReleaseSdkValue != 'false';
-
-/// The value of the PUB_ALLOW_PRERELEASE_SDK environment variable, defaulted
-/// to `true`.
-final String _allowPreReleaseSdkValue = () {
-  var value =
-      Platform.environment['PUB_ALLOW_PRERELEASE_SDK']?.toLowerCase() ?? 'true';
-  if (!['true', 'quiet', 'false'].contains(value)) {
-    warning(yellow('''
-The environment variable PUB_ALLOW_PRERELEASE_SDK is set as `$value`.
-The expected value is either `true`, `quiet` (true but no logging), or `false`.
-Using a default value of `true`.
-'''));
-    value = 'true';
-  }
-  return value;
-}();
-
-/// Whether or not to warn about pre-release SDK overrides.
-bool get warnAboutPreReleaseSdkOverrides => _allowPreReleaseSdkValue != 'quiet';
 
 /// The parsed contents of a pubspec file.
 ///
@@ -120,9 +86,6 @@ class Pubspec extends PubspecBase {
 
   Map<String, PackageRange>? _devDependencies;
 
-  /// The Dart sdk version this is parsed against.
-  final Version _dartSdkVersion;
-
   /// The dependency constraints that this package overrides when it is the
   /// root package.
   ///
@@ -178,55 +141,11 @@ class Pubspec extends PubspecBase {
   /// pubspec.
   final bool _includeDefaultSdkConstraint;
 
-  /// Whether or not the SDK version was overridden from <2.0.0 to
-  /// <2.0.0-dev.infinity.
-  bool get dartSdkWasOverridden => _dartSdkWasOverriddenToAllowPrerelease;
-  bool _dartSdkWasOverriddenToAllowPrerelease = false;
-
-  /// Whether or not we should override [sdkConstraint] to be <= the user's
-  /// current SDK version.
-  ///
-  /// This is true if the following conditions are met:
-  ///
-  ///   - [_allowPreReleaseSdk] is `true`
-  ///   - The user's current SDK is a pre-release version.
-  ///   - The original [sdkConstraint] max version is exclusive (`includeMax`
-  ///     is `false`).
-  ///   - The original [sdkConstraint] is not a pre-release version.
-  ///   - The original [sdkConstraint] matches the exact same major, minor, and
-  ///     patch versions as the user's current SDK.
-  bool _shouldEnableCurrentSdk(VersionRange sdkConstraint) {
-    if (!_allowPreReleaseSdk) return false;
-    if (!_dartSdkVersion.isPreRelease) return false;
-    if (sdkConstraint.includeMax) return false;
-    var minSdkConstraint = sdkConstraint.min;
-    if (minSdkConstraint != null &&
-        minSdkConstraint.isPreRelease &&
-        equalsIgnoringPreRelease(sdkConstraint.min!, _dartSdkVersion)) {
-      return false;
-    }
-    var maxSdkConstraint = sdkConstraint.max;
-    if (maxSdkConstraint == null) return false;
-    if (maxSdkConstraint.max.isPreRelease &&
-        !maxSdkConstraint.isFirstPreRelease) {
-      return false;
-    }
-    return equalsIgnoringPreRelease(maxSdkConstraint, _dartSdkVersion);
-  }
-
   SdkConstraint _interpretDartSdkConstraint(
     VersionConstraint originalConstraint, {
     required VersionConstraint? defaultUpperBoundConstraint,
   }) {
     VersionConstraint constraint = originalConstraint;
-    if (constraint is VersionRange && _shouldEnableCurrentSdk(constraint)) {
-      _dartSdkWasOverriddenToAllowPrerelease = true;
-      constraint = VersionRange(
-          min: constraint.min,
-          includeMin: constraint.includeMin,
-          max: _dartSdkVersion,
-          includeMax: true);
-    }
     if (defaultUpperBoundConstraint != null &&
         constraint is VersionRange &&
         constraint.max == null &&
@@ -370,7 +289,6 @@ class Pubspec extends PubspecBase {
     Map? fields,
     SourceRegistry? sources,
     Map<String, SdkConstraint>? sdkConstraints,
-    Version? dartSdkVersion,
   })  : _dependencies = dependencies == null
             ? null
             : Map.fromIterable(dependencies, key: (range) => range.name),
@@ -386,7 +304,6 @@ class Pubspec extends PubspecBase {
         _sources = sources ??
             ((String? name) => throw StateError('No source registry given')),
         _overridesFileFields = null,
-        _dartSdkVersion = dartSdkVersion ?? sdk.version,
         super(
           fields == null ? YamlMap() : YamlMap.wrap(fields),
           name: name,
@@ -406,11 +323,9 @@ class Pubspec extends PubspecBase {
     YamlMap? overridesFields,
     String? expectedName,
     Uri? location,
-    Version? dartSdkVersion,
   })  : _overridesFileFields = overridesFields,
         _includeDefaultSdkConstraint = true,
         _givenSdkConstraints = null,
-        _dartSdkVersion = dartSdkVersion ?? sdk.version,
         super(fields is YamlMap
             ? fields
             : YamlMap.wrap(fields, sourceUrl: location)) {
@@ -436,7 +351,6 @@ class Pubspec extends PubspecBase {
     Uri? location,
     String? overridesFileContents,
     Uri? overridesLocation,
-    Version? dartSdkVersion,
   }) {
     late final YamlMap pubspecMap;
     YamlMap? overridesFileMap;
@@ -456,7 +370,6 @@ class Pubspec extends PubspecBase {
       overridesFields: overridesFileMap,
       expectedName: expectedName,
       location: location,
-      dartSdkVersion: dartSdkVersion,
     );
   }
 
