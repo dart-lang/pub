@@ -151,6 +151,7 @@ Future<void> precompile({
   required String name,
   required String outputPath,
   required String packageConfigPath,
+  List<String> additionalSources = const [],
 }) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillPath));
@@ -181,6 +182,7 @@ Future<void> precompile({
       platformDill,
       sdkRoot: sdkRoot,
       packagesJson: packageConfigPath,
+      additionalSources: additionalSources,
       printIncrementalDependencies: false,
     );
     final result = await client.compile();
