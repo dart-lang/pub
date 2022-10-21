@@ -447,23 +447,39 @@ class Entrypoint {
   }
 
   /// Precompiles executable .dart file at [path] to a snapshot.
-  Future<void> precompileExecutable(Executable executable) async {
+  ///
+  /// The [additionalSources], if provided, instruct the compiler to include
+  /// additional source files into compilation even if they are not referenced
+  /// from the main library.
+  Future<void> precompileExecutable(
+    Executable executable, {
+    List<String> additionalSources = const [],
+  }) async {
     await log.progress('Building package executable', () async {
       ensureDir(p.dirname(pathOfExecutable(executable)));
-      return waitAndPrintErrors([_precompileExecutable(executable)]);
+      return waitAndPrintErrors([
+        _precompileExecutable(
+          executable,
+          additionalSources: additionalSources,
+        )
+      ]);
     });
   }
 
-  Future<void> _precompileExecutable(Executable executable) async {
+  Future<void> _precompileExecutable(
+    Executable executable, {
+    List<String> additionalSources = const [],
+  }) async {
     final package = executable.package;
 
     await dart.precompile(
-        executablePath: resolveExecutable(executable),
-        outputPath: pathOfExecutable(executable),
-        incrementalDillPath: incrementalDillPathOfExecutable(executable),
-        packageConfigPath: packageConfigPath,
-        name:
-            '$package:${p.basenameWithoutExtension(executable.relativePath)}');
+      executablePath: resolveExecutable(executable),
+      outputPath: pathOfExecutable(executable),
+      incrementalDillPath: incrementalDillPathOfExecutable(executable),
+      packageConfigPath: packageConfigPath,
+      name: '$package:${p.basenameWithoutExtension(executable.relativePath)}',
+      additionalSources: additionalSources,
+    );
   }
 
   /// The location of the snapshot of the dart program at [path] in [package]
