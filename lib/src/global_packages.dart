@@ -207,6 +207,7 @@ class GlobalPackages {
     // being available, report that as a [dataError].
     SolveResult result;
     try {
+      // TODO continue here, this is the next part to fix. shouldn't fetch origin completely because it was fetched already earlier.
       result = await log.spinner(
         'Resolving dependencies',
         () => resolveVersions(SolveType.get, cache, root),

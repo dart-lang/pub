@@ -199,9 +199,12 @@ class GitSource extends CachedSource {
   Future<String> getPackageNameFromRepo(
       String repo, String? ref, String? path, SystemCache cache) {
     // Clone the repo to a temp directory.
+
+    // TODO: why is it cloned to a temp dir? it's downloaded again later?!
+    // TODO: let's not delete the temp dir but instead move it to the right destination in .pub-cache
+
     return withTempDir((tempDir) async {
-      await _clone(repo, tempDir, shallow: true);
-      if (ref != null) await _checkOut(tempDir, ref);
+      await _clone(repo, tempDir, shallow: true, ref: ref);
       var pubspec = Pubspec.load(p.join(tempDir, path), cache.sources);
       return pubspec.name;
     });
@@ -425,7 +428,7 @@ class GitSource extends CachedSource {
 
   /// Ensures that the canonical clone of the repository referred to by [ref]
   /// contains the given Git [revision].
-  Future _ensureRevision(
+  Future<void> _ensureRevision(
     PackageRef ref,
     String revision,
     SystemCache cache,
@@ -448,7 +451,7 @@ class GitSource extends CachedSource {
 
   /// Ensures that the canonical clone of the repository referred to by [ref]
   /// exists and is up-to-date.
-  Future _ensureRepoCache(PackageRef ref, SystemCache cache) async {
+  Future<void> _ensureRepoCache(PackageRef ref, SystemCache cache) async {
     var path = _repoCachePath(ref, cache);
     if (_updatedRepos.contains(path)) return;
 
@@ -464,7 +467,7 @@ class GitSource extends CachedSource {
   /// Creates the canonical clone of the repository referred to by [ref].
   ///
   /// This assumes that the canonical clone doesn't yet exist.
-  Future _createRepoCache(PackageRef ref, SystemCache cache) async {
+  Future<void> _createRepoCache(PackageRef ref, SystemCache cache) async {
     final description = ref.description;
     if (description is! GitDescription) {
       throw ArgumentError('Wrong source');
@@ -484,7 +487,7 @@ class GitSource extends CachedSource {
   /// [ref].
   ///
   /// This assumes that the canonical clone already exists.
-  Future _updateRepoCache(
+  Future<void> _updateRepoCache(
     PackageRef ref,
     SystemCache cache,
   ) async {
@@ -571,33 +574,52 @@ class GitSource extends CachedSource {
   ///
   /// If [shallow] is true, creates a shallow clone that contains no history
   /// for the repository.
-  Future _clone(
+  Future<void> _clone(
     String from,
     String to, {
     bool mirror = false,
     bool shallow = false,
-  }) {
-    return Future.sync(() {
-      // Git on Windows does not seem to automatically create the destination
-      // directory.
-      ensureDir(to);
-      var args = [
+    String? ref,
+  }) async {
+    // Git on Windows does not seem to automatically create the destination
+    // directory.
+    ensureDir(to);
+
+    var cloned = false;
+    if (!mirror) {
+      try {
+        await git.run(['init'], workingDir: to);
+        await git.run(['remote', 'add', 'origin', from], workingDir: to);
+        await git.run([
+          'fetch',
+          'origin',
+          '--tags',
+          if (shallow) ...['--depth', '1'],
+          if (ref != null) ref,
+        ], workingDir: to);
+        await git.run(['reset', '--hard', 'FETCH_HEAD'], workingDir: to);
+        await git.run(['fetch', '--all'], workingDir: to);
+        cloned = true;
+      } on git.GitException {
+        // clean up
+        Directory(to).deleteSync(recursive: true);
+        ensureDir(to);
+      }
+    }
+    if (!cloned) {
+      await git.run([
         'clone',
         if (mirror) '--mirror',
         if (shallow) ...['--depth', '1'],
         from,
         to
-      ];
-
-      return git.run(args);
-    }).then((result) => null);
+      ]);
+    }
   }
 
   /// Checks out the reference [ref] in [repoPath].
-  Future _checkOut(String repoPath, String ref) {
-    return git
-        .run(['checkout', ref], workingDir: repoPath).then((result) => null);
-  }
+  Future<void> _checkOut(String repoPath, String ref) =>
+      git.run(['checkout', ref], workingDir: repoPath);
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
       cache.rootDirForSource(this),
@@ -744,6 +766,7 @@ class GitResolvedDescription extends ResolvedDescription {
   GitDescription get description => super.description as GitDescription;
 
   final String resolvedRef;
+
   GitResolvedDescription(GitDescription description, this.resolvedRef)
       : super(description);
 
@@ -783,5 +806,6 @@ class GitResolvedDescription extends ResolvedDescription {
 class _ValidatedUrl {
   final String url;
   final bool wasRelative;
+
   _ValidatedUrl(this.url, this.wasRelative);
 }

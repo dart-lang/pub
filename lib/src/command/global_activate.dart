@@ -14,8 +14,10 @@ import '../utils.dart';
 class GlobalActivateCommand extends PubCommand {
   @override
   String get name => 'activate';
+
   @override
   String get description => "Make a package's executables globally available.";
+
   @override
   String get argumentsDescription => '<package> [version-constraint]';
 
@@ -29,7 +31,8 @@ class GlobalActivateCommand extends PubCommand {
     argParser.addOption('git-path', help: 'Path of git package in repository');
 
     argParser.addOption('git-ref',
-        help: 'Git branch or commit to be retrieved');
+        help: 'Git branch, tag, or commit SHA to be retrieved. '
+            'When using a commit SHA, must be the full SHA (40 characters).');
 
     argParser.addMultiOption('features',
         abbr: 'f', help: 'Feature(s) to enable.', hide: true);
