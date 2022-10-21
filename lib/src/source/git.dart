@@ -199,10 +199,6 @@ class GitSource extends CachedSource {
   Future<String> getPackageNameFromRepo(
       String repo, String? ref, String? path, SystemCache cache) {
     // Clone the repo to a temp directory.
-
-    // TODO: why is it cloned to a temp dir? it's downloaded again later?!
-    // TODO: let's not delete the temp dir but instead move it to the right destination in .pub-cache
-
     return withTempDir((tempDir) async {
       await _clone(repo, tempDir, shallow: true, ref: ref);
       var pubspec = Pubspec.load(p.join(tempDir, path), cache.sources);
