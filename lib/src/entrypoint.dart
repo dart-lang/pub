@@ -465,6 +465,10 @@ class Entrypoint {
   }
 
   /// Precompiles executable .dart file at [path] to a snapshot.
+  ///
+  /// The [additionalSources], if provided, instruct the compiler to include
+  /// additional source files into compilation even if they are not referenced
+  /// from the main library.
   Future<void> precompileExecutable(
     Executable executable, {
     List<String> additionalSources = const [],

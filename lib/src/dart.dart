@@ -145,6 +145,10 @@ class AnalyzerErrorGroup implements Exception {
 /// for `package:` uri resolution.
 ///
 /// The [name] is used to describe the executable in logs and error messages.
+///
+/// The [additionalSources], if provided, instruct the compiler to include
+/// additional source files into compilation even if they are not referenced
+/// from the main library.
 Future<void> precompile({
   required String executablePath,
   required String incrementalDillPath,
