@@ -15,7 +15,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
 
   /// Creates the Git repository and commits the contents.
   @override
-  Future create([String? parent]) async {
+  Future<void> create([String? parent]) async {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['init'],
@@ -33,7 +33,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// the previous structure to the Git repo.
   ///
   /// [parent] defaults to [sandbox].
-  Future commit([String? parent]) async {
+  Future<void> commit([String? parent]) async {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['add', '.'],
@@ -46,7 +46,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   ///
   /// [parent] defaults to [sandbox].
   Future<String> revParse(String ref, [String? parent]) async {
-    var output = await _runGit(['rev-parse', ref], parent);
+    final output = await _runGit(['rev-parse', ref], parent);
     return output[0];
   }
 
@@ -55,17 +55,20 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// [parent] defaults to [sandbox].
   Future runGit(List<String> args, [String? parent]) => _runGit(args, parent);
 
+  Future<void> tag(String tagName, [String? parent]) =>
+      _runGit(['tag', tagName], parent);
+
   Future<List<String>> _runGit(List<String> args, String? parent) {
     // Explicitly specify the committer information. Git needs this to commit
     // and we don't want to rely on the buildbots having this already set up.
-    var environment = {
+    final environment = {
       'GIT_AUTHOR_NAME': 'Pub Test',
       'GIT_AUTHOR_EMAIL': 'pub@dartlang.org',
       'GIT_COMMITTER_NAME': 'Pub Test',
       'GIT_COMMITTER_EMAIL': 'pub@dartlang.org',
       // To make stable commits ids we fix the date.
-      'GIT_COMMITTER_DATE': DateTime(1970).toIso8601String(),
-      'GIT_AUTHOR_DATE': DateTime(1970).toIso8601String(),
+      'GIT_COMMITTER_DATE': '1970-01-01T01:00:00',
+      'GIT_AUTHOR_DATE': '1970-01-01T01:00:00',
     };
 
     return git.run(args,
@@ -74,7 +77,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   }
 
   Future _runGitCommands(String? parent, List<List<String>> commands) async {
-    for (var command in commands) {
+    for (final command in commands) {
       await _runGit(command, parent);
     }
   }
