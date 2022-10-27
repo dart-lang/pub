@@ -1049,9 +1049,10 @@ See $contentHashesDocumentationUrl.
 
       // The client from `withAuthenticatedClient` will retry HTTP requests.
       // This wrapper is one layer up and will retry checksum validation errors.
-      await retry(
-        // Attempt to download archive and validate its checksum.
+      await retryForHttp(
+        'downloading "$archiveUrl"',
         () async {
+          // Attempt to download archive and validate its checksum.
           final request = http.Request('GET', archiveUrl);
           final response = await withAuthenticatedClient(cache,
               Uri.parse(description.url), (client) => client.send(request));
@@ -1436,11 +1437,11 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
 
         return ByteData.view(bytes.buffer).getUint32(0);
       } on FormatException catch (e, s) {
+        log.exception(e, s);
         throw PackageIntegrityException(
             'Package archive "$fileName" has a malformed CRC32C checksum in '
             'its response headers',
-            innerError: e,
-            innerTrace: s);
+            couldRetry: true);
       }
     }
   }

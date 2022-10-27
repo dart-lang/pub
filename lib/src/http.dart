@@ -290,112 +290,62 @@ extension on http.StreamedResponse {
 /// Program-wide limiter for concurrent network requests.
 final _httpPool = Pool(16);
 
-extension HttpRetrying on http.Client {
-  Future<T> sendWithRetries<T>(
-      {required FutureOr<http.Request> Function() composeRequest,
-      required Future<T> Function(http.StreamedResponse response) onResponse,
-      int maxAttempts = 8,
-      FutureOr<bool> Function(Exception)? retryIf,
-      FutureOr<void> Function(Exception e, int retryCount, http.Request request,
-              http.StreamedResponse? response)?
-          onRetry}) async {
-    late http.Request request;
-    http.StreamedResponse? managedResponse;
-
-    return await retry(() async {
-      final resource = await _httpPool.request();
-      request = await composeRequest();
-
-      http.StreamedResponse directResponse;
-      try {
-        directResponse = await send(request);
-        directResponse.throwIfNotOK();
-      } catch (_) {
-        resource.release();
-        rethrow;
+Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn,
+    {int maxAttempts = 8,
+    FutureOr<bool> Function(Exception)? retryIf,
+    FutureOr<void> Function(Exception e, int retryCount)? onRetry}) async {
+  return await retry(
+      () async => await _httpPool.withResource(() async => await fn()),
+      mapException: (e) {
+    if (e is SocketException) {
+      final osError = e.osError;
+      if (osError == null) {
+        return PubHttpException('Socket operation failure', couldRetry: true);
       }
 
-      // [PoolResource] has no knowledge of streams, so we must manually release
-      // the resource once the stream is canceled or done. We pipe the response
-      // stream through a [StreamController], which enables us to set up lifecycle
-      // hooks.
-      var didStreamActivate = false;
-      final responseController = StreamController<List<int>>(
-        sync: true,
-        onListen: () => didStreamActivate = true,
+      // Handle error codes known to be related to DNS or SSL issues. While it
+      // is tempting to handle these error codes before retrying, saving time
+      // for the end-user, it is known that DNS lookups can fail intermittently
+      // in some cloud environments. Furthermore, since these error codes are
+      // platform-specific (undocumented) and essentially cargo-culted along
+      // skipping retries may lead to intermittent issues that could be fixed
+      // with a retry. Failing to retry intermittent issues is likely to cause
+      // customers to wrap pub in a retry loop which will not improve the
+      // end-user experience.
+
+      // TODO: should these return PubConnectException('msg', couldRetry: false)?
+      if (osError.isDnsError) {
+        fail('Could not resolve URL when $operation.');
+      } else if (osError.isSslError) {
+        fail('Unable to validate SSL certificate when $operation.');
+      }
+    }
+
+    return e;
+  }, retryIf: (e) async {
+    // TODO: think about IOException. RetryClient used to catch IOException
+    // from _PubHttpClient.
+
+    return (e is PubHttpException && e.couldRetry) ||
+        e is HttpException ||
+        e is TimeoutException ||
+        e is FormatException ||
+        (retryIf != null && await retryIf(e));
+  }, onRetry: (exception, retryCount) async {
+    if (onRetry != null) {
+      await onRetry(
+        exception,
+        retryCount,
       );
+    } else {
+      log.io('Retry #${retryCount + 1} for $operation');
+    }
 
-      // TODO: does this need to be in a try block? this internally calls
-      // [addStream], which theoretically(?) could throw if the stream has an
-      // error.
-      unawaited(directResponse.stream.pipe(responseController));
-      unawaited(responseController.done.then((_) => resource.release()));
-      managedResponse =
-          directResponse.replacingStream(responseController.stream);
-
-      try {
-        return await onResponse(managedResponse!);
-      } catch (_) {
-        rethrow;
-      } finally {
-        if (!didStreamActivate) {
-          // Release resource if the stream was never subscribed to.
-          unawaited(responseController.stream.listen(null).cancel());
-        }
-      }
-    }, mapException: (e) {
-      if (e is SocketException) {
-        final osError = e.osError;
-        if (osError == null) {
-          return PubHttpException('Socket operation failure', couldRetry: true);
-        }
-
-        // Handle error codes known to be related to DNS or SSL issues. While it
-        // is tempting to handle these error codes before retrying, saving time
-        // for the end-user, it is known that DNS lookups can fail intermittently
-        // in some cloud environments. Furthermore, since these error codes are
-        // platform-specific (undocumented) and essentially cargo-culted along
-        // skipping retries may lead to intermittent issues that could be fixed
-        // with a retry. Failing to retry intermittent issues is likely to cause
-        // customers to wrap pub in a retry loop which will not improve the
-        // end-user experience.
-
-        // TODO: should these return PubConnectException('msg', couldRetry: false)?
-        if (osError.isDnsError) {
-          fail('Could not resolve URL "${request.url.origin}".');
-        } else if (osError.isSslError) {
-          fail(
-              'Unable to validate SSL certificate for "${request.url.origin}".');
-        }
-      }
-
-      return e;
-    }, retryIf: (e) async {
-      // TODO: think about IOException. RetryClient used to catch IOException
-      // from _PubHttpClient.
-
-      return (e is PubHttpException && e.couldRetry) ||
-          e is HttpException ||
-          e is TimeoutException ||
-          e is FormatException ||
-          (retryIf != null && await retryIf(e));
-    }, onRetry: (exception, retryCount) async {
-      if (onRetry != null) {
-        await onRetry(exception, retryCount, request, managedResponse);
-      } else {
-        log.io('Retry #${retryCount + 1} for '
-            '${request.method} ${request.url}...');
-      }
-
-      if (retryCount != 3) return;
-      if (!_retriedHosts.add(request.url.host)) return;
-      log.message('It looks like ${request.url.host} is having some trouble.\n'
-          'Pub will wait for a while before trying to connect again.');
-    }, maxAttempts: maxAttempts);
-  }
+    if (retryCount != 3) return;
+  }, maxAttempts: maxAttempts);
 }
 
-extension on http.BaseResponse {
+extension Throwing on http.BaseResponse {
   void throwIfNotOK() {
     // Retry if the response indicates a server error.
     if ([500, 502, 503, 504].contains(statusCode)) {
