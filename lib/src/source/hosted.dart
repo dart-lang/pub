@@ -1046,29 +1046,32 @@ See $contentHashesDocumentationUrl.
       // download.
       final expectedSha256 = versionInfo.archiveSha256;
 
-      // This will retry HTTP errors as well as sha256/crc32c errors because
-      // [PackageIntegrityException] subclasses [PubHttpException].
-      await retryForHttp('downloading "$archiveUrl"', () async {
-        final request = http.Request('GET', archiveUrl);
-        final response = await withAuthenticatedClient(cache,
-            Uri.parse(description.url), (client) => client.send(request));
-        response.throwIfNotOk();
+      await withAuthenticatedClient(cache, Uri.parse(description.url),
+          (client) async {
+        // In addition to HTTP errors, this will retry crc32c/sha256 errors as
+        // well because [PackageIntegrityException] subclasses
+        // [PubHttpException].
+        await retryForHttp('downloading "$archiveUrl"', () async {
+          final request = http.Request('GET', archiveUrl);
+          final response = await client.send(request);
+          response.throwIfNotOk();
 
-        Stream<List<int>> stream = response.stream;
-        final expectedCrc32c = _parseCrc32c(response.headers, fileName);
-        if (expectedCrc32c != null) {
-          stream =
-              _validateCrc32c(response.stream, expectedCrc32c, id, archiveUrl);
-        }
-        stream = validateSha256(
-            stream, (expectedSha256 == null) ? null : Digest(expectedSha256));
+          Stream<List<int>> stream = response.stream;
+          final expectedCrc32c = _parseCrc32c(response.headers, fileName);
+          if (expectedCrc32c != null) {
+            stream = _validateCrc32c(
+                response.stream, expectedCrc32c, id, archiveUrl);
+          }
+          stream = validateSha256(
+              stream, (expectedSha256 == null) ? null : Digest(expectedSha256));
 
-        // We download the archive to disk instead of streaming it directly
-        // into the tar unpacking. This simplifies stream handling.
-        // Package:tar cancels the stream when it reaches end-of-archive, and
-        // cancelling a http stream makes it not reusable.
-        // There are ways around this, and we might revisit this later.
-        await createFileFromStream(stream, archivePath);
+          // We download the archive to disk instead of streaming it directly
+          // into the tar unpacking. This simplifies stream handling.
+          // Package:tar cancels the stream when it reaches end-of-archive, and
+          // cancelling a http stream makes it not reusable.
+          // There are ways around this, and we might revisit this later.
+          await createFileFromStream(stream, archivePath);
+        });
       });
 
       var tempDir = cache.createTempDir();
