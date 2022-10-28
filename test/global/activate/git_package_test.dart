@@ -89,6 +89,7 @@ void main() {
   });
 
   group('activates packages from Git repos with non-trivial refs', () {
+    late String gitRepoPath;
     setUp(() async {
       // Generates a git repository with the following structure for the tests:
       //
@@ -128,6 +129,10 @@ void main() {
         d.libPubspec('foo', '0.0.0+master'),
         d.dir('sub', [d.libPubspec('sub', '0.0.0+master')]),
       ]).commit();
+
+      // Using `file://<path>` is required to mimick a remote repository more closely
+      // Otherwise, `git clone --depth 1` behaves differently: --depth is ignored in local clones; use file:// instead
+      gitRepoPath = 'file://${descriptor.io.absolute.path}';
     });
 
     test('with branch name as --git-ref', () async {
@@ -137,7 +142,7 @@ void main() {
           'activate',
           '-s',
           'git',
-          '../foo.git',
+          gitRepoPath,
           '--git-path',
           'sub',
           '--git-ref',
@@ -164,7 +169,7 @@ void main() {
           'activate',
           '-s',
           'git',
-          '../foo.git',
+          gitRepoPath,
           '--git-path',
           'sub',
           '--git-ref',
@@ -191,7 +196,7 @@ void main() {
           'activate',
           '-s',
           'git',
-          '../foo.git',
+          gitRepoPath,
           '--git-ref',
           'HEAD~',
         ],
@@ -216,9 +221,34 @@ void main() {
           'activate',
           '-s',
           'git',
-          '../foo.git',
+          gitRepoPath,
           '--git-ref',
           '855ca7db03741823945496b6e656464736819dc8',
+        ],
+        silent:
+            contains('git checkout 855ca7db03741823945496b6e656464736819dc8'),
+      );
+
+      await runPub(
+        args: [
+          'global',
+          'run',
+          'foo',
+        ],
+        output: contains('hello from foo'),
+      );
+    });
+
+    test('with partial commit SHA as --git-ref', () async {
+      await runPub(
+        args: [
+          'global',
+          'activate',
+          '-s',
+          'git',
+          gitRepoPath,
+          '--git-ref',
+          '855ca7',
         ],
         silent:
             contains('git checkout 855ca7db03741823945496b6e656464736819dc8'),
@@ -241,7 +271,7 @@ void main() {
           'activate',
           '-s',
           'git',
-          '../foo.git',
+          gitRepoPath,
           '--git-ref',
           'HEAD~2',
         ],
@@ -266,7 +296,7 @@ void main() {
           'activate',
           '-s',
           'git',
-          '../foo.git',
+          gitRepoPath,
           '--git-ref',
           'master',
         ],
@@ -280,7 +310,7 @@ void main() {
           'activate',
           '-s',
           'git',
-          '../foo.git',
+          gitRepoPath,
           '--git-ref',
           'master',
         ],
