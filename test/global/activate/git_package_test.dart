@@ -11,6 +11,7 @@ import '../../test_pub.dart';
 void main() {
   test('activates a package from a Git repo', () async {
     ensureGit();
+
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
       d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
@@ -29,7 +30,7 @@ void main() {
 
   test('activates a package from a Git repo with path and ref', () async {
     ensureGit();
-    
+
     await d.git('foo.git', [
       d.libPubspec('foo', '0.0.0'),
       d.dir('bin', [d.file('foo.dart', "main() => print('0');")]),

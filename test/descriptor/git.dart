@@ -61,7 +61,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   Future<List<String>> _runGit(List<String> args, String? parent) {
     // Explicitly specify the committer information. Git needs this to commit
     // and we don't want to rely on the buildbots having this already set up.
-    final environment = {
+    var environment = {
       'GIT_AUTHOR_NAME': 'Pub Test',
       'GIT_AUTHOR_EMAIL': 'pub@dartlang.org',
       'GIT_COMMITTER_NAME': 'Pub Test',

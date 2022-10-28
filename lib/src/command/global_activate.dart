@@ -14,10 +14,8 @@ import '../utils.dart';
 class GlobalActivateCommand extends PubCommand {
   @override
   String get name => 'activate';
-
   @override
   String get description => "Make a package's executables globally available.";
-
   @override
   String get argumentsDescription => '<package> [version-constraint]';
 

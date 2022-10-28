@@ -762,8 +762,8 @@ class GitDescription extends Description {
 class GitResolvedDescription extends ResolvedDescription {
   @override
   GitDescription get description => super.description as GitDescription;
-  final String resolvedRef;
 
+  final String resolvedRef;
   GitResolvedDescription(GitDescription description, this.resolvedRef)
       : super(description);
 
