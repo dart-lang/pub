@@ -15,7 +15,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
 
   /// Creates the Git repository and commits the contents.
   @override
-  Future<void> create([String? parent]) async {
+  Future create([String? parent]) async {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['init'],
@@ -33,7 +33,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// the previous structure to the Git repo.
   ///
   /// [parent] defaults to [sandbox].
-  Future<void> commit([String? parent]) async {
+  Future commit([String? parent]) async {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['add', '.'],
@@ -46,7 +46,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   ///
   /// [parent] defaults to [sandbox].
   Future<String> revParse(String ref, [String? parent]) async {
-    final output = await _runGit(['rev-parse', ref], parent);
+    var output = await _runGit(['rev-parse', ref], parent);
     return output[0];
   }
 
@@ -77,7 +77,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   }
 
   Future _runGitCommands(String? parent, List<List<String>> commands) async {
-    for (final command in commands) {
+    for (var command in commands) {
       await _runGit(command, parent);
     }
   }
