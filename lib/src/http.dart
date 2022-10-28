@@ -6,17 +6,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-// import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
-// import 'package:http/retry.dart';
 import 'package:pool/pool.dart';
-// import 'package:stack_trace/stack_trace.dart';
 
 import 'command.dart';
 import 'io.dart';
 import 'log.dart' as log;
-import 'oauth2.dart' as oauth2;
 import 'package.dart';
 import 'sdk.dart';
 import 'source/hosted.dart';
@@ -158,10 +155,6 @@ class _PubHttpClient extends http.BaseClient {
 /// The [_PubHttpClient] wrapped by [httpClient].
 final _pubClient = _PubHttpClient();
 
-/// A set of all hostnames for which we've printed a message indicating that
-/// we're waiting for them to come back up.
-final _retriedHosts = <String>{};
-
 /// The HTTP client to use for all HTTP requests.
 final httpClient = _pubClient;
 
@@ -233,9 +226,9 @@ Never invalidServerResponse(http.Response response) =>
 /// Exception thrown when an HTTP operation fails.
 class PubHttpException implements Exception {
   final String message;
-  final bool couldRetry;
+  final bool isIntermittent;
 
-  PubHttpException(this.message, {this.couldRetry = false});
+  PubHttpException(this.message, {this.isIntermittent = false});
 }
 
 /// Exception thrown when an HTTP response is not OK.
@@ -243,8 +236,8 @@ class PubHttpResponseException extends PubHttpException {
   final http.Response response;
 
   PubHttpResponseException(this.response,
-      {String message = '', bool couldRetry = false})
-      : super(message, couldRetry: couldRetry);
+      {String message = '', bool isIntermittent = false})
+      : super(message, isIntermittent: isIntermittent);
 
   @override
   String toString() {
@@ -256,117 +249,46 @@ class PubHttpResponseException extends PubHttpException {
   }
 }
 
-extension on OSError {
-  get isDnsError {
-    // See https://github.com/dart-lang/pub/pull/2254#pullrequestreview-314895700
-    const indeterminateOSCodes = [8, -2, -5];
-    const windowsCodes = [11001, 11004];
-
-    return indeterminateOSCodes.contains(errorCode) ||
-        windowsCodes.contains(errorCode);
-  }
-
-  get isSslError {
-    // TODO: does dart/pub use nspr anymore?
-    const nsprCodes = [-12276];
-
-    return nsprCodes.contains(errorCode);
-  }
-}
-
-extension on http.StreamedResponse {
-  /// Creates a copy of this response with [newStream] as the stream.
-  http.StreamedResponse replacingStream(Stream<List<int>> newStream) {
-    return http.StreamedResponse(newStream, statusCode,
-        contentLength: contentLength,
-        request: request,
-        headers: headers,
-        isRedirect: isRedirect,
-        persistentConnection: persistentConnection,
-        reasonPhrase: reasonPhrase);
-  }
-}
-
 /// Program-wide limiter for concurrent network requests.
 final _httpPool = Pool(16);
 
-Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn,
-    {int maxAttempts = 8,
-    FutureOr<bool> Function(Exception)? retryIf,
-    FutureOr<void> Function(Exception e, int retryCount)? onRetry}) async {
+Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
   return await retry(
       () async => await _httpPool.withResource(() async => await fn()),
-      mapException: (e) {
-    if (e is SocketException) {
-      final osError = e.osError;
-      if (osError == null) {
-        return PubHttpException('Socket operation failure', couldRetry: true);
-      }
-
-      // Handle error codes known to be related to DNS or SSL issues. While it
-      // is tempting to handle these error codes before retrying, saving time
-      // for the end-user, it is known that DNS lookups can fail intermittently
-      // in some cloud environments. Furthermore, since these error codes are
-      // platform-specific (undocumented) and essentially cargo-culted along
-      // skipping retries may lead to intermittent issues that could be fixed
-      // with a retry. Failing to retry intermittent issues is likely to cause
-      // customers to wrap pub in a retry loop which will not improve the
-      // end-user experience.
-
-      // TODO: should these return PubConnectException('msg', couldRetry: false)?
-      if (osError.isDnsError) {
-        fail('Could not resolve URL when $operation.');
-      } else if (osError.isSslError) {
-        fail('Unable to validate SSL certificate when $operation.');
-      }
-    }
-
-    return e;
-  }, retryIf: (e) async {
-    // TODO: think about IOException. RetryClient used to catch IOException
-    // from _PubHttpClient.
-
-    return (e is PubHttpException && e.couldRetry) ||
-        e is HttpException ||
-        e is TimeoutException ||
-        e is FormatException ||
-        (retryIf != null && await retryIf(e));
-  }, onRetry: (exception, retryCount) async {
-    if (onRetry != null) {
-      await onRetry(
-        exception,
-        retryCount,
-      );
-    } else {
-      log.io('Retry #${retryCount + 1} for $operation');
-    }
-
-    if (retryCount != 3) return;
-  }, maxAttempts: maxAttempts);
+      retryIf: (e) async =>
+          (e is PubHttpException && e.isIntermittent) ||
+          e is TimeoutException ||
+          e is HttpException ||
+          e is TlsException ||
+          e is SocketException ||
+          e is WebSocketException,
+      onRetry: (exception, retryCount) async =>
+          log.io('Retry #${retryCount + 1} for $operation'),
+      maxAttempts: math.max(
+        1, // Having less than 1 attempt doesn't make sense.
+        int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
+      ));
 }
 
 extension Throwing on http.BaseResponse {
-  void throwIfNotOK() {
-    // Retry if the response indicates a server error.
-    if ([500, 502, 503, 504].contains(statusCode)) {
-      throw PubHttpResponseException(this as http.Response, couldRetry: true);
-    }
-
-    // 401 responses should be handled by the OAuth2 client. It's very
-    // unlikely that they'll be returned by non-OAuth2 requests. We also want
-    // to pass along 400 responses from the token endpoint.
-    var tokenRequest = request!.url == oauth2.tokenEndpoint;
-    if (statusCode < 400 ||
-        statusCode == 401 ||
-        (statusCode == 400 && tokenRequest)) {
+  void throwIfNotOk() {
+    if (statusCode >= 200 && statusCode <= 299) {
       return;
-    }
-
-    if (statusCode == 406 &&
+    } else if (statusCode == HttpStatus.notAcceptable &&
         request?.headers['Accept'] == pubApiHeaders['Accept']) {
       fail('Pub ${sdk.version} is incompatible with the current version of '
           '${request?.url.host}.\n'
           'Upgrade pub to the latest version and try again.');
+    } else if (statusCode >= 500 ||
+        statusCode == HttpStatus.requestTimeout ||
+        statusCode == HttpStatus.tooManyRequests) {
+      // Throw if the response indicates a server error or an intermittent
+      // client error, but mark it as intermittent so it can be retried.
+      throw PubHttpResponseException(this as http.Response,
+          isIntermittent: true);
+    } else {
+      // Throw for all other status codes.
+      throw PubHttpResponseException(this as http.Response);
     }
   }
 }
