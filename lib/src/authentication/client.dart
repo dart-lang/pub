@@ -127,7 +127,7 @@ Future<T> withAuthenticatedClient<T>(
   Future<T> Function(http.Client) fn,
 ) async {
   final credential = systemCache.tokenStore.findCredential(hostedUrl);
-  final client = _AuthenticatedClient(httpClient, credential);
+  final client = _AuthenticatedClient(globalHttpClient, credential);
 
   try {
     return await fn(client);

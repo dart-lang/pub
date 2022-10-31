@@ -152,13 +152,14 @@ class _PubHttpClient extends http.BaseClient {
   void close() => _inner.close();
 }
 
-/// The [_PubHttpClient] wrapped by [httpClient].
+/// The [_PubHttpClient] wrapped by [globalHttpClient].
 final _pubClient = _PubHttpClient();
 
 /// The HTTP client to use for all HTTP requests.
-final httpClient = _pubClient;
+final globalHttpClient = _pubClient;
 
-/// The underlying HTTP client wrapped by [httpClient].
+/// The underlying HTTP client wrapped by [globalHttpClient].
+/// This enables the ability to use a mock client in tests.
 http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
 

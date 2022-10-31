@@ -142,7 +142,7 @@ Future<Client> _getClient(SystemCache cache) async {
       secret: _secret,
       // Google's OAuth2 API doesn't support basic auth.
       basicAuth: false,
-      httpClient: httpClient);
+      httpClient: globalHttpClient);
   _saveCredentials(cache, client.credentials);
   return client;
 }
@@ -221,7 +221,7 @@ Future<Client> _authorize() async {
           secret: _secret,
           // Google's OAuth2 API doesn't support basic auth.
           basicAuth: false,
-          httpClient: httpClient);
+          httpClient: globalHttpClient);
 
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as

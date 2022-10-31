@@ -46,7 +46,7 @@ class LoginCommand extends PubCommand {
 
   Future<_UserInfo?> _retrieveUserInfo() async {
     return await oauth2.withClient(cache, (client) async {
-      final discovery = await httpClient.get(Uri.https(
+      final discovery = await globalHttpClient.get(Uri.https(
           'accounts.google.com', '/.well-known/openid-configuration'));
       final userInfoEndpoint = json.decode(discovery.body)['userinfo_endpoint'];
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));

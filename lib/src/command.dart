@@ -238,7 +238,7 @@ and attaching the relevant parts of that log file.
           log.message('Logs written to $transcriptPath.');
         }
       }
-      httpClient.close();
+      globalHttpClient.close();
     }
   }
 

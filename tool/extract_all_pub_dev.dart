@@ -20,13 +20,13 @@ const statusFilename = 'extract_all_pub_status.json';
 
 Future<List<String>> allPackageNames() async {
   var nextUrl = Uri.https('pub.dev', 'api/packages?compact=1');
-  final result = json.decode(await httpClient.read(nextUrl));
+  final result = json.decode(await globalHttpClient.read(nextUrl));
   return List<String>.from(result['packages']);
 }
 
 Future<List<String>> versionArchiveUrls(String packageName) async {
   final url = Uri.https('pub.dev', 'api/packages/$packageName');
-  final result = json.decode(await httpClient.read(url));
+  final result = json.decode(await globalHttpClient.read(url));
   return List<String>.from(result['versions'].map((v) => v['archive_url']));
 }
 
@@ -81,7 +81,7 @@ Future<void> main() async {
               log.message('downloading $archiveUrl');
               http.StreamedResponse response;
               try {
-                response = await httpClient
+                response = await globalHttpClient
                     .send(http.Request('GET', Uri.parse(archiveUrl)));
                 await extractTarGz(response.stream, tempDir);
                 log.message('Extracted $archiveUrl');
