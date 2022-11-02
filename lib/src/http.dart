@@ -195,7 +195,7 @@ class PubHttpException implements Exception {
   PubHttpException(this.message, {this.isIntermittent = false});
 }
 
-/// Exception thrown when an HTTP response is not OK.
+/// Exception thrown when an HTTP response is not Ok.
 class PubHttpResponseException extends PubHttpException {
   final http.Response response;
 
@@ -216,6 +216,14 @@ class PubHttpResponseException extends PubHttpException {
 /// Program-wide limiter for concurrent network requests.
 final _httpPool = Pool(16);
 
+/// Runs the provided function [fn] and returns the response.
+///
+/// If there is an HTTP-related exception, an intermittent HTTP error response,
+/// or an async timeout, [fn] is run repeatedly until there is a successful
+/// response or at most seven total attempts have been made. If all attempts
+/// fail, the final exception is re-thrown.
+///
+/// Each attempt is run within a [Pool] configured with 16 maximum resources.
 Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
   return await retry(
       () async => await _httpPool.withResource(() async => await fn()),
@@ -235,6 +243,13 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
 }
 
 extension Throwing on http.BaseResponse {
+  /// Throws [PubHttpResponseException], calls [fail], or does nothing depending
+  /// on the status code.
+  ///
+  /// If the code is in the 200 range, nothing is done. If the code is 408, 429,
+  /// or in the 500 range, [PubHttpResponseException] is thrown with
+  /// "isIntermittent" set to `true`. Otherwise, [PubHttpResponseException] is
+  /// thrown with "isIntermittent" set to `false`.
   void throwIfNotOk() {
     if (statusCode >= 200 && statusCode <= 299) {
       return;
