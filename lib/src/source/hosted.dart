@@ -430,8 +430,10 @@ class HostedSource extends CachedSource {
           (client) async {
         return await retryForHttp(
             'fetching versions for "$packageName" from "$url"', () async {
-          return await client.read(url,
+          final response = await client.get(url,
               headers: HostedSource.httpRequestHeadersFor(url));
+          response.throwIfNotOk();
+          return response.body;
         });
       });
       final decoded = jsonDecode(bodyText);
