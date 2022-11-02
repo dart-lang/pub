@@ -11,12 +11,9 @@ import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
-import 'command.dart';
-import 'io.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'sdk.dart';
-import 'source/hosted.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
@@ -30,7 +27,7 @@ const _censoredFields = ['refresh_token', 'authorization'];
 const pubApiHeaders = {'Accept': 'application/vnd.pub.v2+json'};
 
 /// A unique ID to identify this particular invocation of pub.
-final _sessionId = createUuid();
+final sessionId = createUuid();
 
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
@@ -43,22 +40,6 @@ class _PubHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    if (_shouldAddMetadata(request)) {
-      request.headers['X-Pub-OS'] = Platform.operatingSystem;
-      request.headers['X-Pub-Command'] = PubCommand.command;
-      request.headers['X-Pub-Session-ID'] = _sessionId;
-
-      var environment = Platform.environment['PUB_ENVIRONMENT'];
-      if (environment != null) {
-        request.headers['X-Pub-Environment'] = environment;
-      }
-
-      var type = Zone.current[#_dependencyType];
-      if (type != null && type != DependencyType.none) {
-        request.headers['X-Pub-Reason'] = type.toString();
-      }
-    }
-
     _requestStopwatches[request] = Stopwatch()..start();
     request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
     _logRequest(request);
@@ -68,24 +49,6 @@ class _PubHttpClient extends http.BaseClient {
     _logResponse(streamedResponse);
 
     return streamedResponse;
-  }
-
-  /// Whether extra metadata headers should be added to [request].
-  bool _shouldAddMetadata(http.BaseRequest request) {
-    if (runningFromTest && Platform.environment.containsKey('PUB_HOSTED_URL')) {
-      if (request.url.origin != Platform.environment['PUB_HOSTED_URL']) {
-        return false;
-      }
-    } else {
-      if (!HostedSource.isPubDevUrl(request.url.toString())) return false;
-    }
-
-    if (Platform.environment.containsKey('CI') &&
-        Platform.environment['CI'] != 'false') {
-      return false;
-    }
-
-    return true;
   }
 
   /// Logs the fact that [request] was sent, and information about it.

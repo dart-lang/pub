@@ -15,18 +15,21 @@ import 'package:pool/pool.dart';
 import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/source/hosted.dart';
 
 const statusFilename = 'extract_all_pub_status.json';
 
 Future<List<String>> allPackageNames() async {
   var nextUrl = Uri.https('pub.dev', 'api/packages?compact=1');
-  final result = json.decode(await globalHttpClient.read(nextUrl));
+  final result = json.decode(await globalHttpClient.read(nextUrl,
+      headers: HostedSource.httpRequestHeadersFor(nextUrl)));
   return List<String>.from(result['packages']);
 }
 
 Future<List<String>> versionArchiveUrls(String packageName) async {
   final url = Uri.https('pub.dev', 'api/packages/$packageName');
-  final result = json.decode(await globalHttpClient.read(url));
+  final result = json.decode(await globalHttpClient.read(url,
+      headers: HostedSource.httpRequestHeadersFor(url)));
   return List<String>.from(result['versions'].map((v) => v['archive_url']));
 }
 
@@ -81,8 +84,11 @@ Future<void> main() async {
               log.message('downloading $archiveUrl');
               http.StreamedResponse response;
               try {
-                response = await globalHttpClient
-                    .send(http.Request('GET', Uri.parse(archiveUrl)));
+                final archiveUri = Uri.parse(archiveUrl);
+                final request = http.Request('GET', archiveUri);
+                request.headers
+                    .addAll(HostedSource.httpRequestHeadersFor(archiveUri));
+                response = await globalHttpClient.send(request);
                 await extractTarGz(response.stream, tempDir);
                 log.message('Extracted $archiveUrl');
               } catch (e) {

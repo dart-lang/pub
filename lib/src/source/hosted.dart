@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
@@ -17,6 +18,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../authentication/client.dart';
+import '../command.dart';
 import '../crc32c.dart';
 import '../exceptions.dart';
 import '../http.dart';
@@ -165,6 +167,57 @@ class HostedSource extends CachedSource {
           'Invalid `PUB_HOSTED_URL="${e.source}"`: ${e.message}');
     }
   }();
+
+  /// Whether extra metadata headers should be sent for HTTP requests to a given
+  /// [url].
+  static bool _shouldSendRequestMetadata(Uri url) {
+    if (runningFromTest && Platform.environment.containsKey('PUB_HOSTED_URL')) {
+      if (url.origin != Platform.environment['PUB_HOSTED_URL']) {
+        return false;
+      }
+    } else {
+      if (!HostedSource.isPubDevUrl(url.toString())) return false;
+    }
+
+    if (Platform.environment.containsKey('CI') &&
+        Platform.environment['CI'] != 'false') {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Adds request metadata headers to a [Map] of HTTP headers. The headers
+  /// contain information about the Pub tool's environment and the currently
+  /// running command.
+  static void attachRequestMetadata(Map<String, String> headers) {
+    headers['X-Pub-OS'] = Platform.operatingSystem;
+    headers['X-Pub-Command'] = PubCommand.command;
+    headers['X-Pub-Session-ID'] = sessionId;
+
+    var environment = Platform.environment['PUB_ENVIRONMENT'];
+    if (environment != null) {
+      headers['X-Pub-Environment'] = environment;
+    }
+
+    var type = Zone.current[#_dependencyType];
+    if (type != null && type != DependencyType.none) {
+      headers['X-Pub-Reason'] = type.toString();
+    }
+  }
+
+  /// Creates a [Map] of HTTP headers that include the Pub API version "Accept"
+  /// header and, if determined necessary from the environment and the passed
+  /// [url], metadata headers.
+  static Map<String, String> httpRequestHeadersFor(Uri url) {
+    final headers = {...pubApiHeaders};
+
+    if (_shouldSendRequestMetadata(url)) {
+      attachRequestMetadata(headers);
+    }
+
+    return headers;
+  }
 
   /// Returns a reference to a hosted package named [name].
   ///
@@ -373,12 +426,12 @@ class HostedSource extends CachedSource {
     final List<_VersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
-      // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
+      // requires resolution of: https://github.com/dart-lang/http/issues/424.
       bodyText = await withAuthenticatedClient(
-        cache,
-        Uri.parse(hostedUrl),
-        (client) => client.read(url, headers: pubApiHeaders),
-      );
+          cache,
+          Uri.parse(hostedUrl),
+          (client) => client.read(url,
+              headers: HostedSource.httpRequestHeadersFor(url)));
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
         throw FormatException('version listing must be a mapping');
@@ -1053,6 +1106,8 @@ See $contentHashesDocumentationUrl.
         // [PubHttpException].
         await retryForHttp('downloading "$archiveUrl"', () async {
           final request = http.Request('GET', archiveUrl);
+          request.headers
+              .addAll(HostedSource.httpRequestHeadersFor(archiveUrl));
           final response = await client.send(request);
           response.throwIfNotOk();
 
