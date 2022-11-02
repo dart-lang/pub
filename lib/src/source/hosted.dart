@@ -292,8 +292,6 @@ class HostedSource extends CachedSource {
     );
   }
 
-  HostedDescription _asDescription(desc) => desc as HostedDescription;
-
   /// Parses the description for a package.
   ///
   /// If the package parses correctly, this returns a (name, url) pair. If not,
@@ -417,6 +415,7 @@ class HostedSource extends CachedSource {
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
     }
+    final packageName = description.packageName;
     final hostedUrl = description.url;
     final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
@@ -427,11 +426,14 @@ class HostedSource extends CachedSource {
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/http/issues/424.
-      bodyText = await withAuthenticatedClient(
-          cache,
-          Uri.parse(hostedUrl),
-          (client) => client.read(url,
-              headers: HostedSource.httpRequestHeadersFor(url)));
+      bodyText = await withAuthenticatedClient(cache, Uri.parse(hostedUrl),
+          (client) async {
+        return await retryForHttp(
+            'fetching versions for "$packageName" from "$url"', () async {
+          return await client.read(url,
+              headers: HostedSource.httpRequestHeadersFor(url));
+        });
+      });
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
         throw FormatException('version listing must be a mapping');
@@ -439,7 +441,6 @@ class HostedSource extends CachedSource {
       body = decoded;
       result = _versionInfoFromPackageListing(body, ref, url, cache);
     } on Exception catch (error, stackTrace) {
-      final packageName = _asDescription(ref.description).packageName;
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
 
