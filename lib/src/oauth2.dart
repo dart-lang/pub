@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:collection/collection.dart' show IterableExtension;
+import 'package:http/retry.dart';
 import 'package:oauth2/oauth2.dart';
 import 'package:path/path.dart' as path;
 import 'package:shelf/shelf.dart' as shelf;
@@ -16,6 +17,11 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'system_cache.dart';
 import 'utils.dart';
+
+/// The global HTTP client with basic retries. Used instead of retryForHttp for
+/// OAuth calls because the OAuth2 package requires a client to be passed. While
+/// the retry logic is more basic, this is fine for the publishing process.
+final _retryHttpClient = RetryClient(globalHttpClient);
 
 /// The pub client's OAuth2 identifier.
 const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
@@ -142,7 +148,7 @@ Future<Client> _getClient(SystemCache cache) async {
       secret: _secret,
       // Google's OAuth2 API doesn't support basic auth.
       basicAuth: false,
-      httpClient: globalHttpClient);
+      httpClient: _retryHttpClient);
   _saveCredentials(cache, client.credentials);
   return client;
 }
@@ -221,7 +227,7 @@ Future<Client> _authorize() async {
           secret: _secret,
           // Google's OAuth2 API doesn't support basic auth.
           basicAuth: false,
-          httpClient: globalHttpClient);
+          httpClient: _retryHttpClient);
 
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as
