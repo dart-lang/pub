@@ -14,17 +14,27 @@ import '../validator.dart';
 
 /// Runs `dart analyze` and gives a warning if it returns non-zero.
 class AnalyzeValidator extends Validator {
+  /// Only analyze dart code in the following sub-folders.
   @override
   Future<void> validate() async {
-    final result = await runProcess(Platform.resolvedExecutable, [
-      'analyze',
-      '--fatal-infos',
-      if (!p.equals(entrypoint.root.dir, p.current)) entrypoint.root.dir,
-    ]);
-    if (result.exitCode != 0) {
-      final limitedOutput = limitLength(result.stdout.join('\n'), 1000);
-      warnings
-          .add('`dart analyze` found the following issue(s):\n$limitedOutput');
+    final dirsToAnalyze = ['lib', 'test', 'bin']
+        .map((dir) => p.join(entrypoint.root.dir, dir))
+        .where(dirExists);
+
+    if (dirsToAnalyze.isEmpty) {
+      fine('No code to `dart analyze`');
+    }
+    {
+      final result = await runProcess(Platform.resolvedExecutable, [
+        'analyze',
+        '--fatal-infos',
+        ...dirsToAnalyze,
+      ]);
+      if (result.exitCode != 0) {
+        final limitedOutput = limitLength(result.stdout.join('\n'), 1000);
+        warnings.add(
+            '`dart analyze` found the following issue(s):\n$limitedOutput');
+      }
     }
   }
 }
