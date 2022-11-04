@@ -20,21 +20,19 @@ class AnalyzeValidator extends Validator {
     final dirsToAnalyze = ['lib', 'test', 'bin']
         .map((dir) => p.join(entrypoint.root.dir, dir))
         .where(dirExists);
-
-    if (dirsToAnalyze.isEmpty) {
-      fine('No code to `dart analyze`');
-    }
-    {
-      final result = await runProcess(Platform.resolvedExecutable, [
+    final result = await runProcess(
+      Platform.resolvedExecutable,
+      [
         'analyze',
         '--fatal-infos',
         ...dirsToAnalyze,
-      ]);
-      if (result.exitCode != 0) {
-        final limitedOutput = limitLength(result.stdout.join('\n'), 1000);
-        warnings.add(
-            '`dart analyze` found the following issue(s):\n$limitedOutput');
-      }
+        p.join(entrypoint.root.dir, 'pubspec.yaml')
+      ],
+    );
+    if (result.exitCode != 0) {
+      final limitedOutput = limitLength(result.stdout.join('\n'), 1000);
+      warnings
+          .add('`dart analyze` found the following issue(s):\n$limitedOutput');
     }
   }
 }
