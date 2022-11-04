@@ -213,6 +213,17 @@ class PubHttpResponseException extends PubHttpException {
   }
 }
 
+/// Whether [e] is one of a few HTTP-related exceptions that subclass
+/// [IOException]. Can be used if your try-catch block contains various
+/// operations in addition to HTTP calls and so a [IOException] instance check
+/// would be too coarse.
+bool isHttpIOException(Object e) {
+  return e is HttpException ||
+      e is TlsException ||
+      e is SocketException ||
+      e is WebSocketException;
+}
+
 /// Program-wide limiter for concurrent network requests.
 final _httpPool = Pool(16);
 
@@ -230,10 +241,7 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
       retryIf: (e) async =>
           (e is PubHttpException && e.isIntermittent) ||
           e is TimeoutException ||
-          e is HttpException ||
-          e is TlsException ||
-          e is SocketException ||
-          e is WebSocketException,
+          isHttpIOException(e),
       onRetry: (exception, retryCount) async =>
           log.io('Retry #${retryCount + 1} for $operation'),
       maxAttempts: math.max(

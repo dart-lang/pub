@@ -21,7 +21,9 @@ import 'utils.dart';
 /// The global HTTP client with basic retries. Used instead of retryForHttp for
 /// OAuth calls because the OAuth2 package requires a client to be passed. While
 /// the retry logic is more basic, this is fine for the publishing process.
-final _retryHttpClient = RetryClient(globalHttpClient);
+final _retryHttpClient = RetryClient(globalHttpClient,
+    when: (response) => response.statusCode >= 500,
+    whenError: (e, _) => isHttpIOException(e));
 
 /// The pub client's OAuth2 identifier.
 const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
