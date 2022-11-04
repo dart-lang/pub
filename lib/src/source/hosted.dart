@@ -1486,8 +1486,7 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
         log.exception(e, s);
         throw PackageIntegrityException(
             'Package archive "$fileName" has a malformed CRC32C checksum in '
-            'its response headers',
-            isIntermittent: true);
+            'its response headers');
       }
     }
   }

@@ -108,7 +108,8 @@ class PackageNotFoundException extends WrappedException {
 
 /// A class for exceptions where a package's checksum could not be validated.
 class PackageIntegrityException extends PubHttpException {
-  PackageIntegrityException(super.message, {super.isIntermittent});
+  PackageIntegrityException(String message)
+      : super(message, isIntermittent: true);
 }
 
 /// Returns whether [error] is a user-facing error object.
