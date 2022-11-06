@@ -94,8 +94,10 @@ class LishCommand extends PubCommand {
     try {
       await log.progress('Uploading', () async {
         var newUri = host.resolve('api/packages/versions/new');
-        var response = await client.get(newUri,
-            headers: HostedSource.httpRequestHeadersFor(newUri));
+        var publishRequest = http.Request('GET', newUri);
+        publishRequest.attachMetadataHeaders();
+        var response = await client.sendSync(publishRequest);
+        response.throwIfNotOk();
         var parameters = parseJsonResponse(response);
 
         var url = _expectField(parameters, 'url', response);
@@ -115,14 +117,17 @@ class LishCommand extends PubCommand {
         request.followRedirects = false;
         request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
             filename: 'package.tar.gz'));
-        var postResponse =
-            await http.Response.fromStream(await client.send(request));
+        var postResponse = await client.sendSync(request);
+        postResponse.throwIfNotOk();
 
         var location = postResponse.headers['location'];
         if (location == null) throw PubHttpResponseException(postResponse);
         final locationUri = Uri.parse(location);
-        handleJsonSuccess(await client.get(locationUri,
-            headers: HostedSource.httpRequestHeadersFor(locationUri)));
+        var finalizeRequest = http.Request('GET', locationUri);
+        finalizeRequest.attachMetadataHeaders();
+        var finalizeResponse = await client.sendSync(finalizeRequest);
+        finalizeResponse.throwIfNotOk();
+        handleJsonSuccess(finalizeResponse);
       });
     } on AuthenticationException catch (error) {
       var msg = '';

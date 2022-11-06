@@ -18,7 +18,6 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../authentication/client.dart';
-import '../command.dart';
 import '../crc32c.dart';
 import '../exceptions.dart';
 import '../http.dart';
@@ -170,7 +169,7 @@ class HostedSource extends CachedSource {
 
   /// Whether extra metadata headers should be sent for HTTP requests to a given
   /// [url].
-  static bool _shouldSendRequestMetadata(Uri url) {
+  static bool shouldSendAdditionalMetadataFor(Uri url) {
     if (runningFromTest && Platform.environment.containsKey('PUB_HOSTED_URL')) {
       if (url.origin != Platform.environment['PUB_HOSTED_URL']) {
         return false;
@@ -185,38 +184,6 @@ class HostedSource extends CachedSource {
     }
 
     return true;
-  }
-
-  /// Adds request metadata headers to a [Map] of HTTP headers. The headers
-  /// contain information about the Pub tool's environment and the currently
-  /// running command.
-  static void attachRequestMetadata(Map<String, String> headers) {
-    headers['X-Pub-OS'] = Platform.operatingSystem;
-    headers['X-Pub-Command'] = PubCommand.command;
-    headers['X-Pub-Session-ID'] = sessionId;
-
-    var environment = Platform.environment['PUB_ENVIRONMENT'];
-    if (environment != null) {
-      headers['X-Pub-Environment'] = environment;
-    }
-
-    var type = Zone.current[#_dependencyType];
-    if (type != null && type != DependencyType.none) {
-      headers['X-Pub-Reason'] = type.toString();
-    }
-  }
-
-  /// Creates a [Map] of HTTP headers that include the Pub API version "Accept"
-  /// header and, if determined necessary from the environment and the passed
-  /// [url], metadata headers.
-  static Map<String, String> httpRequestHeadersFor(Uri url) {
-    final headers = {...pubApiHeaders};
-
-    if (_shouldSendRequestMetadata(url)) {
-      attachRequestMetadata(headers);
-    }
-
-    return headers;
   }
 
   /// Returns a reference to a hosted package named [name].
@@ -430,8 +397,9 @@ class HostedSource extends CachedSource {
           (client) async {
         return await retryForHttp(
             'fetching versions for "$packageName" from "$url"', () async {
-          final response = await client.get(url,
-              headers: HostedSource.httpRequestHeadersFor(url));
+          final request = http.Request('GET', url);
+          request.attachMetadataHeaders();
+          final response = await client.sendSync(request);
           response.throwIfNotOk();
           return response.body;
         });
@@ -1109,8 +1077,7 @@ See $contentHashesDocumentationUrl.
         // [PubHttpException].
         await retryForHttp('downloading "$archiveUrl"', () async {
           final request = http.Request('GET', archiveUrl);
-          request.headers
-              .addAll(HostedSource.httpRequestHeadersFor(archiveUrl));
+          request.attachMetadataHeaders();
           final response = await client.send(request);
           response.throwIfNotOk();
 

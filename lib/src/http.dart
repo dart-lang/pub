@@ -10,10 +10,12 @@ import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
+import 'command.dart';
 
 import 'log.dart' as log;
 import 'package.dart';
 import 'sdk.dart';
+import 'source/hosted.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
@@ -27,7 +29,7 @@ const _censoredFields = ['refresh_token', 'authorization'];
 const pubApiHeaders = {'Accept': 'application/vnd.pub.v2+json'};
 
 /// A unique ID to identify this particular invocation of pub.
-final sessionId = createUuid();
+final _sessionId = createUuid();
 
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
@@ -136,6 +138,35 @@ Future<T> withDependencyType<T>(
   Future<T> Function() callback,
 ) {
   return runZoned(callback, zoneValues: {#_dependencyType: type});
+}
+
+extension AttachHeaders on http.Request {
+  /// Adds request metadata headers if the request URL indicates the destination
+  /// is a Hosted Pub Repository. Additional information about the Pub tool's
+  /// environment and the currently running command is sent depending on the
+  /// environment and the URL.
+  void attachMetadataHeaders() {
+    // Always include the Pub API version "Accept" header.
+    headers.addAll(pubApiHeaders);
+
+    if (!HostedSource.shouldSendAdditionalMetadataFor(url)) {
+      return;
+    }
+
+    headers['X-Pub-OS'] = Platform.operatingSystem;
+    headers['X-Pub-Command'] = PubCommand.command;
+    headers['X-Pub-Session-ID'] = _sessionId;
+
+    var environment = Platform.environment['PUB_ENVIRONMENT'];
+    if (environment != null) {
+      headers['X-Pub-Environment'] = environment;
+    }
+
+    var type = Zone.current[#_dependencyType];
+    if (type != null && type != DependencyType.none) {
+      headers['X-Pub-Reason'] = type.toString();
+    }
+  }
 }
 
 /// Handles a successful JSON-formatted response from pub.dev.
@@ -277,5 +308,16 @@ extension Throwing on http.BaseResponse {
       // Throw for all other status codes.
       throw PubHttpResponseException(this as http.Response);
     }
+  }
+}
+
+extension SyncSending on http.Client {
+  /// Sends an HTTP request and synchronously returns the response. The regular
+  /// send method on [http.Client], which returns a [http.StreamedResponse], is
+  /// the only method that accepts a request object. This method can be used
+  /// when you need to send a request object but want a regular response object.
+  Future<http.Response> sendSync(http.BaseRequest request) async {
+    final streamedResponse = await send(request);
+    return await http.Response.fromStream(streamedResponse);
   }
 }
