@@ -82,8 +82,11 @@ void main() {
 
     final archivePath = p.join(sandbox, 'archive');
 
-    File(archivePath).writeAsBytesSync(await readBytes(
-        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
+    File(archivePath).writeAsBytesSync(
+      await readBytes(
+        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz'),
+      ),
+    );
     await runPub(
       args: ['cache', 'preload', archivePath],
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
@@ -93,11 +96,17 @@ void main() {
 
     server.serve('foo', '1.0.0', contents: [file('new-file.txt')]);
 
-    File(archivePath).writeAsBytesSync(await readBytes(
-        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
+    File(archivePath).writeAsBytesSync(
+      await readBytes(
+        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz'),
+      ),
+    );
 
-    File(archivePath).writeAsBytesSync(await readBytes(
-        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
+    File(archivePath).writeAsBytesSync(
+      await readBytes(
+        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz'),
+      ),
+    );
 
     await runPub(
       args: ['cache', 'preload', archivePath],
@@ -135,14 +144,14 @@ void main() {
 
     // Create a tar.gz with a single file (and no pubspec.yaml).
     File(archivePath).writeAsBytesSync(
-        await tarFromDescriptors([d.file('foo.txt')])
-            .expand((x) => x)
-            .toList());
+      await tarFromDescriptors([d.file('foo.txt')]).expand((x) => x).toList(),
+    );
 
     await runPub(
       args: ['cache', 'preload', archivePath],
       error: contains(
-          'Found no `pubspec.yaml` in $archivePath. Is it a valid pub package archive?'),
+        'Found no `pubspec.yaml` in $archivePath. Is it a valid pub package archive?',
+      ),
       exitCode: 1,
     );
   });
@@ -158,7 +167,8 @@ void main() {
     await runPub(
       args: ['cache', 'preload', archivePath],
       error: contains(
-          'Failed to load `pubspec.yaml` from `$archivePath`: Error on line 1, column 1'),
+        'Failed to load `pubspec.yaml` from `$archivePath`: Error on line 1, column 1',
+      ),
       exitCode: 1,
     );
   });
