@@ -21,6 +21,8 @@ class CachePreloadCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
+  /// The `cache preload` command is hidden by default, because it's really only intended for
+  /// `flutter` to use when pre-loading `PUB_CACHE` after being installed from `zip` archive.
   @override
   bool get hidden => true;
 
