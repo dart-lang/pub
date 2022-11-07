@@ -10,8 +10,8 @@ import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
-import 'command.dart';
 
+import 'command.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'sdk.dart';

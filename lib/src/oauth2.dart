@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:collection/collection.dart' show IterableExtension;
+import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
 import 'package:oauth2/oauth2.dart';
 import 'package:path/path.dart' as path;
@@ -33,6 +34,12 @@ const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
 ///
 /// This isn't actually meant to be kept a secret.
 const _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
+
+/// The URL from which the pub client will retrieve Google's OIDC endpoint URIs.
+///
+/// [Google OpenID Connect documentation]: https://developers.google.com/identity/openid-connect/openid-connect#discovery
+final _oidcDiscoveryDocumentEndpoint =
+    Uri.https('accounts.google.com', '/.well-known/openid-configuration');
 
 /// The URL to which the user will be directed to authorize the pub client to
 /// get an OAuth2 access token.
@@ -265,4 +272,20 @@ Future<Client> _authorize() async {
   var client = await completer.future;
   log.message('Successfully authorized.\n');
   return client;
+}
+
+/// Fetches Google's OpenID Connect Discovery document and parses the JSON
+/// response body into a [Map].
+///
+/// See
+/// https://developers.google.com/identity/openid-connect/openid-connect#discovery
+Future<Map> fetchOidcDiscoveryDocument() async {
+  final discoveryResponse = await retryForHttp(
+      'fetching Google\'s OpenID Connect Discovery document', () async {
+    final request = http.Request('GET', _oidcDiscoveryDocumentEndpoint);
+    final response = await globalHttpClient.sendSync(request);
+    response.throwIfNotOk();
+    return response;
+  });
+  return parseJsonResponse(discoveryResponse);
 }

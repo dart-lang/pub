@@ -7,7 +7,6 @@ import 'dart:convert';
 
 import '../command.dart';
 import '../command_runner.dart';
-import '../http.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
 
@@ -46,9 +45,8 @@ class LoginCommand extends PubCommand {
 
   Future<_UserInfo?> _retrieveUserInfo() async {
     return await oauth2.withClient(cache, (client) async {
-      final discovery = await globalHttpClient.get(Uri.https(
-          'accounts.google.com', '/.well-known/openid-configuration'));
-      final userInfoEndpoint = json.decode(discovery.body)['userinfo_endpoint'];
+      final discovery = await oauth2.fetchOidcDiscoveryDocument();
+      final userInfoEndpoint = discovery['userinfo_endpoint'];
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
