@@ -40,14 +40,82 @@ void main() {
     await expectValidation(contains('Package has 0 warnings.'), 0);
   });
 
-  test('should warn if package contains errors, and works with --directory',
+  test('should handle having no code in the analyzed directories', () async {
+    await d.dir(appPath, [
+      d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      d.file('LICENSE', 'Eh, do what you want.'),
+      d.file('README.md', "This package isn't real."),
+      d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
+
+    await expectValidation(contains('Package has 0 warnings.'), 0);
+  });
+
+  test(
+      'follows analysis_options.yaml and should warn if package contains errors in pubspec.yaml',
+      () async {
+    await d.dir(appPath, [
+      d.libPubspec('test_pkg', '1.0.0',
+          sdk: '>=1.8.0 <=2.0.0',
+          // Using http where https is recommended.
+          extras: {'repository': 'http://repo.org/'}),
+      d.file('LICENSE', 'Eh, do what you want.'),
+      d.file('README.md', "This package isn't real."),
+      d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+      d.file('analysis_options.yaml', '''
+linter:
+  rules:
+    - secure_pubspec_urls
+''')
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
+
+    await expectValidation(
+      allOf([
+        contains(
+            "The url should only use secure protocols. Try using 'https'."),
+        contains('Package has 1 warning.'),
+      ]),
+      DATA,
+    );
+  });
+
+  test(
+      'should consider a package valid even if it contains errors in the example/ sub-folder',
       () async {
     await d.dir(appPath, [
       d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
       d.file('LICENSE', 'Eh, do what you want.'),
       d.file('README.md', "This package isn't real."),
       d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      d.dir('lib', [
+      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
+      d.dir('example', [
+        d.file('test_pkg.dart', '''
+void main() {
+  final a = 10; // Unused.
+}
+''')
+      ])
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
+
+    await expectValidation(contains('Package has 0 warnings.'), 0);
+  });
+
+  test(
+      'should warn if package contains errors in bin/, and works with --directory',
+      () async {
+    await d.dir(appPath, [
+      d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      d.file('LICENSE', 'Eh, do what you want.'),
+      d.file('README.md', "This package isn't real."),
+      d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
+      d.dir('bin', [
         d.file('test_pkg.dart', '''
 void main() {
 // Missing }
@@ -60,7 +128,7 @@ void main() {
     await expectValidation(
       allOf([
         contains('`dart analyze` found the following issue(s):'),
-        contains('Analyzing myapp...'),
+        contains('Analyzing lib, bin, pubspec.yaml...'),
         contains('error -'),
         contains("Expected to find '}'."),
         contains('Package has 1 warning.')
@@ -71,13 +139,14 @@ void main() {
     );
   });
 
-  test('should warn if package contains infos', () async {
+  test('should warn if package contains infos in test folder', () async {
     await d.dir(appPath, [
       d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
       d.file('LICENSE', 'Eh, do what you want.'),
       d.file('README.md', "This package isn't real."),
       d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      d.dir('lib', [
+      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
+      d.dir('test', [
         d.file('test_pkg.dart', '''
 void main() {
   final a = 10; // Unused.
@@ -91,7 +160,7 @@ void main() {
     await expectValidation(
       allOf([
         contains('`dart analyze` found the following issue(s):'),
-        contains('Analyzing myapp...'),
+        contains('Analyzing lib, test, pubspec.yaml...'),
         contains('info -'),
         contains("The value of the local variable 'a' isn't used"),
         contains('Package has 1 warning.')

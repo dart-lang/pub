@@ -96,15 +96,23 @@ Descriptor appPubspec([Map? dependencies]) {
 /// [name], [version], and [deps]. If "sdk" is given, then it adds an SDK
 /// constraint on that version, otherwise it adds an SDK constraint allowing
 /// the current SDK version.
-Descriptor libPubspec(String name, String version,
-    {Map? deps, Map? devDeps, String? sdk}) {
+///
+/// [extras] is additional fields of the pubspec.
+Descriptor libPubspec(
+  String name,
+  String version, {
+  Map? deps,
+  Map? devDeps,
+  String? sdk,
+  Map<String, Object> extras = const {},
+}) {
   var map = packageMap(name, version, deps, devDeps);
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
   } else {
     map['environment'] = {'sdk': '>=0.1.2 <1.0.0'};
   }
-  return pubspec(map);
+  return pubspec({...map, ...extras});
 }
 
 /// Describes a file named `pubspec_overrides.yaml` by default, with the given
