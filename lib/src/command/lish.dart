@@ -93,40 +93,42 @@ class LishCommand extends PubCommand {
 
     try {
       await log.progress('Uploading', () async {
-        var newUri = host.resolve('api/packages/versions/new');
-        var publishRequest = http.Request('GET', newUri);
-        publishRequest.attachMetadataHeaders();
-        var response = await client.sendSync(publishRequest);
-        response.throwIfNotOk();
-        var parameters = parseJsonResponse(response);
+        final parametersResponse =
+            await retryForHttp('initiating upload', () async {
+          final request =
+              http.Request('GET', host.resolve('api/packages/versions/new'));
+          request.attachMetadataHeaders();
+          return await client.fetch(request);
+        });
+        final parameters = parseJsonResponse(parametersResponse);
 
-        var url = _expectField(parameters, 'url', response);
-        if (url is! String) invalidServerResponse(response);
+        var url = _expectField(parameters, 'url', parametersResponse);
+        if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
         // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
         // should report that error and exit.
         var request = http.MultipartRequest('POST', cloudStorageUrl!);
 
-        var fields = _expectField(parameters, 'fields', response);
-        if (fields is! Map) invalidServerResponse(response);
+        var fields = _expectField(parameters, 'fields', parametersResponse);
+        if (fields is! Map) invalidServerResponse(parametersResponse);
         fields.forEach((key, value) {
-          if (value is! String) invalidServerResponse(response);
+          if (value is! String) invalidServerResponse(parametersResponse);
           request.fields[key] = value;
         });
 
         request.followRedirects = false;
         request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
             filename: 'package.tar.gz'));
-        var postResponse = await client.sendSync(request);
-        postResponse.throwIfNotOk();
+        var postResponse = await client.fetch(request);
 
         var location = postResponse.headers['location'];
         if (location == null) throw PubHttpResponseException(postResponse);
-        final locationUri = Uri.parse(location);
-        var finalizeRequest = http.Request('GET', locationUri);
-        finalizeRequest.attachMetadataHeaders();
-        var finalizeResponse = await client.sendSync(finalizeRequest);
-        finalizeResponse.throwIfNotOk();
+        final finalizeResponse =
+            await retryForHttp('finalizing upload', () async {
+          final request = http.Request('GET', Uri.parse(location));
+          request.attachMetadataHeaders();
+          return await client.fetch(request);
+        });
         handleJsonSuccess(finalizeResponse);
       });
     } on AuthenticationException catch (error) {

@@ -399,8 +399,7 @@ class HostedSource extends CachedSource {
             'fetching versions for "$packageName" from "$url"', () async {
           final request = http.Request('GET', url);
           request.attachMetadataHeaders();
-          final response = await client.sendSync(request);
-          response.throwIfNotOk();
+          final response = await client.fetch(request);
           return response.body;
         });
       });
@@ -1078,8 +1077,7 @@ See $contentHashesDocumentationUrl.
         await retryForHttp('downloading "$archiveUrl"', () async {
           final request = http.Request('GET', archiveUrl);
           request.attachMetadataHeaders();
-          final response = await client.send(request);
-          response.throwIfNotOk();
+          final response = await client.fetchAsStream(request);
 
           Stream<List<int>> stream = response.stream;
           final expectedCrc32c = _parseCrc32c(response.headers, fileName);

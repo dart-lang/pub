@@ -22,8 +22,7 @@ Future<List<String>> allPackageNames() async {
   var nextUrl = Uri.https('pub.dev', 'api/packages?compact=1');
   final request = http.Request('GET', nextUrl);
   request.attachMetadataHeaders();
-  final response = await globalHttpClient.sendSync(request);
-  response.throwIfNotOk();
+  final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
   return List<String>.from(result['packages']);
 }
@@ -32,8 +31,7 @@ Future<List<String>> versionArchiveUrls(String packageName) async {
   final url = Uri.https('pub.dev', 'api/packages/$packageName');
   final request = http.Request('GET', url);
   request.attachMetadataHeaders();
-  final response = await globalHttpClient.sendSync(request);
-  response.throwIfNotOk();
+  final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
   return List<String>.from(result['versions'].map((v) => v['archive_url']));
 }
@@ -92,8 +90,7 @@ Future<void> main() async {
                 final archiveUri = Uri.parse(archiveUrl);
                 final request = http.Request('GET', archiveUri);
                 request.attachMetadataHeaders();
-                response = await globalHttpClient.send(request);
-                response.throwIfNotOk();
+                response = await globalHttpClient.fetchAsStream(request);
                 await extractTarGz(response.stream, tempDir);
                 log.message('Extracted $archiveUrl');
               } catch (e) {

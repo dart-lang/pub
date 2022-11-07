@@ -311,13 +311,36 @@ extension Throwing on http.BaseResponse {
   }
 }
 
-extension SyncSending on http.Client {
-  /// Sends an HTTP request and synchronously returns the response. The regular
-  /// send method on [http.Client], which returns a [http.StreamedResponse], is
-  /// the only method that accepts a request object. This method can be used
+extension RequestSending on http.Client {
+  /// Sends an HTTP request, validates the response headers, and if validation
+  /// is successful, reads the whole response body and returns it.
+  ///
+  /// The send method on [http.Client], which returns a [http.StreamedResponse],
+  /// is the only method that accepts a request object. This method can be used
   /// when you need to send a request object but want a regular response object.
-  Future<http.Response> sendSync(http.BaseRequest request) async {
+  ///
+  /// If false is passed for [throwIfNotOk], the response will not be validated.
+  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  Future<http.Response> fetch(http.BaseRequest request,
+      {bool throwIfNotOk = true}) async {
     final streamedResponse = await send(request);
+    if (throwIfNotOk) {
+      streamedResponse.throwIfNotOk();
+    }
     return await http.Response.fromStream(streamedResponse);
+  }
+
+  /// Sends an HTTP request, validates the response headers, and if validation
+  /// is successful, returns a [http.StreamedResponse].
+  ///
+  /// If false is passed for [throwIfNotOk], the response will not be validated.
+  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  Future<http.StreamedResponse> fetchAsStream(http.BaseRequest request,
+      {bool throwIfNotOk = true}) async {
+    final streamedResponse = await send(request);
+    if (throwIfNotOk) {
+      streamedResponse.throwIfNotOk();
+    }
+    return streamedResponse;
   }
 }

@@ -283,9 +283,7 @@ Future<Map> fetchOidcDiscoveryDocument() async {
   final discoveryResponse = await retryForHttp(
       'fetching Google\'s OpenID Connect Discovery document', () async {
     final request = http.Request('GET', _oidcDiscoveryDocumentEndpoint);
-    final response = await globalHttpClient.sendSync(request);
-    response.throwIfNotOk();
-    return response;
+    return await globalHttpClient.fetch(request);
   });
   return parseJsonResponse(discoveryResponse);
 }
