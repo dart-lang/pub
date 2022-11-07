@@ -10,7 +10,7 @@ import '../log.dart' as log;
 import '../source/hosted.dart';
 import '../utils.dart';
 
-/// Handles the `cache add` pub command.
+/// Handles the `cache preload` pub command.
 class CachePreloadCommand extends PubCommand {
   @override
   String get name => 'preload';
