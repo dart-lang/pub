@@ -26,8 +26,8 @@ void main() {
 
     await runPub(args: ['cache', 'clean', '-f']);
 
-    final archivePath = p.join(sandbox, 'archive');
-    final archivePath2 = p.join(sandbox, 'archive2');
+    final archivePath1 = p.join(sandbox, 'foo-1.0.0-archive.tar.gz');
+    final archivePath2 = p.join(sandbox, 'foo-2.0.0-archive.tar.gz');
 
     File(archivePath).writeAsBytesSync(await readBytes(
         Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
