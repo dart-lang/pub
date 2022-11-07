@@ -57,7 +57,9 @@ void main() {
     await pubGet(args: ['--offline']);
   });
 
-  test('installs package from according to PUB_HOSTED_URL', () async {
+  test(
+      'installs package according to PUB_HOSTED_URL even on non-offical server',
+      () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
@@ -67,6 +69,9 @@ void main() {
         Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
     await runPub(
       args: ['cache', 'preload', archivePath],
+      // By having pub.dev be the "official" server the test-server (localhost)
+      // is considered non-official. Test that the output mentions that we
+      // are installing to a non-official server.
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': 'pub.dev'},
       output: allOf([
         contains(
