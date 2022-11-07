@@ -6,6 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
+import '../exceptions.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
@@ -52,13 +53,16 @@ class SolveReport {
 
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
-  Future<void> show() async {
-    await _reportChanges();
+  ///
+  /// If [enforceLockfile] then any changes to the lockfile will result in a
+  /// [DataException].
+  Future<void> show({required bool enforceLockfile}) async {
+    _checkContentHashesMatchOldLockfile(enforceLockfile: enforceLockfile);
+    await _reportChanges(enforceLockfile: enforceLockfile);
     await _reportOverrides();
-    _checkContentHashesMatchOldLockfile();
   }
 
-  void _checkContentHashesMatchOldLockfile() {
+  void _checkContentHashesMatchOldLockfile({required bool enforceLockfile}) {
     final issues = <String>[];
 
     final newPackageNames = _newLockFile.packages.keys.toSet();
@@ -100,7 +104,7 @@ class SolveReport {
     }
 
     if (issues.isNotEmpty) {
-      log.warning('''
+      (enforceLockfile ? log.error : log.warning)('''
 The existing content-hash from pubspec.lock doesn't match contents for:
  * ${issues.join('\n * ')}
 
@@ -112,6 +116,9 @@ ${_dryRun ? '' : '\nThe content-hashes in pubspec.lock has been updated.'}
 For more information see:
 $contentHashesDocumentationUrl
 ''');
+      if (enforceLockfile) {
+        dataError('Could not enforce the lockfile.');
+      }
     }
   }
 
@@ -180,15 +187,16 @@ $contentHashesDocumentationUrl
 
   /// Displays a report of all of the previous and current dependencies and
   /// how they have changed.
-  Future<void> _reportChanges() async {
+  Future<void> _reportChanges({required bool enforceLockfile}) async {
     _output.clear();
 
     // Show the new set of dependencies ordered by name.
     var names = _newLockFile.packages.keys.toList();
     names.remove(_root.name);
     names.sort();
+    var hasChanges = false;
     for (final name in names) {
-      await _reportPackage(name);
+      hasChanges |= await _reportPackage(name);
     }
     // Show any removed ones.
     var removed = _previousLockFile.packages.keys.toSet();
@@ -199,9 +207,13 @@ $contentHashesDocumentationUrl
       for (var name in ordered(removed)) {
         await _reportPackage(name, alwaysShow: true);
       }
+      hasChanges = true;
     }
 
     log.message(_output);
+    if (enforceLockfile && hasChanges) {
+      dataError('Could not enforce the lockfile.');
+    }
   }
 
   /// Displays a warning about the overrides currently in effect.
@@ -273,7 +285,9 @@ $contentHashesDocumentationUrl
   /// If [alwaysShow] is true, the package is reported even if it didn't change,
   /// regardless of [_type]. If [highlightOverride] is true (or absent), writes
   /// "(override)" next to overridden packages.
-  Future<void> _reportPackage(String name,
+  ///
+  /// Returns true if the package had changed.
+  Future<bool> _reportPackage(String name,
       {bool alwaysShow = false, bool highlightOverride = true}) async {
     var newId = _newLockFile.packages[name];
     var oldId = _previousLockFile.packages[name];
@@ -380,7 +394,7 @@ $contentHashesDocumentationUrl
 
     if (_type == SolveType.get &&
         !(alwaysShow || changed || addedOrRemoved || message != null)) {
-      return;
+      return changed || addedOrRemoved;
     }
 
     _output.write(icon);
@@ -403,6 +417,7 @@ $contentHashesDocumentationUrl
     if (message != null) _output.write(' ${log.cyan(message)}');
 
     _output.writeln();
+    return changed || addedOrRemoved;
   }
 
   /// Writes a terse description of [id] (not including its name) to the output.

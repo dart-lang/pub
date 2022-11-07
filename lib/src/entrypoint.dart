@@ -309,6 +309,10 @@ class Entrypoint {
   /// shown --- in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
+  ///
+  /// If [enforceLockfile] is true no changes to the current lockfile are
+  /// allowed. Instead the existing lockfile is loaded, verified against
+  /// pubspec.yaml and all dependencies downloaded.
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String>? unlock,
@@ -316,7 +320,13 @@ class Entrypoint {
     bool precompile = false,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
+    bool enforceLockfile = false,
   }) async {
+    if (enforceLockfile && !fileExists(lockFilePath)) {
+      throw ApplicationException(
+          'Retrieving dependencies failed. Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.');
+    }
+
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
       log.warning(
           'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
@@ -355,13 +365,14 @@ class Entrypoint {
         type, root, lockFile, newLockFile, result.availableVersions, cache,
         dryRun: dryRun);
     if (!onlyReportSuccessOrFailure) {
-      await report.show();
+      await report.show(enforceLockfile: enforceLockfile);
     }
-    _lockFile = newLockFile;
 
     if (!dryRun) {
       newLockFile.writeToFile(lockFilePath, cache);
     }
+
+    _lockFile = newLockFile;
 
     if (onlyReportSuccessOrFailure) {
       log.message('Got dependencies$suffix.');
