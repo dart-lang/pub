@@ -129,6 +129,11 @@ class HostedSource extends CachedSource {
 
   static bool isPubDevUrl(String url) {
     final origin = Uri.parse(url).origin;
+    // Allow the defaultHostedUrl to be overriden when running from tests
+    if (runningFromTest &&
+        io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
+      return origin == io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'];
+    }
     return origin == pubDevUrl || origin == pubDartlangUrl;
   }
 
@@ -994,7 +999,7 @@ class HostedSource extends CachedSource {
         versions.firstWhereOrNull((i) => i.version == id.version);
     final packageName = id.name;
     final version = id.version;
-    late Uint8List contentHash;
+    late final Uint8List contentHash;
     if (versionInfo == null) {
       throw PackageNotFoundException(
           'Package $packageName has no version $version');
@@ -1032,13 +1037,8 @@ This indicates a problem on the package repository: `${description.url}`.
 See $contentHashesDocumentationUrl.
 ''');
         }
-        final path = hashPath(id, cache);
-        ensureDir(p.dirname(path));
-        writeTextFile(
-          path,
-          hexEncode(actualHash.bytes),
-        );
         contentHash = Uint8List.fromList(actualHash.bytes);
+        writeHash(id, cache, contentHash);
       }
 
       // It is important that we do not compare against id.description.sha256,
@@ -1086,9 +1086,14 @@ See $contentHashesDocumentationUrl.
       );
 
       var tempDir = cache.createTempDir();
-      await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
+      try {
+        await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
 
-      ensureDir(p.dirname(destPath));
+        ensureDir(p.dirname(destPath));
+      } catch (e) {
+        deleteEntry(tempDir);
+        rethrow;
+      }
       // Now that the get has succeeded, move it to the real location in the
       // cache.
       //
@@ -1098,6 +1103,84 @@ See $contentHashesDocumentationUrl.
       tryRenameDir(tempDir, destPath);
       return contentHash;
     });
+  }
+
+  /// Writes the contenthash for [id] in the cache.
+  void writeHash(PackageId id, SystemCache cache, List<int> bytes) {
+    final path = hashPath(id, cache);
+    ensureDir(p.dirname(path));
+    writeTextFile(
+      path,
+      hexEncode(bytes),
+    );
+  }
+
+  /// Installs a tar.gz file in [archivePath] as if it was downloaded from a
+  /// package repository.
+  ///
+  /// The name, version and repository are decided from the pubspec.yaml that
+  /// must be present in the archive.
+  Future<PackageId> preloadPackage(
+      String archivePath, SystemCache cache) async {
+    // Extract to a temp-folder and do atomic rename to preserve the integrity
+    // of the cache.
+    late final Uint8List contentHash;
+
+    var tempDir = cache.createTempDir();
+    final PackageId id;
+    try {
+      try {
+        // We read the file twice, once to compute the hash, and once to extract
+        // the archive.
+        //
+        // It would be desirable to read the file only once, but the tar
+        // extraction closes the stream early making things tricky to get right.
+        contentHash = Uint8List.fromList(
+            (await sha256.bind(readBinaryFileAsStream(archivePath)).first)
+                .bytes);
+        await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
+      } on FormatException catch (e) {
+        dataError('Failed to extract `$archivePath`: ${e.message}.');
+      }
+      if (!fileExists(p.join(tempDir, 'pubspec.yaml'))) {
+        fail(
+            'Found no `pubspec.yaml` in $archivePath. Is it a valid pub package archive?');
+      }
+      final Pubspec pubspec;
+      try {
+        pubspec = Pubspec.load(tempDir, cache.sources);
+        final errors = pubspec.allErrors;
+        if (errors.isNotEmpty) {
+          throw errors.first;
+        }
+      } on Exception catch (e) {
+        fail('Failed to load `pubspec.yaml` from `$archivePath`: $e.');
+      }
+      // Reconstruct the PackageId from the extracted pubspec.yaml.
+      id = PackageId(
+        pubspec.name,
+        pubspec.version,
+        ResolvedHostedDescription(
+          HostedDescription(
+            pubspec.name,
+            validateAndNormalizeHostedUrl(cache.hosted.defaultUrl).toString(),
+          ),
+          sha256: contentHash,
+        ),
+      );
+    } catch (e) {
+      deleteEntry(tempDir);
+      rethrow;
+    }
+    final packageDir = getDirectoryInCache(id, cache);
+    if (dirExists(packageDir)) {
+      log.fine(
+          'Cache entry for ${id.name}-${id.version} already exists. Replacing.');
+      deleteEntry(packageDir);
+    }
+    tryRenameDir(tempDir, packageDir);
+    writeHash(id, cache, contentHash);
+    return id;
   }
 
   /// When an error occurs trying to read something about [package] from [hostedUrl],

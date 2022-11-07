@@ -11,7 +11,6 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/crc32c.dart';
 import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/third_party/tar/tar.dart';
 import 'package:pub/src/utils.dart' show hexEncode;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
@@ -239,58 +238,8 @@ class PackageServer {
     package.versions[version] = _ServedPackageVersion(
       pubspecFields,
       headers: headers,
-      contents: () {
-        final entries = <TarEntry>[];
-
-        void addDescriptor(d.Descriptor descriptor, String path) {
-          if (descriptor is d.DirectoryDescriptor) {
-            for (final e in descriptor.contents) {
-              addDescriptor(e, p.posix.join(path, descriptor.name));
-            }
-          } else {
-            entries.add(
-              TarEntry(
-                TarHeader(
-                  // Ensure paths in tar files use forward slashes
-                  name: p.posix.join(path, descriptor.name),
-                  // We want to keep executable bits, but otherwise use the default
-                  // file mode
-                  mode: 420,
-                  // size: 100,
-                  modified: DateTime.fromMicrosecondsSinceEpoch(0),
-                  userName: 'pub',
-                  groupName: 'pub',
-                ),
-                (descriptor as d.FileDescriptor).readAsBytes(),
-              ),
-            );
-          }
-        }
-
-        for (final e in contents ?? <d.Descriptor>[]) {
-          addDescriptor(e, '');
-        }
-        return _replaceOs(Stream.fromIterable(entries)
-            .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-            .transform(gzip.encoder));
-      },
+      contents: () => tarFromDescriptors(contents ?? []),
     );
-  }
-
-  /// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
-  /// entry of a gzip stream, giving us the same stream and thius stable testing
-  /// on all platforms.
-  ///
-  /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
-  /// about the OS header.
-  Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
-    final bytesBuilder = BytesBuilder();
-    await for (final t in stream) {
-      bytesBuilder.add(t);
-    }
-    final result = bytesBuilder.toBytes();
-    result[9] = 0;
-    yield result;
   }
 
   // Mark a package discontinued.

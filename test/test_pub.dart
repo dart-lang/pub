@@ -9,9 +9,10 @@
 /// library provides an API to build tests like that.
 import 'dart:convert';
 import 'dart:core';
-import 'dart:io';
+import 'dart:io' hide BytesBuilder;
 import 'dart:isolate';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
@@ -26,6 +27,7 @@ import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
+import 'package:pub/src/third_party/tar/tar.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -973,4 +975,55 @@ Map<String, String> extendedPathEnv() {
     // Override 'PATH' to ensure that we can't detect a working "git" binary
     'PATH': '$binFolder$separator${Platform.environment['PATH']}',
   };
+}
+
+Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
+  final entries = <TarEntry>[];
+  void addDescriptor(d.Descriptor descriptor, String path) {
+    if (descriptor is d.DirectoryDescriptor) {
+      for (final e in descriptor.contents) {
+        addDescriptor(e, p.posix.join(path, descriptor.name));
+      }
+    } else {
+      entries.add(
+        TarEntry(
+          TarHeader(
+            // Ensure paths in tar files use forward slashes
+            name: p.posix.join(path, descriptor.name),
+            // We want to keep executable bits, but otherwise use the default
+            // file mode
+            mode: 420,
+            // size: 100,
+            modified: DateTime.fromMicrosecondsSinceEpoch(0),
+            userName: 'pub',
+            groupName: 'pub',
+          ),
+          (descriptor as d.FileDescriptor).readAsBytes(),
+        ),
+      );
+    }
+  }
+
+  for (final e in contents) {
+    addDescriptor(e, '');
+  }
+  return _replaceOs(Stream.fromIterable(entries)
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder));
+}
+
+/// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
+/// entry of a gzip stream, giving us the same stream and thius stable testing
+/// on all platforms.
+///
+/// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
+/// about the OS header.
+Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
+  final bytesBuilder = BytesBuilder();
+  await for (final t in stream) {
+    bytesBuilder.add(t);
+  }
+  final result = bytesBuilder.toBytes();
+  result[9] = 0;
+  yield result;
 }
