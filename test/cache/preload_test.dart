@@ -29,16 +29,16 @@ void main() {
     final archivePath1 = p.join(sandbox, 'foo-1.0.0-archive.tar.gz');
     final archivePath2 = p.join(sandbox, 'foo-2.0.0-archive.tar.gz');
 
-    File(archivePath).writeAsBytesSync(await readBytes(
+    File(archivePath1).writeAsBytesSync(await readBytes(
         Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
     File(archivePath2).writeAsBytesSync(await readBytes(
         Uri.parse(server.url).resolve('packages/foo/versions/2.0.0.tar.gz')));
     await runPub(
-      args: ['cache', 'preload', archivePath, archivePath2],
+      args: ['cache', 'preload', archivePath1, archivePath2],
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
       output: allOf(
         [
-          contains('Installed $archivePath in cache as foo 1.0.0.'),
+          contains('Installed $archivePath1 in cache as foo 1.0.0.'),
           contains('Installed $archivePath2 in cache as foo 2.0.0.'),
         ],
       ),
