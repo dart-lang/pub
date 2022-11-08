@@ -189,7 +189,12 @@ void handleJsonSuccess(http.Response response) {
 /// These responses are expected to be of the form `{"error": {"message": "some
 /// message"}}`. If the format is correct, the message will be raised as an
 /// error; otherwise an [invalidServerResponse] error will be raised.
-void handleJsonError(http.Response response) {
+void handleJsonError(http.BaseResponse response) {
+  if (response is! http.Response) {
+    // Not likely to be a common code path, but necessary.
+    // See https://github.com/dart-lang/pub/pull/3590#discussion_r1012978108
+    fail(log.red('Invalid server response'));
+  }
   var errorMap = parseJsonResponse(response);
   if (errorMap['error'] is! Map ||
       !errorMap['error'].containsKey('message') ||
@@ -228,7 +233,7 @@ class PubHttpException implements Exception {
 
 /// Exception thrown when an HTTP response is not Ok.
 class PubHttpResponseException extends PubHttpException {
-  final http.Response response;
+  final http.BaseResponse response;
 
   PubHttpResponseException(this.response,
       {String message = '', bool isIntermittent = false})
@@ -302,18 +307,17 @@ extension Throwing on http.BaseResponse {
         statusCode == HttpStatus.tooManyRequests) {
       // Throw if the response indicates a server error or an intermittent
       // client error, but mark it as intermittent so it can be retried.
-      throw PubHttpResponseException(this as http.Response,
-          isIntermittent: true);
+      throw PubHttpResponseException(this, isIntermittent: true);
     } else {
       // Throw for all other status codes.
-      throw PubHttpResponseException(this as http.Response);
+      throw PubHttpResponseException(this);
     }
   }
 }
 
 extension RequestSending on http.Client {
-  /// Sends an HTTP request, validates the response headers, and if validation
-  /// is successful, reads the whole response body and returns it.
+  /// Sends an HTTP request, reads the whole response body, validates the
+  /// response headers, and if validation is successful, and returns it.
   ///
   /// The send method on [http.Client], which returns a [http.StreamedResponse],
   /// is the only method that accepts a request object. This method can be used
@@ -324,10 +328,11 @@ extension RequestSending on http.Client {
   Future<http.Response> fetch(http.BaseRequest request,
       {bool throwIfNotOk = true}) async {
     final streamedResponse = await send(request);
+    final response = await http.Response.fromStream(streamedResponse);
     if (throwIfNotOk) {
-      streamedResponse.throwIfNotOk();
+      response.throwIfNotOk();
     }
-    return await http.Response.fromStream(streamedResponse);
+    return response;
   }
 
   /// Sends an HTTP request, validates the response headers, and if validation
