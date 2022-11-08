@@ -277,8 +277,7 @@ Future<Client> _authorize() async {
 /// Fetches Google's OpenID Connect Discovery document and parses the JSON
 /// response body into a [Map].
 ///
-/// See
-/// https://developers.google.com/identity/openid-connect/openid-connect#discovery
+/// See https://developers.google.com/identity/openid-connect/openid-connect#discovery
 Future<Map> fetchOidcDiscoveryDocument() async {
   final discoveryResponse = await retryForHttp(
       'fetching Google\'s OpenID Connect Discovery document', () async {
