@@ -27,7 +27,7 @@ import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
-import 'package:pub/src/third_party/tar/tar.dart';
+import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
