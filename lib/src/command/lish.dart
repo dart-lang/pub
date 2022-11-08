@@ -18,7 +18,7 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
 import '../solver/type.dart';
-import '../source/hosted.dart' show HostedSource, validateAndNormalizeHostedUrl;
+import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
 import '../validator.dart';
 
@@ -93,6 +93,7 @@ class LishCommand extends PubCommand {
 
     try {
       await log.progress('Uploading', () async {
+        /// 1. Initiate upload
         final parametersResponse =
             await retryForHttp('initiating upload', () async {
           final request =
@@ -102,29 +103,34 @@ class LishCommand extends PubCommand {
         });
         final parameters = parseJsonResponse(parametersResponse);
 
+        /// 2. Upload package
         var url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
-        // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-        // should report that error and exit.
-        var request = http.MultipartRequest('POST', cloudStorageUrl!);
+        final uploadResponse =
+            await retryForHttp('uploading package', () async {
+          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+          // should report that error and exit.
+          var request = http.MultipartRequest('POST', cloudStorageUrl!);
 
-        var fields = _expectField(parameters, 'fields', parametersResponse);
-        if (fields is! Map) invalidServerResponse(parametersResponse);
-        fields.forEach((key, value) {
-          if (value is! String) invalidServerResponse(parametersResponse);
-          request.fields[key] = value;
+          var fields = _expectField(parameters, 'fields', parametersResponse);
+          if (fields is! Map) invalidServerResponse(parametersResponse);
+          fields.forEach((key, value) {
+            if (value is! String) invalidServerResponse(parametersResponse);
+            request.fields[key] = value;
+          });
+
+          request.followRedirects = false;
+          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
+              filename: 'package.tar.gz'));
+          return await client.fetch(request);
         });
 
-        request.followRedirects = false;
-        request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-            filename: 'package.tar.gz'));
-        var postResponse = await client.fetch(request);
-
-        var location = postResponse.headers['location'];
-        if (location == null) throw PubHttpResponseException(postResponse);
+        /// 3. Finalize publish
+        var location = uploadResponse.headers['location'];
+        if (location == null) throw PubHttpResponseException(uploadResponse);
         final finalizeResponse =
-            await retryForHttp('finalizing upload', () async {
+            await retryForHttp('finalizing publish', () async {
           final request = http.Request('GET', Uri.parse(location));
           request.attachMetadataHeaders();
           return await client.fetch(request);
