@@ -39,6 +39,44 @@ Future<void> main() async {
     );
   });
 
+  test('Refuses to get in ./example if hash is updated', () async {
+    final server = await servePackages();
+    server.serveContentHashes = true;
+    server.serve('foo', '1.0.0');
+    server.serve('bar', '1.0.0');
+
+    await appDir({'foo': '^1.0.0'}).create();
+    await dir(appPath, [
+      dir('example', [
+        libPubspec('example', '0.0.0', deps: {
+          'bar': '1.0.0',
+          'myapp': {'path': '../'}
+        })
+      ])
+    ]).create();
+    await pubGet(args: ['--example']);
+
+    server.serve('bar', '1.0.0', contents: [
+      file('README.md', 'Including this will change the content-hash.'),
+    ]);
+    // Deleting the version-listing cache will cause it to be refetched, and the
+    // error will happen.
+    File(p.join(globalServer.cachingPath, '.cache', 'bar-versions.json'))
+        .deleteSync();
+
+    final example = p.join('.', 'example');
+    await pubGet(
+      args: ['--enforce-lockfile', '--example'],
+      output: allOf(
+        contains('Got dependencies!'),
+        contains('Resolving dependencies in $example...'),
+      ),
+      error: contains(
+          'Could not enforce the lockfile in $example. For details run `dart pub get --directory $example --enforce-lockfile'),
+      exitCode: DATA,
+    );
+  });
+
   test('Refuses to get if lockfile is missing package', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
@@ -48,7 +86,10 @@ Future<void> main() async {
 
     await pubGet(
       args: ['--enforce-lockfile'],
-      output: '+ foo 1.0.0',
+      output: allOf(
+        contains('+ foo 1.0.0'),
+        contains('Would have changed 1 dependency.'),
+      ),
       error: 'Could not enforce the lockfile.',
       exitCode: DATA,
     );
@@ -64,7 +105,10 @@ Future<void> main() async {
     await appDir({'foo': '^2.0.0'}).create();
     await pubGet(
       args: ['--enforce-lockfile'],
-      output: contains('> foo 2.0.0 (was 1.0.0)'),
+      output: allOf([
+        contains('> foo 2.0.0 (was 1.0.0)'),
+        contains('Would have changed 1 dependency.'),
+      ]),
       error: contains('Could not enforce the lockfile.'),
       exitCode: DATA,
     );
@@ -86,6 +130,10 @@ Future<void> main() async {
         .deleteSync();
     await pubGet(
       args: ['--enforce-lockfile'],
+      output: allOf(
+        contains('~ foo 1.0.0 (was 1.0.0)'),
+        contains('Would have changed 1 dependency.'),
+      ),
       error: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
@@ -117,9 +165,15 @@ Future<void> main() async {
 
     await pubGet(
       args: ['--enforce-lockfile'],
-      error: contains('''
+      output: allOf(
+        contains('~ foo 1.0.0 (was 1.0.0)'),
+        contains('Would have changed 1 dependency.'),
+      ),
+      error: allOf(
+        contains('''
 The existing content-hash from pubspec.lock doesn't match contents for:
  * foo-1.0.0 from "${server.url}"'''),
+      ),
       exitCode: DATA,
     );
   });

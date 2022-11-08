@@ -322,9 +322,19 @@ class Entrypoint {
     bool onlyReportSuccessOrFailure = false,
     bool enforceLockfile = false,
   }) async {
+    final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
+
+    String forDetails() {
+      final enforceLockfileOption =
+          enforceLockfile ? ' --enforce-lockfile' : '';
+      final directoryOption =
+          root.isInMemory || root.dir == '.' ? '' : ' --directory ${root.dir}';
+      return ' For details run `$topLevelProgram pub ${type.toString()}$directoryOption$enforceLockfileOption`';
+    }
+
     if (enforceLockfile && !fileExists(lockFilePath)) {
       throw ApplicationException(
-          'Retrieving dependencies failed. Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.');
+          'Retrieving dependencies failed$suffix. Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.');
     }
 
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
@@ -332,7 +342,6 @@ class Entrypoint {
           'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
     }
 
-    final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
@@ -347,11 +356,8 @@ class Entrypoint {
       });
     } catch (e) {
       if (onlyReportSuccessOrFailure && (e is ApplicationException)) {
-        final directoryOption = root.isInMemory || root.dir == '.'
-            ? ''
-            : ' --directory ${root.dir}';
         throw ApplicationException(
-            'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
+            'Resolving dependencies$suffix failed.${forDetails()}');
       } else {
         rethrow;
       }
@@ -362,23 +368,29 @@ class Entrypoint {
     final newLockFile = await result.downloadCachedPackages(cache);
 
     final report = SolveReport(
-        type, root, lockFile, newLockFile, result.availableVersions, cache,
-        dryRun: dryRun);
-    if (!onlyReportSuccessOrFailure) {
-      await report.show(enforceLockfile: enforceLockfile);
+      type,
+      root,
+      lockFile,
+      newLockFile,
+      result.availableVersions,
+      cache,
+      dryRun: dryRun,
+      enforceLockfile: enforceLockfile,
+      quiet: onlyReportSuccessOrFailure,
+    );
+
+    final hasChanges = await report.show();
+    await report.summarize();
+    if (enforceLockfile && hasChanges) {
+      dataError(
+          'Could not enforce the lockfile$suffix.${onlyReportSuccessOrFailure ? forDetails() : ''}');
     }
 
-    if (!dryRun) {
+    if (!(dryRun || enforceLockfile)) {
       newLockFile.writeToFile(lockFilePath, cache);
     }
 
     _lockFile = newLockFile;
-
-    if (onlyReportSuccessOrFailure) {
-      log.message('Got dependencies$suffix.');
-    } else {
-      await report.summarize();
-    }
 
     if (!dryRun) {
       if (analytics != null) {
