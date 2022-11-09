@@ -48,19 +48,14 @@ class _AuthenticatedClient extends http.BaseClient {
           await _credential!.getAuthorizationHeaderValue();
     }
 
-    try {
-      final response = await _inner.send(request);
-      if (response.statusCode == 401) {
-        _detectInvalidCredentials = true;
-        _throwAuthException(response);
-      }
-      return response;
-    } on PubHttpResponseException catch (e) {
-      if (e.response.statusCode == 403) {
-        _throwAuthException(e.response);
-      }
-      rethrow;
+    final response = await _inner.send(request);
+    if (response.statusCode == 401) {
+      _detectInvalidCredentials = true;
     }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      _throwAuthException(response);
+    }
+    return response;
   }
 
   /// Throws [AuthenticationException] that includes response status code and

@@ -293,15 +293,27 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
 }
 
 extension Throwing on http.BaseResponse {
+  /// See https://api.flutter.dev/flutter/dart-io/HttpClientRequest/followRedirects.html
+  static const _redirectStatusCodes = [
+    HttpStatus.movedPermanently,
+    HttpStatus.movedTemporarily,
+    HttpStatus.seeOther,
+    HttpStatus.temporaryRedirect,
+    HttpStatus.permanentRedirect
+  ];
+
   /// Throws [PubHttpResponseException], calls [fail], or does nothing depending
   /// on the status code.
   ///
-  /// If the code is in the 200 range, nothing is done. If the code is 408, 429,
-  /// or in the 500 range, [PubHttpResponseException] is thrown with
-  /// "isIntermittent" set to `true`. Otherwise, [PubHttpResponseException] is
-  /// thrown with "isIntermittent" set to `false`.
+  /// If the code is in the 200 range or if its a 300 range redirect code,
+  /// nothing is done. If the code is 408, 429, or in the 500 range,
+  /// [PubHttpResponseException] is thrown with "isIntermittent" set to `true`.
+  /// Otherwise, [PubHttpResponseException] is thrown with "isIntermittent" set
+  /// to `false`.
   void throwIfNotOk() {
     if (statusCode >= 200 && statusCode <= 299) {
+      return;
+    } else if (_redirectStatusCodes.contains(statusCode)) {
       return;
     } else if (statusCode == HttpStatus.notAcceptable &&
         request?.headers['Accept'] == pubApiHeaders['Accept']) {
