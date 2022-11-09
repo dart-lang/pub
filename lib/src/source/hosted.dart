@@ -398,6 +398,7 @@ class HostedSource extends CachedSource {
         return await retryForHttp(
             'fetching versions for "$packageName" from "$url"', () async {
           final request = http.Request('GET', url);
+          request.attachPubApiHeaders();
           request.attachMetadataHeaders();
           final response = await client.fetch(request);
           return response.body;

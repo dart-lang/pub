@@ -98,6 +98,7 @@ class LishCommand extends PubCommand {
             await retryForHttp('initiating upload', () async {
           final request =
               http.Request('GET', host.resolve('api/packages/versions/new'));
+          request.attachPubApiHeaders();
           request.attachMetadataHeaders();
           return await client.fetch(request);
         });
@@ -132,6 +133,7 @@ class LishCommand extends PubCommand {
         final finalizeResponse =
             await retryForHttp('finalizing publish', () async {
           final request = http.Request('GET', Uri.parse(location));
+          request.attachPubApiHeaders();
           request.attachMetadataHeaders();
           return await client.fetch(request);
         });

@@ -141,14 +141,15 @@ Future<T> withDependencyType<T>(
 }
 
 extension AttachHeaders on http.Request {
-  /// Adds request metadata headers if the request URL indicates the destination
-  /// is a Hosted Pub Repository. Additional information about the Pub tool's
-  /// environment and the currently running command is sent depending on the
-  /// environment and the URL.
-  void attachMetadataHeaders() {
-    // Always include the Pub API version "Accept" header.
+  /// Adds headers required for pub.dev API requests.
+  void attachPubApiHeaders() {
     headers.addAll(pubApiHeaders);
+  }
 
+  /// Adds request metadata headers about the Pub tool's environment and the
+  /// currently running command if the request URL indicates the destination is
+  /// a Hosted Pub Repository.
+  void attachMetadataHeaders() {
     if (!HostedSource.shouldSendAdditionalMetadataFor(url)) {
       return;
     }
