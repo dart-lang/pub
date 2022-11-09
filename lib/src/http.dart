@@ -284,8 +284,8 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
           (e is PubHttpException && e.isIntermittent) ||
           e is TimeoutException ||
           isHttpIOException(e),
-      onRetry: (exception, retryCount) async =>
-          log.io('Retry #${retryCount + 1} for $operation'),
+      onRetry: (exception, attemptNumber) async =>
+          log.io('Attempt #$attemptNumber for $operation'),
       maxAttempts: math.max(
         1, // Having less than 1 attempt doesn't make sense.
         int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
