@@ -139,11 +139,12 @@ void main() {
     }).create();
 
     await pubGet(
+      exitCode: exit_codes.TEMP_FAIL,
       error: RegExp(
           r'''Package archive for foo 1.2.3 downloaded from "(.+)" has '''
           r'''"x-goog-hash: crc32c=(\d+)", which doesn't match the checksum '''
           r'''of the archive downloaded\.'''),
-      silent: contains('Retry #2 because of checksum error'),
+      silent: contains('Attempt #2'),
       environment: {
         'PUB_MAX_HTTP_RETRIES': '2',
       },
@@ -175,11 +176,11 @@ void main() {
       }).create();
 
       await pubGet(
-        exitCode: exit_codes.DATA,
+        exitCode: exit_codes.TEMP_FAIL,
         error: contains(
             'Package archive "foo-1.2.3.tar.gz" has a malformed CRC32C '
             'checksum in its response headers'),
-        silent: contains('Retry #2 because of checksum error'),
+        silent: contains('Attempt #2'),
         environment: {
           'PUB_MAX_HTTP_RETRIES': '2',
         },
@@ -195,11 +196,11 @@ void main() {
       }).create();
 
       await pubGet(
-        exitCode: exit_codes.DATA,
+        exitCode: exit_codes.TEMP_FAIL,
         error: contains(
             'Package archive "bar-1.2.3.tar.gz" has a malformed CRC32C '
             'checksum in its response headers'),
-        silent: contains('Retry #2 because of checksum error'),
+        silent: contains('Attempt #2'),
         environment: {
           'PUB_MAX_HTTP_RETRIES': '2',
         },
@@ -215,11 +216,11 @@ void main() {
       }).create();
 
       await pubGet(
-        exitCode: exit_codes.DATA,
+        exitCode: exit_codes.TEMP_FAIL,
         error: contains(
             'Package archive "baz-1.2.3.tar.gz" has a malformed CRC32C '
             'checksum in its response headers'),
-        silent: contains('Retry #2 because of checksum error'),
+        silent: contains('Attempt #2'),
         environment: {
           'PUB_MAX_HTTP_RETRIES': '2',
         },

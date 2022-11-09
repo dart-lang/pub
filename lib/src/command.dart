@@ -238,7 +238,7 @@ and attaching the relevant parts of that log file.
           log.message('Logs written to $transcriptPath.');
         }
       }
-      httpClient.close();
+      globalHttpClient.close();
     }
   }
 
@@ -253,7 +253,9 @@ and attaching the relevant parts of that log file.
       exception = exception.innerError!;
     }
 
-    if (exception is HttpException ||
+    if (exception is PackageIntegrityException) {
+      return exit_codes.TEMP_FAIL;
+    } else if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
         exception is TlsException ||

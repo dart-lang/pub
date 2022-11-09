@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
-import 'dart:math' as math;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
@@ -172,6 +172,25 @@ class HostedSource extends CachedSource {
     }
   }();
 
+  /// Whether extra metadata headers should be sent for HTTP requests to a given
+  /// [url].
+  static bool shouldSendAdditionalMetadataFor(Uri url) {
+    if (runningFromTest && Platform.environment.containsKey('PUB_HOSTED_URL')) {
+      if (url.origin != Platform.environment['PUB_HOSTED_URL']) {
+        return false;
+      }
+    } else {
+      if (!HostedSource.isPubDevUrl(url.toString())) return false;
+    }
+
+    if (Platform.environment.containsKey('CI') &&
+        Platform.environment['CI'] != 'false') {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Returns a reference to a hosted package named [name].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
@@ -244,8 +263,6 @@ class HostedSource extends CachedSource {
       ),
     );
   }
-
-  HostedDescription _asDescription(desc) => desc as HostedDescription;
 
   /// Parses the description for a package.
   ///
@@ -370,6 +387,7 @@ class HostedSource extends CachedSource {
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
     }
+    final packageName = description.packageName;
     final hostedUrl = description.url;
     final url = _listVersionsUrl(ref);
     log.io('Get versions from $url.');
@@ -379,12 +397,18 @@ class HostedSource extends CachedSource {
     final List<_VersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
-      // requires resolution of: https://github.com/dart-lang/sdk/issues/22265.
-      bodyText = await withAuthenticatedClient(
-        cache,
-        Uri.parse(hostedUrl),
-        (client) => client.read(url, headers: pubApiHeaders),
-      );
+      // requires resolution of: https://github.com/dart-lang/http/issues/424.
+      bodyText = await withAuthenticatedClient(cache, Uri.parse(hostedUrl),
+          (client) async {
+        return await retryForHttp(
+            'fetching versions for "$packageName" from "$url"', () async {
+          final request = http.Request('GET', url);
+          request.attachPubApiHeaders();
+          request.attachMetadataHeaders();
+          final response = await client.fetch(request);
+          return response.body;
+        });
+      });
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
         throw FormatException('version listing must be a mapping');
@@ -392,7 +416,6 @@ class HostedSource extends CachedSource {
       body = decoded;
       result = _versionInfoFromPackageListing(body, ref, url, cache);
     } on Exception catch (error, stackTrace) {
-      final packageName = _asDescription(ref.description).packageName;
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
 
@@ -1047,43 +1070,33 @@ See $contentHashesDocumentationUrl.
       // download.
       final expectedSha256 = versionInfo.archiveSha256;
 
-      // The client from `withAuthenticatedClient` will retry HTTP requests.
-      // This wrapper is one layer up and will retry checksum validation errors.
-      await retry(
-        // Attempt to download archive and validate its checksum.
-        () async {
+      await withAuthenticatedClient(cache, Uri.parse(description.url),
+          (client) async {
+        // In addition to HTTP errors, this will retry crc32c/sha256 errors as
+        // well because [PackageIntegrityException] subclasses
+        // [PubHttpException].
+        await retryForHttp('downloading "$archiveUrl"', () async {
           final request = http.Request('GET', archiveUrl);
-          final response = await withAuthenticatedClient(cache,
-              Uri.parse(description.url), (client) => client.send(request));
-          final expectedCrc32Checksum =
-              _parseCrc32c(response.headers, fileName);
+          request.attachMetadataHeaders();
+          final response = await client.fetchAsStream(request);
 
           Stream<List<int>> stream = response.stream;
-          if (expectedCrc32Checksum != null) {
-            stream = _validateStreamCrc32Checksum(
-                response.stream, expectedCrc32Checksum, id, archiveUrl);
+          final expectedCrc32c = _parseCrc32c(response.headers, fileName);
+          if (expectedCrc32c != null) {
+            stream = _validateCrc32c(
+                response.stream, expectedCrc32c, id, archiveUrl);
           }
           stream = validateSha256(
               stream, (expectedSha256 == null) ? null : Digest(expectedSha256));
+
           // We download the archive to disk instead of streaming it directly
           // into the tar unpacking. This simplifies stream handling.
           // Package:tar cancels the stream when it reaches end-of-archive, and
           // cancelling a http stream makes it not reusable.
           // There are ways around this, and we might revisit this later.
           await createFileFromStream(stream, archivePath);
-        },
-        // Retry if the checksum response header was malformed or the actual
-        // checksum did not match the expected checksum.
-        retryIf: (e) => e is PackageIntegrityException,
-        onRetry: (e, retryCount) => log
-            .io('Retry #${retryCount + 1} because of checksum error with GET '
-                '$archiveUrl...'),
-        maxAttempts: math.max(
-          1, // Having less than 1 attempt doesn't make sense.
-          int.tryParse(io.Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ??
-              7,
-        ),
-      );
+        });
+      });
 
       var tempDir = cache.createTempDir();
       try {
@@ -1193,7 +1206,7 @@ See $contentHashesDocumentationUrl.
     String package,
     String hostedUrl,
   ) {
-    if (error is PubHttpException) {
+    if (error is PubHttpResponseException) {
       if (error.response.statusCode == 404) {
         throw PackageNotFoundException(
             'could not find package $package at $hostedUrl',
@@ -1461,7 +1474,7 @@ const checksumHeaderName = 'x-goog-hash';
 /// the one present in the checksum response header.
 ///
 /// Throws [PackageIntegrityException] if there is a checksum mismatch.
-Stream<List<int>> _validateStreamCrc32Checksum(Stream<List<int>> stream,
+Stream<List<int>> _validateCrc32c(Stream<List<int>> stream,
     int expectedChecksum, PackageId id, Uri archiveUrl) async* {
   final crc32c = Crc32c();
 
@@ -1519,11 +1532,10 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
 
         return ByteData.view(bytes.buffer).getUint32(0);
       } on FormatException catch (e, s) {
+        log.exception(e, s);
         throw PackageIntegrityException(
             'Package archive "$fileName" has a malformed CRC32C checksum in '
-            'its response headers',
-            innerError: e,
-            innerTrace: s);
+            'its response headers');
       }
     }
   }
