@@ -229,6 +229,11 @@ class PubHttpException implements Exception {
   final bool isIntermittent;
 
   PubHttpException(this.message, {this.isIntermittent = false});
+
+  @override
+  String toString() {
+    return 'PubHttpException: $message';
+  }
 }
 
 /// Exception thrown when an HTTP response is not Ok.
@@ -241,7 +246,8 @@ class PubHttpResponseException extends PubHttpException {
 
   @override
   String toString() {
-    var temp = 'HTTP error ${response.statusCode}: ${response.reasonPhrase}';
+    var temp = 'PubHttpResponseException: HTTP error ${response.statusCode} '
+        '${response.reasonPhrase}';
     if (message != '') {
       temp += ': $message';
     }
