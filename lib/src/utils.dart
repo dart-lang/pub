@@ -693,7 +693,7 @@ Future<T> retry<T>(
   Duration maxDelay = const Duration(seconds: 30),
   int maxAttempts = 8,
   FutureOr<bool> Function(Exception)? retryIf,
-  FutureOr<void> Function(Exception, int retryCount)? onRetry,
+  FutureOr<void> Function(Exception, int attemptNumber)? onRetry,
 }) async {
   var attempt = 0;
   // ignore: literal_only_boolean_expressions
@@ -705,8 +705,9 @@ Future<T> retry<T>(
       if (attempt >= maxAttempts || (retryIf != null && !(await retryIf(e)))) {
         rethrow;
       }
+
       if (onRetry != null) {
-        await onRetry(e, attempt);
+        await onRetry(e, attempt + 1);
       }
     }
 

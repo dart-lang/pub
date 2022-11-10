@@ -54,7 +54,8 @@ Future<void> main() async {
         'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279');
     await appDir({'foo': 'any'}).create();
     await pubGet(
-      silent: contains('Retry #2'),
+      exitCode: exit_codes.TEMP_FAIL,
+      silent: contains('Attempt #2'),
       error:
           contains('Downloaded archive for foo-1.0.0 had wrong content-hash.'),
       environment: {

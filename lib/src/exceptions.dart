@@ -12,6 +12,7 @@ import 'package:stack_trace/stack_trace.dart';
 import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
+import 'http.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///
@@ -106,12 +107,9 @@ class PackageNotFoundException extends WrappedException {
 }
 
 /// A class for exceptions where a package's checksum could not be validated.
-class PackageIntegrityException extends WrappedException {
-  PackageIntegrityException(
-    String message, {
-    Object? innerError,
-    StackTrace? innerTrace,
-  }) : super(message, innerError, innerTrace);
+class PackageIntegrityException extends PubHttpException {
+  PackageIntegrityException(String message)
+      : super(message, isIntermittent: true);
 }
 
 /// Returns whether [error] is a user-facing error object.
