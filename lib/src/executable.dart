@@ -267,12 +267,17 @@ class DartExecutableWithPackageConfig {
 ///
 /// Throws an [CommandResolutionFailedException] if the command is not found or
 /// if the entrypoint is not up to date (requires `pub get`) and a `pub get`.
+///
+/// The [additionalSources], if provided, instructs the compiler to include
+/// additional source files into compilation even if they are not referenced
+/// from the main library that [descriptor] resolves to.
 Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
   String? root,
   String? pubCacheDir,
   PubAnalytics? analytics,
+  List<String> additionalSources = const [],
 }) async {
   root ??= p.current;
   var asPath = descriptor;
@@ -363,7 +368,10 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
         entrypoint.packageGraph.isPackageMutable(package)) {
       try {
         await warningsOnlyUnlessTerminal(
-          () => entrypoint.precompileExecutable(executable),
+          () => entrypoint.precompileExecutable(
+            executable,
+            additionalSources: additionalSources,
+          ),
         );
       } on ApplicationException catch (e) {
         throw CommandResolutionFailedException._(

@@ -222,21 +222,27 @@ packages:
     test('serialize() dumps the lockfile to YAML', () {
       var lockfile = LockFile([
         PackageId(
-            'foo',
-            Version.parse('1.2.3'),
-            ResolvedHostedDescription(
-                HostedDescription('foo', 'https://foo.com'))),
+          'foo',
+          Version.parse('1.2.3'),
+          ResolvedHostedDescription(
+            HostedDescription('foo', 'https://foo.com'),
+            sha256: null,
+          ),
+        ),
         PackageId(
-            'bar',
-            Version.parse('3.2.1'),
-            ResolvedHostedDescription(
-                HostedDescription('bar', 'https://bar.com'))),
+          'bar',
+          Version.parse('3.2.1'),
+          ResolvedHostedDescription(
+            HostedDescription('bar', 'https://bar.com'),
+            sha256: null,
+          ),
+        ),
       ], devDependencies: {
         'bar'
       });
 
       expect(
-          loadYaml(lockfile.serialize('')),
+          loadYaml(lockfile.serialize('', cache)),
           equals({
             'sdks': {'dart': 'any'},
             'packages': {

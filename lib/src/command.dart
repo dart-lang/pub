@@ -55,11 +55,12 @@ abstract class PubCommand extends Command<int> {
     return a;
   }
 
-  String get directory =>
-      (argResults.options.contains('directory')
-          ? argResults['directory']
-          : null) ??
-      _pubTopLevel.directory;
+  String get directory {
+    return (argResults.options.contains('directory')
+            ? argResults['directory']
+            : null) ??
+        _pubTopLevel.directory;
+  }
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
@@ -194,7 +195,6 @@ abstract class PubCommand extends Command<int> {
       return exit_codes.SUCCESS;
     } catch (error, chain) {
       log.exception(error, chain);
-
       if (_pubTopLevel.trace) {
         log.dumpTranscriptToStdErr();
       } else if (!isUserFacingException(error)) {
@@ -238,7 +238,7 @@ and attaching the relevant parts of that log file.
           log.message('Logs written to $transcriptPath.');
         }
       }
-      httpClient.close();
+      globalHttpClient.close();
     }
   }
 
@@ -253,7 +253,9 @@ and attaching the relevant parts of that log file.
       exception = exception.innerError!;
     }
 
-    if (exception is HttpException ||
+    if (exception is PackageIntegrityException) {
+      return exit_codes.TEMP_FAIL;
+    } else if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
         exception is TlsException ||
@@ -351,7 +353,7 @@ abstract class PubTopLevel {
   }
 
   /// The directory containing the pubspec.yaml of the project to work on.
-  String? get directory;
+  String get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.
   ArgResults get argResults;

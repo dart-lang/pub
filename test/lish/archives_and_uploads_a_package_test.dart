@@ -102,7 +102,16 @@ void main() {
     var repo = d.git(appPath, d.validPackage.contents);
     await repo.create();
 
-    await repo.runGit(['submodule', 'add', '../empty', 'empty']);
+    await repo.runGit([
+      // Hack to allow testing with local submodules after CVE-2022-39253.
+      '-c',
+      'protocol.file.allow=always',
+      'submodule',
+      'add',
+      '--',
+      '../empty',
+      'empty'
+    ]);
     await repo.commit();
 
     deleteEntry(p.join(d.sandbox, appPath, 'empty'));

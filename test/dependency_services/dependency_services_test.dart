@@ -10,8 +10,10 @@ import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../descriptor.dart' as d;
+import '../descriptor.dart';
 import '../golden_file.dart';
 import '../test_pub.dart';
 
@@ -49,6 +51,7 @@ extension on GoldenTestContext {
       Platform.resolvedExecutable,
       [
         snapshot,
+        '--verbose',
         ...args,
       ],
       environment: getPubTestEnvironment(),
@@ -120,7 +123,8 @@ Future<void> main() async {
     final server = (await servePackages())
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('foo', '2.2.3')
-      ..serve('transitive', '1.0.0');
+      ..serve('transitive', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
@@ -151,7 +155,8 @@ Future<void> main() async {
     final server = (await servePackages())
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('foo', '2.2.3')
-      ..serve('transitive', '1.0.0');
+      ..serve('transitive', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
 
@@ -183,7 +188,8 @@ Future<void> main() async {
       ..serve('foo', '2.2.3')
       ..serve('bar', '1.2.3')
       ..serve('bar', '2.2.3')
-      ..serve('boo', '1.2.3');
+      ..serve('boo', '1.2.3')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
@@ -211,11 +217,51 @@ Future<void> main() async {
     });
   });
 
+  testWithGolden('Preserves no content-hashes', (context) async {
+    final server = (await servePackages())
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '2.2.3')
+      ..serve('bar', '1.2.3')
+      ..serve('bar', '2.2.3')
+      ..serve('boo', '1.2.3')
+      ..serveContentHashes = true;
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+          'boo': '^1.0.0',
+        },
+      })
+    ]).create();
+    await pubGet();
+    final lockFile = File(path(p.join(appPath, 'pubspec.lock')));
+    final lockFileYaml = YamlEditor(
+      lockFile.readAsStringSync(),
+    );
+    for (final p in lockFileYaml.parseAt(['packages']).value.entries) {
+      lockFileYaml.remove(['packages', p.key, 'description', 'sha256']);
+    }
+    lockFile.writeAsStringSync(lockFileYaml.toString());
+
+    server.serve('foo', '1.2.4');
+    server.serve('boo', '1.2.4');
+
+    server.dontAllowDownloads();
+
+    await _listReportApply(context, [
+      _PackageVersion('foo', '1.2.4'),
+    ]);
+  });
+
   testWithGolden('Adding transitive', (context) async {
     final server = (await servePackages())
       ..serve('foo', '1.2.3')
       ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
-      ..serve('transitive', '1.0.0');
+      ..serve('transitive', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
@@ -247,7 +293,8 @@ Future<void> main() async {
     final server = (await servePackages())
       ..serve('foo', '1.0.0')
       ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0');
+      ..serve('baz', '1.0.0')
+      ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({

@@ -9,9 +9,10 @@
 /// library provides an API to build tests like that.
 import 'dart:convert';
 import 'dart:core';
-import 'dart:io';
+import 'dart:io' hide BytesBuilder;
 import 'dart:isolate';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
@@ -24,7 +25,9 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
+import 'package:pub/src/third_party/tar/tar.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -182,6 +185,7 @@ Future<void> pubGet({
   Iterable<String>? args,
   Object? output,
   Object? error,
+  Object? silent,
   Object? warning,
   int? exitCode,
   Map<String, String?>? environment,
@@ -193,6 +197,7 @@ Future<void> pubGet({
       args: args,
       output: output,
       error: error,
+      silent: silent,
       warning: warning,
       exitCode: exitCode,
       environment: environment,
@@ -205,6 +210,7 @@ Future<void> pubUpgrade(
         Object? output,
         Object? error,
         Object? warning,
+        Object? silent,
         int? exitCode,
         Map<String, String>? environment,
         String? workingDirectory}) async =>
@@ -214,6 +220,7 @@ Future<void> pubUpgrade(
       output: output,
       error: error,
       warning: warning,
+      silent: silent,
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
@@ -624,7 +631,8 @@ Future<void> createLockFile(String package,
       _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package)))
+    d.file(
+        'pubspec.lock', lockFile.serialize(p.join(d.sandbox, package), cache))
   ]).create();
 }
 
@@ -651,7 +659,17 @@ LockFile _createLockFile(SystemCache cache,
         containingDir: p.join(d.sandbox, appPath))),
     if (hosted != null)
       ...hosted.entries.map(
-          (entry) => cache.hosted.idFor(entry.key, Version.parse(entry.value)))
+        (entry) => PackageId(
+          entry.key,
+          Version.parse(entry.value),
+          ResolvedHostedDescription(
+              HostedDescription(
+                entry.key,
+                'https://pub.dev',
+              ),
+              sha256: null),
+        ),
+      )
   ];
 
   return LockFile(packages);
@@ -689,38 +707,6 @@ Map<String, Object> packageMap(
   if (devDependencies != null) package['dev_dependencies'] = devDependencies;
   if (environment != null) package['environment'] = environment;
   return package;
-}
-
-/// Returns a Map in the format used by the pub.dev API to represent a
-/// package version.
-///
-/// [pubspec] is the parsed pubspec of the package version. If [full] is true,
-/// this returns the complete map, including metadata that's only included when
-/// requesting the package version directly.
-Map packageVersionApiMap(String hostedUrl, Map pubspec,
-    {bool retracted = false, bool full = false}) {
-  var name = pubspec['name'];
-  var version = pubspec['version'];
-  var map = {
-    'pubspec': pubspec,
-    'version': version,
-    'archive_url': '$hostedUrl/packages/$name/versions/$version.tar.gz',
-  };
-
-  if (retracted) {
-    map['retracted'] = true;
-  }
-
-  if (full) {
-    map.addAll({
-      'downloads': 0,
-      'created': '2012-09-25T18:38:28.685260',
-      'libraries': ['$name.dart'],
-      'uploader': ['nweiz@google.com']
-    });
-  }
-
-  return map;
 }
 
 /// Returns the name of the shell script for a binstub named [name].
@@ -882,9 +868,6 @@ StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
 /// Removes output from pub known to be unstable.
 Iterable<String> filterUnstableLines(List<String> input) {
   return input
-      // Downloading order is not deterministic, so to avoid flakiness we filter
-      // out these lines.
-      .where((line) => !line.startsWith('Downloading '))
       // Any paths in output should be relative to the sandbox and with forward
       // slashes to be stable across platforms.
       .map((line) {
@@ -992,4 +975,55 @@ Map<String, String> extendedPathEnv() {
     // Override 'PATH' to ensure that we can't detect a working "git" binary
     'PATH': '$binFolder$separator${Platform.environment['PATH']}',
   };
+}
+
+Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
+  final entries = <TarEntry>[];
+  void addDescriptor(d.Descriptor descriptor, String path) {
+    if (descriptor is d.DirectoryDescriptor) {
+      for (final e in descriptor.contents) {
+        addDescriptor(e, p.posix.join(path, descriptor.name));
+      }
+    } else {
+      entries.add(
+        TarEntry(
+          TarHeader(
+            // Ensure paths in tar files use forward slashes
+            name: p.posix.join(path, descriptor.name),
+            // We want to keep executable bits, but otherwise use the default
+            // file mode
+            mode: 420,
+            // size: 100,
+            modified: DateTime.fromMicrosecondsSinceEpoch(0),
+            userName: 'pub',
+            groupName: 'pub',
+          ),
+          (descriptor as d.FileDescriptor).readAsBytes(),
+        ),
+      );
+    }
+  }
+
+  for (final e in contents) {
+    addDescriptor(e, '');
+  }
+  return _replaceOs(Stream.fromIterable(entries)
+      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+      .transform(gzip.encoder));
+}
+
+/// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
+/// entry of a gzip stream, giving us the same stream and thius stable testing
+/// on all platforms.
+///
+/// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
+/// about the OS header.
+Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
+  final bytesBuilder = BytesBuilder();
+  await for (final t in stream) {
+    bytesBuilder.add(t);
+  }
+  final result = bytesBuilder.toBytes();
+  result[9] = 0;
+  yield result;
 }

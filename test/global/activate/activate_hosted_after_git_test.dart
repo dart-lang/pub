@@ -22,14 +22,14 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-sgit', '../foo.git']);
 
-    await runPub(args: ['global', 'activate', 'foo'], output: '''
-        Package foo is currently active from Git repository "..${separator}foo.git".
-        Resolving dependencies...
-        + foo 2.0.0
-        Downloading foo 2.0.0...
-        Building package executables...
-        Built foo:foo.
-        Activated foo 2.0.0.''');
+    await runPub(
+        args: ['global', 'activate', 'foo'],
+        output: allOf([
+          contains(
+              'Package foo is currently active from Git repository "..${separator}foo.git".'),
+          contains('* foo 2.0.0 (was 1.0.0 from git ..${separator}foo.git at'),
+          contains('Activated foo 2.0.0.')
+        ]));
 
     // Should now run the hosted one.
     var pub = await pubRun(global: true, args: ['foo']);

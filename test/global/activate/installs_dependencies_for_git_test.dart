@@ -20,7 +20,7 @@ void main() {
 
     await runPub(
         args: ['global', 'activate', '-sgit', '../foo.git'],
-        output: allOf([
+        silent: allOf([
           contains('Downloading bar 1.0.0...'),
           contains('Downloading baz 1.0.0...')
         ]));

@@ -39,10 +39,10 @@ Future<void> expectValidation(
 }
 
 Future<void> expectValidationWarning(error,
-    {Map<String, String> environment = const {}}) async {
+    {int count = 1, Map<String, String> environment = const {}}) async {
   if (error is String) error = contains(error);
   await expectValidation(
-    error: allOf([error, contains('Package has 1 warning.')]),
+    error: allOf([error, contains('Package has $count warning')]),
     exitCode: DATA,
     environment: environment,
   );
@@ -106,7 +106,9 @@ void main() {
       await expectValidationWarning(
           allOf([
             contains('  foo: any'),
+            contains("Publishable packages can't have 'git' dependencies"),
           ]),
+          count: 2,
           environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
     });
 
@@ -504,13 +506,13 @@ void main() {
       await fuschiaPackage('foo', sdk: '>=0.0.0 <3.0.0').create();
 
       await package(
-        sdk: '>=2.0.0-dev.50.0 <2.0.1',
+        sdk: '>=2.0.0-dev.50.0 <2.0.2',
         deps: {
           'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
         },
       ).create();
 
-      await expectValidationError('sdk: ">=2.0.0 <2.0.1"', environment: {
+      await expectValidationError('sdk: ">=2.0.0 <2.0.2"', environment: {
         'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
         '_PUB_TEST_SDK_VERSION': '2.0.1-dev.51.0',
       });

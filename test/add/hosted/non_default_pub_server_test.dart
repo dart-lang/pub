@@ -91,7 +91,8 @@ void main() {
 
     await pubAdd(
       args: ['foo', '--hosted-url', 'https://invalid-url.foo'],
-      error: contains('Could not resolve URL "https://invalid-url.foo".'),
+      error: contains('Got socket error trying to find package foo at '
+          'https://invalid-url.foo.'),
       exitCode: exit_codes.DATA,
       environment: {
         // Limit the retries - the url will never go valid.

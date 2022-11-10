@@ -276,7 +276,14 @@ void main() {
           d.file('file2.text', 'contents')
         ]).create();
 
-        await repo.runGit(['submodule', 'add', '../submodule']);
+        await repo.runGit([
+          // Hack to allow testing with local submodules after CVE-2022-39253.
+          '-c',
+          'protocol.file.allow=always',
+          'submodule',
+          'add',
+          '../submodule'
+        ]);
 
         await d.file('$appPath/submodule/file1.txt', 'contents').create();
 

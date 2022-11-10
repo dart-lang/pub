@@ -10,6 +10,7 @@ import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../source/hosted.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
@@ -25,42 +26,114 @@ class SolveReport {
   final SolveType _type;
   final Package _root;
   final LockFile _previousLockFile;
-  final SolveResult _result;
+  final LockFile _newLockFile;
   final SystemCache _cache;
+  final bool _dryRun;
 
-  /// The dependencies in [_result], keyed by package name.
-  final _dependencies = <String, PackageId>{};
+  /// The available versions of all selected packages from their source.
+  ///
+  /// An entry here may not include the full list of versions available if the
+  /// given package was locked and did not need to be unlocked during the solve.
+  ///
+  /// Version list will not contain any retracted package versions.
+  final Map<String, List<Version>> _availableVersions;
 
   final _output = StringBuffer();
 
-  SolveReport(this._type, this._root, this._previousLockFile, this._result,
-      this._cache) {
-    // Fill the map so we can use it later.
-    for (var id in _result.packages) {
-      _dependencies[id.name] = id;
-    }
-  }
+  SolveReport(
+    this._type,
+    this._root,
+    this._previousLockFile,
+    this._newLockFile,
+    this._availableVersions,
+    this._cache, {
+    required bool dryRun,
+  }) : _dryRun = dryRun;
 
-  /// Displays a report of the results of the version resolution relative to
-  /// the previous lock file.
+  /// Displays a report of the results of the version resolution in
+  /// [_newLockFile] relative to the [_previousLockFile] file.
   Future<void> show() async {
     await _reportChanges();
     await _reportOverrides();
+    _checkContentHashesMatchOldLockfile();
+  }
+
+  void _checkContentHashesMatchOldLockfile() {
+    final issues = <String>[];
+
+    final newPackageNames = _newLockFile.packages.keys.toSet();
+    final oldPackageNames = _previousLockFile.packages.keys.toSet();
+    // We only care about packages that exist in both new and old lockfile.
+    for (final name in newPackageNames.intersection(oldPackageNames)) {
+      final newId = _newLockFile.packages[name]!;
+      final oldId = _previousLockFile.packages[name]!;
+
+      // We only care about hosted packages
+      final newDescription = newId.description;
+      final oldDescription = oldId.description;
+      if (newDescription is! ResolvedHostedDescription ||
+          oldDescription is! ResolvedHostedDescription) {
+        continue;
+      }
+
+      // We don't care about changes in the hash if the version number changed!
+      if (newId.version != oldId.version) {
+        continue;
+      }
+
+      // Use the cached content-hashes after downloading to ensure that
+      // content-hashes from legacy servers gets used.
+      final cachedHash = newDescription.sha256;
+      assert(cachedHash != null);
+
+      // Ignore cases where the old lockfile doesn't have a content-hash
+      final oldHash = oldDescription.sha256;
+      if (oldHash == null) {
+        continue;
+      }
+
+      if (!fixedTimeBytesEquals(cachedHash, oldHash)) {
+        issues.add(
+          '$name-${newId.version} from "${newDescription.description.url}"',
+        );
+      }
+    }
+
+    if (issues.isNotEmpty) {
+      log.warning('''
+The existing content-hash from pubspec.lock doesn't match contents for:
+ * ${issues.join('\n * ')}
+
+This indicates one of:
+ * The content has changed on the server since you created the pubspec.lock.
+ * The pubspec.lock has been corrupted.
+${_dryRun ? '' : '\nThe content-hashes in pubspec.lock has been updated.'}
+
+For more information see:
+$contentHashesDocumentationUrl
+''');
+    }
   }
 
   /// Displays a one-line message summarizing what changes were made (or would
   /// be made) to the lockfile.
   ///
   /// If [dryRun] is true, describes it in terms of what would be done.
-  void summarize({bool dryRun = false}) {
+  ///
+  /// [type] is the type of version resolution that was run.
+
+  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages that
+  /// are not at the latest available version and the number of outdated
+  /// packages.
+  Future<void> summarize() async {
     // Count how many dependencies actually changed.
-    var dependencies = _dependencies.keys.toSet();
+    var dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
     dependencies.remove(_root.name);
 
     var numChanged = dependencies.where((name) {
       var oldId = _previousLockFile.packages[name];
-      var newId = _dependencies[name];
+      var newId = _newLockFile.packages[name];
 
       // Added or removed dependencies count.
       if (oldId == null) return true;
@@ -78,7 +151,7 @@ class SolveReport {
       }
     }
 
-    if (dryRun) {
+    if (_dryRun) {
       if (numChanged == 0) {
         log.message('No dependencies would change$suffix.');
       } else if (numChanged == 1) {
@@ -99,6 +172,10 @@ class SolveReport {
         log.message('Changed $numChanged dependencies$suffix!');
       }
     }
+    if (_type == SolveType.upgrade) {
+      await reportDiscontinued();
+      reportOutdated();
+    }
   }
 
   /// Displays a report of all of the previous and current dependencies and
@@ -107,7 +184,7 @@ class SolveReport {
     _output.clear();
 
     // Show the new set of dependencies ordered by name.
-    var names = _result.packages.map((id) => id.name).toList();
+    var names = _newLockFile.packages.keys.toList();
     names.remove(_root.name);
     names.sort();
     for (final name in names) {
@@ -146,10 +223,10 @@ class SolveReport {
   /// if discontinued packages are detected.
   Future<void> reportDiscontinued() async {
     var numDiscontinued = 0;
-    for (var id in _result.packages) {
+    for (var id in _newLockFile.packages.values) {
       if (id.description is RootDescription) continue;
-      final status =
-          await id.source.status(id, _cache, maxAge: Duration(days: 3));
+      final status = await id.source
+          .status(id.toRef(), id.version, _cache, maxAge: Duration(days: 3));
       if (status.isDiscontinued &&
           (_root.dependencyType(id.name) == DependencyType.direct ||
               _root.dependencyType(id.name) == DependencyType.dev)) {
@@ -168,8 +245,8 @@ class SolveReport {
   /// Displays a two-line message, number of outdated packages and an
   /// instruction to run `pub outdated` if outdated packages are detected.
   void reportOutdated() {
-    final outdatedPackagesCount = _result.packages.where((id) {
-      final versions = _result.availableVersions[id.name]!;
+    final outdatedPackagesCount = _newLockFile.packages.values.where((id) {
+      final versions = _availableVersions[id.name]!;
       // A version is counted:
       // - if there is a newer version which is not a pre-release and current
       // version is also not a pre-release or,
@@ -198,7 +275,7 @@ class SolveReport {
   /// "(override)" next to overridden packages.
   Future<void> _reportPackage(String name,
       {bool alwaysShow = false, bool highlightOverride = true}) async {
-    var newId = _dependencies[name];
+    var newId = _newLockFile.packages[name];
     var oldId = _previousLockFile.packages[name];
     var id = newId ?? oldId!;
 
@@ -218,6 +295,7 @@ class SolveReport {
     //     + The package was added.
     //     > The package was upgraded from a lower version.
     //     < The package was downgraded from a higher version.
+    //     ~ Package contents has changed, but not the version number.
     //     * Any other change between the old and new package.
     String icon;
     if (isOverridden) {
@@ -228,7 +306,8 @@ class SolveReport {
     } else if (oldId == null) {
       icon = log.green('+ ');
       addedOrRemoved = true;
-    } else if (oldId.description != newId.description) {
+    } else if (oldId.description.description != newId.description.description) {
+      // Eg. a changed source in pubspec.yaml.
       icon = log.cyan('* ');
       changed = true;
     } else if (oldId.version < newId.version) {
@@ -236,6 +315,10 @@ class SolveReport {
       changed = true;
     } else if (oldId.version > newId.version) {
       icon = log.cyan('< ');
+      changed = true;
+    } else if (oldId.description != newId.description) {
+      // Eg. a changed hash or revision.
+      icon = log.cyan('~ ');
       changed = true;
     } else {
       // Unchanged.
@@ -245,7 +328,7 @@ class SolveReport {
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
     if (newId != null && _type != SolveType.downgrade) {
-      var versions = _result.availableVersions[newId.name]!;
+      var versions = _availableVersions[newId.name]!;
 
       var newerStable = false;
       var newerUnstable = false;
@@ -259,8 +342,12 @@ class SolveReport {
           }
         }
       }
-      final status =
-          await id.source.status(id, _cache, maxAge: Duration(days: 3));
+      final status = await id.source.status(
+        id.toRef(),
+        id.version,
+        _cache,
+        maxAge: Duration(days: 3),
+      );
 
       if (status.isRetracted) {
         if (newerStable) {

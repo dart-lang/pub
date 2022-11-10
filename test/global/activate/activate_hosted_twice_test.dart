@@ -46,9 +46,7 @@ Activated foo 1.0.0.''');
     await runPub(args: ['global', 'activate', 'foo'], output: '''
 Package foo is currently active at version 1.0.0.
 Resolving dependencies...
-+ bar 2.0.0
-+ foo 1.0.0
-Downloading bar 2.0.0...
+> bar 2.0.0 (was 1.0.0)
 Building package executables...
 Built foo:foo.
 Activated foo 1.0.0.''');

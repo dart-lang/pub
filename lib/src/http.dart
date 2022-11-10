@@ -9,14 +9,10 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
-import 'package:http/retry.dart';
 import 'package:pool/pool.dart';
-import 'package:stack_trace/stack_trace.dart';
 
 import 'command.dart';
-import 'io.dart';
 import 'log.dart' as log;
-import 'oauth2.dart' as oauth2;
 import 'package.dart';
 import 'sdk.dart';
 import 'source/hosted.dart';
@@ -46,22 +42,6 @@ class _PubHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    if (_shouldAddMetadata(request)) {
-      request.headers['X-Pub-OS'] = Platform.operatingSystem;
-      request.headers['X-Pub-Command'] = PubCommand.command;
-      request.headers['X-Pub-Session-ID'] = _sessionId;
-
-      var environment = Platform.environment['PUB_ENVIRONMENT'];
-      if (environment != null) {
-        request.headers['X-Pub-Environment'] = environment;
-      }
-
-      var type = Zone.current[#_dependencyType];
-      if (type != null && type != DependencyType.none) {
-        request.headers['X-Pub-Reason'] = type.toString();
-      }
-    }
-
     _requestStopwatches[request] = Stopwatch()..start();
     request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
     _logRequest(request);
@@ -71,24 +51,6 @@ class _PubHttpClient extends http.BaseClient {
     _logResponse(streamedResponse);
 
     return streamedResponse;
-  }
-
-  /// Whether extra metadata headers should be added to [request].
-  bool _shouldAddMetadata(http.BaseRequest request) {
-    if (runningFromTest && Platform.environment.containsKey('PUB_HOSTED_URL')) {
-      if (request.url.origin != Platform.environment['PUB_HOSTED_URL']) {
-        return false;
-      }
-    } else {
-      if (!HostedSource.isPubDevUrl(request.url.toString())) return false;
-    }
-
-    if (Platform.environment.containsKey('CI') &&
-        Platform.environment['CI'] != 'false') {
-      return false;
-    }
-
-    return true;
   }
 
   /// Logs the fact that [request] was sent, and information about it.
@@ -155,130 +117,14 @@ class _PubHttpClient extends http.BaseClient {
   void close() => _inner.close();
 }
 
-/// The [_PubHttpClient] wrapped by [httpClient].
+/// The [_PubHttpClient] wrapped by [globalHttpClient].
 final _pubClient = _PubHttpClient();
 
-/// A set of all hostnames for which we've printed a message indicating that
-/// we're waiting for them to come back up.
-final _retriedHosts = <String>{};
-
-/// Intercepts all requests and throws exceptions if the response was not
-/// considered successful.
-class _ThrowingClient extends http.BaseClient {
-  final http.Client _inner;
-
-  _ThrowingClient(this._inner);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    late http.StreamedResponse streamedResponse;
-    try {
-      streamedResponse = await _inner.send(request);
-    } on SocketException catch (error, stackTraceOrNull) {
-      // Work around issue 23008.
-      var stackTrace = stackTraceOrNull;
-
-      if (error.osError == null) rethrow;
-
-      // Handle error codes known to be related to DNS or SSL issues. While it
-      // is tempting to handle these error codes before retrying, saving time
-      // for the end-user, it is known that DNS lookups can fail intermittently
-      // in some cloud environments. Furthermore, since these error codes are
-      // platform-specific (undocumented) and essentially cargo-culted along
-      // skipping retries may lead to intermittent issues that could be fixed
-      // with a retry. Failing to retry intermittent issues is likely to cause
-      // customers to wrap pub in a retry loop which will not improve the
-      // end-user experience.
-      if (error.osError!.errorCode == 8 ||
-          error.osError!.errorCode == -2 ||
-          error.osError!.errorCode == -5 ||
-          error.osError!.errorCode == 11001 ||
-          error.osError!.errorCode == 11004) {
-        fail('Could not resolve URL "${request.url.origin}".', error,
-            stackTrace);
-      } else if (error.osError!.errorCode == -12276) {
-        fail(
-            'Unable to validate SSL certificate for '
-            '"${request.url.origin}".',
-            error,
-            stackTrace);
-      } else {
-        rethrow;
-      }
-    }
-
-    var status = streamedResponse.statusCode;
-    // 401 responses should be handled by the OAuth2 client. It's very
-    // unlikely that they'll be returned by non-OAuth2 requests. We also want
-    // to pass along 400 responses from the token endpoint.
-    var tokenRequest = streamedResponse.request!.url == oauth2.tokenEndpoint;
-    if (status < 400 || status == 401 || (status == 400 && tokenRequest)) {
-      return streamedResponse;
-    }
-
-    if (status == 406 && request.headers['Accept'] == pubApiHeaders['Accept']) {
-      fail('Pub ${sdk.version} is incompatible with the current version of '
-          '${request.url.host}.\n'
-          'Upgrade pub to the latest version and try again.');
-    }
-
-    if (status == 500 &&
-        (request.url.host == 'pub.dev' ||
-            request.url.host == 'storage.googleapis.com')) {
-      fail('HTTP error 500: Internal Server Error at ${request.url}.\n'
-          'This is likely a transient error. Please try again later.');
-    }
-
-    throw PubHttpException(await http.Response.fromStream(streamedResponse));
-  }
-
-  @override
-  void close() => _inner.close();
-}
-
 /// The HTTP client to use for all HTTP requests.
-final httpClient = _ThrottleClient(
-    16,
-    _ThrowingClient(RetryClient(_pubClient,
-        retries: math.max(
-          1, // Having less than 1 retry is **always** wrong.
-          int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
-        ),
-        when: (response) =>
-            const [500, 502, 503, 504].contains(response.statusCode),
-        whenError: (error, stackTrace) {
-          if (error is! IOException) return false;
+final globalHttpClient = _pubClient;
 
-          var chain = Chain.forTrace(stackTrace);
-          log.io('HTTP error:\n$error\n\n${chain.terse}');
-          return true;
-        },
-        delay: (retryCount) {
-          if (retryCount < 3) {
-            // Retry quickly a couple times in case of a short transient error.
-            //
-            // Add a random delay to avoid retrying a bunch of parallel requests
-            // all at the same time.
-            return Duration(milliseconds: 500) * math.pow(1.5, retryCount) +
-                Duration(milliseconds: random.nextInt(500));
-          } else {
-            // If the error persists, wait a long time. This works around issues
-            // where an AppEngine instance will go down and need to be rebooted,
-            // which takes about a minute.
-            return Duration(seconds: 30);
-          }
-        },
-        onRetry: (request, response, retryCount) {
-          log.io('Retry #${retryCount + 1} for '
-              '${request.method} ${request.url}...');
-          if (retryCount != 3) return;
-          if (!_retriedHosts.add(request.url.host)) return;
-          log.message(
-              'It looks like ${request.url.host} is having some trouble.\n'
-              'Pub will wait for a while before trying to connect again.');
-        })));
-
-/// The underlying HTTP client wrapped by [httpClient].
+/// The underlying HTTP client wrapped by [globalHttpClient].
+/// This enables the ability to use a mock client in tests.
 http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
 
@@ -292,6 +138,36 @@ Future<T> withDependencyType<T>(
   Future<T> Function() callback,
 ) {
   return runZoned(callback, zoneValues: {#_dependencyType: type});
+}
+
+extension AttachHeaders on http.Request {
+  /// Adds headers required for pub.dev API requests.
+  void attachPubApiHeaders() {
+    headers.addAll(pubApiHeaders);
+  }
+
+  /// Adds request metadata headers about the Pub tool's environment and the
+  /// currently running command if the request URL indicates the destination is
+  /// a Hosted Pub Repository.
+  void attachMetadataHeaders() {
+    if (!HostedSource.shouldSendAdditionalMetadataFor(url)) {
+      return;
+    }
+
+    headers['X-Pub-OS'] = Platform.operatingSystem;
+    headers['X-Pub-Command'] = PubCommand.command;
+    headers['X-Pub-Session-ID'] = _sessionId;
+
+    var environment = Platform.environment['PUB_ENVIRONMENT'];
+    if (environment != null) {
+      headers['X-Pub-Environment'] = environment;
+    }
+
+    var type = Zone.current[#_dependencyType];
+    if (type != null && type != DependencyType.none) {
+      headers['X-Pub-Reason'] = type.toString();
+    }
+  }
 }
 
 /// Handles a successful JSON-formatted response from pub.dev.
@@ -314,7 +190,12 @@ void handleJsonSuccess(http.Response response) {
 /// These responses are expected to be of the form `{"error": {"message": "some
 /// message"}}`. If the format is correct, the message will be raised as an
 /// error; otherwise an [invalidServerResponse] error will be raised.
-void handleJsonError(http.Response response) {
+void handleJsonError(http.BaseResponse response) {
+  if (response is! http.Response) {
+    // Not likely to be a common code path, but necessary.
+    // See https://github.com/dart-lang/pub/pull/3590#discussion_r1012978108
+    fail(log.red('Invalid server response'));
+  }
   var errorMap = parseJsonResponse(response);
   if (errorMap['error'] is! Map ||
       !errorMap['error'].containsKey('message') ||
@@ -345,56 +226,145 @@ Never invalidServerResponse(http.Response response) =>
 
 /// Exception thrown when an HTTP operation fails.
 class PubHttpException implements Exception {
-  final http.Response response;
+  final String message;
+  final bool isIntermittent;
 
-  const PubHttpException(this.response);
+  PubHttpException(this.message, {this.isIntermittent = false});
 
   @override
-  String toString() => 'HTTP error ${response.statusCode}: '
-      '${response.reasonPhrase}';
+  String toString() {
+    return 'PubHttpException: $message';
+  }
 }
 
-/// A middleware client that throttles the number of concurrent requests.
-///
-/// As long as the number of requests is within the limit, this works just like
-/// a normal client. If a request is made beyond the limit, the underlying HTTP
-/// request won't be sent until other requests have completed.
-class _ThrottleClient extends http.BaseClient {
-  final Pool _pool;
-  final http.Client _inner;
+/// Exception thrown when an HTTP response is not Ok.
+class PubHttpResponseException extends PubHttpException {
+  final http.BaseResponse response;
 
-  /// Creates a new client that allows no more than [maxActiveRequests]
-  /// concurrent requests.
-  ///
-  /// If [inner] is passed, it's used as the inner client for sending HTTP
-  /// requests. It defaults to `new http.Client()`.
-  _ThrottleClient(int maxActiveRequests, this._inner)
-      : _pool = Pool(maxActiveRequests);
+  PubHttpResponseException(this.response,
+      {String message = '', bool isIntermittent = false})
+      : super(message, isIntermittent: isIntermittent);
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    var resource = await _pool.request();
-
-    http.StreamedResponse response;
-    try {
-      response = await _inner.send(request);
-    } catch (_) {
-      resource.release();
-      rethrow;
+  String toString() {
+    var temp = 'PubHttpResponseException: HTTP error ${response.statusCode} '
+        '${response.reasonPhrase}';
+    if (message != '') {
+      temp += ': $message';
     }
+    return temp;
+  }
+}
 
-    final responseController = StreamController<List<int>>(sync: true);
-    unawaited(response.stream.pipe(responseController));
-    unawaited(responseController.done.then((_) => resource.release()));
-    return http.StreamedResponse(responseController.stream, response.statusCode,
-        contentLength: response.contentLength,
-        request: response.request,
-        headers: response.headers,
-        isRedirect: response.isRedirect,
-        persistentConnection: response.persistentConnection,
-        reasonPhrase: response.reasonPhrase);
+/// Whether [e] is one of a few HTTP-related exceptions that subclass
+/// [IOException]. Can be used if your try-catch block contains various
+/// operations in addition to HTTP calls and so a [IOException] instance check
+/// would be too coarse.
+bool isHttpIOException(Object e) {
+  return e is HttpException ||
+      e is TlsException ||
+      e is SocketException ||
+      e is WebSocketException;
+}
+
+/// Program-wide limiter for concurrent network requests.
+final _httpPool = Pool(16);
+
+/// Runs the provided function [fn] and returns the response.
+///
+/// If there is an HTTP-related exception, an intermittent HTTP error response,
+/// or an async timeout, [fn] is run repeatedly until there is a successful
+/// response or at most seven total attempts have been made. If all attempts
+/// fail, the final exception is re-thrown.
+///
+/// Each attempt is run within a [Pool] configured with 16 maximum resources.
+Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
+  return await retry(
+      () async => await _httpPool.withResource(() async => await fn()),
+      retryIf: (e) async =>
+          (e is PubHttpException && e.isIntermittent) ||
+          e is TimeoutException ||
+          isHttpIOException(e),
+      onRetry: (exception, attemptNumber) async =>
+          log.io('Attempt #$attemptNumber for $operation'),
+      maxAttempts: math.max(
+        1, // Having less than 1 attempt doesn't make sense.
+        int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
+      ));
+}
+
+extension Throwing on http.BaseResponse {
+  /// See https://api.flutter.dev/flutter/dart-io/HttpClientRequest/followRedirects.html
+  static const _redirectStatusCodes = [
+    HttpStatus.movedPermanently,
+    HttpStatus.movedTemporarily,
+    HttpStatus.seeOther,
+    HttpStatus.temporaryRedirect,
+    HttpStatus.permanentRedirect
+  ];
+
+  /// Throws [PubHttpResponseException], calls [fail], or does nothing depending
+  /// on the status code.
+  ///
+  /// If the code is in the 200 range or if its a 300 range redirect code,
+  /// nothing is done. If the code is 408, 429, or in the 500 range,
+  /// [PubHttpResponseException] is thrown with "isIntermittent" set to `true`.
+  /// Otherwise, [PubHttpResponseException] is thrown with "isIntermittent" set
+  /// to `false`.
+  void throwIfNotOk() {
+    if (statusCode >= 200 && statusCode <= 299) {
+      return;
+    } else if (_redirectStatusCodes.contains(statusCode)) {
+      return;
+    } else if (statusCode == HttpStatus.notAcceptable &&
+        request?.headers['Accept'] == pubApiHeaders['Accept']) {
+      fail('Pub ${sdk.version} is incompatible with the current version of '
+          '${request?.url.host}.\n'
+          'Upgrade pub to the latest version and try again.');
+    } else if (statusCode >= 500 ||
+        statusCode == HttpStatus.requestTimeout ||
+        statusCode == HttpStatus.tooManyRequests) {
+      // Throw if the response indicates a server error or an intermittent
+      // client error, but mark it as intermittent so it can be retried.
+      throw PubHttpResponseException(this, isIntermittent: true);
+    } else {
+      // Throw for all other status codes.
+      throw PubHttpResponseException(this);
+    }
+  }
+}
+
+extension RequestSending on http.Client {
+  /// Sends an HTTP request, reads the whole response body, validates the
+  /// response headers, and if validation is successful, and returns it.
+  ///
+  /// The send method on [http.Client], which returns a [http.StreamedResponse],
+  /// is the only method that accepts a request object. This method can be used
+  /// when you need to send a request object but want a regular response object.
+  ///
+  /// If false is passed for [throwIfNotOk], the response will not be validated.
+  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  Future<http.Response> fetch(http.BaseRequest request,
+      {bool throwIfNotOk = true}) async {
+    final streamedResponse = await send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+    if (throwIfNotOk) {
+      response.throwIfNotOk();
+    }
+    return response;
   }
 
-  @override
-  void close() => _inner.close();
+  /// Sends an HTTP request, validates the response headers, and if validation
+  /// is successful, returns a [http.StreamedResponse].
+  ///
+  /// If false is passed for [throwIfNotOk], the response will not be validated.
+  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  Future<http.StreamedResponse> fetchAsStream(http.BaseRequest request,
+      {bool throwIfNotOk = true}) async {
+    final streamedResponse = await send(request);
+    if (throwIfNotOk) {
+      streamedResponse.throwIfNotOk();
+    }
+    return streamedResponse;
+  }
 }

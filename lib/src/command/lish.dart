@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';
 import '../command.dart';
+import '../command_runner.dart';
 import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
@@ -92,52 +93,69 @@ class LishCommand extends PubCommand {
 
     try {
       await log.progress('Uploading', () async {
-        var newUri = host.resolve('api/packages/versions/new');
-        var response = await client.get(newUri, headers: pubApiHeaders);
-        var parameters = parseJsonResponse(response);
+        /// 1. Initiate upload
+        final parametersResponse =
+            await retryForHttp('initiating upload', () async {
+          final request =
+              http.Request('GET', host.resolve('api/packages/versions/new'));
+          request.attachPubApiHeaders();
+          request.attachMetadataHeaders();
+          return await client.fetch(request);
+        });
+        final parameters = parseJsonResponse(parametersResponse);
 
-        var url = _expectField(parameters, 'url', response);
-        if (url is! String) invalidServerResponse(response);
+        /// 2. Upload package
+        var url = _expectField(parameters, 'url', parametersResponse);
+        if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
-        // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-        // should report that error and exit.
-        var request = http.MultipartRequest('POST', cloudStorageUrl!);
+        final uploadResponse =
+            await retryForHttp('uploading package', () async {
+          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+          // should report that error and exit.
+          var request = http.MultipartRequest('POST', cloudStorageUrl!);
 
-        var fields = _expectField(parameters, 'fields', response);
-        if (fields is! Map) invalidServerResponse(response);
-        fields.forEach((key, value) {
-          if (value is! String) invalidServerResponse(response);
-          request.fields[key] = value;
+          var fields = _expectField(parameters, 'fields', parametersResponse);
+          if (fields is! Map) invalidServerResponse(parametersResponse);
+          fields.forEach((key, value) {
+            if (value is! String) invalidServerResponse(parametersResponse);
+            request.fields[key] = value;
+          });
+
+          request.followRedirects = false;
+          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
+              filename: 'package.tar.gz'));
+          return await client.fetch(request);
         });
 
-        request.followRedirects = false;
-        request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-            filename: 'package.tar.gz'));
-        var postResponse =
-            await http.Response.fromStream(await client.send(request));
-
-        var location = postResponse.headers['location'];
-        if (location == null) throw PubHttpException(postResponse);
-        handleJsonSuccess(
-            await client.get(Uri.parse(location), headers: pubApiHeaders));
+        /// 3. Finalize publish
+        var location = uploadResponse.headers['location'];
+        if (location == null) throw PubHttpResponseException(uploadResponse);
+        final finalizeResponse =
+            await retryForHttp('finalizing publish', () async {
+          final request = http.Request('GET', Uri.parse(location));
+          request.attachPubApiHeaders();
+          request.attachMetadataHeaders();
+          return await client.fetch(request);
+        });
+        handleJsonSuccess(finalizeResponse);
       });
     } on AuthenticationException catch (error) {
       var msg = '';
       if (error.statusCode == 401) {
         msg += '$host package repository requested authentication!\n'
             'You can provide credentials using:\n'
-            '    pub token add $host\n';
+            '    $topLevelProgram pub token add $host\n';
       }
       if (error.statusCode == 403) {
         msg += 'Insufficient permissions to the resource at the $host '
             'package repository.\nYou can modify credentials using:\n'
-            '    pub token add $host\n';
+            '    $topLevelProgram pub token add $host\n';
       }
       if (error.serverMessage != null) {
         msg += '\n${error.serverMessage!}\n';
       }
       dataError(msg + log.red('Authentication failed!'));
-    } on PubHttpException catch (error) {
+    } on PubHttpResponseException catch (error) {
       var url = error.response.request!.url;
       if (url == cloudStorageUrl) {
         // TODO(nweiz): the response may have XML-formatted information about
@@ -188,7 +206,7 @@ class LishCommand extends PubCommand {
           return _publishUsingClient(packageBytes, client);
         });
       }
-    } on PubHttpException catch (error) {
+    } on PubHttpResponseException catch (error) {
       var url = error.response.request!.url;
       if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);

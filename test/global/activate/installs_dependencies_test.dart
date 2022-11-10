@@ -15,7 +15,7 @@ void main() {
 
     await runPub(
         args: ['global', 'activate', 'foo'],
-        output: allOf([
+        silent: allOf([
           contains('Downloading bar 1.0.0...'),
           contains('Downloading baz 1.0.0...')
         ]));

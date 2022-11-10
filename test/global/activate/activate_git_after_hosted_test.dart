@@ -29,7 +29,7 @@ void main() {
         output: allOf(
             startsWith('Package foo is currently active at version 1.0.0.\n'
                 'Resolving dependencies...\n'
-                '+ foo 1.0.0 from git ..${separator}foo.git at '),
+                '* foo 1.0.0 from git ..${separator}foo.git at '),
             // Specific revision number goes here.
             endsWith('Building package executables...\n'
                 'Built foo:foo.\n'

@@ -49,6 +49,7 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
+
     await entrypoint.acquireDependencies(
       SolveType.get,
       dryRun: argResults['dry-run'],

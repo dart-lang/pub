@@ -91,7 +91,7 @@ class NullSafetyAnalysis {
           }
         },
         sources: _systemCache.sources,
-        sdkConstraints: {'dart': rootPubspec.sdkConstraints['dart']!}));
+        sdkConstraints: {'dart': rootPubspec.dartSdkConstraint}));
 
     final rootLanguageVersion = rootPubspec.languageVersion;
     if (!rootLanguageVersion.supportsNullSafety) {

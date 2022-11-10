@@ -441,7 +441,7 @@ void main() {
         },
         error: allOf(
           contains('Because myapp depends on has_conflict >=2.0.0 which'),
-          contains('requires SDK version >=2.13.0 <3.0.0,'),
+          contains('requires SDK version >=2.13.0 <4.0.0,'),
           contains('version solving failed.'),
         ),
       );
