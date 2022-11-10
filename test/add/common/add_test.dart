@@ -574,7 +574,7 @@ environment:
       ]).validate();
     });
 
-    test('Cannot combine --dev and :dev', () async {
+    test('Cannot combine --dev with :dev', () async {
       await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
 
       await d.dir(appPath, [

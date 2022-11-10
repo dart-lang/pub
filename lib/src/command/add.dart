@@ -363,7 +363,7 @@ Specify multiple sdk packages with descriptors.''');
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
   ///
-  /// The returned [_PartialParseResult]
+  /// The returned [_PartialParseResult] will always have `ref!=null`.
   _PartialParseResult _parsePackageOldStyleArgs(
     String package,
     ArgResults argResults,
@@ -534,7 +534,7 @@ Specify multiple sdk packages with descriptors.''');
         }
         final range = dummyPubspec.dependencies[packageName]!;
         if (parsedDescriptor is String) {
-          // Ref will be parsed by `_parsePackageOldStyleArgs()`
+          // Ref will be constructed by `_parsePackageOldStyleArgs()`
           ref = null;
         } else {
           ref = range.toRef();
@@ -549,7 +549,6 @@ Specify multiple sdk packages with descriptors.''');
         }
       }
     }
-    print(ref);
     return _PartialParseResult(ref, constraint);
   }
 
