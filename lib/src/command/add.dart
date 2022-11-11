@@ -340,7 +340,7 @@ Specify multiple sdk packages with descriptors.''');
   /// arguments given in [argResults] to configure the description.
   ///
   /// [package] must be written in the format
-  /// `[dev:]<package-name>[:<version-constraint>]`, where quotations should be
+  /// `<package-name>[:<version-constraint>]`, where quotations should be
   /// used if necessary.
   ///
   /// Examples:
