@@ -8,8 +8,9 @@ import 'dart:io';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
-import 'package:oauth2/oauth2.dart';
 import 'package:path/path.dart' as path;
+// ignore: prefer_relative_imports
+import 'package:pub/src/third_party/oauth2/lib/oauth2.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
