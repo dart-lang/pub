@@ -5,8 +5,12 @@ $ pub add --help
 Add dependencies to `pubspec.yaml`.
 
 Invoking `dart pub add foo bar` will add `foo` and `bar` to `pubspec.yaml`
-
 with a default constraint derived from latest compatible version.
+
+Add to dev_dependencies by prefixing with "dev:".
+
+Add packages with specific constraints or other sources by giving a descriptor
+after a colon.
 
 For example:
   * Add a hosted dependency at newest compatible stable version:

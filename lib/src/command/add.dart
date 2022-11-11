@@ -44,8 +44,12 @@ class AddCommand extends PubCommand {
   String get description => '''Add dependencies to `pubspec.yaml`.
 
 Invoking `dart pub add foo bar` will add `foo` and `bar` to `pubspec.yaml`
-
 with a default constraint derived from latest compatible version.
+
+Add to dev_dependencies by prefixing with "dev:".
+
+Add packages with specific constraints or other sources by giving a descriptor
+after a colon.
 
 For example:
   * Add a hosted dependency at newest compatible stable version:
@@ -159,27 +163,8 @@ Specify multiple sdk packages with descriptors.''');
       usageException('Must specify at least one package to be added.');
     }
 
-    final updates = argResults.rest.map((p) {
-      var isDev = argResults['dev'] as bool;
-      if (p.startsWith('dev:')) {
-        if (argResults.isDev) {
-          usageException("Cannot combine 'dev:' with --dev");
-        }
-        isDev = true;
-        p = p.substring('dev:'.length);
-      }
-      var partial = _parsePackage(p, argResults);
-      if (partial.ref == null) {
-        // No yaml-style descriptor was given, parse old-style arguments.
-        partial = _parsePackageOldStyleArgs(p, argResults);
-      } else {
-        if (argResults.hasOldStyleOptions) {
-          usageException(
-              '--path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.');
-        }
-      }
-      return _ParseResult(partial.ref!, partial.constraint, isDev: isDev);
-    }).toList();
+    final updates =
+        argResults.rest.map((p) => _parsePackage(p, argResults)).toList();
 
     var updatedPubSpec = entrypoint.root.pubspec;
     for (final update in updates) {
@@ -336,12 +321,45 @@ Specify multiple sdk packages with descriptors.''');
     );
   }
 
-  /// Parse [package] to return the corresponding [_ParseResult] using the
+  /// Split [arg] on ':' and interpret it with the flags in [argResult] either as
+  /// an old-style or a new-style descriptor to produce a PackageRef].
+  _ParseResult _parsePackage(String arg, ArgResults argResults) {
+    var isDev = argResults['dev'] as bool;
+    if (arg.startsWith('dev:')) {
+      if (argResults.isDev) {
+        usageException("Cannot combine 'dev:' with --dev");
+      }
+      isDev = true;
+      arg = arg.substring('dev:'.length);
+    }
+    final nextColon = arg.indexOf(':');
+    final packageName = nextColon == -1 ? arg : arg.substring(0, nextColon);
+    if (!packageNameRegExp.hasMatch(packageName)) {
+      usageException('Not a valid package name: "$packageName"');
+    }
+    final descriptor = nextColon == -1 ? null : arg.substring(nextColon + 1);
+
+    final _PartialParseResult partial;
+    if (argResults.hasOldStyleOptions) {
+      partial = _parseDescriptorOldStyleArgs(
+        packageName,
+        descriptor,
+        argResults,
+      );
+    } else {
+      partial = _parseDescriptorNewStyle(packageName, descriptor);
+    }
+
+    return _ParseResult(partial.ref, partial.constraint, isDev: isDev);
+  }
+
+  /// Parse [descriptor] to return the corresponding [_ParseResult] using the
   /// arguments given in [argResults] to configure the description.
   ///
-  /// [package] must be written in the format
-  /// `<package-name>[:<version-constraint>]`, where quotations should be
-  /// used if necessary.
+  /// [descriptor] should be a constraint as parsed by
+  /// [VersionConstraint.parse]. If it fails to parse as a version constraint
+  /// but could parse with [_parseDescriptorNewStyle()] a specific usage
+  /// description is issued.
   ///
   /// Examples:
   /// ```
@@ -364,8 +382,9 @@ Specify multiple sdk packages with descriptors.''');
   /// defined, an error will be thrown.
   ///
   /// The returned [_PartialParseResult] will always have `ref!=null`.
-  _PartialParseResult _parsePackageOldStyleArgs(
-    String package,
+  _PartialParseResult _parseDescriptorOldStyleArgs(
+    String packageName,
+    String? descriptor,
     ArgResults argResults,
   ) {
     final conflictingFlagSets = [
@@ -388,25 +407,28 @@ Specify multiple sdk packages with descriptors.''');
       }
     }
 
-    final splitPackage = package.split(':');
-
-    final packageName = splitPackage[0];
-
-    /// There shouldn't be more than one `:` in the package information
-    if (splitPackage.length > 2) {
-      usageException('Invalid package and version constraint: $package');
-    }
-
     /// We want to allow for [constraint] to take on a `null` value here to
     /// preserve the fact that the user did not specify a constraint.
     VersionConstraint? constraint;
-
     try {
-      constraint = splitPackage.length == 2
-          ? VersionConstraint.parse(splitPackage[1])
-          : null;
+      constraint =
+          descriptor == null ? null : VersionConstraint.parse(descriptor);
     } on FormatException catch (e) {
-      usageException('Invalid version constraint: ${e.message}');
+      var couldParseAsNewStyle = false;
+      try {
+        _parseDescriptorNewStyle(packageName, descriptor);
+        // If parsing the descriptor as a new-style descriptor succeeds we
+        // can give this more specific error message.
+        couldParseAsNewStyle = true;
+      } catch (_) {
+        // Do nothing
+      }
+      if (couldParseAsNewStyle) {
+        usageException(
+            '--path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.');
+      } else {
+        usageException('Invalid version constraint: ${e.message}');
+      }
     }
 
     /// The package to be added.
@@ -446,7 +468,7 @@ Specify multiple sdk packages with descriptors.''');
         packageName,
         HostedDescription(
           packageName,
-          argResults.hostUrl ?? cache.hosted.defaultUrl,
+          argResults.hostedUrl ?? cache.hosted.defaultUrl,
         ),
       );
     }
@@ -495,19 +517,10 @@ Specify multiple sdk packages with descriptors.''');
   ///
   /// Returns a `ref` of `null` if the descriptor did not specify a source.
   /// Then the source will be determined by the old-style arguments.
-  _PartialParseResult _parsePackage(String package, ArgResults argResults) {
-    final packageNamePattern =
-        '${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*';
-    final match =
-        RegExp('^(?<name>$packageNamePattern)(?::(?<descriptor>.*))?\$')
-            .firstMatch(package);
-    if (match == null) {
-      usageException('$package is not a valid package specifier.');
-    }
-
-    final packageName = match.namedGroup('name')!;
-    final descriptor = match.namedGroup('descriptor');
-
+  _PartialParseResult _parseDescriptorNewStyle(
+    String packageName,
+    String? descriptor,
+  ) {
     /// We want to allow for [constraint] to take on a `null` value here to
     /// preserve the fact that the user did not specify a constraint.
     VersionConstraint? constraint;
@@ -552,7 +565,17 @@ Specify multiple sdk packages with descriptors.''');
         }
       }
     }
-    return _PartialParseResult(ref, constraint);
+    return _PartialParseResult(
+      ref ??
+          PackageRef(
+            packageName,
+            HostedDescription(
+              packageName,
+              argResults.hostedUrl ?? cache.hosted.defaultUrl,
+            ),
+          ),
+      constraint,
+    );
   }
 
   /// Writes the changes to the pubspec file.
@@ -629,7 +652,7 @@ Specify multiple sdk packages with descriptors.''');
 }
 
 class _PartialParseResult {
-  final PackageRef? ref;
+  final PackageRef ref;
   final VersionConstraint? constraint;
   _PartialParseResult(this.ref, this.constraint);
 }
@@ -647,10 +670,11 @@ extension on ArgResults {
   String? get gitUrl => this['git-url'];
   String? get gitPath => this['git-path'];
   String? get gitRef => this['git-ref'];
-  String? get hostUrl => this['hosted-url'];
+  String? get hostedUrl => this['hosted-url'];
   String? get path => this['path'];
   String? get sdk => this['sdk'];
-  bool get hasOldStyleOptions => hasGitOptions || path != null || sdk != null;
+  bool get hasOldStyleOptions =>
+      hasGitOptions || path != null || sdk != null || hostedUrl != null;
   bool get shouldPrecompile => this['precompile'];
   bool get example => this['example'];
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;

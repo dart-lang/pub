@@ -20,7 +20,7 @@ void main() {
 
     await pubAdd(
         args: ['bad name!:1.2.3'],
-        error: contains('bad name!:1.2.3 is not a valid package specifier.'),
+        error: contains('Not a valid package name: "bad name!"'),
         exitCode: exit_codes.USAGE);
 
     await d.appDir({}).validate();
