@@ -20,13 +20,8 @@ void main() {
 
     await pubAdd(
         args: ['bad name!:1.2.3'],
-        error: allOf([
-          contains(
-              "Because myapp depends on bad name! any which doesn't exist (could "
-              'not find package bad name! at http://localhost:'),
-          contains('), version solving failed.')
-        ]),
-        exitCode: exit_codes.DATA);
+        error: contains('bad name!:1.2.3 is not a valid package specifier.'),
+        exitCode: exit_codes.USAGE);
 
     await d.appDir({}).validate();
 

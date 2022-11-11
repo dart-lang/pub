@@ -496,14 +496,17 @@ Specify multiple sdk packages with descriptors.''');
   /// Returns a `ref` of `null` if the descriptor did not specify a source.
   /// Then the source will be determined by the old-style arguments.
   _PartialParseResult _parsePackage(String package, ArgResults argResults) {
+    final packageNamePattern =
+        '${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*';
     final match =
-        RegExp(r'^(?<name>[^:]*)(?<descriptor>:.*)?$').firstMatch(package);
+        RegExp('^(?<name>$packageNamePattern)(?::(?<descriptor>.*))?\$')
+            .firstMatch(package);
     if (match == null) {
       usageException('$package is not a valid package specifier.');
     }
 
     final packageName = match.namedGroup('name')!;
-    final descriptor = match.namedGroup('descriptor')?.substring(1);
+    final descriptor = match.namedGroup('descriptor');
 
     /// We want to allow for [constraint] to take on a `null` value here to
     /// preserve the fact that the user did not specify a constraint.
