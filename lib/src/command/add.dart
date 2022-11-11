@@ -463,7 +463,7 @@ Specify multiple sdk packages with descriptors.''');
   /// section.
   ///
   /// Assumes that none of '--git-url', '--git-ref', '--git-path', '--path' and
-  /// '--sdk' are present in [argResults], but will obey '--dev'.
+  /// '--sdk' are present in [argResults].
   ///
   ///
   /// Examples:
