@@ -456,7 +456,7 @@ Specify multiple sdk packages with descriptors.''');
   /// Parse [package] to return the corresponding [_ParseResult].
   ///
   /// [package] must be written in the format
-  /// `dev:<package-name>[:descriptor>]`, where quotations should be used if
+  /// `<package-name>[:descriptor>]`, where quotations should be used if
   /// necessary.
   ///
   /// `descriptor` is what you would put in a pubspec.yaml in the dependencies
