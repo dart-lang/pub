@@ -270,6 +270,26 @@ class SystemCache {
 
     return latest;
   }
+
+  /// Write a README.md file in the root of the cache directory to document the
+  /// contents of the folder.
+  ///
+  void ensureReadme() {
+    final readmePath = p.join(rootDir, 'README.md');
+    if (!fileExists(readmePath) && dirExists(rootDir)) {
+      writeTextFile(readmePath, '''
+# Pub Package Cache
+
+This folder is used by Pub to store packages used by Dart / Flutter
+projects.
+
+The contents should only be modified using the `dart pub`/`flutter pub`
+commands.
+
+For more information, see: https://dart.dev/go/pub-cache
+''');
+    }
+  }
 }
 
 typedef SourceRegistry = Source Function(String? name);
