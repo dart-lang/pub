@@ -210,9 +210,6 @@ and attaching the relevant parts of that log file.
       }
       return _chooseExitCode(error);
     } finally {
-      if (!crashed) {
-        cache.ensureReadme();
-      }
       final verbose = _pubTopLevel.verbosity == log.Verbosity.all;
 
       // Write the whole log transcript to file.

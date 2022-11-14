@@ -87,32 +87,7 @@ Future<void> main() async {
     File(snapshot).parent.deleteSync(recursive: true);
   });
 
-  test(
-      'PUB_CACHE/README.md gets created by any command if the pub cache exists',
-      () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
-    final buffer = StringBuffer(); // Ignored in this test.
-    await d.appDir().create();
-    await runEmbeddingToBuffer(
-      ['pub', 'get'],
-      buffer,
-      environment: getPubTestEnvironment(),
-      workingDirectory: d.path(appPath),
-    );
-    await d.nothing(cachePath).validate();
 
-    await d.appDir({'foo': '1.0.0'}).create();
-    await runEmbeddingToBuffer(
-      ['pub', 'get'],
-      buffer,
-      environment: getPubTestEnvironment(),
-      workingDirectory: d.path(appPath),
-    );
-    await d.dir(cachePath, [
-      d.file('README.md', contains('see: https://dart.dev/go/pub-cache'))
-    ]).validate();
-  });
 
   testWithGolden('run works, though hidden', (ctx) async {
     await servePackages();
