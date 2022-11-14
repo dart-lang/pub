@@ -109,6 +109,17 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   "generator": "pub",
 [E]    |   "generatorVersion": "0.1.2+3"
 [E]    | }
+[E] IO  : Writing $N characters to text file $SANDBOX/cache/README.md.
+[E] FINE: Contents:
+[E]    | # Pub Package Cache
+[E]    | 
+[E]    | This folder is used by Pub to store packages used by Dart / Flutter
+[E]    | projects.
+[E]    | 
+[E]    | The contents should only be modified using the `dart pub`/`flutter pub`
+[E]    | commands.
+[E]    | 
+[E]    | For more information, see: https://dart.dev/go/pub-cache
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/log/pub_log.txt.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -255,6 +266,17 @@ FINE: Contents:
    |   "generator": "pub",
    |   "generatorVersion": "0.1.2+3"
    | }
+IO  : Writing $N characters to text file $SANDBOX/cache/README.md.
+FINE: Contents:
+   | # Pub Package Cache
+   | 
+   | This folder is used by Pub to store packages used by Dart / Flutter
+   | projects.
+   | 
+   | The contents should only be modified using the `dart pub`/`flutter pub`
+   | commands.
+   | 
+   | For more information, see: https://dart.dev/go/pub-cache
 ---- End log transcript ----
 -------------------------------- END OF OUTPUT ---------------------------------
 
