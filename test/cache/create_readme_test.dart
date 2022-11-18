@@ -17,7 +17,7 @@ void main() async {
     await d.appDir({'foo': '1.0.0'}).create();
     await pubGet();
     await d.dir(cachePath, [
-      d.file('README.md', contains('see: https://dart.dev/go/pub-cache'))
+      d.file('README.md', contains('https://dart.dev/go/pub-cache'))
     ]).validate();
     File(pathInCache('README.md')).deleteSync();
     // No new download, so 'README.md' doesn't get updated.
@@ -31,7 +31,7 @@ void main() async {
     await d.appDir({'foo': '1.0.0'}).create();
     await pubGet();
     await d.dir(cachePath, [
-      d.file('README.md', contains('see: https://dart.dev/go/pub-cache'))
+      d.file('README.md', contains('https://dart.dev/go/pub-cache'))
     ]).validate();
   });
 }
