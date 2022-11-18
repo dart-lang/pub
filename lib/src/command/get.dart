@@ -32,7 +32,7 @@ class GetCommand extends PubCommand {
       'enforce-lockfile',
       negatable: false,
       help:
-          'Enforce pubspec.lock, fail resolution if pubspec.lock does not satisfy pubspec.yaml',
+          'Enforce pubspec.lock. Fail resolution if pubspec.lock does not satisfy pubspec.yaml',
     );
 
     argParser.addFlag('precompile',

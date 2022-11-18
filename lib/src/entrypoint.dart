@@ -325,6 +325,7 @@ class Entrypoint {
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
 
     String forDetails() {
+      if (!onlyReportSuccessOrFailure) return '';
       final enforceLockfileOption =
           enforceLockfile ? ' --enforce-lockfile' : '';
       final directoryOption =
@@ -333,8 +334,11 @@ class Entrypoint {
     }
 
     if (enforceLockfile && !fileExists(lockFilePath)) {
-      throw ApplicationException(
-          'Retrieving dependencies failed$suffix. Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.');
+      throw ApplicationException('''
+Retrieving dependencies failed$suffix.
+Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.
+
+Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     }
 
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
@@ -382,8 +386,13 @@ class Entrypoint {
     final hasChanges = await report.show();
     await report.summarize();
     if (enforceLockfile && hasChanges) {
-      dataError(
-          'Could not enforce the lockfile$suffix.${onlyReportSuccessOrFailure ? forDetails() : ''}');
+      var suggestion = onlyReportSuccessOrFailure
+          ? ''
+          : '''
+\n\nTo update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
+`--enforce-lockfile`.''';
+      dataError('''
+Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$suggestion''');
     }
 
     if (!(dryRun || enforceLockfile)) {

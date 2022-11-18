@@ -34,8 +34,12 @@ Future<void> main() async {
     await appDir({}).create();
     await pubGet(
       args: ['--enforce-lockfile'],
-      error:
-          'Retrieving dependencies failed. Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.',
+      error: '''
+Retrieving dependencies failed.
+Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.
+
+Try running `dart pub get` to create `pubspec.lock`.
+''',
     );
   });
 
@@ -72,7 +76,7 @@ Future<void> main() async {
         contains('Resolving dependencies in $example...'),
       ),
       error: contains(
-          'Could not enforce the lockfile in $example. For details run `dart pub get --directory $example --enforce-lockfile'),
+          'Unable to satisfy `example/pubspec.yaml` using `example/pubspec.lock` in $example. For details run `dart pub get --directory $example --enforce-lockfile'),
       exitCode: DATA,
     );
   });
@@ -90,7 +94,7 @@ Future<void> main() async {
         contains('+ foo 1.0.0'),
         contains('Would have changed 1 dependency.'),
       ),
-      error: 'Could not enforce the lockfile.',
+      error: contains('Unable to satisfy `pubspec.yaml` using `pubspec.lock`.'),
       exitCode: DATA,
     );
   });
@@ -109,7 +113,7 @@ Future<void> main() async {
         contains('> foo 2.0.0 (was 1.0.0)'),
         contains('Would have changed 1 dependency.'),
       ]),
-      error: contains('Could not enforce the lockfile.'),
+      error: contains('Unable to satisfy `pubspec.yaml` using `pubspec.lock`.'),
       exitCode: DATA,
     );
   });
@@ -143,7 +147,7 @@ Future<void> main() async {
           ' * foo-1.0.0 from "${server.url}"',
         ),
         contains(
-          'Could not enforce the lockfile.',
+          'Unable to satisfy `pubspec.yaml` using `pubspec.lock`.',
         ),
       ),
       exitCode: DATA,
@@ -173,6 +177,7 @@ Future<void> main() async {
         contains('''
 The existing content-hash from pubspec.lock doesn't match contents for:
  * foo-1.0.0 from "${server.url}"'''),
+        contains('Unable to satisfy `pubspec.yaml` using `pubspec.lock`.'),
       ),
       exitCode: DATA,
     );
