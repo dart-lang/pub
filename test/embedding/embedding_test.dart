@@ -87,8 +87,6 @@ Future<void> main() async {
     File(snapshot).parent.deleteSync(recursive: true);
   });
 
-
-
   testWithGolden('run works, though hidden', (ctx) async {
     await servePackages();
     await d.dir(appPath, [
