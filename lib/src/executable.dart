@@ -307,7 +307,8 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   try {
     // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
     entrypoint.assertUpToDate();
-  } on DataException {
+  } on DataException catch (e) {
+    log.fine('Resolution not up to date: ${e.message}. Redoing.');
     try {
       await warningsOnlyUnlessTerminal(
         () => entrypoint.acquireDependencies(
