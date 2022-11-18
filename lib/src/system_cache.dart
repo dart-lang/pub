@@ -305,7 +305,7 @@ class SystemCache {
     final readmePath = p.join(rootDir, 'README.md');
     try {
       writeTextFile(readmePath, '''
-  Pub Package Cache
+Pub Package Cache
 =================
 
 This folder is used by Pub to store cached packages used in Dart / Flutter
