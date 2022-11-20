@@ -12,6 +12,7 @@ import '../command.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../git.dart';
+import '../git_url.dart';
 import '../io.dart';
 import '../language_version.dart';
 import '../log.dart' as log;
@@ -334,11 +335,13 @@ class AddCommand extends PubCommand {
       if (gitUrl == null) {
         usageException('The `--git-url` is required for git dependencies.');
       }
-      Uri parsed;
+      String parsed;
       try {
-        parsed = Uri.parse(gitUrl);
+        parsed = parseGitUrl(gitUrl);
       } on FormatException catch (e) {
         usageException('The --git-url must be a valid url: ${e.message}.');
+      } on GitUrlException catch (e) {
+        usageException('The --git-url must be a valid git format: ${e.message}.');
       }
 
       /// Process the git options to return the simplest representation to be
@@ -347,7 +350,7 @@ class AddCommand extends PubCommand {
       ref = PackageRef(
         packageName,
         GitDescription(
-          url: parsed.toString(),
+          url: parsed,
           containingDir: p.current,
           ref: gitRef,
           path: gitPath,
