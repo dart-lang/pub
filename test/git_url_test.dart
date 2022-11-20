@@ -7,12 +7,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('parse()', () {
-    test('http', () {
-      const gitUrl = 'http://github.com/dart-lang/pub.git';
-      final uri = Uri.parse(gitUrl);
-      expect(parseGitUrl(gitUrl), equals(uri.toString()));
-    });
-
     test('https', () {
       const gitUrl = 'https://github.com/dart-lang/pub.git';
       final uri = Uri.parse(gitUrl);
@@ -21,6 +15,16 @@ void main() {
 
     test('git', () {
       const gitUrl = 'git@github.com:dart-lang/pub.git';
+      expect(parseGitUrl(gitUrl), equals(gitUrl));
+    });
+
+    test('current directory path', () {
+      const gitUrl = 'foo.git';
+      expect(parseGitUrl(gitUrl), equals(gitUrl));
+    });
+
+    test('another directory path', () {
+      const gitUrl = '../foo.git';
       expect(parseGitUrl(gitUrl), equals(gitUrl));
     });
   });
