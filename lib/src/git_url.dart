@@ -3,13 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 String parseGitUrl(String url) {
-  if (url.startsWith('http://') | url.startsWith('https://')) {
-    return Uri.parse(url).toString();
-  } else if (url.startsWith('git@')) {
+  if (url.startsWith('git@')) {
     return _parseGitUrl(url);
-  } else {
-    throw GitUrlException('This is not git format.');
   }
+  return Uri.parse(url).toString();
 }
 
 String _parseGitUrl(String url) {
