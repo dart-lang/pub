@@ -18,7 +18,7 @@ String _parseGitUrl(String url) {
     throw GitUrlException('Need to contain a domain.');
   }
   final domain = url.substring(4, colonIndex);
-  if (Uri.tryParse(domain) == null) {
+  if (domain.isEmpty || Uri.tryParse(domain) == null) {
     throw GitUrlException('Need to contain a valid domain.');
   }
   return url;

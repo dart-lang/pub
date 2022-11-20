@@ -6,26 +6,41 @@ import 'package:pub/src/git_url.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('parse()', () {
-    test('https', () {
-      const gitUrl = 'https://github.com/dart-lang/pub.git';
-      final uri = Uri.parse(gitUrl);
-      expect(parseGitUrl(gitUrl), equals(uri.toString()));
+  test('correct https url', () {
+    const gitUrl = 'https://github.com/dart-lang/pub.git';
+    final uri = Uri.parse(gitUrl);
+    expect(parseGitUrl(gitUrl), equals(uri.toString()));
+  });
+
+  test('current directory path', () {
+    const gitUrl = 'foo.git';
+    expect(parseGitUrl(gitUrl), equals(gitUrl));
+  });
+
+  test('other directory path', () {
+    const gitUrl = '../foo.git';
+    expect(parseGitUrl(gitUrl), equals(gitUrl));
+  });
+
+  test('correct git url', () {
+    const gitUrl = 'git@github.com:dart-lang/pub.git';
+    expect(parseGitUrl(gitUrl), equals(gitUrl));
+  });
+
+  group('git url exception', () {
+    test('invalid git format', () {
+      const gitUrl = 'git@github.com:dart-lang/pub';
+      expect(() => parseGitUrl(gitUrl), throwsA(isA<GitUrlException>()));
     });
 
-    test('git', () {
-      const gitUrl = 'git@github.com:dart-lang/pub.git';
-      expect(parseGitUrl(gitUrl), equals(gitUrl));
+    test('need domain', () {
+      const gitUrl = 'git@dart-lang/pub.git';
+      expect(() => parseGitUrl(gitUrl), throwsA(isA<GitUrlException>()));
     });
 
-    test('current directory path', () {
-      const gitUrl = 'foo.git';
-      expect(parseGitUrl(gitUrl), equals(gitUrl));
-    });
-
-    test('another directory path', () {
-      const gitUrl = '../foo.git';
-      expect(parseGitUrl(gitUrl), equals(gitUrl));
+    test('invalid domain', () {
+      const gitUrl = 'git@:dart-lang/pub.git';
+      expect(() => parseGitUrl(gitUrl), throwsA(isA<GitUrlException>()));
     });
   });
 }
