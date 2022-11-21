@@ -13,14 +13,9 @@ void main() {
   test('fails if the Git repo does not exist', () async {
     ensureGit();
 
-    // Git will report the error message using forward slashes, even on Windows.
-    final pathWithSlashes = p.posix.joinAll([...p.split(sandbox), 'nope.git']);
-
     await runPub(
       args: ['global', 'activate', '-sgit', '../nope.git'],
-      error: contains(
-        "'$pathWithSlashes' does not appear to be a git repository",
-      ),
+      error: contains("/nope.git' does not appear to be a git repository"),
       exitCode: exit_codes.UNAVAILABLE,
     );
   });
