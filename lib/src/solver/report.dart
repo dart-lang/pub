@@ -58,6 +58,9 @@ class SolveReport {
 
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
+  ///
+  /// Returns `true` if there was any change of dependencies relative to the old
+  /// lockfile.
   Future<bool> show() async {
     final hasChanges = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
