@@ -98,7 +98,7 @@ class GlobalPackages {
       ref,
       path,
       cache,
-      containingDir: p.current,
+      relativeTo: p.current,
     );
 
     // TODO(nweiz): Add some special handling for git repos that contain path

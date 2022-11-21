@@ -204,13 +204,13 @@ class GitSource extends CachedSource {
     String? ref,
     String? path,
     SystemCache cache, {
-    required String containingDir,
+    required String relativeTo,
   }) async {
     final description = GitDescription(
       url: url,
       ref: ref,
       path: path,
-      containingDir: containingDir,
+      containingDir: relativeTo,
     );
     return await _pool.withResource(() async {
       await _ensureRepoCache(description, cache);
