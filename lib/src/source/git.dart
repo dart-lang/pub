@@ -238,7 +238,7 @@ class GitSource extends CachedSource {
     // Normalize the path because Git treats "./" at the beginning of a path
     // specially.
     var pathInCache =
-        p.normalize(p.join(p.fromUri(description.path), 'pubspec.yaml'));
+        p.normalize(p.join(p.fromUri(description.path), pathInProject));
 
     // Git doesn't recognize backslashes in paths, even on Windows.
     if (Platform.isWindows) pathInCache = pathInCache.replaceAll('\\', '/');
