@@ -626,7 +626,6 @@ class Entrypoint {
       _checkPackageConfigUpToDate();
       touch(packageConfigPath);
     } else {
-      _checkPackageConfigSameSdk();
       if (touchedLockFile) {
         touch(packageConfigPath);
       }
@@ -648,6 +647,12 @@ class Entrypoint {
             "dependencies' SDK constraints. Please run \"$topLevelProgram pub get\" again.");
       }
     }
+    // We want to do ensure a pub get gets run when updating a minor version of
+    // the Dart SDK.
+    //
+    // Putting this check last because it leads to less specific messages than
+    // the 'incompatible sdk' check above.
+    _checkPackageConfigSameDartSdk();
   }
 
   /// Determines whether or not the lockfile is out of date with respect to the
@@ -787,8 +792,6 @@ class Entrypoint {
           'was generated, please run "$topLevelProgram pub get" again.');
     }
 
-    _checkPackageConfigSameSdk();
-
     final packagePathsMapping = <String, String>{};
 
     final packagesToCheck = packageConfig.nonInjectedPackages;
@@ -853,14 +856,15 @@ class Entrypoint {
   ///
   /// Throws [DataException], if `.dart_tool/package_config.json` the version
   /// changed sufficiently.
-  void _checkPackageConfigSameSdk() {
+  void _checkPackageConfigSameDartSdk() {
     final generatorVersion = packageConfig.generatorVersion;
     if (generatorVersion == null ||
         generatorVersion.major != sdk.version.major ||
         generatorVersion.minor != sdk.version.minor ||
         generatorVersion.isPreRelease ||
         sdk.version.isPreRelease) {
-      dataError('The sdk was updated since last package resolution');
+      dataError('The sdk was updated since last package resolution. Please run '
+          '"$topLevelProgram pub get" again.');
     }
   }
 
