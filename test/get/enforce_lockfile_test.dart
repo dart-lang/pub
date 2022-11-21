@@ -70,7 +70,7 @@ Try running `dart pub get` to create `pubspec.lock`.
 
     final example = p.join('.', 'example');
     final examplePubspec = p.join('example', 'pubspec.yaml');
-    final exampleLockfile = p.join('example', 'pubspec.yaml');
+    final exampleLockfile = p.join('example', 'pubspec.lock');
 
     await pubGet(
       args: ['--enforce-lockfile', '--example'],
