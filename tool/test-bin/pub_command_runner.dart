@@ -33,6 +33,31 @@ class ThrowingCommand extends PubCommand {
   }
 }
 
+class RunCommand extends Command<int> {
+  @override
+  String get name => 'run';
+
+  @override
+  String get description => 'runs a dart app';
+
+  @override
+  Future<int> run() async {
+    final executable = await getExecutableForCommand(argResults!.rest.first);
+    final packageConfig = executable.packageConfig;
+    final process = await Process.start(
+      Platform.executable,
+      [
+        if (packageConfig != null) '--packages=$packageConfig',
+        executable.executable,
+        ...argResults!.rest.skip(1)
+      ],
+      mode: ProcessStartMode.inheritStdio,
+    );
+
+    return await process.exitCode;
+  }
+}
+
 class Runner extends CommandRunner<int> {
   late ArgResults _options;
 
@@ -44,6 +69,7 @@ class Runner extends CommandRunner<int> {
     addCommand(
         pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
           ..addSubcommand(ThrowingCommand()));
+    addCommand(RunCommand());
     argParser.addFlag('verbose');
   }
 
@@ -51,7 +77,9 @@ class Runner extends CommandRunner<int> {
   Future<int> run(Iterable<String> args) async {
     try {
       _options = super.parse(args);
-
+      if (_options['verbose']) {
+        log.verbosity = log.Verbosity.all;
+      }
       return await runCommand(_options);
     } on UsageException catch (error) {
       log.exception(error);
