@@ -2,9 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
+import '../../descriptor.dart';
 import '../../test_pub.dart';
 
 void main() {
@@ -12,8 +14,11 @@ void main() {
     ensureGit();
 
     await runPub(
-        args: ['global', 'activate', '-sgit', '../nope.git'],
-        error: contains("repository '../nope.git' does not exist"),
-        exitCode: exit_codes.UNAVAILABLE);
+      args: ['global', 'activate', '-sgit', '../nope.git'],
+      error: contains(
+        "'$sandbox/nope.git' does not appear to be a git repository",
+      ),
+      exitCode: exit_codes.UNAVAILABLE,
+    );
   });
 }

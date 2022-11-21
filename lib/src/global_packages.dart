@@ -93,7 +93,13 @@ class GlobalPackages {
     String? path,
     String? ref,
   }) async {
-    var name = await cache.git.getPackageNameFromRepo(repo, ref, path, cache);
+    var name = await cache.git.getPackageNameFromRepo(
+      repo,
+      ref,
+      path,
+      cache,
+      containingDir: p.current,
+    );
 
     // TODO(nweiz): Add some special handling for git repos that contain path
     // dependencies. Their executables shouldn't be cached, and there should
