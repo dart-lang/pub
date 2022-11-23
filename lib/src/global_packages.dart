@@ -251,6 +251,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           result.availableVersions,
           cache,
           dryRun: false,
+          quiet: false,
+          enforceLockfile: false,
         ).show();
       }
 

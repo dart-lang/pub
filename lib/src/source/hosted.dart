@@ -728,8 +728,9 @@ class HostedSource extends CachedSource {
   /// `pub get` with a filled cache to be a fast case that doesn't require any
   /// new version-listings.
   @override
-  Future<PackageId> downloadToSystemCache(
+  Future<DownloadPackageResult> downloadToSystemCache(
       PackageId id, SystemCache cache) async {
+    var didUpdate = false;
     final packageDir = getDirectoryInCache(id, cache);
 
     // Use the content-hash from the version-info to compare with what we
@@ -779,17 +780,20 @@ class HostedSource extends CachedSource {
     if (dirExists(packageDir)) {
       contentHash ??= sha256FromCache(id, cache);
     } else {
+      didUpdate = true;
       if (cache.isOffline) {
         fail(
             'Missing package ${id.name}-${id.version}. Try again without --offline.');
       }
       contentHash = await _download(id, packageDir, cache);
     }
-    return PackageId(
-      id.name,
-      id.version,
-      (id.description as ResolvedHostedDescription).withSha256(contentHash),
-    );
+    return DownloadPackageResult(
+        PackageId(
+          id.name,
+          id.version,
+          (id.description as ResolvedHostedDescription).withSha256(contentHash),
+        ),
+        didUpdate: didUpdate);
   }
 
   /// Determines if the package identified by [id] is already downloaded to the
