@@ -20,13 +20,8 @@ void main() {
 
     await pubAdd(
         args: ['bad name!:1.2.3'],
-        error: allOf([
-          contains(
-              "Because myapp depends on bad name! any which doesn't exist (could "
-              'not find package bad name! at http://localhost:'),
-          contains('), version solving failed.')
-        ]),
-        exitCode: exit_codes.DATA);
+        error: contains('Not a valid package name: "bad name!"'),
+        exitCode: exit_codes.USAGE);
 
     await d.appDir({}).validate();
 
@@ -84,7 +79,7 @@ void main() {
       await d.dir(appPath, [
         d.file('pubspec.yaml', '''
           name: myapp
-          dependencies: 
+          dependencies:
 
           dev_dependencies:
 
@@ -370,7 +365,7 @@ environment:
 
         await pubAdd(
             args: ['foo:one-two-three'],
-            exitCode: exit_codes.USAGE,
+            exitCode: exit_codes.DATA,
             error: contains('Invalid version constraint: Could '
                 'not parse version "one-two-three".'));
 
@@ -492,6 +487,18 @@ environment:
     });
   });
 
+  test('Cannot combine descriptor with old-style args', () async {
+    await d.appDir().create();
+
+    await pubAdd(
+      args: ['foo:{"path":"../foo"}', '--path=../foo'],
+      error: contains(
+        '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined',
+      ),
+      exitCode: exit_codes.USAGE,
+    );
+  });
+
   group('--dev', () {
     test('--dev adds packages to dev_dependencies instead', () async {
       final server = await servePackages();
@@ -511,6 +518,84 @@ environment:
         d.pubspec({
           'name': 'myapp',
           'dev_dependencies': {'foo': '1.2.3'}
+        })
+      ]).validate();
+    });
+
+    test('--dev cannot be used with a descriptor', () async {
+      await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(
+        args: ['--dev', 'foo:{"path":../foo}'],
+        error: contains(
+          '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined',
+        ),
+        exitCode: exit_codes.USAGE,
+      );
+    });
+
+    test('dev: adds packages to dev_dependencies instead without a descriptor',
+        () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(args: ['dev:foo:1.2.3']);
+
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dev_dependencies': {'foo': '1.2.3'}
+        })
+      ]).validate();
+    });
+
+    test('Cannot combine --dev with :dev', () async {
+      await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(
+        args: ['--dev', 'dev:foo:1.2.3'],
+        error: contains("Cannot combine 'dev:' with --dev"),
+        exitCode: exit_codes.USAGE,
+      );
+    });
+
+    test('Can add both dev and regular dependencies', () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+      server.serve('bar', '1.2.3');
+
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+      ]).create();
+
+      await pubAdd(args: ['dev:foo:1.2.3', 'bar:1.2.3']);
+
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+        d.packageConfigEntry(name: 'bar', version: '1.2.3'),
+      ]).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'bar': '1.2.3'},
+          'dev_dependencies': {'foo': '1.2.3'},
         })
       ]).validate();
     });
