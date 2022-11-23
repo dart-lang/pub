@@ -562,6 +562,13 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
       });
     }
   });
+
+  test('escapeShellArgument', () {
+    expect(escapeShellArgument(r'abc'), r'abc');
+    expect(escapeShellArgument(r'ab c'), r"'ab c'");
+    expect(escapeShellArgument(r'ab\c'), r"'ab\\c'");
+    expect(escapeShellArgument(r"ab\'c"), r"'ab\\'\''c'");
+  });
 }
 
 /// Like [withTempDir], but canonicalizes the path before passing it to [fn].
