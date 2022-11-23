@@ -99,7 +99,7 @@ Future<void> main() async {
       d.dir('bin', [
         d.file('main.dart', '''
 import 'dart:io';
-main() { 
+main() {
   print('Hi');
   exit(123);
 }
