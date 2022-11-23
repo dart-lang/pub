@@ -30,7 +30,7 @@ For example:
   * Add a git dependency:
     `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
-    `$topLevelProgram pub add \
+    `$topLevelProgram pub add /
       'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
 
 Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor]

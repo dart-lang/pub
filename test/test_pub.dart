@@ -871,9 +871,7 @@ Iterable<String> filterUnstableLines(List<String> input) {
       // Any paths in output should be relative to the sandbox and with forward
       // slashes to be stable across platforms.
       .map((line) {
-    line = line
-        .replaceAll(d.sandbox, r'$SANDBOX')
-        .replaceAll(Platform.pathSeparator, '/');
+    line = line.replaceAll(d.sandbox, r'$SANDBOX').replaceAll(r'\', '/');
     var port = _globalServer?.port;
     if (port != null) {
       line = line.replaceAll(port.toString(), '\$PORT');
