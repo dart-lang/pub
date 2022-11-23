@@ -676,7 +676,11 @@ extension on ArgResults {
   String? get path => this['path'];
   String? get sdk => this['sdk'];
   bool get hasOldStyleOptions =>
-      hasGitOptions || path != null || sdk != null || hostedUrl != null;
+      hasGitOptions ||
+      path != null ||
+      sdk != null ||
+      hostedUrl != null ||
+      isDev;
   bool get shouldPrecompile => this['precompile'];
   bool get example => this['example'];
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
