@@ -493,7 +493,7 @@ environment:
     await pubAdd(
       args: ['foo:{"path":"../foo"}', '--path=../foo'],
       error: contains(
-        '--path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a',
+        '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined',
       ),
       exitCode: exit_codes.USAGE,
     );
@@ -522,28 +522,20 @@ environment:
       ]).validate();
     });
 
-    test('--dev adds packages to dev_dependencies instead with a descriptor',
-        () async {
+    test('--dev cannot be used with a descriptor', () async {
       await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
 
       await d.dir(appPath, [
         d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
       ]).create();
 
-      await pubAdd(args: ['--dev', 'foo:{"path":../foo}']);
-
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', path: '../foo'),
-      ]).validate();
-
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dev_dependencies': {
-            'foo': {'path': '../foo'}
-          },
-        })
-      ]).validate();
+      await pubAdd(
+        args: ['--dev', 'foo:{"path":../foo}'],
+        error: contains(
+          '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined',
+        ),
+        exitCode: exit_codes.USAGE,
+      );
     });
 
     test('dev: adds packages to dev_dependencies instead without a descriptor',

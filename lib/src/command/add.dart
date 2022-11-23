@@ -415,18 +415,17 @@ Specify multiple sdk packages with descriptors.''');
       constraint =
           descriptor == null ? null : VersionConstraint.parse(descriptor);
     } on FormatException catch (e) {
-      var couldParseAsNewStyle = false;
+      var couldParseAsNewStyle = true;
       try {
         _parseDescriptorNewStyle(packageName, descriptor);
         // If parsing the descriptor as a new-style descriptor succeeds we
         // can give this more specific error message.
-        couldParseAsNewStyle = true;
       } catch (_) {
-        // Do nothing
+        couldParseAsNewStyle = false;
       }
       if (couldParseAsNewStyle) {
         usageException(
-            '--path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.');
+            '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.');
       } else {
         usageException('Invalid version constraint: ${e.message}');
       }
