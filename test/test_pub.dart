@@ -865,19 +865,17 @@ Matcher matchesMultiple(String pattern, int times) {
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
 
-/// Removes output from pub known to be unstable.
-Iterable<String> filterUnstableLines(List<String> input) {
-  return input
-      // Any paths in output should be relative to the sandbox and with forward
-      // slashes to be stable across platforms.
-      .map((line) {
-    line = line.replaceAll(d.sandbox, r'$SANDBOX').replaceAll(r'\', '/');
-    var port = _globalServer?.port;
-    if (port != null) {
-      line = line.replaceAll(port.toString(), '\$PORT');
-    }
-    return line;
-  });
+/// Removes output from pub known to be unstable across runs or platforms.
+String filterUnstableText(String input) {
+  // Any paths in output should be relative to the sandbox and with forward
+  // slashes to be stable across platforms.
+  input.replaceAll(RegExp(r'\\\S'), '/');
+  input = input.replaceAll(d.sandbox, r'$SANDBOX');
+  var port = _globalServer?.port;
+  if (port != null) {
+    input = input.replaceAll(port.toString(), '\$PORT');
+  }
+  return input;
 }
 
 /// Runs `pub outdated [args]` and appends the output to [buffer].
@@ -910,12 +908,13 @@ Future<void> runPubIntoBuffer(
   //       .join('\n'));
   // }
   final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
-  buffer.writeln(filterUnstableLines([
-    '\$$pipe pub ${args.map(escapeShellArgument).join(' ')}',
-    ...await process.stdout.rest.toList(),
-  ]).join('\n'));
-  for (final line in filterUnstableLines(await process.stderr.rest.toList())) {
-    buffer.writeln('[STDERR] $line');
+  buffer.writeln(
+      '\$$pipe pub ${args.map(filterUnstableText).map(escapeShellArgument).join(' ')}');
+  for (final line in await process.stdout.rest.toList()) {
+    buffer.writeln(filterUnstableText(line));
+  }
+  for (final line in await process.stderr.rest.toList()) {
+    buffer.writeln('[STDERR] ${filterUnstableText(line)}');
   }
   if (exitCode != 0) {
     buffer.writeln('[EXIT CODE] $exitCode');
