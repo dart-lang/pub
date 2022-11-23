@@ -593,7 +593,13 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
   ///
   /// A `.packages` file is not required. But if it exists it is checked for
   /// consistency with the pubspec.lock.
-  void assertUpToDate() {
+  ///
+  /// If [checkForSdkUpdate] is `true`, the resolution is considered outdated if
+  /// the package_config.json was created by a different sdk. See
+  /// [_checkPackageConfigSameDartSdk].
+  /// TODO(sigurdm): we should consider if we can instead in all places update
+  /// the resolution automatically.
+  void assertUpToDate({bool checkForSdkUpdate = false}) {
     if (isCached) return;
 
     if (!entryExists(lockFilePath)) {
@@ -684,7 +690,7 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
     //
     // Putting this check last because it leads to less specific messages than
     // the 'incompatible sdk' check above.
-    _checkPackageConfigSameDartSdk();
+    if (checkForSdkUpdate) _checkPackageConfigSameDartSdk();
   }
 
   /// Determines whether or not the lockfile is out of date with respect to the
