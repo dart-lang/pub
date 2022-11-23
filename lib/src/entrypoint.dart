@@ -309,6 +309,10 @@ class Entrypoint {
   /// shown --- in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
+  ///
+  /// If [enforceLockfile] is true no changes to the current lockfile are
+  /// allowed. Instead the existing lockfile is loaded, verified against
+  /// pubspec.yaml and all dependencies downloaded.
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String>? unlock,
@@ -316,13 +320,32 @@ class Entrypoint {
     bool precompile = false,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
+    bool enforceLockfile = false,
   }) async {
+    final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
+
+    String forDetails() {
+      if (!onlyReportSuccessOrFailure) return '';
+      final enforceLockfileOption =
+          enforceLockfile ? ' --enforce-lockfile' : '';
+      final directoryOption =
+          root.isInMemory || root.dir == '.' ? '' : ' --directory ${root.dir}';
+      return ' For details run `$topLevelProgram pub ${type.toString()}$directoryOption$enforceLockfileOption`';
+    }
+
+    if (enforceLockfile && !fileExists(lockFilePath)) {
+      throw ApplicationException('''
+Retrieving dependencies failed$suffix.
+Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.
+
+Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
+    }
+
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
       log.warning(
           'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
     }
 
-    final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
@@ -337,11 +360,8 @@ class Entrypoint {
       });
     } catch (e) {
       if (onlyReportSuccessOrFailure && (e is ApplicationException)) {
-        final directoryOption = root.isInMemory || root.dir == '.'
-            ? ''
-            : ' --directory ${root.dir}';
         throw ApplicationException(
-            'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
+            'Resolving dependencies$suffix failed.${forDetails()}');
       } else {
         rethrow;
       }
@@ -352,22 +372,34 @@ class Entrypoint {
     final newLockFile = await result.downloadCachedPackages(cache);
 
     final report = SolveReport(
-        type, root, lockFile, newLockFile, result.availableVersions, cache,
-        dryRun: dryRun);
-    if (!onlyReportSuccessOrFailure) {
-      await report.show();
-    }
-    _lockFile = newLockFile;
+      type,
+      root,
+      lockFile,
+      newLockFile,
+      result.availableVersions,
+      cache,
+      dryRun: dryRun,
+      enforceLockfile: enforceLockfile,
+      quiet: onlyReportSuccessOrFailure,
+    );
 
-    if (!dryRun) {
+    final hasChanges = await report.show();
+    await report.summarize();
+    if (enforceLockfile && hasChanges) {
+      var suggestion = onlyReportSuccessOrFailure
+          ? ''
+          : '''
+\n\nTo update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
+`--enforce-lockfile`.''';
+      dataError('''
+Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$suggestion''');
+    }
+
+    if (!(dryRun || enforceLockfile)) {
       newLockFile.writeToFile(lockFilePath, cache);
     }
 
-    if (onlyReportSuccessOrFailure) {
-      log.message('Got dependencies$suffix.');
-    } else {
-      await report.summarize();
-    }
+    _lockFile = newLockFile;
 
     if (!dryRun) {
       if (analytics != null) {

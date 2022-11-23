@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
@@ -30,6 +29,11 @@ class SolveReport {
   final SystemCache _cache;
   final bool _dryRun;
 
+  /// If quiet only a single summary line is output.
+  final bool _quiet;
+
+  final bool _enforceLockfile;
+
   /// The available versions of all selected packages from their source.
   ///
   /// An entry here may not include the full list of versions available if the
@@ -37,8 +41,6 @@ class SolveReport {
   ///
   /// Version list will not contain any retracted package versions.
   final Map<String, List<Version>> _availableVersions;
-
-  final _output = StringBuffer();
 
   SolveReport(
     this._type,
@@ -48,14 +50,22 @@ class SolveReport {
     this._availableVersions,
     this._cache, {
     required bool dryRun,
-  }) : _dryRun = dryRun;
+    required bool enforceLockfile,
+    required bool quiet,
+  })  : _dryRun = dryRun,
+        _quiet = quiet,
+        _enforceLockfile = enforceLockfile;
 
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
-  Future<void> show() async {
-    await _reportChanges();
-    await _reportOverrides();
+  ///
+  /// Returns `true` if there was any change of dependencies relative to the old
+  /// lockfile.
+  Future<bool> show() async {
+    final hasChanges = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
+    await _reportOverrides();
+    return hasChanges;
   }
 
   void _checkContentHashesMatchOldLockfile() {
@@ -100,14 +110,14 @@ class SolveReport {
     }
 
     if (issues.isNotEmpty) {
-      log.warning('''
+      warning('''
 The existing content-hash from pubspec.lock doesn't match contents for:
  * ${issues.join('\n * ')}
 
 This indicates one of:
  * The content has changed on the server since you created the pubspec.lock.
  * The pubspec.lock has been corrupted.
-${_dryRun ? '' : '\nThe content-hashes in pubspec.lock has been updated.'}
+${_dryRun || _enforceLockfile ? '' : '\nThe content-hashes in pubspec.lock has been updated.'}
 
 For more information see:
 $contentHashesDocumentationUrl
@@ -118,7 +128,8 @@ $contentHashesDocumentationUrl
   /// Displays a one-line message summarizing what changes were made (or would
   /// be made) to the lockfile.
   ///
-  /// If [dryRun] is true, describes it in terms of what would be done.
+  /// If [_dryRun] or [_enforceLockfile] is true, describes it in terms of what
+  /// would be done.
   ///
   /// [type] is the type of version resolution that was run.
 
@@ -145,77 +156,102 @@ $contentHashesDocumentationUrl
 
     var suffix = '';
     if (!_root.isInMemory) {
-      final dir = path.normalize(_root.dir);
+      final dir = _root.dir;
       if (dir != '.') {
         suffix = ' in $dir';
       }
     }
 
-    if (_dryRun) {
-      if (numChanged == 0) {
-        log.message('No dependencies would change$suffix.');
-      } else if (numChanged == 1) {
-        log.message('Would change $numChanged dependency$suffix.');
+    if (_quiet) {
+      if (_dryRun) {
+        log.message('Would get dependencies$suffix.');
+      } else if (_enforceLockfile) {
+        if (numChanged == 0) {
+          log.message('Got dependencies$suffix.');
+        }
       } else {
-        log.message('Would change $numChanged dependencies$suffix.');
+        log.message('Got dependencies$suffix.');
       }
     } else {
-      if (numChanged == 0) {
-        if (_type == SolveType.get) {
-          log.message('Got dependencies$suffix!');
+      if (_dryRun) {
+        if (numChanged == 0) {
+          log.message('No dependencies would change$suffix.');
+        } else if (numChanged == 1) {
+          log.message('Would change $numChanged dependency$suffix.');
         } else {
-          log.message('No dependencies changed$suffix.');
+          log.message('Would change $numChanged dependencies$suffix.');
         }
-      } else if (numChanged == 1) {
-        log.message('Changed $numChanged dependency$suffix!');
+      } else if (_enforceLockfile) {
+        if (numChanged == 0) {
+          log.message('Got dependencies$suffix!');
+        } else if (numChanged == 1) {
+          log.message('Would change $numChanged dependency$suffix.');
+        } else {
+          log.message('Would change $numChanged dependencies$suffix.');
+        }
       } else {
-        log.message('Changed $numChanged dependencies$suffix!');
+        if (numChanged == 0) {
+          if (_type == SolveType.get) {
+            log.message('Got dependencies$suffix!');
+          } else {
+            log.message('No dependencies changed$suffix.');
+          }
+        } else if (numChanged == 1) {
+          log.message('Changed $numChanged dependency$suffix!');
+        } else {
+          log.message('Changed $numChanged dependencies$suffix!');
+        }
       }
-    }
-    if (_type == SolveType.upgrade) {
-      await reportDiscontinued();
-      reportOutdated();
+      if (_type == SolveType.upgrade) {
+        await reportDiscontinued();
+        reportOutdated();
+      }
     }
   }
 
   /// Displays a report of all of the previous and current dependencies and
   /// how they have changed.
-  Future<void> _reportChanges() async {
-    _output.clear();
-
+  ///
+  /// Returns true if anything changed.
+  Future<bool> _reportChanges() async {
+    final output = StringBuffer();
     // Show the new set of dependencies ordered by name.
     var names = _newLockFile.packages.keys.toList();
     names.remove(_root.name);
     names.sort();
+    var hasChanges = false;
     for (final name in names) {
-      await _reportPackage(name);
+      hasChanges |= await _reportPackage(name, output);
     }
     // Show any removed ones.
     var removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
     removed.remove(_root.name); // Never consider root.
     if (removed.isNotEmpty) {
-      _output.writeln('These packages are no longer being depended on:');
+      output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
-        await _reportPackage(name, alwaysShow: true);
+        await _reportPackage(name, output, alwaysShow: true);
       }
+      hasChanges = true;
     }
 
-    log.message(_output);
+    message(output.toString());
+    return hasChanges;
   }
 
   /// Displays a warning about the overrides currently in effect.
   Future<void> _reportOverrides() async {
-    _output.clear();
+    final output = StringBuffer();
 
     if (_root.dependencyOverrides.isNotEmpty) {
-      _output.writeln('Warning: You are using these overridden dependencies:');
+      output.writeln('Warning: You are using these overridden dependencies:');
 
       for (var name in ordered(_root.dependencyOverrides.keys)) {
-        await _reportPackage(name, alwaysShow: true, highlightOverride: false);
+        await _reportPackage(name, output,
+            alwaysShow: true, highlightOverride: false);
       }
 
-      log.warning(_output);
+      warning(output.toString());
     }
   }
 
@@ -235,9 +271,9 @@ $contentHashesDocumentationUrl
     }
     if (numDiscontinued > 0) {
       if (numDiscontinued == 1) {
-        log.message('1 package is discontinued.');
+        message('1 package is discontinued.');
       } else {
-        log.message('$numDiscontinued packages are discontinued.');
+        message('$numDiscontinued packages are discontinued.');
       }
     }
   }
@@ -263,7 +299,7 @@ $contentHashesDocumentationUrl
       } else {
         packageCountString = '$outdatedPackagesCount packages have';
       }
-      log.message('$packageCountString newer versions incompatible with '
+      message('$packageCountString newer versions incompatible with '
           'dependency constraints.\nTry `$topLevelProgram pub outdated` for more information.');
     }
   }
@@ -273,7 +309,9 @@ $contentHashesDocumentationUrl
   /// If [alwaysShow] is true, the package is reported even if it didn't change,
   /// regardless of [_type]. If [highlightOverride] is true (or absent), writes
   /// "(override)" next to overridden packages.
-  Future<void> _reportPackage(String name,
+  ///
+  /// Returns true if the package had changed.
+  Future<bool> _reportPackage(String name, StringBuffer output,
       {bool alwaysShow = false, bool highlightOverride = true}) async {
     var newId = _newLockFile.packages[name];
     var oldId = _previousLockFile.packages[name];
@@ -380,38 +418,55 @@ $contentHashesDocumentationUrl
 
     if (_type == SolveType.get &&
         !(alwaysShow || changed || addedOrRemoved || message != null)) {
-      return;
+      return changed || addedOrRemoved;
     }
 
-    _output.write(icon);
-    _output.write(log.bold(id.name));
-    _output.write(' ');
-    _writeId(id);
+    output.write(icon);
+    output.write(log.bold(id.name));
+    output.write(' ');
+    _writeId(id, output);
 
     // If the package was upgraded, show what it was upgraded from.
     if (changed) {
-      _output.write(' (was ');
-      _writeId(oldId!);
-      _output.write(')');
+      output.write(' (was ');
+      _writeId(oldId!, output);
+      output.write(')');
     }
 
     // Highlight overridden packages.
     if (isOverridden && highlightOverride) {
-      _output.write(" ${log.magenta('(overridden)')}");
+      output.write(" ${log.magenta('(overridden)')}");
     }
 
-    if (message != null) _output.write(' ${log.cyan(message)}');
+    if (message != null) output.write(' ${log.cyan(message)}');
 
-    _output.writeln();
+    output.writeln();
+    return changed || addedOrRemoved;
   }
 
   /// Writes a terse description of [id] (not including its name) to the output.
-  void _writeId(PackageId id) {
-    _output.write(id.version);
+  void _writeId(PackageId id, StringBuffer output) {
+    output.write(id.version);
 
     if (id.source != _cache.defaultSource) {
       var description = id.description.format();
-      _output.write(' from ${id.source} $description');
+      output.write(' from ${id.source} $description');
+    }
+  }
+
+  void warning(String message) {
+    if (_quiet) {
+      log.fine(message);
+    } else {
+      log.warning(message);
+    }
+  }
+
+  void message(String message) {
+    if (_quiet) {
+      log.fine(message);
+    } else {
+      log.message(message);
     }
   }
 }
