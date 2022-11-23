@@ -41,7 +41,8 @@ class AddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
-  String get description => '''Add dependencies to `pubspec.yaml`.
+  String get description => r'''
+Add dependencies to `pubspec.yaml`.
 
 Invoking `dart pub add foo bar` will add `foo` and `bar` to `pubspec.yaml`
 with a default constraint derived from latest compatible version.
@@ -69,7 +70,8 @@ For example:
   * Add a git dependency:
     `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
-    `$topLevelProgram pub add 'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
+    `$topLevelProgram pub add \
+      'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
 
   @override
   String get argumentsDescription =>
@@ -550,7 +552,7 @@ Specify multiple sdk packages with descriptors.''');
         }
         final range = dummyPubspec.dependencies[packageName]!;
         if (parsedDescriptor is String) {
-          // Ref will be constructed by `_parsePackageOldStyleArgs()`
+          // Ref will be constructed by the default behavior below.
           ref = null;
         } else {
           ref = range.toRef();
