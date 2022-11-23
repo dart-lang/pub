@@ -894,12 +894,12 @@ class Entrypoint {
   void _checkSdkConstraint(Pubspec pubspec) {
     final dartSdkConstraint = pubspec.dartSdkConstraint.effectiveConstraint;
     if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
-      // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
+      // Suggest version range '>=2.12.0 <3.0.0', we avoid using:
       // [CompatibleWithVersionRange] because some pub versions don't support
-      // caret syntax (e.g. '^2.10.0')
+      // caret syntax (e.g. '^2.12.0')
       var suggestedConstraint = VersionRange(
-        min: Version.parse('2.10.0'),
-        max: Version.parse('2.10.0').nextBreaking,
+        min: Version.parse('2.12.0'),
+        max: Version.parse('2.12.0').nextBreaking,
         includeMin: true,
       );
       // But if somehow that doesn't work, we fallback to safe sanity, mostly
