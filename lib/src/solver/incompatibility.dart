@@ -419,9 +419,9 @@ class Incompatibility {
       }
     } else if (latter.cause == IncompatibilityCause.noVersions) {
       buffer.write("which doesn't match any versions");
-    } else if (cause is PackageNotFoundCause) {
+    } else if (latter.cause is PackageNotFoundCause) {
       buffer.write("which doesn't exist "
-          '(${(cause as PackageNotFoundCause).exception.message})');
+          '(${(latter.cause as PackageNotFoundCause).exception.message})');
     } else {
       buffer.write('which is forbidden');
     }
