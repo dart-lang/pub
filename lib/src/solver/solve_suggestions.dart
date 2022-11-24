@@ -13,14 +13,12 @@ import '../system_cache.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
 
-/// Looks through the root-[incompability] of a solve-failure and tries to see
-/// * if an update of the current sdk can make a resolution go through.
-/// * if any single change to a package constraint can make a resolution go
-///   through.
-/// * If removing the bounds on all constraints can make a resolution go through
-///   updating less than 5 dependencies.
-/// * If running `pub upgrade --major versions` would make the resolution go
-///   through.
+/// Looks through the root-[incompability] of a solve-failure and tries to see if
+/// the conflict could resolved by any of the following suggestions:
+/// * An update of the current SDK.
+/// * Any single change to a package constraint.
+/// * Removing the bounds on all constraints, changing less than 5 dependencies.
+/// * Running `pub upgrade --major versions`.
 ///
 /// Returns a formatted list of suggestions, or the empty String if no
 /// suggestions were found.
