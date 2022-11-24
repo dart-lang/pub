@@ -25,8 +25,7 @@ class StrictDependenciesValidator extends Validator {
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
     final packagePath = p.normalize(p.absolute(entrypoint.root.dir));
     final AnalysisContextManager analysisContextManager =
-        AnalysisContextManager();
-    analysisContextManager.createContextsForDirectory(packagePath);
+        AnalysisContextManager(packagePath);
 
     for (var file in files) {
       List<UriBasedDirective> directives;
