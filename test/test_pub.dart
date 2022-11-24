@@ -908,9 +908,6 @@ Future<void> runPubIntoBuffer(
   //       .join('\n'));
   // }
   final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
-  print(args);
-  print(args.map(filterUnstableText));
-  print(args.map(filterUnstableText).map(escapeShellArgument));
   buffer.writeln(
       '\$$pipe pub ${args.map(filterUnstableText).map(escapeShellArgument).join(' ')}');
   for (final line in await process.stdout.rest.toList()) {
