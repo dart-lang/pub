@@ -33,7 +33,7 @@ Future<SolveResult> resolveVersions(
     SolveType type, SystemCache cache, Package root,
     {LockFile? lockFile,
     Iterable<String> unlock = const [],
-    Map<String, Version>? sdkOverrides}) {
+    Map<String, Version>? sdkOverrides,}) {
   lockFile ??= LockFile.empty();
   return VersionSolver(
     type,
