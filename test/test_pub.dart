@@ -869,7 +869,7 @@ StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
 String filterUnstableText(String input) {
   // Any paths in output should be relative to the sandbox and with forward
   // slashes to be stable across platforms.
-  input.replaceAll(RegExp(r'\\\S'), '/');
+  input = input.replaceAllMapped(RegExp(r'\\(\S)'), (match) => '/${match[1]}');
   input = input.replaceAll(d.sandbox, r'$SANDBOX');
   var port = _globalServer?.port;
   if (port != null) {
@@ -908,6 +908,9 @@ Future<void> runPubIntoBuffer(
   //       .join('\n'));
   // }
   final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
+  print(args);
+  print(args.map(filterUnstableText));
+  print(args.map(filterUnstableText).map(escapeShellArgument));
   buffer.writeln(
       '\$$pipe pub ${args.map(filterUnstableText).map(escapeShellArgument).join(' ')}');
   for (final line in await process.stdout.rest.toList()) {
