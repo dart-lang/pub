@@ -36,7 +36,7 @@ class AnalysisContextManager {
                 optionsFile:
                     // We don't want to take 'analysis_options.yaml' files into
                     // account. So we replace it with an empty file.
-                    Platform.isWindows ? 'NUL' : '/dev/null',
+                    Platform.isWindows ? r'C:\NUL' : '/dev/null',
               ).first,
             )
             .currentSession;
