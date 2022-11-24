@@ -306,7 +306,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
   try {
     // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
-    entrypoint.assertUpToDate();
+    entrypoint.assertUpToDate(checkForSdkUpdate: true);
   } on DataException catch (e) {
     log.fine('Resolution not up to date: ${e.message}. Redoing.');
     try {
