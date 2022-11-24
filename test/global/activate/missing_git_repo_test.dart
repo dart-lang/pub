@@ -12,8 +12,9 @@ void main() {
     ensureGit();
 
     await runPub(
-        args: ['global', 'activate', '-sgit', '../nope.git'],
-        error: contains("repository '../nope.git' does not exist"),
-        exitCode: exit_codes.UNAVAILABLE);
+      args: ['global', 'activate', '-sgit', '../nope.git'],
+      error: contains("/nope.git' does not appear to be a git repository"),
+      exitCode: exit_codes.UNAVAILABLE,
+    );
   });
 }

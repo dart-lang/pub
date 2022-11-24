@@ -66,7 +66,10 @@ void main() {
         'global',
         'activate',
         '-sgit',
-        '../foo.git',
+        // Testing with a file:// ur; is important here, as the cloning behavior
+        // matches that of networked cloning. Specifically a shallow clone will
+        // not be shallow if it is from a relative url.
+        '${p.toUri(d.sandbox)}/foo.git',
         '--git-ref=HEAD~',
         '--git-path=sub/',
       ],
