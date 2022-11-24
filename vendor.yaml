@@ -1,0 +1,10 @@
+import_rewrites:
+  oauth2: oauth2
+  tar: tar
+vendored_dependencies:
+  oauth2:
+    package: oauth2
+    version: 2.0.1
+  tar:
+    package: tar
+    version: 0.5.6

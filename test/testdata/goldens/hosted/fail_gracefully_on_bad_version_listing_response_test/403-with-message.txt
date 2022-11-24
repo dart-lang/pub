@@ -7,7 +7,7 @@ Resolving dependencies...
 [STDERR] 
 [STDERR] Insufficient permissions to the resource at the http://localhost:$PORT package repository.
 [STDERR] You can modify credentials using:
-[STDERR]     pub token add http://localhost:$PORT
+[STDERR]     dart pub token add http://localhost:$PORT
 [STDERR] <message>
 [EXIT CODE] 69
 

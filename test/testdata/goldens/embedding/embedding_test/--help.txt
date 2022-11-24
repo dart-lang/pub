@@ -13,7 +13,7 @@ Usage: pub_command_runner pub [arguments...]
    (defaults to ".")
 
 Available subcommands:
-  add   Add dependencies to pubspec.yaml.
+  add   Add dependencies to `pubspec.yaml`.
   cache   Work with the system cache.
   deps   Print package dependencies.
   downgrade   Downgrade the current package's dependencies to oldest versions.

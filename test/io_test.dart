@@ -9,7 +9,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
-import 'package:pub/src/third_party/tar/tar.dart';
+import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -561,6 +561,13 @@ void testExistencePredicate(String name, bool Function(String path) predicate,
         }), completes);
       });
     }
+  });
+
+  test('escapeShellArgument', () {
+    expect(escapeShellArgument(r'abc'), r'abc');
+    expect(escapeShellArgument(r'ab c'), r"'ab c'");
+    expect(escapeShellArgument(r'ab\c'), r"'ab\\c'");
+    expect(escapeShellArgument(r"ab\'c"), r"'ab\\'\''c'");
   });
 }
 

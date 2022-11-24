@@ -16,11 +16,13 @@ void main() {
       ..serve('foo', '2.0.0');
 
     await runPub(
-        args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0', '--all'],
-        output: '''
-          Downloading foo 1.2.2...
-          Downloading foo 1.2.3-dev...
-          Downloading foo 1.2.3...''');
+      args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0', '--all'],
+      silent: allOf([
+        contains('Downloading foo 1.2.2...'),
+        contains('Downloading foo 1.2.3-dev...'),
+        contains('Downloading foo 1.2.3...'),
+      ]),
+    );
 
     await d.cacheDir({'foo': '1.2.2'}).validate();
     await d.cacheDir({'foo': '1.2.3-dev'}).validate();

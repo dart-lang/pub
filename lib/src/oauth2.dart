@@ -6,8 +6,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:collection/collection.dart' show IterableExtension;
-import 'package:oauth2/oauth2.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/retry.dart';
 import 'package:path/path.dart' as path;
+// ignore: prefer_relative_imports
+import 'package:pub/src/third_party/oauth2/lib/oauth2.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
@@ -17,6 +20,13 @@ import 'log.dart' as log;
 import 'system_cache.dart';
 import 'utils.dart';
 
+/// The global HTTP client with basic retries. Used instead of retryForHttp for
+/// OAuth calls because the OAuth2 package requires a client to be passed. While
+/// the retry logic is more basic, this is fine for the publishing process.
+final _retryHttpClient = RetryClient(globalHttpClient,
+    when: (response) => response.statusCode >= 500,
+    whenError: (e, _) => isHttpIOException(e));
+
 /// The pub client's OAuth2 identifier.
 const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
     'googleusercontent.com';
@@ -25,6 +35,12 @@ const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
 ///
 /// This isn't actually meant to be kept a secret.
 const _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
+
+/// The URL from which the pub client will retrieve Google's OIDC endpoint URIs.
+///
+/// [Google OpenID Connect documentation]: https://developers.google.com/identity/openid-connect/openid-connect#discovery
+final _oidcDiscoveryDocumentEndpoint =
+    Uri.https('accounts.google.com', '/.well-known/openid-configuration');
 
 /// The URL to which the user will be directed to authorize the pub client to
 /// get an OAuth2 access token.
@@ -142,7 +158,7 @@ Future<Client> _getClient(SystemCache cache) async {
       secret: _secret,
       // Google's OAuth2 API doesn't support basic auth.
       basicAuth: false,
-      httpClient: httpClient);
+      httpClient: _retryHttpClient);
   _saveCredentials(cache, client.credentials);
   return client;
 }
@@ -212,7 +228,7 @@ String _legacyCredentialsFile(SystemCache cache) {
   return path.join(cache.rootDir, 'credentials.json');
 }
 
-/// Gets the user to authorize pub as a client of pub.dartlang.org via oauth2.
+/// Gets the user to authorize pub as a client of pub.dev via oauth2.
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
 Future<Client> _authorize() async {
@@ -221,7 +237,7 @@ Future<Client> _authorize() async {
           secret: _secret,
           // Google's OAuth2 API doesn't support basic auth.
           basicAuth: false,
-          httpClient: httpClient);
+          httpClient: _retryHttpClient);
 
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as
@@ -241,7 +257,7 @@ Future<Client> _authorize() async {
     completer
         .complete(grant.handleAuthorizationResponse(queryToMap(queryString)));
 
-    return shelf.Response.found('https://pub.dartlang.org/authorized');
+    return shelf.Response.found('https://pub.dev/authorized');
   });
 
   var authUrl = grant.getAuthorizationUrl(
@@ -257,4 +273,17 @@ Future<Client> _authorize() async {
   var client = await completer.future;
   log.message('Successfully authorized.\n');
   return client;
+}
+
+/// Fetches Google's OpenID Connect Discovery document and parses the JSON
+/// response body into a [Map].
+///
+/// See https://developers.google.com/identity/openid-connect/openid-connect#discovery
+Future<Map> fetchOidcDiscoveryDocument() async {
+  final discoveryResponse = await retryForHttp(
+      'fetching Google\'s OpenID Connect Discovery document', () async {
+    final request = http.Request('GET', _oidcDiscoveryDocumentEndpoint);
+    return await globalHttpClient.fetch(request);
+  });
+  return parseJsonResponse(discoveryResponse);
 }

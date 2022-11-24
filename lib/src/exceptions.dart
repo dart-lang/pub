@@ -7,10 +7,12 @@ import 'dart:isolate';
 
 import 'package:args/command_runner.dart';
 import 'package:http/http.dart' as http;
+import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
+import 'http.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///
@@ -104,6 +106,12 @@ class PackageNotFoundException extends WrappedException {
   String toString() => 'Package not available ($message).';
 }
 
+/// A class for exceptions where a package's checksum could not be validated.
+class PackageIntegrityException extends PubHttpException {
+  PackageIntegrityException(String message)
+      : super(message, isIntermittent: true);
+}
+
 /// Returns whether [error] is a user-facing error object.
 ///
 /// This includes both [ApplicationException] and any dart:io errors.
@@ -117,4 +125,35 @@ bool isUserFacingException(error) {
       error is http.ClientException ||
       error is YamlException ||
       error is UsageException;
+}
+
+/// An exception thrown when parsing a `pubspec.yaml` or a `pubspec.lock`.
+///
+/// These exceptions are often thrown lazily while accessing pubspec properties.
+///
+/// By being an [ApplicationException] this will not trigger a stack-trace on
+/// normal operations.
+///
+/// Works as a [SourceSpanFormatException], but can contain more context:
+/// An optional [explanation] that explains the operation that failed.
+/// An optional [hint] that gives suggestions how to proceed.
+class SourceSpanApplicationException extends SourceSpanFormatException
+    implements ApplicationException {
+  final String? explanation;
+  final String? hint;
+
+  SourceSpanApplicationException(String message, SourceSpan? span,
+      {this.hint, this.explanation})
+      : super(message, span);
+
+  @override
+  String toString({color}) {
+    return [
+      if (explanation != null) explanation,
+      span == null
+          ? message
+          : 'Error on ${span?.message(message, color: color)}',
+      if (hint != null) hint,
+    ].join('\n\n');
+  }
 }

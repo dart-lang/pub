@@ -55,7 +55,10 @@ abstract class CachedSource extends Source {
       dirExists(getDirectoryInCache(id, cache));
 
   /// Downloads the package identified by [id] to the system cache.
-  Future<Package> downloadToSystemCache(PackageId id, SystemCache cache);
+  Future<DownloadPackageResult> downloadToSystemCache(
+    PackageId id,
+    SystemCache cache,
+  );
 
   /// Returns the [Package]s that have been downloaded to the system cache.
   List<Package> getCachedPackages(SystemCache cache);
@@ -85,4 +88,15 @@ class RepairResult {
     this.source, {
     required this.success,
   });
+}
+
+class DownloadPackageResult {
+  /// The resolved package.
+  final PackageId packageId;
+
+  /// Whether we had to make changes in the cache in order to download the
+  /// package.
+  final bool didUpdate;
+
+  DownloadPackageResult(this.packageId, {required this.didUpdate});
 }

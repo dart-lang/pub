@@ -20,7 +20,8 @@ void main() {
       ]).create();
 
       await pubCommand(command,
-          error: 'Could not resolve URL "https://invalid-url.foo".',
+          error: 'Got socket error trying to find package foo at '
+              'https://invalid-url.foo.',
           exitCode: exit_codes.UNAVAILABLE,
           environment: {
             'PUB_MAX_HTTP_RETRIES': '2',

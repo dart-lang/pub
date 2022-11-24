@@ -99,7 +99,7 @@ Future<void> main() async {
       d.dir('bin', [
         d.file('main.dart', '''
 import 'dart:io';
-main() { 
+main() {
   print('Hi');
   exit(123);
 }
@@ -258,6 +258,67 @@ main() {
       environment: getPubTestEnvironment(),
     );
   });
+
+  test('`embedding run` does `pub get` if sdk updated', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^2.18.0'},
+        'dependencies': {'foo': '^1.0.0'}
+      }),
+      d.dir('bin', [
+        d.file('myapp.dart', 'main() {print(42);}'),
+      ])
+    ]).create();
+
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'environment': {'sdk': '^2.18.0'}
+    });
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.18.3'});
+    // Deleting the version-listing cache will cause it to be refetched, and the
+    // warning will happen.
+    File(p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'))
+        .deleteSync();
+    server.serve('foo', '1.0.1', pubspec: {
+      'environment': {'sdk': '^2.18.0'}
+    });
+
+    final buffer = StringBuffer();
+
+    // Just changing the patch version should not trigger a pub get.
+    await runEmbeddingToBuffer(
+      ['--verbose', 'run', 'myapp'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: {'_PUB_TEST_SDK_VERSION': '2.18.4'},
+    );
+
+    expect(
+      buffer.toString(),
+      allOf(contains('42'), isNot(contains('Resolving dependencies'))),
+    );
+
+    File(p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'));
+    buffer.clear();
+
+    // Changing the minor version should.
+    await runEmbeddingToBuffer(
+      ['--verbose', 'run', 'myapp'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: {'_PUB_TEST_SDK_VERSION': '2.19.3'},
+    );
+    expect(
+      buffer.toString(),
+      allOf(
+        contains('42'),
+        contains('Resolving dependencies'),
+        contains('1.0.1 available'),
+      ),
+    );
+  });
 }
 
 String _filter(String input) {
@@ -356,6 +417,18 @@ String _filter(String input) {
       .replaceAll(
         RegExp(r'Writing \d+ characters', multiLine: true),
         r'Writing $N characters',
+      )
+      .replaceAll(
+        RegExp(r'x-goog-hash(.*)$', multiLine: true),
+        r'x-goog-hash: $CHECKSUM_HEADER',
+      )
+      .replaceAll(
+        RegExp(
+            r'Computed checksum \d+ for foo 1.0.0 with expected CRC32C of '
+            r'\d+\.',
+            multiLine: true),
+        r'Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of '
+        r'$CRC32C.',
       )
 
       /// TODO(sigurdm): This hack suppresses differences in stack-traces

@@ -9,9 +9,8 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('when receives 403 response persists saved token', () async {
+    await d.validPackage.create();
     final server = await servePackages();
     await d.tokensFile({
       'version': 1,

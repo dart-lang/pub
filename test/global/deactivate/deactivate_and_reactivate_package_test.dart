@@ -20,10 +20,12 @@ void main() {
         output: 'Deactivated package foo 1.0.0.');
 
     // Activating again should forget the old version.
-    await runPub(args: ['global', 'activate', 'foo'], output: '''
+    await runPub(
+        args: ['global', 'activate', 'foo'],
+        silent: contains('Downloading foo 2.0.0...'),
+        output: '''
         Resolving dependencies...
         + foo 2.0.0
-        Downloading foo 2.0.0...
         Activated foo 2.0.0.''');
   });
 }

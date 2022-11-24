@@ -8,10 +8,10 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'command_runner.dart';
@@ -19,7 +19,6 @@ import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
 import 'io.dart';
-import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
@@ -31,6 +30,7 @@ import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
+import 'solver/report.dart';
 import 'solver/solve_suggestions.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
@@ -102,7 +102,17 @@ class Entrypoint {
     if (!fileExists(lockFilePath)) {
       return _lockFile = LockFile.empty();
     } else {
-      return _lockFile = LockFile.load(lockFilePath, cache.sources);
+      try {
+        return _lockFile = LockFile.load(lockFilePath, cache.sources);
+      } on SourceSpanException catch (e) {
+        throw SourceSpanApplicationException(
+          e.message,
+          e.span,
+          explanation: 'Failed parsing lock file:',
+          hint:
+              'Consider deleting the file and running `$topLevelProgram pub get` to recreate it.',
+        );
+      }
     }
   }
 
@@ -271,7 +281,8 @@ class Entrypoint {
       await lockFile.packageConfigFile(
         cache,
         entrypoint: entrypointName,
-        entrypointSdkConstraint: root.pubspec.sdkConstraints[sdk.identifier],
+        entrypointSdkConstraint:
+            root.pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
         relativeFrom: isGlobal ? null : root.dir,
       ),
     );
@@ -281,11 +292,11 @@ class Entrypoint {
   ///
   /// Performs version resolution according to [SolveType].
   ///
-  /// [useLatest], if provided, defines a list of packages that will be
-  /// unlocked and forced to their latest versions. If [upgradeAll] is
-  /// true, the previous lockfile is ignored and all packages are re-resolved
-  /// from scratch. Otherwise, it will attempt to preserve the versions of all
-  /// previously locked packages.
+  /// [useLatest], if provided, defines a list of packages that will be unlocked
+  /// and forced to their latest versions. If [upgradeAll] is true, the previous
+  /// lockfile is ignored and all packages are re-resolved from scratch.
+  /// Otherwise, it will attempt to preserve the versions of all previously
+  /// locked packages.
   ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
@@ -295,10 +306,14 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
-  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be shown ---
-  /// in case of failure, a reproduction command is shown.
+  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be
+  /// shown --- in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
+  ///
+  /// If [enforceLockfile] is true no changes to the current lockfile are
+  /// allowed. Instead the existing lockfile is loaded, verified against
+  /// pubspec.yaml and all dependencies downloaded.
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String>? unlock,
@@ -306,13 +321,32 @@ class Entrypoint {
     bool precompile = false,
     required PubAnalytics? analytics,
     bool onlyReportSuccessOrFailure = false,
+    bool enforceLockfile = false,
   }) async {
+    final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
+
+    String forDetails() {
+      if (!onlyReportSuccessOrFailure) return '';
+      final enforceLockfileOption =
+          enforceLockfile ? ' --enforce-lockfile' : '';
+      final directoryOption =
+          root.isInMemory || root.dir == '.' ? '' : ' --directory ${root.dir}';
+      return ' For details run `$topLevelProgram pub ${type.toString()}$directoryOption$enforceLockfileOption`';
+    }
+
+    if (enforceLockfile && !fileExists(lockFilePath)) {
+      throw ApplicationException('''
+Retrieving dependencies failed$suffix.
+Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.
+
+Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
+    }
+
     if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
       log.warning(
           'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
     }
 
-    final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
@@ -327,11 +361,8 @@ class Entrypoint {
       });
     } catch (e) {
       if (onlyReportSuccessOrFailure && (e is ApplicationException)) {
-        final directoryOption = root.isInMemory || root.dir == '.'
-            ? ''
-            : ' --directory ${root.dir}';
         throw ApplicationException(
-            'Resolving dependencies$suffix failed. For details run `$topLevelProgram pub ${type.toString()}$directoryOption`');
+            'Resolving dependencies$suffix failed.${forDetails()}');
       } else {
         if (e is SolveFailure) {
           throw SolveFailure(
@@ -350,36 +381,39 @@ class Entrypoint {
       }
     }
 
-    // Log once about all overridden packages.
-    if (warnAboutPreReleaseSdkOverrides) {
-      var overriddenPackages = (result.pubspecs.values
-              .where((pubspec) => pubspec.dartSdkWasOverridden)
-              .map((pubspec) => pubspec.name)
-              .toList()
-            ..sort())
-          .join(', ');
-      if (overriddenPackages.isNotEmpty) {
-        log.message(log.yellow(
-            'Overriding the upper bound Dart SDK constraint to <=${sdk.version} '
-            'for the following packages:\n\n$overriddenPackages\n\n'
-            'To disable this you can set the PUB_ALLOW_PRERELEASE_SDK system '
-            'environment variable to `false`, or you can silence this message '
-            'by setting it to `quiet`.'));
-      }
+    // We have to download files also with --dry-run to ensure we know the
+    // archive hashes for downloaded files.
+    final newLockFile = await result.downloadCachedPackages(cache);
+
+    final report = SolveReport(
+      type,
+      root,
+      lockFile,
+      newLockFile,
+      result.availableVersions,
+      cache,
+      dryRun: dryRun,
+      enforceLockfile: enforceLockfile,
+      quiet: onlyReportSuccessOrFailure,
+    );
+
+    final hasChanges = await report.show();
+    await report.summarize();
+    if (enforceLockfile && hasChanges) {
+      var suggestion = onlyReportSuccessOrFailure
+          ? ''
+          : '''
+\n\nTo update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
+`--enforce-lockfile`.''';
+      dataError('''
+Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$suggestion''');
     }
 
-    if (!onlyReportSuccessOrFailure) {
-      await result.showReport(type, cache);
+    if (!(dryRun || enforceLockfile)) {
+      newLockFile.writeToFile(lockFilePath, cache);
     }
-    if (!dryRun) {
-      await result.downloadCachedPackages(cache);
-      saveLockFile(result);
-    }
-    if (onlyReportSuccessOrFailure) {
-      log.message('Got dependencies$suffix.');
-    } else {
-      await result.summarizeChanges(type, cache, dryRun: dryRun);
-    }
+
+    _lockFile = newLockFile;
 
     if (!dryRun) {
       if (analytics != null) {
@@ -459,23 +493,39 @@ class Entrypoint {
   }
 
   /// Precompiles executable .dart file at [path] to a snapshot.
-  Future<void> precompileExecutable(Executable executable) async {
+  ///
+  /// The [additionalSources], if provided, instruct the compiler to include
+  /// additional source files into compilation even if they are not referenced
+  /// from the main library.
+  Future<void> precompileExecutable(
+    Executable executable, {
+    List<String> additionalSources = const [],
+  }) async {
     await log.progress('Building package executable', () async {
       ensureDir(p.dirname(pathOfExecutable(executable)));
-      return waitAndPrintErrors([_precompileExecutable(executable)]);
+      return waitAndPrintErrors([
+        _precompileExecutable(
+          executable,
+          additionalSources: additionalSources,
+        )
+      ]);
     });
   }
 
-  Future<void> _precompileExecutable(Executable executable) async {
+  Future<void> _precompileExecutable(
+    Executable executable, {
+    List<String> additionalSources = const [],
+  }) async {
     final package = executable.package;
 
     await dart.precompile(
-        executablePath: resolveExecutable(executable),
-        outputPath: pathOfExecutable(executable),
-        incrementalDillPath: incrementalDillPathOfExecutable(executable),
-        packageConfigPath: packageConfigPath,
-        name:
-            '$package:${p.basenameWithoutExtension(executable.relativePath)}');
+      executablePath: resolveExecutable(executable),
+      outputPath: pathOfExecutable(executable),
+      incrementalDillPath: incrementalDillPathOfExecutable(executable),
+      packageConfigPath: packageConfigPath,
+      name: '$package:${p.basenameWithoutExtension(executable.relativePath)}',
+      additionalSources: additionalSources,
+    );
   }
 
   /// The location of the snapshot of the dart program at [path] in [package]
@@ -557,7 +607,13 @@ class Entrypoint {
   ///
   /// A `.packages` file is not required. But if it exists it is checked for
   /// consistency with the pubspec.lock.
-  void assertUpToDate() {
+  ///
+  /// If [checkForSdkUpdate] is `true`, the resolution is considered outdated if
+  /// the package_config.json was created by a different sdk. See
+  /// [_checkPackageConfigSameDartSdk].
+  /// TODO(sigurdm): we should consider if we can instead in all places update
+  /// the resolution automatically.
+  void assertUpToDate({bool checkForSdkUpdate = false}) {
     if (isCached) return;
 
     if (!entryExists(lockFilePath)) {
@@ -621,8 +677,10 @@ class Entrypoint {
       //  * Force `pub get` if a path dependency has changed language version.
       _checkPackageConfigUpToDate();
       touch(packageConfigPath);
-    } else if (touchedLockFile) {
-      touch(packageConfigPath);
+    } else {
+      if (touchedLockFile) {
+        touch(packageConfigPath);
+      }
     }
 
     for (var match in _sdkConstraint.allMatches(lockFileText)) {
@@ -641,6 +699,12 @@ class Entrypoint {
             "dependencies' SDK constraints. Please run \"$topLevelProgram pub get\" again.");
       }
     }
+    // We want to do ensure a pub get gets run when updating a minor version of
+    // the Dart SDK.
+    //
+    // Putting this check last because it leads to less specific messages than
+    // the 'incompatible sdk' check above.
+    if (checkForSdkUpdate) _checkPackageConfigSameDartSdk();
   }
 
   /// Determines whether or not the lockfile is out of date with respect to the
@@ -819,9 +883,7 @@ class Entrypoint {
       try {
         // Load `pubspec.yaml` and extract language version to compare with the
         // language version from `package_config.json`.
-        final languageVersion = LanguageVersion.fromSdkConstraint(
-          cache.load(id).pubspec.sdkConstraints[sdk.identifier],
-        );
+        final languageVersion = cache.load(id).pubspec.languageVersion;
         if (pkg.languageVersion != languageVersion) {
           final relativePubspecPath = p.join(
             cache.getDirectory(id, relativeFrom: '.'),
@@ -838,19 +900,24 @@ class Entrypoint {
     }
   }
 
-  /// Saves a list of concrete package versions to the `pubspec.lock` file.
+  /// Checks whether or not the `.dart_tool/package_config.json` file is was
+  /// generated by a different sdk down changes in minor versions.
   ///
-  /// Will use Windows line endings (`\r\n`) if a `pubspec.lock` exists, and
-  /// uses that.
-  void saveLockFile(SolveResult result) {
-    _lockFile = result.lockFile;
-
-    final windowsLineEndings = fileExists(lockFilePath) &&
-        detectWindowsLineEndings(readTextFile(lockFilePath));
-
-    final serialized = lockFile.serialize(root.dir);
-    writeTextFile(lockFilePath,
-        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
+  /// For pre-releases we always consider the package_config.json out of date
+  /// when the version changes.
+  ///
+  /// Throws [DataException], if `.dart_tool/package_config.json` the version
+  /// changed sufficiently.
+  void _checkPackageConfigSameDartSdk() {
+    final generatorVersion = packageConfig.generatorVersion;
+    if (generatorVersion == null ||
+        generatorVersion.major != sdk.version.major ||
+        generatorVersion.minor != sdk.version.minor ||
+        generatorVersion.isPreRelease ||
+        sdk.version.isPreRelease) {
+      dataError('The sdk was updated since last package resolution. Please run '
+          '"$topLevelProgram pub get" again.');
+    }
   }
 
   /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
@@ -877,14 +944,14 @@ class Entrypoint {
   ///
   /// We don't allow unknown sdks.
   void _checkSdkConstraint(Pubspec pubspec) {
-    final dartSdkConstraint = pubspec.sdkConstraints['dart'];
+    final dartSdkConstraint = pubspec.dartSdkConstraint.effectiveConstraint;
     if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
-      // Suggest version range '>=2.10.0 <3.0.0', we avoid using:
+      // Suggest version range '>=2.12.0 <3.0.0', we avoid using:
       // [CompatibleWithVersionRange] because some pub versions don't support
-      // caret syntax (e.g. '^2.10.0')
+      // caret syntax (e.g. '^2.12.0')
       var suggestedConstraint = VersionRange(
-        min: Version.parse('2.10.0'),
-        max: Version.parse('2.10.0').nextBreaking,
+        min: Version.parse('2.12.0'),
+        max: Version.parse('2.12.0').nextBreaking,
         includeMin: true,
       );
       // But if somehow that doesn't work, we fallback to safe sanity, mostly
@@ -912,7 +979,7 @@ See https://dart.dev/go/sdk-constraint
         final keyNode = environment.nodes.entries
             .firstWhere((e) => (e.key as YamlNode).value == sdk)
             .key as YamlNode;
-        throw PubspecException('''
+        throw SourceSpanApplicationException('''
 $pubspecPath refers to an unknown sdk '$sdk'.
 
 Did you mean to add it as a dependency?
@@ -930,23 +997,4 @@ See https://dart.dev/go/sdk-constraint
     dataError('The "$packageConfigPath" file is not recognized by '
         '"pub" version, please run "$topLevelProgram pub get".');
   }
-}
-
-/// Returns `true` if the [text] looks like it uses windows line endings.
-///
-/// The heuristic used is to count all `\n` in the text and if stricly more than
-/// half of them are preceded by `\r` we report `true`.
-@visibleForTesting
-bool detectWindowsLineEndings(String text) {
-  var index = -1;
-  var unixNewlines = 0;
-  var windowsNewlines = 0;
-  while ((index = text.indexOf('\n', index + 1)) != -1) {
-    if (index != 0 && text[index - 1] == '\r') {
-      windowsNewlines++;
-    } else {
-      unixNewlines++;
-    }
-  }
-  return windowsNewlines > unixNewlines;
 }

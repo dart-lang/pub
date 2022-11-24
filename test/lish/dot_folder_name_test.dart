@@ -16,7 +16,6 @@ void main() {
       d.dir('.vscode', [d.file('a')]),
       d.file('.pubignore', '!.vscode/')
     ]).create();
-
     await runPub(
       args: ['lish', '--dry-run'],
       output: contains('''

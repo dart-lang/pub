@@ -46,7 +46,7 @@ class FlutterPluginFormatValidator extends Validator {
     final flutterConstraint = pubspec.sdkConstraints['flutter'];
     if (usesNewPluginFormat &&
         (flutterConstraint == null ||
-            flutterConstraint.allowsAny(VersionRange(
+            flutterConstraint.effectiveConstraint.allowsAny(VersionRange(
               min: Version.parse('0.0.0'),
               max: Version.parse('1.10.0'),
               includeMin: true,

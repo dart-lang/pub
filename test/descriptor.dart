@@ -5,10 +5,10 @@
 /// Pub-specific test descriptors.
 import 'dart:convert';
 
-import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/third_party/oauth2/lib/oauth2.dart' as oauth2;
 import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor/git.dart';
@@ -33,7 +33,7 @@ TarFileDescriptor tar(String name, [List<Descriptor>? contents]) =>
 
 /// Describes a package that passes all validation.
 DirectoryDescriptor get validPackage => dir(appPath, [
-      libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+      libPubspec('test_pkg', '1.0.0', sdk: '>=0.1.2 <=0.2.0'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
@@ -96,15 +96,23 @@ Descriptor appPubspec([Map? dependencies]) {
 /// [name], [version], and [deps]. If "sdk" is given, then it adds an SDK
 /// constraint on that version, otherwise it adds an SDK constraint allowing
 /// the current SDK version.
-Descriptor libPubspec(String name, String version,
-    {Map? deps, Map? devDeps, String? sdk}) {
+///
+/// [extras] is additional fields of the pubspec.
+Descriptor libPubspec(
+  String name,
+  String version, {
+  Map? deps,
+  Map? devDeps,
+  String? sdk,
+  Map<String, Object> extras = const {},
+}) {
   var map = packageMap(name, version, deps, devDeps);
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
   } else {
     map['environment'] = {'sdk': '>=0.1.2 <1.0.0'};
   }
-  return pubspec(map);
+  return pubspec({...map, ...extras});
 }
 
 /// Describes a file named `pubspec_overrides.yaml` by default, with the given
@@ -189,6 +197,20 @@ Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
 /// that this cache represents. It defaults to [globalServer.port].
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(hostedCachePath(port: port), contents);
+}
+
+/// Describes the hosted-hashes cache directory containing hashes of the hosted
+/// packages downloaded from the mock package server.
+///
+/// If [port] is passed, it's used as the port number of the local hosted server
+/// that this cache represents. It defaults to [globalServer.port].
+Descriptor hostedHashesCache(Iterable<Descriptor> contents, {int? port}) {
+  return dir(cachePath, [
+    dir(
+      'hosted-hashes',
+      [dir('localhost%58${port ?? globalServer.port}', contents)],
+    )
+  ]);
 }
 
 String hostedCachePath({int? port}) =>

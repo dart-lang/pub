@@ -15,13 +15,14 @@ import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pool/pool.dart';
+// ignore: prefer_relative_imports
+import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
-import 'third_party/tar/tar.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -172,7 +173,7 @@ List<int> readBinaryFile(String file) {
 }
 
 /// Reads the contents of the binary file [file] as a [Stream].
-Stream<List<int>> readBinaryFileAsSream(String file) {
+Stream<List<int>> readBinaryFileAsStream(String file) {
   log.io('Reading binary file $file.');
   var contents = File(file).openRead();
   return contents;
@@ -1089,5 +1090,5 @@ final String? dartConfigDir = () {
 /// Otherwise, wrap with single quotation, and use '\'' to insert single quote.
 String escapeShellArgument(String x) =>
     RegExp(r'^[a-zA-Z0-9-_=@.]+$').stringMatch(x) == null
-        ? "'${x.replaceAll(r'\', '\\').replaceAll("'", r"'\''")}'"
+        ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
         : x;

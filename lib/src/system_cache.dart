@@ -186,7 +186,12 @@ class SystemCache {
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
     versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await ref.source.status(id, this, maxAge: maxAge);
+      final packageStatus = await ref.source.status(
+        id.toRef(),
+        id.version,
+        this,
+        maxAge: maxAge,
+      );
       if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
         return id;
       }
@@ -208,10 +213,35 @@ class SystemCache {
     return id.source.doGetDirectory(id, this, relativeFrom: relativeFrom);
   }
 
-  Future<void> downloadPackage(PackageId id) async {
+  /// Downloads a cached package identified by [id] to the cache.
+  ///
+  /// [id] must refer to a cached package.
+  ///
+  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
+  /// response if present instead of probing the server. Not probing allows for
+  /// `pub get` with a filled cache to be a fast case that doesn't require any
+  /// new version-listings.
+  ///
+  /// Returns [id] with an updated [ResolvedDescription], this can be different
+  /// if the content-hash changed while downloading.
+  Future<PackageId> downloadPackage(PackageId id) async {
     final source = id.source;
     assert(source is CachedSource);
-    await (source as CachedSource).downloadToSystemCache(id, this);
+    final result = await (source as CachedSource).downloadToSystemCache(
+      id,
+      this,
+    );
+
+    // We only update the README.md in the cache when a change to the cache has
+    // happened. This is:
+    // * to avoid failing if used with a read-only cache, and
+    // * because the cost of writing a single file is negligible compared to
+    //   downloading a package, but might be significant in the fast-case where
+    //   a the cache is already valid.
+    if (result.didUpdate) {
+      _ensureReadme();
+    }
+    return result.packageId;
   }
 
   /// Get the latest version of [package].
@@ -251,6 +281,51 @@ class SystemCache {
 
     return latest;
   }
+
+  /// Removes all contents of the system cache.
+  ///
+  /// Rewrites the README.md.
+  void clean() {
+    deleteEntry(rootDir);
+    ensureDir(rootDir);
+    _ensureReadme();
+  }
+
+  /// Write a README.md file in the root of the cache directory to document the
+  /// contents of the folder.
+  ///
+  /// This should only be called when we are doing another operation that is
+  /// modifying the `PUB_CACHE`. This ensures that users won't experience
+  /// permission errors because we writing a `README.md` file, in a flow that
+  /// the user expected wouldn't have issues with a read-only `PUB_CACHE`.
+  void _ensureReadme() {
+    /// We only want to do this once per run.
+    if (_hasEnsuredReadme) return;
+    _hasEnsuredReadme = true;
+    final readmePath = p.join(rootDir, 'README.md');
+    try {
+      writeTextFile(readmePath, '''
+Pub Package Cache
+=================
+
+This folder is used by Pub to store cached packages used in Dart / Flutter
+projects.
+
+The contents of this folder should only be modified using the `dart pub` and
+`flutter pub` commands.
+
+Modifying this folder manually can lead to inconsistent behavior.
+
+For details on how manage the `PUB_CACHE`, see:
+https://dart.dev/go/pub-cache
+''');
+    } on Exception catch (e) {
+      // Failing to write the README.md should not disrupt other operations.
+      log.fine('Failed to write README.md in PUB_CACHE: $e');
+    }
+  }
+
+  bool _hasEnsuredReadme = false;
 }
 
 typedef SourceRegistry = Source Function(String? name);

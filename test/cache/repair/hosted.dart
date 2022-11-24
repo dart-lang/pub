@@ -39,11 +39,12 @@ void main() {
     await runPub(
         args: ['cache', 'repair'],
         output: '''
-          Downloading bar 1.2.4...
-          Downloading foo 1.2.3...
-          Downloading foo 1.2.5...
+
           Reinstalled 3 packages.''',
         silent: allOf([
+          contains('Downloading bar 1.2.4...'),
+          contains('Downloading foo 1.2.3...'),
+          contains('Downloading foo 1.2.5...'),
           contains('X-Pub-OS: ${Platform.operatingSystem}'),
           contains('X-Pub-Command: cache repair'),
           contains('X-Pub-Session-ID:'),

@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart' hide mapMap;
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -29,15 +30,15 @@ class LockFile {
 
   /// Dependency names that appeared in the root package's `dependencies`
   /// section.
-  final Set<String> _mainDependencies;
+  final Set<String> mainDependencies;
 
   /// Dependency names that appeared in the root package's `dev_dependencies`
   /// section.
-  final Set<String> _devDependencies;
+  final Set<String> devDependencies;
 
   /// Dependency names that appeared in the root package's
   /// `dependency_overrides` section.
-  final Set<String> _overriddenDependencies;
+  final Set<String> overriddenDependencies;
 
   /// Creates a new lockfile containing [ids].
   ///
@@ -59,20 +60,16 @@ class LockFile {
             devDependencies ?? const UnmodifiableSetView.empty(),
             overriddenDependencies ?? const UnmodifiableSetView.empty());
 
-  LockFile._(
-      Map<String, PackageId> packages,
-      this.sdkConstraints,
-      this._mainDependencies,
-      this._devDependencies,
-      this._overriddenDependencies)
+  LockFile._(Map<String, PackageId> packages, this.sdkConstraints,
+      this.mainDependencies, this.devDependencies, this.overriddenDependencies)
       : packages = UnmodifiableMapView(packages);
 
   LockFile.empty()
       : packages = const {},
         sdkConstraints = {'dart': VersionConstraint.any},
-        _mainDependencies = const UnmodifiableSetView.empty(),
-        _devDependencies = const UnmodifiableSetView.empty(),
-        _overriddenDependencies = const UnmodifiableSetView.empty();
+        mainDependencies = const UnmodifiableSetView.empty(),
+        devDependencies = const UnmodifiableSetView.empty(),
+        overriddenDependencies = const UnmodifiableSetView.empty();
 
   /// Loads a lockfile from [filePath].
   factory LockFile.load(String filePath, SourceRegistry sources) {
@@ -98,50 +95,54 @@ class LockFile {
 
     Uri? sourceUrl;
     if (filePath != null) sourceUrl = p.toUri(filePath);
-    var parsed = loadYamlNode(contents, sourceUrl: sourceUrl);
+    final parsed = _parseNode<YamlMap>(
+      loadYamlNode(contents, sourceUrl: sourceUrl),
+      'YAML mapping',
+    );
 
-    _validate(parsed is Map, 'The lockfile must be a YAML mapping.', parsed);
-    var parsedMap = parsed as YamlMap;
-
-    var sdkConstraints = <String, VersionConstraint>{};
-    var sdkNode = parsedMap.nodes['sdk'];
+    final sdkConstraints = <String, VersionConstraint>{};
+    final sdkNode =
+        _getEntry<YamlScalar?>(parsed, 'sdk', 'string', required: false);
     if (sdkNode != null) {
       // Lockfiles produced by pub versions from 1.14.0 through 1.18.0 included
       // a top-level "sdk" field which encoded the unified constraint on the
       // Dart SDK. They had no way of specifying constraints on other SDKs.
       sdkConstraints['dart'] = _parseVersionConstraint(sdkNode);
-    } else if (parsedMap.containsKey('sdks')) {
-      var sdksField = parsedMap['sdks'];
-      _validate(sdksField is Map, 'The "sdks" field must be a mapping.',
-          parsedMap.nodes['sdks']);
-
-      sdksField.nodes.forEach((name, constraint) {
-        _validate(name.value is String, 'SDK names must be strings.', name);
-        sdkConstraints[name.value as String] =
-            _parseVersionConstraint(constraint);
-      });
     }
 
-    var packages = <String, PackageId>{};
-    var packageEntries = parsedMap['packages'];
-    if (packageEntries != null) {
-      _validate(packageEntries is Map, 'The "packages" field must be a map.',
-          parsedMap.nodes['packages']);
+    final sdksField =
+        _getEntry<YamlMap?>(parsed, 'sdks', 'map', required: false);
 
-      packageEntries.forEach((name, spec) {
+    if (sdksField != null) {
+      _parseEachEntry<String, YamlScalar>(sdksField, (name, constraint) {
+        sdkConstraints[name] = _parseVersionConstraint(constraint);
+      }, 'string', 'string');
+    }
+
+    final packages = <String, PackageId>{};
+
+    final mainDependencies = <String>{};
+    final devDependencies = <String>{};
+    final overriddenDependencies = <String>{};
+
+    final packageEntries =
+        _getEntry<YamlMap?>(parsed, 'packages', 'map', required: false);
+
+    if (packageEntries != null) {
+      _parseEachEntry<String, YamlMap>(packageEntries, (name, spec) {
         // Parse the version.
-        _validate(spec.containsKey('version'),
-            'Package $name is missing a version.', spec);
-        var version = Version.parse(spec['version']);
+        final versionEntry = _getStringEntry(spec, 'version');
+        final version = Version.parse(versionEntry);
 
         // Parse the source.
-        _validate(spec.containsKey('source'),
-            'Package $name is missing a source.', spec);
-        var sourceName = spec['source'];
+        final sourceName = _getStringEntry(spec, 'source');
 
-        _validate(spec.containsKey('description'),
-            'Package $name is missing a description.', spec);
-        var description = spec['description'];
+        var descriptionNode =
+            _getEntry<YamlNode>(spec, 'description', 'description');
+
+        dynamic description = descriptionNode is YamlScalar
+            ? descriptionNode.value
+            : descriptionNode;
 
         // Let the source parse the description.
         var source = sources(sourceName);
@@ -150,33 +151,36 @@ class LockFile {
           id = source.parseId(name, version, description,
               containingDir: filePath == null ? null : p.dirname(filePath));
         } on FormatException catch (ex) {
-          throw SourceSpanFormatException(
-              ex.message, spec.nodes['description'].span);
+          _failAt(ex.message, spec.nodes['description']!);
         }
 
         // Validate the name.
-        _validate(name == id.name,
-            "Package name $name doesn't match ${id.name}.", spec);
+        if (name != id.name) {
+          _failAt("Package name $name doesn't match ${id.name}.", spec);
+        }
 
         packages[name] = id;
-      });
+        if (spec.containsKey('dependency')) {
+          final dependencyKind = _getStringEntry(spec, 'dependency');
+          switch (dependencyKind) {
+            case _directMain:
+              mainDependencies.add(name);
+              break;
+            case _directDev:
+              devDependencies.add(name);
+              break;
+            case _directOverridden:
+              overriddenDependencies.add(name);
+          }
+        }
+      }, 'string', 'map');
     }
-
     return LockFile._(
         packages,
         sdkConstraints,
         const UnmodifiableSetView.empty(),
         const UnmodifiableSetView.empty(),
         const UnmodifiableSetView.empty());
-  }
-
-  /// Asserts that [node] is a version constraint, and parses it.
-  static VersionConstraint _parseVersionConstraint(YamlNode node) {
-    _validate(node.value is String,
-        'Invalid version constraint: must be a string.', node);
-
-    return _wrapFormatException('version constraint', node.span,
-        () => VersionConstraint.parse(node.value));
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
@@ -195,10 +199,68 @@ class LockFile {
     }
   }
 
-  /// If [condition] is `false` throws a format error with [message] for [node].
-  static void _validate(bool condition, String message, YamlNode? node) {
-    if (condition) return;
-    throw SourceSpanFormatException(message, node!.span);
+  static VersionConstraint _parseVersionConstraint(YamlNode node) {
+    return _parseNode(node, 'version constraint',
+        parse: VersionConstraint.parse);
+  }
+
+  static String _getStringEntry(YamlMap map, String key) {
+    return _parseNode<String>(
+        _getEntry<YamlScalar>(map, key, 'string'), 'string');
+  }
+
+  static T _parseNode<T>(YamlNode node, String typeDescription,
+      {T Function(String)? parse}) {
+    if (node is T) {
+      return node as T;
+    } else if (node is YamlScalar) {
+      final value = node.value;
+      if (parse != null) {
+        if (value is! String) {
+          _failAt('Expected a $typeDescription.', node);
+        }
+        return _wrapFormatException(
+            'Expected a $typeDescription.', node.span, () => parse(node.value));
+      } else if (value is T) {
+        return value;
+      }
+      _failAt('Expected a $typeDescription.', node);
+    }
+    _failAt('Expected a $typeDescription.', node);
+  }
+
+  static void _parseEachEntry<K, V>(
+      YamlMap map,
+      void Function(K key, V value) f,
+      String keyTypeDescription,
+      String valueTypeDescription) {
+    map.nodes.forEach((key, value) {
+      f(_parseNode(key, keyTypeDescription),
+          _parseNode(value, valueTypeDescription));
+    });
+  }
+
+  static T _getEntry<T>(
+    YamlMap map,
+    String key,
+    String type, {
+    bool required = true,
+  }) {
+    final entry = map.nodes[key];
+    // `null` here always means not present. A value explicitly mapped to `null`
+    // would be a `YamlScalar(null)`.
+    if (entry == null) {
+      if (required) {
+        _failAt('Expected a `$key` entry.', map);
+      } else {
+        return null as T;
+      }
+    }
+    return _parseNode(entry, type);
+  }
+
+  static Never _failAt(String message, YamlNode node) {
+    throw SourceSpanFormatException(message, node.span);
   }
 
   /// Returns a copy of this LockFile with a package named [name] removed.
@@ -209,8 +271,13 @@ class LockFile {
 
     var packages = Map<String, PackageId>.from(this.packages);
     packages.remove(name);
-    return LockFile._(packages, sdkConstraints, _mainDependencies,
-        _devDependencies, _overriddenDependencies);
+    return LockFile._(
+      packages,
+      sdkConstraints,
+      mainDependencies,
+      devDependencies,
+      overriddenDependencies,
+    );
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
@@ -241,12 +308,11 @@ class LockFile {
         rootUri = p.toUri(rootPath);
       }
       final pubspec = await cache.describe(id);
-      final sdkConstraint = pubspec.sdkConstraints[sdk.identifier];
       entries.add(PackageConfigEntry(
         name: name,
         rootUri: rootUri,
         packageUri: p.toUri('lib/'),
-        languageVersion: LanguageVersion.fromSdkConstraint(sdkConstraint),
+        languageVersion: pubspec.languageVersion,
       ));
     }
 
@@ -277,20 +343,18 @@ class LockFile {
   /// [packageDir] is the containing directory of the root package, used to
   /// serialize relative path package descriptions. If it is null, they will be
   /// serialized as absolute.
-  String serialize(String? packageDir) {
+  String serialize(String? packageDir, SystemCache cache) {
     // Convert the dependencies to a simple object.
     var packageMap = {};
-    packages.forEach((name, package) {
-      var description =
-          package.description.serializeForLockfile(containingDir: packageDir);
-
-      packageMap[name] = {
-        'version': package.version.toString(),
-        'source': package.source.name,
-        'description': description,
-        'dependency': _dependencyType(package.name)
+    for (final id in packages.values) {
+      packageMap[id.name] = {
+        'version': id.version.toString(),
+        'source': id.source.name,
+        'description':
+            id.description.serializeForLockfile(containingDir: packageDir),
+        'dependency': _dependencyType(id.name)
       };
-    });
+    }
 
     var data = {
       'sdks': mapMap(sdkConstraints,
@@ -304,17 +368,37 @@ ${yamlToString(data)}
 ''';
   }
 
+  /// Saves the list of concrete package versions to [lockFilePath].
+  ///
+  /// Will use Windows line endings (`\r\n`) if the file already exists, and
+  /// uses that.
+  ///
+  /// Relative paths will be resolved relative to [lockFilePath]
+  void writeToFile(String lockFilePath, SystemCache cache) {
+    final windowsLineEndings = fileExists(lockFilePath) &&
+        detectWindowsLineEndings(readTextFile(lockFilePath));
+
+    final serialized = serialize(p.dirname(lockFilePath), cache);
+    writeTextFile(lockFilePath,
+        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
+  }
+
+  static const _directMain = 'direct main';
+  static const _directDev = 'direct dev';
+  static const _directOverridden = 'direct overridden';
+  static const _transitive = 'transitive';
+
   /// Returns the dependency classification for [package].
   String _dependencyType(String package) {
-    if (_mainDependencies.contains(package)) return 'direct main';
-    if (_devDependencies.contains(package)) return 'direct dev';
+    if (mainDependencies.contains(package)) return _directMain;
+    if (devDependencies.contains(package)) return _directDev;
 
     // If a package appears in `dependency_overrides` and another dependency
     // section, the main section it appears in takes precedence.
-    if (_overriddenDependencies.contains(package)) {
-      return 'direct overridden';
+    if (overriddenDependencies.contains(package)) {
+      return _directOverridden;
     }
-    return 'transitive';
+    return _transitive;
   }
 
   /// `true` if [other] has the same packages as `this` in the same versions
@@ -329,4 +413,23 @@ ${yamlToString(data)}
     }
     return true;
   }
+}
+
+/// Returns `true` if the [text] looks like it uses windows line endings.
+///
+/// The heuristic used is to count all `\n` in the text and if stricly more than
+/// half of them are preceded by `\r` we report `true`.
+@visibleForTesting
+bool detectWindowsLineEndings(String text) {
+  var index = -1;
+  var unixNewlines = 0;
+  var windowsNewlines = 0;
+  while ((index = text.indexOf('\n', index + 1)) != -1) {
+    if (index != 0 && text[index - 1] == '\r') {
+      windowsNewlines++;
+    } else {
+      unixNewlines++;
+    }
+  }
+  return windowsNewlines > unixNewlines;
 }

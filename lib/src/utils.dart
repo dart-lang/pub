@@ -7,7 +7,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -328,6 +330,10 @@ String replace(String source, Pattern matcher, String Function(Match) fn) {
 String sha1(String source) =>
     crypto.sha1.convert(utf8.encode(source)).toString();
 
+String hexEncode(List<int> bytes) => hex.encode(bytes);
+
+Uint8List hexDecode(String string) => hex.decode(string) as Uint8List;
+
 /// A regular expression matching a trailing CR character.
 final _trailingCR = RegExp(r'\r$');
 
@@ -419,6 +425,26 @@ bool get canUseAnsiCodes {
 
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
+
+/// Whether an environment variable overriding the [stdout.hasTerminal] check
+/// was passed.
+bool get forceTerminalOutput =>
+    Platform.environment.containsKey('_PUB_FORCE_TERMINAL_OUTPUT');
+
+/// Whether it makes sense to do stdout animation.
+///
+/// Checks if pub is in JSON output mode or if stdout has no terminal attached.
+/// The flutter tool sets an environment variable when running "pub get" that
+/// overrides the terminal check. See [forceTerminalOutput].
+bool get canAnimateOutput {
+  if (log.json.enabled) {
+    return false;
+  }
+  if (!stdout.hasTerminal && !forceTerminalOutput) {
+    return false;
+  }
+  return true;
+}
 
 /// Gets a emoji special character as unicode, or the [alternative] if unicode
 /// charactors are not supported by stdout.
@@ -637,4 +663,78 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
     for (var entry in map.entries)
       key(entry.key, entry.value): value(entry.key, entry.value),
   };
+}
+
+/// Compares two lists. If the lists have equal length this comparison will
+/// iterate all elements, thus taking a fixed amount of time making timing
+/// attacks harder.
+bool fixedTimeBytesEquals(List<int>? a, List<int>? b) {
+  if (a == null || b == null) return a == b;
+  if (a.length != b.length) return false;
+  var e = 0;
+  for (var i = 0; i < a.length; i++) {
+    e |= a[i] ^ b[i];
+  }
+  return e == 0;
+}
+
+/// Call [fn] retrying so long as [retryIf] return `true` for the exception
+/// thrown, up-to [maxAttempts] times.
+///
+/// Defaults to 8 attempts, sleeping as following after 1st, 2nd, 3rd, ...,
+/// 7th attempt:
+///  1. 400 ms +/- 25%
+///  2. 800 ms +/- 25%
+///  3. 1600 ms +/- 25%
+///  4. 3200 ms +/- 25%
+///  5. 6400 ms +/- 25%
+///  6. 12800 ms +/- 25%
+///  7. 25600 ms +/- 25%
+///
+/// ```dart
+/// final response = await retry(
+///   // Make a GET request
+///   () => http.get('https://google.com').timeout(Duration(seconds: 5)),
+///   // Retry on SocketException or TimeoutException
+///   retryIf: (e) => e is SocketException || e is TimeoutException,
+/// );
+/// print(response.body);
+/// ```
+///
+/// If no [retryIf] function is given this will retry any for any [Exception]
+/// thrown. To retry on an [Error], the error must be caught and _rethrown_
+/// as an [Exception].
+///
+/// See https://github.com/google/dart-neats/blob/master/retry/lib/retry.dart
+Future<T> retry<T>(
+  FutureOr<T> Function() fn, {
+  Duration delayFactor = const Duration(milliseconds: 200),
+  double randomizationFactor = 0.25,
+  Duration maxDelay = const Duration(seconds: 30),
+  int maxAttempts = 8,
+  FutureOr<bool> Function(Exception)? retryIf,
+  FutureOr<void> Function(Exception, int attemptNumber)? onRetry,
+}) async {
+  var attempt = 0;
+  // ignore: literal_only_boolean_expressions
+  while (true) {
+    attempt++; // first invocation is the first attempt
+    try {
+      return await fn();
+    } on Exception catch (e) {
+      if (attempt >= maxAttempts || (retryIf != null && !(await retryIf(e)))) {
+        rethrow;
+      }
+
+      if (onRetry != null) {
+        await onRetry(e, attempt + 1);
+      }
+    }
+
+    // Sleep for a delay
+    final rf = randomizationFactor * (random.nextDouble() * 2 - 1) + 1;
+    final exp = math.min(attempt, 31); // prevent overflows.
+    final delay = delayFactor * math.pow(2.0, exp) * rf;
+    await Future.delayed(delay < maxDelay ? delay : maxDelay);
+  }
 }

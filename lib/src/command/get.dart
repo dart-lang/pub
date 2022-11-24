@@ -28,6 +28,13 @@ class GetCommand extends PubCommand {
         negatable: false,
         help: "Report what dependencies would change but don't change any.");
 
+    argParser.addFlag(
+      'enforce-lockfile',
+      negatable: false,
+      help:
+          'Enforce pubspec.lock. Fail resolution if pubspec.lock does not satisfy pubspec.yaml',
+    );
+
     argParser.addFlag('precompile',
         help: 'Build executables in immediate dependencies.');
 
@@ -49,11 +56,13 @@ class GetCommand extends PubCommand {
       log.warning(log.yellow(
           'The --packages-dir flag is no longer used and does nothing.'));
     }
+
     await entrypoint.acquireDependencies(
       SolveType.get,
       dryRun: argResults['dry-run'],
       precompile: argResults['precompile'],
       analytics: analytics,
+      enforceLockfile: argResults['enforce-lockfile'],
     );
 
     var example = entrypoint.example;
@@ -64,6 +73,7 @@ class GetCommand extends PubCommand {
         precompile: argResults['precompile'],
         analytics: analytics,
         onlyReportSuccessOrFailure: true,
+        enforceLockfile: argResults['enforce-lockfile'],
       );
     }
   }

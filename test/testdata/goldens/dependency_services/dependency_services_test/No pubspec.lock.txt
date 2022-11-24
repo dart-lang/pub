@@ -34,7 +34,8 @@ $ dependency_services list
         "type": "hosted",
         "description": {
           "name": "foo",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "72f6a04c4af0d78e4f1a1e2eb00a850843e6c0c5233ac2ca911aa061cbd5f8f1"
         }
       }
     },
@@ -47,7 +48,8 @@ $ dependency_services list
         "type": "hosted",
         "description": {
           "name": "transitive",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "8d245de5cde3ab3293e4cdea516c6a0395e24d338688279bab5f6c97bffa0915"
         }
       }
     }
@@ -86,7 +88,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "bf378a3f6c4840f911d66ab375f6d3eae78a015a41f0b8b202c31d4af010892e"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -98,7 +101,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "72f6a04c4af0d78e4f1a1e2eb00a850843e6c0c5233ac2ca911aa061cbd5f8f1"
             }
           }
         }
@@ -112,7 +116,8 @@ $ dependency_services report
         "type": "hosted",
         "description": {
           "name": "foo",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "72f6a04c4af0d78e4f1a1e2eb00a850843e6c0c5233ac2ca911aa061cbd5f8f1"
         }
       },
       "latest": "2.2.3",
@@ -127,7 +132,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "bf378a3f6c4840f911d66ab375f6d3eae78a015a41f0b8b202c31d4af010892e"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -139,7 +145,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "72f6a04c4af0d78e4f1a1e2eb00a850843e6c0c5233ac2ca911aa061cbd5f8f1"
             }
           }
         }
@@ -153,7 +160,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "bf378a3f6c4840f911d66ab375f6d3eae78a015a41f0b8b202c31d4af010892e"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -165,7 +173,8 @@ $ dependency_services report
             "type": "hosted",
             "description": {
               "name": "foo",
-              "url": "http://localhost:$PORT"
+              "url": "http://localhost:$PORT",
+              "sha256": "72f6a04c4af0d78e4f1a1e2eb00a850843e6c0c5233ac2ca911aa061cbd5f8f1"
             }
           }
         }
@@ -179,7 +188,8 @@ $ dependency_services report
         "type": "hosted",
         "description": {
           "name": "transitive",
-          "url": "http://localhost:$PORT"
+          "url": "http://localhost:$PORT",
+          "sha256": "8d245de5cde3ab3293e4cdea516c6a0395e24d338688279bab5f6c97bffa0915"
         }
       },
       "latest": "1.0.0",

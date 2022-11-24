@@ -35,8 +35,7 @@ Future authorizePub(TestProcess pub, PackageServer server,
   // sign-in with Google account.
   var response =
       await (http.Request('GET', redirectUrl)..followRedirects = false).send();
-  expect(response.headers['location'],
-      equals('https://pub.dartlang.org/authorized'));
+  expect(response.headers['location'], equals('https://pub.dev/authorized'));
 }
 
 void handleAccessTokenRequest(PackageServer server, String accessToken) {

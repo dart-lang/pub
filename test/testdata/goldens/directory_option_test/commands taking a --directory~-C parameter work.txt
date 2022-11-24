@@ -53,7 +53,7 @@ $ pub get bar -C 'myapp/example2'
 Resolving dependencies in myapp/example2...
 [STDERR] Error on line 1, column 9 of myapp/pubspec.yaml: "name" field doesn't match expected name "myapp".
 [STDERR]   ╷
-[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dev","description":"A package, I guess.","environment":{"sdk":">=1.8.0 <=2.0.0"}, dependencies: { foo: ^1.0.0}}
+[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dev","description":"A package, I guess.","environment":{"sdk":">=0.1.2 <=0.2.0"}, dependencies: { foo: ^1.0.0}}
 [STDERR]   │         ^^^^^^^^^^
 [STDERR]   ╵
 [EXIT CODE] 65
@@ -93,6 +93,8 @@ Hi
 
 ## Section 11
 $ pub publish -C myapp --dry-run
+Resolving dependencies in myapp...
+Got dependencies in myapp!
 Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 ├── CHANGELOG.md (<1 KB)
 ├── LICENSE (<1 KB)
@@ -106,9 +108,15 @@ Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 ├── lib
 │   └── test_pkg.dart (<1 KB)
 └── pubspec.yaml (<1 KB)
-The server may enforce additional checks.
-[STDERR] 
-[STDERR] Package has 0 warnings.
+[STDERR] Package validation found the following error:
+[STDERR] * Older versions of pub don't support ^ version constraints.
+[STDERR]   Make sure your SDK constraint excludes old versions:
+[STDERR]   
+[STDERR]   environment:
+[STDERR]     sdk: ">=1.8.0 <2.0.0"
+[STDERR] Sorry, your package is missing a requirement and can't be published yet.
+[STDERR] For more information, see: https://dart.dev/tools/pub/cmd/pub-lish.
+[EXIT CODE] 65
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -124,7 +132,7 @@ $ pub uploader -C myapp add sigurdm@google.com
 
 ## Section 13
 $ pub deps -C myapp
-Dart SDK 1.12.0
+Dart SDK 0.1.2+3
 test_pkg 1.0.0
 └── foo 1.0.0
 
