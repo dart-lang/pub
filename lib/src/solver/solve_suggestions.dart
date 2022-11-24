@@ -196,7 +196,7 @@ class _ResolutionSuggestion {
 Future<SolveResult?> tryResolve(SolveType type, SystemCache cache, Package root,
     {LockFile? lockFile,
     Iterable<String> unlock = const [],
-    Map<String, Version>? sdkOverrides}) async {
+    Map<String, Version> sdkOverrides = const {}}) async {
   try {
     return await resolveVersions(type, cache, root,
         lockFile: lockFile, sdkOverrides: sdkOverrides);

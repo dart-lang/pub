@@ -77,7 +77,7 @@ class VersionSolver {
 
   /// If present these represents the version of an SDK to assume during
   /// resolution.
-  final Map<String, Version>? _sdkOverrides;
+  final Map<String, Version> _sdkOverrides;
 
   final _stopwatch = Stopwatch();
 

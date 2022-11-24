@@ -106,9 +106,8 @@ class PackageLister {
     this._overriddenPackages,
     this._allowedRetractedVersion, {
     bool downgrade = false,
-    required Map<String, Version>? sdkOverrides,
-  })  : sdkOverrides = sdkOverrides ?? {},
-        _isDowngrade = downgrade;
+    this.sdkOverrides = const {},
+  }) : _isDowngrade = downgrade;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(Package package, this._systemCache,

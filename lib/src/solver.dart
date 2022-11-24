@@ -30,10 +30,13 @@ export 'solver/type.dart';
 /// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
 Future<SolveResult> resolveVersions(
-    SolveType type, SystemCache cache, Package root,
-    {LockFile? lockFile,
-    Iterable<String> unlock = const [],
-    Map<String, Version>? sdkOverrides,}) {
+  SolveType type,
+  SystemCache cache,
+  Package root, {
+  LockFile? lockFile,
+  Iterable<String> unlock = const [],
+  Map<String, Version> sdkOverrides = const {},
+}) {
   lockFile ??= LockFile.empty();
   return VersionSolver(
     type,
