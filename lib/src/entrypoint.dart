@@ -483,9 +483,13 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
   /// The [additionalSources], if provided, instruct the compiler to include
   /// additional source files into compilation even if they are not referenced
   /// from the main library.
+  ///
+  /// The [nativeAssets], if provided, instruct the compiler include a native
+  /// assets map.
   Future<void> precompileExecutable(
     Executable executable, {
     List<String> additionalSources = const [],
+    String? nativeAssets,
   }) async {
     await log.progress('Building package executable', () async {
       ensureDir(p.dirname(pathOfExecutable(executable)));
@@ -493,6 +497,7 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
         _precompileExecutable(
           executable,
           additionalSources: additionalSources,
+          nativeAssets: nativeAssets,
         )
       ]);
     });
@@ -501,6 +506,7 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
   Future<void> _precompileExecutable(
     Executable executable, {
     List<String> additionalSources = const [],
+    String? nativeAssets,
   }) async {
     final package = executable.package;
 
@@ -511,6 +517,7 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
       packageConfigPath: packageConfigPath,
       name: '$package:${p.basenameWithoutExtension(executable.relativePath)}',
       additionalSources: additionalSources,
+      nativeAssets: nativeAssets,
     );
   }
 

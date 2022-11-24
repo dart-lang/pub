@@ -105,6 +105,9 @@ class AnalyzerErrorGroup implements Exception {
 /// The [additionalSources], if provided, instruct the compiler to include
 /// additional source files into compilation even if they are not referenced
 /// from the main library.
+///
+/// The [nativeAssets], if provided, instruct the compiler include a native
+/// assets map.
 Future<void> precompile({
   required String executablePath,
   required String incrementalDillPath,
@@ -112,6 +115,7 @@ Future<void> precompile({
   required String outputPath,
   required String packageConfigPath,
   List<String> additionalSources = const [],
+  String? nativeAssets,
 }) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillPath));
@@ -143,6 +147,7 @@ Future<void> precompile({
       sdkRoot: sdkRoot,
       packagesJson: packageConfigPath,
       additionalSources: additionalSources,
+      nativeAssets: nativeAssets,
       printIncrementalDependencies: false,
     );
     final result = await client.compile();
