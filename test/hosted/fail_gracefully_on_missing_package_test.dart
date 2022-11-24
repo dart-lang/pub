@@ -29,9 +29,8 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully if transitive dependencies does not exist',
         () async {
-      await servePackages(
-        (builder) => builder.serve('foo', '1.2.3', deps: {'bar': '^1.0.0'}),
-      );
+      final server = await servePackages();
+      server.serve('foo', '1.2.3', deps: {'bar': '^1.0.0'});
 
       await d.appDir({'foo': '1.2.3'}).create();
 
