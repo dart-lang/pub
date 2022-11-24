@@ -451,9 +451,13 @@ class Entrypoint {
   /// The [additionalSources], if provided, instruct the compiler to include
   /// additional source files into compilation even if they are not referenced
   /// from the main library.
+  ///
+  /// The [nativeAssets], if provided, instruct the compiler include a native
+  /// assets map.
   Future<void> precompileExecutable(
     Executable executable, {
     List<String> additionalSources = const [],
+    String? nativeAssets,
   }) async {
     await log.progress('Building package executable', () async {
       ensureDir(p.dirname(pathOfExecutable(executable)));
@@ -461,6 +465,7 @@ class Entrypoint {
         _precompileExecutable(
           executable,
           additionalSources: additionalSources,
+          nativeAssets: nativeAssets,
         )
       ]);
     });
@@ -469,6 +474,7 @@ class Entrypoint {
   Future<void> _precompileExecutable(
     Executable executable, {
     List<String> additionalSources = const [],
+    String? nativeAssets,
   }) async {
     final package = executable.package;
 
@@ -479,6 +485,7 @@ class Entrypoint {
       packageConfigPath: packageConfigPath,
       name: '$package:${p.basenameWithoutExtension(executable.relativePath)}',
       additionalSources: additionalSources,
+      nativeAssets: nativeAssets,
     );
   }
 

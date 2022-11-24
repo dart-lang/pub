@@ -271,6 +271,9 @@ class DartExecutableWithPackageConfig {
 /// The [additionalSources], if provided, instructs the compiler to include
 /// additional source files into compilation even if they are not referenced
 /// from the main library that [descriptor] resolves to.
+///
+/// The [nativeAssets], if provided, instructs the compiler to include
+/// the native-assets mapping for @Native external functions.
 Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
@@ -278,6 +281,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   String? pubCacheDir,
   PubAnalytics? analytics,
   List<String> additionalSources = const [],
+  String? nativeAssets,
 }) async {
   root ??= p.current;
   var asPath = descriptor;
@@ -371,6 +375,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
           () => entrypoint.precompileExecutable(
             executable,
             additionalSources: additionalSources,
+            nativeAssets: nativeAssets,
           ),
         );
       } on ApplicationException catch (e) {
