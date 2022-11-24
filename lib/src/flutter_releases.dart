@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:http/http.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'http.dart';
@@ -18,7 +19,7 @@ String get flutterReleasesUrl =>
 Future<List<FlutterRelease>> _flutterReleases = () async {
   final response = await retryForHttp(
     'fetching available Flutter releases',
-    () => globalHttpClient.get(Uri.parse(flutterReleasesUrl)),
+    () => globalHttpClient.fetch(Request('GET', Uri.parse(flutterReleasesUrl))),
   );
   final decoded = jsonDecode(response.body);
   if (decoded is! Map) throw FormatException('Bad response - should be a Map');
