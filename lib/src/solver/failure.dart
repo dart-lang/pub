@@ -47,7 +47,7 @@ class SolveFailure implements ApplicationException {
   String toString() => [
         _Writer(incompatibility).write(),
         if (suggestions != null) suggestions
-      ].join();
+      ].join('\n');
 }
 
 /// A class that writes a human-readable description of the cause of a
