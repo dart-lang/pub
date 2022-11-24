@@ -20,8 +20,7 @@ class LanguageVersionValidator extends Validator {
   @override
   Future validate() async {
     var packagePath = p.normalize(p.absolute(entrypoint.root.dir));
-    final analysisContextManager = AnalysisContextManager()
-      ..createContextsForDirectory(packagePath);
+    final analysisContextManager = AnalysisContextManager(packagePath);
 
     final declaredLanguageVersion = entrypoint.root.pubspec.languageVersion;
 

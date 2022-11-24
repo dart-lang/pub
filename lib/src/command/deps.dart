@@ -8,7 +8,6 @@ import 'dart:convert';
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../command_runner.dart';
-import '../dart.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../sdk.dart';
@@ -30,9 +29,6 @@ class DepsCommand extends PubCommand {
 
   @override
   bool get takesArguments => false;
-
-  final AnalysisContextManager analysisContextManager =
-      AnalysisContextManager();
 
   /// The [StringBuffer] used to accumulate the output.
   // TODO(sigurdm): use a local variable for this.

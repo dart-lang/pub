@@ -6,15 +6,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:analyzer/dart/analysis/analysis_context.dart';
-import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
+import 'package:analyzer/dart/analysis/context_builder.dart';
+import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
-import 'package:analyzer/file_system/overlay_file_system.dart';
-import 'package:analyzer/file_system/physical_file_system.dart';
-import 'package:cli_util/cli_util.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
 import 'package:path/path.dart' as p;
 
@@ -23,53 +20,26 @@ import 'io.dart';
 import 'log.dart' as log;
 
 class AnalysisContextManager {
-  /// The map from a context root directory to to the context.
-  final Map<String, AnalysisContext> _contexts = {};
+  static final sessions = <String, AnalysisContextManager>{};
 
-  /// Ensure that there are analysis contexts for the directory with the
-  /// given [path]. If any previously added root covers the [path], keep
-  /// the previously created analysis context.
-  ///
-  /// This method does not discover analysis roots "up", it only looks down
-  /// the given [path]. It is expected that the client knows analysis roots
-  /// in advance. Pub does know, it is the packages it works with.
-  void createContextsForDirectory(String path) {
-    path = p.normalize(p.absolute(path));
+  final String packagePath;
+  final AnalysisSession _session;
 
-    // We add all contexts below the given directory.
-    // So, children contexts must also have been added.
-    if (_contexts.containsKey(path)) {
-      return;
-    }
+  factory AnalysisContextManager(String packagePath) => sessions.putIfAbsent(
+      packagePath, () => AnalysisContextManager._(packagePath));
 
-    // Overwrite the analysis_options.yaml to avoid loading the file included
-    // in the package, as this may result in some files not being analyzed.
-    final resourceProvider =
-        OverlayResourceProvider(PhysicalResourceProvider.INSTANCE);
-    resourceProvider.setOverlay(
-      p.join(path, 'analysis_options.yaml'),
-      content: '',
-      modificationStamp: 0,
-    );
-
-    var contextCollection = AnalysisContextCollection(
-      includedPaths: [path],
-      resourceProvider: resourceProvider,
-      sdkPath: getSdkPath(),
-    );
-
-    // Add new contexts for the given path.
-    for (var analysisContext in contextCollection.contexts) {
-      var contextRootPath = analysisContext.contextRoot.root.path;
-
-      // If there is already a context for this context root path, keep it.
-      if (_contexts.containsKey(contextRootPath)) {
-        continue;
-      }
-
-      _contexts[contextRootPath] = analysisContext;
-    }
-  }
+  AnalysisContextManager._(this.packagePath)
+      : _session = ContextBuilder()
+            .createContext(
+              contextRoot: ContextLocator().locateRoots(
+                includedPaths: [p.absolute(p.normalize(packagePath))],
+                optionsFile:
+                    // We don't want to take 'analysis_options.yaml' files into
+                    // account. So we replace it with an empty file.
+                    Platform.isWindows ? 'NUL' : '/dev/null',
+              ).first,
+            )
+            .currentSession;
 
   /// Parse the file with the given [path] into AST.
   ///
@@ -80,7 +50,7 @@ class AnalysisContextManager {
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
     path = p.normalize(p.absolute(path));
-    var parseResult = _getExistingSession(path).getParsedUnit(path);
+    var parseResult = _session.getParsedUnit(path);
     if (parseResult is ParsedUnitResult) {
       if (parseResult.errors.isNotEmpty) {
         throw AnalyzerErrorGroup(parseResult.errors);
@@ -93,10 +63,6 @@ class AnalysisContextManager {
 
   /// Return import and export directives in the file with the given [path].
   ///
-  /// One of the containing directories must be used to create analysis
-  /// contexts using [createContextsForDirectory]. Throws [StateError] if
-  /// this has not been done.
-  ///
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   List<UriBasedDirective> parseImportsAndExports(String path) {
     var unit = parse(path);
@@ -107,16 +73,6 @@ class AnalysisContextManager {
       }
     }
     return uriDirectives;
-  }
-
-  AnalysisSession _getExistingSession(String path) {
-    for (var context in _contexts.values) {
-      if (context.contextRoot.isAnalyzed(path)) {
-        return context.currentSession;
-      }
-    }
-
-    throw StateError('Unable to find the context to $path');
   }
 }
 
