@@ -21,7 +21,7 @@ void manifestAndLockfile(GoldenTestContext context) {
   String catFile(String filename) {
     final path = p.join(d.sandbox, appPath, filename);
     if (File(path).existsSync()) {
-      final contents = filterUnstableLines(File(path).readAsLinesSync());
+      final contents = File(path).readAsLinesSync().map(filterUnstableText);
 
       return '''
 \$ cat $filename
@@ -82,7 +82,7 @@ extension on GoldenTestContext {
 Future<Iterable<String>> outputLines(Stream<List<int>> stream) async {
   final s = await utf8.decodeStream(stream);
   if (s.isEmpty) return [];
-  return filterUnstableLines(s.split('\n'));
+  return s.split('\n').map(filterUnstableText);
 }
 
 Future<void> _listReportApply(

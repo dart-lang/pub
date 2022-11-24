@@ -353,6 +353,7 @@ class GitSource extends CachedSource {
           (id.description as GitResolvedDescription).resolvedRef;
 
       didUpdate |= await _ensureRevision(description, resolvedRef, cache);
+
       var revisionCachePath = _revisionCachePath(id, cache);
       final path = description.path;
       await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
@@ -460,31 +461,13 @@ class GitSource extends CachedSource {
 
   /// Ensures that the canonical clone of the repository referred to by [ref]
   /// contains the given Git [revision].
-<<<<<<< HEAD
-  Future<void> _ensureRevision(
-    GitDescription description,
-||||||| d54d52d3
-  Future _ensureRevision(
-    PackageRef ref,
-=======
-  ///
-  /// Returns `true` if it had to update anything.
   Future<bool> _ensureRevision(
-    PackageRef ref,
->>>>>>> origin/master
+    GitDescription description,
     String revision,
     SystemCache cache,
   ) async {
-<<<<<<< HEAD
     var path = _repoCachePath(description, cache);
-    if (_updatedRepos.contains(path)) return;
-||||||| d54d52d3
-    var path = _repoCachePath(ref, cache);
-    if (_updatedRepos.contains(path)) return;
-=======
-    var path = _repoCachePath(ref, cache);
     if (_updatedRepos.contains(path)) return false;
->>>>>>> origin/master
 
     await _deleteGitRepoIfInvalid(path);
 
@@ -495,85 +478,41 @@ class GitSource extends CachedSource {
     try {
       await _firstRevision(path, revision);
     } on git.GitException catch (_) {
-<<<<<<< HEAD
       await _updateRepoCache(description, cache);
-||||||| d54d52d3
-      await _updateRepoCache(ref, cache);
-=======
-      await _updateRepoCache(ref, cache);
       return true;
->>>>>>> origin/master
     }
     return false;
   }
 
   /// Ensures that the canonical clone of the repository referred to by [ref]
   /// exists and is up-to-date.
-<<<<<<< HEAD
-  Future<void> _ensureRepoCache(
+  ///
+  /// Returns `true` if it had to update anything.
+  Future<bool> _ensureRepoCache(
     GitDescription description,
     SystemCache cache,
   ) async {
     var path = _repoCachePath(description, cache);
-    if (_updatedRepos.contains(path)) return;
-||||||| d54d52d3
-  Future _ensureRepoCache(PackageRef ref, SystemCache cache) async {
-    var path = _repoCachePath(ref, cache);
-    if (_updatedRepos.contains(path)) return;
-=======
-  ///
-  /// Returns `true` if it had to update anything.
-  Future<bool> _ensureRepoCache(PackageRef ref, SystemCache cache) async {
-    var path = _repoCachePath(ref, cache);
     if (_updatedRepos.contains(path)) return false;
->>>>>>> origin/master
 
     await _deleteGitRepoIfInvalid(path);
 
     if (!entryExists(path)) {
-<<<<<<< HEAD
       await _createRepoCache(description, cache);
-||||||| d54d52d3
-      await _createRepoCache(ref, cache);
-=======
-      await _createRepoCache(ref, cache);
       return true;
->>>>>>> origin/master
     } else {
-<<<<<<< HEAD
-      await _updateRepoCache(description, cache);
-||||||| d54d52d3
-      await _updateRepoCache(ref, cache);
-=======
-      return await _updateRepoCache(ref, cache);
->>>>>>> origin/master
+      return await _updateRepoCache(description, cache);
     }
   }
 
   /// Creates the canonical clone of the repository referred to by [ref].
   ///
   /// This assumes that the canonical clone doesn't yet exist.
-<<<<<<< HEAD
   Future<void> _createRepoCache(
     GitDescription description,
     SystemCache cache,
   ) async {
     var path = _repoCachePath(description, cache);
-||||||| d54d52d3
-  Future _createRepoCache(PackageRef ref, SystemCache cache) async {
-    final description = ref.description;
-    if (description is! GitDescription) {
-      throw ArgumentError('Wrong source');
-    }
-    var path = _repoCachePath(ref, cache);
-=======
-  Future<void> _createRepoCache(PackageRef ref, SystemCache cache) async {
-    final description = ref.description;
-    if (description is! GitDescription) {
-      throw ArgumentError('Wrong source');
-    }
-    var path = _repoCachePath(ref, cache);
->>>>>>> origin/master
     assert(!_updatedRepos.contains(path));
     try {
       await _clone(description.url, path, mirror: true);
@@ -588,30 +527,14 @@ class GitSource extends CachedSource {
   /// [ref].
   ///
   /// This assumes that the canonical clone already exists.
-<<<<<<< HEAD
-  Future<void> _updateRepoCache(
-    GitDescription description,
-||||||| d54d52d3
-  Future _updateRepoCache(
-    PackageRef ref,
-=======
   ///
   /// Returns `true` if it had to update anything.
   Future<bool> _updateRepoCache(
-    PackageRef ref,
->>>>>>> origin/master
+    GitDescription description,
     SystemCache cache,
   ) async {
-<<<<<<< HEAD
     var path = _repoCachePath(description, cache);
-    if (_updatedRepos.contains(path)) return Future.value();
-||||||| d54d52d3
-    var path = _repoCachePath(ref, cache);
-    if (_updatedRepos.contains(path)) return Future.value();
-=======
-    var path = _repoCachePath(ref, cache);
     if (_updatedRepos.contains(path)) return false;
->>>>>>> origin/master
     await git.run(['fetch'], workingDir: path);
     _updatedRepos.add(path);
     return true;
