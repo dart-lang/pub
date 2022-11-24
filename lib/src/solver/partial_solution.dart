@@ -137,7 +137,7 @@ class PartialSolution {
       if (assignment.package.name != term.package.name) continue;
 
       if (!assignment.package.isRoot &&
-          !assignment.package.samePackage(term.package)) {
+          assignment.package.toRef() != term.package.toRef()) {
         // not foo from hosted has no bearing on foo from git
         if (!assignment.isPositive) continue;
 

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -15,17 +13,16 @@ void main() {
   test(
       'adds the latest version of the package matching the '
       'version constraint', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-      builder.serve('foo', '1.2.3');
-      builder.serve('foo', '2.0.0-dev');
-      builder.serve('foo', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.2.2')
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '2.0.0-dev')
+      ..serve('foo', '2.0.0');
 
     await runPub(
         args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0'],
-        output: 'Downloading foo 1.2.3...',
         silent: allOf([
+          contains('Downloading foo 1.2.3...'),
           contains('X-Pub-OS: ${Platform.operatingSystem}'),
           contains('X-Pub-Command: cache add'),
           contains('X-Pub-Session-ID:'),

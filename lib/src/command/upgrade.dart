@@ -121,7 +121,7 @@ class UpgradeCommand extends PubCommand {
 
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
     await e.acquireDependencies(
-      SolveType.UPGRADE,
+      SolveType.upgrade,
       unlock: argResults.rest,
       dryRun: _dryRun,
       precompile: _precompile,
@@ -179,7 +179,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         cache,
         Package.inMemory(resolvablePubspec),
       );
@@ -214,34 +214,47 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
-      changes[dep] = dep.withConstraint(VersionConstraint.compatibleWith(
-        resolvedPackage.version,
-      ));
+      changes[dep] = dep.toRef().withConstraint(
+            VersionConstraint.compatibleWith(
+              resolvedPackage.version,
+            ),
+          );
     }
+    final newPubspecText = _updatePubspec(changes);
+
+    // When doing '--majorVersions' for specific packages we try to update other
+    // packages as little as possible to make a focused change (SolveType.get).
+    //
+    // But without a specific package we want to get as many non-major updates
+    // as possible (SolveType.upgrade).
+    final solveType =
+        argResults.rest.isEmpty ? SolveType.upgrade : SolveType.get;
 
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
-      // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(
-        Package.inMemory(resolvablePubspec),
-        entrypoint.lockFile,
+      await Entrypoint.inMemory(
+        Package.inMemory(
+          Pubspec.parse(newPubspecText, cache.sources),
+        ),
         cache,
+        lockFile: entrypoint.lockFile,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.UPGRADE,
+        solveType,
         dryRun: true,
         precompile: _precompile,
         analytics: null, // No analytics for dry-run
       );
     } else {
-      await _updatePubspec(changes);
-
+      if (changes.isNotEmpty) {
+        writeTextFile(entrypoint.pubspecPath, newPubspecText);
+      }
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes when not in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint(directory, cache).acquireDependencies(
-        SolveType.UPGRADE,
+        solveType,
         precompile: _precompile,
         analytics: analytics,
       );
@@ -276,7 +289,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final resolvedPackages = <String, PackageId>{};
     final solveResult = await log.spinner('Resolving dependencies', () async {
       return await resolveVersions(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         cache,
         Package.inMemory(nullsafetyPubspec),
       );
@@ -310,32 +323,34 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         continue;
       }
 
-      changes[dep] = dep.withConstraint(constraint);
+      changes[dep] = dep.toRef().withConstraint(constraint);
     }
 
+    final newPubspecText = _updatePubspec(changes);
     if (_dryRun) {
       // Even if it is a dry run, run `acquireDependencies` so that the user
       // gets a report on changes.
       // TODO(jonasfj): Stop abusing Entrypoint.global for dry-run output
-      await Entrypoint.global(
-        Package.inMemory(nullsafetyPubspec),
-        entrypoint.lockFile,
+      await Entrypoint.inMemory(
+        Package.inMemory(Pubspec.parse(newPubspecText, cache.sources)),
         cache,
+        lockFile: entrypoint.lockFile,
         solveResult: solveResult,
       ).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         dryRun: true,
         precompile: _precompile,
         analytics: null,
       );
     } else {
-      await _updatePubspec(changes);
-
+      if (changes.isNotEmpty) {
+        writeTextFile(entrypoint.pubspecPath, newPubspecText);
+      }
       // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
       //       we can show the changes in --dry-run mode. For now we only show
       //       the changes made to pubspec.yaml in dry-run mode.
       await Entrypoint(directory, cache).acquireDependencies(
-        SolveType.UPGRADE,
+        SolveType.upgrade,
         precompile: _precompile,
         analytics: analytics,
       );
@@ -357,8 +372,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     await Future.wait(directDeps.map((name) async {
       final resolvedPackage = resolvedPackages[name]!;
 
-      final boundSource = resolvedPackage.source!.bind(cache);
-      final pubspec = await boundSource.describe(resolvedPackage);
+      final pubspec = await cache.describe(resolvedPackage);
       if (!pubspec.languageVersion.supportsNullSafety) {
         nonMigratedDirectDeps.add(name);
       }
@@ -381,12 +395,10 @@ You may have to:
   }
 
   /// Updates `pubspec.yaml` with given [changes].
-  Future<void> _updatePubspec(
+  String _updatePubspec(
     Map<PackageRange, PackageRange> changes,
-  ) async {
+  ) {
     ArgumentError.checkNotNull(changes, 'changes');
-
-    if (changes.isEmpty) return;
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
     final deps = entrypoint.root.pubspec.dependencies.keys;
@@ -407,9 +419,7 @@ You may have to:
         );
       }
     }
-
-    /// Windows line endings are already handled by [yamlEditor]
-    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
+    return yamlEditor.toString();
   }
 
   /// Outputs a summary of changes made to `pubspec.yaml`.
@@ -458,7 +468,7 @@ You may have to:
     final hasNoNullSafetyVersions = <String>{};
     final hasNullSafetyVersions = <String>{};
 
-    Future<Iterable<PackageRange>> _removeUpperConstraints(
+    Future<Iterable<PackageRange>> removeUpperConstraints(
       Iterable<PackageRange> dependencies,
     ) async =>
         await Future.wait(dependencies.map((dep) async {
@@ -469,28 +479,27 @@ You may have to:
             return dep;
           }
 
-          final boundSource = dep.source!.bind(cache);
-          final packages = await boundSource.getVersions(dep.toRef());
+          final packages = await cache.getVersions(dep.toRef());
           packages.sort((a, b) => a.version.compareTo(b.version));
 
           for (final package in packages) {
-            final pubspec = await boundSource.describe(package);
+            final pubspec = await cache.describe(package);
             if (pubspec.languageVersion.supportsNullSafety) {
               hasNullSafetyVersions.add(dep.name);
-              return dep.withConstraint(
-                VersionRange(min: package.version, includeMin: true),
-              );
+              return dep.toRef().withConstraint(
+                    VersionRange(min: package.version, includeMin: true),
+                  );
             }
           }
 
           hasNoNullSafetyVersions.add(dep.name);
           // This value is never used. We will throw an exception because
           //`hasNonNullSafetyVersions` is not empty.
-          return dep.withConstraint(VersionConstraint.empty);
+          return dep.toRef().withConstraint(VersionConstraint.empty);
         }));
 
-    final deps = _removeUpperConstraints(original.dependencies.values);
-    final devDeps = _removeUpperConstraints(original.devDependencies.values);
+    final deps = removeUpperConstraints(original.dependencies.values);
+    final devDeps = removeUpperConstraints(original.devDependencies.values);
     await Future.wait([deps, devDeps]);
 
     if (hasNoNullSafetyVersions.isNotEmpty) {

@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0-dev.1"
       },
@@ -21,6 +22,7 @@ $ pub outdated --json
     },
     {
       "package": "mop",
+      "isDiscontinued": false,
       "current": {
         "version": "0.10.0-dev"
       },
@@ -197,6 +199,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "0.9.0",
         "nullSafety": false
@@ -216,6 +219,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0-dev.1",
         "nullSafety": false
@@ -235,6 +239,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "mop",
+      "isDiscontinued": false,
       "current": {
         "version": "0.10.0-dev",
         "nullSafety": false
@@ -263,6 +268,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0-dev.1"
       },
@@ -278,6 +284,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "mop",
+      "isDiscontinued": false,
       "current": {
         "version": "0.10.0-dev"
       },

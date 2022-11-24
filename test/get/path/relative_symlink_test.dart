@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 // Pub uses NTFS junction points to create links in the packages directory.
 // These (unlike the symlinks that are supported in Vista and later) do not
 // support relative paths. So this test, by design, will not pass on Windows.
@@ -30,8 +28,8 @@ void main() {
 
     await pubGet();
 
-    await d.dir(appPath, [
-      d.packagesFile({'myapp': '.', 'foo': '../foo'})
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
 
     await d.dir('moved').create();
@@ -43,8 +41,8 @@ void main() {
     renameInSandbox(appPath, path.join('moved', appPath));
 
     await d.dir('moved', [
-      d.dir(appPath, [
-        d.packagesFile({'myapp': '.', 'foo': '../foo'})
+      d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', path: '../foo'),
       ])
     ]).validate();
   });

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as shelf;
@@ -11,8 +9,8 @@ import 'package:test/test.dart';
 
 import '../test_pub.dart';
 
-void handleUploadForm(PackageServer server, [Map body]) {
-  server.expect('GET', '/api/packages/versions/new', (request) {
+void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
+  server.expect('GET', '$path/api/packages/versions/new', (request) {
     expect(
         request.headers, containsPair('authorization', 'Bearer access token'));
 

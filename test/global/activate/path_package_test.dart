@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -57,14 +55,13 @@ void main() {
   });
 
   test("Doesn't precompile binaries when activating from path", () async {
-    await servePackages(
-      (builder) => builder.serve(
-        'bar',
-        '1.0.0',
-        contents: [
-          d.dir('bin', [d.file('bar.dart', "main() => print('bar');")])
-        ],
-      ),
+    final server = await servePackages();
+    server.serve(
+      'bar',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('bar.dart', "main() => print('bar');")])
+      ],
     );
 
     await d.dir('foo', [

@@ -6,21 +6,18 @@ import 'dart:async';
 
 import 'package:path/path.dart' as path;
 
-import '../entrypoint.dart';
 import '../utils.dart';
 import '../validator.dart';
 
 /// A validator that the name of a package is legal and matches the library name
 /// in the case of a single library.
 class NameValidator extends Validator {
-  NameValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
   Future validate() {
     return Future.sync(() {
       _checkName(entrypoint.root.name);
 
-      var libraries = _libraries;
+      var libraries = _libraries(files);
 
       if (libraries.length == 1) {
         var libName = path.basenameWithoutExtension(libraries[0]);
@@ -34,10 +31,9 @@ class NameValidator extends Validator {
 
   /// Returns a list of all libraries in the current package as paths relative
   /// to the package's root directory.
-  List<String> get _libraries {
+  List<String> _libraries(List<String> files) {
     var libDir = entrypoint.root.path('lib');
-    return entrypoint.root
-        .listFiles(beneath: 'lib')
+    return filesBeneath('lib', recursive: true)
         .map((file) => path.relative(file, from: path.dirname(libDir)))
         .where((file) =>
             !path.split(file).contains('src') &&

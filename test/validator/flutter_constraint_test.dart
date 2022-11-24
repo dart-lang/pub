@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -13,17 +11,21 @@ Future<void> expectValidation(error, int exitCode) async {
   await runPub(
     error: error,
     args: ['publish', '--dry-run'],
-    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0'},
+    environment: {
+      '_PUB_TEST_SDK_VERSION': '2.12.0',
+      'FLUTTER_ROOT': fakeFlutterRoot.io.path,
+    },
     workingDirectory: d.path(appPath),
     exitCode: exitCode,
   );
 }
 
+late d.DirectoryDescriptor fakeFlutterRoot;
+
 Future<void> setup({
-  String flutterConstraint,
+  String? flutterConstraint,
 }) async {
-  final fakeFlutterRoot =
-      d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);
+  fakeFlutterRoot = d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);
   await fakeFlutterRoot.create();
   await d.validPackage.create();
   await d.dir(appPath, [

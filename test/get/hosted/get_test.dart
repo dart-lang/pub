@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
@@ -14,19 +12,81 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('gets a package from a pub server', () async {
-    await servePackages((builder) => builder.serve('foo', '1.2.3'));
+  test('gets a package from a pub server and validates its CRC32C checksum',
+      () async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
 
     await d.appDir({'foo': '1.2.3'}).create();
 
     await pubGet();
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
+  });
+
+  group('gets a package from a pub server without validating its checksum', () {
+    late PackageServer server;
+
+    setUp(() async {
+      server = await servePackages()
+        ..serveChecksums = false
+        ..serve('foo', '1.2.3')
+        ..serve('bar', '1.2.3', headers: {
+          'x-goog-hash': ['']
+        })
+        ..serve('baz', '1.2.3', headers: {
+          'x-goog-hash': ['md5=loremipsum']
+        });
+    });
+
+    test('because of omitted checksum header', () async {
+      expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
+
+      await d.appDir({'foo': '1.2.3'}).create();
+
+      await pubGet();
+
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
+    });
+
+    test('because of empty checksum header', () async {
+      expect(await server.peekArchiveChecksumHeader('bar', '1.2.3'), '');
+
+      await d.appDir({'bar': '1.2.3'}).create();
+
+      await pubGet();
+
+      await d.cacheDir({'bar': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'bar', version: '1.2.3'),
+      ]).validate();
+    });
+
+    test('because of missing CRC32C in checksum header', () async {
+      expect(await server.peekArchiveChecksumHeader('baz', '1.2.3'),
+          'md5=loremipsum');
+
+      await d.appDir({'baz': '1.2.3'}).create();
+
+      await pubGet();
+
+      await d.cacheDir({'baz': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'baz', version: '1.2.3'),
+      ]).validate();
+    });
   });
 
   test('URL encodes the package name', () async {
-    await serveNoPackages();
+    await servePackages();
 
     await d.appDir({'bad name!': '1.2.3'}).create();
 
@@ -43,11 +103,10 @@ void main() {
   test('gets a package from a non-default pub server', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
-    await serveErrors();
+    (await servePackages()).serveErrors();
 
-    var server = await PackageServer.start((builder) {
-      builder.serve('foo', '1.2.3');
-    });
+    var server = await startPackageServer();
+    server.serve('foo', '1.2.3');
 
     await d.appDir({
       'foo': {
@@ -59,18 +118,164 @@ void main() {
     await pubGet();
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackagesFile({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
+    ]).validate();
+  });
+
+  test('recognizes and retries a package with a CRC32C checksum mismatch',
+      () async {
+    var server = await startPackageServer();
+
+    server.serve('foo', '1.2.3', headers: {
+      'x-goog-hash': PackageServer.composeChecksumHeader(crc32c: 3381945770)
+    });
+
+    await d.appDir({
+      'foo': {
+        'version': '1.2.3',
+        'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+      }
+    }).create();
+
+    await pubGet(
+      exitCode: exit_codes.TEMP_FAIL,
+      error: RegExp(
+          r'''Package archive for foo 1.2.3 downloaded from "(.+)" has '''
+          r'''"x-goog-hash: crc32c=(\d+)", which doesn't match the checksum '''
+          r'''of the archive downloaded\.'''),
+      silent: contains('Attempt #2'),
+      environment: {
+        'PUB_MAX_HTTP_RETRIES': '2',
+      },
+    );
+  });
+
+  group('recognizes bad checksum header and retries', () {
+    late PackageServer server;
+
+    setUp(() async {
+      server = await servePackages()
+        ..serve('foo', '1.2.3', headers: {
+          'x-goog-hash': ['crc32c=,md5=']
+        })
+        ..serve('bar', '1.2.3', headers: {
+          'x-goog-hash': ['crc32c=loremipsum,md5=loremipsum']
+        })
+        ..serve('baz', '1.2.3', headers: {
+          'x-goog-hash': ['crc32c=MTIzNDU=,md5=NTQzMjE=']
+        });
+    });
+
+    test('when the CRC32C checksum is empty', () async {
+      await d.appDir({
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+        }
+      }).create();
+
+      await pubGet(
+        exitCode: exit_codes.TEMP_FAIL,
+        error: contains(
+            'Package archive "foo-1.2.3.tar.gz" has a malformed CRC32C '
+            'checksum in its response headers'),
+        silent: contains('Attempt #2'),
+        environment: {
+          'PUB_MAX_HTTP_RETRIES': '2',
+        },
+      );
+    });
+
+    test('when the CRC32C checksum has bad encoding', () async {
+      await d.appDir({
+        'bar': {
+          'version': '1.2.3',
+          'hosted': {'name': 'bar', 'url': 'http://localhost:${server.port}'}
+        }
+      }).create();
+
+      await pubGet(
+        exitCode: exit_codes.TEMP_FAIL,
+        error: contains(
+            'Package archive "bar-1.2.3.tar.gz" has a malformed CRC32C '
+            'checksum in its response headers'),
+        silent: contains('Attempt #2'),
+        environment: {
+          'PUB_MAX_HTTP_RETRIES': '2',
+        },
+      );
+    });
+
+    test('when the CRC32C checksum is malformed', () async {
+      await d.appDir({
+        'baz': {
+          'version': '1.2.3',
+          'hosted': {'name': 'baz', 'url': 'http://localhost:${server.port}'}
+        }
+      }).create();
+
+      await pubGet(
+        exitCode: exit_codes.TEMP_FAIL,
+        error: contains(
+            'Package archive "baz-1.2.3.tar.gz" has a malformed CRC32C '
+            'checksum in its response headers'),
+        silent: contains('Attempt #2'),
+        environment: {
+          'PUB_MAX_HTTP_RETRIES': '2',
+        },
+      );
+    });
+  });
+
+  test('gets a package from a pub server that uses gzip response compression',
+      () async {
+    final server = await servePackages();
+    server.autoCompress = true;
+    server.serveChecksums = false;
+    server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
+
+    await d.appDir({'foo': '1.2.3'}).create();
+
+    await pubGet();
+
+    await d.cacheDir({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
+  });
+
+  test(
+      'gets a package from a pub server that uses gzip response compression '
+      'and validates its CRC32C checksum', () async {
+    final server = await servePackages();
+    server.autoCompress = true;
+    server.serve('foo', '1.2.3');
+
+    expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
+
+    await d.appDir({'foo': '1.2.3'}).create();
+
+    await pubGet();
+
+    await d.cacheDir({'foo': '1.2.3'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+    ]).validate();
   });
 
   group('categorizes dependency types in the lockfile', () {
-    setUp(() => servePackages((builder) {
-          builder.serve('foo', '1.2.3', deps: {'bar': 'any'});
-          builder.serve('bar', '1.2.3');
-          builder.serve('baz', '1.2.3', deps: {'qux': 'any'});
-          builder.serve('qux', '1.2.3');
-          builder.serve('zip', '1.2.3', deps: {'zap': 'any'});
-          builder.serve('zap', '1.2.3');
-        }));
+    setUp(() async {
+      await servePackages()
+        ..serve('foo', '1.2.3', deps: {'bar': 'any'})
+        ..serve('bar', '1.2.3')
+        ..serve('baz', '1.2.3', deps: {'qux': 'any'})
+        ..serve('qux', '1.2.3')
+        ..serve('zip', '1.2.3', deps: {'zap': 'any'})
+        ..serve('zap', '1.2.3');
+    });
 
     test('for main, dev, and overridden dependencies', () async {
       await d.dir(appPath, [

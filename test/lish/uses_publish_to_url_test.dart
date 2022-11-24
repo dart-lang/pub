@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 
 import 'package:test/test.dart';
@@ -16,7 +14,6 @@ void main() {
     var pkg = packageMap('test_pkg', '1.0.0');
     pkg['publish_to'] = 'http://example.com';
     await d.dir(appPath, [d.pubspec(pkg)]).create();
-
     await runPub(
         args: ['lish', '--dry-run'],
         output: contains('Publishing test_pkg 1.0.0 to http://example.com'),

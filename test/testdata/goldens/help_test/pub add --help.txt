@@ -2,22 +2,45 @@
 
 ## Section 0
 $ pub add --help
-Add a dependency to pubspec.yaml.
+Add dependencies to `pubspec.yaml`.
 
-Usage: pub add <package>[:<constraint>] [options]
+Invoking `dart pub add foo bar` will add `foo` and `bar` to `pubspec.yaml`
+with a default constraint derived from latest compatible version.
+
+Add to dev_dependencies by prefixing with "dev:".
+
+Add packages with specific constraints or other sources by giving a descriptor
+after a colon.
+
+For example:
+  * Add a hosted dependency at newest compatible stable version:
+    `$topLevelProgram pub add foo`
+  * Add a hosted dev dependency at newest compatible stable version:
+    `$topLevelProgram pub add dev:foo`
+  * Add a hosted dependency with the given constraint
+    `$topLevelProgram pub add foo:^1.2.3`
+  * Add multiple dependencies:
+    `$topLevelProgram pub add foo dev:bar`
+  * Add a path dependency:
+    `$topLevelProgram pub add 'foo{"path":"../foo"}'`
+  * Add a hosted dependency:
+    `$topLevelProgram pub add 'foo{"hosted":"my-pub.dev"}'`
+  * Add an sdk dependency:
+    `$topLevelProgram pub add 'foo{"sdk":"flutter"}'`
+  * Add a git dependency:
+    `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
+  * Add a git dependency with a path and ref specified:
+    `$topLevelProgram pub add \
+      'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
+
+Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor]
+       ...]
 -h, --help               Print this usage information.
--d, --dev                Adds package to the development dependencies instead.
-    --git-url            Git URL of the package
-    --git-ref            Git branch or commit to be retrieved
-    --git-path           Path of git package in repository
-    --hosted-url         URL of package host server
-    --path               Local path
-    --sdk                SDK source for package
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
     --[no-]precompile    Build executables in immediate dependencies.
--C, --directory=<dir>    Run this in the directory<dir>.
+-C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-add for detailed documentation.

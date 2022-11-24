@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -24,6 +25,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -188,6 +190,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "overridden": true,
@@ -210,6 +213,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "overridden": true,
@@ -241,6 +245,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -259,6 +264,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "overridden": true

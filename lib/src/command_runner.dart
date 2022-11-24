@@ -45,7 +45,7 @@ bool _isrunningInsideFlutter =
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String? get directory => argResults['directory'];
+  String get directory => argResults['directory'];
 
   @override
   bool get captureStackChains {
@@ -58,21 +58,22 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Verbosity get verbosity {
     switch (argResults['verbosity']) {
       case 'error':
-        return log.Verbosity.ERROR;
+        return log.Verbosity.error;
       case 'warning':
-        return log.Verbosity.WARNING;
+        return log.Verbosity.warning;
       case 'normal':
-        return log.Verbosity.NORMAL;
+        return log.Verbosity.normal;
       case 'io':
-        return log.Verbosity.IO;
+        return log.Verbosity.io;
       case 'solver':
-        return log.Verbosity.SOLVER;
+        return log.Verbosity.solver;
       case 'all':
-        return log.Verbosity.ALL;
+        return log.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (argResults['verbose']) return log.Verbosity.ALL;
-        return log.Verbosity.NORMAL;
+        if (argResults['verbose']) return log.Verbosity.all;
+        if (runningFromTest) return log.Verbosity.testing;
+        return log.Verbosity.normal;
     }
   }
 
@@ -120,6 +121,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     });
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -154,7 +156,8 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
   Future<int> run(Iterable<String> args) async {
     try {
-      _argResults = parse(args);
+      final argResults = parse(args);
+      _argResults = argResults;
       return await runCommand(argResults) ?? exit_codes.SUCCESS;
     } on UsageException catch (error) {
       log.exception(error);

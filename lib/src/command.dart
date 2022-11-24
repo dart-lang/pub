@@ -10,9 +10,9 @@ import 'package:args/command_runner.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 import 'authentication/token_store.dart';
-import 'command_runner.dart';
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
@@ -55,7 +55,12 @@ abstract class PubCommand extends Command<int> {
     return a;
   }
 
-  String get directory => argResults['directory'] ?? _pubTopLevel.directory;
+  String get directory {
+    return (argResults.options.contains('directory')
+            ? argResults['directory']
+            : null) ??
+        _pubTopLevel.directory;
+  }
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
@@ -69,7 +74,12 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  late final Entrypoint entrypoint = Entrypoint(directory, cache);
+  late final Entrypoint entrypoint =
+      Entrypoint(directory, cache, withPubspecOverrides: withPubspecOverrides);
+
+  /// Whether `pubspec_overrides.yaml` is taken into account, when creating
+  /// [entrypoint].
+  bool get withPubspecOverrides => true;
 
   /// The URL for web documentation for this command.
   String? get docUrl => null;
@@ -122,7 +132,7 @@ abstract class PubCommand extends Command<int> {
   }
 
   PubTopLevel get _pubTopLevel =>
-      _pubEmbeddableCommand ?? runner as PubCommandRunner;
+      _pubEmbeddableCommand ?? runner as PubTopLevel;
 
   PubAnalytics? get analytics => _pubEmbeddableCommand?.analytics;
 
@@ -156,7 +166,7 @@ abstract class PubCommand extends Command<int> {
 
   /// Override the exit code that would normally be used when exiting
   /// successfully. Intended to be used by subcommands like `run` that wishes
-  /// to control the top-level exitcode.
+  /// to control the top-level exit code.
   ///
   /// This may only be called once.
   @nonVirtual
@@ -169,13 +179,13 @@ abstract class PubCommand extends Command<int> {
   @override
   @nonVirtual
   FutureOr<int> run() async {
-    computeCommand(_pubTopLevel.argResults);
-    if (_pubTopLevel.trace) {
-      log.recordTranscript();
-    }
+    _computeCommand(_pubTopLevel.argResults);
+    _decideOnColors(_pubTopLevel.argResults);
+
     log.verbosity = _pubTopLevel.verbosity;
     log.fine('Pub ${sdk.version}');
 
+    var crashed = false;
     try {
       await captureErrors<void>(() async => runProtected(),
           captureStackChains: _pubTopLevel.captureStackChains);
@@ -185,10 +195,25 @@ abstract class PubCommand extends Command<int> {
       return exit_codes.SUCCESS;
     } catch (error, chain) {
       log.exception(error, chain);
-
       if (_pubTopLevel.trace) {
-        log.dumpTranscript();
+        log.dumpTranscriptToStdErr();
       } else if (!isUserFacingException(error)) {
+        log.error('''
+This is an unexpected error. The full log and other details are collected in:
+
+    $transcriptPath
+
+Consider creating an issue on https://github.com/dart-lang/pub/issues/new
+and attaching the relevant parts of that log file.
+''');
+        crashed = true;
+      }
+      return _chooseExitCode(error);
+    } finally {
+      final verbose = _pubTopLevel.verbosity == log.Verbosity.all;
+
+      // Write the whole log transcript to file.
+      if (verbose || crashed) {
         // Escape the argument for users to copy-paste in bash.
         // Wrap with single quotation, and use '\'' to insert single quote, as
         // long as we have no spaces this doesn't create a new argument.
@@ -196,32 +221,41 @@ abstract class PubCommand extends Command<int> {
             RegExp(r'^[a-zA-Z0-9-_]+$').stringMatch(x) == null
                 ? "'${x.replaceAll("'", r"'\''")}'"
                 : x;
-        log.error("""
-This is an unexpected error. Please run
 
-    dart pub --trace ${_topCommand.name} ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}
+        late final Entrypoint? e;
+        try {
+          e = entrypoint;
+        } on ApplicationException {
+          e = null;
+        }
+        log.dumpTranscriptToFile(
+          transcriptPath,
+          'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
+          e,
+        );
 
-and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
-""");
+        if (!crashed) {
+          log.message('Logs written to $transcriptPath.');
+        }
       }
-      return _chooseExitCode(error);
-    } finally {
-      httpClient.close();
+      globalHttpClient.close();
     }
   }
 
   /// Returns the appropriate exit code for [exception], falling back on 1 if no
   /// appropriate exit code could be found.
-  int _chooseExitCode(exception) {
+  int _chooseExitCode(Object exception) {
     if (exception is SolveFailure) {
       var packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
     while (exception is WrappedException && exception.innerError is Exception) {
-      exception = exception.innerError;
+      exception = exception.innerError!;
     }
 
-    if (exception is HttpException ||
+    if (exception is PackageIntegrityException) {
+      return exit_codes.TEMP_FAIL;
+    } else if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
         exception is TlsException ||
@@ -267,9 +301,19 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
   ///
   /// For top-level commands, if an alias is used, the primary command name is
   /// returned. For instance `install` becomes `get`.
-  static late final String command = _command ?? '';
+  static final String command = _command ?? '';
 
-  static void computeCommand(ArgResults argResults) {
+  static void _decideOnColors(ArgResults argResults) {
+    if (!argResults.wasParsed('color')) {
+      forceColors = ForceColorOption.auto;
+    } else {
+      forceColors = argResults['color'] as bool
+          ? ForceColorOption.always
+          : ForceColorOption.never;
+    }
+  }
+
+  static void _computeCommand(ArgResults argResults) {
     var list = <String?>[];
     for (var command = argResults.command;
         command != null;
@@ -288,13 +332,28 @@ and include the logs in an issue on https://github.com/dart-lang/pub/issues/new
     }
     _command = list.join(' ');
   }
+
+  String get transcriptPath {
+    return p.join(cache.rootDir, 'log', 'pub_log.txt');
+  }
 }
 
 abstract class PubTopLevel {
   bool get captureStackChains;
   log.Verbosity get verbosity;
   bool get trace;
-  String? get directory;
+
+  static addColorFlag(ArgParser argParser) {
+    argParser.addFlag(
+      'color',
+      help: 'Use colors in terminal output.\n'
+          'Defaults to color when connected to a '
+          'terminal, and no-color otherwise.',
+    );
+  }
+
+  /// The directory containing the pubspec.yaml of the project to work on.
+  String get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.
   ArgResults get argResults;

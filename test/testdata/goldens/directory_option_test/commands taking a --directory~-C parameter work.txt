@@ -17,7 +17,7 @@ Changed 1 dependency in myapp!
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 2
-$ pub -C myapp/example get --directory=myapp bar
+$ pub -C 'myapp/example' get --directory=myapp bar
 Resolving dependencies in myapp...
 Got dependencies in myapp!
 
@@ -40,7 +40,7 @@ Got dependencies in myapp!
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 5
-$ pub get bar -C myapp/example
+$ pub get bar -C 'myapp/example'
 Resolving dependencies in myapp/example...
 + foo 1.0.0
 + test_pkg 1.0.0 from path myapp
@@ -49,11 +49,11 @@ Changed 2 dependencies in myapp/example!
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 6
-$ pub get bar -C myapp/example2
+$ pub get bar -C 'myapp/example2'
 Resolving dependencies in myapp/example2...
 [STDERR] Error on line 1, column 9 of myapp/pubspec.yaml: "name" field doesn't match expected name "myapp".
 [STDERR]   ╷
-[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dartlang.org","description":"A package, I guess.","environment":{"sdk":">=1.8.0 <=2.0.0"}, dependencies: { foo: ^1.0.0}}
+[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dev","description":"A package, I guess.","environment":{"sdk":">=0.1.2 <=0.2.0"}, dependencies: { foo: ^1.0.0}}
 [STDERR]   │         ^^^^^^^^^^
 [STDERR]   ╵
 [EXIT CODE] 65
@@ -61,7 +61,7 @@ Resolving dependencies in myapp/example2...
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 7
-$ pub get bar -C myapp/broken_dir
+$ pub get bar -C 'myapp/broken_dir'
 [STDERR] Could not find a file named "pubspec.yaml" in "$SANDBOX/myapp/broken_dir".
 [EXIT CODE] 66
 
@@ -84,7 +84,7 @@ No dependencies changed in myapp.
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 10
-$ pub run -C myapp bin/app.dart
+$ pub run -C myapp 'bin/app.dart'
 Building package executable...
 Built test_pkg:app.
 Hi
@@ -93,34 +93,46 @@ Hi
 
 ## Section 11
 $ pub publish -C myapp --dry-run
+Resolving dependencies in myapp...
+Got dependencies in myapp!
 Publishing test_pkg 1.0.0 to http://localhost:$PORT:
-|-- CHANGELOG.md
-|-- LICENSE
-|-- README.md
-|-- bin
-|   '-- app.dart
-|-- example
-|   '-- pubspec.yaml
-|-- example2
-|   '-- pubspec.yaml
-|-- lib
-|   '-- test_pkg.dart
-'-- pubspec.yaml
-The server may enforce additional checks.
-[STDERR] 
-[STDERR] Package has 0 warnings.
+├── CHANGELOG.md (<1 KB)
+├── LICENSE (<1 KB)
+├── README.md (<1 KB)
+├── bin
+│   └── app.dart (<1 KB)
+├── example
+│   └── pubspec.yaml (<1 KB)
+├── example2
+│   └── pubspec.yaml (<1 KB)
+├── lib
+│   └── test_pkg.dart (<1 KB)
+└── pubspec.yaml (<1 KB)
+[STDERR] Package validation found the following error:
+[STDERR] * Older versions of pub don't support ^ version constraints.
+[STDERR]   Make sure your SDK constraint excludes old versions:
+[STDERR]   
+[STDERR]   environment:
+[STDERR]     sdk: ">=1.8.0 <2.0.0"
+[STDERR] Sorry, your package is missing a requirement and can't be published yet.
+[STDERR] For more information, see: https://dart.dev/tools/pub/cmd/pub-lish.
+[EXIT CODE] 65
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 12
 $ pub uploader -C myapp add sigurdm@google.com
-Good job!
+[STDERR] Package uploaders are no longer managed from the command line.
+[STDERR] Manage uploaders from:
+[STDERR] 
+[STDERR] https://pub.dev/packages/test_pkg/admin
+[EXIT CODE] 1
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 13
 $ pub deps -C myapp
-Dart SDK 1.12.0
+Dart SDK 0.1.2+3
 test_pkg 1.0.0
-'-- foo 1.0.0
+└── foo 1.0.0
 

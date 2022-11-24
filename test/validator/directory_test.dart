@@ -2,9 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
-import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/directory.dart';
 import 'package:test/test.dart';
@@ -13,7 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator directory(Entrypoint entrypoint) => DirectoryValidator(entrypoint);
+Validator directory() => DirectoryValidator();
 
 void main() {
   group('should consider a package valid if it', () {
@@ -23,7 +20,19 @@ void main() {
 
     test('has a nested directory named "tools"', () async {
       await d.dir(appPath, [
-        d.dir('foo', [d.dir('tools')])
+        d.dir('foo', [
+          d.dir('tools', [d.file('empty')])
+        ])
+      ]).create();
+      await expectValidation(directory);
+    });
+
+    test('is pubignoring the folder', () async {
+      await d.dir(appPath, [
+        d.file('.pubignore', 'tools/\n'),
+        d.dir('foo', [
+          d.dir('tools', [d.file('empty')])
+        ])
       ]).create();
       await expectValidation(directory);
     });
@@ -46,7 +55,9 @@ void main() {
 
     for (var name in names) {
       test('"$name"', () async {
-        await d.dir(appPath, [d.dir(name)]).create();
+        await d.dir(appPath, [
+          d.dir(name, [d.file('empty')])
+        ]).create();
         await expectValidation(directory, warnings: isNotEmpty);
       });
     }

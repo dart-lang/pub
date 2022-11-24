@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:test/test.dart';
@@ -74,7 +72,9 @@ void main() {
       await pubCommand(command);
 
       // Should upgrade to the new one.
-      await d.appPackagesFile({'foo': '../foo'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', path: '../foo'),
+      ]).validate();
     });
   });
 }

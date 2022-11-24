@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io' show Platform;
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -21,11 +19,33 @@ void main() {
 
     await pubAdd(args: ['foo', '--path', '../foo']);
 
-    await d.appPackagesFile({'foo': '../foo'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+    ]).validate();
 
     await d.appDir({
       'foo': {'path': '../foo'}
     }).validate();
+  });
+
+  test('can use relative path with a path descriptor', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '1.2.3')]).create();
+
+    await d.appDir().create();
+
+    await pubAdd(
+      args: ['dev:foo:{"path":"../foo"}'],
+    );
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dev_dependencies': {
+          'foo': {'path': '../foo'}
+        }
+      })
+    ]).validate();
   });
 
   test('can use relative path with --directory', () async {
@@ -40,7 +60,9 @@ void main() {
       output: contains('Changed 1 dependency in myapp!'),
     );
 
-    await d.appPackagesFile({'foo': '../foo'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+    ]).validate();
 
     await d.appDir({
       'foo': {'path': '../foo'}
@@ -104,9 +126,8 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.2');
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
@@ -121,7 +142,9 @@ void main() {
     await pubAdd(args: ['foo', '--path', '../foo']);
 
     await d.cacheDir({'foo': '1.2.2'}).validate();
-    await d.appPackagesFile({'foo': '1.2.2'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+    ]).validate();
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -131,5 +154,35 @@ void main() {
         'dependency_overrides': {'foo': '1.2.2'}
       })
     ]).validate();
+  });
+
+  test('Can add multiple path packages using descriptors', () async {
+    await d
+        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d
+        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+      args: [
+        '--directory',
+        appPath,
+        'foo:{"path":"foo"}',
+        'bar:{"path":"bar"}',
+      ],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 2 dependencies in myapp!'),
+    );
+
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', path: '../foo'),
+      d.packageConfigEntry(name: 'bar', path: '../bar'),
+    ]).validate();
+
+    await d.appDir({
+      'foo': {'path': '../foo'},
+      'bar': {'path': '../bar'},
+    }).validate();
   });
 }

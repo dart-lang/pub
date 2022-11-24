@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -23,14 +21,14 @@ void main() {
 
     await servePackages();
     await d
-        .credentialsFile(globalPackageServer, 'access token',
+        .credentialsFile(globalServer, 'access token',
             refreshToken: 'bad refresh token',
             expiration: DateTime.now().subtract(Duration(hours: 1)))
         .create();
 
-    var pub = await startPublish(globalPackageServer);
+    var pub = await startPublish(globalServer);
 
-    globalPackageServer.expect('POST', '/token', (request) {
+    globalServer.expect('POST', '/token', (request) {
       return request.read().drain().then((_) {
         return shelf.Response(400,
             body: jsonEncode({'error': 'invalid_request'}),
@@ -41,11 +39,10 @@ void main() {
     await confirmPublish(pub);
 
     await expectLater(pub.stdout, emits(startsWith('Uploading...')));
-    await authorizePub(pub, globalPackageServer, 'new access token');
+    await authorizePub(pub, globalServer, 'new access token');
 
     var done = Completer();
-    globalPackageServer.expect('GET', '/api/packages/versions/new',
-        (request) async {
+    globalServer.expect('GET', '/api/packages/versions/new', (request) async {
       expect(request.headers,
           containsPair('authorization', 'Bearer new access token'));
 

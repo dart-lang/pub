@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -51,11 +49,10 @@ void main() {
   });
 
   test('a snapshotted application sees a file: package root', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('script.dart', _script)])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [
+      d.dir('bin', [d.file('script.dart', _script)])
+    ]);
 
     await d.dir(appPath, [
       d.appPubspec({'foo': 'any'})
@@ -75,8 +72,8 @@ void main() {
             .toString()));
     expect(pub.stdout,
         emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
-    var fooResourcePath = p.join(
-        globalPackageServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+    var fooResourcePath =
+        p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });

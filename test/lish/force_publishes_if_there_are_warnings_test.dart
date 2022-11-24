@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -15,37 +13,36 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('--force publishes if there are warnings', () async {
+    await d.validPackage.create();
     var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
+        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=0.1.2 <0.2.0'});
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer, args: ['--force']);
+    (await servePackages()).serve('foo', '1.0.0');
 
-    handleUploadForm(globalPackageServer);
-    handleUpload(globalPackageServer);
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer, args: ['--force']);
 
-    globalPackageServer.expect('GET', '/create', (request) {
+    handleUploadForm(globalServer);
+    handleUpload(globalServer);
+
+    globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode({
         'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
       }));
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
+    final stderrLines = await pub.stderr.rest.toList();
     expect(
-      pub.stderr,
-      emitsThrough('Package validation found the following potential issue:'),
-    );
-    expect(
-        pub.stderr,
-        emitsLines(
-            '* Your dependency on "foo" should have a version constraint.\n'
-            '  Without a constraint, you\'re promising to support all future versions of "foo".'));
+        stderrLines,
+        allOf([
+          contains('Package validation found the following potential issue:'),
+          contains(
+              '* Your dependency on "foo" should have a version constraint. For example:'),
+        ]));
     expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
   });
 }

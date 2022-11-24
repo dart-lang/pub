@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -11,24 +9,23 @@ import '../../test_pub.dart';
 
 void main() {
   test('shows pub outdated', () async {
-    await servePackages((builder) {
-      builder.serve('multiple_newer', '1.0.0');
-      builder.serve('multiple_newer', '1.0.1-unstable.1');
-      builder.serve('multiple_newer', '1.0.1');
-      builder.serve('multiple_newer', '1.0.2-unstable.1');
-      builder.serve('multiple_newer', '1.0.2-unstable.2');
-      builder.serve('multiple_newer_stable', '1.0.0');
-      builder.serve('multiple_newer_stable', '1.0.1');
-      builder.serve('multiple_newer_stable', '1.0.2');
-      builder.serve('multiple_newer_unstable', '1.0.0');
-      builder.serve('multiple_newer_unstable', '1.0.1-unstable.1');
-      builder.serve('multiple_newer_unstable', '1.0.1-unstable.2');
-      builder.serve('no_newer', '1.0.0');
-      builder.serve('one_newer_unstable', '1.0.0');
-      builder.serve('one_newer_unstable', '1.0.1-unstable.1');
-      builder.serve('one_newer_stable', '1.0.0');
-      builder.serve('one_newer_stable', '1.0.1');
-    });
+    await servePackages()
+      ..serve('multiple_newer', '1.0.0')
+      ..serve('multiple_newer', '1.0.1-unstable.1')
+      ..serve('multiple_newer', '1.0.1')
+      ..serve('multiple_newer', '1.0.2-unstable.1')
+      ..serve('multiple_newer', '1.0.2-unstable.2')
+      ..serve('multiple_newer_stable', '1.0.0')
+      ..serve('multiple_newer_stable', '1.0.1')
+      ..serve('multiple_newer_stable', '1.0.2')
+      ..serve('multiple_newer_unstable', '1.0.0')
+      ..serve('multiple_newer_unstable', '1.0.1-unstable.1')
+      ..serve('multiple_newer_unstable', '1.0.1-unstable.2')
+      ..serve('no_newer', '1.0.0')
+      ..serve('one_newer_unstable', '1.0.0')
+      ..serve('one_newer_unstable', '1.0.1-unstable.1')
+      ..serve('one_newer_stable', '1.0.0')
+      ..serve('one_newer_stable', '1.0.1');
 
     // Constraint everything to the first version.
     await d.appDir({

@@ -25,7 +25,7 @@ class CacheListCommand extends PubCommand {
     var packagesObj = <String, Map>{};
 
     var source = cache.defaultSource as CachedSource;
-    for (var package in source.getCachedPackages()) {
+    for (var package in source.getCachedPackages(cache)) {
       var packageInfo = packagesObj.putIfAbsent(package.name, () => {});
       packageInfo[package.version.toString()] = {'location': package.dir};
     }

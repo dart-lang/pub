@@ -17,8 +17,7 @@ class GlobalRunCommand extends PubCommand {
   String get name => 'run';
   @override
   String get description =>
-      'Run an executable from a globally activated package.\n'
-      "NOTE: We are currently optimizing this command's startup time.";
+      'Run an executable from a globally activated package.';
   @override
   String get argumentsDescription => '<package>:<executable> [args...]';
   @override

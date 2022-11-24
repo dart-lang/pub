@@ -53,15 +53,20 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
 
   if (min == null && max == null) return term;
   return Term(
-      term.package
-          .withConstraint(VersionRange(
-              min: min ?? range.min,
-              max: max ?? range.max,
-              includeMin: range.includeMin,
-              includeMax: includeMax ?? range.includeMax,
-              alwaysIncludeMaxPreRelease: true))
-          .withTerseConstraint(),
-      term.isPositive);
+    term.package
+        .toRef()
+        .withConstraint(
+          VersionRange(
+            min: min ?? range.min,
+            max: max ?? range.max,
+            includeMin: range.includeMin,
+            includeMax: includeMax ?? range.includeMax,
+            alwaysIncludeMaxPreRelease: true,
+          ),
+        )
+        .withTerseConstraint(),
+    term.isPositive,
+  );
 }
 
 /// Returns the new minimum version to use for [range], or `null` if it doesn't

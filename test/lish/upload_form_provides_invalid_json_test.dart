@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
@@ -11,16 +9,16 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('upload form provides invalid JSON', () async {
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.validPackage.create();
+    await servePackages();
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 
-    globalPackageServer.expect('GET', '/api/packages/versions/new',
+    globalServer.expect('GET', '/api/packages/versions/new',
         (request) => shelf.Response.ok('{not json'));
 
     expect(

@@ -3,35 +3,83 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A trivial embedding of the pub command. Used from tests.
-// @dart = 2.11
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:pub/pub.dart';
+import 'package:pub/src/command.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
 import 'package:usage/usage.dart';
 
-final _LoggingAnalytics loggingAnalytics = _LoggingAnalytics();
+final Analytics loggingAnalytics = _LoggingAnalytics();
+
+// A command for explicitly throwing an exception, to test the handling of
+// unexpected eceptions.
+class ThrowingCommand extends PubCommand {
+  @override
+  String get name => 'fail';
+
+  @override
+  String get description => 'Throws an exception';
+
+  bool get hide => true;
+
+  @override
+  Future<int> runProtected() async {
+    throw StateError('Pub has crashed');
+  }
+}
+
+class RunCommand extends Command<int> {
+  @override
+  String get name => 'run';
+
+  @override
+  String get description => 'runs a dart app';
+
+  @override
+  Future<int> run() async {
+    final executable = await getExecutableForCommand(argResults!.rest.first);
+    final packageConfig = executable.packageConfig;
+    final process = await Process.start(
+      Platform.executable,
+      [
+        if (packageConfig != null) '--packages=$packageConfig',
+        executable.executable,
+        ...argResults!.rest.skip(1)
+      ],
+      mode: ProcessStartMode.inheritStdio,
+    );
+
+    return await process.exitCode;
+  }
+}
 
 class Runner extends CommandRunner<int> {
-  ArgResults _options;
+  late ArgResults _options;
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
         ? PubAnalytics(() => loggingAnalytics,
             dependencyKindCustomDimensionName: 'cd1')
         : null;
-    addCommand(pubCommand(analytics: analytics));
+    addCommand(
+        pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
+          ..addSubcommand(ThrowingCommand()));
+    addCommand(RunCommand());
+    argParser.addFlag('verbose');
   }
 
   @override
   Future<int> run(Iterable<String> args) async {
     try {
       _options = super.parse(args);
-
+      if (_options['verbose']) {
+        log.verbosity = log.Verbosity.all;
+      }
       return await runCommand(_options);
     } on UsageException catch (error) {
       log.exception(error);
@@ -60,7 +108,7 @@ class _LoggingAnalytics extends AnalyticsMock {
   bool get firstRun => false;
 
   @override
-  Future sendScreenView(String viewName, {Map<String, String> parameters}) {
+  Future sendScreenView(String viewName, {Map<String, String>? parameters}) {
     parameters ??= <String, String>{};
     parameters['viewName'] = viewName;
     return _log('screenView', parameters);
@@ -68,7 +116,7 @@ class _LoggingAnalytics extends AnalyticsMock {
 
   @override
   Future sendEvent(String category, String action,
-      {String label, int value, Map<String, String> parameters}) {
+      {String? label, int? value, Map<String, String>? parameters}) {
     parameters ??= <String, String>{};
     return _log(
         'event',
@@ -82,7 +130,7 @@ class _LoggingAnalytics extends AnalyticsMock {
 
   @override
   Future sendTiming(String variableName, int time,
-      {String category, String label}) {
+      {String? category, String? label}) {
     return _log('timing', {
       'variableName': variableName,
       'time': time,

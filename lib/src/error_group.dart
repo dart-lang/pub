@@ -191,7 +191,15 @@ class _ErrorGroupFuture<T> implements Future<T> {
 
     // Make sure _completer.future doesn't automatically send errors to the
     // top-level.
-    _completer.future.catchError((_) {});
+    Future<void> swallowErrors(Future future) async {
+      try {
+        await future;
+      } catch (_) {
+        // Do nothing.
+      }
+    }
+
+    swallowErrors(_completer.future);
   }
 
   @override

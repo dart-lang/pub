@@ -14,15 +14,15 @@ import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
-import 'package:pedantic/pedantic.dart';
 import 'package:pool/pool.dart';
+// ignore: prefer_relative_imports
+import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
-import 'third_party/tar/tar.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -173,7 +173,7 @@ List<int> readBinaryFile(String file) {
 }
 
 /// Reads the contents of the binary file [file] as a [Stream].
-Stream<List<int>> readBinaryFileAsSream(String file) {
+Stream<List<int>> readBinaryFileAsStream(String file) {
   log.io('Reading binary file $file.');
   var contents = File(file).openRead();
   return contents;
@@ -362,51 +362,54 @@ bool dirExists(String dir) => Directory(dir).existsSync();
 /// when we try to delete or move something while it's being scanned. To
 /// mitigate that, on Windows, this will retry the operation a few times if it
 /// fails.
-void _attempt(String description, void Function() operation) {
+///
+/// For some operations it makes sense to handle ERROR_DIR_NOT_EMPTY
+/// differently. They can pass [ignoreEmptyDir] = `true`.
+void _attempt(String description, void Function() operation,
+    {bool ignoreEmptyDir = false}) {
   if (!Platform.isWindows) {
     operation();
     return;
   }
 
   String? getErrorReason(FileSystemException error) {
+    // ERROR_ACCESS_DENIED
     if (error.osError?.errorCode == 5) {
       return 'access was denied';
     }
 
+    // ERROR_SHARING_VIOLATION
     if (error.osError?.errorCode == 32) {
       return 'it was in use by another process';
     }
 
-    if (error.osError?.errorCode == 145) {
+    // ERROR_DIR_NOT_EMPTY
+    if (!ignoreEmptyDir && _isDirectoryNotEmptyException(error)) {
       return 'of dart-lang/sdk#25353';
     }
 
     return null;
   }
 
-  for (var i = 0; i < 2; i++) {
+  const maxRetries = 50;
+  for (var i = 0; i < maxRetries; i++) {
     try {
       operation();
-      return;
+      break;
     } on FileSystemException catch (error) {
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      log.io('Pub failed to $description because $reason. '
-          'Retrying in 50ms.');
-      sleep(Duration(milliseconds: 50));
+      if (i < maxRetries - 1) {
+        log.io('Pub failed to $description because $reason. '
+            'Retrying in 50ms.');
+        sleep(Duration(milliseconds: 50));
+      } else {
+        fail('Pub failed to $description because $reason.\n'
+            'This may be caused by a virus scanner or having a file\n'
+            'in the directory open in another application.');
+      }
     }
-  }
-
-  try {
-    operation();
-  } on FileSystemException catch (error) {
-    var reason = getErrorReason(error);
-    if (reason == null) rethrow;
-
-    fail('Pub failed to $description because $reason.\n'
-        'This may be caused by a virus scanner or having a file\n'
-        'in the directory open in another application.');
   }
 }
 
@@ -452,14 +455,53 @@ void cleanDir(String dir) {
 void renameDir(String from, String to) {
   _attempt('rename directory', () {
     log.io('Renaming directory $from to $to.');
-    try {
-      Directory(from).renameSync(to);
-    } on IOException {
-      // Ensure that [to] isn't left in an inconsistent state. See issue 12436.
-      if (entryExists(to)) deleteEntry(to);
+    Directory(from).renameSync(to);
+  }, ignoreEmptyDir: true);
+}
+
+/// Renames directory [from] to [to].
+/// If it fails with "destination not empty" we log and continue, assuming
+/// another process got there before us.
+void tryRenameDir(String from, String to) {
+  ensureDir(path.dirname(to));
+  try {
+    renameDir(from, to);
+  } on FileSystemException catch (e) {
+    tryDeleteEntry(from);
+    if (!_isDirectoryNotEmptyException(e)) {
       rethrow;
     }
-  });
+    log.fine('''
+Destination directory $to already existed.
+Assuming a concurrent pub invocation installed it.''');
+  }
+}
+
+void copyFile(String from, String to) {
+  log.io('Copying "$from" to "$to".');
+  File(from).copySync(to);
+}
+
+void renameFile(String from, String to) {
+  log.io('Renaming "$from" to "$to".');
+  File(from).renameSync(to);
+}
+
+bool _isDirectoryNotEmptyException(FileSystemException e) {
+  final errorCode = e.osError?.errorCode;
+  return
+      // On Linux rename will fail with ENOTEMPTY if directory exists:
+      // https://man7.org/linux/man-pages/man2/rename.2.html
+      // #define	ENOTEMPTY	39	/* Directory not empty */
+      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
+      (Platform.isLinux && errorCode == 39) ||
+          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or ERROR_ALREADY_EXISTS
+          // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+          (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
+          // On MacOS rename will fail with ENOTEMPTY if directory exists.
+          // #define ENOTEMPTY       66              /* Directory not empty */
+          // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
+          (Platform.isMacOS && errorCode == 66);
 }
 
 /// Creates a new symlink at path [symlink] that points to [target].
@@ -561,10 +603,6 @@ final String dartRepoRoot = (() {
   return path.fromUri(url);
 })();
 
-/// A line-by-line stream of standard input.
-final Stream<String> _stdinLines =
-    ByteStream(stdin).toStringStream().transform(const LineSplitter());
-
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
 /// Returns a [Future] that completes to `true` if the user confirms or `false`
@@ -580,7 +618,7 @@ Future<bool> confirm(String message) {
 }
 
 /// Writes [prompt] and reads a line from stdin.
-Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
+Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
   if (runningFromTest) {
     log.message(prompt);
   } else {
@@ -588,12 +626,16 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) {
   }
   if (echoMode != null && stdin.hasTerminal) {
     final previousEchoMode = stdin.echoMode;
-    stdin.echoMode = echoMode;
-    return _stdinLines.first.whenComplete(() {
+    try {
+      stdin.echoMode = echoMode;
+      final result = stdin.readLineSync() ?? '';
+      stdout.write('\n');
+      return result;
+    } finally {
       stdin.echoMode = previousEchoMode;
-    });
+    }
   } else {
-    return _stdinLines.first;
+    return stdin.readLineSync() ?? '';
   }
 }
 
@@ -662,7 +704,7 @@ Future<PubProcessResult> runProcess(
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 @visibleForTesting
-Future<_PubProcess> startProcess(
+Future<PubProcess> startProcess(
   String executable,
   List<String> args, {
   String? workingDir,
@@ -681,7 +723,7 @@ Future<_PubProcess> startProcess(
           'Pub failed to run subprocess `$executable`: $e');
     }
 
-    var process = _PubProcess(ioProcess);
+    var process = PubProcess(ioProcess);
     unawaited(process.exitCode.whenComplete(resource.release));
     return process;
   });
@@ -712,7 +754,7 @@ PubProcessResult runProcessSync(
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
-class _PubProcess {
+class PubProcess {
   /// The underlying `dart:io` [Process].
   final Process _process;
 
@@ -771,8 +813,8 @@ class _PubProcess {
   /// error handler unless nothing has handled it.
   Future<int> get exitCode => _exitCode;
 
-  /// Creates a new [_PubProcess] wrapping [process].
-  _PubProcess(Process process) : _process = process {
+  /// Creates a new [PubProcess] wrapping [process].
+  PubProcess(Process process) : _process = process {
     var errorGroup = ErrorGroup();
 
     var pair = _consumerToSink(process.stdin);
@@ -967,10 +1009,10 @@ ByteStream createTarGz(
   log.fine(buffer.toString());
 
   ArgumentError.checkNotNull(baseDir, 'baseDir');
-  baseDir = path.absolute(baseDir);
+  baseDir = path.normalize(path.absolute(baseDir));
 
   final tarContents = Stream.fromIterable(contents.map((entry) {
-    entry = path.absolute(entry);
+    entry = path.normalize(path.absolute(entry));
     if (!path.isWithin(baseDir, entry)) {
       throw ArgumentError('Entry $entry is not inside $baseDir.');
     }
@@ -1040,3 +1082,13 @@ final String? dartConfigDir = () {
     return null;
   }
 }();
+
+/// Escape [x] for users to copy-paste in bash.
+///
+/// If x is alphanumeric we leave it as is.
+///
+/// Otherwise, wrap with single quotation, and use '\'' to insert single quote.
+String escapeShellArgument(String x) =>
+    RegExp(r'^[a-zA-Z0-9-_=@.]+$').stringMatch(x) == null
+        ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
+        : x;

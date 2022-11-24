@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -11,17 +9,16 @@ import '../../test_pub.dart';
 
 void main() {
   test('creates binstubs for each executable in the pubspec', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'executables': {'one': null, 'two-renamed': 'second'}
-      }, contents: [
-        d.dir('bin', [
-          d.file('one.dart', "main(args) => print('one');"),
-          d.file('second.dart', "main(args) => print('two');"),
-          d.file('nope.dart', "main(args) => print('nope');")
-        ])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'executables': {'one': null, 'two-renamed': 'second'}
+    }, contents: [
+      d.dir('bin', [
+        d.file('one.dart', "main(args) => print('one');"),
+        d.file('second.dart', "main(args) => print('two');"),
+        d.file('nope.dart', "main(args) => print('nope');")
+      ])
+    ]);
 
     await runPub(
         args: ['global', 'activate', 'foo'],

@@ -4,12 +4,12 @@ This document specifies the REST API that a hosted pub _package repository_ must
 implement.
 
 A package repository is a server from which packages can be downloaded,
-the default package repository is `'https://pub.dartlang.org'`, with public
-interface hosted at [pub.dev](https://pub.dev).
+the default package repository is `'https://pub.dev'`.
+It used to be [pub.dartlang.org](https://pub.dartlang.org).
 
 ## Hosted URL
 A custom package repository is identified by a _hosted-url_, like
-`https://pub.dartlang.org` or `https://some-server.com/prefix/pub/`.
+`https://pub.dev` or `https://some-server.com/prefix/pub/`.
 The _hosted-url_ always includes protocol `http://` or `https://`.
 For the purpose of this specification the _hosted-url_ should always be
 normalized such that it doesn't end with a slash (`/`). As all URL end-points
@@ -17,7 +17,7 @@ described in this specification includes slash prefix.
 
 For the remainder of this specification the placeholder `<hosted-url>` will be
 used in place of a _hosted-url_ such as:
- * `https://pub.dartlang.org`
+ * `https://pub.dev`
  * `https://some-server.com/prefix/pub`
  * `https://pub.other-server.com/prefix`
  * `http://localhost:8080`
@@ -78,7 +78,7 @@ allows _package repository operators_ to identify which client a request is
 coming from. Including a URL allowing operators to reach owners/authors of the
 client is good practice.
 
- * `User-Agent: my-pub-bot/1.2.3 (+https://github.com/organization/<repository)`
+ * `User-Agent: my-pub-bot/1.2.3 (+https://github.com/organization/<repository>)`
 
 The `User-Agent` header also allows package repository to determine how many
 different clients would be affected by an API change.
@@ -91,8 +91,8 @@ This aims to increase robustness against intermittent network issues, while not
 overloading servers that are partially failing.
 
 Clients are strongly encouraged to employ exponential backoff starting at 200ms,
-400ms, etc. stopping after 5-7 retries. Excessive can have negative impact on
-servers and network performance.
+400ms, etc. stopping after 5-7 retries. Excessive retries can have a negative impact
+on servers and network performance.
 
 
 ## Rejecting Requests
@@ -120,7 +120,7 @@ parse the `<message>`.
 The `dart pub` client allows users to save an opaque `<token>` for each
 `<hosted-url>`. When the `dart pub` client makes a request to a `<hosted-url>`
 for which it has a `<token>` stored, it will attach an `Authorization` header
-as follows: 
+as follows:
 
  * `Authorization: Bearer <token>`
 
@@ -227,8 +227,9 @@ server, this could work in many different ways.
   "replacedBy": "<package>", /* optional field, if isDiscontinued == true */
   "latest": {
     "version": "<version>",
-    "isRetracted": true || false, /* optional field, false if omitted */
+    "retracted": true || false, /* optional field, false if omitted */
     "archive_url": "https://.../archive.tar.gz",
+    "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
     "pubspec": {
       /* pubspec contents as JSON object */
     }
@@ -236,8 +237,9 @@ server, this could work in many different ways.
   "versions": [
     {
       "version": "<package>",
-      "isRetracted": true || false, /* optional field, false if omitted */
+      "retracted": true || false, /* optional field, false if omitted */
       "archive_url": "https://.../archive.tar.gz",
+      "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
       "pubspec": {
         /* pubspec contents as JSON object */
       }
@@ -255,6 +257,15 @@ The `archive_url` may be temporary and is allowed to include query-string
 parameters. This allows for the server to return signed-URLs for S3, GCS or
 other blob storage service. If temporary URLs are returned it is wise to not set
 expiration to less than 25 minutes (to allow for retries and clock drift).
+
+The `archive_sha256` should be the hex-encoded sha256 checksum of the file at
+archive_url. It is an optional field that allows the pub client to verify the
+integrity of the downloaded archive.
+
+The `archive_sha256` also provides an easy way for clients to detect if
+something has changed on the server. In the absense of this field the client can
+still download the archive to obtain a checksum and detect changes to the
+archive.
 
 If `<hosted-url>` for the server returning `archive_url` is a prefix of
 `archive_url`, then the `Authorization: Bearer <token>` is also included when
@@ -371,7 +382,9 @@ This can be used to forbid git-dependencies in published packages, limit the
 archive size, or enforce any other repository specific constraints.
 
 This upload flow allows for archives to be uploaded directly to a signed POST
-URL for S3, GCS or similar blob storage service. Both the
+URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
+[GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
+similar blob storage service. Both the
 `<multipart-upload-url>` and `<finalize-upload-url>` is allowed to contain
 query-string parameters, and both of these URLs need only be temporary.
 

@@ -17,6 +17,11 @@ import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
+  if (Platform.environment['FLUTTER_ROOT'] != null) {
+    stderr.writeln(
+      'WARNING: The tests will not run correctly with dart from a flutter checkout!',
+    );
+  }
   Process? testProcess;
   final sub = ProcessSignal.sigint.watch().listen((signal) {
     testProcess?.kill(signal);
@@ -25,22 +30,22 @@ Future<void> main(List<String> args) async {
       path.absolute(path.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
   final pubSnapshotIncrementalFilename = '$pubSnapshotFilename.incremental';
   try {
-    print('Building snapshot');
+    stderr.writeln('Building snapshot');
     await precompile(
         executablePath: path.join('bin', 'pub.dart'),
         outputPath: pubSnapshotFilename,
-        incrementalDillOutputPath: pubSnapshotIncrementalFilename,
+        incrementalDillPath: pubSnapshotIncrementalFilename,
         name: 'bin/pub.dart',
         packageConfigPath: path.join('.dart_tool', 'package_config.json'));
     testProcess = await Process.start(
       Platform.resolvedExecutable,
-      ['run', 'test', '--chain-stack-traces', ...args],
+      ['run', 'test', ...args],
       environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename},
       mode: ProcessStartMode.inheritStdio,
     );
     exitCode = await testProcess.exitCode;
   } on ApplicationException catch (e) {
-    print('Failed building snapshot: $e');
+    stderr.writeln('Failed building snapshot: $e');
     exitCode = 1;
   } finally {
     try {

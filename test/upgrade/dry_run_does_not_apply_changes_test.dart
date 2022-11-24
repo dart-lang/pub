@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -13,10 +11,9 @@ import '../test_pub.dart';
 
 void main() {
   test('--dry-run: shows report, changes nothing', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0');
 
     // Create the first lockfile.
     await d.appDir({'foo': '1.0.0'}).create();
@@ -52,10 +49,9 @@ void main() {
   });
 
   test('--dry-run --major-versions: shows report, changes nothing', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-    });
+    await servePackages()
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0');
 
     await d.appDir({'foo': '^1.0.0'}).create();
 
@@ -72,6 +68,7 @@ void main() {
     // Do the dry run.
     await pubUpgrade(
       args: ['--dry-run', '--major-versions'],
+      silent: contains('Downloading foo 2.0.0...'),
       output: allOf([
         contains('Resolving dependencies...'),
         contains('> foo 2.0.0 (was 1.0.0)'),
@@ -96,7 +93,6 @@ void main() {
       output: allOf([
         contains('Resolving dependencies...'),
         contains('> foo 2.0.0 (was 1.0.0)'),
-        contains('Downloading foo 2.0.0...'),
         contains('Changed 1 dependency!'),
         contains('Changed 1 constraint in pubspec.yaml:'),
         contains('foo: ^1.0.0 -> ^2.0.0'),

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -15,7 +13,7 @@ import '../../test_pub.dart';
 import 'utils.dart';
 
 /// The contents of the binstub for [executable], or `null` if it doesn't exist.
-String binStub(String executable) {
+String? binStub(String executable) {
   final f = File(p.join(d.sandbox, cachePath, 'bin', binStubName(executable)));
   if (f.existsSync()) {
     return f.readAsStringSync();
@@ -26,23 +24,22 @@ String binStub(String executable) {
 void main() {
   test("an outdated binstub runs 'pub global run', which replaces old binstub",
       () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', pubspec: {
-        'executables': {
-          'foo-script': 'script',
-          'foo-script2': 'script',
-          'foo-script-not-installed': 'script',
-          'foo-another-script': 'another-script',
-          'foo-another-script-not-installed': 'another-script'
-        }
-      }, contents: [
-        d.dir('bin', [
-          d.file('script.dart', r"main(args) => print('ok $args');"),
-          d.file('another-script.dart',
-              r"main(args) => print('not so good $args');")
-        ])
-      ]);
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', pubspec: {
+      'executables': {
+        'foo-script': 'script',
+        'foo-script2': 'script',
+        'foo-script-not-installed': 'script',
+        'foo-another-script': 'another-script',
+        'foo-another-script-not-installed': 'another-script'
+      }
+    }, contents: [
+      d.dir('bin', [
+        d.file('script.dart', r"main(args) => print('ok $args');"),
+        d.file(
+            'another-script.dart', r"main(args) => print('not so good $args');")
+      ])
+    ]);
 
     await runPub(args: [
       'global',

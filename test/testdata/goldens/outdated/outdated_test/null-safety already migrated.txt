@@ -127,6 +127,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "devTransitive",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "nullSafety": false

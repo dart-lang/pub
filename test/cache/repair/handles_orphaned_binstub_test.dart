@@ -2,14 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
-const _ORPHANED_BINSTUB = '''
+const _orphanedBinstub = '''
 #!/usr/bin/env sh
 # This file was created by pub v0.1.2-3.
 # Package: foo
@@ -22,7 +20,7 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 void main() {
   test('handles an orphaned binstub script', () async {
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('script'), _ORPHANED_BINSTUB)])
+      d.dir('bin', [d.file(binStubName('script'), _orphanedBinstub)])
     ]).create();
 
     await runPub(

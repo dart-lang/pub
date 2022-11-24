@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "builder",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
       },
@@ -21,6 +22,7 @@ $ pub outdated --json
     },
     {
       "package": "dev_trans",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
       },
@@ -34,6 +36,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
       },
@@ -49,6 +52,7 @@ $ pub outdated --json
     },
     {
       "package": "transitive",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
       },
@@ -64,6 +68,7 @@ $ pub outdated --json
     },
     {
       "package": "transitive2",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -75,6 +80,7 @@ $ pub outdated --json
     },
     {
       "package": "transitive3",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -335,6 +341,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "nullSafety": false
@@ -354,6 +361,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "builder",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3",
         "nullSafety": false
@@ -373,6 +381,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "dev_trans",
+      "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
         "nullSafety": false
@@ -389,6 +398,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3",
         "nullSafety": false
@@ -408,6 +418,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "local_package",
+      "isDiscontinued": false,
       "current": {
         "version": "0.0.1",
         "nullSafety": false
@@ -427,6 +438,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "transitive",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3",
         "nullSafety": false
@@ -446,6 +458,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "transitive2",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -459,6 +472,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "transitive3",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -481,6 +495,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
       },
@@ -496,6 +511,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "transitive",
+      "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
       },

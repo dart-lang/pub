@@ -5,6 +5,7 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../http.dart';
 import '../io.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
@@ -12,11 +13,9 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
+import '../source/cached.dart';
 import '../source/hosted.dart';
-import '../source_registry.dart';
 import '../system_cache.dart';
-import 'report.dart';
-import 'type.dart';
 
 /// The result of a successful version resolution.
 class SolveResult {
@@ -49,9 +48,37 @@ class SolveResult {
   /// The wall clock time the resolution took.
   final Duration resolutionTime;
 
-  /// The [LockFile] representing the packages selected by this version
-  /// resolution.
-  LockFile get lockFile {
+  /// Downloads all the cached packages selected by this version resolution.
+  ///
+  /// If some already cached package differs from what is provided by the server
+  /// (according to the content-hash) a warning is printed and the package is
+  /// redownloaded.
+  ///
+  /// Returns the [LockFile] representing the packages selected by this version
+  /// resolution. Any resolved [PackageId]s will correspond to those in the
+  /// cache (and thus to the one provided by the server).
+  ///
+  /// If there is a mismatch between the previous content-hash from pubspec.lock
+  /// and the new one a warning will be printed but the new one will be
+  /// returned.
+  Future<LockFile> downloadCachedPackages(SystemCache cache) async {
+    final resolvedPackageIds = await Future.wait(
+      packages.map((id) async {
+        if (id.source is CachedSource) {
+          return await withDependencyType(_root.dependencyType(id.name),
+              () async {
+            return await cache.downloadPackage(
+              id,
+            );
+          });
+        }
+        return id;
+      }),
+    );
+
+    // Invariant: the content-hashes in PUB_CACHE matches those provided by the
+    // server.
+
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
@@ -62,19 +89,18 @@ class SolveResult {
     var sdkConstraints = <String, VersionConstraint>{};
     for (var pubspec in nonOverrides) {
       pubspec.sdkConstraints.forEach((identifier, constraint) {
-        sdkConstraints[identifier] = constraint
+        sdkConstraints[identifier] = constraint.effectiveConstraint
             .intersect(sdkConstraints[identifier] ?? VersionConstraint.any);
       });
     }
-
-    return LockFile(packages,
-        sdkConstraints: sdkConstraints,
-        mainDependencies: MapKeySet(_root.dependencies),
-        devDependencies: MapKeySet(_root.devDependencies),
-        overriddenDependencies: MapKeySet(_root.dependencyOverrides));
+    return LockFile(
+      resolvedPackageIds,
+      sdkConstraints: sdkConstraints,
+      mainDependencies: MapKeySet(_root.dependencies),
+      devDependencies: MapKeySet(_root.devDependencies),
+      overriddenDependencies: MapKeySet(_root.dependencyOverrides),
+    );
   }
-
-  final SourceRegistry _sources;
 
   final LockFile _previousLockFile;
 
@@ -92,41 +118,8 @@ class SolveResult {
         .toSet());
   }
 
-  SolveResult(
-      this._sources,
-      this._root,
-      this._previousLockFile,
-      this.packages,
-      this.pubspecs,
-      this.availableVersions,
-      this.attemptedSolutions,
-      this.resolutionTime);
-
-  /// Displays a report of what changes were made to the lockfile.
-  ///
-  /// [type] is the type of version resolution that was run.
-  Future<void> showReport(SolveType type, SystemCache cache) async {
-    await SolveReport(type, _sources, _root, _previousLockFile, this, cache)
-        .show();
-  }
-
-  /// Displays a one-line message summarizing what changes were made (or would
-  /// be made) to the lockfile.
-  ///
-  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages
-  /// that are not at the latest available version.
-  ///
-  /// [type] is the type of version resolution that was run.
-  Future<void> summarizeChanges(SolveType type, SystemCache cache,
-      {bool dryRun = false}) async {
-    final report =
-        SolveReport(type, _sources, _root, _previousLockFile, this, cache);
-    report.summarize(dryRun: dryRun);
-    if (type == SolveType.UPGRADE) {
-      await report.reportDiscontinued();
-      report.reportOutdated();
-    }
-  }
+  SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
+      this.availableVersions, this.attemptedSolutions, this.resolutionTime);
 
   /// Send analytics about the package resolution.
   void sendAnalytics(PubAnalytics pubAnalytics) {
@@ -136,11 +129,9 @@ class SolveResult {
 
     final dependenciesForAnalytics = <PackageId>[];
     for (final package in packages) {
-      final source = package.source;
       // Only send analytics for packages from pub.dev.
-      if (source is HostedSource &&
-          (runningFromTest ||
-              package.description['url'] == HostedSource.pubDevUrl)) {
+      if (HostedSource.isFromPubDev(package) ||
+          (package.source is HostedSource && runningFromTest)) {
         dependenciesForAnalytics.add(package);
       }
     }

@@ -153,8 +153,9 @@ class Term {
   Term? difference(Term other) => intersect(other.inverse); // A ∖ B → A ∩ not B
 
   /// Returns whether [other] is compatible with [package].
-  bool _compatiblePackage(PackageRange other) =>
-      package.isRoot || other.isRoot || other.samePackage(package);
+  bool _compatiblePackage(PackageRange other) {
+    return package.isRoot || other.isRoot || other.toRef() == package.toRef();
+  }
 
   /// Returns a new [Term] with the same package as [this] and with
   /// [constraint], unless that would produce a term that allows no packages,
@@ -162,7 +163,7 @@ class Term {
   Term? _nonEmptyTerm(VersionConstraint constraint, bool isPositive) =>
       constraint.isEmpty
           ? null
-          : Term(package.withConstraint(constraint), isPositive);
+          : Term(package.toRef().withConstraint(constraint), isPositive);
 
   @override
   String toString() => "${isPositive ? '' : 'not '}$package";

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -11,19 +9,18 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package validation has an error', () async {
     await d.dir(appPath, [
       d.rawPubspec({
         'name': 'test_pkg',
-        'homepage': 'http://pub.dartlang.org',
+        'homepage': 'https://pub.dev',
         'version': '1.0.0',
+        'environment': {'sdk': '>=0.1.2 <0.2.0'}
       }),
     ]).create();
 
     await servePackages();
-    var pub = await startPublish(globalPackageServer);
+    var pub = await startPublish(globalServer);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(

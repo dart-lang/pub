@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:test/test.dart';
@@ -13,17 +11,16 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('upload form is missing fields', () async {
     await servePackages();
-    await d.credentialsFile(globalPackageServer, 'access token').create();
-    var pub = await startPublish(globalPackageServer);
+    await d.validPackage.create();
+    await d.credentialsFile(globalServer, 'access token').create();
+    var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 
     var body = {'url': 'http://example.com/upload'};
-    handleUploadForm(globalPackageServer, body);
+    handleUploadForm(globalServer, body: body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));
     await pub.shouldExit(1);

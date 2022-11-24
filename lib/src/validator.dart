@@ -5,11 +5,13 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
+import 'validator/analyze.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -42,9 +44,6 @@ import 'validator/strict_dependencies.dart';
 /// package not to be uploaded; warnings will require the user to confirm the
 /// upload.
 abstract class Validator {
-  /// The entrypoint that's being validated.
-  final Entrypoint entrypoint;
-
   /// The accumulated errors for this validator.
   ///
   /// Filled by calling [validate].
@@ -60,11 +59,15 @@ abstract class Validator {
   /// Filled by calling [validate].
   final hints = <String>[];
 
-  Validator(this.entrypoint);
+  late ValidationContext context;
+  Entrypoint get entrypoint => context.entrypoint;
+  int get packageSize => context.packageSize;
+  Uri get serverUrl => context.serverUrl;
+  List<String> get files => context.files;
 
   /// Validates the entrypoint, adding any errors and warnings to [errors] and
   /// [warnings], respectively.
-  Future validate();
+  Future<void> validate();
 
   /// Adds an error if the package's SDK constraint doesn't exclude Dart SDK
   /// versions older than [firstSdkVersion].
@@ -72,7 +75,7 @@ abstract class Validator {
   void validateSdkConstraint(Version firstSdkVersion, String message) {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
-    if (entrypoint.root.pubspec.originalDartSdkConstraint
+    if (entrypoint.root.pubspec.dartSdkConstraint.originalConstraint
         .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
@@ -93,7 +96,8 @@ abstract class Validator {
             ? firstSdkVersion.nextPatch
             : firstSdkVersion.nextBreaking);
 
-    var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint
+    var newSdkConstraint = entrypoint
+        .root.pubspec.dartSdkConstraint.originalConstraint
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
@@ -101,7 +105,7 @@ abstract class Validator {
         'Make sure your SDK constraint excludes old versions:\n'
         '\n'
         'environment:\n'
-        '  sdk: \"$newSdkConstraint\"');
+        '  sdk: "$newSdkConstraint"');
   }
 
   /// Returns whether [version1] and [version2] are pre-releases of the same version.
@@ -114,45 +118,56 @@ abstract class Validator {
 
   /// Run all validators on the [entrypoint] package and print their results.
   ///
+  /// [files] should be the result of `entrypoint.root.listFiles()`.
+  ///
   /// When the future completes [hints] [warnings] amd [errors] will have been
   /// appended with the reported hints warnings and errors respectively.
   ///
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<void> runAll(
-      Entrypoint entrypoint, Future<int> packageSize, Uri? serverUrl,
+  static Future<void> runAll(Entrypoint entrypoint, Future<int> packageSize,
+      Uri serverUrl, List<String> files,
       {required List<String> hints,
       required List<String> warnings,
-      required List<String> errors}) {
+      required List<String> errors}) async {
     var validators = [
-      GitignoreValidator(entrypoint),
-      PubspecValidator(entrypoint),
-      LicenseValidator(entrypoint),
-      NameValidator(entrypoint),
-      PubspecFieldValidator(entrypoint),
-      DependencyValidator(entrypoint),
-      DependencyOverrideValidator(entrypoint),
-      DeprecatedFieldsValidator(entrypoint),
-      DirectoryValidator(entrypoint),
-      ExecutableValidator(entrypoint),
-      CompiledDartdocValidator(entrypoint),
-      ReadmeValidator(entrypoint),
-      ChangelogValidator(entrypoint),
-      SdkConstraintValidator(entrypoint),
-      StrictDependenciesValidator(entrypoint),
-      FlutterConstraintValidator(entrypoint),
-      FlutterPluginFormatValidator(entrypoint),
-      LanguageVersionValidator(entrypoint),
-      RelativeVersionNumberingValidator(entrypoint, serverUrl),
-      NullSafetyMixedModeValidator(entrypoint),
-      PubspecTypoValidator(entrypoint),
-      LeakDetectionValidator(entrypoint),
+      AnalyzeValidator(),
+      GitignoreValidator(),
+      PubspecValidator(),
+      LicenseValidator(),
+      NameValidator(),
+      PubspecFieldValidator(),
+      DependencyValidator(),
+      DependencyOverrideValidator(),
+      DeprecatedFieldsValidator(),
+      DirectoryValidator(),
+      ExecutableValidator(),
+      CompiledDartdocValidator(),
+      ReadmeValidator(),
+      ChangelogValidator(),
+      SdkConstraintValidator(),
+      StrictDependenciesValidator(),
+      FlutterConstraintValidator(),
+      FlutterPluginFormatValidator(),
+      LanguageVersionValidator(),
+      RelativeVersionNumberingValidator(),
+      NullSafetyMixedModeValidator(),
+      PubspecTypoValidator(),
+      LeakDetectionValidator(),
+      SizeValidator(),
     ];
-    validators.add(SizeValidator(entrypoint, packageSize));
 
-    return Future.wait(validators.map((validator) => validator.validate()))
-        .then((_) {
+    final context = ValidationContext(
+      entrypoint,
+      await packageSize,
+      serverUrl,
+      files,
+    );
+    return await Future.wait(validators.map((validator) async {
+      validator.context = context;
+      await validator.validate();
+    })).then((_) {
       hints.addAll([for (final validator in validators) ...validator.hints]);
       warnings
           .addAll([for (final validator in validators) ...validator.warnings]);
@@ -190,4 +205,28 @@ abstract class Validator {
       }
     });
   }
+
+  /// Returns the [files] that are inside [dir] (relative to the package
+  /// entrypoint).
+  // TODO(sigurdm): Consider moving this to a more central location.
+  List<String> filesBeneath(String dir, {required bool recursive}) {
+    final base = p.canonicalize(p.join(entrypoint.root.dir, dir));
+    return files
+        .where(
+          recursive
+              ? (file) => p.canonicalize(file).startsWith(base)
+              : (file) => p.canonicalize(p.dirname(file)) == base,
+        )
+        .toList();
+  }
+}
+
+class ValidationContext {
+  final Entrypoint entrypoint;
+  final int packageSize;
+  final Uri serverUrl;
+  final List<String> files;
+
+  ValidationContext(
+      this.entrypoint, this.packageSize, this.serverUrl, this.files);
 }

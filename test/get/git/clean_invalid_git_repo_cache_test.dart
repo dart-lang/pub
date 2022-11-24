@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -15,11 +14,10 @@ import '../../test_pub.dart';
 void _invalidateGitCache(String repo) {
   final cacheDir =
       path.join(d.sandbox, path.joinAll([cachePath, 'git', 'cache']));
-  final Directory fooCacheDir =
-      Directory(cacheDir).listSync().firstWhere((entity) {
+  final fooCacheDir = Directory(cacheDir).listSync().firstWhere((entity) {
     return entity is Directory &&
         entity.path.split(Platform.pathSeparator).last.startsWith(repo);
-  });
+  }) as Directory;
 
   fooCacheDir.deleteSync(recursive: true);
   fooCacheDir.createSync();

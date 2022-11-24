@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async' show Future;
 import 'dart:convert' show utf8;
 import 'dart:io';
@@ -29,7 +27,7 @@ class YamlDescriptor extends FileDescriptor {
       Stream.fromIterable([utf8.encode(_contents)]);
 
   @override
-  Future validate([String parent]) async {
+  Future validate([String? parent]) async {
     var fullPath = p.join(parent ?? sandbox, name);
     if (!await File(fullPath).exists()) {
       fail("File not found: '$fullPath'.");

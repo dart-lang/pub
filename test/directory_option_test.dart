@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:convert';
 
 import 'package:path/path.dart' as p;
@@ -16,32 +14,33 @@ import 'test_pub.dart';
 Future<void> main() async {
   testWithGolden('commands taking a --directory/-C parameter work',
       (ctx) async {
-    await servePackages((b) => b
+    await servePackages()
       ..serve('foo', '1.0.0')
       ..serve('foo', '0.1.2')
-      ..serve('bar', '1.2.3'));
-    await credentialsFile(globalPackageServer, 'access token').create();
-    globalPackageServer
-        .extraHandlers[RegExp('/api/packages/test_pkg/uploaders')] = (request) {
-      return shelf.Response.ok(
-        jsonEncode({
-          'success': {'message': 'Good job!'}
-        }),
-        headers: {'content-type': 'application/json'},
-      );
-    };
+      ..serve('bar', '1.2.3');
+    await credentialsFile(globalServer, 'access token').create();
+    globalServer.handle(
+      RegExp('/api/packages/test_pkg/uploaders'),
+      (request) {
+        return shelf.Response.ok(
+            jsonEncode({
+              'success': {'message': 'Good job!'}
+            }),
+            headers: {'content-type': 'application/json'});
+      },
+    );
 
     await validPackage.create();
     await dir(appPath, [
       dir('bin', [
         file('app.dart', '''
-main() => print('Hi');    
+main() => print('Hi');
 ''')
       ]),
       dir('example', [
         pubspec({
           'name': 'example',
-          'environment': {'sdk': '>=1.2.0 <2.0.0'},
+          'environment': {'sdk': '>=0.1.2 <0.2.0'},
           'dependencies': {
             'test_pkg': {'path': '../'}
           }
@@ -50,7 +49,7 @@ main() => print('Hi');
       dir('example2', [
         pubspec({
           'name': 'example',
-          'environment': {'sdk': '>=1.2.0 <2.0.0'},
+          'environment': {'sdk': '>=0.1.2 <0.2.0'},
           'dependencies': {
             'myapp': {'path': '../'} // Wrong name of dependency
           }
@@ -83,7 +82,6 @@ main() => print('Hi');
       await ctx.run(
         cases[i],
         workingDirectory: sandbox,
-        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
       );
     }
   });

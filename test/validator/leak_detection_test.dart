@@ -2,9 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
-import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/leak_detection.dart';
 import 'package:test/test.dart';
@@ -13,8 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator leakDetection(Entrypoint entrypoint) =>
-    LeakDetectionValidator(entrypoint);
+Validator leakDetection() => LeakDetectionValidator();
 
 void main() {
   group('should consider a package valid if it', () {

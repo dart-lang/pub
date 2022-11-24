@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
@@ -13,9 +11,8 @@ import '../../test_pub.dart';
 
 void main() {
   setUp(() async {
-    await servePackages((builder) {
-      builder.serve('bar', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
 
     await d.dir('flutter', [
       d.dir('packages', [
@@ -42,14 +39,15 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'sdk': 'flutter', 'version': '^0.0.1'}
+          'foo': {'sdk': 'flutter'}
         }
       }),
-      d.packagesFile({
-        'myapp': '.',
-        'foo': p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-        'bar': '1.0.0'
-      })
+    ]).validate();
+
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'foo', path: p.join(d.sandbox, 'flutter', 'packages', 'foo')),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
     ]).validate();
   });
 
@@ -68,11 +66,11 @@ void main() {
           'foo': {'sdk': 'flutter', 'version': '0.0.1'}
         }
       }),
-      d.packagesFile({
-        'myapp': '.',
-        'foo': p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-        'bar': '1.0.0'
-      })
+    ]).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'foo', path: p.join(d.sandbox, 'flutter', 'packages', 'foo')),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
     ]).validate();
   });
 
@@ -82,11 +80,10 @@ void main() {
         args: ['baz', '--sdk', 'flutter'],
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
 
-    await d.dir(appPath, [
-      d.packagesFile({
-        'myapp': '.',
-        'baz': p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz')
-      })
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(
+          name: 'baz',
+          path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'))
     ]).validate();
   });
 

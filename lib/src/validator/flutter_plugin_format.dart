@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../entrypoint.dart';
 import '../validator.dart';
 
 const _pluginDocsUrl =
@@ -19,8 +18,6 @@ const _pluginDocsUrl =
 /// See:
 /// https://flutter.dev/docs/development/packages-and-plugins/developing-packages
 class FlutterPluginFormatValidator extends Validator {
-  FlutterPluginFormatValidator(Entrypoint entrypoint) : super(entrypoint);
-
   @override
   Future validate() async {
     final pubspec = entrypoint.root.pubspec;
@@ -49,7 +46,7 @@ class FlutterPluginFormatValidator extends Validator {
     final flutterConstraint = pubspec.sdkConstraints['flutter'];
     if (usesNewPluginFormat &&
         (flutterConstraint == null ||
-            flutterConstraint.allowsAny(VersionRange(
+            flutterConstraint.effectiveConstraint.allowsAny(VersionRange(
               min: Version.parse('0.0.0'),
               max: Version.parse('1.10.0'),
               includeMin: true,

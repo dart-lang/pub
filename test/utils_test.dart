@@ -128,7 +128,7 @@ b: {}'''));
     test('is stable', () async {
       {
         final completers = <String, Completer>{};
-        Completer completer(k) => completers.putIfAbsent(k, () => Completer());
+        Completer completer(k) => completers.putIfAbsent(k, Completer.new);
         Future<int> lengthWhenComplete(String s) async {
           await completer(s).future;
           return s.length;
@@ -145,7 +145,7 @@ b: {}'''));
       }
       {
         final completers = <String, Completer>{};
-        Completer completer(k) => completers.putIfAbsent(k, () => Completer());
+        Completer completer(k) => completers.putIfAbsent(k, Completer.new);
         Future<int> lengthWhenComplete(String s) async {
           await completer(s).future;
           return s.length;
@@ -161,5 +161,19 @@ b: {}'''));
         await w;
       }
     });
+  });
+
+  test('hexEncode', () {
+    expect(hexEncode([]), '');
+    expect(hexEncode([255, 0, 1, 240]), 'ff0001f0');
+    expect(() => hexEncode([256, 0, 1]), throwsA(isA<FormatException>()));
+  });
+  test('hexDecode', () {
+    expect(hexDecode(''), []);
+    expect(hexDecode('ff0001f0abcdef'), [255, 0, 1, 240, 171, 205, 239]);
+    expect(hexDecode('FF0001F0ABCDEF'), [255, 0, 1, 240, 171, 205, 239]);
+    expect(() => hexDecode('F'), throwsA(isA<FormatException>()));
+    expect(() => hexDecode('0p'), throwsA(isA<FormatException>()));
+    expect(() => hexDecode('p0'), throwsA(isA<FormatException>()));
   });
 }

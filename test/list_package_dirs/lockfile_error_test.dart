@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as path;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
@@ -21,7 +19,7 @@ void main() {
       'list-package-dirs',
       '--format=json'
     ], outputJson: {
-      'error': contains('The lockfile must be a YAML mapping.'),
+      'error': contains('Expected a YAML mapping.'),
       'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock'))
     }, exitCode: exit_codes.DATA);
   });

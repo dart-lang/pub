@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"
@@ -19,6 +20,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"
@@ -47,7 +49,7 @@ bar           -        *1.2.3      2.0.0       2.0.0
 foo           -        1.2.3       1.2.3       1.2.3   
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -66,7 +68,7 @@ bar           -        *1.2.3      2.0.0       2.0.0
 foo           -        1.2.3       1.2.3       1.2.3   
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -85,7 +87,7 @@ bar           -        *1.2.3      2.0.0       2.0.0
 foo           -        1.2.3       1.2.3       1.2.3   
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -104,7 +106,7 @@ bar           -        *1.2.3      2.0.0       2.0.0
 foo           -        1.2.3       1.2.3       1.2.3   
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -123,7 +125,7 @@ bar           -        *1.2.3      2.0.0       2.0.0
 foo           -        1.2.3       1.2.3       1.2.3   
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -142,7 +144,7 @@ bar           -        *1.2.3      2.0.0       2.0.0
 foo           -        1.2.3       1.2.3       1.2.3   
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -162,7 +164,7 @@ bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0
 foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
@@ -182,7 +184,7 @@ bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0
 foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
@@ -202,7 +204,7 @@ bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0
 foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
 
 No pubspec.lock found. There are no Current versions.
-Run `pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
+Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
@@ -215,6 +217,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3",
@@ -231,6 +234,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3",
@@ -256,6 +260,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "bar",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"
@@ -269,6 +274,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "foo",
+      "isDiscontinued": false,
       "current": null,
       "upgradable": {
         "version": "1.2.3"

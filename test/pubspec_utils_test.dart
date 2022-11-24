@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/pubspec_utils.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
@@ -47,8 +45,10 @@ void main() {
     });
 
     test('works on compatible version union', () {
-      final constraint1 = VersionConstraint.parse('>=1.2.3 <2.0.0');
-      final constraint2 = VersionConstraint.parse('>2.2.3 <=4.0.0');
+      final constraint1 =
+          VersionConstraint.parse('>=1.2.3 <2.0.0') as VersionRange;
+      final constraint2 =
+          VersionConstraint.parse('>2.2.3 <=4.0.0') as VersionRange;
       final constraint = VersionUnion.fromRanges([constraint1, constraint2]);
 
       final removedUpperBound = stripUpperBound(constraint) as VersionRange;

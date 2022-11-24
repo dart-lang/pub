@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -16,12 +14,14 @@ import 'package:test/test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
+late PackageServer server;
+
 void main() {
   setUp(() async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0');
-      builder.serve('foo', '2.0.0');
-    });
+    server = await servePackages();
+
+    server.serve('foo', '1.0.0');
+    server.serve('foo', '2.0.0');
 
     await d.dir(appPath, [
       d.appPubspec(),
@@ -205,97 +205,6 @@ void main() {
           'pubspec.lock file was generated, please run "dart pub get" again.');
     });
 
-    group(
-        'the lockfile is pointing to an unavailable package with an older '
-        '.packages', () {
-      setUp(() async {
-        await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
-        ]).create();
-
-        await pubGet();
-
-        deleteEntry(p.join(d.sandbox, cachePath));
-
-        // Ensure that the lockfile looks newer than the .packages file.
-        await _touch('pubspec.lock');
-      });
-
-      _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "dart pub get" again.');
-    });
-
-    group("the lockfile has a package that the .packages file doesn't", () {
-      setUp(() async {
-        await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
-
-        await d.dir(appPath, [
-          d.appPubspec({
-            'foo': {'path': '../foo'}
-          })
-        ]).create();
-
-        await pubGet();
-
-        await createPackagesFile(appPath);
-
-        // Ensure that the pubspec looks newer than the lockfile.
-        await _touch('pubspec.lock');
-      });
-
-      _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "dart pub get" again.');
-    });
-
-    group('the .packages file has a package with a non-file URI', () {
-      setUp(() async {
-        await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
-
-        await d.dir(appPath, [
-          d.appPubspec({
-            'foo': {'path': '../foo'}
-          })
-        ]).create();
-
-        await pubGet();
-
-        await d.dir(appPath, [
-          d.file('.packages', '''
-myapp:lib
-foo:http://example.com/
-''')
-        ]).create();
-
-        // Ensure that the pubspec looks newer than the lockfile.
-        await _touch('pubspec.lock');
-      });
-
-      _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "dart pub get" again.');
-    });
-
-    group('the .packages file points to the wrong place', () {
-      setUp(() async {
-        await d.dir('bar', [d.libPubspec('foo', '1.0.0')]).create();
-
-        await d.dir(appPath, [
-          d.appPubspec({
-            'foo': {'path': '../bar'}
-          })
-        ]).create();
-
-        await pubGet();
-
-        await createPackagesFile(appPath, dependenciesInSandBox: ['foo']);
-
-        // Ensure that the pubspec looks newer than the lockfile.
-        await _touch('pubspec.lock');
-      });
-
-      _requiresPubGet('The pubspec.lock file has changed since the .packages '
-          'file was generated, please run "dart pub get" again.');
-    });
-
     group('the package_config.json file points to the wrong place', () {
       setUp(() async {
         await d.dir('bar', [d.libPubspec('foo', '1.0.0')]).create();
@@ -334,10 +243,8 @@ foo:http://example.com/
       setUp(() async {
         // Avoid using a path dependency because it triggers the full validation
         // logic. We want to be sure SDK-validation works without that logic.
-        globalPackageServer.add((builder) {
-          builder.serve('foo', '3.0.0', pubspec: {
-            'environment': {'sdk': '>=1.0.0 <2.0.0'}
-          });
+        server.serve('foo', '3.0.0', pubspec: {
+          'environment': {'sdk': '>=1.0.0 <2.0.0'}
         });
 
         await d.dir(appPath, [
@@ -362,10 +269,8 @@ foo:http://example.com/
         'current Flutter SDK', () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      globalPackageServer.add((builder) {
-        builder.serve('foo', '3.0.0', pubspec: {
-          'environment': {'flutter': '>=1.0.0 <2.0.0'}
-        });
+      server.serve('foo', '3.0.0', pubspec: {
+        'environment': {'flutter': '>=1.0.0 <2.0.0'}
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
@@ -456,7 +361,7 @@ foo:http://example.com/
   group("doesn't require the user to run pub get first if", () {
     group(
         'the pubspec is older than the lockfile which is older than the '
-        'packages file, even if the contents are wrong', () {
+        'package-config, even if the contents are wrong', () {
       setUp(() async {
         await d.dir(appPath, [
           d.appPubspec({'foo': '1.0.0'})
@@ -465,7 +370,6 @@ foo:http://example.com/
         await _touch('pubspec.yaml');
 
         await _touch('pubspec.lock');
-        await _touch('.packages');
         await _touch('.dart_tool/package_config.json');
       });
 
@@ -524,10 +428,8 @@ foo:http://example.com/
 
     group("an overridden dependency's SDK constraint is unmatched", () {
       setUp(() async {
-        globalPackageServer.add((builder) {
-          builder.serve('bar', '1.0.0', pubspec: {
-            'environment': {'sdk': '0.0.0-fake'}
-          });
+        server.serve('bar', '1.0.0', pubspec: {
+          'environment': {'sdk': '0.0.0-fake'}
         });
 
         await d.dir(appPath, [
@@ -549,10 +451,8 @@ foo:http://example.com/
         () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      globalPackageServer.add((builder) {
-        builder.serve('foo', '3.0.0', pubspec: {
-          'environment': {'flutter': '>=1.0.0 <2.0.0'}
-        });
+      server.serve('foo', '3.0.0', pubspec: {
+        'environment': {'flutter': '>=1.0.0 <2.0.0'}
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
@@ -608,14 +508,11 @@ void _runsSuccessfully({bool runDeps = true}) {
           File(p.join(d.sandbox, 'myapp/pubspec.yaml')).lastModifiedSync();
       var lockFileModified =
           File(p.join(d.sandbox, 'myapp/pubspec.lock')).lastModifiedSync();
-      var packagesModified =
-          File(p.join(d.sandbox, 'myapp/.packages')).lastModifiedSync();
       var packageConfigModified =
           File(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
               .lastModifiedSync();
 
       expect(!pubspecModified.isAfter(lockFileModified), isTrue);
-      expect(!lockFileModified.isAfter(packagesModified), isTrue);
       expect(!lockFileModified.isAfter(packageConfigModified), isTrue);
     });
   }

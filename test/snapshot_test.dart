@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -13,17 +11,15 @@ import 'test_pub.dart';
 void main() {
   group('creates a snapshot', () {
     test('for an immediate dependency', () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3', contents: [
-          d.dir('bin', [
-            d.file('hello.dart', "void main() => print('hello!');"),
-            d.file('goodbye.dart', "void main() => print('goodbye!');"),
-            d.file('shell.sh', 'echo shell'),
-            d.dir(
-                'subdir', [d.file('sub.dart', "void main() => print('sub!');")])
-          ])
-        ]);
-      });
+      final server = await servePackages();
+      server.serve('foo', '1.2.3', contents: [
+        d.dir('bin', [
+          d.file('hello.dart', "void main() => print('hello!');"),
+          d.file('goodbye.dart', "void main() => print('goodbye!');"),
+          d.file('shell.sh', 'echo shell'),
+          d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")])
+        ])
+      ]);
 
       await d.appDir({'foo': '1.2.3'}).create();
 
@@ -51,8 +47,8 @@ void main() {
     });
 
     test("for an immediate dependency that's also transitive", () async {
-      await servePackages((builder) {
-        builder.serve('foo', '1.2.3', contents: [
+      await servePackages()
+        ..serve('foo', '1.2.3', contents: [
           d.dir('bin', [
             d.file('hello.dart', "void main() => print('hello!');"),
             d.file('goodbye.dart', "void main() => print('goodbye!');"),
@@ -60,9 +56,8 @@ void main() {
             d.dir(
                 'subdir', [d.file('sub.dart', "void main() => print('sub!');")])
           ])
-        ]);
-        builder.serve('bar', '1.2.3', deps: {'foo': '1.2.3'});
-      });
+        ])
+        ..serve('bar', '1.2.3', deps: {'foo': '1.2.3'});
 
       await d.appDir({'foo': '1.2.3'}).create();
 
@@ -91,12 +86,11 @@ void main() {
 
     group('again if', () {
       test('its package is updated', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3', contents: [
-            d.dir('bin',
-                [d.file('hello.dart', "void main() => print('hello!');")])
-          ]);
-        });
+        final server = await servePackages();
+        server.serve('foo', '1.2.3', contents: [
+          d.dir(
+              'bin', [d.file('hello.dart', "void main() => print('hello!');")])
+        ]);
 
         await d.appDir({'foo': 'any'}).create();
 
@@ -107,12 +101,10 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
-        globalPackageServer.add((builder) {
-          builder.serve('foo', '1.2.4', contents: [
-            d.dir('bin',
-                [d.file('hello.dart', "void main() => print('hello 2!');")])
-          ]);
-        });
+        server.serve('foo', '1.2.4', contents: [
+          d.dir('bin',
+              [d.file('hello.dart', "void main() => print('hello 2!');")])
+        ]);
 
         await pubUpgrade(
             args: ['--precompile'], output: contains('Built foo:hello.'));
@@ -127,22 +119,22 @@ void main() {
       });
 
       test('a dependency of its package is updated', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '1.2.3', pubspec: {
-            'dependencies': {'bar': 'any'}
-          }, contents: [
-            d.dir('bin', [
-              d.file('hello.dart', """
+        final server = await servePackages();
+
+        server.serve('foo', '1.2.3', pubspec: {
+          'dependencies': {'bar': 'any'}
+        }, contents: [
+          d.dir('bin', [
+            d.file('hello.dart', """
             import 'package:bar/bar.dart';
 
             void main() => print(message);
           """)
-            ])
-          ]);
-          builder.serve('bar', '1.2.3', contents: [
-            d.dir('lib', [d.file('bar.dart', "final message = 'hello!';")])
-          ]);
-        });
+          ])
+        ]);
+        server.serve('bar', '1.2.3', contents: [
+          d.dir('lib', [d.file('bar.dart', "final message = 'hello!';")])
+        ]);
 
         await d.appDir({'foo': 'any'}).create();
 
@@ -153,11 +145,9 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
         ]).validate();
 
-        globalPackageServer.add((builder) {
-          builder.serve('bar', '1.2.4', contents: [
-            d.dir('lib', [d.file('bar.dart', "final message = 'hello 2!';")]),
-          ]);
-        });
+        server.serve('bar', '1.2.4', contents: [
+          d.dir('lib', [d.file('bar.dart', "final message = 'hello 2!';")]),
+        ]);
 
         await pubUpgrade(
             args: ['--precompile'], output: contains('Built foo:hello.'));
@@ -209,12 +199,11 @@ void main() {
       });
 
       test('the SDK is out of date', () async {
-        await servePackages((builder) {
-          builder.serve('foo', '5.6.7', contents: [
-            d.dir('bin',
-                [d.file('hello.dart', "void main() => print('hello!');")])
-          ]);
-        });
+        final server = await servePackages();
+        server.serve('foo', '5.6.7', contents: [
+          d.dir(
+              'bin', [d.file('hello.dart', "void main() => print('hello!');")])
+        ]);
 
         await d.appDir({'foo': '5.6.7'}).create();
 

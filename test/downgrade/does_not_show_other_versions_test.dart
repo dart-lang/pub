@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -11,11 +9,10 @@ import '../test_pub.dart';
 
 void main() {
   test('does not show how many other versions are available', () async {
-    await servePackages((builder) {
-      builder.serve('downgraded', '1.0.0');
-      builder.serve('downgraded', '2.0.0');
-      builder.serve('downgraded', '3.0.0-dev');
-    });
+    await servePackages()
+      ..serve('downgraded', '1.0.0')
+      ..serve('downgraded', '2.0.0')
+      ..serve('downgraded', '3.0.0-dev');
 
     await d.appDir({'downgraded': '3.0.0-dev'}).create();
 

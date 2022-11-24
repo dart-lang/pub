@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -13,35 +11,34 @@ void main() {
   test(
       "doesn't unlock dependencies if a new dependency is already "
       'satisfied', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
-      builder.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
-      builder.serve('baz', '1.0.0');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
+    server.serve('bar', '1.0.0', deps: {'baz': '<2.0.0'});
+    server.serve('baz', '1.0.0');
 
     await d.appDir({'foo': 'any'}).create();
 
     await pubGet();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      d.packageConfigEntry(name: 'baz', version: '1.0.0'),
+    ]).validate();
 
-    await d.appPackagesFile(
-        {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'}).validate();
-
-    globalPackageServer.add((builder) {
-      builder.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
-      builder.serve('bar', '2.0.0', deps: {'baz': '<3.0.0'});
-      builder.serve('baz', '2.0.0');
-      builder.serve('newdep', '2.0.0', deps: {'baz': '>=1.0.0'});
-    });
+    server.serve('foo', '2.0.0', deps: {'bar': '<3.0.0'});
+    server.serve('bar', '2.0.0', deps: {'baz': '<3.0.0'});
+    server.serve('baz', '2.0.0');
+    server.serve('newdep', '2.0.0', deps: {'baz': '>=1.0.0'});
 
     await d.appDir({'foo': 'any', 'newdep': 'any'}).create();
 
     await pubGet();
 
-    await d.appPackagesFile({
-      'foo': '1.0.0',
-      'bar': '1.0.0',
-      'baz': '1.0.0',
-      'newdep': '2.0.0'
-    }).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
+      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      d.packageConfigEntry(name: 'baz', version: '1.0.0'),
+      d.packageConfigEntry(name: 'newdep', version: '2.0.0'),
+    ]).validate();
   });
 }

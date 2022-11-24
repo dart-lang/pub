@@ -2,9 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
-import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/pubspec_field.dart';
 import 'package:test/test.dart';
@@ -13,8 +10,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
-Validator pubspecField(Entrypoint entrypoint) =>
-    PubspecFieldValidator(entrypoint);
+Validator pubspecField() => PubspecFieldValidator();
 
 void main() {
   group('should consider a package valid if it', () {
@@ -24,7 +20,7 @@ void main() {
 
     test('has an HTTPS homepage URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
-      pkg['homepage'] = 'https://pub.dartlang.org';
+      pkg['homepage'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField);
@@ -33,7 +29,7 @@ void main() {
     test('has an HTTPS repository URL instead of homepage', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg.remove('homepage');
-      pkg['repository'] = 'https://pub.dartlang.org';
+      pkg['repository'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField);
@@ -41,7 +37,7 @@ void main() {
 
     test('has an HTTPS documentation URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
-      pkg['documentation'] = 'https://pub.dartlang.org';
+      pkg['documentation'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidation(pubspecField);
@@ -57,7 +53,7 @@ void main() {
 
     test('has executables', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
-      pkg['executables'] = <String, String>{
+      pkg['executables'] = <String, String?>{
         'test_pkg': null,
         'test_pkg_helper': 'helper',
       };

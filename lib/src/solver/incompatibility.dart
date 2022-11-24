@@ -126,7 +126,7 @@ class Incompatibility {
       if (!cause.sdk.isAvailable) {
         buffer.write('the ${cause.sdk.name} SDK');
       } else {
-        if (cause.sdk.name != 'Dart') buffer.write(cause.sdk.name + ' ');
+        if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
         buffer.write('SDK version ${cause.constraint}');
       }
       return buffer.toString();
@@ -262,7 +262,7 @@ class Incompatibility {
         .join(' or ');
 
     var buffer =
-        StringBuffer(_terse(thisPositive, details, allowEvery: true) + ' ');
+        StringBuffer('${_terse(thisPositive, details, allowEvery: true)} ');
     var isDependency = cause == IncompatibilityCause.dependency &&
         other.cause == IncompatibilityCause.dependency;
     buffer.write(isDependency ? 'depends on' : 'requires');
@@ -414,7 +414,7 @@ class Incompatibility {
       if (!cause.sdk.isAvailable) {
         buffer.write('the ${cause.sdk.name} SDK');
       } else {
-        if (cause.sdk.name != 'Dart') buffer.write(cause.sdk.name + ' ');
+        if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
         buffer.write('SDK version ${cause.constraint}');
       }
     } else if (latter.cause == IncompatibilityCause.noVersions) {

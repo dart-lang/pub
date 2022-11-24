@@ -2,11 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// @dart=2.10
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
-
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
@@ -158,9 +155,8 @@ void main() {
   });
 
   test('can be overriden by dependency override', () async {
-    await servePackages((builder) {
-      builder.serve('foo', '1.2.2');
-    });
+    final server = await servePackages();
+    server.serve('foo', '1.2.2');
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
@@ -176,7 +172,9 @@ void main() {
     await pubAdd(args: ['foo', '--git-url', '../foo.git']);
 
     await d.cacheDir({'foo': '1.2.2'}).validate();
-    await d.appPackagesFile({'foo': '1.2.2'}).validate();
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'foo', version: '1.2.2'),
+    ]).validate();
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -184,6 +182,65 @@ void main() {
           'foo': {'git': '../foo.git'}
         },
         'dependency_overrides': {'foo': '1.2.2'}
+      })
+    ]).validate();
+  });
+
+  test('fails if multiple packages passed for git source', () async {
+    ensureGit();
+
+    await d.appDir({}).create();
+
+    await pubAdd(
+        args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
+        exitCode: exit_codes.USAGE,
+        error: contains('Specify multiple git packages with descriptors.'));
+  });
+
+  test('Can add a package with a git descriptor and relative path', () async {
+    await d.git('foo.git', [
+      d.dir('subdir', [d.libPubspec('foo', '1.2.3')])
+    ]).create();
+    await d.appDir({}).create();
+    await pubAdd(
+      args: [
+        '--directory',
+        appPath,
+        'foo:{"git": {"url":"foo.git", "path":"subdir"}}',
+      ],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 1 dependency in myapp!'),
+    );
+
+    await d.appDir({
+      'foo': {
+        'git': {'url': '../foo.git', 'path': 'subdir'}
+      }
+    }).validate();
+  });
+
+  test('Can add multiple git packages using descriptors', () async {
+    ensureGit();
+
+    await d.git(
+        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+    await d.git(
+        'bar.git', [d.libDir('foo'), d.libPubspec('bar', '1.0.0')]).create();
+
+    await d.appDir({}).create();
+
+    await pubAdd(args: [
+      'foo:{"git":"../foo.git"}',
+      'bar:{"git":"../bar.git"}',
+    ]);
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'foo': {'git': '../foo.git'},
+          'bar': {'git': '../bar.git'},
+        },
       })
     ]).validate();
   });
