@@ -16,7 +16,10 @@ String get flutterReleasesUrl =>
 
 // Retrieves all released versions of Flutter.
 Future<List<FlutterRelease>> _flutterReleases = () async {
-  final response = await httpClient.get(Uri.parse(flutterReleasesUrl));
+  final response = await retryForHttp(
+    'fetching available Flutter releases',
+    () => globalHttpClient.get(Uri.parse(flutterReleasesUrl)),
+  );
   final decoded = jsonDecode(response.body);
   if (decoded is! Map) throw FormatException('Bad response - should be a Map');
   final releases = decoded['releases'];
