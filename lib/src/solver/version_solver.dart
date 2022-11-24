@@ -87,7 +87,7 @@ class VersionSolver {
     this._root,
     this._lockFile,
     Iterable<String> unlock, {
-    Map<String, Version>? sdkOverrides,
+    Map<String, Version> sdkOverrides = const {},
   })  : _sdkOverrides = sdkOverrides,
         _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
