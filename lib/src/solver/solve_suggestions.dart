@@ -22,7 +22,7 @@ import 'incompatibility_cause.dart';
 ///
 /// Returns a formatted list of suggestions, or the empty String if no
 /// suggestions were found.
-Future<String> suggestResolutionAlternatives(
+Future<String?> suggestResolutionAlternatives(
   Entrypoint entrypoint,
   SolveType type,
   Incompatibility incompatibility,
@@ -177,7 +177,7 @@ Future<String> suggestResolutionAlternatives(
         await suggestUnlockingAll(stripLowerBound: false));
   }
 
-  if (suggestions.isEmpty) return '';
+  if (suggestions.isEmpty) return null;
   final tryOne = suggestions.length == 1
       ? 'You can try the following suggestion to make the pubspec resolve:'
       : 'You can try one of the following suggestions to make the pubspec resolve:';
