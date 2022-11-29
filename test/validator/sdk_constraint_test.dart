@@ -25,6 +25,12 @@ void main() {
       await expectValidation(sdkConstraint);
     });
 
+    test('has an SDK constraint with ^', () async {
+      await d.dir(
+          appPath, [d.libPubspec('test_pkg', '1.0.0', sdk: '^1.8.0')]).create();
+      await expectValidation(sdkConstraint);
+    });
+
     test('depends on a pre-release Dart SDK from a pre-release', () async {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0-dev.1', sdk: '>=1.8.0-dev.1 <2.0.0')
@@ -60,13 +66,6 @@ void main() {
   });
 
   group('should consider a package invalid if it', () {
-    test('has an SDK constraint with ^', () async {
-      await d.dir(
-          appPath, [d.libPubspec('test_pkg', '1.0.0', sdk: '^1.8.0')]).create();
-      await expectValidation(sdkConstraint,
-          errors: anyElement(contains('">=1.8.0 <2.0.0"')));
-    });
-
     test('has no upper bound SDK constraint', () async {
       await d.dir(appPath,
           [d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0')]).create();
