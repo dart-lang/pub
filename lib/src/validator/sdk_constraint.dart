@@ -35,21 +35,6 @@ class SdkConstraintValidator extends Validator {
   Future validate() async {
     final dartConstraint = _sdkConstraintFromPubspecYaml();
     if (dartConstraint is VersionRange) {
-      if (dartConstraint.toString().startsWith('^')) {
-        var dartConstraintWithoutCaret = VersionRange(
-            min: dartConstraint.min,
-            max: dartConstraint.max,
-            includeMin: dartConstraint.includeMin,
-            includeMax: dartConstraint.includeMax);
-        errors.add(
-            "^ version constraints aren't allowed for SDK constraints since "
-            "older versions of pub don't support them.\n"
-            'Expand it manually instead:\n'
-            '\n'
-            'environment:\n'
-            '  sdk: "$dartConstraintWithoutCaret"');
-      }
-
       if (dartConstraint.max == null) {
         errors.add(
             'Published packages should have an upper bound constraint on the '
