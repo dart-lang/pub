@@ -41,7 +41,7 @@ void main() {
     ]).validate();
 
     expect(packageSpec('foo'), isNotNull);
-  }, skip: true);
+  });
 
   test(
       'checks out a package from Git with a name that is not a valid '
