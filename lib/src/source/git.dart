@@ -254,7 +254,7 @@ class GitSource extends CachedSource {
       fail('Could not find a file named "$pathInCache" in '
           '${GitDescription.prettyUri(description.url)} $revision.');
     }
-    return lines.join();
+    return lines.join('\n');
   }
 
   @override

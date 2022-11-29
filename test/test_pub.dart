@@ -611,7 +611,7 @@ class PubProcess extends TestProcess {
 /// We require machines running these tests to have git installed. This
 /// validation gives an easier-to-understand error when that requirement isn't
 /// met than just failing in the middle of a test when pub invokes git.
-void ensureGit() {
+void  ensureGit() {
   if (!git.isInstalled) fail('Git must be installed to run this test.');
 }
 
