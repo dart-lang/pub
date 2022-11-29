@@ -401,7 +401,7 @@ void main() {
         ]).create();
 
         await expectValidationError(
-          '  sdk: ">=1.8.0 <2.0.0"',
+          '  sdk: "^1.8.0"',
           environment: {'_PUB_TEST_SDK_VERSION': '1.5.0'},
         );
       });
@@ -424,7 +424,7 @@ void main() {
 
         await expectValidation(
           error: allOf(
-            contains('  sdk: ">=2.0.0 <3.0.0"'),
+            contains('  sdk: "^2.0.0"'),
             contains('  foo: any'),
           ),
           exitCode: DATA,
@@ -450,7 +450,7 @@ void main() {
 
         await expectValidation(
           error: allOf([
-            contains('  sdk: ">=2.0.0 <3.0.0"'),
+            contains('  sdk: "^2.0.0"'),
             contains('  foo: any'),
           ]),
           environment: {'_PUB_TEST_SDK_VERSION': '1.24.0'},
@@ -479,7 +479,7 @@ void main() {
         sdk: '>=1.18.0 <2.0.0',
       ).create();
 
-      await expectValidationError('sdk: ">=1.19.0 <2.0.0"', environment: {
+      await expectValidationError('sdk: "^1.19.0"', environment: {
         '_PUB_TEST_SDK_VERSION': '1.19.0',
         'FLUTTER_ROOT': path.join(d.sandbox, 'flutter'),
       });
@@ -493,7 +493,7 @@ void main() {
       }).create();
 
       await expectValidationError(
-        'sdk: ">=1.19.0 <2.0.0"',
+        'sdk: "^1.19.0"',
         environment: {
           '_PUB_TEST_SDK_VERSION': '0.0.0',
           'FLUTTER_ROOT': path.join(d.sandbox, 'flutter'),
@@ -525,7 +525,7 @@ void main() {
       }).create();
 
       await expectValidationError(
-        'sdk: ">=2.0.0 <3.0.0"',
+        'sdk: "^2.0.0"',
         environment: {'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia')},
       );
     });

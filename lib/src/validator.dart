@@ -105,7 +105,7 @@ abstract class Validator {
         'Make sure your SDK constraint excludes old versions:\n'
         '\n'
         'environment:\n'
-        '  sdk: "$newSdkConstraint"');
+        '  sdk: "${newSdkConstraint.asCompatibleWithifPossible()}"');
   }
 
   /// Returns whether [version1] and [version2] are pre-releases of the same version.
@@ -229,4 +229,17 @@ class ValidationContext {
 
   ValidationContext(
       this.entrypoint, this.packageSize, this.serverUrl, this.files);
+}
+
+extension on VersionConstraint {
+  // Returns `this` expressed as [VersionConstraint.compatibleWith] if possible.
+  VersionConstraint asCompatibleWithifPossible() {
+    final range = this;
+    if (range is! VersionRange) return this;
+    final min = range.min;
+    if (min == null) return this;
+    final asCompatibleWith = VersionConstraint.compatibleWith(min);
+    if (asCompatibleWith == this) return asCompatibleWith;
+    return this;
+  }
 }
