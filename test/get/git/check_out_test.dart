@@ -43,6 +43,25 @@ void main() {
     expect(packageSpec('foo'), isNotNull);
   }, skip: true);
 
+  test('checks out a package from Git using non-json YAML', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.file('pubspec.yaml', '''
+name: foo
+environment:
+  sdk: ^0.1.2
+'''),
+    ]).create();
+
+    await d.appDir({
+      'foo': {'git': '../foo.git'}
+    }).create();
+
+    await pubGet();
+  });
+
   test(
       'checks out a package from Git with a name that is not a valid '
       'file name in the url', () async {

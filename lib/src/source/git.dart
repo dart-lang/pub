@@ -248,13 +248,15 @@ class GitSource extends CachedSource {
 
     late List<String> lines;
     try {
+      // TODO(sigurdm): We should have a `git.run` alternative that gives back
+      // a stream of stdout instead of the lines.
       lines = await git
           .run(['show', '$revision:$pathInCache'], workingDir: repoPath);
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pathInCache" in '
           '${GitDescription.prettyUri(description.url)} $revision.');
     }
-    return lines.join();
+    return lines.join('\n');
   }
 
   @override
