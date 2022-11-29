@@ -248,6 +248,8 @@ class GitSource extends CachedSource {
 
     late List<String> lines;
     try {
+      // TODO(sigurdm): We should have a `git.run` alternative that gives back
+      // a stream of stdout instead of the lines.
       lines = await git
           .run(['show', '$revision:$pathInCache'], workingDir: repoPath);
     } on git.GitException catch (_) {
