@@ -41,7 +41,7 @@ void main() {
     ]).validate();
 
     expect(packageSpec('foo'), isNotNull);
-  }, skip: true);
+  });
 
   test('checks out a package from Git using non-json YAML', () async {
     ensureGit();
