@@ -113,7 +113,7 @@ Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 [STDERR]   Make sure your SDK constraint excludes old versions:
 [STDERR]   
 [STDERR]   environment:
-[STDERR]     sdk: ">=1.8.0 <2.0.0"
+[STDERR]     sdk: "^1.8.0"
 [STDERR] Sorry, your package is missing a requirement and can't be published yet.
 [STDERR] For more information, see: https://dart.dev/tools/pub/cmd/pub-lish.
 [EXIT CODE] 65

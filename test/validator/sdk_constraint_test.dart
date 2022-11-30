@@ -109,7 +109,7 @@ void main() {
         })
       ]).create();
       await expectValidation(sdkConstraint,
-          errors: anyElement(contains('">=1.19.0 <2.0.0"')));
+          errors: anyElement(contains('"^1.19.0"')));
     });
 
     test(
@@ -123,7 +123,7 @@ void main() {
         })
       ]).create();
       await expectValidation(sdkConstraint,
-          errors: anyElement(contains('">=2.0.0 <3.0.0"')));
+          errors: anyElement(contains('"^2.0.0"')));
     });
 
     test('has a Fuchsia SDK constraint with no SDK constraint', () async {
@@ -135,7 +135,7 @@ void main() {
         })
       ]).create();
       await expectValidation(sdkConstraint,
-          errors: anyElement(contains('">=2.0.0 <3.0.0"')));
+          errors: anyElement(contains('"^2.0.0"')));
     });
 
     test('depends on a pre-release sdk from a non-pre-release', () async {
