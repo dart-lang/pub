@@ -961,7 +961,7 @@ $pubspecPath has no lower-bound SDK constraint.
 You should edit $pubspecPath to contain an SDK constraint:
 
 environment:
-  sdk: '$suggestedConstraint'
+  sdk: '${suggestedConstraint.asCompatibleWithIfPossible()}'
 
 See https://dart.dev/go/sdk-constraint
 ''');
