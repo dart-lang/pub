@@ -157,6 +157,10 @@ Future<void> precompile({
       log.message('Built $highlightedName.');
       // By using rename we ensure atomicity. An external observer will either
       // see the old or the new snapshot.
+      final parent = File(outputPath).parent;
+      if (!await parent.exists()) {
+        await parent.create(recursive: true);
+      }
       renameFile(temporaryIncrementalDill, outputPath);
     } else {
       // By using rename we ensure atomicity. An external observer will either
