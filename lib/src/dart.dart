@@ -129,7 +129,7 @@ Future<void> precompile({
     // To avoid potential races we copy the incremental data to a temporary file
     // for just this compilation.
     final temporaryIncrementalDill =
-        p.join(tempDir, '${p.basename(incrementalDillPath)}.incremental.dill');
+        p.join(tempDir, '${p.basename(incrementalDillPath)}.temp');
     try {
       if (fileExists(incrementalDillPath)) {
         copyFile(incrementalDillPath, temporaryIncrementalDill);
