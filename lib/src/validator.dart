@@ -230,16 +230,3 @@ class ValidationContext {
   ValidationContext(
       this.entrypoint, this.packageSize, this.serverUrl, this.files);
 }
-
-extension on VersionConstraint {
-  // Returns `this` expressed as [VersionConstraint.compatibleWith] if possible.
-  VersionConstraint asCompatibleWithIfPossible() {
-    final range = this;
-    if (range is! VersionRange) return this;
-    final min = range.min;
-    if (min == null) return this;
-    final asCompatibleWith = VersionConstraint.compatibleWith(min);
-    if (asCompatibleWith == this) return asCompatibleWith;
-    return this;
-  }
-}
