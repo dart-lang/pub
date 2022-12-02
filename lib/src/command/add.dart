@@ -249,7 +249,7 @@ Specify multiple sdk packages with descriptors.''');
         await entrypoint.example!.acquireDependencies(
           SolveType.get,
           precompile: argResults.shouldPrecompile,
-          onlyReportSuccessOrFailure: true,
+          summaryOnly: true,
           analytics: analytics,
         );
       }

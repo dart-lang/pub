@@ -125,7 +125,7 @@ class UpgradeCommand extends PubCommand {
       unlock: argResults.rest,
       dryRun: _dryRun,
       precompile: _precompile,
-      onlyReportSuccessOrFailure: onlySummary,
+      summaryOnly: onlySummary,
       analytics: analytics,
     );
     _showOfflineWarning();
