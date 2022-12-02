@@ -426,26 +426,6 @@ bool get canUseAnsiCodes {
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
 
-/// Whether an environment variable overriding the [stdout.hasTerminal] check
-/// was passed.
-bool get forceTerminalOutput =>
-    Platform.environment.containsKey('_PUB_FORCE_TERMINAL_OUTPUT');
-
-/// Whether it makes sense to do stdout animation.
-///
-/// Checks if pub is in JSON output mode or if stdout has no terminal attached.
-/// The flutter tool sets an environment variable when running "pub get" that
-/// overrides the terminal check. See [forceTerminalOutput].
-bool get canAnimateOutput {
-  if (log.json.enabled) {
-    return false;
-  }
-  if (!stdout.hasTerminal && !forceTerminalOutput) {
-    return false;
-  }
-  return true;
-}
-
 /// Gets a emoji special character as unicode, or the [alternative] if unicode
 /// charactors are not supported by stdout.
 String emoji(String unicode, String alternative) =>
