@@ -72,7 +72,7 @@ class GetCommand extends PubCommand {
         dryRun: argResults['dry-run'],
         precompile: argResults['precompile'],
         analytics: analytics,
-        onlyReportSuccessOrFailure: true,
+        summaryOnly: true,
         enforceLockfile: argResults['enforce-lockfile'],
       );
     }

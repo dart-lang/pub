@@ -90,7 +90,7 @@ class RemoveCommand extends PubCommand {
         await example.acquireDependencies(
           SolveType.get,
           precompile: argResults['precompile'],
-          onlyReportSuccessOrFailure: true,
+          summaryOnly: true,
           analytics: analytics,
         );
       }

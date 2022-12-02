@@ -305,7 +305,7 @@ class Entrypoint {
   /// If [precompile] is `true` (the default), this snapshots dependencies'
   /// executables.
   ///
-  /// if [onlyReportSuccessOrFailure] is `true` only success or failure will be
+  /// if [summaryOnly] is `true` only success or failure will be
   /// shown --- in case of failure, a reproduction command is shown.
   ///
   /// Updates [lockFile] and [packageRoot] accordingly.
@@ -319,13 +319,14 @@ class Entrypoint {
     bool dryRun = false,
     bool precompile = false,
     required PubAnalytics? analytics,
-    bool onlyReportSuccessOrFailure = false,
+    bool summaryOnly = false,
     bool enforceLockfile = false,
   }) async {
+    summaryOnly = summaryOnly || _summaryOnlyEnvironment;
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
 
     String forDetails() {
-      if (!onlyReportSuccessOrFailure) return '';
+      if (!summaryOnly) return '';
       final enforceLockfileOption =
           enforceLockfile ? ' --enforce-lockfile' : '';
       final directoryOption =
@@ -341,7 +342,7 @@ Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.
 Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     }
 
-    if (!onlyReportSuccessOrFailure && hasPubspecOverrides) {
+    if (!summaryOnly && hasPubspecOverrides) {
       log.warning(
           'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
     }
@@ -359,7 +360,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
         );
       });
     } catch (e) {
-      if (onlyReportSuccessOrFailure && (e is ApplicationException)) {
+      if (summaryOnly && (e is ApplicationException)) {
         throw ApplicationException(
             'Resolving dependencies$suffix failed.${forDetails()}');
       } else {
@@ -380,13 +381,13 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       cache,
       dryRun: dryRun,
       enforceLockfile: enforceLockfile,
-      quiet: onlyReportSuccessOrFailure,
+      quiet: summaryOnly,
     );
 
     final hasChanges = await report.show();
     await report.summarize();
     if (enforceLockfile && hasChanges) {
-      var suggestion = onlyReportSuccessOrFailure
+      var suggestion = summaryOnly
           ? ''
           : '''
 \n\nTo update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
@@ -985,4 +986,10 @@ See https://dart.dev/go/sdk-constraint
     dataError('The "$packageConfigPath" file is not recognized by '
         '"pub" version, please run "$topLevelProgram pub get".');
   }
+
+  /// Setting the `PUB_SUMMARY_ONLY` environment variable to anything but '0'
+  /// will result in [acquireDependencies] to only print a summary of the
+  /// results.
+  bool get _summaryOnlyEnvironment =>
+      (Platform.environment['PUB_SUMMARY_ONLY'] ?? '0') != '0';
 }
