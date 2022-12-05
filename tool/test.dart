@@ -139,5 +139,5 @@ Future<void> main(List<String> args) async {
     );
   }
   await compileSnapshot();
-  await test.main(args);
+  test.main(args);
 }
