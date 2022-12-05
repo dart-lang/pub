@@ -7,6 +7,7 @@
 /// Unlike typical unit tests, most pub tests are integration tests that stage
 /// some stuff on the file system, run pub, and then validate the results. This
 /// library provides an API to build tests like that.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
 import 'dart:io' hide BytesBuilder;
@@ -463,7 +464,10 @@ Future<PubProcess> startPub(
   // recommended to use a temporary file with a unique name for each test run.
   // Note: running tests without a snapshot is significantly slower, use
   // tool/test.dart to generate the snapshot.
-  var pubPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
+  var pubPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ??
+      // TODO(sigurdm): avoid hard-coding the snapshot path here.
+      p.absolute('.dart_tool', '_pub', 'pub.dart.snapshot.dart2');
+
   if (pubPath.isEmpty || !fileExists(pubPath)) {
     pubPath = p.absolute(p.join(_pubRoot, 'bin/pub.dart'));
   }
