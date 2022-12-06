@@ -239,19 +239,19 @@ $contentHashesDocumentationUrl
     return hasChanges;
   }
 
-  /// Displays a warning about the overrides currently in effect.
+  /// Displays a notice about the overrides currently in effect.
   Future<void> _reportOverrides() async {
     final output = StringBuffer();
 
     if (_root.dependencyOverrides.isNotEmpty) {
-      output.writeln('Warning: You are using these overridden dependencies:');
+      output.writeln('You are using these overridden dependencies:');
 
       for (var name in ordered(_root.dependencyOverrides.keys)) {
         await _reportPackage(name, output,
             alwaysShow: true, highlightOverride: false);
       }
 
-      warning(output.toString());
+      message(output.toString());
     }
   }
 

@@ -343,8 +343,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     }
 
     if (!summaryOnly && hasPubspecOverrides) {
-      log.warning(
-          'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
+      log.message('pubspec.yaml has overrides from $pubspecOverridesPath');
     }
 
     SolveResult result;

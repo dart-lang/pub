@@ -24,10 +24,15 @@ void main() {
 
       await pubCommand(
         command,
-        warning:
-            'Warning: pubspec.yaml has overrides from pubspec_overrides.yaml\n'
-            'Warning: You are using these overridden dependencies:\n'
-            '! lib 2.0.0',
+        output: allOf(
+          contains('pubspec.yaml has overrides from pubspec_overrides.yaml'),
+          contains(
+            '''
+You are using these overridden dependencies:
+! lib 2.0.0
+''',
+          ),
+        ),
       );
 
       await d.dir(appPath, [
