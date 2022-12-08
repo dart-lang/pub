@@ -28,7 +28,8 @@ void main() {
         args: ['cache', 'clean', '--force'],
         output: 'Removing pub cache directory $cache.');
 
-    expect(listDir(cache, includeHidden: true),
+    expect(
+        listDir(cache, includeHidden: true),
         // The README.md will be reconstructed.
         [pathInCache('README.md')]);
   });
