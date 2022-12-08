@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:path/path.dart' as p;
+import 'package:pub/src/io.dart' show EnvironmentKeys;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
 
@@ -316,6 +317,69 @@ main() {
         contains('42'),
         contains('Resolving dependencies'),
         contains('1.0.1 available'),
+      ),
+    );
+  });
+
+  test('`embedding run` does not have output when successful and no terminal',
+      () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '^1.0.0'}
+      }),
+      d.dir('bin', [
+        d.file('myapp.dart', 'main() {print(42);}'),
+      ])
+    ]).create();
+
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    final buffer = StringBuffer();
+    await runEmbeddingToBuffer(
+      ['run', 'myapp'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: {EnvironmentKeys.forceTerminalOutput: '0'},
+    );
+
+    expect(
+      buffer.toString(),
+      allOf(
+        isNot(contains('Resolving dependencies...')),
+        contains('42'),
+      ),
+    );
+  });
+  test('`embedding run` outputs info when successful and has a terminal',
+      () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '^1.0.0'}
+      }),
+      d.dir('bin', [
+        d.file('myapp.dart', 'main() {print(42);}'),
+      ])
+    ]).create();
+
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    final buffer = StringBuffer();
+    await runEmbeddingToBuffer(
+      ['run', 'myapp'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: {EnvironmentKeys.forceTerminalOutput: '1'},
+    );
+    expect(
+      buffer.toString(),
+      allOf(
+        contains('Resolving dependencies'),
+        contains('+ 1.0.0'),
+        contains('42'),
       ),
     );
   });

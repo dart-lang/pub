@@ -448,7 +448,7 @@ class DependencyServicesApplyCommand extends PubCommand {
             cache.sources,
             filePath: entrypoint.lockFilePath,
           );
-    await log.warningsOnlyUnlessTerminal(
+    await log.errorsOnlyUnlessTerminal(
       () async {
         final updatedPubspec = pubspecEditor.toString();
         // Resolve versions, this will update transitive dependencies that were
