@@ -108,4 +108,25 @@ void main() {
       ),
     );
   });
+
+  test('When the constraint is not rewritten, a helpful hint is given',
+      () async {
+    await d.appDir(dependencies: {
+      'foo': 'any'
+    }, pubspec: {
+      'environment': {'sdk': '>=2.12.0 <3.0.0'}
+    }).create();
+    final server = await servePackages();
+
+    // foo is not null safe.
+    server.serve('foo', '1.0.0', pubspec: {
+      'environment': {'sdk': '>=2.10.0 <3.0.0'}
+    });
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'},
+      error: contains(
+        'The constraint >=2.10.0 <3.0.0 does not support null-safety.',
+      ),
+    );
+  });
 }
