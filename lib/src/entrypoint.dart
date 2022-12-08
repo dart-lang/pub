@@ -935,13 +935,10 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
   void _checkSdkConstraint(Pubspec pubspec) {
     final dartSdkConstraint = pubspec.dartSdkConstraint.effectiveConstraint;
     if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
-      // Suggest version range '>=2.12.0 <3.0.0', we avoid using:
-      // [CompatibleWithVersionRange] because some pub versions don't support
-      // caret syntax (e.g. '^2.12.0')
-      var suggestedConstraint = VersionRange(
-        min: Version.parse('2.12.0'),
-        max: Version.parse('2.12.0').nextBreaking,
-        includeMin: true,
+      // Suggest an sdk constraint giving the same language version as the
+      // current sdk.
+      var suggestedConstraint = VersionConstraint.compatibleWith(
+        Version(sdk.version.major, sdk.version.minor, 0),
       );
       // But if somehow that doesn't work, we fallback to safe sanity, mostly
       // important for tests, or if we jump to 3.x without patching this code.
