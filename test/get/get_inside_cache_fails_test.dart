@@ -16,7 +16,7 @@ void main() {
       'version': '1.0.0',
       'environment': {'sdk': '>=0.1.2+3 <0.2.0'}
     });
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet();
 

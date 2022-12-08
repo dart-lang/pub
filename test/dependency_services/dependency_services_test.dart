@@ -339,7 +339,7 @@ Future<void> main() async {
     server.serve('foo', '1.0.0');
     await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': '^1.0.0',
       'bar': {'path': '../bar'}
     }).create();
@@ -360,7 +360,7 @@ Future<void> main() async {
     await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
     await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': {'url': '../foo.git'}
       },

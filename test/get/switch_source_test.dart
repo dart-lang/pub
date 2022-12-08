@@ -15,7 +15,7 @@ void main() {
     await d.dir('foo',
         [d.libDir('foo', 'foo 0.0.1'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'path': '../foo'}
     }).create();
 
@@ -24,7 +24,7 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet();
 

@@ -19,7 +19,7 @@ void main() {
 
     expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await pubGet();
 
@@ -47,7 +47,7 @@ void main() {
     test('because of omitted checksum header', () async {
       expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
 
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubGet();
 
@@ -60,7 +60,7 @@ void main() {
     test('because of empty checksum header', () async {
       expect(await server.peekArchiveChecksumHeader('bar', '1.2.3'), '');
 
-      await d.appDir({'bar': '1.2.3'}).create();
+      await d.appDir(dependencies: {'bar': '1.2.3'}).create();
 
       await pubGet();
 
@@ -74,7 +74,7 @@ void main() {
       expect(await server.peekArchiveChecksumHeader('baz', '1.2.3'),
           'md5=loremipsum');
 
-      await d.appDir({'baz': '1.2.3'}).create();
+      await d.appDir(dependencies: {'baz': '1.2.3'}).create();
 
       await pubGet();
 
@@ -88,7 +88,7 @@ void main() {
   test('URL encodes the package name', () async {
     await servePackages();
 
-    await d.appDir({'bad name!': '1.2.3'}).create();
+    await d.appDir(dependencies: {'bad name!': '1.2.3'}).create();
 
     await pubGet(
         error: allOf([
@@ -108,7 +108,7 @@ void main() {
     var server = await startPackageServer();
     server.serve('foo', '1.2.3');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.2.3',
         'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
@@ -131,7 +131,7 @@ void main() {
       'x-goog-hash': PackageServer.composeChecksumHeader(crc32c: 3381945770)
     });
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.2.3',
         'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
@@ -168,7 +168,7 @@ void main() {
     });
 
     test('when the CRC32C checksum is empty', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.2.3',
           'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
@@ -188,7 +188,7 @@ void main() {
     });
 
     test('when the CRC32C checksum has bad encoding', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'bar': {
           'version': '1.2.3',
           'hosted': {'name': 'bar', 'url': 'http://localhost:${server.port}'}
@@ -208,7 +208,7 @@ void main() {
     });
 
     test('when the CRC32C checksum is malformed', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'baz': {
           'version': '1.2.3',
           'hosted': {'name': 'baz', 'url': 'http://localhost:${server.port}'}
@@ -237,7 +237,7 @@ void main() {
 
     expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNull);
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await pubGet();
 
@@ -256,7 +256,7 @@ void main() {
 
     expect(await server.peekArchiveChecksumHeader('foo', '1.2.3'), isNotNull);
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await pubGet();
 

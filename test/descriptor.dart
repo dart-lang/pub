@@ -81,12 +81,13 @@ Descriptor rawPubspec(Map<String, Object> contents) =>
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
-Descriptor appPubspec([Map? dependencies]) {
+Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
   var map = <String, Object>{
     'name': 'myapp',
     'environment': {
       'sdk': '>=0.1.2 <1.0.0',
     },
+    ...?extras
   };
   if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);
@@ -280,8 +281,8 @@ Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
 
 /// Describes the application directory, containing only a pubspec specifying
 /// the given [dependencies].
-DirectoryDescriptor appDir([Map? dependencies]) =>
-    dir(appPath, [appPubspec(dependencies)]);
+DirectoryDescriptor appDir({Map? dependencies, Map<String, Object>? pubspec}) =>
+    dir(appPath, [appPubspec(dependencies: dependencies, extras: pubspec)]);
 
 /// Describes a `.dart_tools/package_config.json` file.
 ///

@@ -31,7 +31,7 @@ void main() {
       ..serve('one_newer_stable', '1.0.1');
 
     // Constraint everything to the first version.
-    await d.appDir({
+    await d.appDir(dependencies: {
       'multiple_newer': '1.0.0',
       'multiple_newer_stable': '1.0.0',
       'multiple_newer_unstable': '1.0.0',

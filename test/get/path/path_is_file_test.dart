@@ -17,7 +17,7 @@ void main() {
     var dummyPath = path.join(d.sandbox, 'dummy.txt');
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': dummyPath}
       })
     ]).create();

@@ -17,7 +17,7 @@ void main() {
     await d
         .dir('bar', [d.libDir('bar'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo', '--git-url', '../foo.git', '--path', '../bar'],
@@ -28,7 +28,7 @@ void main() {
         ]),
         exitCode: exit_codes.USAGE);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -46,7 +46,7 @@ void main() {
 
     await d
         .dir('bar', [d.libDir('bar'), d.libPubspec('foo', '0.0.1')]).create();
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: [
@@ -63,7 +63,7 @@ void main() {
         ]),
         exitCode: exit_codes.USAGE);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -83,7 +83,7 @@ void main() {
 
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: [
@@ -100,7 +100,7 @@ void main() {
         ]),
         exitCode: exit_codes.USAGE);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),

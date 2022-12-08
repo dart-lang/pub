@@ -19,7 +19,7 @@ void main() {
       }
     });
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await pubGet();
 

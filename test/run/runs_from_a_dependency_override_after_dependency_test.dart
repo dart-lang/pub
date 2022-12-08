@@ -19,7 +19,7 @@ void main() {
     ]);
 
     await d.dir(appPath, [
-      d.appPubspec({'foo': null})
+      d.appPubspec(dependencies: {'foo': null})
     ]).create();
 
     await pubGet(args: ['--precompile']);

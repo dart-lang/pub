@@ -14,7 +14,7 @@ void main() {
     test('sends the correct Accept header', () async {
       await servePackages();
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'hosted': {'name': 'foo', 'url': globalServer.url}
         }
@@ -33,7 +33,7 @@ void main() {
     test('prints a friendly error if the version is out-of-date', () async {
       await servePackages();
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'hosted': {'name': 'foo', 'url': globalServer.url}
         }

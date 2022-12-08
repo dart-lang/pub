@@ -44,7 +44,7 @@ Future<void> main() async {
   });
 
   testWithGolden('no lockfile', (ctx) async {
-    await d.appDir({'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
     await servePackages()
       ..serve('foo', '1.2.3')
       ..serve('bar', '1.2.3')

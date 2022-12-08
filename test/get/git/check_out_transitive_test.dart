@@ -26,7 +26,7 @@ void main() {
     await d.git(
         'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
       }
@@ -60,7 +60,7 @@ void main() {
     await d.git(
         'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
       }
@@ -87,7 +87,7 @@ void main() {
     await d
         .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
       }

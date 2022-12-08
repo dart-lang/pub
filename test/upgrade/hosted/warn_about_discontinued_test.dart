@@ -12,7 +12,7 @@ void main() {
     final server = await servePackages()
       ..serve('foo', '1.2.3', deps: {'transitive': 'any'})
       ..serve('transitive', '1.0.0');
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
 
     server

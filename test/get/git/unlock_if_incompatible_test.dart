@@ -16,7 +16,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '0.5.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).create();
 
@@ -36,7 +36,7 @@ void main() {
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git', 'version': '>=1.0.0'}
     }).create();
 

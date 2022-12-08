@@ -17,7 +17,7 @@ void main() {
 
     await repo.create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['sub', '--git-url', '../foo.git', '--git-path', 'subdir']);
@@ -36,7 +36,7 @@ void main() {
           path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'sub': {
         'git': {'url': '../foo.git', 'path': 'subdir'}
       }
@@ -53,7 +53,7 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['sub', '--git-url', '../foo.git', '--git-path', 'sub/dir']);
@@ -75,7 +75,7 @@ void main() {
           path: pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'sub': {
         'git': {'url': '../foo.git', 'path': 'sub/dir'}
       }

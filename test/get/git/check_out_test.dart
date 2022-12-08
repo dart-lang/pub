@@ -21,7 +21,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).create();
 
@@ -55,7 +55,7 @@ environment:
 '''),
     ]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).create();
 
@@ -78,7 +78,7 @@ environment:
     final server =
         await _serveDirectory(p.join(descriptor.io.path, '.git'), funkyName);
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'}
     }).create();
 

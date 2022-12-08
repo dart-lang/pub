@@ -14,7 +14,7 @@ void main() async {
     await pubGet();
     await d.nothing(cachePath).validate();
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await pubGet();
     await d.dir(cachePath, [
       d.file('README.md', contains('https://dart.dev/go/pub-cache'))
@@ -28,7 +28,7 @@ void main() async {
   test('PUB_CACHE/README.md gets created by `dart pub cache clean`', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await pubGet();
     await d.dir(cachePath, [
       d.file('README.md', contains('https://dart.dev/go/pub-cache'))

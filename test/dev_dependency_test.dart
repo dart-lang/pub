@@ -77,7 +77,7 @@ void main() {
         .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'}
       })
     ]).create();

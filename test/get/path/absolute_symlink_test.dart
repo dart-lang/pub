@@ -17,7 +17,7 @@ void main() {
 
     var fooPath = d.path('foo');
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': fooPath}
       })
     ]).create();

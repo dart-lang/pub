@@ -16,7 +16,7 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': path.join(d.sandbox, 'foo')}
       })
     ]).create();
@@ -25,7 +25,7 @@ void main() {
     // Add a dependency on "bar" and remove "foo", but don't run "pub get".
 
     await d.dir(appPath, [
-      d.appPubspec({'bar': 'any'})
+      d.appPubspec(dependencies: {'bar': 'any'})
     ]).create();
     // Note: Using canonicalize here because pub gets the path to the
     // entrypoint package from the working directory, which has had symlinks
