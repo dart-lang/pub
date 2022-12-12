@@ -95,7 +95,7 @@ dependencies:
 dev_dependencies:
   foo: 1.2.3
 environment:
-  sdk: '>=0.1.2 <1.0.0'
+  sdk: '$defaultSdkConstraint'
 ''')
     ]).create();
     await pubGet();

@@ -16,7 +16,7 @@ void main() {
   test('--force publishes if there are warnings', () async {
     await d.validPackage.create();
     var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=0.1.2 <0.2.0'});
+        packageMap('test_pkg', '1.0.0', null, null, {'sdk': defaultSdkConstraint});
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 

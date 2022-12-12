@@ -45,7 +45,7 @@ void main() {
     test('in compact form', () async {
       await pubGet();
       await runPub(args: ['deps', '-s', 'compact'], output: '''
-          Dart SDK 0.1.2+3
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -73,7 +73,7 @@ void main() {
     test('in list form', () async {
       await pubGet();
       await runPub(args: ['deps', '--style', 'list'], output: '''
-          Dart SDK 0.1.2+3
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -110,7 +110,7 @@ void main() {
     test('in tree form', () async {
       await pubGet();
       await runPub(args: ['deps'], output: '''
-          Dart SDK 0.1.2+3
+          Dart SDK 3.1.2+3
           myapp 0.0.0
           ├── from_path 1.2.3
           ├── normal 1.2.3
@@ -244,7 +244,7 @@ void main() {
   "sdks": [
     {
       "name": "Dart",
-      "version": "0.1.2+3"
+      "version": "3.1.2+3"
     }
   ],
   "executables": []
@@ -276,7 +276,7 @@ void main() {
     test('in compact form', () async {
       await pubGet();
       await runPub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
-          Dart SDK 0.1.2+3
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -300,7 +300,7 @@ void main() {
     test('in list form', () async {
       await pubGet();
       await runPub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
-          Dart SDK 0.1.2+3
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -331,7 +331,7 @@ void main() {
     test('in tree form', () async {
       await pubGet();
       await runPub(args: ['deps', '--no-dev'], output: '''
-          Dart SDK 0.1.2+3
+          Dart SDK 3.1.2+3
           myapp 0.0.0
           ├── from_path 1.2.3
           ├── normal 1.2.3

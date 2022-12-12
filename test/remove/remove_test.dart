@@ -35,14 +35,14 @@ void main() {
     await d.dir(appPath, [
       d.file('pubspec.yaml', '''
 name: myapp
-dependencies: 
+dependencies:
   foo: 1.2.3
 
 dev_dependencies:
   bar: 2.0.0
 
 environment:
-  sdk: '>=0.1.2 <1.0.0'
+  sdk: '$defaultSdkConstraint'
 ''')
     ]).create();
 
@@ -241,7 +241,7 @@ environment:
             foo: 1.0.0 # comment D
           # comment E
         environment:
-          sdk: '>=0.1.2 <1.0.0'
+          sdk: '$defaultSdkConstraint'
     '''),
     ]).create();
 

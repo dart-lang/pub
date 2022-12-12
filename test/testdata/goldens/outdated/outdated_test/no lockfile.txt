@@ -160,8 +160,8 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0  
-foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
+bar           -        ✓1.2.3      ✓2.0.0      ✓2.0.0  
+foo           -        ✓1.2.3      ✓1.2.3      ✓1.2.3  
 
 No pubspec.lock found. There are no Current versions.
 Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -180,8 +180,8 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0  
-foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
+bar           -        ✓1.2.3      ✓2.0.0      ✓2.0.0  
+foo           -        ✓1.2.3      ✓1.2.3      ✓1.2.3  
 
 No pubspec.lock found. There are no Current versions.
 Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -200,8 +200,8 @@ Showing dependencies that are currently not opted in to null-safety.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           -        ✗1.2.3      ✗2.0.0      ✗2.0.0  
-foo           -        ✗1.2.3      ✗1.2.3      ✗1.2.3  
+bar           -        ✓1.2.3      ✓2.0.0      ✓2.0.0  
+foo           -        ✓1.2.3      ✓1.2.3      ✓1.2.3  
 
 No pubspec.lock found. There are no Current versions.
 Run `dart pub get` to create a pubspec.lock with versions matching your pubspec.yaml.
@@ -221,15 +221,15 @@ $ pub outdated --json --mode=null-safety
       "current": null,
       "upgradable": {
         "version": "1.2.3",
-        "nullSafety": false
+        "nullSafety": true
       },
       "resolvable": {
         "version": "2.0.0",
-        "nullSafety": false
+        "nullSafety": true
       },
       "latest": {
         "version": "2.0.0",
-        "nullSafety": false
+        "nullSafety": true
       }
     },
     {
@@ -238,15 +238,15 @@ $ pub outdated --json --mode=null-safety
       "current": null,
       "upgradable": {
         "version": "1.2.3",
-        "nullSafety": false
+        "nullSafety": true
       },
       "resolvable": {
         "version": "1.2.3",
-        "nullSafety": false
+        "nullSafety": true
       },
       "latest": {
         "version": "1.2.3",
-        "nullSafety": false
+        "nullSafety": true
       }
     }
   ]

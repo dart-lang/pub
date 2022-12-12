@@ -11,8 +11,7 @@ import '../test_pub.dart';
 void main() {
   test('package validation has a warning and is canceled', () async {
     await d.validPackage.create();
-    var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=0.1.2 <0.2.0'});
+    var pkg = packageMap('test_pkg', '1.0.0', null, null, {'sdk': defaultSdkConstraint});
     pkg['author'] = 'Natalie Weizenbaum';
     await d.dir(appPath, [
       d.pubspec(pkg),

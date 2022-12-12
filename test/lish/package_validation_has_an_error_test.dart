@@ -15,7 +15,7 @@ void main() {
         'name': 'test_pkg',
         'homepage': 'https://pub.dev',
         'version': '1.0.0',
-        'environment': {'sdk': '>=0.1.2 <0.2.0'}
+        'environment': {'sdk': defaultSdkConstraint}
       }),
     ]).create();
 
