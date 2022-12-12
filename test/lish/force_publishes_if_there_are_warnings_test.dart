@@ -15,8 +15,8 @@ import 'utils.dart';
 void main() {
   test('--force publishes if there are warnings', () async {
     await d.validPackage.create();
-    var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': defaultSdkConstraint});
+    var pkg = packageMap(
+        'test_pkg', '1.0.0', null, null, {'sdk': defaultSdkConstraint});
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
