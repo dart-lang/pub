@@ -84,6 +84,7 @@ Descriptor rawPubspec(Map<String, Object> contents) =>
 Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
   var map = <String, Object>{
     'name': 'myapp',
+    ...?extras,
   };
   if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);

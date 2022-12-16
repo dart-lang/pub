@@ -114,7 +114,7 @@ void main() {
     await d.appDir(dependencies: {
       'foo': 'any'
     }, pubspec: {
-      'environment': {'sdk': '>=2.12.0 <3.0.0'}
+      'environment': {'sdk': '^2.12.0'}
     }).create();
     final server = await servePackages();
 
@@ -123,9 +123,8 @@ void main() {
       'environment': {'sdk': '>=2.10.0 <3.0.0'}
     });
     await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'},
       error: contains(
-        'The lower bound of ">=2.10.0 <3.0.0" does not opt into null safety.',
+        'The lower bound of ">=2.10.0 <3.0.0" does not enable null safety.',
       ),
     );
   });
