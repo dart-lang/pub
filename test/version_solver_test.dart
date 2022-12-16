@@ -984,28 +984,28 @@ void dartSdkConstraint() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '0.0.0'}
+        'environment': {'sdk': '2.12.0'}
       })
     ]).create();
 
     await expectResolves(error: equalsIgnoringWhitespace('''
       The current Dart SDK version is 3.1.2+3.
 
-      Because myapp requires SDK version 0.0.0, version solving failed.
+      Because myapp requires SDK version 2.12.0, version solving failed.
     '''));
   });
 
   test('dependency does not match SDK', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', pubspec: {
-      'environment': {'sdk': '0.0.0'}
+      'environment': {'sdk': '2.12.0'}
     });
 
     await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       The current Dart SDK version is 3.1.2+3.
 
-      Because myapp depends on foo any which requires SDK version 0.0.0, version
+      Because myapp depends on foo any which requires SDK version 2.12.0, version
         solving failed.
     '''));
   });
@@ -1014,7 +1014,7 @@ void dartSdkConstraint() {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
       ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.0.0'}
+        'environment': {'sdk': '2.12.0'}
       });
 
     await d.appDir(dependencies: {'foo': 'any'}).create();
@@ -1022,7 +1022,7 @@ void dartSdkConstraint() {
       The current Dart SDK version is 3.1.2+3.
 
       Because every version of foo depends on bar any which requires SDK version
-        0.0.0, foo is forbidden.
+        2.12.0, foo is forbidden.
       So, because myapp depends on foo any, version solving failed.
     '''));
   });
