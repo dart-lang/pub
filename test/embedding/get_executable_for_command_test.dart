@@ -99,7 +99,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+        'environment': {'sdk': '^$_currentVersion'},
         'dependencies': {
           'foo': {
             'path': '../foo',
@@ -113,7 +113,7 @@ Future<void> main() async {
             contains(
                 'Error on line 1, column 9 of ${d.sandbox}${p.separator}foo${p.separator}pubspec.yaml: "name" field must be a valid Dart identifier.'),
             contains(
-                '{"name":"broken name","environment":{"sdk":">=0.1.2 <1.0.0"}}')),
+                '{"name":"broken name","environment":{"sdk":"$defaultSdkConstraint"}}')),
         issue: CommandResolutionIssue.pubGetFailed);
   });
 
@@ -121,7 +121,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+        'environment': {'sdk': '^$_currentVersion'},
         'dependencies': {'foo': '^1.0.0'}
       }),
       d.dir('bin', [
@@ -144,7 +144,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+        'environment': {'sdk': '^$_currentVersion'},
       }),
     ]).create();
     await testGetExecutable(
@@ -159,7 +159,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=$_currentVersion <3.0.0'},
+        'environment': {'sdk': '^$_currentVersion'},
       }),
       d.dir('bin', [
         d.file('foo.dart', 'main() {'),
@@ -180,7 +180,7 @@ Future<void> main() async {
   test('Finds files', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', pubspec: {
-      'environment': {'sdk': '>=$_currentVersion <3.0.0'}
+      'environment': {'sdk': '^$_currentVersion'}
     }, contents: [
       d.dir('bin', [
         d.file('foo.dart', 'main() {print(42);}'),
@@ -191,12 +191,12 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.0.0 <3.0.0'},
+        'environment': {'sdk': '^$_currentVersion'},
         'dependencies': {
           'foo': {
             'hosted': {
               'name': 'foo',
-              'url': getPubTestEnvironment()['PUB_HOSTED_URL'],
+              'url': globalServer.url,
             },
             'version': '^1.0.0',
           },

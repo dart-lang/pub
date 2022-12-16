@@ -100,7 +100,7 @@ class SdkCause extends IncompatibilityCause {
     if (sdk.isDartSdk &&
         !LanguageVersion.fromSdkConstraint(constraint).supportsNullSafety &&
         sdk.version! >= Version(3, 0, 0).firstPreRelease) {
-      return 'The constraint $constraint does not support null-safety.';
+      return 'The lower bound of "$constraint" does not opt into null safety.';
     }
     // If the SDK is available, then installing it won't help
     if (sdk.isAvailable) {

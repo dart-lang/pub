@@ -38,7 +38,7 @@ void main() {
       d.dir('bin', [
         // The new binstub should contain an if
         d.file(binStubName('foo-script'),
-            contains('This file was created by pub v0.1.2+3.'))
+            contains('This file was created by pub v3.1.2+3.'))
       ])
     ]).validate();
   });

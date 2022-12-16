@@ -973,7 +973,7 @@ void dartSdkConstraint() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
     ]).create();
 
@@ -989,7 +989,7 @@ void dartSdkConstraint() {
     ]).create();
 
     await expectResolves(error: equalsIgnoringWhitespace('''
-      The current Dart SDK version is 0.1.2+3.
+      The current Dart SDK version is 3.1.2+3.
 
       Because myapp requires SDK version 0.0.0, version solving failed.
     '''));
@@ -1003,7 +1003,7 @@ void dartSdkConstraint() {
 
     await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      The current Dart SDK version is 0.1.2+3.
+      The current Dart SDK version is 3.1.2+3.
 
       Because myapp depends on foo any which requires SDK version 0.0.0, version
         solving failed.
@@ -1019,7 +1019,7 @@ void dartSdkConstraint() {
 
     await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      The current Dart SDK version is 0.1.2+3.
+      The current Dart SDK version is 3.1.2+3.
 
       Because every version of foo depends on bar any which requires SDK version
         0.0.0, foo is forbidden.
@@ -1030,10 +1030,10 @@ void dartSdkConstraint() {
   test('selects a dependency version that allows the SDK', () async {
     await servePackages()
       ..serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('foo', '2.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('foo', '3.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
@@ -1050,10 +1050,10 @@ void dartSdkConstraint() {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
       ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '2.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '3.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
@@ -1075,10 +1075,10 @@ void dartSdkConstraint() {
       ..serve('foo', '3.0.0', deps: {'bar': '3.0.0'})
       ..serve('foo', '4.0.0', deps: {'bar': '4.0.0'})
       ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '2.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '3.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
@@ -1112,7 +1112,7 @@ void sdkConstraint() {
     test('fails for a dependency', () async {
       final server = await servePackages();
       server.serve('foo', '1.0.0', pubspec: {
-        'environment': {'flutter': '0.0.0'}
+        'environment': {'flutter': 'any', 'sdk': defaultSdkConstraint}
       });
 
       await d.appDir(dependencies: {'foo': 'any'}).create();
@@ -1140,7 +1140,7 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
+          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
@@ -1208,7 +1208,7 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
+          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
@@ -1221,7 +1221,7 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '0.1.2+3', 'flutter': '>1.2.3'}
+          'environment': {'sdk': '3.1.2+3', 'flutter': '>1.2.3'}
         })
       ]).create();
 
@@ -1240,7 +1240,7 @@ void sdkConstraint() {
         d.pubspec({
           'name': 'myapp',
           'environment': {
-            'sdk': '>0.1.2+3', // pub will apply a default upper bound <2.0.0
+            'sdk': '>3.1.2+3',
             'flutter': '1.2.3',
           },
         }),
@@ -1249,9 +1249,9 @@ void sdkConstraint() {
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
           error: equalsIgnoringWhitespace('''
-            The current Dart SDK version is 0.1.2+3.
+            The current Dart SDK version is 3.1.2+3.
 
-            Because myapp requires SDK version >0.1.2+3 <2.0.0, version solving
+            Because myapp requires SDK version >3.1.2+3, version solving
             failed.
           '''));
     });
@@ -1259,13 +1259,13 @@ void sdkConstraint() {
     test('selects the latest dependency with a matching constraint', () async {
       await servePackages()
         ..serve('foo', '1.0.0', pubspec: {
-          'environment': {'flutter': '^0.0.0'}
+          'environment': {'flutter': '^0.0.0', 'sdk': defaultSdkConstraint}
         })
         ..serve('foo', '2.0.0', pubspec: {
-          'environment': {'flutter': '^1.0.0'}
+          'environment': {'flutter': '^1.0.0', 'sdk': defaultSdkConstraint}
         })
         ..serve('foo', '3.0.0', pubspec: {
-          'environment': {'flutter': '^2.0.0'}
+          'environment': {'flutter': '^2.0.0', 'sdk': defaultSdkConstraint}
         });
 
       await d.appDir(dependencies: {'foo': 'any'}).create();
@@ -2297,7 +2297,7 @@ void features() {
         await expectResolves(
             error:
                 'Package foo feature stuff requires SDK version 0.0.1 but the '
-                'current SDK is 0.1.2+3.');
+                'current SDK is 3.1.2+3.');
       });
 
       test("Flutter isn't available", () async {

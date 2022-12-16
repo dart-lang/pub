@@ -17,7 +17,7 @@ d.DirectoryDescriptor package(
     {String version = '1.0.0', Map? deps, String? sdk}) {
   return d.dir(appPath, [
     d.libPubspec('test_pkg', version,
-        sdk: sdk ?? '>=1.8.0 <=2.0.0', deps: deps),
+        sdk: sdk ?? defaultSdkConstraint, deps: deps),
     d.file('LICENSE', 'Eh, do what you want.'),
     d.file('README.md', "This package isn't real."),
     d.file('CHANGELOG.md', '# $version\nFirst version\n'),
@@ -60,33 +60,32 @@ Future<void> expectValidationError(String text,
 }
 
 Future<void> setUpDependency(dep,
-    {List<String> hostedVersions = const []}) async {
+    {String? sdk, List<String> hostedVersions = const []}) async {
   final server = await servePackages();
   for (final version in hostedVersions) {
     server.serve('foo', version);
   }
 
-  await package(deps: {'foo': dep}).create();
+  await package(deps: {'foo': dep}, sdk: sdk).create();
 }
 
 void main() {
   group('should consider a package valid if it', () {
     test('looks normal', () async {
       await package().create();
-      await expectValidation(environment: {'_PUB_TEST_SDK_VERSION': '1.18.0'});
+      await expectValidation();
     });
 
     test('has a ^ constraint with an appropriate SDK constraint', () async {
-      (await servePackages()).serve('foo', '1.2.3');
-      await package(deps: {'foo': '^1.2.3'}).create();
+      (await servePackages()).serve('foo', '1.2.3', sdk: '^1.8.3');
+      await package(deps: {'foo': '^1.2.3'}, sdk: '^1.8.3').create();
       await expectValidation(environment: {'_PUB_TEST_SDK_VERSION': '1.18.0'});
     });
 
     test('with a dependency on a pre-release while being one', () async {
       (await servePackages()).serve('foo', '1.2.3-dev');
       await package(version: '1.0.0-dev', deps: {'foo': '^1.2.3-dev'}).create();
-
-      await expectValidation(environment: {'_PUB_TEST_SDK_VERSION': '1.18.0'});
+      await expectValidation();
     });
 
     test('has a git path dependency with an appropriate SDK constraint',
@@ -175,7 +174,9 @@ void main() {
           await d.dir('foo', [
             d.libPubspec('foo', '1.2.3', sdk: 'any'),
           ]).create();
-          await setUpDependency({'path': path.join(d.sandbox, 'foo')},
+          await setUpDependency(
+              sdk: '^1.8.0',
+              {'path': path.join(d.sandbox, 'foo')},
               hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0']);
           await expectValidationError(
             '  foo: ^2.0.0',
@@ -184,12 +185,13 @@ void main() {
         });
 
         test(
-            'and should suggest the hosted prerelease version if '
-            "it's the only version available", () async {
+            "and should suggest the hosted prerelease version if it's the only version available",
+            () async {
           await d.dir('foo', [
             d.libPubspec('foo', '1.2.3', sdk: 'any'),
           ]).create();
           await setUpDependency(
+            sdk: '^1.8.0',
             {'path': path.join(d.sandbox, 'foo')},
             hostedVersions: ['3.0.0-pre', '2.0.0-pre'],
           );
@@ -199,13 +201,13 @@ void main() {
           );
         });
 
-        test(
-            'and should suggest a tighter constraint if primary is '
-            'pre-1.0.0', () async {
+        test('and should suggest a tighter constraint if primary is pre-1.0.0',
+            () async {
           await d.dir('foo', [
             d.libPubspec('foo', '1.2.3', sdk: 'any'),
           ]).create();
           await setUpDependency(
+            sdk: '^1.8.0',
             {'path': path.join(d.sandbox, 'foo')},
             hostedVersions: ['0.0.1', '0.0.2'],
           );
@@ -221,7 +223,7 @@ void main() {
           await d.dir('foo', [
             d.libPubspec('foo', '1.2.3', sdk: 'any'),
           ]).create();
-          await setUpDependency({
+          await setUpDependency(sdk: '^1.8.0', {
             'path': path.join(d.sandbox, 'foo'),
             'version': '>=1.0.0 <2.0.0'
           });
@@ -238,6 +240,7 @@ void main() {
             d.libPubspec('foo', '0.2.3', sdk: '^1.8.0'),
           ]).create();
           await setUpDependency(
+              sdk: '^1.8.0',
               {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'});
           await expectValidationError(
             '  foo: 0.2.3',
@@ -249,9 +252,8 @@ void main() {
 
     group('has an unconstrained dependency', () {
       group('with a lockfile', () {
-        test(
-            'and it should suggest a constraint based on the locked '
-            'version', () async {
+        test('and it should suggest a constraint based on the locked version',
+            () async {
           (await servePackages()).serve('foo', '1.2.3');
           await d.dir(appPath, [
             d.libPubspec('test_pkg', '1.0.0', deps: {'foo': 'any'}),
@@ -261,8 +263,8 @@ void main() {
         });
 
         test(
-            'and it should suggest a concrete constraint if the locked '
-            'version is pre-1.0.0', () async {
+            'and it should suggest a concrete constraint if the locked version is pre-1.0.0',
+            () async {
           (await servePackages()).serve('foo', '0.1.2');
 
           await d.dir(appPath, [
@@ -286,7 +288,7 @@ void main() {
     });
 
     test('with a dependency on a pre-release without being one', () async {
-      (await servePackages()).serve('foo', '1.2.3-dev');
+      (await servePackages()).serve('foo', '1.2.3-dev', sdk: '^1.8.0');
 
       await d.dir(appPath, [
         d.libPubspec(
@@ -394,7 +396,7 @@ void main() {
 
     group('has a ^ dependency', () {
       test('with a too-broad SDK constraint', () async {
-        (await servePackages()).serve('foo', '1.2.3');
+        (await servePackages()).serve('foo', '1.2.3', sdk: '^1.4.0');
         await d.dir(appPath, [
           d.libPubspec('test_pkg', '1.0.0',
               deps: {'foo': '^1.2.3'}, sdk: '>=1.5.0 <2.0.0')
@@ -412,14 +414,18 @@ void main() {
         // Ensure we don't report anything from the real pub.dev.
         await setUpDependency({});
         await d.git('foo', [
-          d.dir('subdir', [d.libPubspec('foo', '1.0.0')]),
+          d.dir('subdir', [
+            d.libPubspec('foo', '1.0.0', extras: {'dependencies': {}})
+          ]),
         ]).create();
         await d.dir(appPath, [
-          d.libPubspec('integration_pkg', '1.0.0', deps: {
-            'foo': {
-              'git': {'url': d.path('foo'), 'path': 'subdir'}
-            }
-          })
+          d.libPubspec('integration_pkg', '1.0.0',
+              deps: {
+                'foo': {
+                  'git': {'url': d.path('foo'), 'path': 'subdir'}
+                },
+              },
+              sdk: '>=1.0.0 <4.0.0')
         ]).create();
 
         await expectValidation(
@@ -516,18 +522,6 @@ void main() {
         'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
         '_PUB_TEST_SDK_VERSION': '2.0.1-dev.51.0',
       });
-    });
-
-    test('depends on a Fuchsia package with no SDK constraint', () async {
-      await fuschiaPackage('foo').create();
-      await package(sdk: '>=0.0.0 <1.0.0', deps: {
-        'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
-      }).create();
-
-      await expectValidationError(
-        'sdk: "^2.0.0"',
-        environment: {'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia')},
-      );
     });
   });
 }

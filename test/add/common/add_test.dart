@@ -87,7 +87,7 @@ void main() {
           dev_dependencies:
 
           environment:
-            sdk: '>=0.1.2 <1.0.0'
+            sdk: $defaultSdkConstraint
         ''')
       ]).create();
 
@@ -139,7 +139,7 @@ void main() {
         d.file('pubspec.yaml', '''
 name: myapp
 environment:
-  "sdk": ">=0.1.2 <1.0.0"
+  "sdk": "$defaultSdkConstraint"
 ''')
       ]).create();
 
@@ -164,7 +164,7 @@ environment:
 
       await d.dir(appPath, [
         d.file('pubspec.yaml',
-            '{"name":"myapp", "environment": {"sdk": ">=0.1.2 <1.0.0"}}')
+            '{"name":"myapp", "environment": {"sdk": "$defaultSdkConstraint"}}')
       ]).create();
 
       await pubAdd(args: ['foo:1.2.3']);
@@ -247,7 +247,7 @@ dependencies:
 dev_dependencies:
   foo: 1.2.2
 environment:
-  sdk: '>=0.1.2 <1.0.0'
+  sdk: '$defaultSdkConstraint'
 ''')
       ]).create();
 
@@ -922,7 +922,7 @@ environment:
         name: myapp
         dependencies:
         environment:
-          sdk: '>=0.1.2 <1.0.0'
+          sdk: '$defaultSdkConstraint'
 '''),
     ]).create();
 
@@ -945,7 +945,7 @@ environment:
             foo: 1.0.0 # comment C
           # comment D
         environment:
-          sdk: '>=0.1.2 <1.0.0'
+          sdk: '$defaultSdkConstraint'
     '''),
     ]).create();
 

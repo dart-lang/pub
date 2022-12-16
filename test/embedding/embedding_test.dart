@@ -90,12 +90,7 @@ Future<void> main() async {
   testWithGolden('run works, though hidden', (ctx) async {
     await servePackages();
     await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'environment': {
-          'sdk': '0.1.2+3',
-        },
-      }),
+      d.appPubspec(),
       d.dir('bin', [
         d.file('main.dart', '''
 import 'dart:io';
@@ -165,7 +160,7 @@ main() {
     await d.dir('dep', [
       d.pubspec({
         'name': 'dep',
-        'environment': {'sdk': '>=0.0.0 <3.0.0'}
+        'environment': {'sdk': '^3.0.0'}
       })
     ]).create();
     final app = d.dir(appPath, [
@@ -231,7 +226,7 @@ main() {
     await servePackages();
     final buffer = StringBuffer();
     await runEmbeddingToBuffer(['--verbose', 'pub', 'logout'], buffer);
-    expect(buffer.toString(), contains('FINE: Pub 0.1.2+3'));
+    expect(buffer.toString(), contains('FINE: Pub 3.1.2+3'));
   });
 
   testWithGolden('--help', (context) async {

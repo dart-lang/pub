@@ -125,7 +125,7 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'},
       error: contains(
-        'The constraint >=2.10.0 <3.0.0 does not support null-safety.',
+        'The lower bound of ">=2.10.0 <3.0.0" does not opt into null safety.',
       ),
     );
   });

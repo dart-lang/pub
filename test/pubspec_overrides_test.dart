@@ -35,12 +35,12 @@ void main() {
           d.packageConfigEntry(
             name: 'lib',
             version: '2.0.0',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ])
       ]).validate();

@@ -53,7 +53,7 @@ $ pub get bar -C 'myapp/example2'
 Resolving dependencies in myapp/example2...
 [STDERR] Error on line 1, column 9 of myapp/pubspec.yaml: "name" field doesn't match expected name "myapp".
 [STDERR]   ╷
-[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dev","description":"A package, I guess.","environment":{"sdk":">=0.1.2 <=0.2.0"}, dependencies: { foo: ^1.0.0}}
+[STDERR] 1 │ {"name":"test_pkg","version":"1.0.0","homepage":"http://pub.dev","description":"A package, I guess.","environment":{"sdk":">=3.1.2 <=3.2.0"}, dependencies: { foo: ^1.0.0}}
 [STDERR]   │         ^^^^^^^^^^
 [STDERR]   ╵
 [EXIT CODE] 65
@@ -86,8 +86,11 @@ No dependencies changed in myapp.
 ## Section 10
 $ pub run -C myapp 'bin/app.dart'
 Building package executable...
-Built test_pkg:app.
-Hi
+[STDERR] Failed to build test_pkg:app:
+[STDERR] myapp/bin/app.dart:1:1: Error: The specified language version is too high. The highest supported language version is 3.0.
+[STDERR] main() => print('Hi');
+[STDERR] ^
+[EXIT CODE] 1
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -108,15 +111,9 @@ Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 ├── lib
 │   └── test_pkg.dart (<1 KB)
 └── pubspec.yaml (<1 KB)
-[STDERR] Package validation found the following error:
-[STDERR] * Older versions of pub don't support ^ version constraints.
-[STDERR]   Make sure your SDK constraint excludes old versions:
-[STDERR]   
-[STDERR]   environment:
-[STDERR]     sdk: "^1.8.0"
-[STDERR] Sorry, your package is missing a requirement and can't be published yet.
-[STDERR] For more information, see: https://dart.dev/tools/pub/cmd/pub-lish.
-[EXIT CODE] 65
+The server may enforce additional checks.
+[STDERR] 
+[STDERR] Package has 0 warnings.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -132,7 +129,7 @@ $ pub uploader -C myapp add sigurdm@google.com
 
 ## Section 13
 $ pub deps -C myapp
-Dart SDK 0.1.2+3
+Dart SDK 3.1.2+3
 test_pkg 1.0.0
 └── foo 1.0.0
 

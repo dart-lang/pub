@@ -51,7 +51,7 @@ void main() {
       d.file('pubspec.yaml', '''
 name: foo
 environment:
-  sdk: ^0.1.2
+  sdk: '$defaultSdkConstraint'
 '''),
     ]).create();
 

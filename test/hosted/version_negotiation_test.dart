@@ -49,7 +49,7 @@ void main() {
       expect(
           pub.stderr,
           emitsLines(
-              'Pub 0.1.2+3 is incompatible with the current version of localhost.\n'
+              'Pub 3.1.2+3 is incompatible with the current version of localhost.\n'
               'Upgrade pub to the latest version and try again.'));
     });
   });
