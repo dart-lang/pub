@@ -193,59 +193,44 @@ Future<void> main() async {
     ]).create();
 
     await servePackages()
-      ..serve('foo', '1.0.0', deps: {
-        'bar': '^1.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-      })
-      ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-      })
-      ..serve('foo', '2.0.0-nullsafety.0', deps: {
-        'bar': '^2.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-      })
-      ..serve('foo', '2.0.0', deps: {
-        'bar': '^1.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-      })
-      ..serve('bar', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.13.0 < 3.0.0'}
-      })
-      ..serve('file_opts_out', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      }, contents: [
+      ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'}, sdk: '>=2.9.0 < 4.0.0')
+      ..serve('bar', '1.0.0', sdk: '>=2.9.0 < 4.0.0')
+      ..serve(
+        'foo',
+        '2.0.0-nullsafety.0',
+        deps: {'bar': '^2.0.0'},
+      )
+      ..serve(
+        'foo',
+        '2.0.0',
+        deps: {'bar': '^1.0.0'},
+      )
+      ..serve(
+        'bar',
+        '2.0.0',
+      )
+      ..serve('file_opts_out', '1.0.0', contents: [
         d.dir('lib', [d.file('main.dart', '// @dart = 2.9\n')])
       ])
-      ..serve('file_opts_out', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      })
-      ..serve('fails_analysis', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      }, contents: [
+      ..serve('file_opts_out', '2.0.0')
+      ..serve('fails_analysis', '1.0.0', contents: [
         d.dir('lib', [d.file('main.dart', 'syntax error\n')])
       ])
-      ..serve('fails_analysis', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      })
-      ..serve('file_in_dependency_opts_out', '1.0.0', deps: {
-        'file_opts_out': '^1.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      })
-      ..serve('file_in_dependency_opts_out', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      })
-      ..serve('fails_analysis_in_dependency', '1.0.0', deps: {
-        'fails_analysis': '^1.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      })
-      ..serve('fails_analysis_in_dependency', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
-      });
+      ..serve('fails_analysis', '2.0.0')
+      ..serve(
+        'file_in_dependency_opts_out',
+        '1.0.0',
+        deps: {'file_opts_out': '^1.0.0'},
+        sdk: '^2.12.0',
+      )
+      ..serve('file_in_dependency_opts_out', '2.0.0', sdk: '^2.12.0')
+      ..serve(
+        'fails_analysis_in_dependency',
+        '1.0.0',
+        deps: {'fails_analysis': '^1.0.0'},
+        sdk: '^2.12.0',
+      )
+      ..serve('fails_analysis_in_dependency', '2.0.0', sdk: '^2.12.0');
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
 
     await ctx.runOutdatedTests(environment: {
@@ -255,22 +240,20 @@ Future<void> main() async {
 
   testWithGolden('null-safety no resolution', (ctx) async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-      })
-      ..serve('foo', '2.0.0-nullsafety.0', deps: {
-        'bar': '^1.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-      })
+      ..serve('foo', '1.0.0', sdk: '>=2.9.0 < 4.0.0')
+      ..serve(
+        'foo',
+        '2.0.0-nullsafety.0',
+        deps: {'bar': '^1.0.0'},
+      )
       ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
+        'environment': {'sdk': '>=2.9.0 < 4.0.0'}
       })
-      ..serve('bar', '2.0.0-nullsafety.0', deps: {
-        'foo': '^1.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-      });
+      ..serve(
+        'bar',
+        '2.0.0-nullsafety.0',
+        deps: {'foo': '^1.0.0'},
+      );
 
     await d.dir(appPath, [
       d.pubspec({
@@ -279,37 +262,22 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
-        },
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
+        }
       }),
     ]).create();
 
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+    await pubGet();
 
-    await ctx.runOutdatedTests(environment: {
-      '_PUB_TEST_SDK_VERSION': '2.13.0',
-    });
+    await ctx.runOutdatedTests();
   });
 
   testWithGolden('null-safety already migrated', (ctx) async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-      })
-      ..serve('foo', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-      })
-      ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-      })
-      ..serve('bar', '2.0.0', deps: {
-        'devTransitive': '^1.0.0'
-      }, pubspec: {
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'}
-      })
-      ..serve('devTransitive', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.9.0 < 3.0.0'}
-      });
+      ..serve('foo', '1.0.0', sdk: '>=2.9.0 < 4.0.0')
+      ..serve('foo', '2.0.0')
+      ..serve('bar', '1.0.0', sdk: '>=2.9.0 < 4.0.0')
+      ..serve('bar', '2.0.0', deps: {'devTransitive': '^1.0.0'})
+      ..serve('devTransitive', '1.0.0', sdk: '>=2.9.0 < 4.0.0');
 
     await d.dir(appPath, [
       d.pubspec({
@@ -321,15 +289,12 @@ Future<void> main() async {
         'dev_dependencies': {
           'bar': '^2.0.0',
         },
-        'environment': {'sdk': '>=2.12.0 < 3.0.0'},
       }),
     ]).create();
 
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.13.0'});
+    await pubGet();
 
-    await ctx.runOutdatedTests(environment: {
-      '_PUB_TEST_SDK_VERSION': '2.13.0',
-    });
+    await ctx.runOutdatedTests();
   });
 
   testWithGolden('overridden dependencies', (ctx) async {

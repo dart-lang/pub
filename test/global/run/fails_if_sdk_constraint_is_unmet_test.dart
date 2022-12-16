@@ -35,69 +35,64 @@ void main() {
 
     await runPub(
         args: ['global', 'run', 'foo:script'],
-        error: contains("foo 1.0.0 doesn't support Dart 0.1.2+3."),
+        error: contains("foo 1.0.0 doesn't support Dart 3.1.2+3."),
         exitCode: exit_codes.DATA);
   });
 
   test('fails if SDK is downgraded below the constraints', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'environment': {
-        'sdk': '>=2.0.0 <3.0.0',
-      },
-    }, contents: [
+    server.serve('foo', '1.0.0', sdk: '^3.0.1', contents: [
       d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")])
     ]);
 
+    await runPub(args: ['global', 'activate', 'foo']);
+
     await runPub(
-      environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-      args: ['global', 'activate', 'foo'],
+      args: ['global', 'run', 'foo:script'],
+      output: contains('123-OK'),
     );
 
     await runPub(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        args: ['global', 'run', 'foo:script'],
-        output: contains('123-OK'));
-
-    await runPub(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.2.3'},
-        args: ['global', 'run', 'foo:script'],
-        error: contains("foo 1.0.0 doesn't support Dart 1.2.3."),
-        exitCode: exit_codes.DATA);
+      environment: {
+        // Not compatible with [defaultSdkConstraint].
+        '_PUB_TEST_SDK_VERSION': '3.0.0'
+      },
+      args: ['global', 'run', 'foo:script'],
+      error: contains("foo 1.0.0 doesn't support Dart 3.0.0."),
+      exitCode: exit_codes.DATA,
+    );
   });
 
   test('fails if SDK is downgraded below dependency SDK constraints', () async {
     await servePackages()
-      ..serve('foo', '1.0.0', deps: {
-        'bar': '^1.0.0',
-      }, pubspec: {
-        'environment': {
-          'sdk': '>=2.0.0 <3.0.0',
-        },
-      }, contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")])
-      ])
+      ..serve('foo', '1.0.0',
+          deps: {
+            'bar': '^1.0.0',
+          },
+          sdk: '^3.0.0',
+          contents: [
+            d.dir('bin',
+                [d.file('script.dart', "main(args) => print('123-OK');")])
+          ])
       ..serve('bar', '1.0.0', pubspec: {
         'environment': {
-          'sdk': '>=2.2.0 <3.0.0',
+          'sdk': '^3.0.1',
         },
       });
 
+    await runPub(args: ['global', 'activate', 'foo']);
+
     await runPub(
-      environment: {'_PUB_TEST_SDK_VERSION': '2.2.0'},
-      args: ['global', 'activate', 'foo'],
+      args: ['global', 'run', 'foo:script'],
+      output: contains('123-OK'),
     );
 
     await runPub(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.2.0'},
-        args: ['global', 'run', 'foo:script'],
-        output: contains('123-OK'));
-
-    await runPub(
-        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
-        args: ['global', 'run', 'foo:script'],
-        error: contains(
-            "foo as globally activated doesn't support Dart 2.0.0, try: dart pub global activate foo"),
-        exitCode: exit_codes.DATA);
+      environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'},
+      args: ['global', 'run', 'foo:script'],
+      error: contains(
+          "foo as globally activated doesn't support Dart 3.0.0, try: dart pub global activate foo"),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

@@ -414,7 +414,10 @@ String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
-const String testVersion = '0.1.2+3';
+const String testVersion = '3.1.2+3';
+
+/// This constraint is compatible with [testVersion].
+const String defaultSdkConstraint = '^3.0.2';
 
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {

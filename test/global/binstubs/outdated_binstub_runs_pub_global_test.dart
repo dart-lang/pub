@@ -52,12 +52,12 @@ void main() {
       '--executable',
       'foo-another-script',
     ], environment: {
-      '_PUB_TEST_SDK_VERSION': '0.0.1'
+      '_PUB_TEST_SDK_VERSION': '3.0.0'
     });
 
-    expect(binStub('foo-script'), contains('script.dart-0.0.1.snapshot'));
+    expect(binStub('foo-script'), contains('script.dart-3.0.0.snapshot'));
 
-    expect(binStub('foo-script2'), contains('script.dart-0.0.1.snapshot'));
+    expect(binStub('foo-script2'), contains('script.dart-3.0.0.snapshot'));
 
     expect(
       binStub('foo-script-not-installed'),
@@ -66,7 +66,7 @@ void main() {
 
     expect(
       binStub('foo-another-script'),
-      contains('another-script.dart-0.0.1.snapshot'),
+      contains('another-script.dart-3.0.0.snapshot'),
     );
 
     expect(
@@ -81,7 +81,7 @@ void main() {
         d.dir('foo', [
           d.dir(
             'bin',
-            [d.outOfDateSnapshot('script.dart-0.0.1.snapshot')],
+            [d.outOfDateSnapshot('script.dart-3.0.0.snapshot')],
           )
         ])
       ])
@@ -96,12 +96,12 @@ void main() {
 
     expect(
       binStub('foo-script'),
-      contains('script.dart-0.1.2+3.snapshot'),
+      contains('script.dart-3.1.2+3.snapshot'),
     );
 
     expect(
       binStub('foo-script2'),
-      contains('script.dart-0.1.2+3.snapshot'),
+      contains('script.dart-3.1.2+3.snapshot'),
     );
 
     expect(
@@ -112,7 +112,7 @@ void main() {
 
     expect(
       binStub('foo-another-script'),
-      contains('another-script.dart-0.0.1.snapshot'),
+      contains('another-script.dart-3.0.0.snapshot'),
       reason:
           'global run recompile should not refresh binstubs for other scripts',
     );

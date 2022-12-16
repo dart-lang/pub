@@ -137,13 +137,7 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
-
-direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
-foo           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+All your dependencies declare support for null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -153,13 +147,7 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
-
-direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
-foo           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+All your dependencies declare support for null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -169,61 +157,14 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
-
-direct dependencies:
-bar           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
-foo           ✗1.0.0   ✗1.0.0      ✗1.0.0      ✗2.0.0  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+All your dependencies declare support for null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 10
 $ pub outdated --json --mode=null-safety
 {
-  "packages": [
-    {
-      "package": "bar",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "foo",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": false
-      }
-    }
-  ]
+  "packages": []
 }
 
 -------------------------------- END OF OUTPUT ---------------------------------

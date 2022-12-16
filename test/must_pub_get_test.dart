@@ -260,7 +260,7 @@ void main() {
         await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.2.3+4'});
       });
 
-      _requiresPubGet("Dart 0.1.2+3 is incompatible with your dependencies' "
+      _requiresPubGet("Dart 3.1.2+3 is incompatible with your dependencies' "
           'SDK constraints. Please run "dart pub get" again.');
     });
 
@@ -270,7 +270,10 @@ void main() {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
       server.serve('foo', '3.0.0', pubspec: {
-        'environment': {'flutter': '>=1.0.0 <2.0.0'}
+        'environment': {
+          'flutter': '>=1.0.0 <2.0.0',
+          'sdk': defaultSdkConstraint
+        }
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
@@ -327,8 +330,8 @@ void main() {
             'bar',
             '1.0.0',
             deps: {'foo': '1.0.0'},
-            // Creates language version requirement 0.0
-            sdk: '>= 0.0.1 <=0.9.9', // tests runs with '0.1.2+3'
+            // Creates language version requirement 2.99
+            sdk: '>= 2.99.0 <=4.0.0', // tests runs with '3.1.2+3'
           ),
         ]).create();
 
@@ -346,8 +349,8 @@ void main() {
             'bar',
             '1.0.0',
             deps: {'foo': '1.0.0'},
-            // Creates language version requirement 0.1
-            sdk: '>= 0.1.0 <=0.9.9', // tests runs with '0.1.2+3'
+            // Creates language version requirement 2.100
+            sdk: '>= 2.100.0 <=4.0.0', // tests runs with '3.1.2+3'
           ),
         ]).create();
       });
@@ -452,7 +455,10 @@ void main() {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
       server.serve('foo', '3.0.0', pubspec: {
-        'environment': {'flutter': '>=1.0.0 <2.0.0'}
+        'environment': {
+          'flutter': '>=1.0.0 <2.0.0',
+          'sdk': defaultSdkConstraint
+        }
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();

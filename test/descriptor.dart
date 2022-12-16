@@ -33,7 +33,7 @@ TarFileDescriptor tar(String name, [List<Descriptor>? contents]) =>
 
 /// Describes a package that passes all validation.
 DirectoryDescriptor get validPackage => dir(appPath, [
-      libPubspec('test_pkg', '1.0.0', sdk: '>=0.1.2 <=0.2.0'),
+      libPubspec('test_pkg', '1.0.0', sdk: '>=3.1.2 <=3.2.0'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
@@ -70,7 +70,7 @@ Descriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
         ...contents,
         // TODO: Copy-pasting this into all call-sites, or use d.libPubspec
         'environment': {
-          'sdk': '>=0.1.2 <1.0.0',
+          'sdk': defaultSdkConstraint,
           ...(contents['environment'] ?? {}) as Map,
         },
       }),
@@ -84,9 +84,6 @@ Descriptor rawPubspec(Map<String, Object> contents) =>
 Descriptor appPubspec([Map? dependencies]) {
   var map = <String, Object>{
     'name': 'myapp',
-    'environment': {
-      'sdk': '>=0.1.2 <1.0.0',
-    },
   };
   if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);
@@ -109,8 +106,6 @@ Descriptor libPubspec(
   var map = packageMap(name, version, deps, devDeps);
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
-  } else {
-    map['environment'] = {'sdk': '>=0.1.2 <1.0.0'};
   }
   return pubspec({...map, ...extras});
 }
@@ -292,13 +287,13 @@ DirectoryDescriptor appDir([Map? dependencies]) =>
 /// that matches the `rootUri` of that package.
 Descriptor packageConfigFile(
   List<PackageConfigEntry> packages, {
-  String generatorVersion = '0.1.2+3',
+  String generatorVersion = '3.1.2+3',
 }) =>
     PackageConfigFileDescriptor(packages, generatorVersion);
 
 Descriptor appPackageConfigFile(
   List<PackageConfigEntry> packages, {
-  String generatorVersion = '0.1.2+3',
+  String generatorVersion = '3.1.2+3',
 }) =>
     dir(
       appPath,
