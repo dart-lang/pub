@@ -199,24 +199,33 @@ Future<void> main() async {
         'foo',
         '2.0.0-nullsafety.0',
         deps: {'bar': '^2.0.0'},
+        sdk: '^2.12.0',
       )
       ..serve(
         'foo',
         '2.0.0',
         deps: {'bar': '^1.0.0'},
+        sdk: '^2.12.0',
       )
+      ..serve('bar', '2.0.0', sdk: '^2.12.0')
       ..serve(
-        'bar',
-        '2.0.0',
+        'file_opts_out',
+        '1.0.0',
+        contents: [
+          d.dir('lib', [d.file('main.dart', '// @dart = 2.9\n')])
+        ],
+        sdk: '^2.12.0',
       )
-      ..serve('file_opts_out', '1.0.0', contents: [
-        d.dir('lib', [d.file('main.dart', '// @dart = 2.9\n')])
-      ])
-      ..serve('file_opts_out', '2.0.0')
-      ..serve('fails_analysis', '1.0.0', contents: [
-        d.dir('lib', [d.file('main.dart', 'syntax error\n')])
-      ])
-      ..serve('fails_analysis', '2.0.0')
+      ..serve('file_opts_out', '2.0.0', sdk: '>=2.9.0 < 4.0.0')
+      ..serve(
+        'fails_analysis',
+        '1.0.0',
+        contents: [
+          d.dir('lib', [d.file('main.dart', 'syntax error\n')])
+        ],
+        sdk: '^2.12.0',
+      )
+      ..serve('fails_analysis', '2.0.0', sdk: '^2.12.0')
       ..serve(
         'file_in_dependency_opts_out',
         '1.0.0',
