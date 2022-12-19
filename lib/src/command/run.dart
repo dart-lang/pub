@@ -40,6 +40,11 @@ class RunCommand extends PubCommand {
             'Runs the executable in a VM with the given experiments enabled.\n'
             '(Will disable snapshotting, resulting in slower startup).',
         valueHelp: 'experiment');
+    argParser.addFlag(
+      'sound-null-safety',
+      help: 'Override the default null safety execution mode.',
+      hide: true,
+    );
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
@@ -54,6 +59,9 @@ class RunCommand extends PubCommand {
     }
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
+    }
+    if (argResults.wasParsed('sound-null-safety')) {
+      dataError('The --(no-)sound-null-safety flag is no longer supported.');
     }
 
     var package = entrypoint.root.name;
