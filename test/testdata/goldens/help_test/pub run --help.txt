@@ -11,8 +11,6 @@ Usage: pub run <executable> [arguments...]
                                         given experiments enabled.
                                         (Will disable snapshotting, resulting in
                                         slower startup).
-    --[no-]sound-null-safety            Override the default null safety
-                                        execution mode.
 -C, --directory=<dir>                   Run this in the directory<dir>.
 
 Run "pub help" to see global options.
