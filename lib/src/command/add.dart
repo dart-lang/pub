@@ -10,6 +10,7 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../git.dart';
@@ -40,7 +41,7 @@ class AddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
-  String get description => r'''
+  String get description => '''
 Add dependencies to `pubspec.yaml`.
 
 Invoking `dart pub add foo bar` will add `foo` and `bar` to `pubspec.yaml`
@@ -69,7 +70,7 @@ For example:
   * Add a git dependency:
     `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
-    `$topLevelProgram pub add \
+    `$topLevelProgram pub add \\
       'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
 
   @override
