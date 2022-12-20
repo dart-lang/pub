@@ -62,7 +62,7 @@ void main() {
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'}
       })
     ]).create();
@@ -73,7 +73,7 @@ void main() {
   testWithGolden('lists executables only from immediate dependencies',
       (ctx) async {
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'}
       })
     ]).create();
@@ -95,7 +95,7 @@ void main() {
 
   testWithGolden('applies formatting before printing executables', (ctx) async {
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'},
         'bar': {'path': '../bar'}
       }),

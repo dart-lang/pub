@@ -75,7 +75,7 @@ void main() {
       ]).create();
 
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {'path': '../deps/foo'},
           'bar': {'path': '../deps/bar'}
         })
@@ -87,7 +87,7 @@ void main() {
 
     test('does not allow a dependency on itself', () async {
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'myapp': {'path': '.'}
         })
       ]).create();

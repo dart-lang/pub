@@ -15,7 +15,7 @@ void main() {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(args: ['foo', '--path', '../foo']);
 
@@ -23,7 +23,7 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'path': '../foo'}
     }).validate();
   });
@@ -52,7 +52,7 @@ void main() {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['--directory', appPath, 'foo', '--path', 'foo'],
@@ -64,13 +64,13 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'path': '../foo'}
     }).validate();
   });
 
   test('fails if path does not exist', () async {
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo', '--path', '../foo'],
@@ -80,7 +80,7 @@ void main() {
             'version solving failed.'),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -92,11 +92,11 @@ void main() {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(args: ['foo:0.0.1', '--path', '../foo']);
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'path': '../foo', 'version': '0.0.1'}
     }).validate();
   });
@@ -107,7 +107,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo:2.0.0', '--path', '../foo'],
@@ -117,7 +117,7 @@ void main() {
             'version solving failed.'),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -162,7 +162,7 @@ void main() {
     await d
         .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: [
@@ -180,7 +180,7 @@ void main() {
       d.packageConfigEntry(name: 'bar', path: '../bar'),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'path': '../foo'},
       'bar': {'path': '../bar'},
     }).validate();

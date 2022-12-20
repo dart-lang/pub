@@ -17,7 +17,7 @@ void main() {
         [d.libDir('weirdname'), d.libPubspec('weirdname', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'weirdname': {'git': '../foo.git'}
       })
     ]).create();

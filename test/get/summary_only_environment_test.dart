@@ -10,7 +10,7 @@ import '../test_pub.dart';
 void main() {
   test('pub get with PUB_SUMMARY_ONLY will only print a summary', () async {
     (await servePackages()).serve('foo', '1.0.0');
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(
       output: 'Resolving dependencies...\nGot dependencies.',

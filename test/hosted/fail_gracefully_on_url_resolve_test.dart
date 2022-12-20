@@ -12,7 +12,7 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully if the url does not resolve', () async {
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': 'https://invalid-url.foo'}
           }

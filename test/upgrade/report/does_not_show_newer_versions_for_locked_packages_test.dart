@@ -20,12 +20,14 @@ void main() {
       ..serve('upgraded', '3.0.0-dev');
 
     // Constraint everything to the first version.
-    await d.appDir({'not_upgraded': '1.0.0', 'upgraded': '1.0.0'}).create();
+    await d.appDir(
+        dependencies: {'not_upgraded': '1.0.0', 'upgraded': '1.0.0'}).create();
 
     await pubGet();
 
     // Loosen the constraints.
-    await d.appDir({'not_upgraded': 'any', 'upgraded': 'any'}).create();
+    await d.appDir(
+        dependencies: {'not_upgraded': 'any', 'upgraded': 'any'}).create();
 
     // Only upgrade "upgraded".
     await pubUpgrade(args: ['upgraded'], output: RegExp(r'''

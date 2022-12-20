@@ -22,7 +22,7 @@ void main() {
       expect(Uri.parse(globalServer.url).path, isEmpty);
 
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': globalServer.url},
           },
@@ -40,7 +40,7 @@ void main() {
       server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': '${globalServer.url}/'},
           },
@@ -63,7 +63,7 @@ void main() {
       );
 
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': '${globalServer.url}//'},
           },
@@ -109,7 +109,7 @@ void main() {
       final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': testUrl},
           },
@@ -133,7 +133,7 @@ void main() {
       final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': testUrl},
           },

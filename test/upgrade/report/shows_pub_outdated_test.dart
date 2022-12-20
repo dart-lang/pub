@@ -28,7 +28,7 @@ void main() {
       ..serve('one_newer_stable', '1.0.1');
 
     // Constraint everything to the first version.
-    await d.appDir({
+    await d.appDir(dependencies: {
       'multiple_newer': '1.0.0',
       'multiple_newer_stable': '1.0.0',
       'multiple_newer_unstable': '1.0.0',
@@ -49,7 +49,7 @@ Try `dart pub outdated` for more information.$''', multiLine: true));
 Try `flutter pub outdated` for more information.$''', multiLine: true));
 
     // Upgrade `multiple_newer` to `1.0.1`.
-    await d.appDir({
+    await d.appDir(dependencies: {
       'multiple_newer': '1.0.1',
       'multiple_newer_stable': '1.0.0',
       'multiple_newer_unstable': '1.0.0',
@@ -64,7 +64,7 @@ Try `flutter pub outdated` for more information.$''', multiLine: true));
 Try `dart pub outdated` for more information.$''', multiLine: true));
 
     // Upgrade `multiple_newer` to `1.0.2-unstable.1`.
-    await d.appDir({
+    await d.appDir(dependencies: {
       'multiple_newer': '1.0.2-unstable.1',
       'multiple_newer_stable': '1.0.0',
       'multiple_newer_unstable': '1.0.0',
@@ -79,7 +79,7 @@ Try `dart pub outdated` for more information.$''', multiLine: true));
 Try `dart pub outdated` for more information.$''', multiLine: true));
 
     // Upgrade all except `one_newer_stable`.
-    await d.appDir({
+    await d.appDir(dependencies: {
       'multiple_newer': '1.0.2-unstable.2',
       'multiple_newer_stable': '1.0.2',
       'multiple_newer_unstable': '1.0.1-unstable.2',

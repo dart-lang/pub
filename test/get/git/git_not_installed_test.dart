@@ -19,7 +19,7 @@ exit 1
 ''', batch: '''
 echo "not git"
 ''');
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).create();
 
@@ -51,7 +51,7 @@ if "%1"=="--version" (
 
     await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).create();
 

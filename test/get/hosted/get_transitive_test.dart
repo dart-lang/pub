@@ -15,7 +15,7 @@ void main() {
       ..serve('bar', '2.0.4')
       ..serve('bar', '2.0.5');
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await pubGet();
 

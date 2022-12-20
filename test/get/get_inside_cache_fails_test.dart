@@ -12,7 +12,7 @@ void main() {
   test('`pub get` inside the cache fails gracefully', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet();
 

@@ -26,7 +26,7 @@ void main() {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'}
       }),
       d.dir('bin', [d.file('script.dart', _script)])
@@ -55,7 +55,7 @@ void main() {
     ]);
 
     await d.dir(appPath, [
-      d.appPubspec({'foo': 'any'})
+      d.appPubspec(dependencies: {'foo': 'any'})
     ]).create();
 
     await pubGet();

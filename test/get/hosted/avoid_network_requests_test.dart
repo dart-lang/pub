@@ -17,7 +17,7 @@ void main() {
       ..serve('bar', '1.1.0')
       ..serve('bar', '1.2.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Get once so it gets cached.
     await pubGet();
@@ -27,7 +27,7 @@ void main() {
     globalServer.requestedPaths.clear();
 
     // Add "bar" to the dependencies.
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
     // Run the solver again.
     await pubGet();

@@ -12,7 +12,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     // Get once so it gets cached.
     await pubGet();

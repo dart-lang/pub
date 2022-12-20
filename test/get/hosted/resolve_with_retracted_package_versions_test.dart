@@ -17,7 +17,7 @@ void main() {
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0')
       ..serve('bar', '1.1.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     server.retractPackageVersion('bar', '1.1.0');
     await pubGet();
@@ -33,7 +33,7 @@ void main() {
     final server = await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     server.retractPackageVersion('bar', '1.0.0');
     await pubGet(
@@ -52,7 +52,7 @@ void main() {
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0')
       ..serve('bar', '1.1.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
@@ -112,7 +112,7 @@ void main() {
     // Now serve only errors - to validate we are truly offline.
     server.serveErrors();
 
-    await d.appDir({'foo': '1.0.0', 'bar': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '^1.0.0'}).create();
 
     await pubUpgrade(args: ['--offline']);
 
@@ -163,7 +163,7 @@ void main() {
       ..serve('foo', '2.0.0')
       ..serve('foo', '3.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
 
     server.retractPackageVersion('foo', '2.0.0');

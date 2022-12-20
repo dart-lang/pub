@@ -56,7 +56,7 @@ main() async {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'}
       }),
       d.dir('bin', [

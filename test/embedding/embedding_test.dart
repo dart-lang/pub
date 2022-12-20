@@ -117,7 +117,7 @@ main() {
       (context) async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // TODO(sigurdm) This logs the entire verbose trace to a golden file.
     //
@@ -164,7 +164,7 @@ main() {
       })
     ]).create();
     final app = d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': '1.0.0',
         // The path dependency should not go to analytics.
         'dep': {'path': '../dep'}
@@ -241,7 +241,7 @@ main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serve('foo', '2.0.0');
-    await d.appDir({'foo': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
     await context.runEmbedding(
       ['pub', '--no-color', 'get'],
       environment: getPubTestEnvironment(),

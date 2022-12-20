@@ -18,7 +18,7 @@ void main() {
     server.serve('foo', '3.2.1');
     server.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
 
-    await d.appDir({'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'bar': '1.0.0'}).create();
     await pubGet();
 
     /// foo's package creator releases a newer version of foo, and we
@@ -30,7 +30,7 @@ void main() {
 
     await pubAdd(args: ['foo']);
 
-    await d.appDir({'foo': '^3.5.0', 'bar': '1.0.0'}).validate();
+    await d.appDir(dependencies: {'foo': '^3.5.0', 'bar': '1.0.0'}).validate();
     await d.cacheDir({'foo': '3.5.0', 'bar': '1.0.0'}).validate();
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '3.5.0'),
@@ -47,7 +47,7 @@ void main() {
     server.serve('foo', '3.2.1');
     server.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
 
-    await d.appDir({'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'bar': '1.0.0'}).create();
     await pubGet();
 
     server.serve('foo', '4.0.0');
@@ -55,7 +55,7 @@ void main() {
 
     await pubAdd(args: ['foo']);
 
-    await d.appDir({'foo': '^3.2.1', 'bar': '1.0.0'}).validate();
+    await d.appDir(dependencies: {'foo': '^3.2.1', 'bar': '1.0.0'}).validate();
     await d.cacheDir({'foo': '3.2.1', 'bar': '1.0.0'}).validate();
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '3.2.1'),
@@ -72,7 +72,7 @@ void main() {
     server.serve('foo', '3.2.1');
     server.serve('bar', '1.0.0', deps: {'foo': '^3.2.1'});
 
-    await d.appDir({'bar': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'bar': '^1.0.0'}).create();
     await pubGet();
 
     server.serve('foo', '5.0.0');
@@ -82,7 +82,7 @@ void main() {
 
     await pubAdd(args: ['foo']);
 
-    await d.appDir({'foo': '^4.0.0', 'bar': '^1.0.0'}).validate();
+    await d.appDir(dependencies: {'foo': '^4.0.0', 'bar': '^1.0.0'}).validate();
     await d.cacheDir({'foo': '4.0.0', 'bar': '1.5.0'}).validate();
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '4.0.0'),

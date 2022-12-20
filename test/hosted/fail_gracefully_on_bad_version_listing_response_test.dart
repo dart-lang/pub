@@ -29,7 +29,7 @@ void main() {
               }));
         }),
       );
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubCommand(command,
           error: allOf([
@@ -50,7 +50,7 @@ void main() {
             'notTheRight': {'response': 'type'}
           }));
     });
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await ctx.run(['get']);
   });
@@ -64,7 +64,7 @@ void main() {
             'notTheRight': {'response': 'type'}
           }));
     });
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await ctx.run(['get']);
   });
@@ -78,7 +78,7 @@ void main() {
             'notTheRight': {'response': 'type'}
           }));
     });
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await ctx.run(['get']);
   });
@@ -95,7 +95,7 @@ void main() {
             'notTheRight': {'response': 'type'}
           }));
     });
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await ctx.run(['get']);
   });
@@ -112,7 +112,7 @@ void main() {
             'notTheRight': {'response': 'type'}
           }));
     });
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     await ctx.run(['get']);
   });

@@ -19,7 +19,7 @@ void main() {
     server.serve('foo', '1.0.0');
     server.serve('foo', '2.0.0');
 
-    await appDir({'foo': '^2.0.0'}).create();
+    await appDir(dependencies: {'foo': '^2.0.0'}).create();
     // Do a `pub get` here to create a lock file in order to validate we later can
     // `pub get --offline` with packages installed by `preload`.
     await pubGet();

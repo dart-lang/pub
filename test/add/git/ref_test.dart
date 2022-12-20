@@ -20,7 +20,7 @@ void main() {
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(args: ['foo', '--git-url', '../foo.git', '--git-ref', 'old']);
 
@@ -33,7 +33,7 @@ void main() {
       ])
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': {'url': '../foo.git', 'ref': 'old'}
       }
@@ -51,7 +51,7 @@ void main() {
     await d.git('foo.git',
         [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo', '--git-url', '../foo.git', '--git-ref', 'old'],
@@ -59,7 +59,7 @@ void main() {
             'git parameters'),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),

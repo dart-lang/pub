@@ -20,7 +20,7 @@ void main() {
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -61,7 +61,7 @@ void main() {
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -107,7 +107,7 @@ void main() {
 
     test('package_config.json file is not created if pub fails', () async {
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 

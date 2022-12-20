@@ -15,7 +15,7 @@ void main() {
         ..serve('lib', '2.0.0');
 
       await d.dir(appPath, [
-        d.appPubspec({'lib': '1.0.0'}),
+        d.appPubspec(dependencies: {'lib': '1.0.0'}),
         d.dir('lib'),
         d.pubspecOverrides({
           'dependency_overrides': {'lib': '2.0.0'}

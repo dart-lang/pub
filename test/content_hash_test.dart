@@ -19,7 +19,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serveContentHashes = true;
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
@@ -36,7 +36,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
@@ -52,7 +52,7 @@ Future<void> main() async {
     server.serve('foo', '1.0.0');
     server.overrideArchiveSha256('foo', '1.0.0',
         'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet(
       exitCode: exit_codes.TEMP_FAIL,
       silent: contains('Attempt #2'),
@@ -69,7 +69,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = true;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     server.serve('foo', '1.0.0',
         contents: [file('new_file.txt', 'This file could be malicious.')]);
@@ -100,7 +100,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     server.serve('foo', '1.0.0',
         contents: [file('new_file.txt', 'This file could be malicious.')]);
@@ -130,7 +130,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
@@ -153,7 +153,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = true;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
         File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
@@ -176,7 +176,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serveContentHashes = false;
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     // Pretend we had no hash in the lockfile.
     final lockfile = YamlEditor(
@@ -201,7 +201,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serveContentHashes = true;
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     // Pretend we had no hash in the lockfile.
     final lockfile = YamlEditor(

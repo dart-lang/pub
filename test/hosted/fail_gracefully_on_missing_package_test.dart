@@ -13,7 +13,7 @@ void main() {
     test('fails gracefully if the package does not exist', () async {
       await servePackages();
 
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubCommand(command,
           error: allOf([
@@ -32,7 +32,7 @@ void main() {
       final server = await servePackages();
       server.serve('foo', '1.2.3', deps: {'bar': '^1.0.0'});
 
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubCommand(command,
           error: allOf(
