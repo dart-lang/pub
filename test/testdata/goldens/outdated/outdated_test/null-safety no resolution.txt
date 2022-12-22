@@ -125,6 +125,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "bar",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.0",
@@ -142,6 +143,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.0",

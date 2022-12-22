@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "builder",
+      "kind": "dev",
       "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
@@ -22,6 +23,7 @@ $ pub outdated --json
     },
     {
       "package": "dev_trans",
+      "kind": "transitive",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.0"
@@ -36,6 +38,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
@@ -52,6 +55,7 @@ $ pub outdated --json
     },
     {
       "package": "transitive",
+      "kind": "transitive",
       "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
@@ -68,6 +72,7 @@ $ pub outdated --json
     },
     {
       "package": "transitive2",
+      "kind": "transitive",
       "isDiscontinued": false,
       "current": null,
       "upgradable": null,
@@ -80,6 +85,7 @@ $ pub outdated --json
     },
     {
       "package": "transitive3",
+      "kind": "transitive",
       "isDiscontinued": false,
       "current": null,
       "upgradable": null,
@@ -312,6 +318,7 @@ $ pub outdated --json --mode=null-safety
   "packages": [
     {
       "package": "transitive2",
+      "kind": "transitive",
       "isDiscontinued": false,
       "current": null,
       "upgradable": null,
@@ -326,6 +333,7 @@ $ pub outdated --json --mode=null-safety
     },
     {
       "package": "transitive3",
+      "kind": "transitive",
       "isDiscontinued": false,
       "current": null,
       "upgradable": null,
@@ -349,6 +357,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
@@ -365,6 +374,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "transitive",
+      "kind": "transitive",
       "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
