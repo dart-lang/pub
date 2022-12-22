@@ -7,8 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:collection/collection.dart'
-    show IterableExtension, IterableNullableExtension;
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as path;
 
 import '../command.dart';
