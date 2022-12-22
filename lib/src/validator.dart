@@ -26,7 +26,6 @@ import 'validator/language_version.dart';
 import 'validator/leak_detection.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
-import 'validator/null_safety_mixed_mode.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/pubspec_typo.dart';
@@ -152,7 +151,6 @@ abstract class Validator {
       FlutterPluginFormatValidator(),
       LanguageVersionValidator(),
       RelativeVersionNumberingValidator(),
-      NullSafetyMixedModeValidator(),
       PubspecTypoValidator(),
       LeakDetectionValidator(),
       SizeValidator(),

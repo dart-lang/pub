@@ -39,63 +39,6 @@ Pubspec stripDependencyOverrides(Pubspec original) {
   );
 }
 
-Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
-    Pubspec original, SystemCache cache) async {
-  /// Get the first version of [package] opting in to null-safety.
-  Future<VersionConstraint> constrainToFirstWithNullSafety(
-      PackageRange packageRange) async {
-    final ref = packageRange.toRef();
-    final available = await cache.getVersions(ref);
-    if (available.isEmpty) {
-      return stripUpperBound(packageRange.constraint);
-    }
-
-    available.sort((x, y) => x.version.compareTo(y.version));
-
-    for (final p in available) {
-      final pubspec = await cache.describe(p);
-      if (pubspec.languageVersion.supportsNullSafety) {
-        return VersionRange(min: p.version, includeMin: true);
-      }
-    }
-    return stripUpperBound(packageRange.constraint);
-  }
-
-  Future<List<PackageRange>> allConstrainedToAtLeastNullSafety(
-    Map<String, PackageRange> constrained,
-  ) async {
-    final result = await Future.wait(constrained.keys.map((name) async {
-      final packageRange = constrained[name]!;
-      var unconstrainedRange = packageRange;
-
-      /// We only need to remove the upper bound if it is a hosted package.
-      if (packageRange.description is HostedDescription) {
-        unconstrainedRange = PackageRange(
-          packageRange.toRef(),
-          await constrainToFirstWithNullSafety(packageRange),
-        );
-      }
-      return unconstrainedRange;
-    }));
-
-    return result;
-  }
-
-  final constrainedLists = await Future.wait([
-    allConstrainedToAtLeastNullSafety(original.dependencies),
-    allConstrainedToAtLeastNullSafety(original.devDependencies),
-  ]);
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: constrainedLists[0],
-    devDependencies: constrainedLists[1],
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
-}
-
 /// Returns new pubspec with the same dependencies as [original] but with the
 /// upper bounds of the constraints removed.
 ///
