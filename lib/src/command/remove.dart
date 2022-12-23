@@ -20,9 +20,19 @@ class RemoveCommand extends PubCommand {
   @override
   String get name => 'remove';
   @override
-  String get description => 'Removes a dependency from the current package.';
+  String get description => '''
+Removes dependencies from `pubspec.yaml`.
+
+Invoking `dart pub remove foo bar` will remove `foo` and `bar` from either
+`dependencies` or `dev_dependencies` in `pubspec.yaml`.
+
+To remove a dependency override of a package prefix the package name with
+'override:'.
+''';
+
   @override
-  String get argumentsDescription => '<package>';
+  String get argumentsDescription =>
+      '[override:]<package1> [[override:]<package2>...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
@@ -98,13 +108,20 @@ class RemoveCommand extends PubCommand {
   }
 
   Pubspec _removePackagesFromPubspec(Pubspec original, Set<String> packages) {
+    final overrides = packages
+        .where((p) => p.startsWith('override:'))
+        .map((e) => e.substring('override:'.length));
+    final otherPackages = packages.where((p) => !p.startsWith('override:'));
+
     final originalDependencies = original.dependencies.values;
     final originalDevDependencies = original.devDependencies.values;
 
     final newDependencies = originalDependencies
-        .where((dependency) => !packages.contains(dependency.name));
+        .where((dependency) => !otherPackages.contains(dependency.name));
     final newDevDependencies = originalDevDependencies
-        .where((dependency) => !packages.contains(dependency.name));
+        .where((dependency) => !otherPackages.contains(dependency.name));
+    final newOverrides = original.dependencyOverrides.values
+        .where((dependency) => !overrides.contains(dependency.name));
 
     return Pubspec(
       original.name,
@@ -112,7 +129,7 @@ class RemoveCommand extends PubCommand {
       sdkConstraints: original.sdkConstraints,
       dependencies: newDependencies,
       devDependencies: newDevDependencies,
-      dependencyOverrides: original.dependencyOverrides.values,
+      dependencyOverrides: newOverrides,
     );
   }
 
@@ -123,11 +140,18 @@ class RemoveCommand extends PubCommand {
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
     for (var package in packages) {
+      var isOverride = false;
+      if (package.startsWith('override:')) {
+        package = package.substring('override:'.length);
+        isOverride = true;
+      }
       var found = false;
 
       /// There may be packages where the dependency is declared both in
       /// dependencies and dev_dependencies.
-      for (final dependencyKey in ['dependencies', 'dev_dependencies']) {
+      for (final dependencyKey in isOverride
+          ? ['dependency_overrides']
+          : ['dependencies', 'dev_dependencies']) {
         final dependenciesNode = yamlEditor
             .parseAt([dependencyKey], orElse: () => YamlScalar.wrap(null));
 

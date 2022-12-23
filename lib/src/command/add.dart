@@ -49,6 +49,8 @@ with a default constraint derived from latest compatible version.
 
 Add to dev_dependencies by prefixing with "dev:".
 
+Make dependency overrides by prefixing with "override:".
+
 Add packages with specific constraints or other sources by giving a descriptor
 after a colon.
 
@@ -62,20 +64,22 @@ For example:
   * Add multiple dependencies:
     `$topLevelProgram pub add foo dev:bar`
   * Add a path dependency:
-    `$topLevelProgram pub add 'foo{"path":"../foo"}'`
+    `$topLevelProgram pub add 'foo:{"path":"../foo"}'`
   * Add a hosted dependency:
-    `$topLevelProgram pub add 'foo{"hosted":"my-pub.dev"}'`
+    `$topLevelProgram pub add 'foo:{"hosted":"my-pub.dev"}'`
   * Add an sdk dependency:
-    `$topLevelProgram pub add 'foo{"sdk":"flutter"}'`
+    `$topLevelProgram pub add 'foo:{"sdk":"flutter"}'`
   * Add a git dependency:
-    `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
+    `$topLevelProgram pub add 'foo:{"git":"https://github.com/foo/foo"}'`
+  * Add a dependency override:
+    `$topLevelProgram pub add 'override:foo:1.0.0`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add \\
-      'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
+      'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
 
   @override
   String get argumentsDescription =>
-      '[options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor] ...]';
+      '[options] [dev|override:]<package>[:descriptor] [dev|override:]<package>[:descriptor] ...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
@@ -271,12 +275,17 @@ Specify multiple sdk packages with descriptors.''');
     final name = package.ref.name;
     final dependencies = [...original.dependencies.values];
     var devDependencies = [...original.devDependencies.values];
+    var dependencyOverrides = [...original.dependencyOverrides.values];
+
     final dependencyNames = dependencies.map((dependency) => dependency.name);
     final devDependencyNames =
         devDependencies.map((devDependency) => devDependency.name);
     final range =
         package.ref.withConstraint(package.constraint ?? VersionConstraint.any);
-    if (package.isDev) {
+
+    if (package.isOverride) {
+      dependencyOverrides.add(range);
+    } else if (package.isDev) {
       if (devDependencyNames.contains(name)) {
         log.message('"$name" is already in "dev_dependencies". '
             'Will try to update the constraint.');
@@ -319,7 +328,7 @@ Specify multiple sdk packages with descriptors.''');
       sdkConstraints: original.sdkConstraints,
       dependencies: dependencies,
       devDependencies: devDependencies,
-      dependencyOverrides: original.dependencyOverrides.values,
+      dependencyOverrides: dependencyOverrides,
     );
   }
 
@@ -327,12 +336,24 @@ Specify multiple sdk packages with descriptors.''');
   /// an old-style or a new-style descriptor to produce a PackageRef].
   _ParseResult _parsePackage(String arg, ArgResults argResults) {
     var isDev = argResults['dev'] as bool;
-    if (arg.startsWith('dev:')) {
-      if (argResults.isDev) {
-        usageException("Cannot combine 'dev:' with --dev");
+    var isOverride = false;
+    final firstColon = arg.indexOf(':');
+    if (firstColon != -1) {
+      final prefix = arg.substring(0, firstColon);
+      if (prefix == 'dev') {
+        if (argResults.isDev) {
+          usageException("Cannot combine 'dev:' with --dev");
+        }
+        isDev = true;
+        arg = arg.substring(prefix.length + 1);
+      } else if (prefix == 'override') {
+        if (argResults.isDev) {
+          usageException("Cannot combine 'override:' with --dev");
+        }
+        isOverride = true;
+        arg = arg.substring(prefix.length + 1);
       }
-      isDev = true;
-      arg = arg.substring('dev:'.length);
+      // TODO(sigurdm): can we give a better error message if someone mistypes the prefix?
     }
     final nextColon = arg.indexOf(':');
     final packageName = nextColon == -1 ? arg : arg.substring(0, nextColon);
@@ -341,6 +362,9 @@ Specify multiple sdk packages with descriptors.''');
     }
     final descriptor = nextColon == -1 ? null : arg.substring(nextColon + 1);
 
+    if (isOverride && descriptor == null) {
+      usageException('A dependency override needs an explicit descriptor.');
+    }
     final _PartialParseResult partial;
     if (argResults.hasOldStyleOptions) {
       partial = _parseDescriptorOldStyleArgs(
@@ -352,7 +376,12 @@ Specify multiple sdk packages with descriptors.''');
       partial = _parseDescriptorNewStyle(packageName, descriptor);
     }
 
-    return _ParseResult(partial.ref, partial.constraint, isDev: isDev);
+    return _ParseResult(
+      partial.ref,
+      partial.constraint,
+      isDev: isDev,
+      isOverride: isOverride,
+    );
   }
 
   /// Parse [descriptor] to return the corresponding [_ParseResult] using the
@@ -589,7 +618,9 @@ Specify multiple sdk packages with descriptors.''');
     log.fine('Contents:\n$yamlEditor');
 
     for (final update in updates) {
-      final dependencyKey = update.isDev ? 'dev_dependencies' : 'dependencies';
+      final dependencyKey = update.isDev
+          ? 'dev_dependencies'
+          : (update.isOverride ? 'dependency_overrides' : 'dependencies');
       final constraint = update.constraint;
       final ref = update.ref;
       final name = ref.name;
@@ -630,7 +661,7 @@ Specify multiple sdk packages with descriptors.''');
 
       /// Remove the package from dev_dependencies if we are adding it to
       /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
-      if (!update.isDev) {
+      if (!update.isDev && !update.isOverride) {
         final devDependenciesNode = yamlEditor
             .parseAt(['dev_dependencies'], orElse: () => YamlScalar.wrap(null));
 
@@ -662,7 +693,13 @@ class _ParseResult {
   final PackageRef ref;
   final VersionConstraint? constraint;
   final bool isDev;
-  _ParseResult(this.ref, this.constraint, {required this.isDev});
+  final bool isOverride;
+  _ParseResult(
+    this.ref,
+    this.constraint, {
+    required this.isDev,
+    required this.isOverride,
+  });
 }
 
 extension on ArgResults {

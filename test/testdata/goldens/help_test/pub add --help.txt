@@ -9,6 +9,8 @@ with a default constraint derived from latest compatible version.
 
 Add to dev_dependencies by prefixing with "dev:".
 
+Make dependency overrides by prefixing with "override:".
+
 Add packages with specific constraints or other sources by giving a descriptor
 after a colon.
 
@@ -22,19 +24,21 @@ For example:
   * Add multiple dependencies:
     `dart pub add foo dev:bar`
   * Add a path dependency:
-    `dart pub add 'foo{"path":"../foo"}'`
+    `dart pub add 'foo:{"path":"../foo"}'`
   * Add a hosted dependency:
-    `dart pub add 'foo{"hosted":"my-pub.dev"}'`
+    `dart pub add 'foo:{"hosted":"my-pub.dev"}'`
   * Add an sdk dependency:
-    `dart pub add 'foo{"sdk":"flutter"}'`
+    `dart pub add 'foo:{"sdk":"flutter"}'`
   * Add a git dependency:
-    `dart pub add 'foo{"git":"https://github.com/foo/foo"}'`
+    `dart pub add 'foo:{"git":"https://github.com/foo/foo"}'`
+  * Add a dependency override:
+    `dart pub add 'override:foo:1.0.0`
   * Add a git dependency with a path and ref specified:
     `dart pub add \
-      'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
+      'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
 
-Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor]
-       ...]
+Usage: pub add [options] [dev|override:]<package>[:descriptor]
+       [dev|override:]<package>[:descriptor] ...]
 -h, --help               Print this usage information.
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change
