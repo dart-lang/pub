@@ -702,7 +702,7 @@ Map<String, Object> packageMap(
   var package = <String, Object>{
     'name': name,
     'version': version,
-    'homepage': 'http://pub.dev',
+    'homepage': 'https://pub.dev',
     'description': 'A package, I guess.'
   };
 

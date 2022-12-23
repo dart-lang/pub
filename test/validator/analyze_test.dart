@@ -76,7 +76,7 @@ linter:
     await expectValidation(
       allOf([
         contains(
-            "The url should only use secure protocols. Try using 'https'."),
+            "The 'http' protocol shouldn't be used because it isn't secure. Try using a secure protocol, such as 'https'."),
         contains('Package has 1 warning.'),
       ]),
       DATA,
