@@ -24,14 +24,10 @@ void main() {
 
       await pubCommand(
         command,
-        output: allOf(
-          contains('pubspec.yaml has overrides from pubspec_overrides.yaml'),
-          contains(
-            '''
-You are using these overridden dependencies:
-! lib 2.0.0
+        output: contains(
+          '''
+! lib 2.0.0 (overridden in ./pubspec_overrides.yaml)
 ''',
-          ),
         ),
       );
 

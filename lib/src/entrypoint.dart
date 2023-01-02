@@ -342,10 +342,6 @@ Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.
 Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     }
 
-    if (!summaryOnly && hasPubspecOverrides) {
-      log.message('pubspec.yaml has overrides from $pubspecOverridesPath');
-    }
-
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {

@@ -118,10 +118,9 @@ void main() {
       await runPub(
         args: [command.name],
         output: contains('''
-You are using these overridden dependencies:
-! bar 1.0.0
-! baz 0.0.1 from path $bazPath
-! foo 1.0.0
+! bar 1.0.0 (overridden)
+! baz 0.0.1 from path $bazPath (overridden)
+! foo 1.0.0 (overridden)
 '''),
       );
     });
