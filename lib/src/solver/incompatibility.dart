@@ -121,13 +121,17 @@ class Incompatibility {
       assert(terms.first.isPositive);
 
       var cause = this.cause as SdkCause;
-      var buffer = StringBuffer(
-          '${_terse(terms.first, details, allowEvery: true)} requires ');
-      if (!cause.sdk.isAvailable) {
-        buffer.write('the ${cause.sdk.name} SDK');
+      var buffer = StringBuffer(_terse(terms.first, details, allowEvery: true));
+      if (cause.noNullSafetyCause) {
+        buffer.write(' doesn\'t support null safety');
       } else {
-        if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
-        buffer.write('SDK version ${cause.constraint}');
+        buffer.write(' requires ');
+        if (!cause.sdk.isAvailable) {
+          buffer.write('the ${cause.sdk.name} SDK');
+        } else {
+          if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
+          buffer.write('SDK version ${cause.constraint}');
+        }
       }
       return buffer.toString();
     } else if (cause == IncompatibilityCause.noVersions) {
@@ -410,12 +414,16 @@ class Incompatibility {
       buffer.write('but the latest version ($latest) is required');
     } else if (latter.cause is SdkCause) {
       var cause = latter.cause as SdkCause;
-      buffer.write('which requires ');
-      if (!cause.sdk.isAvailable) {
-        buffer.write('the ${cause.sdk.name} SDK');
+      if (cause.noNullSafetyCause) {
+        buffer.write('which doesn\'t support null safety');
       } else {
-        if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
-        buffer.write('SDK version ${cause.constraint}');
+        buffer.write('which requires ');
+        if (!cause.sdk.isAvailable) {
+          buffer.write('the ${cause.sdk.name} SDK');
+        } else {
+          if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
+          buffer.write('SDK version ${cause.constraint}');
+        }
       }
     } else if (latter.cause == IncompatibilityCause.noVersions) {
       buffer.write("which doesn't match any versions");

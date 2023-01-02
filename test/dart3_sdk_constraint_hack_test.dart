@@ -18,7 +18,7 @@ void main() {
 
     await pubGet(
       error: contains(
-          'Because myapp requires SDK version >=2.11.0 <3.0.0, version solving failed'),
+          'Because myapp doesn\'t support null safety, version solving failed'),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -47,7 +47,7 @@ void main() {
 
     await pubGet(
       error: contains(
-          'Because myapp requires SDK version >=2.11.0 <2.999.0, version solving failed'),
+          'Because myapp doesn\'t support null safety, version solving failed'),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -62,7 +62,7 @@ void main() {
 
     await pubGet(
       error: contains(
-          'Because myapp requires SDK version >=2.11.0 <3.0.0-0.0, version solving failed'),
+          'Because myapp doesn\'t support null safety, version solving failed'),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -142,7 +142,7 @@ void main() {
     });
     await pubGet(
       error: contains(
-        'The lower bound of ">=2.10.0 <3.0.0" does not enable null safety.',
+        'The lower bound of ">=2.10.0 <3.0.0" must be 2.12.0 or higher for null safety.',
       ),
     );
   });
