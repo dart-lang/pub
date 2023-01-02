@@ -261,21 +261,12 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name   Current        Upgradable     Resolvable     Latest         
+Package Name  Current  Upgradable  Resolvable  Latest  
 
-direct dependencies:
-bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
-foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
-local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
+direct dependencies: all support null safety.
 
-dev_dependencies:
-builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0-alpha   
-
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
-
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
+dev_dependencies: all support null safety.
+All dependencies opt in to null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -285,29 +276,18 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name   Current        Upgradable     Resolvable     Latest         
+Package Name  Current  Upgradable  Resolvable  Latest  
 
-direct dependencies:
-bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
-foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
-local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
+direct dependencies: all support null safety.
 
-dev_dependencies:
-builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0-alpha   
+dev_dependencies: all support null safety.
 
 transitive dependencies:
-transitive     ✗1.2.3         ✗1.3.0         ✗1.3.0         ✗2.0.0         
-transitive2    -              -              ✗1.0.0         ✗1.0.0         
+transitive2   -        -           ✓1.0.0      ✓1.0.0  
 
 transitive dev_dependencies:
-dev_trans      ✗1.0.0         -              ✗1.0.0         ✗2.0.0         
-transitive3    -              -              ✗1.0.0         ✗1.0.0         
-
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
-
-3  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
+transitive3   -        -           ✓1.0.0      ✓1.0.0  
+All dependencies opt in to null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -317,21 +297,12 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name   Current        Upgradable     Resolvable     Latest         
+Package Name  Current  Upgradable  Resolvable  Latest  
 
-direct dependencies:
-bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
-foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
-local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
+direct dependencies: all support null safety.
 
-dev_dependencies:
-builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗2.0.0         
-
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
-
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
+dev_dependencies: all support null safety.
+All dependencies opt in to null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -340,134 +311,17 @@ $ pub outdated --json --mode=null-safety
 {
   "packages": [
     {
-      "package": "bar",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "builder",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.2.3",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "3.0.0-alpha",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "dev_trans",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": null,
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "foo",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.2.3",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "3.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "local_package",
-      "isDiscontinued": false,
-      "current": {
-        "version": "0.0.1",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "0.0.1",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "0.0.1",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "0.0.1",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "transitive",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.2.3",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": false
-      }
-    },
-    {
       "package": "transitive2",
       "isDiscontinued": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
         "version": "1.0.0",
-        "nullSafety": false
+        "nullSafety": true
       },
       "latest": {
         "version": "1.0.0",
-        "nullSafety": false
+        "nullSafety": true
       }
     },
     {
@@ -477,11 +331,11 @@ $ pub outdated --json --mode=null-safety
       "upgradable": null,
       "resolvable": {
         "version": "1.0.0",
-        "nullSafety": false
+        "nullSafety": true
       },
       "latest": {
         "version": "1.0.0",
-        "nullSafety": false
+        "nullSafety": true
       }
     }
   ]

@@ -54,7 +54,7 @@ $ pub deps --json
   "sdks": [
     {
       "name": "Dart",
-      "version": "0.1.2+3"
+      "version": "3.1.2+3"
     }
   ],
   "executables": [

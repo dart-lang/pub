@@ -22,7 +22,7 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'sub': {
         'git': {'url': '../foo.git', 'path': 'subdir'}
       }
@@ -56,7 +56,7 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'sub': {
         'git': {'url': '../foo.git', 'path': 'sub/dir%25'}
       }
@@ -94,7 +94,7 @@ void main() {
 
   group('requires path to be absolute', () {
     test('absolute path', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'sub': {
           'git': {'url': '../foo.git', 'path': '/subdir'}
         }
@@ -108,7 +108,7 @@ void main() {
       );
     });
     test('scheme', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'sub': {
           'git': {'url': '../foo.git', 'path': 'https://subdir'}
         }
@@ -122,7 +122,7 @@ void main() {
       );
     });
     test('fragment', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'sub': {
           'git': {'url': '../foo.git', 'path': 'subdir/dir#fragment'}
         }
@@ -137,7 +137,7 @@ void main() {
     });
 
     test('query', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'sub': {
           'git': {'url': '../foo.git', 'path': 'subdir/dir?query'}
         }
@@ -152,7 +152,7 @@ void main() {
     });
 
     test('authority', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'sub': {
           'git': {
             'url': '../foo.git',
@@ -181,7 +181,7 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'sub': {
         'git': {
           'url': p.toUri(p.join(d.sandbox, 'foo.git')).toString(),
@@ -231,7 +231,7 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'sub1': {
         'git': {'url': '../foo.git', 'path': 'subdir1'}
       },
@@ -281,7 +281,7 @@ void main() {
     ]).commit();
     var newRevision = await repo.revParse('HEAD');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'sub1': {
         'git': {'url': '../foo.git', 'path': 'subdir', 'ref': oldRevision}
       },

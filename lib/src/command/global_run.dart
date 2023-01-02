@@ -32,8 +32,11 @@ class GlobalRunCommand extends PubCommand {
         help: 'Runs the executable in a VM with the given experiments enabled. '
             '(Will disable snapshotting, resulting in slower startup).',
         valueHelp: 'experiment');
-    argParser.addFlag('sound-null-safety',
-        help: 'Override the default null safety execution mode.');
+    argParser.addFlag(
+      'sound-null-safety',
+      help: 'Override the default null safety execution mode.',
+      hide: true,
+    );
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
@@ -41,6 +44,9 @@ class GlobalRunCommand extends PubCommand {
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
+    }
+    if (argResults.wasParsed('sound-null-safety')) {
+      dataError('The --(no-)sound-null-safety flag is no longer supported.');
     }
 
     String package;

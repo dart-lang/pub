@@ -16,14 +16,14 @@ void main() {
   test('URL encodes the package name', () async {
     await servePackages();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['bad name!:1.2.3'],
         error: contains('Not a valid package name: "bad name!"'),
         exitCode: exit_codes.USAGE);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
 
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
@@ -37,7 +37,7 @@ void main() {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
 
-      await d.appDir({}).create();
+      await d.appDir(dependencies: {}).create();
 
       await pubAdd(args: ['foo:1.2.3']);
 
@@ -45,7 +45,7 @@ void main() {
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.2.3'),
       ]).validate();
-      await d.appDir({'foo': '1.2.3'}).validate();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).validate();
     });
 
     test('adds multiple package from a pub server', () async {
@@ -54,7 +54,7 @@ void main() {
       server.serve('bar', '1.1.0');
       server.serve('baz', '2.5.3');
 
-      await d.appDir({}).create();
+      await d.appDir(dependencies: {}).create();
 
       await pubAdd(args: ['foo:1.2.3', 'bar:1.1.0', 'baz:2.5.3']);
 
@@ -65,8 +65,11 @@ void main() {
         d.packageConfigEntry(name: 'bar', version: '1.1.0'),
         d.packageConfigEntry(name: 'baz', version: '2.5.3'),
       ]).validate();
-      await d
-          .appDir({'foo': '1.2.3', 'bar': '1.1.0', 'baz': '2.5.3'}).validate();
+      await d.appDir(dependencies: {
+        'foo': '1.2.3',
+        'bar': '1.1.0',
+        'baz': '2.5.3'
+      }).validate();
     });
 
     test(
@@ -84,7 +87,7 @@ void main() {
           dev_dependencies:
 
           environment:
-            sdk: '>=0.1.2 <1.0.0'
+            sdk: $defaultSdkConstraint
         ''')
       ]).create();
 
@@ -109,7 +112,7 @@ void main() {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
 
-      await d.appDir({}).create();
+      await d.appDir(dependencies: {}).create();
 
       await pubAdd(
           args: ['foo:1.2.3', '--dry-run'],
@@ -118,7 +121,7 @@ void main() {
             contains('+ foo 1.2.3')
           ]));
 
-      await d.appDir({}).validate();
+      await d.appDir(dependencies: {}).validate();
       await d.dir(appPath, [
         d.nothing('.dart_tool/package_config.json'),
         d.nothing('pubspec.lock'),
@@ -136,7 +139,7 @@ void main() {
         d.file('pubspec.yaml', '''
 name: myapp
 environment:
-  "sdk": ">=0.1.2 <1.0.0"
+  "sdk": "$defaultSdkConstraint"
 ''')
       ]).create();
 
@@ -151,7 +154,7 @@ environment:
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.2.3'),
       ]).validate();
-      await d.appDir({'foo': '1.2.3'}).validate();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).validate();
     });
 
     test('Inserts correctly when the pubspec is flow-style at top-level',
@@ -161,7 +164,7 @@ environment:
 
       await d.dir(appPath, [
         d.file('pubspec.yaml',
-            '{"name":"myapp", "environment": {"sdk": ">=0.1.2 <1.0.0"}}')
+            '{"name":"myapp", "environment": {"sdk": "$defaultSdkConstraint"}}')
       ]).create();
 
       await pubAdd(args: ['foo:1.2.3']);
@@ -177,7 +180,7 @@ environment:
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.2.3'),
       ]).validate();
-      await d.appDir({'foo': '1.2.3'}).validate();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).validate();
     });
 
     group('notifies user about existing constraint', () {
@@ -186,7 +189,7 @@ environment:
           ..serve('foo', '1.2.3')
           ..serve('foo', '1.2.2');
 
-        await d.appDir({'foo': '1.2.2'}).create();
+        await d.appDir(dependencies: {'foo': '1.2.2'}).create();
 
         await pubAdd(
           args: ['foo'],
@@ -195,7 +198,7 @@ environment:
           ),
         );
 
-        await d.appDir({'foo': '^1.2.3'}).validate();
+        await d.appDir(dependencies: {'foo': '^1.2.3'}).validate();
       });
 
       test('if package is added with a specific version constraint', () async {
@@ -203,7 +206,7 @@ environment:
           ..serve('foo', '1.2.3')
           ..serve('foo', '1.2.2');
 
-        await d.appDir({'foo': '1.2.2'}).create();
+        await d.appDir(dependencies: {'foo': '1.2.2'}).create();
 
         await pubAdd(
           args: ['foo:1.2.3'],
@@ -212,7 +215,7 @@ environment:
           ),
         );
 
-        await d.appDir({'foo': '1.2.3'}).validate();
+        await d.appDir(dependencies: {'foo': '1.2.3'}).validate();
       });
 
       test('if package is added with a version constraint range', () async {
@@ -220,14 +223,14 @@ environment:
           ..serve('foo', '1.2.3')
           ..serve('foo', '1.2.2');
 
-        await d.appDir({'foo': '1.2.2'}).create();
+        await d.appDir(dependencies: {'foo': '1.2.2'}).create();
 
         await pubAdd(
             args: ['foo:>=1.2.2'],
             output: contains(
                 '"foo" is already in "dependencies". Will try to update the constraint.'));
 
-        await d.appDir({'foo': '>=1.2.2'}).validate();
+        await d.appDir(dependencies: {'foo': '>=1.2.2'}).validate();
       });
     });
 
@@ -244,7 +247,7 @@ dependencies:
 dev_dependencies:
   foo: 1.2.2
 environment:
-  sdk: '>=0.1.2 <1.0.0'
+  sdk: '$defaultSdkConstraint'
 ''')
       ]).create();
 
@@ -919,14 +922,14 @@ environment:
         name: myapp
         dependencies:
         environment:
-          sdk: '>=0.1.2 <1.0.0'
+          sdk: '$defaultSdkConstraint'
 '''),
     ]).create();
 
     await pubGet();
 
     await pubAdd(args: ['bar']);
-    await d.appDir({'bar': '^1.0.0'}).validate();
+    await d.appDir(dependencies: {'bar': '^1.0.0'}).validate();
   });
 
   test('preserves comments', () async {
@@ -942,7 +945,7 @@ environment:
             foo: 1.0.0 # comment C
           # comment D
         environment:
-          sdk: '>=0.1.2 <1.0.0'
+          sdk: '$defaultSdkConstraint'
     '''),
     ]).create();
 
@@ -950,7 +953,7 @@ environment:
 
     await pubAdd(args: ['bar']);
 
-    await d.appDir({'bar': '^1.0.0', 'foo': '1.0.0'}).validate();
+    await d.appDir(dependencies: {'bar': '^1.0.0', 'foo': '1.0.0'}).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
 
     expect(File(fullPath).existsSync(), true);

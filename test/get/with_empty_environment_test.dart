@@ -12,7 +12,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(environment: {
       '_PUB_TEST_CONFIG_DIR': null,

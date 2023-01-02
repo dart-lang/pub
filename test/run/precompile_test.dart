@@ -18,7 +18,7 @@ main(List<String> args) {
 void main() {
   Future<void> setupForPubRunToPrecompile() async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();
@@ -54,7 +54,7 @@ void main() {
   // Regression test of https://github.com/dart-lang/pub/issues/2483
   test('`pub run` precompiles script with relative PUB_CACHE', () async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();
@@ -77,7 +77,7 @@ void main() {
 
   test('`get --precompile` precompiles script', () async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();
@@ -101,7 +101,7 @@ void main() {
   test('`get --precompile` precompiles script with relative PUB_CACHE',
       () async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();

@@ -17,7 +17,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3', deps: {'transitive': 'any'});
     server.serve('transitive', '1.0.0');
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
 
     server
@@ -95,7 +95,7 @@ dependencies:
 dev_dependencies:
   foo: 1.2.3
 environment:
-  sdk: '>=0.1.2 <1.0.0'
+  sdk: '$defaultSdkConstraint'
 ''')
     ]).create();
     await pubGet();
@@ -157,7 +157,7 @@ Got dependencies!
   test('get does not fail when status listing fails', () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
     final fooVersionsCache =
         p.join(globalServer.cachingPath, '.cache', 'foo-versions.json');

@@ -12,7 +12,7 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully if the url is invalid', () async {
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': 'not@url-com'}
           }
@@ -30,7 +30,7 @@ void main() {
     });
     test('fails gracefully if the url has querystring', () async {
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': 'http://example.foo/?key=value'}
           }
@@ -49,7 +49,7 @@ void main() {
 
     test('fails gracefully if the url has fragment', () async {
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': 'http://example.foo/#hash'}
           }
@@ -68,7 +68,7 @@ void main() {
 
     test('fails gracefully if the url has user-info (1)', () async {
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': 'http://user:pwd@example.foo/'}
           }
@@ -87,7 +87,7 @@ void main() {
 
     test('fails gracefully if the url has user-info (2)', () async {
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {
             'hosted': {'name': 'foo', 'url': 'http://user@example.foo/'}
           }

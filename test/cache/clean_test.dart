@@ -20,7 +20,7 @@ void main() {
     await servePackages()
       ..serve('foo', '1.1.2')
       ..serve('bar', '1.2.3');
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
     final cache = path.join(d.sandbox, cachePath);
     expect(listDir(cache, includeHidden: true), contains(endsWith('hosted')));
@@ -39,7 +39,7 @@ void main() {
     await servePackages()
       ..serve('foo', '1.1.2')
       ..serve('bar', '1.2.3');
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
     final cache = path.join(d.sandbox, cachePath);
     expect(

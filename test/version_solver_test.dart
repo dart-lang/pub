@@ -48,7 +48,7 @@ void basicGraph() {
       ..serve('ba', '1.0.0')
       ..serve('bb', '1.0.0');
 
-    await d.appDir({'a': '1.0.0', 'b': '1.0.0'}).create();
+    await d.appDir(dependencies: {'a': '1.0.0', 'b': '1.0.0'}).create();
     await expectResolves(result: {
       'a': '1.0.0',
       'aa': '1.0.0',
@@ -69,7 +69,7 @@ void basicGraph() {
       ..serve('shared', '4.0.0')
       ..serve('shared', '5.0.0');
 
-    await d.appDir({'a': '1.0.0', 'b': '1.0.0'}).create();
+    await d.appDir(dependencies: {'a': '1.0.0', 'b': '1.0.0'}).create();
     await expectResolves(
         result: {'a': '1.0.0', 'b': '1.0.0', 'shared': '3.6.9'});
   });
@@ -87,7 +87,7 @@ void basicGraph() {
       ..serve('whoop', '1.0.0')
       ..serve('zoop', '1.0.0');
 
-    await d.appDir({'foo': '<=1.0.2', 'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '<=1.0.2', 'bar': '1.0.0'}).create();
     await expectResolves(
         result: {'foo': '1.0.1', 'bar': '1.0.0', 'bang': '1.0.0'});
   });
@@ -97,7 +97,7 @@ void basicGraph() {
       ..serve('foo', '1.0.0', deps: {'bar': '1.0.0'})
       ..serve('bar', '1.0.0', deps: {'foo': '1.0.0'});
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
@@ -109,7 +109,7 @@ void basicGraph() {
       ..serve('bar', '2.0.0', deps: {'baz': '1.0.0'})
       ..serve('baz', '1.0.0', deps: {'foo': '2.0.0'});
 
-    await d.appDir({'foo': '1.0.0', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'}, tries: 2);
   });
 }
@@ -124,10 +124,10 @@ void withLockFile() {
       ..serve('bar', '1.0.1')
       ..serve('bar', '1.0.2');
 
-    await d.appDir({'foo': '1.0.1'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
   });
 
@@ -140,10 +140,10 @@ void withLockFile() {
       ..serve('bar', '1.0.1')
       ..serve('bar', '1.0.2');
 
-    await d.appDir({'foo': '1.0.1'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
 
-    await d.appDir({'foo': '>1.0.1'}).create();
+    await d.appDir(dependencies: {'foo': '>1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.2', 'bar': '1.0.2'});
   });
 
@@ -157,10 +157,10 @@ void withLockFile() {
       ..serve('bar', '1.0.2')
       ..serve('baz', '1.0.0');
 
-    await d.appDir({'baz': '1.0.0'}).create();
+    await d.appDir(dependencies: {'baz': '1.0.0'}).create();
     await expectResolves(result: {'baz': '1.0.0'});
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.2', 'bar': '1.0.2'});
   });
 
@@ -178,7 +178,7 @@ void withLockFile() {
       ..serve('qux', '2.0.0')
       ..serve('newdep', '2.0.0', deps: {'baz': '>=1.5.0'});
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(result: {
       'foo': '1.0.0',
       'bar': '1.0.0',
@@ -186,7 +186,7 @@ void withLockFile() {
       'qux': '1.0.0'
     });
 
-    await d.appDir({'foo': 'any', 'newdep': '2.0.0'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'newdep': '2.0.0'}).create();
     await expectResolves(result: {
       'foo': '2.0.0',
       'bar': '2.0.0',
@@ -205,10 +205,10 @@ void withLockFile() {
       ..serve('bar', '1.0.0')
       ..serve('bar', '2.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
 
-    await d.appDir({'foo': 'any', 'bar': '<2.0.0'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': '<2.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because myapp depends on foo any which depends on bar >=2.0.0,
         bar >=2.0.0 is required.
@@ -222,7 +222,7 @@ void rootDependency() {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'myapp': 'any'});
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
@@ -233,7 +233,7 @@ void rootDependency() {
         'myapp': {'git': 'http://nowhere.com/'}
       });
 
-    await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
@@ -241,7 +241,7 @@ void rootDependency() {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'myapp': '>0.0.0'});
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because myapp depends on foo 1.0.0 which depends on myapp >0.0.0,
         myapp >0.0.0 is required.
@@ -287,7 +287,7 @@ void devDependency() {
       'dev_dependencies': {'bar': '1.0.0'}
     });
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
@@ -415,7 +415,7 @@ void unsolvable() {
       ..serve('foo', '2.0.0')
       ..serve('foo', '2.1.3');
 
-    await d.appDir({'foo': '>=1.0.0 <2.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '>=1.0.0 <2.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
       Because myapp depends on foo ^1.0.0 which doesn't match any versions,
         version solving failed.
@@ -429,7 +429,7 @@ void unsolvable() {
       ..serve('shared', '2.5.0')
       ..serve('shared', '3.5.0');
 
-    await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of foo depends on shared ^2.0.0 and no versions of
         shared match ^2.9.0, every version of foo requires
@@ -448,7 +448,7 @@ void unsolvable() {
       ..serve('shared', '2.0.0')
       ..serve('shared', '4.0.0');
 
-    await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of bar depends on shared >3.0.0 and every version
         of foo depends on shared <=2.0.0, bar is incompatible with foo.
@@ -471,7 +471,7 @@ void unsolvable() {
       })
       ..serve('shared', '1.0.0');
 
-    await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '1.0.0'}).create();
 
     await expectResolves(
         error: allOf([
@@ -495,7 +495,7 @@ void unsolvable() {
       })
       ..serve('shared', '1.0.0');
 
-    await d.appDir({'foo': '1.0.0', 'bar': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of bar depends on shared from path and every
         version of foo depends on shared from hosted, bar is incompatible with
@@ -512,7 +512,7 @@ void unsolvable() {
       ..serve('b', '1.0.0', deps: {'a': '2.0.0'})
       ..serve('b', '2.0.0', deps: {'a': '1.0.0'});
 
-    await d.appDir({'a': 'any', 'b': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because b <2.0.0 depends on a 2.0.0 which depends on b 2.0.0, b <2.0.0 is
         forbidden.
@@ -529,7 +529,7 @@ void unsolvable() {
       ..serve('a', '1.0.0')
       ..serve('b', '1.0.0');
 
-    await d.appDir({'a': 'any', 'b': '>1.0.0'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': '>1.0.0'}).create();
     await expectResolves(error: equalsIgnoringWhitespace("""
       Because myapp depends on b >1.0.0 which doesn't match any versions,
         version solving failed.
@@ -551,7 +551,8 @@ void unsolvable() {
       ..serve('di', '0.0.37', deps: {'analyzer': '>=0.13.0 <0.14.0'})
       ..serve('di', '0.0.36', deps: {'analyzer': '>=0.13.0 <0.14.0'});
 
-    await d.appDir({'angular': 'any', 'collection': 'any'}).create();
+    await d
+        .appDir(dependencies: {'angular': 'any', 'collection': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of angular depends on di ^0.0.32 which depends on
         analyzer ^0.13.0, every version of angular requires analyzer ^0.13.0.
@@ -563,7 +564,7 @@ void unsolvable() {
 
 void badSource() {
   test('fail if the root package has a bad source in dep', () async {
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'bad': 'any'}
     }).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
@@ -600,7 +601,7 @@ void badSource() {
         'bang': {'bad': 'any'}
       });
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because foo <1.0.1 depends on bar from unknown source "bad", foo <1.0.1 is
         forbidden.
@@ -624,7 +625,7 @@ void badSource() {
       })
       ..serve('bar', '1.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'}, tries: 2);
   });
 
@@ -636,7 +637,7 @@ void badSource() {
       ..serve('baz', '1.0.0');
     await d.dir('baz', [d.libPubspec('baz', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': 'any',
       'baz': {'path': '../baz'}
     }).create();
@@ -656,7 +657,7 @@ void backtracking() {
       ..serve('a', '2.0.0', deps: {'b': '1.0.0'})
       ..serve('b', '1.0.0', deps: {'a': '1.0.0'});
 
-    await d.appDir({'a': '>=1.0.0'}).create();
+    await d.appDir(dependencies: {'a': '>=1.0.0'}).create();
     await expectResolves(result: {'a': '1.0.0'}, tries: 2);
   });
 
@@ -670,7 +671,7 @@ void backtracking() {
       ..serve('c', '2.0.0')
       ..serve('c', '1.0.0');
 
-    await d.appDir({'a': 'any', 'b': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0', 'b': '2.0.0', 'c': '3.0.0'});
   });
 
@@ -689,7 +690,7 @@ void backtracking() {
       ..serve('y', '1.0.0')
       ..serve('y', '2.0.0');
 
-    await d.appDir({'c': 'any', 'y': '^2.0.0'}).create();
+    await d.appDir(dependencies: {'c': 'any', 'y': '^2.0.0'}).create();
     await expectResolves(result: {'c': '1.0.0', 'y': '2.0.0'}, tries: 2);
   });
 
@@ -706,7 +707,7 @@ void backtracking() {
       ..serve('y', '1.0.0')
       ..serve('y', '2.0.0');
 
-    await d.appDir({'foo': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
     await expectResolves(
         // We avoid equalsIgnoringWhitespace() here because we want to test the
         // formatting of the line number.
@@ -737,7 +738,7 @@ void backtracking() {
       ..serve('c', '1.0.0')
       ..serve('c', '2.0.0');
 
-    await d.appDir({'a': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any'}).create();
     await expectResolves(result: {'a': '2.0.0', 'b': '1.0.0', 'c': '2.0.0'});
   });
 
@@ -753,7 +754,7 @@ void backtracking() {
       ..serve('bar', '3.0.0', deps: {'baz': '3.0.0'})
       ..serve('baz', '1.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(
         result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'}, tries: 3);
   });
@@ -771,7 +772,7 @@ void backtracking() {
       ..serve('b', '3.0.0')
       ..serve('c', '1.0.0');
 
-    await d.appDir({'a': 'any', 'b': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any'}).create();
     await expectResolves(
         result: {'a': '1.0.0', 'b': '3.0.0', 'c': '1.0.0'}, tries: 2);
   });
@@ -805,7 +806,7 @@ void backtracking() {
       ..serve('c', '4.0.0')
       ..serve('c', '5.0.0');
 
-    await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'c': '5.0.0'});
   });
 
@@ -828,7 +829,7 @@ void backtracking() {
       ..serve('c', '4.0.0')
       ..serve('c', '5.0.0');
 
-    await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'c': '5.0.0'});
   });
 
@@ -848,7 +849,7 @@ void backtracking() {
       ..serve('c', '4.0.0')
       ..serve('c', '5.0.0');
 
-    await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
       Because every version of b depends on a from path and myapp depends on
         a from hosted, b is forbidden.
@@ -873,7 +874,7 @@ void backtracking() {
       ..serve('c', '4.0.0')
       ..serve('c', '5.0.0');
 
-    await d.appDir({'a': 'any', 'b': 'any', 'c': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any', 'c': 'any'}).create();
     await expectResolves(
         error: allOf([
       contains('Because every version of b depends on a from hosted on '
@@ -903,7 +904,7 @@ void backtracking() {
       ..serve('c', '1.0.0')
       ..serve('c', '2.0.0');
 
-    await d.appDir({'a': 'any', 'b': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any'}).create();
     await expectResolves(result: {'a': '4.0.0', 'b': '4.0.0', 'c': '2.0.0'});
   });
 
@@ -922,7 +923,7 @@ void backtracking() {
       }
     }
 
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await expectResolves(
         result: {'foo': '0.9.0', 'bar': '9.0.0', 'baz': '0.0.0'}, tries: 10);
   });
@@ -944,7 +945,7 @@ void backtracking() {
       ..serve('foo', '2.0.3')
       ..serve('foo', '2.0.4');
 
-    await d.appDir({'a': 'any', 'foo': '>2.0.0'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'foo': '>2.0.0'}).create();
     await expectResolves(result: {'a': '1.0.0', 'foo': '2.0.4'});
   });
 
@@ -961,7 +962,7 @@ void backtracking() {
       ..serve('d', '2.0.0', deps: {'myapp': 'any'})
       ..serve('d', '1.0.0', deps: {'myapp': '<1.0.0'});
 
-    await d.appDir({'a': 'any', 'c': 'any', 'd': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any', 'c': 'any', 'd': 'any'}).create();
     await expectResolves(
         result: {'a': '1.0.0', 'b': '1.0.0', 'c': '1.0.0', 'd': '2.0.0'});
   });
@@ -972,7 +973,7 @@ void dartSdkConstraint() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
     ]).create();
 
@@ -983,28 +984,28 @@ void dartSdkConstraint() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '0.0.0'}
+        'environment': {'sdk': '2.12.0'}
       })
     ]).create();
 
     await expectResolves(error: equalsIgnoringWhitespace('''
-      The current Dart SDK version is 0.1.2+3.
+      The current Dart SDK version is 3.1.2+3.
 
-      Because myapp requires SDK version 0.0.0, version solving failed.
+      Because myapp requires SDK version 2.12.0, version solving failed.
     '''));
   });
 
   test('dependency does not match SDK', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', pubspec: {
-      'environment': {'sdk': '0.0.0'}
+      'environment': {'sdk': '2.12.0'}
     });
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      The current Dart SDK version is 0.1.2+3.
+      The current Dart SDK version is 3.1.2+3.
 
-      Because myapp depends on foo any which requires SDK version 0.0.0, version
+      Because myapp depends on foo any which requires SDK version 2.12.0, version
         solving failed.
     '''));
   });
@@ -1013,15 +1014,15 @@ void dartSdkConstraint() {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
       ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.0.0'}
+        'environment': {'sdk': '2.12.0'}
       });
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(error: equalsIgnoringWhitespace('''
-      The current Dart SDK version is 0.1.2+3.
+      The current Dart SDK version is 3.1.2+3.
 
       Because every version of foo depends on bar any which requires SDK version
-        0.0.0, foo is forbidden.
+        2.12.0, foo is forbidden.
       So, because myapp depends on foo any, version solving failed.
     '''));
   });
@@ -1029,10 +1030,10 @@ void dartSdkConstraint() {
   test('selects a dependency version that allows the SDK', () async {
     await servePackages()
       ..serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('foo', '2.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('foo', '3.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
@@ -1041,7 +1042,7 @@ void dartSdkConstraint() {
         'environment': {'sdk': '0.0.0'}
       });
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '2.0.0'});
   });
 
@@ -1049,10 +1050,10 @@ void dartSdkConstraint() {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
       ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '2.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '3.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
@@ -1061,7 +1062,7 @@ void dartSdkConstraint() {
         'environment': {'sdk': '0.0.0'}
       });
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '2.0.0'});
   });
 
@@ -1074,10 +1075,10 @@ void dartSdkConstraint() {
       ..serve('foo', '3.0.0', deps: {'bar': '3.0.0'})
       ..serve('foo', '4.0.0', deps: {'bar': '4.0.0'})
       ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '2.0.0', pubspec: {
-        'environment': {'sdk': '0.1.2+3'}
+        'environment': {'sdk': '3.1.2+3'}
       })
       ..serve('bar', '3.0.0', pubspec: {
         'environment': {'sdk': '0.0.0'}
@@ -1086,7 +1087,7 @@ void dartSdkConstraint() {
         'environment': {'sdk': '0.0.0'}
       });
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await expectResolves(result: {'foo': '2.0.0', 'bar': '2.0.0'}, tries: 2);
   });
 }
@@ -1111,10 +1112,10 @@ void sdkConstraint() {
     test('fails for a dependency', () async {
       final server = await servePackages();
       server.serve('foo', '1.0.0', pubspec: {
-        'environment': {'flutter': '0.0.0'}
+        'environment': {'flutter': 'any', 'sdk': defaultSdkConstraint}
       });
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
       await expectResolves(error: equalsIgnoringWhitespace('''
         Because myapp depends on foo any which requires the Flutter SDK, version
           solving failed.
@@ -1131,7 +1132,7 @@ void sdkConstraint() {
           'environment': {'flutter': '0.0.0'}
         });
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
       await expectResolves(result: {'foo': '2.0.0'});
     });
 
@@ -1139,7 +1140,7 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
+          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
@@ -1207,7 +1208,7 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '0.1.2+3', 'flutter': '1.2.3'}
+          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'}
         })
       ]).create();
 
@@ -1220,7 +1221,7 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '0.1.2+3', 'flutter': '>1.2.3'}
+          'environment': {'sdk': '3.1.2+3', 'flutter': '>1.2.3'}
         })
       ]).create();
 
@@ -1239,7 +1240,7 @@ void sdkConstraint() {
         d.pubspec({
           'name': 'myapp',
           'environment': {
-            'sdk': '>0.1.2+3', // pub will apply a default upper bound <2.0.0
+            'sdk': '>3.1.2+3',
             'flutter': '1.2.3',
           },
         }),
@@ -1248,9 +1249,9 @@ void sdkConstraint() {
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
           error: equalsIgnoringWhitespace('''
-            The current Dart SDK version is 0.1.2+3.
+            The current Dart SDK version is 3.1.2+3.
 
-            Because myapp requires SDK version >0.1.2+3 <2.0.0, version solving
+            Because myapp requires SDK version >3.1.2+3, version solving
             failed.
           '''));
     });
@@ -1258,16 +1259,16 @@ void sdkConstraint() {
     test('selects the latest dependency with a matching constraint', () async {
       await servePackages()
         ..serve('foo', '1.0.0', pubspec: {
-          'environment': {'flutter': '^0.0.0'}
+          'environment': {'flutter': '^0.0.0', 'sdk': defaultSdkConstraint}
         })
         ..serve('foo', '2.0.0', pubspec: {
-          'environment': {'flutter': '^1.0.0'}
+          'environment': {'flutter': '^1.0.0', 'sdk': defaultSdkConstraint}
         })
         ..serve('foo', '3.0.0', pubspec: {
-          'environment': {'flutter': '^2.0.0'}
+          'environment': {'flutter': '^2.0.0', 'sdk': defaultSdkConstraint}
         });
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
       await expectResolves(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
           result: {'foo': '2.0.0'});
@@ -1283,7 +1284,7 @@ void prerelease() {
       ..serve('a', '2.0.0-dev')
       ..serve('a', '3.0.0-dev');
 
-    await d.appDir({'a': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any'}).create();
     await expectResolves(result: {'a': '1.0.0'});
   });
 
@@ -1294,7 +1295,7 @@ void prerelease() {
       ..serve('a', '1.9.0-dev')
       ..serve('a', '3.0.0');
 
-    await d.appDir({'a': '<2.0.0'}).create();
+    await d.appDir(dependencies: {'a': '<2.0.0'}).create();
     await expectResolves(result: {'a': '1.9.0-dev'});
   });
 
@@ -1305,7 +1306,7 @@ void prerelease() {
       ..serve('a', '2.0.0-dev')
       ..serve('a', '2.0.0');
 
-    await d.appDir({'a': '<2.0.0'}).create();
+    await d.appDir(dependencies: {'a': '<2.0.0'}).create();
     await expectResolves(result: {'a': '1.1.0'});
   });
 
@@ -1317,7 +1318,7 @@ void prerelease() {
       ..serve('a', '2.0.0-dev')
       ..serve('a', '2.0.0');
 
-    await d.appDir({'a': '<=2.0.0-dev'}).create();
+    await d.appDir(dependencies: {'a': '<=2.0.0-dev'}).create();
     await expectResolves(result: {'a': '1.1.0'});
   });
 
@@ -1326,7 +1327,7 @@ void prerelease() {
       ..serve('a', '1.0.0')
       ..serve('a', '1.1.0-dev');
 
-    await d.appDir({'a': '^1.1.0-dev'}).create();
+    await d.appDir(dependencies: {'a': '^1.1.0-dev'}).create();
     await expectResolves(result: {'a': '1.1.0-dev'});
   });
 
@@ -1336,7 +1337,7 @@ void prerelease() {
       ..serve('a', '1.1.0-dev')
       ..serve('a', '1.1.0');
 
-    await d.appDir({'a': '^1.1.0-dev'}).create();
+    await d.appDir(dependencies: {'a': '^1.1.0-dev'}).create();
     await expectResolves(result: {'a': '1.1.0'});
   });
 
@@ -1349,7 +1350,7 @@ void prerelease() {
       ..serve('b', '1.0.0')
       ..serve('b', '1.1.0-dev');
 
-    await d.appDir({'a': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'a': '^1.0.0'}).create();
     await expectResolves(result: {
       'a': '1.1.0',
       'b': '1.1.0-dev',
@@ -1363,7 +1364,7 @@ void prerelease() {
       ..serve('b', '1.0.0')
       ..serve('b', '1.1.0-dev');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'a': '^1.0.0',
       'b': '^1.0.0', // Direct dependency prevents us from using a pre-release.
     }).create();
@@ -1383,7 +1384,7 @@ void prerelease() {
       ..serve('b', '1.1.0-dev')
       ..serve('c', '1.0.0', deps: {'b': '^1.0.0'});
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'a': '^1.0.0',
       'c': '^1.0.0', // This doesn't not prevent using a pre-release.
     }).create();
@@ -1405,7 +1406,7 @@ void prerelease() {
       ..serve('c', '2.0.1', deps: {});
 
     await d.appDir(
-      {
+      dependencies: {
         'a': '0.12.0',
         'b': 'any',
       },
@@ -1424,7 +1425,7 @@ void prerelease() {
       ..serve('b', '1.1.0-alpha')
       ..serve('a', '1.0.0', deps: {'b': '^1.1.0-alpha'});
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'a': '^1.0.0',
     }).create();
     await expectResolves(tries: 2);
@@ -1511,7 +1512,7 @@ void override() {
       ..serve('bar', '1.0.1')
       ..serve('bar', '1.0.2');
 
-    await d.appDir({'foo': '1.0.1'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
 
     await d.dir(appPath, [
@@ -1533,7 +1534,7 @@ void override() {
       ..serve('bar', '1.0.1')
       ..serve('bar', '1.0.2');
 
-    await d.appDir({'foo': '1.0.1'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.1'}).create();
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
 
     await d.dir(appPath, [
@@ -1619,7 +1620,7 @@ void override() {
       ..serve('bar', '1.2.3')
       ..serve('bar', '0.0.1');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await expectResolves(result: {'foo': '1.2.3', 'bar': '1.2.3'});
 
@@ -1681,10 +1682,10 @@ void downgrade() {
       ..serve('foo', '2.0.0')
       ..serve('foo', '2.1.0');
 
-    await d.appDir({'foo': '2.1.0'}).create();
+    await d.appDir(dependencies: {'foo': '2.1.0'}).create();
     await expectResolves(result: {'foo': '2.1.0'});
 
-    await d.appDir({'foo': '>=2.0.0 <3.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '>=2.0.0 <3.0.0'}).create();
     await expectResolves(result: {'foo': '2.0.0'}, downgrade: true);
   });
 
@@ -1697,7 +1698,7 @@ void downgrade() {
       ..serve('a', '2.0.0-dev.2')
       ..serve('a', '2.0.0-dev.3');
 
-    await d.appDir({'a': '>=2.0.0-dev.1 <3.0.0'}).create();
+    await d.appDir(dependencies: {'a': '>=2.0.0-dev.1 <3.0.0'}).create();
     await expectResolves(result: {'a': '2.0.0-dev.1'}, downgrade: true);
   });
 }
@@ -1715,7 +1716,7 @@ void features() {
       })
       ..serve('bar', '1.0.0');
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0'});
   });
 
@@ -1731,7 +1732,7 @@ void features() {
       })
       ..serve('bar', '1.0.0');
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
@@ -1746,7 +1747,7 @@ void features() {
       })
       ..serve('bar', '1.0.0');
 
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
   });
 
@@ -1762,7 +1763,7 @@ void features() {
       })
       ..serve('bar', '1.0.0');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.0.0',
         'features': {'stuff': true}
@@ -1782,7 +1783,7 @@ void features() {
       })
       ..serve('bar', '1.0.0');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.0.0',
         'features': {'stuff': false}
@@ -1808,7 +1809,7 @@ void features() {
         }
       });
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.0.0',
         'features': {'stuff': false}
@@ -1835,7 +1836,7 @@ void features() {
         }
       });
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.0.0',
         'features': {'stuff': false}
@@ -1859,7 +1860,7 @@ void features() {
       ..serve('foo', '1.1.0')
       ..serve('bar', '1.0.0');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.0.0',
         'features': {'stuff': true}
@@ -1889,7 +1890,7 @@ void features() {
       ..serve('bar', '1.0.0')
       ..serve('bar', '2.0.0');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '^1.0.0',
         'features': {'stuff': true}
@@ -1934,7 +1935,7 @@ void features() {
       ..serve('baz', '1.0.0')
       ..serve('baz', '2.0.0');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '^1.0.0',
         'features': {'stuff': true}
@@ -1969,7 +1970,7 @@ void features() {
       ..serve('baz', '1.0.0')
       ..serve('baz', '2.0.0');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '^1.0.0',
         'features': {'stuff': true}
@@ -2136,7 +2137,7 @@ void features() {
         })
         ..serve('bar', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'stuff': 'if available'}
@@ -2149,7 +2150,7 @@ void features() {
       final server = await servePackages();
       server.serve('foo', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'stuff': 'if available'}
@@ -2296,7 +2297,7 @@ void features() {
         await expectResolves(
             error:
                 'Package foo feature stuff requires SDK version 0.0.1 but the '
-                'current SDK is 0.1.2+3.');
+                'current SDK is 3.1.2+3.');
       });
 
       test("Flutter isn't available", () async {
@@ -2372,12 +2373,12 @@ void features() {
         })
         ..serve('baz', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'version': '1.0.0'}
       }).create();
       await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'stuff': true}
@@ -2417,7 +2418,7 @@ void features() {
         })
         ..serve('baz', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'stuff': true}
@@ -2450,7 +2451,7 @@ void features() {
         ..serve('bar', '1.0.0')
         ..serve('baz', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'main': true}
@@ -2480,7 +2481,7 @@ void features() {
         ..serve('bar', '1.0.0')
         ..serve('baz', '1.0.0');
 
-      await d.appDir({'foo': '1.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '1.0.0'}).create();
       await expectResolves(
           result: {'foo': '1.0.0', 'bar': '1.0.0', 'baz': '1.0.0'});
     });
@@ -2500,7 +2501,7 @@ void features() {
         })
         ..serve('bar', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'main': false}
@@ -2525,7 +2526,7 @@ void features() {
         })
         ..serve('bar', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'main': true, 'required': false}
@@ -2553,7 +2554,7 @@ void features() {
         })
         ..serve('bar', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'features': {'main': true}
@@ -2637,7 +2638,7 @@ void regressions() {
       ..serve('integration_test', '1.0.2+2',
           deps: {'vm_service': '>= 4.2.0 <7.0.0'})
       ..serve('vm_service', '7.3.0');
-    await d.appDir({'integration_test': '^1.0.2'}).create();
+    await d.appDir(dependencies: {'integration_test': '^1.0.2'}).create();
     await expectResolves(
       error: contains(
         'Because no versions of integration_test match >=1.0.2 <1.0.2+2',
@@ -2660,7 +2661,7 @@ void regressions() {
       ..serve('bar', '1.0.0', deps: {
         'baz': {'sdk': 'flutter'}
       });
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await expectResolves(
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
     );

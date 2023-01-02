@@ -145,15 +145,7 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current       Upgradable    Resolvable    Latest        
-
-direct dependencies:
-bar           ✗0.9.0        ✗0.9.0        ✗0.9.0        ✗1.0.0-dev.2  
-foo           ✗1.0.0-dev.1  ✗1.0.0-dev.1  ✗1.0.0-dev.2  ✗1.0.0-dev.2  
-mop           ✗0.10.0-dev   ✗0.10.0-dev   ✗0.10.0       ✗1.0.0-dev    
-
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
+All your dependencies declare support for null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -163,15 +155,7 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current       Upgradable    Resolvable    Latest        
-
-direct dependencies:
-bar           ✗0.9.0        ✗0.9.0        ✗0.9.0        ✗1.0.0-dev.2  
-foo           ✗1.0.0-dev.1  ✗1.0.0-dev.1  ✗1.0.0-dev.2  ✗1.0.0-dev.2  
-mop           ✗0.10.0-dev   ✗0.10.0-dev   ✗0.10.0       ✗1.0.0-dev    
-
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
+All your dependencies declare support for null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -181,83 +165,14 @@ Showing dependencies that are currently not opted in to null-safety.
 [✗] indicates versions without null safety support.
 [✓] indicates versions opting in to null safety.
 
-Package Name  Current       Upgradable    Resolvable    Latest        
-
-direct dependencies:
-bar           ✗0.9.0        ✗0.9.0        ✗0.9.0        ✗0.9.0        
-foo           ✗1.0.0-dev.1  ✗1.0.0-dev.1  ✗1.0.0-dev.2  ✗1.0.0-dev.2  
-mop           ✗0.10.0-dev   ✗0.10.0-dev   ✗0.10.0       ✗0.10.0       
-
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
+All your dependencies declare support for null-safety.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 10
 $ pub outdated --json --mode=null-safety
 {
-  "packages": [
-    {
-      "package": "bar",
-      "isDiscontinued": false,
-      "current": {
-        "version": "0.9.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "0.9.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "0.9.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0-dev.2",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "foo",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.0.0-dev.1",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0-dev.1",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0-dev.2",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0-dev.2",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "mop",
-      "isDiscontinued": false,
-      "current": {
-        "version": "0.10.0-dev",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "0.10.0-dev",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "0.10.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0-dev",
-        "nullSafety": false
-      }
-    }
-  ]
+  "packages": []
 }
 
 -------------------------------- END OF OUTPUT ---------------------------------

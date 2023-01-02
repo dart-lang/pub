@@ -15,7 +15,7 @@ void main() {
         ..serve('lib', '2.0.0');
 
       await d.dir(appPath, [
-        d.appPubspec({'lib': '1.0.0'}),
+        d.appPubspec(dependencies: {'lib': '1.0.0'}),
         d.dir('lib'),
         d.pubspecOverrides({
           'dependency_overrides': {'lib': '2.0.0'}
@@ -40,12 +40,12 @@ You are using these overridden dependencies:
           d.packageConfigEntry(
             name: 'lib',
             version: '2.0.0',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ])
       ]).validate();

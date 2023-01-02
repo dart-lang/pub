@@ -19,7 +19,7 @@ void main() {
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     final url = server.url;
 
@@ -31,7 +31,7 @@ void main() {
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.2.3',
         'hosted': {'name': 'foo', 'url': url}
@@ -52,7 +52,7 @@ void main() {
     server.serve('baz', '0.1.3');
     server.serve('baz', '1.3.5');
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     final url = server.url;
 
@@ -68,7 +68,7 @@ void main() {
       d.packageConfigEntry(name: 'baz', version: '1.3.5', server: server),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '1.2.3',
         'hosted': {'name': 'foo', 'url': url}
@@ -87,7 +87,7 @@ void main() {
   test('fails when adding from an invalid url', () async {
     ensureGit();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['foo', '--hosted-url', 'https://invalid-url.foo'],
@@ -100,7 +100,7 @@ void main() {
       },
     );
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -120,7 +120,7 @@ void main() {
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     final url = server.url;
 
@@ -130,7 +130,7 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '^1.2.3',
         'hosted': {'name': 'foo', 'url': url}
@@ -149,7 +149,7 @@ void main() {
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     final url = server.url;
 
@@ -159,7 +159,7 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': '^1.2.3',
         'hosted': {'name': 'foo', 'url': url}
@@ -179,7 +179,7 @@ void main() {
     server.serve('foo', '1.1.0');
     server.serve('foo', '1.2.3');
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     final url = server.url;
 
@@ -189,7 +189,7 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'version': 'any',
         'hosted': {'name': 'foo', 'url': url}

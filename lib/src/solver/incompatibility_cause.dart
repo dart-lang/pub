@@ -5,6 +5,7 @@
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
+import '../language_version.dart';
 import '../sdk.dart';
 import 'incompatibility.dart';
 
@@ -96,6 +97,11 @@ class SdkCause extends IncompatibilityCause {
 
   @override
   String? get hint {
+    if (sdk.isDartSdk &&
+        !LanguageVersion.fromSdkConstraint(constraint).supportsNullSafety &&
+        sdk.version! >= Version(3, 0, 0).firstPreRelease) {
+      return 'The lower bound of "$constraint" does not enable null safety.';
+    }
     // If the SDK is available, then installing it won't help
     if (sdk.isAvailable) {
       return null;

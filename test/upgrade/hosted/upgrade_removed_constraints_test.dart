@@ -15,7 +15,7 @@ void main() {
       ..serve('shared_dep', '1.0.0')
       ..serve('shared_dep', '2.0.0');
 
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
     await pubUpgrade();
 
@@ -25,7 +25,7 @@ void main() {
       d.packageConfigEntry(name: 'shared_dep', version: '1.0.0'),
     ]).validate();
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubUpgrade();
 

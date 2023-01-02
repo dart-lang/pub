@@ -12,7 +12,7 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully on a dependency from an unknown source', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'bad': 'foo'}
       }).create();
 
@@ -32,7 +32,7 @@ void main() {
         })
       ]).create();
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'path': '../foo'}
       }).create();
 
@@ -49,7 +49,7 @@ void main() {
 
       // Depend on "foo" from a valid source.
       await d.dir(appPath, [
-        d.appPubspec({
+        d.appPubspec(dependencies: {
           'foo': {'path': '../foo'}
         })
       ]).create();

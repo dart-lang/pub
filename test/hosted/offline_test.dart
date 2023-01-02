@@ -17,7 +17,7 @@ Future<void> populateCache(
   }
   for (final entry in versions.entries) {
     for (final version in entry.value) {
-      await d.appDir({entry.key: version}).create();
+      await d.appDir(dependencies: {entry.key: version}).create();
       await pubGet();
     }
   }
@@ -35,7 +35,7 @@ void main() {
       // Now serve only errors - to validate we are truly offline.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
       String? warning;
       if (command == RunCommand.upgrade) {
@@ -58,7 +58,7 @@ void main() {
       // Now serve only errors - to validate we are truly offline.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       String? warning;
       if (command == RunCommand.upgrade) {
@@ -78,7 +78,7 @@ void main() {
       final server = await servePackages();
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await pubCommand(command,
           args: ['--offline'],
@@ -100,7 +100,7 @@ void main() {
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
-      await d.appDir({'foo': '>2.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '>2.0.0'}).create();
 
       await pubCommand(command,
           args: ['--offline'], error: equalsIgnoringWhitespace("""
@@ -117,7 +117,7 @@ void main() {
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.4'});
 
@@ -141,7 +141,7 @@ void main() {
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.4'});
 
@@ -166,7 +166,7 @@ void main() {
         d.file('random_filename', ''),
       ]).create();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await pubCommand(command, args: ['--offline']);
 
@@ -188,7 +188,7 @@ void main() {
         d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')])
       ]).create();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.3'});
 

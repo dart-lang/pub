@@ -90,12 +90,7 @@ Future<void> main() async {
   testWithGolden('run works, though hidden', (ctx) async {
     await servePackages();
     await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'environment': {
-          'sdk': '0.1.2+3',
-        },
-      }),
+      d.appPubspec(),
       d.dir('bin', [
         d.file('main.dart', '''
 import 'dart:io';
@@ -122,7 +117,7 @@ main() {
       (context) async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // TODO(sigurdm) This logs the entire verbose trace to a golden file.
     //
@@ -165,11 +160,11 @@ main() {
     await d.dir('dep', [
       d.pubspec({
         'name': 'dep',
-        'environment': {'sdk': '>=0.0.0 <3.0.0'}
+        'environment': {'sdk': '^3.0.0'}
       })
     ]).create();
     final app = d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': '1.0.0',
         // The path dependency should not go to analytics.
         'dep': {'path': '../dep'}
@@ -231,7 +226,7 @@ main() {
     await servePackages();
     final buffer = StringBuffer();
     await runEmbeddingToBuffer(['--verbose', 'pub', 'logout'], buffer);
-    expect(buffer.toString(), contains('FINE: Pub 0.1.2+3'));
+    expect(buffer.toString(), contains('FINE: Pub 3.1.2+3'));
   });
 
   testWithGolden('--help', (context) async {
@@ -246,7 +241,7 @@ main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serve('foo', '2.0.0');
-    await d.appDir({'foo': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
     await context.runEmbedding(
       ['pub', '--no-color', 'get'],
       environment: getPubTestEnvironment(),

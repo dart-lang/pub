@@ -14,7 +14,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(args: ['foo', '--git-url', '../foo.git']);
 
@@ -25,7 +25,7 @@ void main() {
       ])
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).validate();
   });
@@ -36,7 +36,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['--directory', appPath, 'foo', '--git-url', 'foo.git'],
@@ -51,7 +51,7 @@ void main() {
       ])
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).validate();
   });
@@ -62,7 +62,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['foo', '--git-url', ':'],
@@ -78,7 +78,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(args: ['foo:1.0.0', '--git-url', '../foo.git']);
 
@@ -89,7 +89,7 @@ void main() {
       ])
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git', 'version': '1.0.0'}
     }).validate();
   });
@@ -100,7 +100,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo:2.0.0', '--git-url', '../foo.git'],
@@ -109,7 +109,7 @@ void main() {
             'any versions, version solving failed.'),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -120,7 +120,7 @@ void main() {
   test('fails when adding from an non-existing url', () async {
     ensureGit();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo', '--git-url', '../foo.git'],
@@ -128,7 +128,7 @@ void main() {
             'git parameters'),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -139,14 +139,14 @@ void main() {
   test('fails if git-url is not declared', () async {
     ensureGit();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo', '--git-ref', 'master'],
         error: contains('The `--git-url` is required for git dependencies.'),
         exitCode: exit_codes.USAGE);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -189,7 +189,7 @@ void main() {
   test('fails if multiple packages passed for git source', () async {
     ensureGit();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(
         args: ['foo', 'bar', 'baz', '--git-url', '../foo.git'],
@@ -201,7 +201,7 @@ void main() {
     await d.git('foo.git', [
       d.dir('subdir', [d.libPubspec('foo', '1.2.3')])
     ]).create();
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     await pubAdd(
       args: [
         '--directory',
@@ -212,7 +212,7 @@ void main() {
       output: contains('Changed 1 dependency in myapp!'),
     );
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': {'url': '../foo.git', 'path': 'subdir'}
       }
@@ -227,7 +227,7 @@ void main() {
     await d.git(
         'bar.git', [d.libDir('foo'), d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     await pubAdd(args: [
       'foo:{"git":"../foo.git"}',

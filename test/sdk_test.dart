@@ -32,7 +32,7 @@ void main() {
     });
 
     test("gets an SDK dependency's dependencies", () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'sdk': 'flutter'}
       }).create();
       await pubCommand(command,
@@ -45,7 +45,7 @@ void main() {
     });
 
     test('gets an SDK dependency from bin/cache/pkg', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'baz': {'sdk': 'flutter'}
       }).create();
       await pubCommand(command,
@@ -59,7 +59,7 @@ void main() {
     });
 
     test('unlocks an SDK dependency when the version changes', () async {
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'sdk': 'flutter'}
       }).create();
       await pubCommand(command,
@@ -94,7 +94,7 @@ void main() {
 
     group('fails if', () {
       test("the version constraint doesn't match", () async {
-        await d.appDir({
+        await d.appDir(dependencies: {
           'foo': {'sdk': 'flutter', 'version': '^1.0.0'}
         }).create();
         await pubCommand(command,
@@ -106,7 +106,7 @@ void main() {
       });
 
       test('the SDK is unknown', () async {
-        await d.appDir({
+        await d.appDir(dependencies: {
           'foo': {'sdk': 'unknown'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
@@ -116,7 +116,7 @@ void main() {
       });
 
       test('the SDK is unavailable', () async {
-        await d.appDir({
+        await d.appDir(dependencies: {
           'foo': {'sdk': 'flutter'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
@@ -129,7 +129,7 @@ void main() {
       });
 
       test("the SDK doesn't contain the package", () async {
-        await d.appDir({
+        await d.appDir(dependencies: {
           'bar': {'sdk': 'flutter'}
         }).create();
         await pubCommand(command,
@@ -143,7 +143,7 @@ void main() {
       });
 
       test("the Dart SDK doesn't contain the package", () async {
-        await d.appDir({
+        await d.appDir(dependencies: {
           'bar': {'sdk': 'dart'}
         }).create();
         await pubCommand(command, error: equalsIgnoringWhitespace("""
@@ -157,7 +157,7 @@ void main() {
     test('supports the Fuchsia SDK', () async {
       renameDir(p.join(d.sandbox, 'flutter'), p.join(d.sandbox, 'fuchsia'));
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'sdk': 'fuchsia'}
       }).create();
       await pubCommand(command,

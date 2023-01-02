@@ -22,7 +22,7 @@ main() => print(value);
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'}
       })
     ]).create();

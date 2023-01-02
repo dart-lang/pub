@@ -14,7 +14,7 @@ void main() {
     test('sends the correct Accept header', () async {
       await servePackages();
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'hosted': {'name': 'foo', 'url': globalServer.url}
         }
@@ -33,7 +33,7 @@ void main() {
     test('prints a friendly error if the version is out-of-date', () async {
       await servePackages();
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'hosted': {'name': 'foo', 'url': globalServer.url}
         }
@@ -49,7 +49,7 @@ void main() {
       expect(
           pub.stderr,
           emitsLines(
-              'Pub 0.1.2+3 is incompatible with the current version of localhost.\n'
+              'Pub 3.1.2+3 is incompatible with the current version of localhost.\n'
               'Upgrade pub to the latest version and try again.'));
     });
   });

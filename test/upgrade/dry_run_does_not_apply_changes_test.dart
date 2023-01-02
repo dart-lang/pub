@@ -16,7 +16,7 @@ void main() {
       ..serve('foo', '2.0.0');
 
     // Create the first lockfile.
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet();
 
@@ -26,7 +26,7 @@ void main() {
     ]).validate();
 
     // Change the pubspec.
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Also delete the ".dart_tool" directory.
     deleteEntry(path.join(d.sandbox, appPath, '.dart_tool'));
@@ -53,7 +53,7 @@ void main() {
       ..serve('foo', '1.0.0')
       ..serve('foo', '2.0.0');
 
-    await d.appDir({'foo': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
     await pubGet();
 
@@ -80,7 +80,7 @@ void main() {
 
     await d.dir(appPath, [
       // The pubspec should not be modified.
-      d.appPubspec({'foo': '^1.0.0'}),
+      d.appPubspec(dependencies: {'foo': '^1.0.0'}),
       // The lockfile should not be modified.
       d.file('pubspec.lock', contains('1.0.0')),
       // The ".dart_tool" directory should not have been regenerated.
@@ -100,7 +100,7 @@ void main() {
     );
 
     await d.dir(appPath, [
-      d.appPubspec({'foo': '^2.0.0'}),
+      d.appPubspec(dependencies: {'foo': '^2.0.0'}),
       d.file('pubspec.lock', contains('2.0.0')),
       d.dir('.dart_tool')
     ]).validate();

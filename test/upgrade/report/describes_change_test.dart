@@ -17,7 +17,7 @@ void main() {
     server.discontinue('foo');
 
     // Create the first lockfile.
-    await d.appDir({'foo': '2.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '2.0.0'}).create();
 
     await pubGet();
 
@@ -62,7 +62,7 @@ void main() {
     ]).create();
 
     // Create the first lockfile.
-    await d.appDir({
+    await d.appDir(dependencies: {
       'unchanged': 'any',
       'contents_changed': '1.0.0',
       'version_upgraded': '1.0.0',
@@ -80,7 +80,7 @@ void main() {
     );
 
     // Change the pubspec.
-    await d.appDir({
+    await d.appDir(dependencies: {
       'unchanged': 'any',
       'version_upgraded': 'any',
       'version_downgraded': '1.0.0',

@@ -22,7 +22,7 @@ void main() {
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'bar': {'path': '../bar'}
       })
     ]).create();

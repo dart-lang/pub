@@ -15,7 +15,7 @@ void main() {
       server.serve('pkg$i', '1.$i.0');
     }
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': '1.2.3',
       for (var i = 0; i < 20; i++) 'pkg$i': '^1.$i.0',
     }).create();
