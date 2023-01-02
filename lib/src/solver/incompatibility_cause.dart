@@ -81,9 +81,10 @@ class SdkCause extends IncompatibilityCause {
   /// The SDK with which the package was incompatible.
   final Sdk sdk;
 
-  bool get noNullSafetyCause => sdk.isDartSdk &&
-        !LanguageVersion.fromSdkConstraint(constraint).supportsNullSafety &&
-        sdk.version! >= Version(3, 0, 0).firstPreRelease;
+  bool get noNullSafetyCause =>
+      sdk.isDartSdk &&
+      !LanguageVersion.fromSdkConstraint(constraint).supportsNullSafety &&
+      sdk.version! >= Version(3, 0, 0).firstPreRelease;
 
   @override
   String? get notice {
@@ -103,7 +104,7 @@ class SdkCause extends IncompatibilityCause {
   String? get hint {
     if (noNullSafetyCause) {
       return 'The lower bound of "$constraint" must be 2.12.0'
-      ' or higher for null safety.';
+          ' or higher for null safety.';
     }
     // If the SDK is available, then installing it won't help
     if (sdk.isAvailable) {
