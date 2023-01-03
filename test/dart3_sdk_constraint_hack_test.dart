@@ -142,7 +142,8 @@ void main() {
     });
     await pubGet(
       error: contains(
-        'The lower bound of ">=2.10.0 <3.0.0" must be 2.12.0 or higher for null safety.',
+        'The lower bound of ">=2.10.0 <3.0.0" must be 2.12.0 or higher to enable null safety.'
+        '\nFor details, see https://dart.dev/null-safety',
       ),
     );
   });
