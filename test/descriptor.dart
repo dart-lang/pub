@@ -64,7 +64,7 @@ FileDescriptor outOfDateSnapshot(String name) => file(
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-Descriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
+FileDescriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
       'pubspec.yaml',
       yaml({
         ...contents,
@@ -96,7 +96,7 @@ Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
 /// the current SDK version.
 ///
 /// [extras] is additional fields of the pubspec.
-Descriptor libPubspec(
+FileDescriptor libPubspec(
   String name,
   String version, {
   Map? deps,
