@@ -103,7 +103,7 @@ class SdkCause extends IncompatibilityCause {
   @override
   String? get hint {
     if (noNullSafetyCause) {
-      return 'The lower bound of "$constraint" must be 2.12.0'
+      return 'The lower bound of "sdk: \'$constraint\'" must be 2.12.0'
           ' or higher to enable null safety.'
           '\nFor details, see https://dart.dev/null-safety';
     }
