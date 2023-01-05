@@ -40,6 +40,8 @@ class Pubspec extends PubspecBase {
 
   String? get _packageName => fields['name'] != null ? name : null;
 
+  final bool dependencyOverridesFromOverridesFile;
+
   /// The name of the manifest file.
   static const pubspecYamlFilename = 'pubspec.yaml';
 
@@ -289,6 +291,7 @@ class Pubspec extends PubspecBase {
     Map? fields,
     SourceRegistry? sources,
     Map<String, SdkConstraint>? sdkConstraints,
+    this.dependencyOverridesFromOverridesFile = false,
   })  : _dependencies = dependencies == null
             ? null
             : Map.fromIterable(dependencies, key: (range) => range.name),
@@ -326,6 +329,8 @@ class Pubspec extends PubspecBase {
   })  : _overridesFileFields = overridesFields,
         _includeDefaultSdkConstraint = true,
         _givenSdkConstraints = null,
+        dependencyOverridesFromOverridesFile = overridesFields != null &&
+            overridesFields.containsKey('dependency_overrides'),
         super(fields is YamlMap
             ? fields
             : YamlMap.wrap(fields, sourceUrl: location)) {
