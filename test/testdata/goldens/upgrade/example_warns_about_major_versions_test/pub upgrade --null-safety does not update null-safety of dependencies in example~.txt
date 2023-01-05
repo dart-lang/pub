@@ -2,27 +2,15 @@
 
 ## Section 0
 $ pub upgrade --null-safety --example
-Resolving dependencies...
-+ bar 2.0.0
-Changed 1 dependency!
-
-Changed 1 constraint in pubspec.yaml:
-  bar: ^1.0.0 -> ^2.0.0
-Resolving dependencies in ./example...
-Got dependencies in ./example.
-[STDERR] Running `upgrade --null-safety` only in `.`. Run `dart pub upgrade --null-safety --directory example/` separately.
+[STDERR] The `--null-safety` flag is no longer supported.
+[STDERR] Consider using the Dart 2.19 sdk to migrate to null safety.
+[EXIT CODE] 65
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 1
 $ pub upgrade --null-safety --directory example
-Resolving dependencies in example...
-> bar 2.0.0 (was 1.0.0)
-> foo 2.0.0 (was 1.0.0)
-  myapp 0.0.0 from path .
-Changed 2 dependencies in example!
-
-Changed 2 constraints in pubspec.yaml:
-  foo: ^1.0.0 -> ^2.0.0
-  bar: ^1.0.0 -> ^2.0.0
+[STDERR] The `--null-safety` flag is no longer supported.
+[STDERR] Consider using the Dart 2.19 sdk to migrate to null safety.
+[EXIT CODE] 65
 

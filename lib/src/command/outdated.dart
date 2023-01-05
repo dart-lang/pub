@@ -7,8 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:collection/collection.dart'
-    show IterableExtension, IterableNullableExtension;
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as path;
 
 import '../command.dart';
@@ -69,12 +68,12 @@ class OutdatedCommand extends PubCommand {
       valueHelp: 'PROPERTY',
       allowed: ['outdated', 'null-safety'],
       defaultsTo: 'outdated',
+      hide: true,
     );
 
     argParser.addFlag(
       'prereleases',
-      help: 'Include prereleases in latest version.\n'
-          '(defaults to on in --mode=null-safety).',
+      help: 'Include prereleases in latest version.',
     );
 
     // Preserve for backwards compatibility.
@@ -98,8 +97,7 @@ class OutdatedCommand extends PubCommand {
     );
     argParser.addFlag(
       'transitive',
-      help: 'Show transitive dependencies.\n'
-          '(defaults to off in --mode=null-safety).',
+      help: 'Show transitive dependencies.',
     );
     argParser.addOption('directory',
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
@@ -107,11 +105,11 @@ class OutdatedCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    final mode = <String, _Mode>{
-      'outdated': _OutdatedMode(),
-      'null-safety': _NullSafetyMode(cache, entrypoint,
-          shouldShowSpinner: _shouldShowSpinner),
-    }[argResults['mode']]!;
+    if (argResults['mode'] == 'null-safety') {
+      dataError('''The `--mode=null-safety` option is no longer supported.
+Consider using the Dart 2.19 sdk to migrate to null safety.''');
+    }
+    final mode = _OutdatedMode();
 
     final includeDevDependencies = argResults['dev-dependencies'];
     final includeDependencyOverrides = argResults['dependency-overrides'];
@@ -288,11 +286,7 @@ class OutdatedCommand extends PubCommand {
   }
 
   bool get showTransitiveDependencies {
-    if (argResults.wasParsed('transitive')) {
-      return argResults['transitive'];
-    }
-    // We default to hidding transitive dependencies in --mode=null-safety
-    return argResults['mode'] != 'null-safety';
+    return argResults['transitive'];
   }
 
   late final bool prereleases = () {
@@ -306,7 +300,7 @@ class OutdatedCommand extends PubCommand {
     if (argResults.wasParsed('pre-releases')) {
       return argResults['pre-releases'];
     }
-    return argResults['mode'] == 'null-safety';
+    return false;
   }();
 
   /// Retrieves the pubspec of package [name] in [version] from [source].
@@ -688,115 +682,6 @@ Showing outdated packages$directoryDescription.
   @override
   Future<Pubspec> resolvablePubspec(Pubspec? pubspec) async {
     return stripVersionUpperBounds(pubspec!);
-  }
-}
-
-class _NullSafetyMode implements _Mode {
-  final SystemCache cache;
-  final Entrypoint entrypoint;
-  final bool shouldShowSpinner;
-
-  final _compliantEmoji = emoji('✓', '+');
-  final _notCompliantEmoji = emoji('✗', 'x');
-
-  _NullSafetyMode(this.cache, this.entrypoint,
-      {required this.shouldShowSpinner});
-
-  @override
-  String explanation(String directoryDescription) => '''
-Showing dependencies$directoryDescription that are currently not opted in to null-safety.
-[${log.red(_notCompliantEmoji)}] indicates versions without null safety support.
-[${log.green(_compliantEmoji)}] indicates versions opting in to null safety.
-''';
-
-  @override
-  String get foundNoBadText =>
-      'All your dependencies declare support for null-safety.';
-
-  @override
-  String get allGood => 'all support null safety.';
-
-  @override
-  String get noResolutionText =>
-      '''No resolution was found. Try running `$topLevelProgram pub upgrade --null-safety --dry-run` to explore why.''';
-
-  @override
-  String get upgradeConstrained =>
-      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --null-safety`';
-
-  @override
-  String get allSafe => 'All dependencies opt in to null-safety.';
-
-  @override
-  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
-      List<_PackageDetails> packages) async {
-    final nullSafetyMap =
-        await log.spinner('Computing null safety support', () async {
-      /// Find all unique ids.
-      final ids = {
-        for (final packageDetails in packages) ...[
-          packageDetails.current?._id,
-          packageDetails.upgradable?._id,
-          packageDetails.resolvable?._id,
-          packageDetails.latest?._id,
-        ]
-      }.whereNotNull();
-
-      return Map.fromEntries(
-        await Future.wait(
-          ids.map(
-            (id) async => MapEntry(id,
-                (await cache.describe(id)).languageVersion.supportsNullSafety),
-          ),
-        ),
-      );
-    }, condition: shouldShowSpinner);
-    return [
-      for (final packageDetails in packages)
-        [
-          packageDetails.current,
-          packageDetails.upgradable,
-          packageDetails.resolvable,
-          packageDetails.latest
-        ].map(
-          (versionDetails) {
-            String Function(String)? color;
-            String? prefix;
-            String? suffix;
-            MapEntry<String, Object>? jsonExplanation;
-            var asDesired = false;
-            if (versionDetails != null) {
-              if (packageDetails.isDiscontinued &&
-                  identical(versionDetails, packageDetails.latest)) {
-                suffix = ' (discontinued)';
-              }
-              if (nullSafetyMap[versionDetails._id]!) {
-                color = log.green;
-                prefix = _compliantEmoji;
-                jsonExplanation = MapEntry('nullSafety', true);
-                asDesired = true;
-              } else {
-                color = log.red;
-                prefix = _notCompliantEmoji;
-                jsonExplanation = MapEntry('nullSafety', false);
-              }
-            }
-            return _MarkedVersionDetails(
-              versionDetails,
-              asDesired: asDesired,
-              format: color,
-              prefix: prefix,
-              suffix: suffix,
-              jsonExplanation: jsonExplanation,
-            );
-          },
-        ).toList()
-    ];
-  }
-
-  @override
-  Future<Pubspec> resolvablePubspec(Pubspec pubspec) async {
-    return constrainedToAtLeastNullSafetyPubspec(pubspec, cache);
   }
 }
 
