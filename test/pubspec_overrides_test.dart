@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -22,11 +23,12 @@ void main() {
         }),
       ]).create();
 
+      final overridesPath = p.join('.', 'pubspec_overrides.yaml');
       await pubCommand(
         command,
         output: contains(
           '''
-! lib 2.0.0 (overridden in ./pubspec_overrides.yaml)
+! lib 2.0.0 (overridden in $overridesPath)
 ''',
         ),
       );
