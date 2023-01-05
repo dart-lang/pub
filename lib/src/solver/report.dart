@@ -427,7 +427,7 @@ $contentHashesDocumentationUrl
 
     // Highlight overridden packages.
     if (isOverridden) {
-      final location = _root.pubspec.usesOverridesFile
+      final location = _root.pubspec.dependencyOverridesFromOverridesFile
           ? ' in ${p.join(_root.dir, Pubspec.pubspecOverridesFilename)}'
           : '';
       output.write(' ${log.magenta('(overridden$location)')}');
