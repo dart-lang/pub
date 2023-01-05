@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.0-dev.1"
@@ -22,6 +23,7 @@ $ pub outdated --json
     },
     {
       "package": "mop",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "0.10.0-dev"
@@ -183,6 +185,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.0-dev.1"
@@ -199,6 +202,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "mop",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "0.10.0-dev"

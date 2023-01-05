@@ -94,7 +94,7 @@ void main() {
       ]).validate();
     });
 
-    test('warns about overridden dependencies', () async {
+    test('informs about overridden dependencies', () async {
       await servePackages()
         ..serve('foo', '1.0.0')
         ..serve('bar', '1.0.0');
@@ -116,14 +116,13 @@ void main() {
       var bazPath = path.join('..', 'baz');
 
       await runPub(
-          args: [command.name],
-          output: command.success,
-          error: '''
-          Warning: You are using these overridden dependencies:
-          ! bar 1.0.0
-          ! baz 0.0.1 from path $bazPath
-          ! foo 1.0.0
-          ''');
+        args: [command.name],
+        output: contains('''
+! bar 1.0.0 (overridden)
+! baz 0.0.1 from path $bazPath (overridden)
+! foo 1.0.0 (overridden)
+'''),
+      );
     });
   });
 }

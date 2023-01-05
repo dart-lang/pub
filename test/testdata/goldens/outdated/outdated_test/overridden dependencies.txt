@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "bar",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",
@@ -25,6 +26,7 @@ $ pub outdated --json
     },
     {
       "package": "baz",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "2.0.0",
@@ -44,6 +46,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",
@@ -210,6 +213,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "bar",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",
@@ -229,6 +233,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "baz",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "2.0.0",
@@ -248,6 +253,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",
