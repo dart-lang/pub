@@ -332,35 +332,48 @@ Specify multiple sdk packages with descriptors.''');
     );
   }
 
+  static final _argRegExp = RegExp(
+    r'^(?:(?<prefix>dev|override):)'
+    r'(?<name>[a-zA-Z0-9$.]*)'
+    r'(?::(?<descriptor>.*))?$',
+  );
+
+  static final _lenientArgRegExp = RegExp(
+    r'^(?:(?<prefix>dev|override):)'
+    r'(?<name>[a-zA-Z0-9$.]*)'
+    r'(?::(?<descriptor>.*))?$',
+  );
+
   /// Split [arg] on ':' and interpret it with the flags in [argResult] either as
   /// an old-style or a new-style descriptor to produce a PackageRef].
   _ParseResult _parsePackage(String arg, ArgResults argResults) {
     var isDev = argResults['dev'] as bool;
     var isOverride = false;
-    final firstColon = arg.indexOf(':');
-    if (firstColon != -1) {
-      final prefix = arg.substring(0, firstColon);
-      if (prefix == 'dev') {
-        if (argResults.isDev) {
-          usageException("Cannot combine 'dev:' with --dev");
-        }
-        isDev = true;
-        arg = arg.substring(prefix.length + 1);
-      } else if (prefix == 'override') {
-        if (argResults.isDev) {
-          usageException("Cannot combine 'override:' with --dev");
-        }
-        isOverride = true;
-        arg = arg.substring(prefix.length + 1);
+
+    final match = _argRegExp.firstMatch(arg);
+    if (match == null) {
+      final match2 = _lenientArgRegExp.firstMatch(arg);
+      if (match2 == null) {
+        usageException('Could not parse $arg');
+      } else {
+        usageException('The only allowed prefixes are "dev:" and "override:"');
       }
-      // TODO(sigurdm): can we give a better error message if someone mistypes the prefix?
+    } else if (match.namedGroup('prefix') == 'dev') {
+      if (argResults.isDev) {
+        usageException("Cannot combine 'dev:' with --dev");
+      }
+      isDev = true;
+    } else if (match.namedGroup('prefix') == 'override') {
+      if (argResults.isDev) {
+        usageException("Cannot combine 'override:' with --dev");
+      }
+      isOverride = true;
     }
-    final nextColon = arg.indexOf(':');
-    final packageName = nextColon == -1 ? arg : arg.substring(0, nextColon);
-    if (!packageNameRegExp.hasMatch(packageName)) {
+    final packageName = match.namedGroup('name')!;
+    if (packageNameRegExp.hasMatch(packageName)) {
       usageException('Not a valid package name: "$packageName"');
     }
-    final descriptor = nextColon == -1 ? null : arg.substring(nextColon + 1);
+    final descriptor = match.namedGroup('descriptor');
 
     if (isOverride && descriptor == null) {
       usageException('A dependency override needs an explicit descriptor.');
