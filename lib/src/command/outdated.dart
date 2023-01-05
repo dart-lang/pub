@@ -386,6 +386,15 @@ Future<void> _outputJson(
           element.kind == _DependencyKind.devTransitive,
     );
   }
+
+  String kindString(_DependencyKind kind) {
+    return {
+          _DependencyKind.direct: 'direct',
+          _DependencyKind.dev: 'dev',
+        }[kind] ??
+        'transitive';
+  }
+
   log.message(
     JsonEncoder.withIndent('  ').convert(
       {
@@ -393,6 +402,7 @@ Future<void> _outputJson(
           ...(rows..sort((a, b) => a.name.compareTo(b.name)))
               .map((packageDetails) => {
                     'package': packageDetails.name,
+                    'kind': kindString(packageDetails.kind),
                     'isDiscontinued': packageDetails.isDiscontinued,
                     'current': markedRows[packageDetails]![0].toJson(),
                     'upgradable': markedRows[packageDetails]![1].toJson(),

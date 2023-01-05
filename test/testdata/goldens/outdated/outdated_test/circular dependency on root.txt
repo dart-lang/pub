@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.2.3"
@@ -121,6 +122,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.2.3"

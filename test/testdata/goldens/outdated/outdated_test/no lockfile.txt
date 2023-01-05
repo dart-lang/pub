@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "bar",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": null,
       "upgradable": {
@@ -20,6 +21,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": null,
       "upgradable": {
@@ -157,6 +159,7 @@ $ pub outdated --json --no-dev-dependencies
   "packages": [
     {
       "package": "bar",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": null,
       "upgradable": {
@@ -171,6 +174,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": null,
       "upgradable": {

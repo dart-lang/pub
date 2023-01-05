@@ -12,7 +12,7 @@ $ dependency_services list
   "dependencies": [
     {
       "name": "bar",
-      "version": "dacb35fe9f1c46982255eadd79480f8eba943ee0",
+      "version": "1ea665d6de007c60308949db4c6ae8049c2395f0",
       "kind": "direct",
       "constraint": "any",
       "source": {
@@ -20,7 +20,7 @@ $ dependency_services list
         "description": {
           "url": "../bar.git",
           "ref": "HEAD",
-          "resolved-ref": "dacb35fe9f1c46982255eadd79480f8eba943ee0",
+          "resolved-ref": "1ea665d6de007c60308949db4c6ae8049c2395f0",
           "path": "."
         }
       }
@@ -64,18 +64,18 @@ $ dependency_services report
   "dependencies": [
     {
       "name": "bar",
-      "version": "dacb35fe9f1c46982255eadd79480f8eba943ee0",
+      "version": "1ea665d6de007c60308949db4c6ae8049c2395f0",
       "kind": "direct",
       "source": {
         "type": "git",
         "description": {
           "url": "../bar.git",
           "ref": "HEAD",
-          "resolved-ref": "dacb35fe9f1c46982255eadd79480f8eba943ee0",
+          "resolved-ref": "1ea665d6de007c60308949db4c6ae8049c2395f0",
           "path": "."
         }
       },
-      "latest": "dacb35fe9f1c46982255eadd79480f8eba943ee0",
+      "latest": "1ea665d6de007c60308949db4c6ae8049c2395f0",
       "constraint": "any",
       "compatible": [],
       "singleBreaking": [],
