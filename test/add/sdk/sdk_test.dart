@@ -30,7 +30,7 @@ void main() {
   });
 
   test("adds an SDK dependency's dependencies", () async {
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     await pubAdd(
         args: ['foo', '--sdk', 'flutter'],
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
@@ -54,7 +54,7 @@ void main() {
   test(
       "adds an SDK dependency's dependencies with version constraint specified",
       () async {
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     await pubAdd(
         args: ['foo:0.0.1', '--sdk', 'flutter'],
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
@@ -75,7 +75,7 @@ void main() {
   });
 
   test('adds an SDK dependency from bin/cache/pkg', () async {
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     await pubAdd(
         args: ['baz', '--sdk', 'flutter'],
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
@@ -88,7 +88,7 @@ void main() {
   });
 
   test("fails if the version constraint doesn't match", () async {
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     await pubAdd(
         args: ['foo:^1.0.0', '--sdk', 'flutter'],
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
@@ -98,7 +98,7 @@ void main() {
             """),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),

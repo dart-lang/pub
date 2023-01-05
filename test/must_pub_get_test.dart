@@ -39,7 +39,7 @@ void main() {
       d.pubspec({'name': 'bar'})
     ]).create();
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'bar': {'path': '../bar'}
       })
     ]).create();
@@ -82,7 +82,7 @@ void main() {
         await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec({
+          d.appPubspec(dependencies: {
             'foo': {'path': '../foo'}
           })
         ]).create();
@@ -98,7 +98,7 @@ void main() {
     group('the lockfile has a dependency from the wrong source', () {
       setUp(() async {
         await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'})
         ]).create();
 
         await pubGet();
@@ -116,7 +116,7 @@ void main() {
     group('the lockfile has a dependency from an unknown source', () {
       setUp(() async {
         await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'})
         ]).create();
 
         await pubGet();
@@ -148,7 +148,7 @@ void main() {
         await d.dir('bar', [d.libPubspec('foo', '1.0.0')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec({
+          d.appPubspec(dependencies: {
             'foo': {'path': '../bar'}
           })
         ]).create();
@@ -168,13 +168,13 @@ void main() {
     group('the pubspec has an incompatible version of a dependency', () {
       setUp(() async {
         await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'})
         ]).create();
 
         await pubGet();
 
         await d.dir(appPath, [
-          d.appPubspec({'foo': '2.0.0'})
+          d.appPubspec(dependencies: {'foo': '2.0.0'})
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -190,7 +190,7 @@ void main() {
         'pubspec', () {
       setUp(() async {
         await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'})
         ]).create();
 
         await pubGet();
@@ -210,7 +210,7 @@ void main() {
         await d.dir('bar', [d.libPubspec('foo', '1.0.0')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec({
+          d.appPubspec(dependencies: {
             'foo': {'path': '../bar'}
           })
         ]).create();
@@ -260,7 +260,7 @@ void main() {
         await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.2.3+4'});
       });
 
-      _requiresPubGet("Dart 0.1.2+3 is incompatible with your dependencies' "
+      _requiresPubGet("Dart 3.1.2+3 is incompatible with your dependencies' "
           'SDK constraints. Please run "dart pub get" again.');
     });
 
@@ -270,13 +270,16 @@ void main() {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
       server.serve('foo', '3.0.0', pubspec: {
-        'environment': {'flutter': '>=1.0.0 <2.0.0'}
+        'environment': {
+          'flutter': '>=1.0.0 <2.0.0',
+          'sdk': defaultSdkConstraint
+        }
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '3.0.0'})
+        d.appPubspec(dependencies: {'foo': '3.0.0'})
       ]).create();
 
       await pubGet(environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
@@ -300,7 +303,7 @@ void main() {
         ]).create();
 
         await d.dir(appPath, [
-          d.appPubspec({
+          d.appPubspec(dependencies: {
             'bar': {'path': '../bar'}
           })
         ]).create();
@@ -327,13 +330,13 @@ void main() {
             'bar',
             '1.0.0',
             deps: {'foo': '1.0.0'},
-            // Creates language version requirement 0.0
-            sdk: '>= 0.0.1 <=0.9.9', // tests runs with '0.1.2+3'
+            // Creates language version requirement 2.99
+            sdk: '>= 2.99.0 <=4.0.0', // tests runs with '3.1.2+3'
           ),
         ]).create();
 
         await d.dir(appPath, [
-          d.appPubspec({
+          d.appPubspec(dependencies: {
             'bar': {'path': '../bar'}
           })
         ]).create();
@@ -346,8 +349,8 @@ void main() {
             'bar',
             '1.0.0',
             deps: {'foo': '1.0.0'},
-            // Creates language version requirement 0.1
-            sdk: '>= 0.1.0 <=0.9.9', // tests runs with '0.1.2+3'
+            // Creates language version requirement 2.100
+            sdk: '>= 2.100.0 <=4.0.0', // tests runs with '3.1.2+3'
           ),
         ]).create();
       });
@@ -364,7 +367,7 @@ void main() {
         'package-config, even if the contents are wrong', () {
       setUp(() async {
         await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'})
         ]).create();
         // Ensure we get a new mtime (mtime is only reported with 1s precision)
         await _touch('pubspec.yaml');
@@ -379,7 +382,7 @@ void main() {
     group("the pubspec is newer than the lockfile, but they're up-to-date", () {
       setUp(() async {
         await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'})
         ]).create();
 
         await pubGet();
@@ -398,7 +401,7 @@ void main() {
         ]).create();
 
         await d.dir(appPath, [
-          d.appPubspec({
+          d.appPubspec(dependencies: {
             'foo': {'path': '../foo'}
           })
         ]).create();
@@ -415,7 +418,7 @@ void main() {
         () {
       setUp(() async {
         await d.dir(appPath, [
-          d.appPubspec({'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'})
         ]).create();
 
         await pubGet();
@@ -452,13 +455,16 @@ void main() {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
       server.serve('foo', '3.0.0', pubspec: {
-        'environment': {'flutter': '>=1.0.0 <2.0.0'}
+        'environment': {
+          'flutter': '>=1.0.0 <2.0.0',
+          'sdk': defaultSdkConstraint
+        }
       });
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '3.0.0'})
+        d.appPubspec(dependencies: {'foo': '3.0.0'})
       ]).create();
 
       await pubGet(environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});

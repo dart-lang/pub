@@ -20,7 +20,7 @@ void main() {
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -31,22 +31,22 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();
@@ -61,7 +61,7 @@ void main() {
             deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -84,22 +84,22 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();
@@ -107,7 +107,7 @@ void main() {
 
     test('package_config.json file is not created if pub fails', () async {
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
         d.dir('lib')
       ]).create();
 
@@ -134,7 +134,7 @@ void main() {
 
       await d.dir('local_baz', [
         d.libDir('baz', 'baz 3.2.1'),
-        d.rawPubspec({
+        d.pubspec({
           'name': 'baz',
           'version': '3.2.1',
         }),
@@ -160,17 +160,17 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'baz',
             path: '../local_baz',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();
@@ -183,7 +183,7 @@ void main() {
         '1.2.3',
         pubspec: {
           'environment': {
-            'sdk': '>=0.0.1 <=0.2.2+2', // tests runs with '0.1.2+3'
+            'sdk': '>=3.0.1 <=3.2.2+2', // tests runs with '3.1.2+3'
           },
         },
         contents: [d.dir('lib', [])],
@@ -196,7 +196,7 @@ void main() {
             'foo': '^1.2.3',
           },
           'environment': {
-            'sdk': '>=0.1.0 <=0.2.2+2', // tests runs with '0.1.2+3'
+            'sdk': '>=3.1.0 <=3.2.2+2', // tests runs with '3.1.2+3'
           },
         }),
         d.dir('lib')
@@ -209,25 +209,26 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '0.0',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.1',
           ),
         ]),
       ]).validate();
     });
 
     test('package_config.json has 2.7 default language version', () async {
+      // TODO(sigurdm): Reconsider the default language version for dart 3.
       final server = await servePackages();
       server.serve(
         'foo',
         '1.2.3',
         pubspec: {
           'environment': {
-            'sdk': 'any',
+            'sdk': '<4.0.0',
           },
         },
         contents: [d.dir('lib', [])],
@@ -255,7 +256,7 @@ void main() {
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();

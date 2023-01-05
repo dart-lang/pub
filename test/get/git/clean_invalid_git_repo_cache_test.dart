@@ -30,7 +30,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).create();
 
@@ -56,7 +56,7 @@ void main() {
     await repo.create();
     await repo.runGit(['branch', 'old']);
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': {'url': '../foo.git', 'ref': 'old'}
       }
@@ -84,7 +84,7 @@ void main() {
     await repo.create();
     var commit = await repo.revParse('HEAD');
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {
         'git': {'url': '../foo.git', 'ref': commit}
       }

@@ -13,7 +13,7 @@ void main() {
 
     await d.git('foo.git', [d.libDir('foo')]).create();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'git': '../foo.git'}
     }).create();
 

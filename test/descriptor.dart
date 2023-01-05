@@ -33,7 +33,7 @@ TarFileDescriptor tar(String name, [List<Descriptor>? contents]) =>
 
 /// Describes a package that passes all validation.
 DirectoryDescriptor get validPackage => dir(appPath, [
-      libPubspec('test_pkg', '1.0.0', sdk: '>=0.1.2 <=0.2.0'),
+      libPubspec('test_pkg', '1.0.0', sdk: '>=3.1.2 <=3.2.0'),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
@@ -64,13 +64,13 @@ FileDescriptor outOfDateSnapshot(String name) => file(
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-Descriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
+FileDescriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
       'pubspec.yaml',
       yaml({
         ...contents,
         // TODO: Copy-pasting this into all call-sites, or use d.libPubspec
         'environment': {
-          'sdk': '>=0.1.2 <1.0.0',
+          'sdk': defaultSdkConstraint,
           ...(contents['environment'] ?? {}) as Map,
         },
       }),
@@ -81,12 +81,10 @@ Descriptor rawPubspec(Map<String, Object> contents) =>
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
-Descriptor appPubspec([Map? dependencies]) {
+Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
   var map = <String, Object>{
     'name': 'myapp',
-    'environment': {
-      'sdk': '>=0.1.2 <1.0.0',
-    },
+    ...?extras,
   };
   if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);
@@ -98,7 +96,7 @@ Descriptor appPubspec([Map? dependencies]) {
 /// the current SDK version.
 ///
 /// [extras] is additional fields of the pubspec.
-Descriptor libPubspec(
+FileDescriptor libPubspec(
   String name,
   String version, {
   Map? deps,
@@ -109,8 +107,6 @@ Descriptor libPubspec(
   var map = packageMap(name, version, deps, devDeps);
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
-  } else {
-    map['environment'] = {'sdk': '>=0.1.2 <1.0.0'};
   }
   return pubspec({...map, ...extras});
 }
@@ -280,8 +276,8 @@ Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
 
 /// Describes the application directory, containing only a pubspec specifying
 /// the given [dependencies].
-DirectoryDescriptor appDir([Map? dependencies]) =>
-    dir(appPath, [appPubspec(dependencies)]);
+DirectoryDescriptor appDir({Map? dependencies, Map<String, Object>? pubspec}) =>
+    dir(appPath, [appPubspec(dependencies: dependencies, extras: pubspec)]);
 
 /// Describes a `.dart_tools/package_config.json` file.
 ///
@@ -292,13 +288,13 @@ DirectoryDescriptor appDir([Map? dependencies]) =>
 /// that matches the `rootUri` of that package.
 Descriptor packageConfigFile(
   List<PackageConfigEntry> packages, {
-  String generatorVersion = '0.1.2+3',
+  String generatorVersion = '3.1.2+3',
 }) =>
     PackageConfigFileDescriptor(packages, generatorVersion);
 
 Descriptor appPackageConfigFile(
   List<PackageConfigEntry> packages, {
-  String generatorVersion = '0.1.2+3',
+  String generatorVersion = '3.1.2+3',
 }) =>
     dir(
       appPath,

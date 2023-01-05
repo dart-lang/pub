@@ -15,7 +15,7 @@ void main() {
     await d.dir('foo', [d.libDir('foo'), d.file('pubspec.yaml', '')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': '../foo'}
       })
     ]).create();

@@ -21,7 +21,7 @@ void main() {
         ])
       ]);
 
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubGet(
           args: ['--precompile'],
@@ -59,7 +59,7 @@ void main() {
         ])
         ..serve('bar', '1.2.3', deps: {'foo': '1.2.3'});
 
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubGet(
           args: ['--precompile'],
@@ -92,7 +92,7 @@ void main() {
               'bin', [d.file('hello.dart', "void main() => print('hello!');")])
         ]);
 
-        await d.appDir({'foo': 'any'}).create();
+        await d.appDir(dependencies: {'foo': 'any'}).create();
 
         await pubGet(
             args: ['--precompile'], output: contains('Built foo:hello.'));
@@ -136,7 +136,7 @@ void main() {
           d.dir('lib', [d.file('bar.dart', "final message = 'hello!';")])
         ]);
 
-        await d.appDir({'foo': 'any'}).create();
+        await d.appDir(dependencies: {'foo': 'any'}).create();
 
         await pubGet(
             args: ['--precompile'], output: contains('Built foo:hello.'));
@@ -170,7 +170,7 @@ void main() {
               'bin', [d.file('hello.dart', "void main() => print('Hello!');")])
         ]).create();
 
-        await d.appDir({
+        await d.appDir(dependencies: {
           'foo': {'git': '../foo.git'}
         }).create();
 
@@ -205,7 +205,7 @@ void main() {
               'bin', [d.file('hello.dart', "void main() => print('hello!');")])
         ]);
 
-        await d.appDir({'foo': '5.6.7'}).create();
+        await d.appDir(dependencies: {'foo': '5.6.7'}).create();
 
         await pubGet(args: ['--no-precompile']);
 

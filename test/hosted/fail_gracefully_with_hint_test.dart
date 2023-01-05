@@ -14,7 +14,7 @@ void main() {
     // Run the server so that we know what URL to use in the system cache.
     (await servePackages()).serveErrors();
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(
       args: ['--offline'],
@@ -48,7 +48,7 @@ void main() {
       ]),
     ]).create();
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(
       args: ['--offline'],

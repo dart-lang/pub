@@ -16,7 +16,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // This should lock the foo dependency to version 1.0.0.
     await pubGet();

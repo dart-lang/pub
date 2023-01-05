@@ -226,8 +226,13 @@ class PackageServer {
       {Map<String, dynamic>? deps,
       Map<String, dynamic>? pubspec,
       List<d.Descriptor>? contents,
+      String? sdk,
       Map<String, List<String>>? headers}) {
-    var pubspecFields = <String, dynamic>{'name': name, 'version': version};
+    var pubspecFields = <String, dynamic>{
+      'name': name,
+      'version': version,
+      'environment': {'sdk': sdk ?? '^3.0.0'}
+    };
     if (pubspec != null) pubspecFields.addAll(pubspec);
     if (deps != null) pubspecFields['dependencies'] = deps;
 

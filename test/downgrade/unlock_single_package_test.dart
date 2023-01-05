@@ -13,7 +13,7 @@ void main() {
     server.serve('foo', '2.1.0', deps: {'bar': '>1.0.0'});
     server.serve('bar', '2.1.0');
 
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
     await pubGet();
     await d.appPackageConfigFile([
@@ -52,7 +52,7 @@ void main() {
       ..serve('foo', '2.0.0')
       ..serve('foo', '2.1.0');
 
-    await d.appDir({'foo': '^2.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^2.0.0'}).create();
 
     await pubGet();
     await d.appPackageConfigFile([

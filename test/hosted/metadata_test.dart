@@ -15,7 +15,7 @@ void main() {
       final server = await servePackages();
       server.serve('foo', '1.0.0');
 
-      await d.appDir({'foo': '1.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
       await pubCommand(command,
           silent: allOf([
@@ -60,7 +60,7 @@ void main() {
       final server = await servePackages();
       server.serve('bar', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'path': '../foo'}
       }).create();
 
@@ -82,7 +82,7 @@ void main() {
       var server = await startPackageServer()
         ..serve('foo', '1.0.0');
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {
           'version': '1.0.0',
           'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
@@ -95,7 +95,7 @@ void main() {
     test("doesn't send metadata headers when CI=true", () async {
       (await servePackages()).serve('foo', '1.0.0');
 
-      await d.appDir({'foo': '1.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
       await pubCommand(command,
           silent: isNot(contains('X-Pub-')),

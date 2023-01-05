@@ -13,6 +13,9 @@ import 'sdk/fuchsia.dart';
 /// An SDK that can provide packages and on which pubspecs can express version
 /// constraints.
 abstract class Sdk {
+  /// Is this the Dart sdk?
+  bool get isDartSdk => identifier == 'dart';
+
   /// This SDK's human-readable name.
   String get name;
 

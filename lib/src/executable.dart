@@ -27,10 +27,6 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
   final experiments = argResults['enable-experiment'] as List;
   return [
     if (experiments.isNotEmpty) "--enable-experiment=${experiments.join(',')}",
-    if (argResults.wasParsed('sound-null-safety'))
-      argResults['sound-null-safety']
-          ? '--sound-null-safety'
-          : '--no-sound-null-safety',
   ];
 }
 

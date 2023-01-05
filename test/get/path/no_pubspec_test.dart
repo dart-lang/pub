@@ -16,7 +16,7 @@ void main() {
     var fooPath = path.join(d.sandbox, 'foo');
 
     await d.dir(appPath, [
-      d.appPubspec({
+      d.appPubspec(dependencies: {
         'foo': {'path': fooPath}
       })
     ]).create();

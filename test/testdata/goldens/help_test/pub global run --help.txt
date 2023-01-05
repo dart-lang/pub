@@ -11,8 +11,6 @@ Usage: pub global run <package>:<executable> [args...]
                                         given experiments enabled. (Will disable
                                         snapshotting, resulting in slower
                                         startup).
-    --[no-]sound-null-safety            Override the default null safety
-                                        execution mode.
 
 Run "pub help" to see global options.
 

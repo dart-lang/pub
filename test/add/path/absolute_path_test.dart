@@ -14,7 +14,7 @@ void main() {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     final absolutePath = path.join(d.sandbox, 'foo');
 
@@ -24,7 +24,7 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: absolutePath),
     ]).validate();
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'path': absolutePath}
     }).validate();
   });
@@ -33,12 +33,12 @@ void main() {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     final absolutePath = path.join(d.sandbox, 'foo');
 
     await pubAdd(args: ['foo:0.0.1', '--path', absolutePath]);
 
-    await d.appDir({
+    await d.appDir(dependencies: {
       'foo': {'path': absolutePath, 'version': '0.0.1'}
     }).validate();
   });
@@ -49,7 +49,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     final absolutePath = path.join(d.sandbox, 'foo');
 
     await pubAdd(
@@ -57,7 +57,7 @@ void main() {
         error: contains('--path cannot be used with multiple packages.'),
         exitCode: exit_codes.USAGE);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -71,7 +71,7 @@ void main() {
     await d.git(
         'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
     final absolutePath = path.join(d.sandbox, 'foo');
 
     await pubAdd(
@@ -82,7 +82,7 @@ void main() {
             'failed.'),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
@@ -91,7 +91,7 @@ void main() {
   });
 
   test('fails if path does not exist', () async {
-    await d.appDir({}).create();
+    await d.appDir(dependencies: {}).create();
 
     final absolutePath = path.join(d.sandbox, 'foo');
 
@@ -103,7 +103,7 @@ void main() {
             'failed.'),
         exitCode: exit_codes.DATA);
 
-    await d.appDir({}).validate();
+    await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),

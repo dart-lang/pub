@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command_runner.dart';
@@ -9,6 +10,7 @@ import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../pubspec.dart';
 import '../source/hosted.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
@@ -64,7 +66,6 @@ class SolveReport {
   Future<bool> show() async {
     final hasChanges = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
-    await _reportOverrides();
     return hasChanges;
   }
 
@@ -239,22 +240,6 @@ $contentHashesDocumentationUrl
     return hasChanges;
   }
 
-  /// Displays a warning about the overrides currently in effect.
-  Future<void> _reportOverrides() async {
-    final output = StringBuffer();
-
-    if (_root.dependencyOverrides.isNotEmpty) {
-      output.writeln('Warning: You are using these overridden dependencies:');
-
-      for (var name in ordered(_root.dependencyOverrides.keys)) {
-        await _reportPackage(name, output,
-            alwaysShow: true, highlightOverride: false);
-      }
-
-      warning(output.toString());
-    }
-  }
-
   /// Displays a single-line message, number of discontinued packages
   /// if discontinued packages are detected.
   Future<void> reportDiscontinued() async {
@@ -311,8 +296,11 @@ $contentHashesDocumentationUrl
   /// "(override)" next to overridden packages.
   ///
   /// Returns true if the package had changed.
-  Future<bool> _reportPackage(String name, StringBuffer output,
-      {bool alwaysShow = false, bool highlightOverride = true}) async {
+  Future<bool> _reportPackage(
+    String name,
+    StringBuffer output, {
+    bool alwaysShow = false,
+  }) async {
     var newId = _newLockFile.packages[name];
     var oldId = _previousLockFile.packages[name];
     var id = newId ?? oldId!;
@@ -417,7 +405,11 @@ $contentHashesDocumentationUrl
     }
 
     if (_type == SolveType.get &&
-        !(alwaysShow || changed || addedOrRemoved || message != null)) {
+        !(alwaysShow ||
+            changed ||
+            addedOrRemoved ||
+            message != null ||
+            isOverridden)) {
       return changed || addedOrRemoved;
     }
 
@@ -434,8 +426,11 @@ $contentHashesDocumentationUrl
     }
 
     // Highlight overridden packages.
-    if (isOverridden && highlightOverride) {
-      output.write(" ${log.magenta('(overridden)')}");
+    if (isOverridden) {
+      final location = _root.pubspec.dependencyOverridesFromOverridesFile
+          ? ' in ${p.join(_root.dir, Pubspec.pubspecOverridesFilename)}'
+          : '';
+      output.write(' ${log.magenta('(overridden$location)')}');
     }
 
     if (message != null) output.write(' ${log.cyan(message)}');

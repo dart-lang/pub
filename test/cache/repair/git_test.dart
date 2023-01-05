@@ -17,7 +17,7 @@ void main() {
       await d.git(
           'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'foo': {'git': '../foo.git'}
       }).create();
       await pubGet();
@@ -123,7 +123,7 @@ void main() {
         d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.0')])
       ]).create();
 
-      await d.appDir({
+      await d.appDir(dependencies: {
         'sub': {
           'git': {'url': '../foo.git', 'path': 'subdir'}
         }

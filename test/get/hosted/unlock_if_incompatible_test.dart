@@ -14,7 +14,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet();
 
@@ -22,7 +22,7 @@ void main() {
       d.packageConfigEntry(name: 'foo', version: '1.0.0'),
     ]).validate();
     server.serve('foo', '1.0.1');
-    await d.appDir({'foo': '>1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '>1.0.0'}).create();
 
     await pubGet();
 

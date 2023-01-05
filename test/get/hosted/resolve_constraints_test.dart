@@ -16,7 +16,7 @@ void main() {
       ..serve('baz', '2.0.4')
       ..serve('baz', '3.0.1');
 
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
     await pubGet();
 

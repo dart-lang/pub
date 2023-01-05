@@ -45,7 +45,7 @@ void main() {
     await d.dir(cachePath, [
       d.dir('bin', [
         d.file(binStubName('foo-script'),
-            contains('This file was created by pub v0.1.2+3'))
+            contains('This file was created by pub v3.1.2+3'))
       ])
     ]).validate();
   });
