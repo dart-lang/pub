@@ -52,11 +52,9 @@ class GitignoreValidator extends Validator {
       final unignoredByGitignore = Ignore.listFiles(
         beneath: beneath,
         listDir: (dir) {
-          var contents = Directory(resolve(dir)).listSync();
-          return contents
-              .where((e) => !(linkExists(e.path) && dirExists(e.path)))
-              .map((entity) => p.posix
-                  .joinAll(p.split(p.relative(entity.path, from: root))));
+          var contents = Directory(resolve(dir)).listSync(followLinks: false);
+          return contents.map((entity) =>
+              p.posix.joinAll(p.split(p.relative(entity.path, from: root))));
         },
         ignoreForDir: (dir) {
           final gitIgnore = resolve('$dir/.gitignore');
@@ -65,7 +63,10 @@ class GitignoreValidator extends Validator {
           ];
           return rules.isEmpty ? null : Ignore(rules);
         },
-        isDir: (dir) => dirExists(resolve(dir)),
+        isDir: (dir) {
+          final resolved = resolve(dir);
+          return dirExists(resolved) && !linkExists(resolved);
+        },
       ).map((file) {
         final relative = p.relative(resolve(file), from: entrypoint.root.dir);
         return Platform.isWindows

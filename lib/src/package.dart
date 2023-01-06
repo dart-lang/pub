@@ -231,25 +231,38 @@ class Package {
       return p.join(root, path);
     }
 
+    // Maintain set of visited symlinks for every directory.
+    // If the same symlink is visited twice while moving down the tree,
+    // then we have faced a loop.
+    //
+    // additional complexity:
+    // N - number of directory symlinks
+    // memory and time complexity are roughly the same:
+    //   from O(N) (without nested symlinks):
+    //     single set is created for each symlink and never copied
+    //   up to O(N^2) (each symlink is nested in previous one):
+    //     for each symlink clone set with all visited symlinks.
+    //     i-th set contains i symlinks.
+    final visitedSymlinks = <String, Set<String>>{};
+
     return Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
-        var contents = Directory(resolve(dir)).listSync();
+        final resolvedDir = resolve(dir);
+        _assertSymlinkLoop(dir, resolvedDir, visitedSymlinks);
+
+        var contents = Directory(resolvedDir).listSync(followLinks: false);
+
         if (!recursive) {
-          contents = contents.where((entity) => entity is! Directory).toList();
+          contents = contents
+              .where(
+                (entity) =>
+                    entity is! Directory &&
+                    !(linkExists(entity.path) && dirExists(entity.path)),
+              )
+              .toList();
         }
         return contents.map((entity) {
-          if (linkExists(entity.path)) {
-            final target = Link(entity.path).targetSync();
-            if (dirExists(entity.path)) {
-              throw DataException(
-                  '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''');
-            }
-            if (!fileExists(entity.path)) {
-              throw DataException(
-                  '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''');
-            }
-          }
           final relative = p.relative(entity.path, from: root);
           if (Platform.isWindows) {
             return p.posix.joinAll(p.split(relative));
@@ -314,7 +327,54 @@ class Package {
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
-    ).map(resolve).toList();
+    ).map(resolve).map(_assertFileLinksResolvable).toList();
+  }
+
+  static void _assertSymlinkLoop(
+    String internalDir,
+    String resolvedDir,
+    Map<String, Set<String>> visitedSymlinks,
+  ) {
+    final link = Link(resolvedDir);
+
+    var currentSymlinks = visitedSymlinks[p.posix.dirname(internalDir)];
+    currentSymlinks ??= <String>{};
+
+    if (link.existsSync()) {
+      // copy on write
+      currentSymlinks = currentSymlinks.toSet();
+
+      // "normalize" link path by resolving all links above it.
+      final resolvedLinkPath = p.join(
+        link.parent.resolveSymbolicLinksSync(),
+        p.basename(resolvedDir),
+      );
+
+      if (!currentSymlinks.add(resolvedLinkPath)) {
+        final link = Link(resolvedDir);
+        final target = link.targetSync();
+        throw DataException(
+          'Pub does not support publishing packages with symlinks loop: '
+          '`$resolvedDir` => `$target`. '
+          'Full list of visited symlinks: $currentSymlinks',
+        );
+      }
+    }
+
+    visitedSymlinks[internalDir] = currentSymlinks;
+  }
+
+  static String _assertFileLinksResolvable(String path) {
+    if (!linkExists(path)) {
+      return path;
+    }
+    if (!fileExists(path)) {
+      final target = Link(path).targetSync();
+      throw DataException(
+          'Pub does not support publishing packages with non-resolving symlink: '
+          '`$path` => `$target`.');
+    }
+    return path;
   }
 }
 
