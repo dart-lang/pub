@@ -333,14 +333,14 @@ Specify multiple sdk packages with descriptors.''');
   }
 
   static final _argRegExp = RegExp(
-    r'^(?:(?<prefix>dev|override):)'
-    r'(?<name>[a-zA-Z0-9$.]*)'
+    r'^(?:(?<prefix>dev|override):)?'
+    r'(?<name>[a-zA-Z0-9$.]+)'
     r'(?::(?<descriptor>.*))?$',
   );
 
   static final _lenientArgRegExp = RegExp(
-    r'^(?:(?<prefix>dev|override):)'
-    r'(?<name>[a-zA-Z0-9$.]*)'
+    r'^(?:(?<prefix>[^:]*):)?'
+    r'(?<name>[^:]*)'
     r'(?::(?<descriptor>.*))?$',
   );
 
@@ -356,7 +356,16 @@ Specify multiple sdk packages with descriptors.''');
       if (match2 == null) {
         usageException('Could not parse $arg');
       } else {
-        usageException('The only allowed prefixes are "dev:" and "override:"');
+        if (match2.namedGroup('prefix') != null &&
+            match2.namedGroup('descriptor') != null) {
+          usageException(
+              'The only allowed prefixes are "dev:" and "override:"');
+        } else {
+          final packageName = match2.namedGroup('descriptor') == null
+              ? match2.namedGroup('prefix')
+              : match2.namedGroup('name');
+          usageException('Not a valid package name: "$packageName"');
+        }
       }
     } else if (match.namedGroup('prefix') == 'dev') {
       if (argResults.isDev) {
@@ -370,7 +379,7 @@ Specify multiple sdk packages with descriptors.''');
       isOverride = true;
     }
     final packageName = match.namedGroup('name')!;
-    if (packageNameRegExp.hasMatch(packageName)) {
+    if (!packageNameRegExp.hasMatch(packageName)) {
       usageException('Not a valid package name: "$packageName"');
     }
     final descriptor = match.namedGroup('descriptor');
