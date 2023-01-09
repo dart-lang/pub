@@ -3,10 +3,17 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../io.dart';
 import '../log.dart' as log;
+// import '../pubspec.dart';
 import '../solver.dart';
+import '../source/sdk.dart';
+// import '../system_cache.dart';
 
 /// Handles the `get` pub command.
 class GetCommand extends PubCommand {
@@ -50,6 +57,25 @@ class GetCommand extends PubCommand {
         abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
   }
 
+  bool shouldRunPostHook() {
+    final flutterRoot = Platform.environment['FLUTTER_ROOT'];
+    if (flutterRoot == null) {
+      return false;
+    }
+    if (!fileExists(p.join(flutterRoot, 'version'))) {
+      return false;
+    }
+
+    // TODO: sky_engine check
+    final hasFlutterDependency =
+        entrypoint.root.dependencies.values.any((package) {
+      return package.name == 'flutter' &&
+          package.source.runtimeType == SdkSource;
+    });
+
+    return hasFlutterDependency;
+  }
+
   @override
   Future<void> runProtected() async {
     if (argResults.wasParsed('packages-dir')) {
@@ -64,6 +90,10 @@ class GetCommand extends PubCommand {
       analytics: analytics,
       enforceLockfile: argResults['enforce-lockfile'],
     );
+
+    if (shouldRunPostHook()) {
+      print('should run post hook');
+    }
 
     var example = entrypoint.example;
     if (argResults['example'] && example != null) {
