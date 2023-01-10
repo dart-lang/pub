@@ -653,7 +653,9 @@ void testExistencePredicate(
           createSymlink(targetPath, symlink1Path);
           createSymlink(symlink1Path, symlink2Path);
           expect(
-              predicate(symlink2Path), equals(forMultiLevelDirectorySymlink));
+            predicate(symlink2Path),
+            equals(forMultiLevelDirectorySymlink),
+          );
         }),
         completes,
       );

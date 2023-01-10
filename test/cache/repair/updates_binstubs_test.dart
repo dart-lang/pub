@@ -28,7 +28,9 @@ void main() {
       },
       contents: [
         d.dir(
-            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+          'bin',
+          [d.file('script.dart', "main(args) => print('ok \$args');")],
+        )
       ],
     );
 

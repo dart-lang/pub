@@ -979,8 +979,12 @@ class HostedSource extends CachedSource {
                   log.fine(stackTrace);
 
                   tryDeleteEntry(package.dir);
-                  return RepairResult(id.name, id.version, this,
-                      success: false);
+                  return RepairResult(
+                    id.name,
+                    id.version,
+                    this,
+                    success: false,
+                  );
                 }
               }),
             ),

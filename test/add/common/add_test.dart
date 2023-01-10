@@ -117,7 +117,8 @@ void main() {
       await pubAdd(
         args: ['foo:1.2.3', '--dry-run'],
         output: allOf(
-            [contains('Would change 1 dependency'), contains('+ foo 1.2.3')]),
+          [contains('Would change 1 dependency'), contains('+ foo 1.2.3')],
+        ),
       );
 
       await d.appDir(dependencies: {}).validate();

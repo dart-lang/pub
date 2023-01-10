@@ -79,7 +79,8 @@ void main() {
     await runPub(
       args: ['global', 'activate', '--source', 'path', '../foo'],
       output: allOf(
-          [contains('Activated foo 1.0.0 at path'), isNot(contains('Built'))]),
+        [contains('Activated foo 1.0.0 at path'), isNot(contains('Built'))],
+      ),
     );
   });
 }
