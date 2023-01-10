@@ -13,11 +13,19 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('package_config.json file is created', () async {
       await servePackages()
-        ..serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
+        ..serve(
+          'foo',
+          '1.2.3',
+          deps: {'baz': '2.2.2'},
+          contents: [d.dir('lib', [])],
+        )
         ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
-        ..serve('baz', '2.2.2',
-            deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
+        ..serve(
+          'baz',
+          '2.2.2',
+          deps: {'bar': '3.2.1'},
+          contents: [d.dir('lib', [])],
+        );
 
       await d.dir(appPath, [
         d.appPubspec(dependencies: {'foo': '1.2.3'}),
@@ -54,11 +62,19 @@ void main() {
 
     test('package_config.json file is overwritten', () async {
       await servePackages()
-        ..serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
+        ..serve(
+          'foo',
+          '1.2.3',
+          deps: {'baz': '2.2.2'},
+          contents: [d.dir('lib', [])],
+        )
         ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
-        ..serve('baz', '2.2.2',
-            deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
+        ..serve(
+          'baz',
+          '2.2.2',
+          deps: {'bar': '3.2.1'},
+          contents: [d.dir('lib', [])],
+        );
 
       await d.dir(appPath, [
         d.appPubspec(dependencies: {'foo': '1.2.3'}),
@@ -111,13 +127,17 @@ void main() {
         d.dir('lib')
       ]).create();
 
-      await pubCommand(command,
-          args: ['--offline'], error: equalsIgnoringWhitespace("""
+      await pubCommand(
+        command,
+        args: ['--offline'],
+        error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
 
             Try again without --offline!
-          """), exitCode: exit_codes.UNAVAILABLE);
+          """),
+        exitCode: exit_codes.UNAVAILABLE,
+      );
 
       await d.dir(appPath, [
         d.nothing('.dart_tool/package_config.json'),
@@ -128,8 +148,12 @@ void main() {
         '.dart_tool/package_config.json file has relative path to path dependency',
         () async {
       await servePackages()
-        ..serve('foo', '1.2.3',
-            deps: {'baz': 'any'}, contents: [d.dir('lib', [])])
+        ..serve(
+          'foo',
+          '1.2.3',
+          deps: {'baz': 'any'},
+          contents: [d.dir('lib', [])],
+        )
         ..serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
 
       await d.dir('local_baz', [

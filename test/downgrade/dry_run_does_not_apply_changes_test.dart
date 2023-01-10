@@ -28,9 +28,11 @@ void main() {
 
     // Do the dry run.
     await pubDowngrade(
-        args: ['--dry-run'],
-        output: allOf(
-            [contains('< foo 1.0.0'), contains('Would change 1 dependency.')]));
+      args: ['--dry-run'],
+      output: allOf(
+        [contains('< foo 1.0.0'), contains('Would change 1 dependency.')],
+      ),
+    );
 
     await d.dir(appPath, [
       // The lockfile should be unmodified.

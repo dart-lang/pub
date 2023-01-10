@@ -17,7 +17,8 @@ void main() {
     await pubGet();
 
     await pubGet(
-        workingDirectory: p.join(d.sandbox, d.hostedCachePath(), 'foo-1.0.0'),
-        error: 'Cannot operate on packages inside the cache.');
+      workingDirectory: p.join(d.sandbox, d.hostedCachePath(), 'foo-1.0.0'),
+      error: 'Cannot operate on packages inside the cache.',
+    );
   });
 }

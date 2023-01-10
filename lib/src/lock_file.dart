@@ -47,22 +47,30 @@ class LockFile {
   /// being listed in the main package's `dependencies`, `dev_dependencies`, and
   /// `dependency_overrides` sections, respectively. These are consumed by the
   /// analysis server to provide better auto-completion.
-  LockFile(Iterable<PackageId> ids,
-      {Map<String, VersionConstraint>? sdkConstraints,
-      Set<String>? mainDependencies,
-      Set<String>? devDependencies,
-      Set<String>? overriddenDependencies})
-      : this._(
-            Map.fromIterable(ids.where((id) => !id.isRoot),
-                key: (id) => id.name),
-            sdkConstraints ?? {'dart': VersionConstraint.any},
-            mainDependencies ?? const UnmodifiableSetView.empty(),
-            devDependencies ?? const UnmodifiableSetView.empty(),
-            overriddenDependencies ?? const UnmodifiableSetView.empty());
+  LockFile(
+    Iterable<PackageId> ids, {
+    Map<String, VersionConstraint>? sdkConstraints,
+    Set<String>? mainDependencies,
+    Set<String>? devDependencies,
+    Set<String>? overriddenDependencies,
+  }) : this._(
+          Map.fromIterable(
+            ids.where((id) => !id.isRoot),
+            key: (id) => id.name,
+          ),
+          sdkConstraints ?? {'dart': VersionConstraint.any},
+          mainDependencies ?? const UnmodifiableSetView.empty(),
+          devDependencies ?? const UnmodifiableSetView.empty(),
+          overriddenDependencies ?? const UnmodifiableSetView.empty(),
+        );
 
-  LockFile._(Map<String, PackageId> packages, this.sdkConstraints,
-      this.mainDependencies, this.devDependencies, this.overriddenDependencies)
-      : packages = UnmodifiableMapView(packages);
+  LockFile._(
+    Map<String, PackageId> packages,
+    this.sdkConstraints,
+    this.mainDependencies,
+    this.devDependencies,
+    this.overriddenDependencies,
+  ) : packages = UnmodifiableMapView(packages);
 
   LockFile.empty()
       : packages = const {},
@@ -80,8 +88,11 @@ class LockFile {
   ///
   /// If [filePath] is given, path-dependencies will be interpreted relative to
   /// that.
-  factory LockFile.parse(String contents, SourceRegistry sources,
-      {String? filePath}) {
+  factory LockFile.parse(
+    String contents,
+    SourceRegistry sources, {
+    String? filePath,
+  }) {
     return LockFile._parse(filePath, contents, sources);
   }
 
@@ -90,7 +101,10 @@ class LockFile {
   /// [filePath] is the system-native path to the lockfile on disc. It may be
   /// `null`.
   static LockFile _parse(
-      String? filePath, String contents, SourceRegistry sources) {
+    String? filePath,
+    String contents,
+    SourceRegistry sources,
+  ) {
     if (contents.trim() == '') return LockFile.empty();
 
     Uri? sourceUrl;
@@ -114,9 +128,14 @@ class LockFile {
         _getEntry<YamlMap?>(parsed, 'sdks', 'map', required: false);
 
     if (sdksField != null) {
-      _parseEachEntry<String, YamlScalar>(sdksField, (name, constraint) {
-        sdkConstraints[name] = _parseVersionConstraint(constraint);
-      }, 'string', 'string');
+      _parseEachEntry<String, YamlScalar>(
+        sdksField,
+        (name, constraint) {
+          sdkConstraints[name] = _parseVersionConstraint(constraint);
+        },
+        'string',
+        'string',
+      );
     }
 
     final packages = <String, PackageId>{};
@@ -129,58 +148,68 @@ class LockFile {
         _getEntry<YamlMap?>(parsed, 'packages', 'map', required: false);
 
     if (packageEntries != null) {
-      _parseEachEntry<String, YamlMap>(packageEntries, (name, spec) {
-        // Parse the version.
-        final versionEntry = _getStringEntry(spec, 'version');
-        final version = Version.parse(versionEntry);
+      _parseEachEntry<String, YamlMap>(
+        packageEntries,
+        (name, spec) {
+          // Parse the version.
+          final versionEntry = _getStringEntry(spec, 'version');
+          final version = Version.parse(versionEntry);
 
-        // Parse the source.
-        final sourceName = _getStringEntry(spec, 'source');
+          // Parse the source.
+          final sourceName = _getStringEntry(spec, 'source');
 
-        var descriptionNode =
-            _getEntry<YamlNode>(spec, 'description', 'description');
+          var descriptionNode =
+              _getEntry<YamlNode>(spec, 'description', 'description');
 
-        dynamic description = descriptionNode is YamlScalar
-            ? descriptionNode.value
-            : descriptionNode;
+          dynamic description = descriptionNode is YamlScalar
+              ? descriptionNode.value
+              : descriptionNode;
 
-        // Let the source parse the description.
-        var source = sources(sourceName);
-        PackageId id;
-        try {
-          id = source.parseId(name, version, description,
-              containingDir: filePath == null ? null : p.dirname(filePath));
-        } on FormatException catch (ex) {
-          _failAt(ex.message, spec.nodes['description']!);
-        }
-
-        // Validate the name.
-        if (name != id.name) {
-          _failAt("Package name $name doesn't match ${id.name}.", spec);
-        }
-
-        packages[name] = id;
-        if (spec.containsKey('dependency')) {
-          final dependencyKind = _getStringEntry(spec, 'dependency');
-          switch (dependencyKind) {
-            case _directMain:
-              mainDependencies.add(name);
-              break;
-            case _directDev:
-              devDependencies.add(name);
-              break;
-            case _directOverridden:
-              overriddenDependencies.add(name);
+          // Let the source parse the description.
+          var source = sources(sourceName);
+          PackageId id;
+          try {
+            id = source.parseId(
+              name,
+              version,
+              description,
+              containingDir: filePath == null ? null : p.dirname(filePath),
+            );
+          } on FormatException catch (ex) {
+            _failAt(ex.message, spec.nodes['description']!);
           }
-        }
-      }, 'string', 'map');
+
+          // Validate the name.
+          if (name != id.name) {
+            _failAt("Package name $name doesn't match ${id.name}.", spec);
+          }
+
+          packages[name] = id;
+          if (spec.containsKey('dependency')) {
+            final dependencyKind = _getStringEntry(spec, 'dependency');
+            switch (dependencyKind) {
+              case _directMain:
+                mainDependencies.add(name);
+                break;
+              case _directDev:
+                devDependencies.add(name);
+                break;
+              case _directOverridden:
+                overriddenDependencies.add(name);
+            }
+          }
+        },
+        'string',
+        'map',
+      );
     }
     return LockFile._(
-        packages,
-        sdkConstraints,
-        const UnmodifiableSetView.empty(),
-        const UnmodifiableSetView.empty(),
-        const UnmodifiableSetView.empty());
+      packages,
+      sdkConstraints,
+      const UnmodifiableSetView.empty(),
+      const UnmodifiableSetView.empty(),
+      const UnmodifiableSetView.empty(),
+    );
   }
 
   /// Runs [fn] and wraps any [FormatException] it throws in a
@@ -190,27 +219,40 @@ class LockFile {
   /// parsed or processed by [fn]. [span] should be the location of whatever's
   /// being processed within the pubspec.
   static T _wrapFormatException<T>(
-      String description, SourceSpan span, T Function() fn) {
+    String description,
+    SourceSpan span,
+    T Function() fn,
+  ) {
     try {
       return fn();
     } on FormatException catch (e) {
       throw SourceSpanFormatException(
-          'Invalid $description: ${e.message}', span);
+        'Invalid $description: ${e.message}',
+        span,
+      );
     }
   }
 
   static VersionConstraint _parseVersionConstraint(YamlNode node) {
-    return _parseNode(node, 'version constraint',
-        parse: VersionConstraint.parse);
+    return _parseNode(
+      node,
+      'version constraint',
+      parse: VersionConstraint.parse,
+    );
   }
 
   static String _getStringEntry(YamlMap map, String key) {
     return _parseNode<String>(
-        _getEntry<YamlScalar>(map, key, 'string'), 'string');
+      _getEntry<YamlScalar>(map, key, 'string'),
+      'string',
+    );
   }
 
-  static T _parseNode<T>(YamlNode node, String typeDescription,
-      {T Function(String)? parse}) {
+  static T _parseNode<T>(
+    YamlNode node,
+    String typeDescription, {
+    T Function(String)? parse,
+  }) {
     if (node is T) {
       return node as T;
     } else if (node is YamlScalar) {
@@ -220,7 +262,10 @@ class LockFile {
           _failAt('Expected a $typeDescription.', node);
         }
         return _wrapFormatException(
-            'Expected a $typeDescription.', node.span, () => parse(node.value));
+          'Expected a $typeDescription.',
+          node.span,
+          () => parse(node.value),
+        );
       } else if (value is T) {
         return value;
       }
@@ -230,13 +275,16 @@ class LockFile {
   }
 
   static void _parseEachEntry<K, V>(
-      YamlMap map,
-      void Function(K key, V value) f,
-      String keyTypeDescription,
-      String valueTypeDescription) {
+    YamlMap map,
+    void Function(K key, V value) f,
+    String keyTypeDescription,
+    String valueTypeDescription,
+  ) {
     map.nodes.forEach((key, value) {
-      f(_parseNode(key, keyTypeDescription),
-          _parseNode(value, valueTypeDescription));
+      f(
+        _parseNode(key, keyTypeDescription),
+        _parseNode(value, valueTypeDescription),
+      );
     });
   }
 
@@ -308,23 +356,27 @@ class LockFile {
         rootUri = p.toUri(rootPath);
       }
       final pubspec = await cache.describe(id);
-      entries.add(PackageConfigEntry(
-        name: name,
-        rootUri: rootUri,
-        packageUri: p.toUri('lib/'),
-        languageVersion: pubspec.languageVersion,
-      ));
+      entries.add(
+        PackageConfigEntry(
+          name: name,
+          rootUri: rootUri,
+          packageUri: p.toUri('lib/'),
+          languageVersion: pubspec.languageVersion,
+        ),
+      );
     }
 
     if (entrypoint != null) {
-      entries.add(PackageConfigEntry(
-        name: entrypoint,
-        rootUri: p.toUri('../'),
-        packageUri: p.toUri('lib/'),
-        languageVersion: LanguageVersion.fromSdkConstraint(
-          entrypointSdkConstraint,
+      entries.add(
+        PackageConfigEntry(
+          name: entrypoint,
+          rootUri: p.toUri('../'),
+          packageUri: p.toUri('lib/'),
+          languageVersion: LanguageVersion.fromSdkConstraint(
+            entrypointSdkConstraint,
+          ),
         ),
-      ));
+      );
     }
 
     final packageConfig = PackageConfig(
@@ -357,8 +409,10 @@ class LockFile {
     }
 
     var data = {
-      'sdks': mapMap(sdkConstraints,
-          value: (_, constraint) => constraint.toString()),
+      'sdks': mapMap(
+        sdkConstraints,
+        value: (_, constraint) => constraint.toString(),
+      ),
       'packages': packageMap
     };
     return '''
@@ -379,8 +433,10 @@ ${yamlToString(data)}
         detectWindowsLineEndings(readTextFile(lockFilePath));
 
     final serialized = serialize(p.dirname(lockFilePath), cache);
-    writeTextFile(lockFilePath,
-        windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized);
+    writeTextFile(
+      lockFilePath,
+      windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized,
+    );
   }
 
   static const _directMain = 'direct main';

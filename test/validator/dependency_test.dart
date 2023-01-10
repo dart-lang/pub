@@ -13,11 +13,18 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-d.DirectoryDescriptor package(
-    {String version = '1.0.0', Map? deps, String? sdk}) {
+d.DirectoryDescriptor package({
+  String version = '1.0.0',
+  Map? deps,
+  String? sdk,
+}) {
   return d.dir(appPath, [
-    d.libPubspec('test_pkg', version,
-        sdk: sdk ?? defaultSdkConstraint, deps: deps),
+    d.libPubspec(
+      'test_pkg',
+      version,
+      sdk: sdk ?? defaultSdkConstraint,
+      deps: deps,
+    ),
     d.file('LICENSE', 'Eh, do what you want.'),
     d.file('README.md', "This package isn't real."),
     d.file('CHANGELOG.md', '# $version\nFirst version\n'),
@@ -25,10 +32,11 @@ d.DirectoryDescriptor package(
   ]);
 }
 
-Future<void> expectValidation(
-    {error,
-    int exitCode = 0,
-    Map<String, String> environment = const {}}) async {
+Future<void> expectValidation({
+  error,
+  int exitCode = 0,
+  Map<String, String> environment = const {},
+}) async {
   await runPub(
     error: error ?? contains('Package has 0 warnings.'),
     args: ['publish', '--dry-run'],
@@ -38,8 +46,11 @@ Future<void> expectValidation(
   );
 }
 
-Future<void> expectValidationWarning(error,
-    {int count = 1, Map<String, String> environment = const {}}) async {
+Future<void> expectValidationWarning(
+  error, {
+  int count = 1,
+  Map<String, String> environment = const {},
+}) async {
   if (error is String) error = contains(error);
   await expectValidation(
     error: allOf([error, contains('Package has $count warning')]),
@@ -48,19 +59,25 @@ Future<void> expectValidationWarning(error,
   );
 }
 
-Future<void> expectValidationError(String text,
-    {Map<String, String> environment = const {}}) async {
+Future<void> expectValidationError(
+  String text, {
+  Map<String, String> environment = const {},
+}) async {
   await expectValidation(
-      error: allOf([
-        contains(text),
-        contains('Package validation found the following error:')
-      ]),
-      exitCode: DATA,
-      environment: environment);
+    error: allOf([
+      contains(text),
+      contains('Package validation found the following error:')
+    ]),
+    exitCode: DATA,
+    environment: environment,
+  );
 }
 
-Future<void> setUpDependency(dep,
-    {String? sdk, List<String> hostedVersions = const []}) async {
+Future<void> setUpDependency(
+  dep, {
+  String? sdk,
+  List<String> hostedVersions = const [],
+}) async {
   final server = await servePackages();
   for (final version in hostedVersions) {
     server.serve('foo', version);
@@ -94,30 +111,35 @@ void main() {
       await d.git('foo', [
         d.dir('subdir', [d.libPubspec('foo', '1.0.0', sdk: '^2.0.0')]),
       ]).create();
-      await package(deps: {
-        'foo': {
-          'git': {'url': '../foo', 'path': 'subdir'}
-        }
-      }, sdk: '>=2.0.0 <3.0.0')
-          .create();
+      await package(
+        deps: {
+          'foo': {
+            'git': {'url': '../foo', 'path': 'subdir'}
+          }
+        },
+        sdk: '>=2.0.0 <3.0.0',
+      ).create();
 
       // We should get a warning for using a git dependency, but not an error.
       await expectValidationWarning(
-          allOf([
-            contains('  foo: any'),
-            contains("Publishable packages can't have 'git' dependencies"),
-          ]),
-          count: 2,
-          environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'});
+        allOf([
+          contains('  foo: any'),
+          contains("Publishable packages can't have 'git' dependencies"),
+        ]),
+        count: 2,
+        environment: {'_PUB_TEST_SDK_VERSION': '2.0.0'},
+      );
     });
 
     test('depends on Flutter from an SDK source', () async {
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
       await flutterPackage('flutter', sdk: '>=1.19.0 <2.0.0').create();
-      await package(deps: {
-        'flutter': {'sdk': 'flutter'}
-      }, sdk: '>=1.19.0 <2.0.0')
-          .create();
+      await package(
+        deps: {
+          'flutter': {'sdk': 'flutter'}
+        },
+        sdk: '>=1.19.0 <2.0.0',
+      ).create();
 
       await expectValidation(
         environment: {
@@ -153,14 +175,19 @@ void main() {
       'depends on a package from Fuchsia with an appropriate Dart SDK constraint',
       () async {
         await fuschiaPackage('foo', sdk: '>=2.0.0 <3.0.0').create();
-        await package(sdk: '>=2.0.0 <3.0.0', deps: {
-          'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
-        }).create();
+        await package(
+          sdk: '>=2.0.0 <3.0.0',
+          deps: {
+            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
+          },
+        ).create();
 
-        await expectValidation(environment: {
-          'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
-          '_PUB_TEST_SDK_VERSION': '2.12.0',
-        });
+        await expectValidation(
+          environment: {
+            'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
+            '_PUB_TEST_SDK_VERSION': '2.12.0',
+          },
+        );
       },
     );
   });
@@ -175,9 +202,10 @@ void main() {
             d.libPubspec('foo', '1.2.3', sdk: 'any'),
           ]).create();
           await setUpDependency(
-              sdk: '^1.8.0',
-              {'path': path.join(d.sandbox, 'foo')},
-              hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0']);
+            sdk: '^1.8.0',
+            {'path': path.join(d.sandbox, 'foo')},
+            hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0'],
+          );
           await expectValidationError(
             '  foo: ^2.0.0',
             environment: {'_PUB_TEST_SDK_VERSION': '1.8.0'},
@@ -240,8 +268,9 @@ void main() {
             d.libPubspec('foo', '0.2.3', sdk: '^1.8.0'),
           ]).create();
           await setUpDependency(
-              sdk: '^1.8.0',
-              {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'});
+            sdk: '^1.8.0',
+            {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'},
+          );
           await expectValidationError(
             '  foo: 0.2.3',
             environment: {'_PUB_TEST_SDK_VERSION': '1.8.0'},
@@ -270,16 +299,17 @@ void main() {
           await d.dir(appPath, [
             d.libPubspec('test_pkg', '1.0.0', deps: {'foo': 'any'}),
             d.file(
-                'pubspec.lock',
-                jsonEncode({
-                  'packages': {
-                    'foo': {
-                      'version': '0.1.2',
-                      'source': 'hosted',
-                      'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                    }
+              'pubspec.lock',
+              jsonEncode({
+                'packages': {
+                  'foo': {
+                    'version': '0.1.2',
+                    'source': 'hosted',
+                    'description': {'name': 'foo', 'url': 'https://pub.dev'}
                   }
-                }))
+                }
+              }),
+            )
           ]).create();
 
           await expectValidationWarning('  foo: ^0.1.2');
@@ -299,8 +329,10 @@ void main() {
         )
       ]).create();
 
-      await expectValidationWarning('Packages dependent on a pre-release',
-          environment: {'_PUB_TEST_SDK_VERSION': '1.8.0'});
+      await expectValidationWarning(
+        'Packages dependent on a pre-release',
+        environment: {'_PUB_TEST_SDK_VERSION': '1.8.0'},
+      );
     });
     test(
         'with a single-version dependency and it should suggest a '
@@ -334,16 +366,17 @@ void main() {
         await d.dir(appPath, [
           d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '<=3.0.0'}),
           d.file(
-              'pubspec.lock',
-              jsonEncode({
-                'packages': {
-                  'foo': {
-                    'version': '1.2.3',
-                    'source': 'hosted',
-                    'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                  }
+            'pubspec.lock',
+            jsonEncode({
+              'packages': {
+                'foo': {
+                  'version': '1.2.3',
+                  'source': 'hosted',
+                  'description': {'name': 'foo', 'url': 'https://pub.dev'}
                 }
-              }))
+              }
+            }),
+          )
         ]).create();
 
         await expectValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
@@ -357,16 +390,17 @@ void main() {
         await d.dir(appPath, [
           d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '<=1.2.3'}),
           d.file(
-              'pubspec.lock',
-              jsonEncode({
-                'packages': {
-                  'foo': {
-                    'version': '1.2.3',
-                    'source': 'hosted',
-                    'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                  }
+            'pubspec.lock',
+            jsonEncode({
+              'packages': {
+                'foo': {
+                  'version': '1.2.3',
+                  'source': 'hosted',
+                  'description': {'name': 'foo', 'url': 'https://pub.dev'}
                 }
-              }))
+              }
+            }),
+          )
         ]).create();
 
         await expectValidationWarning('  foo: ^1.2.3');
@@ -398,8 +432,12 @@ void main() {
       test('with a too-broad SDK constraint', () async {
         (await servePackages()).serve('foo', '1.2.3', sdk: '^1.4.0');
         await d.dir(appPath, [
-          d.libPubspec('test_pkg', '1.0.0',
-              deps: {'foo': '^1.2.3'}, sdk: '>=1.5.0 <2.0.0')
+          d.libPubspec(
+            'test_pkg',
+            '1.0.0',
+            deps: {'foo': '^1.2.3'},
+            sdk: '>=1.5.0 <2.0.0',
+          )
         ]).create();
 
         await expectValidationError(
@@ -419,13 +457,16 @@ void main() {
           ]),
         ]).create();
         await d.dir(appPath, [
-          d.libPubspec('integration_pkg', '1.0.0',
-              deps: {
-                'foo': {
-                  'git': {'url': d.path('foo'), 'path': 'subdir'}
-                },
+          d.libPubspec(
+            'integration_pkg',
+            '1.0.0',
+            deps: {
+              'foo': {
+                'git': {'url': d.path('foo'), 'path': 'subdir'}
               },
-              sdk: '>=1.0.0 <4.0.0')
+            },
+            sdk: '>=1.0.0 <4.0.0',
+          )
         ]).create();
 
         await expectValidation(
@@ -442,16 +483,21 @@ void main() {
         await setUpDependency({});
         await d.git('foo', [
           d.dir(
-              'subdir', [d.libPubspec('foo', '1.0.0', sdk: '>=0.0.0 <3.0.0')]),
+            'subdir',
+            [d.libPubspec('foo', '1.0.0', sdk: '>=0.0.0 <3.0.0')],
+          ),
         ]).create();
         await d.dir(appPath, [
-          d.libPubspec('integration_pkg', '1.0.0',
-              deps: {
-                'foo': {
-                  'git': {'url': d.path('foo'), 'path': 'subdir'}
-                }
-              },
-              sdk: '>=1.24.0 <3.0.0')
+          d.libPubspec(
+            'integration_pkg',
+            '1.0.0',
+            deps: {
+              'foo': {
+                'git': {'url': d.path('foo'), 'path': 'subdir'}
+              }
+            },
+            sdk: '>=1.24.0 <3.0.0',
+          )
         ]).create();
 
         await expectValidation(
@@ -485,18 +531,24 @@ void main() {
         sdk: '>=1.18.0 <2.0.0',
       ).create();
 
-      await expectValidationError('sdk: "^1.19.0"', environment: {
-        '_PUB_TEST_SDK_VERSION': '1.19.0',
-        'FLUTTER_ROOT': path.join(d.sandbox, 'flutter'),
-      });
+      await expectValidationError(
+        'sdk: "^1.19.0"',
+        environment: {
+          '_PUB_TEST_SDK_VERSION': '1.19.0',
+          'FLUTTER_ROOT': path.join(d.sandbox, 'flutter'),
+        },
+      );
     });
 
     test('depends on a Flutter package with no SDK constraint', () async {
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
       await flutterPackage('foo', sdk: '>=0.0.0 <1.0.0').create();
-      await package(sdk: '>=0.0.0 <=0.0.1', deps: {
-        'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'}
-      }).create();
+      await package(
+        sdk: '>=0.0.0 <=0.0.1',
+        deps: {
+          'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'}
+        },
+      ).create();
 
       await expectValidationError(
         'sdk: "^1.19.0"',
@@ -518,16 +570,22 @@ void main() {
         },
       ).create();
 
-      await expectValidationError('sdk: ">=2.0.0 <2.0.2"', environment: {
-        'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
-        '_PUB_TEST_SDK_VERSION': '2.0.1-dev.51.0',
-      });
+      await expectValidationError(
+        'sdk: ">=2.0.0 <2.0.2"',
+        environment: {
+          'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
+          '_PUB_TEST_SDK_VERSION': '2.0.1-dev.51.0',
+        },
+      );
     });
   });
 }
 
-d.Descriptor fuschiaPackage(String name,
-    {Map<String, String> deps = const {}, String? sdk}) {
+d.Descriptor fuschiaPackage(
+  String name, {
+  Map<String, String> deps = const {},
+  String? sdk,
+}) {
   return d.dir('fuchsia', [
     d.dir('packages', [
       d.dir(name, [
@@ -538,8 +596,11 @@ d.Descriptor fuschiaPackage(String name,
   ]);
 }
 
-d.Descriptor flutterPackage(String name,
-    {Map<String, String> deps = const {}, String? sdk}) {
+d.Descriptor flutterPackage(
+  String name, {
+  Map<String, String> deps = const {},
+  String? sdk,
+}) {
   return d.dir('flutter', [
     d.dir('packages', [
       d.dir(name, [

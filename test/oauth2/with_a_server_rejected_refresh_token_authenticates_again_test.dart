@@ -21,18 +21,23 @@ void main() {
 
     await servePackages();
     await d
-        .credentialsFile(globalServer, 'access token',
-            refreshToken: 'bad refresh token',
-            expiration: DateTime.now().subtract(Duration(hours: 1)))
+        .credentialsFile(
+          globalServer,
+          'access token',
+          refreshToken: 'bad refresh token',
+          expiration: DateTime.now().subtract(Duration(hours: 1)),
+        )
         .create();
 
     var pub = await startPublish(globalServer);
 
     globalServer.expect('POST', '/token', (request) {
       return request.read().drain().then((_) {
-        return shelf.Response(400,
-            body: jsonEncode({'error': 'invalid_request'}),
-            headers: {'content-type': 'application/json'});
+        return shelf.Response(
+          400,
+          body: jsonEncode({'error': 'invalid_request'}),
+          headers: {'content-type': 'application/json'},
+        );
       });
     });
 
@@ -43,8 +48,10 @@ void main() {
 
     var done = Completer();
     globalServer.expect('GET', '/api/packages/versions/new', (request) async {
-      expect(request.headers,
-          containsPair('authorization', 'Bearer new access token'));
+      expect(
+        request.headers,
+        containsPair('authorization', 'Bearer new access token'),
+      );
 
       // kill pub and complete test
       await pub.kill();

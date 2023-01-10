@@ -43,18 +43,24 @@ abstract class PubspecBase {
     final name = fields['name'];
     if (name == null) {
       throw SourceSpanApplicationException(
-          'Missing the required "name" field.', fields.span);
+        'Missing the required "name" field.',
+        fields.span,
+      );
     } else if (name is! String) {
       throw SourceSpanApplicationException(
-          '"name" field must be a string.', fields.nodes['name']?.span);
+        '"name" field must be a string.',
+        fields.nodes['name']?.span,
+      );
     } else if (!packageNameRegExp.hasMatch(name)) {
       throw SourceSpanApplicationException(
-          '"name" field must be a valid Dart identifier.',
-          fields.nodes['name']?.span);
+        '"name" field must be a valid Dart identifier.',
+        fields.nodes['name']?.span,
+      );
     } else if (reservedWords.contains(name)) {
       throw SourceSpanApplicationException(
-          '"name" field may not be a Dart reserved word.',
-          fields.nodes['name']?.span);
+        '"name" field may not be a Dart reserved word.',
+        fields.nodes['name']?.span,
+      );
     }
 
     return name;
@@ -79,16 +85,20 @@ abstract class PubspecBase {
         fixed = '$fixed.0';
       }
       _error(
-          '"version" field must have three numeric components: major, '
-          'minor, and patch. Instead of "$version", consider "$fixed".',
-          span);
+        '"version" field must have three numeric components: major, '
+        'minor, and patch. Instead of "$version", consider "$fixed".',
+        span,
+      );
     }
     if (version is! String) {
       _error('"version" field must be a string.', span);
     }
 
     _version = _wrapFormatException(
-        'version number', span, () => Version.parse(version));
+      'version number',
+      span,
+      () => Version.parse(version),
+    );
     return _version!;
   }
 
@@ -183,8 +193,10 @@ abstract class PubspecBase {
     if (yaml == null) return _executables!;
 
     if (yaml is! Map) {
-      _error('"executables" field must be a map.',
-          fields.nodes['executables']?.span);
+      _error(
+        '"executables" field must be a map.',
+        fields.nodes['executables']?.span,
+      );
     }
 
     yaml.nodes.forEach((key, value) {
@@ -195,9 +207,10 @@ abstract class PubspecBase {
       final keyPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
       if (!keyPattern.hasMatch(key.value)) {
         _error(
-            '"executables" keys may only contain letters, '
-            'numbers, hyphens and underscores.',
-            key.span);
+          '"executables" keys may only contain letters, '
+          'numbers, hyphens and underscores.',
+          key.span,
+        );
       }
 
       if (value.value == null) {
@@ -208,8 +221,10 @@ abstract class PubspecBase {
 
       final valuePattern = RegExp(r'[/\\]');
       if (valuePattern.hasMatch(value.value)) {
-        _error('"executables" values may not contain path separators.',
-            value.span);
+        _error(
+          '"executables" values may not contain path separators.',
+          value.span,
+        );
       }
 
       _executables![key.value] = value.value;
@@ -235,8 +250,11 @@ abstract class PubspecBase {
   /// If [targetPackage] is provided, the value is used to describe the
   /// dependency that caused the problem.
   T _wrapFormatException<T>(
-      String description, SourceSpan? span, T Function() fn,
-      {String? targetPackage}) {
+    String description,
+    SourceSpan? span,
+    T Function() fn, {
+    String? targetPackage,
+  }) {
     try {
       return fn();
     } on FormatException catch (e) {

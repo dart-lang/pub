@@ -23,9 +23,11 @@ void main() {
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.notFound(jsonEncode({
-        'error': {'message': 'Your package was too boring.'}
-      }));
+      return shelf.Response.notFound(
+        jsonEncode({
+          'error': {'message': 'Your package was too boring.'}
+        }),
+      );
     });
 
     expect(pub.stderr, emits('Your package was too boring.'));

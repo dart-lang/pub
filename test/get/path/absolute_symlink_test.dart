@@ -17,9 +17,11 @@ void main() {
 
     var fooPath = d.path('foo');
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': fooPath}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': fooPath}
+        },
+      )
     ]).create();
 
     await pubGet();

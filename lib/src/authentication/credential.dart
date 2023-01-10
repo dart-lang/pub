@@ -52,7 +52,8 @@ class Credential {
 
     const knownKeys = {'url', 'token', 'env'};
     final unknownFields = Map.fromEntries(
-        json.entries.where((kv) => !knownKeys.contains(kv.key)));
+      json.entries.where((kv) => !knownKeys.contains(kv.key)),
+    );
 
     /// Returns [String] value from [json] at [key] index or `null` if [json]
     /// doesn't contains [key].

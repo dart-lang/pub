@@ -32,7 +32,9 @@ class PackageGraph {
   /// This is generally faster than loading a package graph from scratch, since
   /// the packages' pubspecs are already fully-parsed.
   factory PackageGraph.fromSolveResult(
-      Entrypoint entrypoint, SolveResult result) {
+    Entrypoint entrypoint,
+    SolveResult result,
+  ) {
     final packages = {
       for (final id in result.packages)
         id.name: id.name == entrypoint.root.name
@@ -56,15 +58,20 @@ class PackageGraph {
 
     if (_transitiveDependencies == null) {
       var closure = transitiveClosure(
-          mapMap<String, Package, String, Iterable<String>>(packages,
-              value: (_, package) => package.dependencies.keys));
+        mapMap<String, Package, String, Iterable<String>>(
+          packages,
+          value: (_, package) => package.dependencies.keys,
+        ),
+      );
       _transitiveDependencies =
-          mapMap<String, Set<String>, String, Set<Package>>(closure,
-              value: (depender, names) {
-        var set = names.map((name) => packages[name]!).toSet();
-        set.add(packages[depender]!);
-        return set;
-      });
+          mapMap<String, Set<String>, String, Set<Package>>(
+        closure,
+        value: (depender, names) {
+          var set = names.map((name) => packages[name]!).toSet();
+          set.add(packages[depender]!);
+          return set;
+        },
+      );
     }
     return _transitiveDependencies![package]!;
   }

@@ -26,7 +26,9 @@ class AnalysisContextManager {
   final AnalysisSession _session;
 
   factory AnalysisContextManager(String packagePath) => sessions.putIfAbsent(
-      packagePath, () => AnalysisContextManager._(packagePath));
+        packagePath,
+        () => AnalysisContextManager._(packagePath),
+      );
 
   AnalysisContextManager._(this.packagePath)
       : _session = ContextBuilder()
@@ -166,8 +168,9 @@ Future<void> precompile({
       tryDeleteEntry(outputPath);
 
       throw ApplicationException(
-          log.yellow('Failed to build $highlightedName:\n') +
-              result.compilerOutputLines.join('\n'));
+        log.yellow('Failed to build $highlightedName:\n') +
+            result.compilerOutputLines.join('\n'),
+      );
     }
   } finally {
     client?.kill();

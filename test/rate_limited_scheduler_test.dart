@@ -27,7 +27,8 @@ void main() {
       preschedule('b');
       preschedule('c');
       await Future.wait(
-          [isBeingProcessed['a']!.future, isBeingProcessed['b']!.future]);
+        [isBeingProcessed['a']!.future, isBeingProcessed['b']!.future],
+      );
       expect(isBeingProcessed['c']!.isCompleted, isFalse);
       completers['a']!.complete();
       await isBeingProcessed['c']!.future;
@@ -185,29 +186,41 @@ void main() {
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
     await scheduler.withPrescheduling((preschedule) async {
-      runZoned(() {
-        preschedule('a');
-      }, zoneValues: {'zoneValue': 'A'});
-      runZoned(() {
-        preschedule('b');
-      }, zoneValues: {'zoneValue': 'B'});
-      runZoned(() {
-        preschedule('c');
-      }, zoneValues: {'zoneValue': 'C'});
+      runZoned(
+        () {
+          preschedule('a');
+        },
+        zoneValues: {'zoneValue': 'A'},
+      );
+      runZoned(
+        () {
+          preschedule('b');
+        },
+        zoneValues: {'zoneValue': 'B'},
+      );
+      runZoned(
+        () {
+          preschedule('c');
+        },
+        zoneValues: {'zoneValue': 'C'},
+      );
 
-      await runZoned(() async {
-        await isBeingProcessed['a']!.future;
-        await isBeingProcessed['b']!.future;
-        // This will put 'c' in front of the queue, but in a zone with zoneValue
-        // bound to S.
-        final f = expectLater(scheduler.schedule('c'), completion('S'));
-        completers['a']!.complete();
-        completers['b']!.complete();
-        expect(await scheduler.schedule('a'), 'A');
-        expect(await scheduler.schedule('b'), 'B');
-        completers['c']!.complete();
-        await f;
-      }, zoneValues: {'zoneValue': 'S'});
+      await runZoned(
+        () async {
+          await isBeingProcessed['a']!.future;
+          await isBeingProcessed['b']!.future;
+          // This will put 'c' in front of the queue, but in a zone with zoneValue
+          // bound to S.
+          final f = expectLater(scheduler.schedule('c'), completion('S'));
+          completers['a']!.complete();
+          completers['b']!.complete();
+          expect(await scheduler.schedule('a'), 'A');
+          expect(await scheduler.schedule('b'), 'B');
+          completers['c']!.complete();
+          await f;
+        },
+        zoneValues: {'zoneValue': 'S'},
+      );
     });
   });
 }

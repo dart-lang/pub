@@ -23,21 +23,26 @@ void main() {
         'GET',
         RegExp('/api/packages/.*'),
         expectAsync1((request) {
-          return Response(200,
-              body: jsonEncode({
-                'notTheRight': {'response': 'type'}
-              }));
+          return Response(
+            200,
+            body: jsonEncode({
+              'notTheRight': {'response': 'type'}
+            }),
+          );
         }),
       );
       await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
-      await pubCommand(command,
-          error: allOf([
-            contains(
-                'Got badly formatted response trying to find package foo at http://localhost:'),
-            contains('), version solving failed.')
-          ]),
-          exitCode: exit_codes.DATA);
+      await pubCommand(
+        command,
+        error: allOf([
+          contains(
+            'Got badly formatted response trying to find package foo at http://localhost:',
+          ),
+          contains('), version solving failed.')
+        ]),
+        exitCode: exit_codes.DATA,
+      );
     });
   });
 
@@ -45,10 +50,12 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(200,
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
+      return Response(
+        200,
+        body: jsonEncode({
+          'notTheRight': {'response': 'type'}
+        }),
+      );
     });
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
@@ -59,10 +66,12 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(403,
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
+      return Response(
+        403,
+        body: jsonEncode({
+          'notTheRight': {'response': 'type'}
+        }),
+      );
     });
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
@@ -73,10 +82,12 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(401,
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
+      return Response(
+        401,
+        body: jsonEncode({
+          'notTheRight': {'response': 'type'}
+        }),
+      );
     });
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
@@ -87,13 +98,15 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(403,
-          headers: {
-            'www-authenticate': 'Bearer realm="pub", message="<message>"',
-          },
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
+      return Response(
+        403,
+        headers: {
+          'www-authenticate': 'Bearer realm="pub", message="<message>"',
+        },
+        body: jsonEncode({
+          'notTheRight': {'response': 'type'}
+        }),
+      );
     });
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
@@ -104,13 +117,15 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
     server.expect('GET', RegExp('/api/packages/.*'), (request) {
-      return Response(401,
-          headers: {
-            'www-authenticate': 'Bearer realm="pub", message="<message>"',
-          },
-          body: jsonEncode({
-            'notTheRight': {'response': 'type'}
-          }));
+      return Response(
+        401,
+        headers: {
+          'www-authenticate': 'Bearer realm="pub", message="<message>"',
+        },
+        body: jsonEncode({
+          'notTheRight': {'response': 'type'}
+        }),
+      );
     });
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 

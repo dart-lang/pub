@@ -20,8 +20,9 @@ void main() {
     await runPub(args: ['global', 'activate', '-sgit', '../foo.git']);
 
     await runPub(
-        args: ['global', 'deactivate', 'foo'],
-        output:
-            'Deactivated package foo 1.0.0 from Git repository "..${separator}foo.git".');
+      args: ['global', 'deactivate', 'foo'],
+      output:
+          'Deactivated package foo 1.0.0 from Git repository "..${separator}foo.git".',
+    );
   });
 }

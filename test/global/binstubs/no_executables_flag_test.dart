@@ -19,14 +19,16 @@ void main() {
 
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
-    await runPub(args: [
-      'global',
-      'activate',
-      '--source',
-      'path',
-      '../foo',
-      '--no-executables'
-    ]);
+    await runPub(
+      args: [
+        'global',
+        'activate',
+        '--source',
+        'path',
+        '../foo',
+        '--no-executables'
+      ],
+    );
 
     // Should still delete old one.
     await d.dir(cachePath, [

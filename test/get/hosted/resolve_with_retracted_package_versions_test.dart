@@ -37,9 +37,10 @@ void main() {
 
     server.retractPackageVersion('bar', '1.0.0');
     await pubGet(
-        error:
-            '''Because every version of foo depends on bar ^1.0.0 which doesn't match any versions, foo is forbidden. 
-            So, because myapp depends on foo 1.0.0, version solving failed.''');
+      error:
+          '''Because every version of foo depends on bar ^1.0.0 which doesn't match any versions, foo is forbidden. 
+            So, because myapp depends on foo 1.0.0, version solving failed.''',
+    );
   });
 
   // Currently retraction does not affect prioritization. I.e., if
@@ -89,10 +90,13 @@ void main() {
   test('Offline versions of pub commands also handle retracted packages',
       () async {
     final server = await servePackages();
-    await populateCache({
-      'foo': ['1.0.0'],
-      'bar': ['1.0.0', '1.1.0']
-    }, server);
+    await populateCache(
+      {
+        'foo': ['1.0.0'],
+        'bar': ['1.0.0', '1.1.0']
+      },
+      server,
+    );
 
     await d.cacheDir({
       'foo': '1.0.0',

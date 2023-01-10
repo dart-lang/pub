@@ -93,8 +93,12 @@ abstract class Source {
   /// some in-memory source.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir});
+  PackageId parseId(
+    String name,
+    Version version,
+    description, {
+    String? containingDir,
+  });
 
   /// Returns the source's name.
   @override
@@ -110,7 +114,10 @@ abstract class Source {
   /// By default, this assumes that each description has a single version and
   /// uses [describe] to get that version.
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache);
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  );
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
@@ -130,8 +137,11 @@ abstract class Source {
   ///
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
-  String doGetDirectory(PackageId id, SystemCache cache,
-      {String? relativeFrom});
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  });
 
   /// Returns metadata about a given package-version.
   ///
@@ -162,9 +172,10 @@ abstract class Source {
 /// with a version constraint.
 abstract class Description {
   Source get source;
-  Object? serializeForPubspec(
-      {required String? containingDir,
-      required LanguageVersion languageVersion});
+  Object? serializeForPubspec({
+    required String? containingDir,
+    required LanguageVersion languageVersion,
+  });
 
   /// Converts `this` into a human-friendly form to show the user.
   ///

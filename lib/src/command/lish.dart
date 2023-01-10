@@ -69,20 +69,30 @@ class LishCommand extends PubCommand {
   bool get force => argResults['force'];
 
   LishCommand() {
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: 'Validate but do not publish the package.');
-    argParser.addFlag('force',
-        abbr: 'f',
-        negatable: false,
-        help: 'Publish without confirmation if there are no errors.');
-    argParser.addOption('server',
-        help: 'The package server to which to upload this package.',
-        hide: true);
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: 'Validate but do not publish the package.',
+    );
+    argParser.addFlag(
+      'force',
+      abbr: 'f',
+      negatable: false,
+      help: 'Publish without confirmation if there are no errors.',
+    );
+    argParser.addOption(
+      'server',
+      help: 'The package server to which to upload this package.',
+      hide: true,
+    );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory<dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   Future<void> _publishUsingClient(
@@ -122,8 +132,13 @@ class LishCommand extends PubCommand {
           });
 
           request.followRedirects = false;
-          request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-              filename: 'package.tar.gz'));
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'file',
+              packageBytes,
+              filename: 'package.tar.gz',
+            ),
+          );
           return await client.fetch(request);
         });
 
@@ -255,7 +270,9 @@ the \$PUB_HOSTED_URL environment variable.''',
 
     // Validate the package.
     var isValid = await _validate(
-        packageBytesFuture.then((bytes) => bytes.length), files);
+      packageBytesFuture.then((bytes) => bytes.length),
+      files,
+    );
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;

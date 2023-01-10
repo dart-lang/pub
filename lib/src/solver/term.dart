@@ -45,7 +45,10 @@ class Term {
   SetRelation relation(Term other) {
     if (package.name != other.package.name) {
       throw ArgumentError.value(
-          other, 'other', 'should refer to package ${package.name}');
+        other,
+        'other',
+        'should refer to package ${package.name}',
+      );
     }
 
     var otherConstraint = other.constraint;
@@ -115,7 +118,10 @@ class Term {
   Term? intersect(Term other) {
     if (package.name != other.package.name) {
       throw ArgumentError.value(
-          other, 'other', 'should refer to package ${package.name}');
+        other,
+        'other',
+        'should refer to package ${package.name}',
+      );
     }
 
     if (_compatiblePackage(other.package)) {
@@ -124,7 +130,9 @@ class Term {
         var positive = isPositive ? this : other;
         var negative = isPositive ? other : this;
         return _nonEmptyTerm(
-            positive.constraint.difference(negative.constraint), true);
+          positive.constraint.difference(negative.constraint),
+          true,
+        );
       } else if (isPositive) {
         // foo ^1.0.0 ∩ foo >=1.5.0 <3.0.0 → foo ^1.5.0
         return _nonEmptyTerm(constraint.intersect(other.constraint), true);

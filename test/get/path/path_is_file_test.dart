@@ -17,13 +17,16 @@ void main() {
     var dummyPath = path.join(d.sandbox, 'dummy.txt');
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': dummyPath}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': dummyPath}
+        },
+      )
     ]).create();
 
     await pubGet(
-        error: 'Path dependency for package foo must refer to a '
-            'directory, not a file. Was "$dummyPath".');
+      error: 'Path dependency for package foo must refer to a '
+          'directory, not a file. Was "$dummyPath".',
+    );
   });
 }

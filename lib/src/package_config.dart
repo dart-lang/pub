@@ -64,7 +64,8 @@ class PackageConfig {
 
     void throwFormatException(String property, String mustBe) =>
         throw FormatException(
-            '"$property" in .dart_tool/package_config.json $mustBe');
+          '"$property" in .dart_tool/package_config.json $mustBe',
+        );
 
     /// Read the 'configVersion' property
     final configVersion = root['configVersion'];
@@ -73,7 +74,9 @@ class PackageConfig {
     }
     if (configVersion != 2) {
       throwFormatException(
-          'configVersion', 'must be 2 (the only supported version)');
+        'configVersion',
+        'must be 2 (the only supported version)',
+      );
     }
 
     final packagesRaw = root['packages'];
@@ -99,7 +102,8 @@ class PackageConfig {
     final generator = root['generator'];
     if (generator != null && generator is! String) {
       throw FormatException(
-          '"generator" in package_config.json must be a string, if given');
+        '"generator" in package_config.json must be a string, if given',
+      );
     }
 
     // Read the 'generatorVersion' property
@@ -112,24 +116,31 @@ class PackageConfig {
       try {
         generatorVersion = Version.parse(generatorVersionRaw);
       } on FormatException catch (e) {
-        throwFormatException('generatorVersion',
-            'must be a semver version, if given, error: ${e.message}');
+        throwFormatException(
+          'generatorVersion',
+          'must be a semver version, if given, error: ${e.message}',
+        );
       }
     }
 
     return PackageConfig(
-        configVersion: configVersion as int,
-        packages: packages,
-        generated: generated,
-        generator: generator,
-        generatorVersion: generatorVersion,
-        additionalProperties: Map.fromEntries(root.entries.where((e) => !{
-              'configVersion',
-              'packages',
-              'generated',
-              'generator',
-              'generatorVersion',
-            }.contains(e.key))));
+      configVersion: configVersion as int,
+      packages: packages,
+      generated: generated,
+      generator: generator,
+      generatorVersion: generatorVersion,
+      additionalProperties: Map.fromEntries(
+        root.entries.where(
+          (e) => !{
+            'configVersion',
+            'packages',
+            'generated',
+            'generator',
+            'generatorVersion',
+          }.contains(e.key),
+        ),
+      ),
+    );
   }
 
   /// Convert to JSON structure.
@@ -196,13 +207,15 @@ class PackageConfigEntry {
   factory PackageConfigEntry.fromJson(Object data) {
     if (data is! Map<String, dynamic>) {
       throw FormatException(
-          'packages[] entries in package_config.json must be JSON objects');
+        'packages[] entries in package_config.json must be JSON objects',
+      );
     }
     final root = data;
 
     Never throwFormatException(String property, String mustBe) =>
         throw FormatException(
-            '"packages[].$property" in .dart_tool/package_config.json $mustBe');
+          '"packages[].$property" in .dart_tool/package_config.json $mustBe',
+        );
 
     final name = root['name'];
     if (name is! String) {
@@ -246,7 +259,9 @@ class PackageConfigEntry {
         languageVersion = LanguageVersion.parse(languageVersionRaw);
       } on FormatException {
         throwFormatException(
-            'languageVersion', 'must be on the form <major>.<minor>');
+          'languageVersion',
+          'must be on the form <major>.<minor>',
+        );
       }
     }
 

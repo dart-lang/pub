@@ -31,12 +31,14 @@ void main() {
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': '1.2.3',
-        'hosted': {'name': 'foo', 'url': url}
-      }
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': url}
+        }
+      },
+    ).validate();
   });
 
   test('adds multiple packages from a non-default pub server', () async {
@@ -57,10 +59,13 @@ void main() {
     final url = server.url;
 
     await pubAdd(
-        args: ['foo:1.2.3', 'bar:3.2.3', 'baz:1.3.5', '--hosted-url', url]);
+      args: ['foo:1.2.3', 'bar:3.2.3', 'baz:1.3.5', '--hosted-url', url],
+    );
 
-    await d.cacheDir({'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'},
-        port: server.port).validate();
+    await d.cacheDir(
+      {'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'},
+      port: server.port,
+    ).validate();
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
@@ -68,20 +73,22 @@ void main() {
       d.packageConfigEntry(name: 'baz', version: '1.3.5', server: server),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': '1.2.3',
-        'hosted': {'name': 'foo', 'url': url}
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': url}
+        },
+        'bar': {
+          'version': '3.2.3',
+          'hosted': {'name': 'bar', 'url': url}
+        },
+        'baz': {
+          'version': '1.3.5',
+          'hosted': {'name': 'baz', 'url': url}
+        }
       },
-      'bar': {
-        'version': '3.2.3',
-        'hosted': {'name': 'bar', 'url': url}
-      },
-      'baz': {
-        'version': '1.3.5',
-        'hosted': {'name': 'baz', 'url': url}
-      }
-    }).validate();
+    ).validate();
   });
 
   test('fails when adding from an invalid url', () async {
@@ -130,12 +137,14 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': '^1.2.3',
-        'hosted': {'name': 'foo', 'url': url}
-      }
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '^1.2.3',
+          'hosted': {'name': 'foo', 'url': url}
+        }
+      },
+    ).validate();
   });
 
   test('adds a package from a non-default pub server with a version constraint',
@@ -159,12 +168,14 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': '^1.2.3',
-        'hosted': {'name': 'foo', 'url': url}
-      }
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '^1.2.3',
+          'hosted': {'name': 'foo', 'url': url}
+        }
+      },
+    ).validate();
   });
 
   test(
@@ -189,11 +200,13 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': 'any',
-        'hosted': {'name': 'foo', 'url': url}
-      }
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': 'any',
+          'hosted': {'name': 'foo', 'url': url}
+        }
+      },
+    ).validate();
   });
 }

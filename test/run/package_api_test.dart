@@ -26,9 +26,11 @@ void main() {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../foo'}
-      }),
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      ),
       d.dir('bin', [d.file('script.dart', _script)])
     ]).create();
 
@@ -37,22 +39,33 @@ void main() {
 
     expect(pub.stdout, emitsThrough('null'));
     expect(
-        pub.stdout,
-        emits(p
+      pub.stdout,
+      emits(
+        p
             .toUri(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
-            .toString()));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'foo/lib/resource.txt')).toString()));
+            .toString(),
+      ),
+    );
+    expect(
+      pub.stdout,
+      emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()),
+    );
+    expect(
+      pub.stdout,
+      emits(p.toUri(p.join(d.sandbox, 'foo/lib/resource.txt')).toString()),
+    );
     await pub.shouldExit(0);
   });
 
   test('a snapshotted application sees a file: package root', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', _script)])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('script.dart', _script)])
+      ],
+    );
 
     await d.dir(appPath, [
       d.appPubspec(dependencies: {'foo': 'any'})
@@ -66,12 +79,17 @@ void main() {
     expect(pub.stdout, emits('Built foo:script.'));
     expect(pub.stdout, emits('null'));
     expect(
-        pub.stdout,
-        emits(p
+      pub.stdout,
+      emits(
+        p
             .toUri(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
-            .toString()));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
+            .toString(),
+      ),
+    );
+    expect(
+      pub.stdout,
+      emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()),
+    );
     var fooResourcePath =
         p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));

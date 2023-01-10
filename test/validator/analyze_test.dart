@@ -57,10 +57,12 @@ void main() {
       'follows analysis_options.yaml and should warn if package contains errors in pubspec.yaml',
       () async {
     await d.dir(appPath, [
-      d.libPubspec('test_pkg', '1.0.0',
-          sdk: '>=1.8.0 <=2.0.0',
-          // Using http where https is recommended.
-          extras: {'repository': 'http://repo.org/'}),
+      d.libPubspec(
+        'test_pkg', '1.0.0',
+        sdk: '>=1.8.0 <=2.0.0',
+        // Using http where https is recommended.
+        extras: {'repository': 'http://repo.org/'},
+      ),
       d.file('LICENSE', 'Eh, do what you want.'),
       d.file('README.md', "This package isn't real."),
       d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
@@ -76,7 +78,8 @@ linter:
     await expectValidation(
       allOf([
         contains(
-            "The 'http' protocol shouldn't be used because it isn't secure. Try using a secure protocol, such as 'https'."),
+          "The 'http' protocol shouldn't be used because it isn't secure. Try using a secure protocol, such as 'https'.",
+        ),
         contains('Package has 1 warning.'),
       ]),
       DATA,

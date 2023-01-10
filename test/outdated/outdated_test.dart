@@ -61,10 +61,14 @@ Future<void> main() async {
     builder
       ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.0.0')
-      ..serve('builder', '1.2.3', deps: {
-        'transitive': '^1.0.0',
-        'dev_trans': '^1.0.0',
-      })
+      ..serve(
+        'builder',
+        '1.2.3',
+        deps: {
+          'transitive': '^1.0.0',
+          'dev_trans': '^1.0.0',
+        },
+      )
       ..serve('transitive', '1.2.3')
       ..serve('dev_trans', '1.0.0');
 
@@ -87,15 +91,22 @@ Future<void> main() async {
     await pubGet();
     builder
       ..serve('foo', '1.3.0', deps: {'transitive': '>=1.0.0<3.0.0'})
-      ..serve('foo', '2.0.0',
-          deps: {'transitive': '>=1.0.0<3.0.0', 'transitive2': '^1.0.0'})
+      ..serve(
+        'foo',
+        '2.0.0',
+        deps: {'transitive': '>=1.0.0<3.0.0', 'transitive2': '^1.0.0'},
+      )
       ..serve('foo', '3.0.0', deps: {'transitive': '^2.0.0'})
       ..serve('builder', '1.3.0', deps: {'transitive': '^1.0.0'})
-      ..serve('builder', '2.0.0', deps: {
-        'transitive': '^1.0.0',
-        'transitive3': '^1.0.0',
-        'dev_trans': '^1.0.0'
-      })
+      ..serve(
+        'builder',
+        '2.0.0',
+        deps: {
+          'transitive': '^1.0.0',
+          'transitive3': '^1.0.0',
+          'dev_trans': '^1.0.0'
+        },
+      )
       ..serve('builder', '3.0.0-alpha', deps: {'transitive': '^1.0.0'})
       ..serve('transitive', '1.3.0')
       ..serve('transitive', '2.0.0')
@@ -273,15 +284,27 @@ Future<void> main() async {
 
   testWithGolden('Handles SDK dependencies', (ctx) async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.10.0 <3.0.0'}
-      })
-      ..serve('foo', '1.1.0', pubspec: {
-        'environment': {'sdk': '>=2.10.0 <3.0.0'}
-      })
-      ..serve('foo', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 <3.0.0'}
-      });
+      ..serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.10.0 <3.0.0'}
+        },
+      )
+      ..serve(
+        'foo',
+        '1.1.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.10.0 <3.0.0'}
+        },
+      )
+      ..serve(
+        'foo',
+        '2.0.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.12.0 <3.0.0'}
+        },
+      );
 
     await d.dir('flutter-root', [
       d.file('version', '1.2.3'),
@@ -315,17 +338,21 @@ Future<void> main() async {
       })
     ]).create();
 
-    await pubGet(environment: {
-      'FLUTTER_ROOT': d.path('flutter-root'),
-      '_PUB_TEST_SDK_VERSION': '2.13.0'
-    });
+    await pubGet(
+      environment: {
+        'FLUTTER_ROOT': d.path('flutter-root'),
+        '_PUB_TEST_SDK_VERSION': '2.13.0'
+      },
+    );
 
-    await ctx.runOutdatedTests(environment: {
-      'FLUTTER_ROOT': d.path('flutter-root'),
-      '_PUB_TEST_SDK_VERSION': '2.13.0',
-      // To test that the reproduction command is reflected correctly.
-      'PUB_ENVIRONMENT': 'flutter_cli:get',
-    });
+    await ctx.runOutdatedTests(
+      environment: {
+        'FLUTTER_ROOT': d.path('flutter-root'),
+        '_PUB_TEST_SDK_VERSION': '2.13.0',
+        // To test that the reproduction command is reflected correctly.
+        'PUB_ENVIRONMENT': 'flutter_cli:get',
+      },
+    );
   });
 
   testWithGolden('does not allow arguments - handles bad flags', (ctx) async {

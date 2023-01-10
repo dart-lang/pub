@@ -50,7 +50,8 @@ class GitSource extends CachedSource {
       final descriptionUrl = description['url'];
       if (descriptionUrl is! String) {
         throw FormatException(
-            "The 'url' field of a description must be a string.");
+          "The 'url' field of a description must be a string.",
+        );
       }
       url = descriptionUrl;
 
@@ -81,8 +82,12 @@ class GitSource extends CachedSource {
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir}) {
+  PackageId parseId(
+    String name,
+    Version version,
+    description, {
+    String? containingDir,
+  }) {
     if (description is! Map) {
       throw FormatException("The description must be a map with a 'url' "
           'key.');
@@ -102,17 +107,20 @@ class GitSource extends CachedSource {
 
     final url = description['url'];
     return PackageId(
-        name,
-        version,
-        GitResolvedDescription(
-            GitDescription(
-                url: url,
-                ref: ref ?? 'HEAD',
-                path: _validatedPath(
-                  description['path'],
-                ),
-                containingDir: containingDir),
-            resolvedRef));
+      name,
+      version,
+      GitResolvedDescription(
+        GitDescription(
+          url: url,
+          ref: ref ?? 'HEAD',
+          path: _validatedPath(
+            description['path'],
+          ),
+          containingDir: containingDir,
+        ),
+        resolvedRef,
+      ),
+    );
   }
 
   /// Throws a [FormatException] if [url] isn't a valid Git URL.
@@ -169,7 +177,8 @@ class GitSource extends CachedSource {
         parsed.hasFragment ||
         parsed.hasQuery) {
       throw FormatException(
-          "The 'path' field of the description must be a relative path URL.");
+        "The 'path' field of the description must be a relative path URL.",
+      );
     }
     if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
       throw FormatException(
@@ -276,8 +285,11 @@ class GitSource extends CachedSource {
       var pubspec = await _describeUncached(ref, revision, cache);
 
       return [
-        PackageId(ref.name, pubspec.version,
-            GitResolvedDescription(description, revision))
+        PackageId(
+          ref.name,
+          pubspec.version,
+          GitResolvedDescription(description, revision),
+        )
       ];
     });
   }
@@ -290,11 +302,13 @@ class GitSource extends CachedSource {
     if (description is! GitResolvedDescription) {
       throw StateError('Called with wrong ref');
     }
-    return _pool.withResource(() => _describeUncached(
-          id.toRef(),
-          description.resolvedRef,
-          cache,
-        ));
+    return _pool.withResource(
+      () => _describeUncached(
+        id.toRef(),
+        description.resolvedRef,
+        cache,
+      ),
+    );
   }
 
   /// Like [describeUncached], but takes a separate [ref] and Git [revision]
@@ -386,7 +400,8 @@ class GitSource extends CachedSource {
   List<Package> getCachedPackages(SystemCache cache) {
     // TODO(keertip): Implement getCachedPackages().
     throw UnimplementedError(
-        "The git source doesn't support listing its cached packages yet.");
+      "The git source doesn't support listing its cached packages yet.",
+    );
   }
 
   /// Resets all cached packages back to the pristine state of the Git
@@ -444,13 +459,15 @@ class GitSource extends CachedSource {
         await git.run(['reset', '--hard', 'HEAD'], workingDir: package.dir);
 
         result.add(
-            RepairResult(package.name, package.version, this, success: true));
+          RepairResult(package.name, package.version, this, success: true),
+        );
       } on git.GitException catch (error, stackTrace) {
         log.error('Failed to reset ${log.bold(package.name)} '
             '${package.version}. Error:\n$error');
         log.fine(stackTrace);
         result.add(
-            RepairResult(package.name, package.version, this, success: false));
+          RepairResult(package.name, package.version, this, success: false),
+        );
 
         // Delete the revision cache path, not the subdirectory that contains the package.
         final repoRoot = git.repoRoot(package.dir);
@@ -642,8 +659,9 @@ class GitSource extends CachedSource {
   }
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
-      cache.rootDirForSource(this),
-      '${_repoName(id.description.description as GitDescription)}-${(id.description as GitResolvedDescription).resolvedRef}');
+        cache.rootDirForSource(this),
+        '${_repoName(id.description.description as GitDescription)}-${(id.description as GitResolvedDescription).resolvedRef}',
+      );
 
   /// Returns the path to the canonical clone of the repository referred to by
   /// [id] (the one in `<system cache>/git/cache`).
@@ -728,8 +746,10 @@ class GitDescription extends Description {
     required LanguageVersion languageVersion,
   }) {
     final relativeUrl = containingDir != null && relative
-        ? p.url.relative(url,
-            from: p.toUri(p.normalize(p.absolute(containingDir))).toString())
+        ? p.url.relative(
+            url,
+            from: p.toUri(p.normalize(p.absolute(containingDir))).toString(),
+          )
         : url;
     if (ref == 'HEAD' && path == '.') return relativeUrl;
     return {
@@ -792,8 +812,10 @@ class GitResolvedDescription extends ResolvedDescription {
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     final url = description.relative && containingDir != null
-        ? p.url.relative(description.url,
-            from: Uri.file(p.absolute(containingDir)).toString())
+        ? p.url.relative(
+            description.url,
+            from: Uri.file(p.absolute(containingDir)).toString(),
+          )
         : description.url;
     return {
       'url': url,

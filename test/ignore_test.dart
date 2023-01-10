@@ -59,25 +59,38 @@ void main() {
           isDir: isDir,
         );
         if (expected) {
-          expect(r, isEmpty,
-              reason: 'Expected "$path" to be ignored, it was NOT!');
+          expect(
+            r,
+            isEmpty,
+            reason: 'Expected "$path" to be ignored, it was NOT!',
+          );
         } else {
-          expect(r, [pathWithoutSlash],
-              reason: 'Expected "$path" to NOT be ignored, it was IGNORED!');
+          expect(
+            r,
+            [pathWithoutSlash],
+            reason: 'Expected "$path" to NOT be ignored, it was IGNORED!',
+          );
         }
 
         // Also test that the logic of walking the tree works.
         final r2 = Ignore.listFiles(
-            includeDirs: true,
-            listDir: listDir,
-            ignoreForDir: ignoreForDir,
-            isDir: isDir);
+          includeDirs: true,
+          listDir: listDir,
+          ignoreForDir: ignoreForDir,
+          isDir: isDir,
+        );
         if (expected) {
-          expect(r2, isNot(contains(pathWithoutSlash)),
-              reason: 'Expected "$path" to be ignored, it was NOT!');
+          expect(
+            r2,
+            isNot(contains(pathWithoutSlash)),
+            reason: 'Expected "$path" to be ignored, it was NOT!',
+          );
         } else {
-          expect(r2, contains(pathWithoutSlash),
-              reason: 'Expected "$path" to NOT be ignored, it was IGNORED!');
+          expect(
+            r2,
+            contains(pathWithoutSlash),
+            reason: 'Expected "$path" to NOT be ignored, it was IGNORED!',
+          );
         }
         expect(hasWarning, c.hasWarning);
       });
@@ -99,8 +112,11 @@ void main() {
   ProcessResult runGit(List<String> args, {String? workingDirectory}) {
     final executable = Platform.isWindows ? 'cmd' : 'git';
     args = Platform.isWindows ? ['/c', 'git', ...args] : args;
-    return Process.runSync(executable, args,
-        workingDirectory: workingDirectory);
+    return Process.runSync(
+      executable,
+      args,
+      workingDirectory: workingDirectory,
+    );
   }
 
   group('git', () {
@@ -110,9 +126,12 @@ void main() {
       tmp = await Directory.systemTemp.createTemp('package-ignore-test-');
 
       final ret = runGit(['init'], workingDirectory: tmp!.path);
-      expect(ret.exitCode, equals(0),
-          reason:
-              'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}');
+      expect(
+        ret.exitCode,
+        equals(0),
+        reason:
+            'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}',
+      );
     });
 
     tearDownAll(() async {
@@ -132,41 +151,48 @@ void main() {
     ) {
       final casing = 'with ignoreCase = $ignoreCase';
       final result = expected ? 'IGNORED' : 'NOT ignored';
-      test('${c.name}: git check-ignore "$path" is $result $casing', () async {
-        expect(
-          runGit(
-            ['config', '--local', 'core.ignoreCase', ignoreCase.toString()],
-            workingDirectory: tmp!.path,
-          ).exitCode,
-          anyOf(0, 1),
-          reason: 'Running "git config --local core.ignoreCase ..." failed',
-        );
-
-        for (final directory in c.patterns.keys) {
-          final resolvedDirectory =
-              directory == '' ? tmp!.uri : tmp!.uri.resolve('$directory/');
-          Directory.fromUri(resolvedDirectory).createSync(recursive: true);
-          final gitIgnore =
-              File.fromUri(resolvedDirectory.resolve('.gitignore'));
-          gitIgnore.writeAsStringSync(
-            '${c.patterns[directory]!.join('\n')}\n',
+      test(
+        '${c.name}: git check-ignore "$path" is $result $casing',
+        () async {
+          expect(
+            runGit(
+              ['config', '--local', 'core.ignoreCase', ignoreCase.toString()],
+              workingDirectory: tmp!.path,
+            ).exitCode,
+            anyOf(0, 1),
+            reason: 'Running "git config --local core.ignoreCase ..." failed',
           );
-        }
-        final process = runGit(
-            ['-C', tmp!.path, 'check-ignore', '--no-index', path],
-            workingDirectory: tmp!.path);
-        expect(process.exitCode, anyOf(0, 1),
-            reason: 'Running "git check-ignore" failed');
-        final ignored = process.exitCode == 0;
-        if (expected != ignored) {
-          if (expected) {
-            fail('Expected "$path" to be ignored, it was NOT!');
+
+          for (final directory in c.patterns.keys) {
+            final resolvedDirectory =
+                directory == '' ? tmp!.uri : tmp!.uri.resolve('$directory/');
+            Directory.fromUri(resolvedDirectory).createSync(recursive: true);
+            final gitIgnore =
+                File.fromUri(resolvedDirectory.resolve('.gitignore'));
+            gitIgnore.writeAsStringSync(
+              '${c.patterns[directory]!.join('\n')}\n',
+            );
           }
-          fail('Expected "$path" to NOT be ignored, it was IGNORED!');
-        }
-      },
-          skip: Platform.isMacOS || // System `git` on mac has issues...
-              c.skipOnWindows && Platform.isWindows);
+          final process = runGit(
+            ['-C', tmp!.path, 'check-ignore', '--no-index', path],
+            workingDirectory: tmp!.path,
+          );
+          expect(
+            process.exitCode,
+            anyOf(0, 1),
+            reason: 'Running "git check-ignore" failed',
+          );
+          final ignored = process.exitCode == 0;
+          if (expected != ignored) {
+            if (expected) {
+              fail('Expected "$path" to be ignored, it was NOT!');
+            }
+            fail('Expected "$path" to NOT be ignored, it was IGNORED!');
+          }
+        },
+        skip: Platform.isMacOS || // System `git` on mac has issues...
+            c.skipOnWindows && Platform.isWindows,
+      );
     }
 
     for (final c in testData) {
@@ -428,112 +454,124 @@ final testData = [
   // Special characters from RegExp that are not special in .gitignore
   for (final c in r'(){}+.^$|'.split('')) ...[
     TestData.single(
-        '${c}file.txt',
-        {
-          '${c}file.txt': true,
-          'file.txt': false,
-          'file.txt$c': false,
-        },
-        skipOnWindows: c == '^' || c == '|'),
+      '${c}file.txt',
+      {
+        '${c}file.txt': true,
+        'file.txt': false,
+        'file.txt$c': false,
+      },
+      skipOnWindows: c == '^' || c == '|',
+    ),
     TestData.single(
-        'file.txt$c',
-        {
-          'file.txt$c': true,
-          'file.txt': false,
-          '${c}file.txt': false,
-        },
-        skipOnWindows: c == '^' || c == '|'),
+      'file.txt$c',
+      {
+        'file.txt$c': true,
+        'file.txt': false,
+        '${c}file.txt': false,
+      },
+      skipOnWindows: c == '^' || c == '|',
+    ),
     TestData.single(
-        'fi${c}l)e.txt',
-        {
-          'fi${c}l)e.txt': true,
-          'f${c}il)e.txt': false,
-          'fil)e.txt': false,
-        },
-        skipOnWindows: c == '^' || c == '|'),
+      'fi${c}l)e.txt',
+      {
+        'fi${c}l)e.txt': true,
+        'f${c}il)e.txt': false,
+        'fil)e.txt': false,
+      },
+      skipOnWindows: c == '^' || c == '|',
+    ),
     TestData.single(
-        'fi${c}l}e.txt',
-        {
-          'fi${c}l}e.txt': true,
-          'f${c}il}e.txt': false,
-          'fil}e.txt': false,
-        },
-        skipOnWindows: c == '^' || c == '|'),
+      'fi${c}l}e.txt',
+      {
+        'fi${c}l}e.txt': true,
+        'f${c}il}e.txt': false,
+        'fil}e.txt': false,
+      },
+      skipOnWindows: c == '^' || c == '|',
+    ),
   ],
   // Special characters from RegExp that are also special in .gitignore
   // can be escaped.
   for (final c in r'[]*?\'.split('')) ...[
     TestData.single(
-        '\\${c}file.txt',
-        {
-          '${c}file.txt': true,
-          'file.txt': false,
-          'file.txt$c': false,
-        },
-        skipOnWindows: c == r'\'),
+      '\\${c}file.txt',
+      {
+        '${c}file.txt': true,
+        'file.txt': false,
+        'file.txt$c': false,
+      },
+      skipOnWindows: c == r'\',
+    ),
     TestData.single(
-        'file.txt\\$c',
-        {
-          'file.txt$c': true,
-          'file.txt': false,
-          '${c}file.txt': false,
-        },
-        skipOnWindows: c == r'\'),
+      'file.txt\\$c',
+      {
+        'file.txt$c': true,
+        'file.txt': false,
+        '${c}file.txt': false,
+      },
+      skipOnWindows: c == r'\',
+    ),
     TestData.single(
-        'fi\\${c}l)e.txt',
-        {
-          'fi${c}l)e.txt': true,
-          'f${c}il)e.txt': false,
-          'fil)e.txt': false,
-        },
-        skipOnWindows: c == r'\'),
+      'fi\\${c}l)e.txt',
+      {
+        'fi${c}l)e.txt': true,
+        'f${c}il)e.txt': false,
+        'fil)e.txt': false,
+      },
+      skipOnWindows: c == r'\',
+    ),
     TestData.single(
-        'fi\\${c}l}e.txt',
-        {
-          'fi${c}l}e.txt': true,
-          'f${c}il}e.txt': false,
-          'fil}e.txt': false,
-        },
-        skipOnWindows: c == r'\'),
+      'fi\\${c}l}e.txt',
+      {
+        'fi${c}l}e.txt': true,
+        'f${c}il}e.txt': false,
+        'fil}e.txt': false,
+      },
+      skipOnWindows: c == r'\',
+    ),
   ],
   // Special characters from RegExp can always be escaped
   for (final c in r'()[]{}*+?.^$|\'.split('')) ...[
     TestData.single(
-        '\\${c}file.txt',
-        {
-          '${c}file.txt': true,
-          'file.txt': false,
-          'file.txt$c': false,
-        },
-        skipOnWindows: c == '^' || c == '|' || c == r'\'),
+      '\\${c}file.txt',
+      {
+        '${c}file.txt': true,
+        'file.txt': false,
+        'file.txt$c': false,
+      },
+      skipOnWindows: c == '^' || c == '|' || c == r'\',
+    ),
     TestData.single(
-        'file.txt\\$c',
-        {
-          'file.txt$c': true,
-          'file.txt': false,
-          '${c}file.txt': false,
-        },
-        skipOnWindows: c == '^' || c == '|' || c == r'\'),
+      'file.txt\\$c',
+      {
+        'file.txt$c': true,
+        'file.txt': false,
+        '${c}file.txt': false,
+      },
+      skipOnWindows: c == '^' || c == '|' || c == r'\',
+    ),
     TestData.single(
-        'file\\$c.txt',
-        {
-          'file$c.txt': true,
-          'file.txt': false,
-          '${c}file.txt': false,
-        },
-        skipOnWindows: c == '^' || c == '|' || c == r'\'),
+      'file\\$c.txt',
+      {
+        'file$c.txt': true,
+        'file.txt': false,
+        '${c}file.txt': false,
+      },
+      skipOnWindows: c == '^' || c == '|' || c == r'\',
+    ),
   ],
   // Ending in backslash (unescaped)
   TestData.single(
-      'file.txt\\',
-      {
-        'file.txt\\': false,
-        'file.txt ': false,
-        'file.txt\n': false,
-        'file.txt': false,
-      },
-      hasWarning: true,
-      skipOnWindows: true),
+    'file.txt\\',
+    {
+      'file.txt\\': false,
+      'file.txt ': false,
+      'file.txt\n': false,
+      'file.txt': false,
+    },
+    hasWarning: true,
+    skipOnWindows: true,
+  ),
   TestData.single(r'file.txt\n', {
     'file.txt\\\n': false,
     'file.txt ': false,
@@ -541,23 +579,25 @@ final testData = [
     'file.txt': false,
   }),
   TestData.single(
-      '**\\',
-      {
-        'file.txt\\\n': false,
-        'file.txt ': false,
-        'file.txt\n': false,
-        'file.txt': false,
-      },
-      hasWarning: true),
+    '**\\',
+    {
+      'file.txt\\\n': false,
+      'file.txt ': false,
+      'file.txt\n': false,
+      'file.txt': false,
+    },
+    hasWarning: true,
+  ),
   TestData.single(
-      '*\\',
-      {
-        'file.txt\\\n': false,
-        'file.txt ': false,
-        'file.txt\n': false,
-        'file.txt': false,
-      },
-      hasWarning: true),
+    '*\\',
+    {
+      'file.txt\\\n': false,
+      'file.txt ': false,
+      'file.txt\n': false,
+      'file.txt': false,
+    },
+    hasWarning: true,
+  ),
   // ? matches anything except /
   TestData.single('?', {
     'f': true,
@@ -627,84 +667,91 @@ final testData = [
   }),
   // Empty character classes
   TestData.single(
-      'a[]c',
-      {
-        'abc': false,
-        'ac': false,
-        'a': false,
-        'a[]c': false,
-        'c': false,
-      },
-      hasWarning: true),
+    'a[]c',
+    {
+      'abc': false,
+      'ac': false,
+      'a': false,
+      'a[]c': false,
+      'c': false,
+    },
+    hasWarning: true,
+  ),
   TestData.single(
-      'a[]',
-      {
-        'abc': false,
-        'ac': false,
-        'a': false,
-        'a[]': false,
-        'c': false,
-      },
-      hasWarning: true),
+    'a[]',
+    {
+      'abc': false,
+      'ac': false,
+      'a': false,
+      'a[]': false,
+      'c': false,
+    },
+    hasWarning: true,
+  ),
   // Invalid character classes
   TestData.single(
-      r'a[\]',
-      {
-        'abc': false,
-        'ac': false,
-        'a': false,
-        'a\\': false,
-        'a[]': false,
-        'a[': false,
-        'a[\\]': false,
-        'c': false,
-      },
-      hasWarning: true,
-      skipOnWindows: true),
+    r'a[\]',
+    {
+      'abc': false,
+      'ac': false,
+      'a': false,
+      'a\\': false,
+      'a[]': false,
+      'a[': false,
+      'a[\\]': false,
+      'c': false,
+    },
+    hasWarning: true,
+    skipOnWindows: true,
+  ),
   TestData.single(
-      r'a[\\\]',
-      {
-        'abc': false,
-        'ac': false,
-        'a': false,
-        'a[]': false,
-        'a[': false,
-        'a[\\]': false,
-        'c': false,
-      },
-      hasWarning: true,
-      skipOnWindows: true),
+    r'a[\\\]',
+    {
+      'abc': false,
+      'ac': false,
+      'a': false,
+      'a[]': false,
+      'a[': false,
+      'a[\\]': false,
+      'c': false,
+    },
+    hasWarning: true,
+    skipOnWindows: true,
+  ),
   // Character classes with special characters
   TestData.single(
-      r'a[\\]',
-      {
-        'a': false,
-        'ab': false,
-        'a[]': false,
-        'a[': false,
-        'a\\': true,
-      },
-      skipOnWindows: true),
+    r'a[\\]',
+    {
+      'a': false,
+      'ab': false,
+      'a[]': false,
+      'a[': false,
+      'a\\': true,
+    },
+    skipOnWindows: true,
+  ),
   TestData.single(
-      r'a[^b]',
-      {
-        'a': false,
-        'ab': false,
-        'ac': true,
-        'a[': true,
-        'a\\': true,
-      },
-      skipOnWindows: true),
+    r'a[^b]',
+    {
+      'a': false,
+      'ab': false,
+      'ac': true,
+      'a[': true,
+      'a\\': true,
+    },
+    skipOnWindows: true,
+  ),
   TestData.single(
-      r'a[!b]',
-      {
-        'a': false,
-        'ab': false,
-        'ac': true,
-        'a[': true,
-        'a\\': true,
-      },
-      skipOnWindows: true),
+    r'a[!b]',
+    {
+      'a': false,
+      'ab': false,
+      'ac': true,
+      'a[': true,
+      'a\\': true,
+    },
+    skipOnWindows: true,
+  ),
   TestData.single(r'a[[]', {
     'a': false,
     'ab': false,

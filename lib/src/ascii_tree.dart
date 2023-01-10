@@ -154,9 +154,14 @@ void _draw(
 
   void drawChild(bool isLastChild, String child) {
     var childPrefix = _getPrefix(name == null, isLast);
-    _draw(buffer, '$prefix$childPrefix', child,
-        children[child] as Map<String, Map>,
-        showAllChildren: showAllChildren, isLast: isLastChild);
+    _draw(
+      buffer,
+      '$prefix$childPrefix',
+      child,
+      children[child] as Map<String, Map>,
+      showAllChildren: showAllChildren,
+      isLast: isLastChild,
+    );
   }
 
   for (var i = 0; i < childNames.length; i++) {

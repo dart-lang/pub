@@ -18,13 +18,17 @@ void main() {
 
     await confirmPublish(pub);
 
-    globalServer.expect('GET', '/api/packages/versions/new',
-        (request) => shelf.Response.ok('{not json'));
+    globalServer.expect(
+      'GET',
+      '/api/packages/versions/new',
+      (request) => shelf.Response.ok('{not json'),
+    );
 
     expect(
-        pub.stderr,
-        emitsLines('Invalid server response:\n'
-            '{not json'));
+      pub.stderr,
+      emitsLines('Invalid server response:\n'
+          '{not json'),
+    );
     await pub.shouldExit(1);
   });
 }

@@ -273,8 +273,9 @@ $contentHashesDocumentationUrl
       // version is also not a pre-release or,
       // - if the current version is pre-release then any upgraded version is
       // considered.
-      return versions.any((v) =>
-          v > id.version && (id.version.isPreRelease || !v.isPreRelease));
+      return versions.any(
+        (v) => v > id.version && (id.version.isPreRelease || !v.isPreRelease),
+      );
     }).length;
 
     if (outdatedPackagesCount > 0) {

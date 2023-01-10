@@ -13,18 +13,25 @@ import 'utils.dart';
 void main() {
   test('the generated binstub runs a snapshotted executable', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'foo-script': 'script'}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'executables': {'foo-script': 'script'}
+      },
+      contents: [
+        d.dir(
+            'bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     var process = await TestProcess.start(
-        p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
-        ['arg1', 'arg2'],
-        environment: getEnvironment());
+      p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
+      ['arg1', 'arg2'],
+      environment: getEnvironment(),
+    );
 
     expect(process.stdout, emits('ok [arg1, arg2]'));
     expect(process.stdout, neverEmits('ok [arg1, arg2]'));
@@ -43,9 +50,10 @@ void main() {
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
     var process = await TestProcess.start(
-        p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
-        ['arg1', 'arg2'],
-        environment: getEnvironment());
+      p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
+      ['arg1', 'arg2'],
+      environment: getEnvironment(),
+    );
 
     expect(process.stdout, emits('ok [arg1, arg2]'));
     await process.shouldExit();

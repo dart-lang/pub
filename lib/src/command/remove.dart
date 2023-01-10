@@ -31,16 +31,22 @@ class RemoveCommand extends PubCommand {
   bool get isDryRun => argResults['dry-run'];
 
   RemoveCommand() {
-    argParser.addFlag('offline',
-        help: 'Use cached packages instead of accessing the network.');
+    argParser.addFlag(
+      'offline',
+      help: 'Use cached packages instead of accessing the network.',
+    );
 
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: "Report what dependencies would change but don't change any.");
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: "Report what dependencies would change but don't change any.",
+    );
 
-    argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
+    argParser.addFlag(
+      'precompile',
+      help: 'Precompile executables in immediate dependencies.',
+    );
 
     argParser.addFlag(
       'example',
@@ -48,8 +54,12 @@ class RemoveCommand extends PubCommand {
       hide: true,
     );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory<dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override

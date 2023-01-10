@@ -23,7 +23,9 @@ void main() {
       ]),
       d.dir('bin/cache/pkg', [
         d.dir(
-            'baz', [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')])
+          'baz',
+          [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
+        )
       ]),
       d.file('version', '1.2.3')
     ]).create();
@@ -32,8 +34,9 @@ void main() {
   test("adds an SDK dependency's dependencies", () async {
     await d.appDir(dependencies: {}).create();
     await pubAdd(
-        args: ['foo', '--sdk', 'flutter'],
-        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
+      args: ['foo', '--sdk', 'flutter'],
+      environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+    );
 
     await d.dir(appPath, [
       d.pubspec({
@@ -46,7 +49,9 @@ void main() {
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'foo', path: p.join(d.sandbox, 'flutter', 'packages', 'foo')),
+        name: 'foo',
+        path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
+      ),
       d.packageConfigEntry(name: 'bar', version: '1.0.0'),
     ]).validate();
   });
@@ -56,8 +61,9 @@ void main() {
       () async {
     await d.appDir(dependencies: {}).create();
     await pubAdd(
-        args: ['foo:0.0.1', '--sdk', 'flutter'],
-        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
+      args: ['foo:0.0.1', '--sdk', 'flutter'],
+      environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+    );
 
     await d.dir(appPath, [
       d.pubspec({
@@ -69,7 +75,9 @@ void main() {
     ]).validate();
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'foo', path: p.join(d.sandbox, 'flutter', 'packages', 'foo')),
+        name: 'foo',
+        path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
+      ),
       d.packageConfigEntry(name: 'bar', version: '1.0.0'),
     ]).validate();
   });
@@ -77,26 +85,29 @@ void main() {
   test('adds an SDK dependency from bin/cache/pkg', () async {
     await d.appDir(dependencies: {}).create();
     await pubAdd(
-        args: ['baz', '--sdk', 'flutter'],
-        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
+      args: ['baz', '--sdk', 'flutter'],
+      environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+    );
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'baz',
-          path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'))
+        name: 'baz',
+        path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
+      )
     ]).validate();
   });
 
   test("fails if the version constraint doesn't match", () async {
     await d.appDir(dependencies: {}).create();
     await pubAdd(
-        args: ['foo:^1.0.0', '--sdk', 'flutter'],
-        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-        error: equalsIgnoringWhitespace("""
+      args: ['foo:^1.0.0', '--sdk', 'flutter'],
+      environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+      error: equalsIgnoringWhitespace("""
               Because myapp depends on foo ^1.0.0 from sdk which doesn't match
                 any versions, version solving failed.
             """),
-        exitCode: exit_codes.DATA);
+      exitCode: exit_codes.DATA,
+    );
 
     await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [

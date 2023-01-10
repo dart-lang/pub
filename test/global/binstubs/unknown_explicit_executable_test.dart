@@ -18,10 +18,12 @@ void main() {
       d.dir('bin', [d.file('one.dart', "main() => print('ok');")])
     ]).create();
 
-    var pub = await startPub(args: [
-      'global', 'activate', '--source', 'path', '../foo', //
-      '-x', 'who', '-x', 'one', '--executable', 'wat'
-    ]);
+    var pub = await startPub(
+      args: [
+        'global', 'activate', '--source', 'path', '../foo', //
+        '-x', 'who', '-x', 'one', '--executable', 'wat'
+      ],
+    );
 
     expect(pub.stdout, emitsThrough('Installed executable one.'));
     expect(pub.stderr, emits('Unknown executables wat and who.'));
