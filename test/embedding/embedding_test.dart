@@ -373,7 +373,7 @@ main() {
       buffer.toString(),
       allOf(
         contains('Resolving dependencies'),
-        contains('+ 1.0.0'),
+        contains('+ foo 1.0.0'),
         contains('42'),
       ),
     );
