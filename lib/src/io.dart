@@ -692,7 +692,8 @@ bool get terminalOutputForStdout {
     return true;
   } else {
     throw DataException(
-        'Environment variable ${EnvironmentKeys.forceTerminalOutput} has unsupported value: $environmentValue.');
+      'Environment variable ${EnvironmentKeys.forceTerminalOutput} has unsupported value: $environmentValue.',
+    );
   }
 }
 
