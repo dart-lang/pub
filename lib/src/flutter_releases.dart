@@ -44,7 +44,7 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
       flutterVersion: Version.parse(flutterVersion),
       dartVersion: Version.parse(dartVersion.split(' ').first),
       channel: channel,
-    ));
+    ),);
   }
   return result
       // Sort releases by channel and version.
@@ -63,7 +63,7 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
 ///
 /// Returns if no such release could be found.
 Future<FlutterRelease?> inferBestFlutterRelease(
-    Map<String, VersionConstraint> sdkConstraints) async {
+    Map<String, VersionConstraint> sdkConstraints,) async {
   final List<FlutterRelease> flutterReleases;
   try {
     flutterReleases = await _flutterReleases;
@@ -75,7 +75,7 @@ Future<FlutterRelease?> inferBestFlutterRelease(
       (sdkConstraints['flutter'] ?? VersionConstraint.any)
           .allows(release.flutterVersion) &&
       (sdkConstraints['dart'] ?? VersionConstraint.any)
-          .allows(release.dartVersion));
+          .allows(release.dartVersion),);
 }
 
 enum Channel {

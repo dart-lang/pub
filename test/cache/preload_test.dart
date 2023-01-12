@@ -19,7 +19,7 @@ void main() {
     server.serve('foo', '1.0.0');
     server.serve('foo', '2.0.0');
 
-    await appDir({'foo': '^2.0.0'}).create();
+    await appDir(dependencies: {'foo': '^2.0.0'}).create();
     // Do a `pub get` here to create a lock file in order to validate we later can
     // `pub get --offline` with packages installed by `preload`.
     await pubGet();
@@ -29,10 +29,16 @@ void main() {
     final archivePath1 = p.join(sandbox, 'foo-1.0.0-archive.tar.gz');
     final archivePath2 = p.join(sandbox, 'foo-2.0.0-archive.tar.gz');
 
-    File(archivePath1).writeAsBytesSync(await readBytes(
-        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
-    File(archivePath2).writeAsBytesSync(await readBytes(
-        Uri.parse(server.url).resolve('packages/foo/versions/2.0.0.tar.gz')));
+    File(archivePath1).writeAsBytesSync(
+      await readBytes(
+        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz'),
+      ),
+    );
+    File(archivePath2).writeAsBytesSync(
+      await readBytes(
+        Uri.parse(server.url).resolve('packages/foo/versions/2.0.0.tar.gz'),
+      ),
+    );
     await runPub(
       args: ['cache', 'preload', archivePath1, archivePath2],
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
@@ -65,8 +71,11 @@ void main() {
 
     final archivePath = p.join(sandbox, 'archive');
 
-    File(archivePath).writeAsBytesSync(await readBytes(
-        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz')));
+    File(archivePath).writeAsBytesSync(
+      await readBytes(
+        Uri.parse(server.url).resolve('packages/foo/versions/1.0.0.tar.gz'),
+      ),
+    );
     await runPub(
       args: ['cache', 'preload', archivePath],
       // By having pub.dev be the "official" server the test-server (localhost)
@@ -75,7 +84,8 @@ void main() {
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': 'pub.dev'},
       output: allOf([
         contains(
-            'Installed $archivePath in cache as foo 1.0.0 from ${server.url}.')
+          'Installed $archivePath in cache as foo 1.0.0 from ${server.url}.',
+        )
       ]),
     );
     await d.cacheDir({'foo': '1.0.0'}).validate();
@@ -165,9 +175,10 @@ void main() {
     final archivePath = p.join(sandbox, 'archive');
 
     File(archivePath).writeAsBytesSync(
-        await tarFromDescriptors([d.file('pubspec.yaml', '{}')])
-            .expand((x) => x)
-            .toList());
+      await tarFromDescriptors([d.file('pubspec.yaml', '{}')])
+          .expand((x) => x)
+          .toList(),
+    );
 
     await runPub(
       args: ['cache', 'preload', archivePath],

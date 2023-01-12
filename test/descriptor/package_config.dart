@@ -70,10 +70,11 @@ class PackageConfigFileDescriptor extends Descriptor {
             (p) => isA<PackageConfigEntry>()
                 .having((p0) => p0.name, 'name', p.name)
                 .having(
-                    (p0) => p0.languageVersion,
-                    'languageVersion',
-                    // If the expected entry has no language-version we don't check it.
-                    p.languageVersion ?? anything)
+                  (p0) => p0.languageVersion,
+                  'languageVersion',
+                  // If the expected entry has no language-version we don't check it.
+                  p.languageVersion ?? anything,
+                )
                 .having((p0) => p0.rootUri, 'rootUri', p.rootUri)
                 .having((p0) => p0.packageUri, 'packageUri', p.packageUri),
           )
@@ -86,8 +87,11 @@ class PackageConfigFileDescriptor extends Descriptor {
     config.generated = null;
     expected.packages = []; // Already compared packages (ignoring ordering)
     config.packages = [];
-    expect(config.toJson(), equals(expected.toJson()),
-        reason: '"$packageConfigFile" does not match expected values');
+    expect(
+      config.toJson(),
+      equals(expected.toJson()),
+      reason: '"$packageConfigFile" does not match expected values',
+    );
   }
 
   @override

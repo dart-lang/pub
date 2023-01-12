@@ -16,13 +16,13 @@ void main() {
       ..serve('b', '1.0.0')
       ..serve('c', '2.0.0');
 
-    await d.appDir({'a': 'any'}).create();
+    await d.appDir(dependencies: {'a': 'any'}).create();
 
     // One dependency changed.
     await pubUpgrade(output: RegExp(r'Changed 1 dependency!$'));
 
     // Remove one and add two.
-    await d.appDir({'b': 'any', 'c': 'any'}).create();
+    await d.appDir(dependencies: {'b': 'any', 'c': 'any'}).create();
 
     await pubUpgrade(output: RegExp(r'Changed 3 dependencies!$'));
 

@@ -16,21 +16,23 @@ void main() {
       ..serve('foo', '2.0.0');
 
     // Create the first lockfile.
-    await d.appDir({'foo': '2.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '2.0.0'}).create();
 
     await pubGet();
 
     // Change the pubspec.
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Also delete the "packages" directory.
     deleteEntry(path.join(d.sandbox, appPath, 'packages'));
 
     // Do the dry run.
     await pubDowngrade(
-        args: ['--dry-run'],
-        output: allOf(
-            [contains('< foo 1.0.0'), contains('Would change 1 dependency.')]));
+      args: ['--dry-run'],
+      output: allOf(
+        [contains('< foo 1.0.0'), contains('Would change 1 dependency.')],
+      ),
+    );
 
     await d.dir(appPath, [
       // The lockfile should be unmodified.

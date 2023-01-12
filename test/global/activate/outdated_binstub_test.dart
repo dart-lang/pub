@@ -20,11 +20,19 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 void main() {
   test('an outdated binstub is replaced', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'foo-script': 'script'}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'executables': {'foo-script': 'script'}
+      },
+      contents: [
+        d.dir(
+          'bin',
+          [d.file('script.dart', "main(args) => print('ok \$args');")],
+        )
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
@@ -37,8 +45,10 @@ void main() {
     await d.dir(cachePath, [
       d.dir('bin', [
         // The new binstub should contain an if
-        d.file(binStubName('foo-script'),
-            contains('This file was created by pub v0.1.2+3.'))
+        d.file(
+          binStubName('foo-script'),
+          contains('This file was created by pub v3.1.2+3.'),
+        )
       ])
     ]).validate();
   });

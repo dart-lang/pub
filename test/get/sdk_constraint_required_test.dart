@@ -17,8 +17,13 @@ void main() {
     ]).create();
 
     await pubGet(
-        error: contains('pubspec.yaml has no lower-bound SDK constraint.'),
-        exitCode: exit_codes.DATA);
+      error: allOf(
+        contains('pubspec.yaml has no lower-bound SDK constraint.'),
+        contains("sdk: '^2.19.0'"),
+      ),
+      exitCode: exit_codes.DATA,
+      environment: {'_PUB_TEST_SDK_VERSION': '2.19.1'},
+    );
 
     await d.dir(appPath, [
       // The lockfile should not be created.

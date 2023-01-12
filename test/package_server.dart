@@ -82,31 +82,32 @@ class PackageServer {
         }
 
         return shelf.Response.ok(
-            jsonEncode({
-              'name': name,
-              'uploaders': ['nweiz@google.com'],
-              'versions': [
-                for (final version in package.versions.values)
-                  {
-                    'pubspec': version.pubspec,
-                    'version': version.version.toString(),
-                    'archive_url':
-                        '${server.url}/packages/$name/versions/${version.version}.tar.gz',
-                    if (version.isRetracted) 'retracted': true,
-                    if (version.sha256 != null || server.serveContentHashes)
-                      'archive_sha256': version.sha256 ??
-                          hexEncode(
-                              (await sha256.bind(version.contents()).first)
-                                  .bytes)
-                  }
-              ],
-              if (package.isDiscontinued) 'isDiscontinued': true,
-              if (package.discontinuedReplacementText != null)
-                'replacedBy': package.discontinuedReplacementText,
-            }),
-            headers: {
-              HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'
-            });
+          jsonEncode({
+            'name': name,
+            'uploaders': ['nweiz@google.com'],
+            'versions': [
+              for (final version in package.versions.values)
+                {
+                  'pubspec': version.pubspec,
+                  'version': version.version.toString(),
+                  'archive_url':
+                      '${server.url}/packages/$name/versions/${version.version}.tar.gz',
+                  if (version.isRetracted) 'retracted': true,
+                  if (version.sha256 != null || server.serveContentHashes)
+                    'archive_sha256': version.sha256 ??
+                        hexEncode(
+                          (await sha256.bind(version.contents()).first).bytes,
+                        )
+                }
+            ],
+            if (package.isDiscontinued) 'isDiscontinued': true,
+            if (package.discontinuedReplacementText != null)
+              'replacedBy': package.discontinuedReplacementText,
+          }),
+          headers: {
+            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'
+          },
+        );
       },
     );
 
@@ -123,7 +124,8 @@ class PackageServer {
         }
 
         final version = Version.parse(
-            parts[3].substring(0, parts[3].length - '.tar.gz'.length));
+          parts[3].substring(0, parts[3].length - '.tar.gz'.length),
+        );
         assert(parts[3].endsWith('.tar.gz'));
 
         for (final packageVersion in package.versions.values) {
@@ -138,11 +140,14 @@ class PackageServer {
             if (server.serveChecksums &&
                 !headers.containsKey(checksumHeaderName)) {
               headers[checksumHeaderName] = composeChecksumHeader(
-                  crc32c: await packageVersion.computeArchiveCrc32c());
+                crc32c: await packageVersion.computeArchiveCrc32c(),
+              );
             }
 
-            return shelf.Response.ok(packageVersion.contents(),
-                headers: headers);
+            return shelf.Response.ok(
+              packageVersion.contents(),
+              headers: headers,
+            );
           }
         }
         return shelf.Response.notFound('No version $version of $name');
@@ -222,12 +227,20 @@ class PackageServer {
   ///
   /// If [contents] is passed, it's used as the contents of the package. By
   /// default, a package just contains a dummy lib directory.
-  void serve(String name, String version,
-      {Map<String, dynamic>? deps,
-      Map<String, dynamic>? pubspec,
-      List<d.Descriptor>? contents,
-      Map<String, List<String>>? headers}) {
-    var pubspecFields = <String, dynamic>{'name': name, 'version': version};
+  void serve(
+    String name,
+    String version, {
+    Map<String, dynamic>? deps,
+    Map<String, dynamic>? pubspec,
+    List<d.Descriptor>? contents,
+    String? sdk,
+    Map<String, List<String>>? headers,
+  }) {
+    var pubspecFields = <String, dynamic>{
+      'name': name,
+      'version': version,
+      'environment': {'sdk': sdk ?? '^3.0.0'}
+    };
     if (pubspec != null) pubspecFields.addAll(pubspec);
     if (deps != null) pubspecFields['dependencies'] = deps;
 
@@ -243,8 +256,11 @@ class PackageServer {
   }
 
   // Mark a package discontinued.
-  void discontinue(String name,
-      {bool isDiscontinued = true, String? replacementText}) {
+  void discontinue(
+    String name, {
+    bool isDiscontinued = true,
+    String? replacementText,
+  }) {
     _packages[name]!
       ..isDiscontinued = isDiscontinued
       ..discontinuedReplacementText = replacementText;
@@ -284,8 +300,10 @@ class PackageServer {
     return checksumHeader?.join(',');
   }
 
-  static List<String> composeChecksumHeader(
-      {int? crc32c, String? md5 = '5f4dcc3b5aa765d61d8327deb882cf99'}) {
+  static List<String> composeChecksumHeader({
+    int? crc32c,
+    String? md5 = '5f4dcc3b5aa765d61d8327deb882cf99',
+  }) {
     List<String> header = [];
 
     if (crc32c != null) {

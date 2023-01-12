@@ -22,8 +22,9 @@ void main() {
     globalServer.expect('POST', '/upload', (request) {
       return request.read().drain().then((_) {
         return shelf.Response.notFound(
-            '<Error><Message>Your request sucked.</Message></Error>',
-            headers: {'content-type': 'application/xml'});
+          '<Error><Message>Your request sucked.</Message></Error>',
+          headers: {'content-type': 'application/xml'},
+        );
       });
     });
 

@@ -19,10 +19,11 @@ void main() {
     ]).create();
 
     await runPub(
-        args: ['global', 'activate', '-sgit', '../foo.git'],
-        silent: allOf([
-          contains('Downloading bar 1.0.0...'),
-          contains('Downloading baz 1.0.0...')
-        ]));
+      args: ['global', 'activate', '-sgit', '../foo.git'],
+      silent: allOf([
+        contains('Downloading bar 1.0.0...'),
+        contains('Downloading baz 1.0.0...')
+      ]),
+    );
   });
 }

@@ -12,16 +12,21 @@ import '../../test_pub.dart';
 
 void main() {
   test('reports failure if Git is not installed', () async {
-    await setUpFakeGitScript(bash: '''
+    await setUpFakeGitScript(
+      bash: '''
 #!/bin/bash -e
 echo "not git"
 exit 1
-''', batch: '''
+''',
+      batch: '''
 echo "not git"
-''');
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+''',
+    );
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
 
     await pubGet(
       environment: extendedPathEnv(),
@@ -31,7 +36,8 @@ echo "not git"
   });
 
   test('warns if git version is too old', () async {
-    await setUpFakeGitScript(bash: '''
+    await setUpFakeGitScript(
+      bash: '''
 #!/bin/bash -e
 if [ "\$1" == "--version" ]
 then
@@ -40,20 +46,24 @@ then
 else
   PATH=${Platform.environment['PATH']} git \$*
 fi
-''', batch: '''
+''',
+      batch: '''
 if "%1"=="--version" (
   echo "git version 2.13.1.616"
 ) else (
   set path="${Platform.environment['PATH']}"
   git %*
 )
-''');
+''',
+    );
 
     await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
 
     await pubGet(
       environment: extendedPathEnv(),

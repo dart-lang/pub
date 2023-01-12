@@ -14,7 +14,8 @@ void main() {
     await runPub(args: ['global', 'activate', 'foo']);
 
     await runPub(
-        args: ['global', 'deactivate', 'foo'],
-        output: 'Deactivated package foo 1.0.0.');
+      args: ['global', 'deactivate', 'foo'],
+      output: 'Deactivated package foo 1.0.0.',
+    );
   });
 }

@@ -96,8 +96,12 @@ class VersionSolver {
   /// throws an error if no such set is available.
   Future<SolveResult> solve() async {
     _stopwatch.start();
-    _addIncompatibility(Incompatibility(
-        [Term(PackageRange.root(_root), false)], IncompatibilityCause.root));
+    _addIncompatibility(
+      Incompatibility(
+        [Term(PackageRange.root(_root), false)],
+        IncompatibilityCause.root,
+      ),
+    );
 
     try {
       return await _systemCache.hosted.withPrefetching(() async {
@@ -163,7 +167,8 @@ class VersionSolver {
   /// [incompatibility] is almost satisfied by [_solution], returns the
   /// unsatisfied term's package name. Otherwise, returns `#none`.
   dynamic /* String | #none | #conflict */ _propagateIncompatibility(
-      Incompatibility incompatibility) {
+    Incompatibility incompatibility,
+  ) {
     // The first entry in `incompatibility.terms` that's not yet satisfied by
     // [_solution], if one exists. If we find more than one, [_solution] is
     // inconclusive for [incompatibility] and we can't deduce anything.
@@ -197,7 +202,10 @@ class VersionSolver {
     _log("derived:${unsatisfied.isPositive ? ' not' : ''} "
         '${unsatisfied.package}');
     _solution.derive(
-        unsatisfied.package, !unsatisfied.isPositive, incompatibility);
+      unsatisfied.package,
+      !unsatisfied.isPositive,
+      incompatibility,
+    );
     return unsatisfied.package.name;
   }
 
@@ -246,7 +254,9 @@ class VersionSolver {
           mostRecentSatisfier = satisfier;
         } else if (mostRecentSatisfier.index < satisfier.index) {
           previousSatisfierLevel = math.max(
-              previousSatisfierLevel, mostRecentSatisfier.decisionLevel);
+            previousSatisfierLevel,
+            mostRecentSatisfier.decisionLevel,
+          );
           mostRecentTerm = term;
           mostRecentSatisfier = satisfier;
           difference = null;
@@ -261,8 +271,10 @@ class VersionSolver {
           // satisfies the remainder.
           difference = mostRecentSatisfier.difference(mostRecentTerm!);
           if (difference != null) {
-            previousSatisfierLevel = math.max(previousSatisfierLevel,
-                _solution.satisfier(difference.inverse).decisionLevel);
+            previousSatisfierLevel = math.max(
+              previousSatisfierLevel,
+              _solution.satisfier(difference.inverse).decisionLevel,
+            );
           }
         }
       }
@@ -307,7 +319,9 @@ class VersionSolver {
       if (difference != null) newTerms.add(difference.inverse);
 
       incompatibility = Incompatibility(
-          newTerms, ConflictCause(incompatibility, mostRecentSatisfier.cause!));
+        newTerms,
+        ConflictCause(incompatibility, mostRecentSatisfier.cause!),
+      );
       newIncompatibility = true;
 
       var partially = difference == null ? '' : ' partially';
@@ -334,9 +348,12 @@ class VersionSolver {
     // that will force a conflict for that package.
     for (var candidate in unsatisfied) {
       if (candidate.source is! UnknownSource) continue;
-      _addIncompatibility(Incompatibility(
+      _addIncompatibility(
+        Incompatibility(
           [Term(candidate.toRef().withConstraint(VersionConstraint.any), true)],
-          IncompatibilityCause.unknownSource));
+          IncompatibilityCause.unknownSource,
+        ),
+      );
       return candidate.name;
     }
 
@@ -353,9 +370,12 @@ class VersionSolver {
     try {
       version = await _packageLister(package).bestVersion(package.constraint);
     } on PackageNotFoundException catch (error) {
-      _addIncompatibility(Incompatibility(
+      _addIncompatibility(
+        Incompatibility(
           [Term(package.toRef().withConstraint(VersionConstraint.any), true)],
-          PackageNotFoundCause(error)));
+          PackageNotFoundCause(error),
+        ),
+      );
       return package.name;
     }
 
@@ -370,8 +390,12 @@ class VersionSolver {
       } else {
         // If there are no versions that satisfy [package.constraint], add an
         // incompatibility that indicates that.
-        _addIncompatibility(Incompatibility(
-            [Term(package, true)], IncompatibilityCause.noVersions));
+        _addIncompatibility(
+          Incompatibility(
+            [Term(package, true)],
+            IncompatibilityCause.noVersions,
+          ),
+        );
         return package.name;
       }
     }
@@ -386,8 +410,10 @@ class VersionSolver {
       // back to unit propagation which will guide us to choose a better
       // version.
       conflict = conflict ||
-          incompatibility.terms.every((term) =>
-              term.package.name == package.name || _solution.satisfies(term));
+          incompatibility.terms.every(
+            (term) =>
+                term.package.name == package.name || _solution.satisfies(term),
+          );
     }
 
     if (!conflict) {
@@ -445,7 +471,8 @@ class VersionSolver {
   ///
   /// The version list will not contain any retracted package versions.
   Future<Map<String, List<Version>>> _getAvailableVersions(
-      List<PackageId> packages) async {
+    List<PackageId> packages,
+  ) async {
     var availableVersions = <String, List<Version>>{};
     for (var package in packages) {
       // If the version list was never requested, use versions from cached
@@ -456,8 +483,10 @@ class VersionSolver {
       List<PackageId> ids;
       try {
         ids = package.source is HostedSource
-            ? await _systemCache.getVersions(package.toRef(),
-                maxAge: Duration(days: 3))
+            ? await _systemCache.getVersions(
+                package.toRef(),
+                maxAge: Duration(days: 3),
+              )
             : [package];
       } on Exception {
         ids = <PackageId>[package];
@@ -475,7 +504,7 @@ class VersionSolver {
     return _packageListers.putIfAbsent(ref, () {
       if (ref.isRoot) {
         return PackageLister.root(_root, _systemCache,
-            sdkOverrides: _sdkOverrides);
+            sdkOverrides: _sdkOverrides,);
       }
 
       var locked = _getLocked(ref.name);
@@ -496,7 +525,7 @@ class VersionSolver {
           overridden,
           _getAllowedRetracted(ref.name),
           downgrade: _type == SolveType.downgrade,
-          sdkOverrides: _sdkOverrides);
+          sdkOverrides: _sdkOverrides,);
     });
   }
 

@@ -14,7 +14,7 @@ void main() {
         ..serve('foo', '1.0.0')
         ..serve('bar', '1.0.0');
 
-      await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
       await pubCommand(command);
       await d.appPackageConfigFile([
@@ -22,7 +22,7 @@ void main() {
         d.packageConfigEntry(name: 'bar', version: '1.0.0'),
       ]).validate();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await pubCommand(command);
 

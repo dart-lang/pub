@@ -14,12 +14,13 @@ void main() {
   test('reports the pubspec path when there is an error in it', () async {
     await d.dir(appPath, [d.file('pubspec.yaml', 'some bad yaml')]).create();
 
-    await runPub(args: [
-      'list-package-dirs',
-      '--format=json'
-    ], outputJson: {
-      'error': contains('Error on line 1'),
-      'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
-    }, exitCode: exit_codes.DATA);
+    await runPub(
+      args: ['list-package-dirs', '--format=json'],
+      outputJson: {
+        'error': contains('Error on line 1'),
+        'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
+      },
+      exitCode: exit_codes.DATA,
+    );
   });
 }

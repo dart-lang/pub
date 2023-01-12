@@ -19,10 +19,12 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': path.join(d.sandbox, 'foo')},
-        'bar': 'any'
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': path.join(d.sandbox, 'foo')},
+          'bar': 'any'
+        },
+      )
     ]).create();
 
     await pubGet();
@@ -31,20 +33,26 @@ void main() {
     // entrypoint package from the working directory, which has had symlinks
     // resolve. On Mac, "/tmp" is actually a symlink to "/private/tmp", so we
     // need to accommodate that.
-    await runPub(args: [
-      'list-package-dirs',
-      '--format=json'
-    ], outputJson: {
-      'packages': {
-        'foo': path.join(d.sandbox, 'foo', 'lib'),
-        'bar': path.join(d.sandbox, cachePath, 'hosted',
-            'localhost%58${server.port}', 'bar-1.0.0', 'lib'),
-        'myapp': canonicalize(path.join(d.sandbox, appPath, 'lib'))
+    await runPub(
+      args: ['list-package-dirs', '--format=json'],
+      outputJson: {
+        'packages': {
+          'foo': path.join(d.sandbox, 'foo', 'lib'),
+          'bar': path.join(
+            d.sandbox,
+            cachePath,
+            'hosted',
+            'localhost%58${server.port}',
+            'bar-1.0.0',
+            'lib',
+          ),
+          'myapp': canonicalize(path.join(d.sandbox, appPath, 'lib'))
+        },
+        'input_files': [
+          canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock')),
+          canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
+        ]
       },
-      'input_files': [
-        canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock')),
-        canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
-      ]
-    });
+    );
   });
 }

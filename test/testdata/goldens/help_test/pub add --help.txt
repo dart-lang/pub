@@ -14,23 +14,23 @@ after a colon.
 
 For example:
   * Add a hosted dependency at newest compatible stable version:
-    `$topLevelProgram pub add foo`
+    `dart pub add foo`
   * Add a hosted dev dependency at newest compatible stable version:
-    `$topLevelProgram pub add dev:foo`
+    `dart pub add dev:foo`
   * Add a hosted dependency with the given constraint
-    `$topLevelProgram pub add foo:^1.2.3`
+    `dart pub add foo:^1.2.3`
   * Add multiple dependencies:
-    `$topLevelProgram pub add foo dev:bar`
+    `dart pub add foo dev:bar`
   * Add a path dependency:
-    `$topLevelProgram pub add 'foo{"path":"../foo"}'`
+    `dart pub add 'foo{"path":"../foo"}'`
   * Add a hosted dependency:
-    `$topLevelProgram pub add 'foo{"hosted":"my-pub.dev"}'`
+    `dart pub add 'foo{"hosted":"my-pub.dev"}'`
   * Add an sdk dependency:
-    `$topLevelProgram pub add 'foo{"sdk":"flutter"}'`
+    `dart pub add 'foo{"sdk":"flutter"}'`
   * Add a git dependency:
-    `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
+    `dart pub add 'foo{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
-    `$topLevelProgram pub add \
+    `dart pub add \
       'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
 
 Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor]

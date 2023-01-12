@@ -19,19 +19,27 @@ void main() {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
 
     await pubGet();
 
     final lockfile = loadYaml(
-        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync());
-    expect(lockfile['packages']['foo']['description']['url'], '../foo.git',
-        reason:
-            'The relative path should be preserved, and be a url (forward slashes on all platforms)');
+      File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
+    expect(
+      lockfile['packages']['foo']['description']['url'],
+      '../foo.git',
+      reason:
+          'The relative path should be preserved, and be a url (forward slashes on all platforms)',
+    );
 
     await d.dir(cachePath, [
       d.dir('git', [
@@ -41,7 +49,28 @@ void main() {
     ]).validate();
 
     expect(packageSpec('foo'), isNotNull);
-  }, skip: true);
+  });
+
+  test('checks out a package from Git using non-json YAML', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.file('pubspec.yaml', '''
+name: foo
+environment:
+  sdk: '$defaultSdkConstraint'
+'''),
+    ]).create();
+
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
+
+    await pubGet();
+  });
 
   test(
       'checks out a package from Git with a name that is not a valid '
@@ -52,16 +81,21 @@ void main() {
         d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
 
     await descriptor.create();
-    await runProcess('git', ['update-server-info'],
-        workingDir: descriptor.io.path);
+    await runProcess(
+      'git',
+      ['update-server-info'],
+      workingDir: descriptor.io.path,
+    );
     const funkyName = '@:+*foo';
 
     final server =
         await _serveDirectory(p.join(descriptor.io.path, '.git'), funkyName);
 
-    await d.appDir({
-      'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'}
+      },
+    ).create();
 
     await pubGet();
 

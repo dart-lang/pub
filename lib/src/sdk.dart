@@ -13,6 +13,9 @@ import 'sdk/fuchsia.dart';
 /// An SDK that can provide packages and on which pubspecs can express version
 /// constraints.
 abstract class Sdk {
+  /// Is this the Dart sdk?
+  bool get isDartSdk => identifier == 'dart';
+
   /// This SDK's human-readable name.
   String get name;
 
@@ -50,7 +53,21 @@ abstract class Sdk {
 /// A map from SDK identifiers that appear in pubspecs to the implementations of
 /// those SDKs.
 final sdks = UnmodifiableMapView<String, Sdk>(
-    {'dart': sdk, 'flutter': FlutterSdk(), 'fuchsia': FuchsiaSdk()});
+  {'dart': sdk, 'flutter': FlutterSdk(), 'fuchsia': FuchsiaSdk()},
+);
 
 /// The core Dart SDK.
 final sdk = DartSdk();
+
+extension AsCompatibleWithIfPossible on VersionConstraint {
+  // Returns `this` expressed as [VersionConstraint.compatibleWith] if possible.
+  VersionConstraint asCompatibleWithIfPossible() {
+    final range = this;
+    if (range is! VersionRange) return this;
+    final min = range.min;
+    if (min == null) return this;
+    final asCompatibleWith = VersionConstraint.compatibleWith(min);
+    if (asCompatibleWith == this) return asCompatibleWith;
+    return this;
+  }
+}

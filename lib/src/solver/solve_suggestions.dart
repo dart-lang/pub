@@ -49,7 +49,7 @@ Future<String?> suggestResolutionAlternatives(
         sdkOverrides: {
           'dart': bestRelease.dartVersion,
           'flutter': bestRelease.flutterVersion
-        });
+        },);
     if (result != null) {
       return _ResolutionSuggestion(
         runningFromFlutter
@@ -69,11 +69,11 @@ Future<String?> suggestResolutionAlternatives(
         ?.constraint;
     if (originalConstraint != null) {
       final relaxedPubspec = stripVersionBounds(entrypoint.root.pubspec,
-          stripOnly: [name], stripLowerBound: true);
+          stripOnly: [name], stripLowerBound: true,);
 
       final result = await tryResolve(
           type, cache, Package.inMemory(relaxedPubspec),
-          lockFile: entrypoint.lockFile, unlock: unlock);
+          lockFile: entrypoint.lockFile, unlock: unlock,);
       if (result != null) {
         final resolvingPackage =
             result.packages.firstWhere((p) => p.name == name);
@@ -106,14 +106,14 @@ Future<String?> suggestResolutionAlternatives(
   }
 
   Future<_ResolutionSuggestion?> suggestUnlockingAll(
-      {required bool stripLowerBound}) async {
+      {required bool stripLowerBound,}) async {
     final originalPubspec = entrypoint.root.pubspec;
     final relaxedPubspec =
         stripVersionBounds(originalPubspec, stripLowerBound: stripLowerBound);
 
     final result = await tryResolve(
         type, cache, Package.inMemory(relaxedPubspec),
-        lockFile: entrypoint.lockFile, unlock: unlock);
+        lockFile: entrypoint.lockFile, unlock: unlock,);
     if (result != null) {
       final updatedPackageVersions = <PackageId>[];
       for (final id in result.packages) {
@@ -135,11 +135,11 @@ Future<String?> suggestResolutionAlternatives(
             .join(' ');
         return _ResolutionSuggestion(
             '* Try updating the following constraints: $topLevelProgram pub add $formattedConstraints',
-            priority: 4);
+            priority: 4,);
       } else {
         return _ResolutionSuggestion(
             '* Try an upgrade of your constraints: $topLevelProgram pub upgrade --major-versions',
-            priority: 4);
+            priority: 4,);
       }
     }
     return null;
@@ -174,7 +174,7 @@ Future<String?> suggestResolutionAlternatives(
   }
   if (suggestions.isEmpty) {
     addSuggestion(await suggestUnlockingAll(stripLowerBound: true) ??
-        await suggestUnlockingAll(stripLowerBound: false));
+        await suggestUnlockingAll(stripLowerBound: false),);
   }
 
   if (suggestions.isEmpty) return null;
@@ -196,10 +196,10 @@ class _ResolutionSuggestion {
 Future<SolveResult?> tryResolve(SolveType type, SystemCache cache, Package root,
     {LockFile? lockFile,
     Iterable<String> unlock = const [],
-    Map<String, Version> sdkOverrides = const {}}) async {
+    Map<String, Version> sdkOverrides = const {},}) async {
   try {
     return await resolveVersions(type, cache, root,
-        lockFile: lockFile, sdkOverrides: sdkOverrides);
+        lockFile: lockFile, sdkOverrides: sdkOverrides,);
   } on SolveFailure {
     return null;
   }

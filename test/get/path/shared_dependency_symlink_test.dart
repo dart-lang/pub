@@ -11,28 +11,40 @@ import '../../test_pub.dart';
 
 void main() {
   test('shared dependency with symlink', () async {
-    await d.dir('shared',
-        [d.libDir('shared'), d.libPubspec('shared', '0.0.1')]).create();
+    await d.dir(
+      'shared',
+      [d.libDir('shared'), d.libPubspec('shared', '0.0.1')],
+    ).create();
 
     await d.dir('foo', [
       d.libDir('foo'),
-      d.libPubspec('foo', '0.0.1', deps: {
-        'shared': {'path': '../shared'}
-      })
+      d.libPubspec(
+        'foo',
+        '0.0.1',
+        deps: {
+          'shared': {'path': '../shared'}
+        },
+      )
     ]).create();
 
     await d.dir('bar', [
       d.libDir('bar'),
-      d.libPubspec('bar', '0.0.1', deps: {
-        'shared': {'path': '../link/shared'}
-      })
+      d.libPubspec(
+        'bar',
+        '0.0.1',
+        deps: {
+          'shared': {'path': '../link/shared'}
+        },
+      )
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'bar': {'path': '../bar'},
-        'foo': {'path': '../foo'},
-      })
+      d.appPubspec(
+        dependencies: {
+          'bar': {'path': '../bar'},
+          'foo': {'path': '../foo'},
+        },
+      )
     ]).create();
 
     await d.dir('link').create();

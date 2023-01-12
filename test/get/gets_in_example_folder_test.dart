@@ -38,19 +38,21 @@ void main() {
 
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), false);
-      await pubCommand(command,
-          args: ['--example'],
-          output: command.name == 'get'
-              ? '''
+      await pubCommand(
+        command,
+        args: ['--example'],
+        output: command.name == 'get'
+            ? '''
 Resolving dependencies... 
 Got dependencies!
 Resolving dependencies in $dotExample...
 Got dependencies in $dotExample.'''
-              : '''
+            : '''
 Resolving dependencies... 
 No dependencies changed.
 Resolving dependencies in $dotExample...
-Got dependencies in $dotExample.''');
+Got dependencies in $dotExample.''',
+      );
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), true);
     });
@@ -70,13 +72,15 @@ Got dependencies in $dotExample.''');
       await pubGet(
         args: ['--example'],
         error: contains(
-            'Resolving dependencies in $dotExample failed. For details run `dart pub get --directory $dotExample`'),
+          'Resolving dependencies in $dotExample failed. For details run `dart pub get --directory $dotExample`',
+        ),
         exitCode: 1,
       );
       await pubGet(
         args: ['--directory', dotExample],
         error: contains(
-            'Error on line 1, column 9 of example${p.separator}pubspec.yaml'),
+          'Error on line 1, column 9 of example${p.separator}pubspec.yaml',
+        ),
         exitCode: exit_codes.DATA,
       );
     });

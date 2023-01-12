@@ -17,9 +17,13 @@ main() {
 void main() {
   test('runs a script in unchecked mode by default', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', _script)])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('script.dart', _script)])
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 

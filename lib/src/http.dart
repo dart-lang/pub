@@ -67,7 +67,8 @@ class _PubHttpClient extends http.BaseClient {
         requestLog.writeln();
         requestLog.writeln('Body fields:');
         request.fields.forEach(
-            (name, value) => requestLog.writeln(_logField(name, value)));
+          (name, value) => requestLog.writeln(_logField(name, value)),
+        );
 
         // TODO(nweiz): make MultipartRequest.files readable, and log them?
       } else if (request is http.Request) {
@@ -75,7 +76,8 @@ class _PubHttpClient extends http.BaseClient {
           requestLog.writeln();
           requestLog.writeln('Body fields:');
           request.bodyFields.forEach(
-              (name, value) => requestLog.writeln(_logField(name, value)));
+            (name, value) => requestLog.writeln(_logField(name, value)),
+          );
         } else if (contentType.value == 'text/plain' ||
             contentType.value == 'application/json') {
           requestLog.write(request.body);
@@ -241,9 +243,11 @@ class PubHttpException implements Exception {
 class PubHttpResponseException extends PubHttpException {
   final http.BaseResponse response;
 
-  PubHttpResponseException(this.response,
-      {String message = '', bool isIntermittent = false})
-      : super(message, isIntermittent: isIntermittent);
+  PubHttpResponseException(
+    this.response, {
+    String message = '',
+    bool isIntermittent = false,
+  }) : super(message, isIntermittent: isIntermittent);
 
   @override
   String toString() {
@@ -280,17 +284,18 @@ final _httpPool = Pool(16);
 /// Each attempt is run within a [Pool] configured with 16 maximum resources.
 Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
   return await retry(
-      () async => await _httpPool.withResource(() async => await fn()),
-      retryIf: (e) async =>
-          (e is PubHttpException && e.isIntermittent) ||
-          e is TimeoutException ||
-          isHttpIOException(e),
-      onRetry: (exception, attemptNumber) async =>
-          log.io('Attempt #$attemptNumber for $operation'),
-      maxAttempts: math.max(
-        1, // Having less than 1 attempt doesn't make sense.
-        int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
-      ));
+    () async => await _httpPool.withResource(() async => await fn()),
+    retryIf: (e) async =>
+        (e is PubHttpException && e.isIntermittent) ||
+        e is TimeoutException ||
+        isHttpIOException(e),
+    onRetry: (exception, attemptNumber) async =>
+        log.io('Attempt #$attemptNumber for $operation'),
+    maxAttempts: math.max(
+      1, // Having less than 1 attempt doesn't make sense.
+      int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
+    ),
+  );
 }
 
 extension Throwing on http.BaseResponse {
@@ -344,8 +349,10 @@ extension RequestSending on http.Client {
   ///
   /// If false is passed for [throwIfNotOk], the response will not be validated.
   /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
-  Future<http.Response> fetch(http.BaseRequest request,
-      {bool throwIfNotOk = true}) async {
+  Future<http.Response> fetch(
+    http.BaseRequest request, {
+    bool throwIfNotOk = true,
+  }) async {
     final streamedResponse = await send(request);
     final response = await http.Response.fromStream(streamedResponse);
     if (throwIfNotOk) {
@@ -359,8 +366,10 @@ extension RequestSending on http.Client {
   ///
   /// If false is passed for [throwIfNotOk], the response will not be validated.
   /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
-  Future<http.StreamedResponse> fetchAsStream(http.BaseRequest request,
-      {bool throwIfNotOk = true}) async {
+  Future<http.StreamedResponse> fetchAsStream(
+    http.BaseRequest request, {
+    bool throwIfNotOk = true,
+  }) async {
     final streamedResponse = await send(request);
     if (throwIfNotOk) {
       streamedResponse.throwIfNotOk();

@@ -41,10 +41,12 @@ Future<void> setup({
       },
     }),
   ]).create();
-  await pubGet(environment: {
-    '_PUB_TEST_SDK_VERSION': '2.12.0',
-    'FLUTTER_ROOT': fakeFlutterRoot.io.path
-  });
+  await pubGet(
+    environment: {
+      '_PUB_TEST_SDK_VERSION': '2.12.0',
+      'FLUTTER_ROOT': fakeFlutterRoot.io.path
+    },
+  );
 }
 
 void main() {
@@ -59,20 +61,23 @@ void main() {
   test('Warn when upper bound', () async {
     await setup(flutterConstraint: '>=1.20.0 <=2.0.0');
     await expectValidation(
-        allOf([
-          contains(
-              'You can replace that with just the lower bound: `>=1.20.0`.'),
-          contains('Package has 1 warning.'),
-        ]),
-        65);
+      allOf([
+        contains(
+          'You can replace that with just the lower bound: `>=1.20.0`.',
+        ),
+        contains('Package has 1 warning.'),
+      ]),
+      65,
+    );
   });
   test('Warn when only upper bound', () async {
     await setup(flutterConstraint: '<2.0.0');
     await expectValidation(
-        allOf([
-          contains('You can replace the constraint with `any`.'),
-          contains('Package has 1 warning.'),
-        ]),
-        65);
+      allOf([
+        contains('You can replace the constraint with `any`.'),
+        contains('Package has 1 warning.'),
+      ]),
+      65,
+    );
   });
 }

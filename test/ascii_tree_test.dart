@@ -67,7 +67,8 @@ void main() {
       (name) => throw UnimplementedError(),
     ).listFiles();
     ctx.expectNextSection(
-        tree.fromFiles(files, baseDir: path(appPath), showFileSizes: true));
+      tree.fromFiles(files, baseDir: path(appPath), showFileSizes: true),
+    );
   });
   test('tree.fromMap empty map', () {
     expect(tree.fromMap({}), equals(''));

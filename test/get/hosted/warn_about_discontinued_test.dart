@@ -17,7 +17,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3', deps: {'transitive': 'any'});
     server.serve('transitive', '1.0.0');
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
 
     server
@@ -35,11 +35,13 @@ void main() {
     deleteEntry(fooVersionsCache);
     deleteEntry(transitiveVersionsCache);
     // We warn only about the direct dependency here:
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued)
 Got dependencies!
-''');
+''',
+    );
     expect(fileExists(fooVersionsCache), isTrue);
     final c = json.decode(readTextFile(fooVersionsCache));
     // Make the cache artificially old.
@@ -49,36 +51,48 @@ Got dependencies!
 
     server.discontinue('foo', replacementText: 'bar');
 
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''');
+Got dependencies!''',
+    );
     final c2 = json.decode(readTextFile(fooVersionsCache));
     // Make a bad cached value to test that responses are actually from cache.
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
-Got dependencies!''');
+Got dependencies!''',
+    );
     // Repairing the cache should reset the package listing caches.
     await runPub(args: ['cache', 'repair']);
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''');
+Got dependencies!''',
+    );
     // Test that --offline won't try to access the server for retrieving the
     // status.
     server.serveErrors();
-    await pubGet(args: ['--offline'], output: '''
+    await pubGet(
+      args: ['--offline'],
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''');
+Got dependencies!''',
+    );
     deleteEntry(fooVersionsCache);
     deleteEntry(transitiveVersionsCache);
-    await pubGet(args: ['--offline'], output: '''
+    await pubGet(
+      args: ['--offline'],
+      output: '''
 Resolving dependencies...
 Got dependencies!
-''');
+''',
+    );
   });
 
   test('Warns about discontinued dev dependencies', () async {
@@ -95,7 +109,7 @@ dependencies:
 dev_dependencies:
   foo: 1.2.3
 environment:
-  sdk: '>=0.1.2 <1.0.0'
+  sdk: '$defaultSdkConstraint'
 ''')
     ]).create();
     await pubGet();
@@ -111,11 +125,13 @@ environment:
     expect(fileExists(fooVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
     // We warn only about the direct dependency here:
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued)
 Got dependencies!
-''');
+''',
+    );
     expect(fileExists(fooVersionsCache), isTrue);
     final c = json.decode(readTextFile(fooVersionsCache));
     // Make the cache artificially old.
@@ -123,49 +139,63 @@ Got dependencies!
         DateTime.now().subtract(Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
     builder.discontinue('foo', replacementText: 'bar');
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''');
+Got dependencies!''',
+    );
     final c2 = json.decode(readTextFile(fooVersionsCache));
     // Make a bad cached value to test that responses are actually from cache.
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
-Got dependencies!''');
+Got dependencies!''',
+    );
     // Repairing the cache should reset the package listing caches.
     await runPub(args: ['cache', 'repair']);
-    await pubGet(output: '''
+    await pubGet(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''');
+Got dependencies!''',
+    );
     // Test that --offline won't try to access the server for retrieving the
     // status.
     builder.serveErrors();
-    await pubGet(args: ['--offline'], output: '''
+    await pubGet(
+      args: ['--offline'],
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''');
+Got dependencies!''',
+    );
     deleteEntry(fooVersionsCache);
-    await pubGet(args: ['--offline'], output: '''
+    await pubGet(
+      args: ['--offline'],
+      output: '''
 Resolving dependencies...
 Got dependencies!
-''');
+''',
+    );
   });
 
   test('get does not fail when status listing fails', () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
     final fooVersionsCache =
         p.join(globalServer.cachingPath, '.cache', 'foo-versions.json');
     expect(fileExists(fooVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
     // Serve 400 on all requests.
-    globalServer.handle(RegExp('.*'),
-        (shelf.Request request) => shelf.Response.notFound('Not found'));
+    globalServer.handle(
+      RegExp('.*'),
+      (shelf.Request request) => shelf.Response.notFound('Not found'),
+    );
 
     /// Even if we fail to get status we still report success if versions don't unlock.
     await pubGet();

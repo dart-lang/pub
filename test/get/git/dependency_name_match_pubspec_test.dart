@@ -15,17 +15,22 @@ void main() {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'weirdname': {'git': '../foo.git'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'weirdname': {'git': '../foo.git'}
+        },
+      )
     ]).create();
 
     await pubGet(
-        error: contains('"name" field doesn\'t match expected name '
-            '"weirdname".'),
-        exitCode: exit_codes.DATA);
+      error: contains('"name" field doesn\'t match expected name '
+          '"weirdname".'),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

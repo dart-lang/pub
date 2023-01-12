@@ -21,7 +21,8 @@ void main() {
     ]).create();
 
     await pubGet(
-        exitCode: exit_codes.SUCCESS,
-        environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path});
+      exitCode: exit_codes.SUCCESS,
+      environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path},
+    );
   });
 }

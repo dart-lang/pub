@@ -16,9 +16,9 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0', pubspec: {
       'environment': {'flutter': '>=3.3.0', 'sdk': '^2.17.0'}
-    });
+    },);
     server.handle(
-        '/flutterReleases', (request) => Response.ok(releasesMockResponse));
+        '/flutterReleases', (request) => Response.ok(releasesMockResponse),);
     await d.dir(appPath, [
       d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0')
     ]).create();
@@ -37,9 +37,9 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0', pubspec: {
       'environment': {'sdk': '>=2.18.0 <2.18.1'}
-    });
+    },);
     server.handle(
-        '/flutterReleases', (request) => Response.ok(releasesMockResponse));
+        '/flutterReleases', (request) => Response.ok(releasesMockResponse),);
     await d.dir(appPath, [
       d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0')
     ]).create();
@@ -72,9 +72,9 @@ void main() {
       error: allOf(
         [
           contains(
-              '* Consider downgrading your constraint on foo: dart pub add foo:^0.9.0'),
+              '* Consider downgrading your constraint on foo: dart pub add foo:^0.9.0',),
           contains(
-              '* Try upgrading your constraint on bar: dart pub add dev:bar:^2.0.0'),
+              '* Try upgrading your constraint on bar: dart pub add dev:bar:^2.0.0',),
         ],
       ),
     );
@@ -95,7 +95,7 @@ void main() {
       error: allOf(
         [
           contains(
-              '* Try updating your constraint on foo: dart pub add foo:^1.0.0'),
+              '* Try updating your constraint on foo: dart pub add foo:^1.0.0',),
         ],
       ),
     );

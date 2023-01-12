@@ -28,11 +28,15 @@ void main() {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
 
     await pubGet();
 
@@ -56,11 +60,13 @@ void main() {
     await repo.create();
     await repo.runGit(['branch', 'old']);
 
-    await d.appDir({
-      'foo': {
-        'git': {'url': '../foo.git', 'ref': 'old'}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git', 'ref': 'old'}
+        }
+      },
+    ).create();
 
     await pubGet();
 
@@ -84,11 +90,13 @@ void main() {
     await repo.create();
     var commit = await repo.revParse('HEAD');
 
-    await d.appDir({
-      'foo': {
-        'git': {'url': '../foo.git', 'ref': commit}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git', 'ref': commit}
+        }
+      },
+    ).create();
 
     await pubGet();
 

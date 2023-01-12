@@ -15,15 +15,21 @@ void main() {
     setUp(() async {
       // Create two cached revisions of foo.
       await d.git(
-          'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+        'foo.git',
+        [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+      ).create();
 
-      await d.appDir({
-        'foo': {'git': '../foo.git'}
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {'git': '../foo.git'}
+        },
+      ).create();
       await pubGet();
 
       await d.git(
-          'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.1')]).commit();
+        'foo.git',
+        [d.libDir('foo'), d.libPubspec('foo', '1.0.1')],
+      ).commit();
 
       await pubUpgrade();
     });
@@ -41,10 +47,13 @@ void main() {
       }
 
       // Repair them.
-      await runPub(args: ['cache', 'repair'], output: '''
+      await runPub(
+        args: ['cache', 'repair'],
+        output: '''
           Resetting Git repository for foo 1.0.0...
           Resetting Git repository for foo 1.0.1...
-          Reinstalled 2 packages.''');
+          Reinstalled 2 packages.''',
+      );
 
       // The missing libraries should have been replaced.
       var fooLibs = fooDirs.map((dir) {
@@ -68,18 +77,19 @@ void main() {
       }
 
       await runPub(
-          args: ['cache', 'repair'],
-          error: allOf([
-            contains('Failed to load package:'),
-            contains('Could not find a file named "pubspec.yaml" in '),
-            contains('foo-'),
-          ]),
-          output: allOf([
-            startsWith('Failed to reinstall 2 packages:'),
-            contains('- foo 0.0.0 from git'),
-            contains('- foo 0.0.0 from git'),
-          ]),
-          exitCode: exit_codes.UNAVAILABLE);
+        args: ['cache', 'repair'],
+        error: allOf([
+          contains('Failed to load package:'),
+          contains('Could not find a file named "pubspec.yaml" in '),
+          contains('foo-'),
+        ]),
+        output: allOf([
+          startsWith('Failed to reinstall 2 packages:'),
+          contains('- foo 0.0.0 from git'),
+          contains('- foo 0.0.0 from git'),
+        ]),
+        exitCode: exit_codes.UNAVAILABLE,
+      );
 
       await d.dir(cachePath, [
         d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
@@ -97,18 +107,19 @@ void main() {
       }
 
       await runPub(
-          args: ['cache', 'repair'],
-          error: allOf([
-            contains('Failed to load package:'),
-            contains('Error on line 1, column 2 of '),
-            contains('foo-'),
-          ]),
-          output: allOf([
-            startsWith('Failed to reinstall 2 packages:'),
-            contains('- foo 0.0.0 from git'),
-            contains('- foo 0.0.0 from git'),
-          ]),
-          exitCode: exit_codes.UNAVAILABLE);
+        args: ['cache', 'repair'],
+        error: allOf([
+          contains('Failed to load package:'),
+          contains('Error on line 1, column 2 of '),
+          contains('foo-'),
+        ]),
+        output: allOf([
+          startsWith('Failed to reinstall 2 packages:'),
+          contains('- foo 0.0.0 from git'),
+          contains('- foo 0.0.0 from git'),
+        ]),
+        exitCode: exit_codes.UNAVAILABLE,
+      );
 
       await d.dir(cachePath, [
         d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
@@ -123,11 +134,13 @@ void main() {
         d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.0')])
       ]).create();
 
-      await d.appDir({
-        'sub': {
-          'git': {'url': '../foo.git', 'path': 'subdir'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'sub': {
+            'git': {'url': '../foo.git', 'path': 'subdir'}
+          }
+        },
+      ).create();
       await pubGet();
 
       await d.git('foo.git', [
@@ -150,10 +163,13 @@ void main() {
       }
 
       // Repair them.
-      await runPub(args: ['cache', 'repair'], output: '''
+      await runPub(
+        args: ['cache', 'repair'],
+        output: '''
           Resetting Git repository for sub 1.0.0...
           Resetting Git repository for sub 1.0.1...
-          Reinstalled 2 packages.''');
+          Reinstalled 2 packages.''',
+      );
 
       // The missing libraries should have been replaced.
       var fooLibs = fooDirs.map((dir) {
@@ -179,19 +195,20 @@ void main() {
       }
 
       await runPub(
-          args: ['cache', 'repair'],
-          error: allOf([
-            contains('Failed to load package:'),
-            contains('Could not find a file named "pubspec.yaml" in '),
-            contains('foo-'),
-            contains('${path.separator}subdir'),
-          ]),
-          output: allOf([
-            startsWith('Failed to reinstall 2 packages:'),
-            contains('- foo 0.0.0 from git'),
-            contains('- foo 0.0.0 from git'),
-          ]),
-          exitCode: exit_codes.UNAVAILABLE);
+        args: ['cache', 'repair'],
+        error: allOf([
+          contains('Failed to load package:'),
+          contains('Could not find a file named "pubspec.yaml" in '),
+          contains('foo-'),
+          contains('${path.separator}subdir'),
+        ]),
+        output: allOf([
+          startsWith('Failed to reinstall 2 packages:'),
+          contains('- foo 0.0.0 from git'),
+          contains('- foo 0.0.0 from git'),
+        ]),
+        exitCode: exit_codes.UNAVAILABLE,
+      );
 
       await d.dir(cachePath, [
         d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))

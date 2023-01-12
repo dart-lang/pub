@@ -21,8 +21,10 @@ export 'src/pub_embeddable_command.dart' show PubAnalytics;
 ///
 /// [isVerbose] should return `true` (after argument resolution) if the
 /// embedding top-level is in verbose mode.
-Command<int> pubCommand(
-        {PubAnalytics? analytics, required bool Function() isVerbose}) =>
+Command<int> pubCommand({
+  PubAnalytics? analytics,
+  required bool Function() isVerbose,
+}) =>
     PubEmbeddableCommand(analytics, isVerbose);
 
 /// Support for the `pub` toplevel command.

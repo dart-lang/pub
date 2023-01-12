@@ -26,7 +26,9 @@ class AnalysisContextManager {
   final AnalysisSession _session;
 
   factory AnalysisContextManager(String packagePath) => sessions.putIfAbsent(
-      packagePath, () => AnalysisContextManager._(packagePath));
+        packagePath,
+        () => AnalysisContextManager._(packagePath),
+      );
 
   AnalysisContextManager._(this.packagePath)
       : _session = ContextBuilder()
@@ -105,6 +107,9 @@ class AnalyzerErrorGroup implements Exception {
 /// The [additionalSources], if provided, instruct the compiler to include
 /// additional source files into compilation even if they are not referenced
 /// from the main library.
+///
+/// The [nativeAssets], if provided, instruct the compiler include a native
+/// assets map.
 Future<void> precompile({
   required String executablePath,
   required String incrementalDillPath,
@@ -112,6 +117,7 @@ Future<void> precompile({
   required String outputPath,
   required String packageConfigPath,
   List<String> additionalSources = const [],
+  String? nativeAssets,
 }) async {
   ensureDir(p.dirname(outputPath));
   ensureDir(p.dirname(incrementalDillPath));
@@ -125,7 +131,7 @@ Future<void> precompile({
     // To avoid potential races we copy the incremental data to a temporary file
     // for just this compilation.
     final temporaryIncrementalDill =
-        p.join(tempDir, '${p.basename(incrementalDillPath)}.incremental.dill');
+        p.join(tempDir, '${p.basename(incrementalDillPath)}.temp');
     try {
       if (fileExists(incrementalDillPath)) {
         copyFile(incrementalDillPath, temporaryIncrementalDill);
@@ -143,6 +149,7 @@ Future<void> precompile({
       sdkRoot: sdkRoot,
       packagesJson: packageConfigPath,
       additionalSources: additionalSources,
+      nativeAssets: nativeAssets,
       printIncrementalDependencies: false,
     );
     final result = await client.compile();
@@ -161,8 +168,9 @@ Future<void> precompile({
       tryDeleteEntry(outputPath);
 
       throw ApplicationException(
-          log.yellow('Failed to build $highlightedName:\n') +
-              result.compilerOutputLines.join('\n'));
+        log.yellow('Failed to build $highlightedName:\n') +
+            result.compilerOutputLines.join('\n'),
+      );
     }
   } finally {
     client?.kill();

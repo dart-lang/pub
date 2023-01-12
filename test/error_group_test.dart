@@ -35,8 +35,9 @@ void main() {
 
       expect(() => errorGroup.registerFuture(Future.value()), throwsStateError);
       expect(
-          () => errorGroup.registerStream(StreamController(sync: true).stream),
-          throwsStateError);
+        () => errorGroup.registerStream(StreamController(sync: true).stream),
+        throwsStateError,
+      );
     });
   });
 
@@ -62,13 +63,15 @@ void main() {
       completer.complete('value');
 
       expect(
-          completer.future
-              .then((_) => errorGroup.registerFuture(Future.value())),
-          throwsStateError);
+        completer.future.then((_) => errorGroup.registerFuture(Future.value())),
+        throwsStateError,
+      );
       expect(
-          completer.future.then((_) =>
-              errorGroup.registerStream(StreamController(sync: true).stream)),
-          throwsStateError);
+        completer.future.then(
+          (_) => errorGroup.registerStream(StreamController(sync: true).stream),
+        ),
+        throwsStateError,
+      );
     });
 
     test(
@@ -130,9 +133,12 @@ void main() {
       completer.completeError(FormatException());
 
       // A listener added afterwards should receive the exception
-      expect(errorGroup.done.catchError((_) {
-        expect(future, throwsFormatException);
-      }), completes);
+      expect(
+        errorGroup.done.catchError((_) {
+          expect(future, throwsFormatException);
+        }),
+        completes,
+      );
     });
 
     test(
@@ -142,10 +148,13 @@ void main() {
       errorGroup.signalError(FormatException());
 
       // A listener added afterwards should receive the exception
-      expect(errorGroup.done.catchError((_) {
-        completer.complete('value'); // should be ignored
-        expect(future, throwsFormatException);
-      }), completes);
+      expect(
+        errorGroup.done.catchError((_) {
+          completer.complete('value'); // should be ignored
+          expect(future, throwsFormatException);
+        }),
+        completes,
+      );
     });
   });
 
@@ -190,10 +199,13 @@ void main() {
       expect(future1, completion(equals('value')));
       completer1.complete('value');
 
-      expect(future1.then((_) {
-        // shouldn't cause a top-level exception
-        completer2.completeError(FormatException());
-      }), completes);
+      expect(
+        future1.then((_) {
+          // shouldn't cause a top-level exception
+          completer2.completeError(FormatException());
+        }),
+        completes,
+      );
     });
 
     test(
@@ -202,10 +214,13 @@ void main() {
       expect(future1, completion(equals('value')));
       completer1.complete('value');
 
-      expect(future1.then((_) {
-        // shouldn't cause a top-level exception
-        errorGroup.signalError(FormatException());
-      }), completes);
+      expect(
+        future1.then((_) {
+          // shouldn't cause a top-level exception
+          errorGroup.signalError(FormatException());
+        }),
+        completes,
+      );
     });
   });
 
@@ -281,8 +296,10 @@ void main() {
 
       // Now that broadcast controllers have been removed a listener should
       // see the value that has been put into the controller.
-      expect(errorGroup.done.then((_) => stream.toList()),
-          completion(equals(['value'])));
+      expect(
+        errorGroup.done.then((_) => stream.toList()),
+        completion(equals(['value'])),
+      );
     });
   });
 
@@ -304,8 +321,10 @@ void main() {
       controller.close();
 
       // A listener added afterwards should receive the value
-      expect(errorGroup.done.then((_) => stream.toList()),
-          completion(equals(['value'])));
+      expect(
+        errorGroup.done.then((_) => stream.toList()),
+        completion(equals(['value'])),
+      );
     });
 
     test(
@@ -315,10 +334,13 @@ void main() {
       controller.addError(FormatException());
 
       // A listener added afterwards should receive the exception
-      expect(errorGroup.done.catchError((_) {
-        controller.add('value'); // should be ignored
-        expect(stream.first, throwsFormatException);
-      }), completes);
+      expect(
+        errorGroup.done.catchError((_) {
+          controller.add('value'); // should be ignored
+          expect(stream.first, throwsFormatException);
+        }),
+        completes,
+      );
     });
 
     test(
@@ -328,10 +350,13 @@ void main() {
       errorGroup.signalError(FormatException());
 
       // A listener added afterwards should receive the exception
-      expect(errorGroup.done.catchError((_) {
-        controller.add('value'); // should be ignored
-        expect(stream.first, throwsFormatException);
-      }), completes);
+      expect(
+        errorGroup.done.catchError((_) {
+          controller.add('value'); // should be ignored
+          expect(stream.first, throwsFormatException);
+        }),
+        completes,
+      );
     });
   });
 
@@ -377,34 +402,44 @@ void main() {
         "shouldn't throw a top-level exception if a stream receives an error "
         'after the other listened stream completes', () {
       var signal = Completer();
-      expect(stream1.toList().whenComplete(signal.complete),
-          completion(equals(['value1', 'value2'])));
+      expect(
+        stream1.toList().whenComplete(signal.complete),
+        completion(equals(['value1', 'value2'])),
+      );
       controller1
         ..add('value1')
         ..add('value2')
         ..close();
 
-      expect(signal.future.then((_) {
-        // shouldn't cause a top-level exception
-        controller2.addError(FormatException());
-      }), completes);
+      expect(
+        signal.future.then((_) {
+          // shouldn't cause a top-level exception
+          controller2.addError(FormatException());
+        }),
+        completes,
+      );
     });
 
     test(
         "shouldn't throw a top-level exception if an error is signaled after "
         'one listened stream completes', () {
       var signal = Completer();
-      expect(stream1.toList().whenComplete(signal.complete),
-          completion(equals(['value1', 'value2'])));
+      expect(
+        stream1.toList().whenComplete(signal.complete),
+        completion(equals(['value1', 'value2'])),
+      );
       controller1
         ..add('value1')
         ..add('value2')
         ..close();
 
-      expect(signal.future.then((_) {
-        // shouldn't cause a top-level exception
-        errorGroup.signalError(FormatException());
-      }), completes);
+      expect(
+        signal.future.then((_) {
+          // shouldn't cause a top-level exception
+          errorGroup.signalError(FormatException());
+        }),
+        completes,
+      );
     });
   });
 
@@ -458,27 +493,35 @@ void main() {
       expect(future, completion(equals('value')));
       completer.complete('value');
 
-      expect(future.then((_) {
-        // shouldn't cause a top-level exception
-        controller.addError(FormatException());
-      }), completes);
+      expect(
+        future.then((_) {
+          // shouldn't cause a top-level exception
+          controller.addError(FormatException());
+        }),
+        completes,
+      );
     });
 
     test(
         "shouldn't throw a top-level exception if the future receives an "
         'error after the listened stream completes', () {
       var signal = Completer();
-      expect(stream.toList().whenComplete(signal.complete),
-          completion(equals(['value1', 'value2'])));
+      expect(
+        stream.toList().whenComplete(signal.complete),
+        completion(equals(['value1', 'value2'])),
+      );
       controller
         ..add('value1')
         ..add('value2')
         ..close();
 
-      expect(signal.future.then((_) {
-        // shouldn't cause a top-level exception
-        completer.completeError(FormatException());
-      }), completes);
+      expect(
+        signal.future.then((_) {
+          // shouldn't cause a top-level exception
+          completer.completeError(FormatException());
+        }),
+        completes,
+      );
     });
   });
 }

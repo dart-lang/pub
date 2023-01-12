@@ -16,34 +16,36 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': path.join(d.sandbox, 'foo')}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': path.join(d.sandbox, 'foo')}
+        },
+      )
     ]).create();
 
     await pubGet();
     // Add a dependency on "bar" and remove "foo", but don't run "pub get".
 
     await d.dir(appPath, [
-      d.appPubspec({'bar': 'any'})
+      d.appPubspec(dependencies: {'bar': 'any'})
     ]).create();
     // Note: Using canonicalize here because pub gets the path to the
     // entrypoint package from the working directory, which has had symlinks
     // resolve. On Mac, "/tmp" is actually a symlink to "/private/tmp", so we
     // need to accommodate that.
 
-    await runPub(args: [
-      'list-package-dirs',
-      '--format=json'
-    ], outputJson: {
-      'packages': {
-        'foo': path.join(d.sandbox, 'foo', 'lib'),
-        'myapp': canonicalize(path.join(d.sandbox, appPath, 'lib'))
+    await runPub(
+      args: ['list-package-dirs', '--format=json'],
+      outputJson: {
+        'packages': {
+          'foo': path.join(d.sandbox, 'foo', 'lib'),
+          'myapp': canonicalize(path.join(d.sandbox, appPath, 'lib'))
+        },
+        'input_files': [
+          canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock')),
+          canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
+        ]
       },
-      'input_files': [
-        canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock')),
-        canonicalize(path.join(d.sandbox, appPath, 'pubspec.yaml'))
-      ]
-    });
+    );
   });
 }

@@ -82,25 +82,27 @@ Future<void> main() async {
         try {
           final versions = await versionArchiveUrls(packageName);
           var allVersionsGood = true;
-          await Future.wait(versions.map((archiveUrl) async {
-            await withTempDir((tempDir) async {
-              log.message('downloading $archiveUrl');
-              http.StreamedResponse response;
-              try {
-                final archiveUri = Uri.parse(archiveUrl);
-                final request = http.Request('GET', archiveUri);
-                request.attachMetadataHeaders();
-                response = await globalHttpClient.fetchAsStream(request);
-                await extractTarGz(response.stream, tempDir);
-                log.message('Extracted $archiveUrl');
-              } catch (e) {
-                log.message('Failed to get and extract $archiveUrl $e');
-                failures.add({'archive': archiveUrl, 'error': e.toString()});
-                allVersionsGood = false;
-                return;
-              }
-            });
-          }));
+          await Future.wait(
+            versions.map((archiveUrl) async {
+              await withTempDir((tempDir) async {
+                log.message('downloading $archiveUrl');
+                http.StreamedResponse response;
+                try {
+                  final archiveUri = Uri.parse(archiveUrl);
+                  final request = http.Request('GET', archiveUri);
+                  request.attachMetadataHeaders();
+                  response = await globalHttpClient.fetchAsStream(request);
+                  await extractTarGz(response.stream, tempDir);
+                  log.message('Extracted $archiveUrl');
+                } catch (e) {
+                  log.message('Failed to get and extract $archiveUrl $e');
+                  failures.add({'archive': archiveUrl, 'error': e.toString()});
+                  allVersionsGood = false;
+                  return;
+                }
+              });
+            }),
+          );
           if (allVersionsGood) alreadyDonePackages.add(packageName);
         } finally {
           resource.release();

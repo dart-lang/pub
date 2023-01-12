@@ -12,8 +12,9 @@ void main() {
     await servePackages();
 
     await runPub(
-        args: ['global', 'deactivate', 'foo'],
-        error: 'No active package foo.',
-        exitCode: exit_codes.DATA);
+      args: ['global', 'deactivate', 'foo'],
+      error: 'No active package foo.',
+      exitCode: exit_codes.DATA,
+    );
   });
 }

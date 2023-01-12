@@ -17,17 +17,20 @@ void main() {
       d.dir('bin', [d.file('script.dart', "main() => print('ok');")])
     ]).create();
 
-    await runPub(args: [
-      'global',
-      'activate',
-      '--source',
-      'path',
-      '../foo',
-      '-x',
-      'one',
-      '--executable',
-      'three'
-    ], output: contains('Installed executables one and three.'));
+    await runPub(
+      args: [
+        'global',
+        'activate',
+        '--source',
+        'path',
+        '../foo',
+        '-x',
+        'one',
+        '--executable',
+        'three'
+      ],
+      output: contains('Installed executables one and three.'),
+    );
 
     await d.dir(cachePath, [
       d.dir('bin', [

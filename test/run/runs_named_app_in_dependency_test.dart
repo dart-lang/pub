@@ -15,9 +15,11 @@ void main() {
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': '../foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      )
     ]).create();
 
     await pubGet();

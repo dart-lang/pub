@@ -16,14 +16,17 @@ void main() {
     var fooPath = path.join(d.sandbox, 'foo');
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': fooPath}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': fooPath}
+        },
+      )
     ]).create();
 
     await pubGet(
-        error: RegExp(r'Could not find a file named "pubspec.yaml" '
-            r'in "[^\n]*"\.'),
-        exitCode: exit_codes.NO_INPUT);
+      error: RegExp(r'Could not find a file named "pubspec.yaml" '
+          r'in "[^\n]*"\.'),
+      exitCode: exit_codes.NO_INPUT,
+    );
   });
 }

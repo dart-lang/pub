@@ -100,7 +100,8 @@ void main() {
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
@@ -120,10 +121,12 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat,
-          errors: contains(
-            contains('Instead use the flutter.plugin.platforms key'),
-          ));
+      await expectValidation(
+        flutterPluginFormat,
+        errors: contains(
+          contains('Instead use the flutter.plugin.platforms key'),
+        ),
+      );
     });
 
     test('is a flutter 1.9.0 plugin with new format', () async {
@@ -148,7 +151,8 @@ void main() {
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
@@ -176,7 +180,8 @@ void main() {
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
@@ -200,7 +205,8 @@ void main() {
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
@@ -223,11 +229,14 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat,
-          errors: contains(
-            contains(
-                'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
-          ));
+      await expectValidation(
+        flutterPluginFormat,
+        errors: contains(
+          contains(
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
+        ),
+      );
     });
 
     test('is a flutter 1.9.999 plugin with new format', () async {
@@ -248,11 +257,14 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat,
-          errors: contains(
-            contains(
-                'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
-          ));
+      await expectValidation(
+        flutterPluginFormat,
+        errors: contains(
+          contains(
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
+        ),
+      );
     });
   });
 }

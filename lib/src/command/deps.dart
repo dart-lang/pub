@@ -38,24 +38,38 @@ class DepsCommand extends PubCommand {
   bool get _includeDev => argResults['dev'];
 
   DepsCommand() {
-    argParser.addOption('style',
-        abbr: 's',
-        help: 'How output should be displayed.',
-        allowed: ['compact', 'tree', 'list'],
-        defaultsTo: 'tree');
+    argParser.addOption(
+      'style',
+      abbr: 's',
+      help: 'How output should be displayed.',
+      allowed: ['compact', 'tree', 'list'],
+      defaultsTo: 'tree',
+    );
 
-    argParser.addFlag('dev',
-        help: 'Whether to include dev dependencies.', defaultsTo: true);
+    argParser.addFlag(
+      'dev',
+      help: 'Whether to include dev dependencies.',
+      defaultsTo: true,
+    );
 
-    argParser.addFlag('executables',
-        negatable: false, help: 'List all available executables.');
+    argParser.addFlag(
+      'executables',
+      negatable: false,
+      help: 'List all available executables.',
+    );
 
-    argParser.addFlag('json',
-        negatable: false,
-        help: 'Output dependency information in a json format.');
+    argParser.addFlag(
+      'json',
+      negatable: false,
+      help: 'Output dependency information in a json format.',
+    );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory<dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
@@ -67,11 +81,13 @@ class DepsCommand extends PubCommand {
     if (argResults['json']) {
       if (argResults.wasParsed('dev')) {
         usageException(
-            'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.');
+          'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.',
+        );
       }
       if (argResults.wasParsed('executables')) {
         usageException(
-            'Cannot combine --json and --executables.\nThe json output always lists available executables.');
+          'Cannot combine --json and --executables.\nThe json output always lists available executables.',
+        );
       }
       if (argResults.wasParsed('style')) {
         usageException('Cannot combine --json and --style.');
@@ -114,9 +130,11 @@ class DepsCommand extends PubCommand {
           ...entrypoint.root.immediateDependencies.keys
               .map((name) => entrypoint.packageGraph.packages[name])
         ])
-          ...package!.executableNames.map((name) => package == entrypoint.root
-              ? ':$name'
-              : (package.name == name ? name : '${package.name}:$name'))
+          ...package!.executableNames.map(
+            (name) => package == entrypoint.root
+                ? ':$name'
+                : (package.name == name ? name : '${package.name}:$name'),
+          )
       ];
 
       _buffer.writeln(
@@ -174,7 +192,9 @@ class DepsCommand extends PubCommand {
       _outputCompactPackages('dev dependencies', root.devDependencies.keys);
     }
     _outputCompactPackages(
-        'dependency overrides', root.dependencyOverrides.keys);
+      'dependency overrides',
+      root.dependencyOverrides.keys,
+    );
 
     var transitive = _getTransitiveDependencies();
     _outputCompactPackages('transitive dependencies', transitive);

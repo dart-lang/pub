@@ -88,7 +88,8 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     final a = _argResults;
     if (a == null) {
       throw StateError(
-          'argResults cannot be used before Command.run is called.');
+        'argResults cannot be used before Command.run is called.',
+      );
     }
     return a;
   }
@@ -98,29 +99,35 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
       'See https://dart.dev/tools/pub/cmd for detailed documentation.';
 
   PubCommandRunner()
-      : super('pub', 'Pub is a package manager for Dart.',
-            usageLineLength: lineLength) {
+      : super(
+          'pub',
+          'Pub is a package manager for Dart.',
+          usageLineLength: lineLength,
+        ) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
-    argParser.addFlag('trace',
-        help: 'Print debugging information when an error occurs.');
-    argParser
-        .addOption('verbosity', help: 'Control output verbosity.', allowed: [
-      'error',
-      'warning',
-      'normal',
-      'io',
-      'solver',
-      'all'
-    ], allowedHelp: {
-      'error': 'Show only errors.',
-      'warning': 'Show only errors and warnings.',
-      'normal': 'Show errors, warnings, and user messages.',
-      'io': 'Also show IO operations.',
-      'solver': 'Show steps during version resolution.',
-      'all': 'Show all output including internal tracing messages.'
-    });
-    argParser.addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    argParser.addFlag(
+      'trace',
+      help: 'Print debugging information when an error occurs.',
+    );
+    argParser.addOption(
+      'verbosity',
+      help: 'Control output verbosity.',
+      allowed: ['error', 'warning', 'normal', 'io', 'solver', 'all'],
+      allowedHelp: {
+        'error': 'Show only errors.',
+        'warning': 'Show only errors and warnings.',
+        'normal': 'Show errors, warnings, and user messages.',
+        'io': 'Also show IO operations.',
+        'solver': 'Show steps during version resolution.',
+        'all': 'Show all output including internal tracing messages.'
+      },
+    );
+    argParser.addFlag(
+      'verbose',
+      abbr: 'v',
+      negatable: false,
+      help: 'Shortcut for "--verbosity=all".',
+    );
     PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',

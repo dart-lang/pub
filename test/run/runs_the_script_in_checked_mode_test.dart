@@ -16,8 +16,9 @@ void main() {
 
     await pubGet();
     await runPub(
-        args: ['run', '--enable-asserts', 'bin/script'],
-        error: contains('Failed assertion'),
-        exitCode: 255);
+      args: ['run', '--enable-asserts', 'bin/script'],
+      error: contains('Failed assertion'),
+      exitCode: 255,
+    );
   });
 }

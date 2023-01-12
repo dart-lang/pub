@@ -16,7 +16,9 @@ void main() {
     await pubGet();
     var pub = await pubRun(args: [p.join('bin', 'script')]);
     expect(
-        pub.stderr, emits("Could not find ${p.join("bin", "script.dart")}."));
+      pub.stderr,
+      emits("Could not find ${p.join("bin", "script.dart")}."),
+    );
     await pub.shouldExit(exit_codes.NO_INPUT);
   });
 }

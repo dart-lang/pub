@@ -68,9 +68,11 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       'GIT_AUTHOR_DATE': DateTime(1970).toIso8601String(),
     };
 
-    return git.run(args,
-        workingDir: path.join(parent ?? sandbox, name),
-        environment: environment);
+    return git.run(
+      args,
+      workingDir: path.join(parent ?? sandbox, name),
+      environment: environment,
+    );
   }
 
   Future _runGitCommands(String? parent, List<List<String>> commands) async {

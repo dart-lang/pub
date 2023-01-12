@@ -26,13 +26,14 @@ void main() {
     // Puts the lockfile in the linked package itself.
     await d.dir('foo', [
       d.file(
-          'pubspec.lock',
-          allOf([
-            contains('bar'),
-            contains('1.0.0'),
-            contains('baz'),
-            contains('2.0.0')
-          ]))
+        'pubspec.lock',
+        allOf([
+          contains('bar'),
+          contains('1.0.0'),
+          contains('baz'),
+          contains('2.0.0')
+        ]),
+      )
     ]).validate();
   });
 }

@@ -28,13 +28,20 @@ void main() {
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
     var pub = await startPub(
-        args: ['global', 'activate', '-spath', '../bar', '--overwrite']);
-    expect(pub.stdout,
-        emitsThrough('Installed executables bar, collide1 and collide2.'));
+      args: ['global', 'activate', '-spath', '../bar', '--overwrite'],
+    );
     expect(
-        pub.stderr, emits('Replaced collide1 previously installed from foo.'));
+      pub.stdout,
+      emitsThrough('Installed executables bar, collide1 and collide2.'),
+    );
     expect(
-        pub.stderr, emits('Replaced collide2 previously installed from foo.'));
+      pub.stderr,
+      emits('Replaced collide1 previously installed from foo.'),
+    );
+    expect(
+      pub.stderr,
+      emits('Replaced collide2 previously installed from foo.'),
+    );
     await pub.shouldExit();
 
     await d.dir(cachePath, [
