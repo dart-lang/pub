@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
@@ -86,7 +85,7 @@ class UpgradeCommand extends PubCommand {
   }
 
   /// Avoid showing spinning progress messages when not in a terminal.
-  bool get _shouldShowSpinner => stdout.hasTerminal;
+  bool get _shouldShowSpinner => terminalOutputForStdout;
 
   bool get _dryRun => argResults['dry-run'];
 

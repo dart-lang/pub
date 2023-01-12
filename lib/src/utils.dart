@@ -436,7 +436,7 @@ bool get canUseAnsiCodes {
       return false;
     case ForceColorOption.auto:
       return (!Platform.environment.containsKey('NO_COLOR')) &&
-          stdout.hasTerminal &&
+          terminalOutputForStdout &&
           stdout.supportsAnsiEscapes;
   }
 }
@@ -457,7 +457,7 @@ bool get canUseUnicode =>
     // The tests support unicode also on windows.
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
-    !stdout.hasTerminal ||
+    !terminalOutputForStdout ||
     !Platform.isWindows ||
     Platform.environment.containsKey('WT_SESSION');
 

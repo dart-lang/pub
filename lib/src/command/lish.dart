@@ -234,7 +234,7 @@ class LishCommand extends PubCommand {
   @override
   Future runProtected() async {
     if (argResults.wasParsed('server')) {
-      await log.warningsOnlyUnlessTerminal(() {
+      await log.errorsOnlyUnlessTerminal(() {
         log.message(
           '''
 The --server option is deprecated. Use `publish_to` in your pubspec.yaml or set

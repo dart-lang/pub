@@ -27,6 +27,30 @@ import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
 
+/// Environment variable names that are recognized by pub.
+class EnvironmentKeys {
+  /// Overrides terminal detection for stdout.
+  ///
+  /// Supported values:
+  /// * missing or `''` (empty string): dart:io terminal detection is used.
+  /// * `"0"`: output as if no terminal is attached
+  ///   - no animations
+  ///   - no ANSI colors
+  ///   - use unicode characters
+  ///   - silent inside [log.errorsOnlyUnlessTerminal]).
+  /// * `"1"`: output as if a terminal is attached
+  ///   - animations
+  ///   - ANSI colors (can be overriden again with NO_COLOR)
+  ///   - no unicode on Windows
+  ///   - normal verbosity in output inside
+  ///   [log.errorsOnlyUnlessTerminal]).
+  ///
+  /// This variable is mainly for testing, and no forward compatibility
+  /// guarantees are given.
+  static const forceTerminalOutput = '_PUB_FORCE_TERMINAL_OUTPUT';
+  // TODO(sigurdm): Add other environment keys here.
+}
+
 /// The pool used for restricting access to asynchronous operations that consume
 /// file descriptors.
 ///
@@ -650,6 +674,25 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
     }
   } else {
     return stdin.readLineSync() ?? '';
+  }
+}
+
+/// Returns `true` if [stdout] should be treated as a terminal.
+///
+/// The detected behaviour can be overridden with the environment variable
+/// [EnvironmentKeys.forceTerminalOutput].
+bool get terminalOutputForStdout {
+  final environmentValue =
+      Platform.environment[EnvironmentKeys.forceTerminalOutput];
+  if (environmentValue == null || environmentValue == '') {
+    return stdout.hasTerminal;
+  } else if (environmentValue == '0') {
+    return false;
+  } else if (environmentValue == '1') {
+    return true;
+  } else {
+    throw DataException(
+        'Environment variable ${EnvironmentKeys.forceTerminalOutput} has unsupported value: $environmentValue.');
   }
 }
 

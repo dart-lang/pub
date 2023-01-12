@@ -80,7 +80,7 @@ class GlobalRunCommand extends PubCommand {
       args,
       vmArgs: vmArgs,
       enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-      recompile: (executable) => log.warningsOnlyUnlessTerminal(
+      recompile: (executable) => log.errorsOnlyUnlessTerminal(
         () => globalEntrypoint.precompileExecutable(executable),
       ),
       alwaysUseSubprocess: alwaysUseSubprocess,

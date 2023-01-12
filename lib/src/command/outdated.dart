@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart' show IterableExtension;
@@ -39,7 +38,7 @@ class OutdatedCommand extends PubCommand {
 
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
-  bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
+  bool get _shouldShowSpinner => terminalOutputForStdout && !argResults['json'];
 
   @override
   bool get takesArguments => false;

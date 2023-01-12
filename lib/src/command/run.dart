@@ -58,7 +58,7 @@ class RunCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     if (deprecated) {
-      await log.warningsOnlyUnlessTerminal(() {
+      await log.errorsOnlyUnlessTerminal(() {
         log.message('Deprecated. Use `dart run` instead.');
       });
     }
@@ -102,7 +102,7 @@ class RunCommand extends PubCommand {
       Executable.adaptProgramName(package, executable),
       args,
       enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-      recompile: (executable) => log.warningsOnlyUnlessTerminal(
+      recompile: (executable) => log.errorsOnlyUnlessTerminal(
         () => entrypoint.precompileExecutable(executable),
       ),
       vmArgs: vmArgs,

@@ -413,10 +413,10 @@ Platform: ${Platform.operatingSystem}
 /// Unless the user has overriden the verbosity,
 ///
 /// This is useful to not pollute stdout when the output is piped somewhere.
-Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
+Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
   final oldVerbosity = verbosity;
-  if (verbosity == Verbosity.normal && !stdout.hasTerminal) {
-    verbosity = Verbosity.warning;
+  if (verbosity == Verbosity.normal && !terminalOutputForStdout) {
+    verbosity = Verbosity.error;
   }
   final result = await callback();
   verbosity = oldVerbosity;
