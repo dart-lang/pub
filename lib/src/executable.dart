@@ -310,7 +310,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   } on DataException catch (e) {
     log.fine('Resolution not up to date: ${e.message}. Redoing.');
     try {
-      await warningsOnlyUnlessTerminal(
+      await errorsOnlyUnlessTerminal(
         () => entrypoint.acquireDependencies(
           SolveType.get,
           analytics: analytics,
@@ -368,7 +368,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     if (!fileExists(snapshotPath) ||
         entrypoint.packageGraph.isPackageMutable(package)) {
       try {
-        await warningsOnlyUnlessTerminal(
+        await errorsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(
             executable,
             additionalSources: additionalSources,
