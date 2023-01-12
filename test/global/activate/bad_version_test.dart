@@ -10,9 +10,9 @@ import '../../test_pub.dart';
 void main() {
   test('fails if the version constraint cannot be parsed', () {
     return runPub(
-        args: ['global', 'activate', 'foo', '1.0'],
-        error:
-            contains('Could not parse version "1.0". Unknown text at "1.0".'),
-        exitCode: exit_codes.USAGE);
+      args: ['global', 'activate', 'foo', '1.0'],
+      error: contains('Could not parse version "1.0". Unknown text at "1.0".'),
+      exitCode: exit_codes.USAGE,
+    );
   });
 }

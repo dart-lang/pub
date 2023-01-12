@@ -35,19 +35,24 @@ class RunCommand extends PubCommand {
   }) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
-    argParser.addMultiOption('enable-experiment',
-        help:
-            'Runs the executable in a VM with the given experiments enabled.\n'
-            '(Will disable snapshotting, resulting in slower startup).',
-        valueHelp: 'experiment');
+    argParser.addMultiOption(
+      'enable-experiment',
+      help: 'Runs the executable in a VM with the given experiments enabled.\n'
+          '(Will disable snapshotting, resulting in slower startup).',
+      valueHelp: 'experiment',
+    );
     argParser.addFlag(
       'sound-null-safety',
       help: 'Override the default null safety execution mode.',
       hide: true,
     );
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory<dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
@@ -77,7 +82,8 @@ class RunCommand extends PubCommand {
 
       if (p.split(executable).length > 1) {
         usageException(
-            'Cannot run an executable in a subdirectory of a dependency.');
+          'Cannot run an executable in a subdirectory of a dependency.',
+        );
       }
     } else if (onlyIdentifierRegExp.hasMatch(executable)) {
       // "pub run foo" means the same thing as "pub run foo:foo" as long as
@@ -97,7 +103,8 @@ class RunCommand extends PubCommand {
       args,
       enableAsserts: argResults['enable-asserts'] || argResults['checked'],
       recompile: (executable) => log.errorsOnlyUnlessTerminal(
-          () => entrypoint.precompileExecutable(executable)),
+        () => entrypoint.precompileExecutable(executable),
+      ),
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
     );

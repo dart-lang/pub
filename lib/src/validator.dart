@@ -89,11 +89,12 @@ abstract class Validator {
     }
 
     var allowedSdks = VersionRange(
-        min: firstSdkVersion,
-        includeMin: true,
-        max: firstSdkVersion.isPreRelease
-            ? firstSdkVersion.nextPatch
-            : firstSdkVersion.nextBreaking);
+      min: firstSdkVersion,
+      includeMin: true,
+      max: firstSdkVersion.isPreRelease
+          ? firstSdkVersion.nextPatch
+          : firstSdkVersion.nextBreaking,
+    );
 
     var newSdkConstraint = entrypoint
         .root.pubspec.dartSdkConstraint.originalConstraint
@@ -125,11 +126,15 @@ abstract class Validator {
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<void> runAll(Entrypoint entrypoint, Future<int> packageSize,
-      Uri serverUrl, List<String> files,
-      {required List<String> hints,
-      required List<String> warnings,
-      required List<String> errors}) async {
+  static Future<void> runAll(
+    Entrypoint entrypoint,
+    Future<int> packageSize,
+    Uri serverUrl,
+    List<String> files, {
+    required List<String> hints,
+    required List<String> warnings,
+    required List<String> errors,
+  }) async {
     var validators = [
       AnalyzeValidator(),
       GitignoreValidator(),
@@ -162,10 +167,12 @@ abstract class Validator {
       serverUrl,
       files,
     );
-    return await Future.wait(validators.map((validator) async {
-      validator.context = context;
-      await validator.validate();
-    })).then((_) {
+    return await Future.wait(
+      validators.map((validator) async {
+        validator.context = context;
+        await validator.validate();
+      }),
+    ).then((_) {
       hints.addAll([for (final validator in validators) ...validator.hints]);
       warnings
           .addAll([for (final validator in validators) ...validator.warnings]);
@@ -226,5 +233,9 @@ class ValidationContext {
   final List<String> files;
 
   ValidationContext(
-      this.entrypoint, this.packageSize, this.serverUrl, this.files);
+    this.entrypoint,
+    this.packageSize,
+    this.serverUrl,
+    this.files,
+  );
 }

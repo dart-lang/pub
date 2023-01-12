@@ -51,7 +51,9 @@ void main() {
   });
 
   test('is symmetrical', () {
-    expect(levenshteinDistance('j', 'alsdlasksjdlakdjlakq2rqb1o3i'),
-        levenshteinDistance('alsdlasksjdlakdjlakq2rqb1o3i', 'j'));
+    expect(
+      levenshteinDistance('j', 'alsdlasksjdlakdjlakq2rqb1o3i'),
+      levenshteinDistance('alsdlasksjdlakdjlakq2rqb1o3i', 'j'),
+    );
   });
 }

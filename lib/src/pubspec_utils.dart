@@ -42,8 +42,10 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 /// [stripOnly] will have their upper bounds removed. If [stripOnly] is
 /// not specified or empty, then all packages will have their upper bounds
 /// removed.
-Pubspec stripVersionUpperBounds(Pubspec original,
-    {Iterable<String>? stripOnly}) {
+Pubspec stripVersionUpperBounds(
+  Pubspec original, {
+  Iterable<String>? stripOnly,
+}) {
   ArgumentError.checkNotNull(original, 'original');
   stripOnly ??= [];
 

@@ -15,29 +15,40 @@ void main() {
 
     await d.git('foo.git', [
       d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0', deps: {
-        'bar': {
-          'git':
-              p.toUri(p.absolute(d.sandbox, appPath, '../bar.git')).toString()
-        }
-      })
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        deps: {
+          'bar': {
+            'git':
+                p.toUri(p.absolute(d.sandbox, appPath, '../bar.git')).toString()
+          }
+        },
+      )
     ]).create();
 
     await d.git(
-        'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
+      'bar.git',
+      [d.libDir('bar'), d.libPubspec('bar', '1.0.0')],
+    ).create();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git':
+              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+        }
+      },
+    ).create();
 
     await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.dir('cache',
-            [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')]),
+        d.dir(
+          'cache',
+          [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')],
+        ),
         d.gitPackageRevisionCacheDir('foo'),
         d.gitPackageRevisionCacheDir('bar')
       ])
@@ -52,23 +63,33 @@ void main() {
 
     await d.git('foo.git', [
       d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0', deps: {
-        'bar': {'git': '../bar.git'}
-      })
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        deps: {
+          'bar': {'git': '../bar.git'}
+        },
+      )
     ]).create();
 
     await d.git(
-        'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
+      'bar.git',
+      [d.libDir('bar'), d.libPubspec('bar', '1.0.0')],
+    ).create();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git':
+              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+        }
+      },
+    ).create();
 
     await pubGet(
       error: contains(
-          '"../bar.git" is a relative path, but this isn\'t a local pubspec.'),
+        '"../bar.git" is a relative path, but this isn\'t a local pubspec.',
+      ),
       exitCode: exit_codes.DATA,
     );
   });
@@ -79,23 +100,31 @@ void main() {
 
     await d.git('foo.git', [
       d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0', deps: {
-        'bar': {'path': '../bar'}
-      })
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        deps: {
+          'bar': {'path': '../bar'}
+        },
+      )
     ]).create();
 
     await d
         .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'git': p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git':
+              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
+        }
+      },
+    ).create();
 
     await pubGet(
       error: contains(
-          '"../bar" is a relative path, but this isn\'t a local pubspec.'),
+        '"../bar" is a relative path, but this isn\'t a local pubspec.',
+      ),
       exitCode: exit_codes.DATA,
     );
   });

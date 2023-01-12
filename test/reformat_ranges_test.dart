@@ -54,13 +54,14 @@ void main() {
       ),
     );
     expect(
-        reformatMax(
-          [],
-          VersionRange(
-            max: Version.parse('1.2.4+1'),
-            alwaysIncludeMaxPreRelease: true,
-          ),
+      reformatMax(
+        [],
+        VersionRange(
+          max: Version.parse('1.2.4+1'),
+          alwaysIncludeMaxPreRelease: true,
         ),
-        equals(null));
+      ),
+      equals(null),
+    );
   });
 }

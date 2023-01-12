@@ -13,13 +13,17 @@ void main() {
       'pubspec', () async {
     ensureGit();
 
-    await d.git('foo.git',
-        [d.libDir('weirdname'), d.libPubspec('weirdname', '1.0.0')]).create();
+    await d.git(
+      'foo.git',
+      [d.libDir('weirdname'), d.libPubspec('weirdname', '1.0.0')],
+    ).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'weirdname': {'git': '../foo.git'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'weirdname': {'git': '../foo.git'}
+        },
+      )
     ]).create();
 
     await pubGet();

@@ -12,10 +12,11 @@ void main() {
     await servePackages();
 
     await runPub(
-        args: ['cache', 'add', 'foo'],
-        error: RegExp(
-          r'Package not available \(could not find package foo at http://.*\)\.',
-        ),
-        exitCode: exit_codes.UNAVAILABLE);
+      args: ['cache', 'add', 'foo'],
+      error: RegExp(
+        r'Package not available \(could not find package foo at http://.*\)\.',
+      ),
+      exitCode: exit_codes.UNAVAILABLE,
+    );
   });
 }

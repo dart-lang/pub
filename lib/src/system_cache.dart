@@ -109,7 +109,10 @@ class SystemCache {
     final source = id.description.description.source;
     if (source is CachedSource) {
       return Package.load(
-          id.name, source.getDirectoryInCache(id, this), sources);
+        id.name,
+        source.getDirectoryInCache(id, this),
+        sources,
+      );
     } else {
       throw ArgumentError('Call only on Cached ids.');
     }
@@ -178,25 +181,31 @@ class SystemCache {
   /// If given, the [allowedRetractedVersion] is the only version which can be
   /// selected even if it is marked as retracted. Otherwise, all the returned
   /// IDs correspond to non-retracted versions.
-  Future<List<PackageId>> getVersions(PackageRef ref,
-      {Duration? maxAge, Version? allowedRetractedVersion}) async {
+  Future<List<PackageId>> getVersions(
+    PackageRef ref, {
+    Duration? maxAge,
+    Version? allowedRetractedVersion,
+  }) async {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
-    versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await ref.source.status(
-        id.toRef(),
-        id.version,
-        this,
-        maxAge: maxAge,
-      );
-      if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
-        return id;
-      }
-      return null;
-    })))
+    versions = (await Future.wait(
+      versions.map((id) async {
+        final packageStatus = await ref.source.status(
+          id.toRef(),
+          id.version,
+          this,
+          maxAge: maxAge,
+        );
+        if (!packageStatus.isRetracted ||
+            id.version == allowedRetractedVersion) {
+          return id;
+        }
+        return null;
+      }),
+    ))
         .whereNotNull()
         .toList();
 
@@ -266,9 +275,11 @@ class SystemCache {
       return null;
     }
 
-    available.sort(allowPrereleases
-        ? (x, y) => x.version.compareTo(y.version)
-        : (x, y) => Version.prioritize(x.version, y.version));
+    available.sort(
+      allowPrereleases
+          ? (x, y) => x.version.compareTo(y.version)
+          : (x, y) => Version.prioritize(x.version, y.version),
+    );
     var latest = available.last;
 
     if (version != null && version.isPreRelease && version > latest.version) {

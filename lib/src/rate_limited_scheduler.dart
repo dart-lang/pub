@@ -60,9 +60,10 @@ class RateLimitedScheduler<J, V> {
   /// Jobs that have started running.
   final Set<J> _started = {};
 
-  RateLimitedScheduler(Future<V> Function(J) runJob,
-      {required int maxConcurrentOperations})
-      : _runJob = runJob,
+  RateLimitedScheduler(
+    Future<V> Function(J) runJob, {
+    required int maxConcurrentOperations,
+  })  : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 
   /// Pick the next task in [_queue] and run it.

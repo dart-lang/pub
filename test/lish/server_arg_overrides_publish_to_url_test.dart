@@ -19,9 +19,10 @@ void main() {
     pkg['publish_to'] = 'http://pubspec.com';
     await d.dir(appPath, [d.pubspec(pkg)]).create();
     await runPub(
-        args: ['lish', '--dry-run', '--server', packageServer.url],
-        output: contains(packageServer.url),
-        exitCode: exit_codes.DATA);
+      args: ['lish', '--dry-run', '--server', packageServer.url],
+      output: contains(packageServer.url),
+      exitCode: exit_codes.DATA,
+    );
 
     await packageServer.close();
   });

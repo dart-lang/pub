@@ -24,10 +24,11 @@ void main() {
     ]).create();
 
     await runPub(
-        args: ['cache', 'repair'],
-        error: allOf([
-          contains('Binstubs exist for non-activated packages:'),
-          contains('From foo: foo-script')
-        ]));
+      args: ['cache', 'repair'],
+      error: allOf([
+        contains('Binstubs exist for non-activated packages:'),
+        contains('From foo: foo-script')
+      ]),
+    );
   });
 }

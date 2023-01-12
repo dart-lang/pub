@@ -14,10 +14,11 @@ void main() {
       ..serve('baz', '1.0.0');
 
     await runPub(
-        args: ['global', 'activate', 'foo'],
-        silent: allOf([
-          contains('Downloading bar 1.0.0...'),
-          contains('Downloading baz 1.0.0...')
-        ]));
+      args: ['global', 'activate', 'foo'],
+      silent: allOf([
+        contains('Downloading bar 1.0.0...'),
+        contains('Downloading baz 1.0.0...')
+      ]),
+    );
   });
 }

@@ -41,8 +41,12 @@ class DependencyServicesReportCommand extends PubCommand {
   bool get takesArguments => false;
 
   DependencyServicesReportCommand() {
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory<dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
@@ -163,8 +167,10 @@ class DependencyServicesReportCommand extends PubCommand {
               'previousVersion':
                   currentPackages[oldPackageName]?.versionOrHash(),
               'previousConstraint': null,
-              'previous': _source(currentPackages[oldPackageName]!,
-                  containingDir: directory)
+              'previous': _source(
+                currentPackages[oldPackageName]!,
+                containingDir: directory,
+              )
             },
       ];
     }
@@ -205,15 +211,23 @@ class DependencyServicesReportCommand extends PubCommand {
         'constraint':
             _constraintOf(compatiblePubspec, package.name)?.toString(),
         'compatible': await computeUpgradeSet(
-            compatiblePubspec, compatibleVersion,
-            upgradeType: _UpgradeType.compatible),
+          compatiblePubspec,
+          compatibleVersion,
+          upgradeType: _UpgradeType.compatible,
+        ),
         'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
             ? []
-            : await computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
-                upgradeType: _UpgradeType.singleBreaking),
+            : await computeUpgradeSet(
+                compatiblePubspec,
+                singleBreakingVersion,
+                upgradeType: _UpgradeType.singleBreaking,
+              ),
         'multiBreaking': kind != 'transitive' && multiBreakingVersion != null
-            ? await computeUpgradeSet(compatiblePubspec, multiBreakingVersion,
-                upgradeType: _UpgradeType.multiBreaking)
+            ? await computeUpgradeSet(
+                compatiblePubspec,
+                multiBreakingVersion,
+                upgradeType: _UpgradeType.multiBreaking,
+              )
             : [],
       });
     }
@@ -267,8 +281,12 @@ class DependencyServicesListCommand extends PubCommand {
   bool get takesArguments => false;
 
   DependencyServicesListCommand() {
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory<dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
@@ -330,8 +348,12 @@ class DependencyServicesApplyCommand extends PubCommand {
   bool get takesArguments => true;
 
   DependencyServicesApplyCommand() {
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
@@ -376,10 +398,13 @@ class DependencyServicesApplyCommand extends PubCommand {
               .update([section, targetPackage], targetConstraint.toString());
         } else if (packageConfig is Map) {
           pubspecEditor.update(
-              [section, targetPackage, 'version'], targetConstraint.toString());
+            [section, targetPackage, 'version'],
+            targetConstraint.toString(),
+          );
         } else {
           fail(
-              'The dependency $targetPackage does not have a map or string as a description');
+            'The dependency $targetPackage does not have a map or string as a description',
+          );
         }
       } else if (targetVersion != null) {
         final constraint = _constraintOf(pubspec, targetPackage);
@@ -387,15 +412,19 @@ class DependencyServicesApplyCommand extends PubCommand {
           final section = pubspec.dependencies[targetPackage] != null
               ? 'dependencies'
               : 'dev_dependencies';
-          pubspecEditor.update([section, targetPackage],
-              VersionConstraint.compatibleWith(targetVersion).toString());
+          pubspecEditor.update(
+            [section, targetPackage],
+            VersionConstraint.compatibleWith(targetVersion).toString(),
+          );
         }
       }
       if (lockFileEditor != null) {
         if (targetVersion != null &&
             lockFileYaml['packages'].containsKey(targetPackage)) {
           lockFileEditor.update(
-              ['packages', targetPackage, 'version'], targetVersion.toString());
+            ['packages', targetPackage, 'version'],
+            targetVersion.toString(),
+          );
           // Remove the now outdated content-hash - it will be restored below
           // after resolution.
           if (lockFileEditor
@@ -411,22 +440,27 @@ class DependencyServicesApplyCommand extends PubCommand {
           final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
           final currentDescription = ref.description as GitDescription;
           final updatedRef = PackageRef(
-              targetPackage,
-              GitDescription(
-                  url: currentDescription.url,
-                  path: currentDescription.path,
-                  ref: targetRevision,
-                  containingDir: directory));
+            targetPackage,
+            GitDescription(
+              url: currentDescription.url,
+              path: currentDescription.path,
+              ref: targetRevision,
+              containingDir: directory,
+            ),
+          );
           final versions = await cache.getVersions(updatedRef);
           if (versions.isEmpty) {
             dataError(
-                'Found no versions of $targetPackage with git revision `$targetRevision`.');
+              'Found no versions of $targetPackage with git revision `$targetRevision`.',
+            );
           }
           // GitSource can only return a single version.
           assert(versions.length == 1);
 
-          lockFileEditor.update(['packages', targetPackage, 'version'],
-              versions.single.version.toString());
+          lockFileEditor.update(
+            ['packages', targetPackage, 'version'],
+            versions.single.version.toString(),
+          );
           lockFileEditor.update(
             ['packages', targetPackage, 'description', 'resolved-ref'],
             targetRevision,
@@ -461,8 +495,13 @@ class DependencyServicesApplyCommand extends PubCommand {
         final solveResult = await resolveVersions(
           SolveType.get,
           cache,
-          Package.inMemory(Pubspec.parse(updatedPubspec, cache.sources,
-              location: toUri(entrypoint.pubspecPath))),
+          Package.inMemory(
+            Pubspec.parse(
+              updatedPubspec,
+              cache.sources,
+              location: toUri(entrypoint.pubspecPath),
+            ),
+          ),
           lockFile: updatedLockfile,
         );
         if (pubspecEditor.edits.isNotEmpty) {
@@ -557,7 +596,9 @@ String? _tryParseHash(String v) {
 }
 
 Map<String, PackageRange>? _dependencySetOfPackage(
-    Pubspec pubspec, PackageId package) {
+  Pubspec pubspec,
+  PackageId package,
+) {
   return pubspec.dependencies.containsKey(package.name)
       ? pubspec.dependencies
       : pubspec.devDependencies.containsKey(package.name)
@@ -566,7 +607,9 @@ Map<String, PackageRange>? _dependencySetOfPackage(
 }
 
 VersionConstraint _widenConstraint(
-    VersionConstraint original, Version newVersion) {
+  VersionConstraint original,
+  Version newVersion,
+) {
   if (original.allows(newVersion)) return original;
   if (original is VersionRange) {
     final min = original.min;
@@ -583,17 +626,21 @@ VersionConstraint _widenConstraint(
     if (min != null && newVersion <= min) {
       return _compatibleWithIfPossible(
         VersionRange(
-            min: newVersion,
-            includeMin: true,
-            max: max,
-            includeMax: original.includeMax),
+          min: newVersion,
+          includeMin: true,
+          max: max,
+          includeMax: original.includeMax,
+        ),
       );
     }
   }
 
   if (original.isEmpty) return newVersion;
   throw ArgumentError.value(
-      original, 'original', 'Must be a Version range or empty');
+    original,
+    'original',
+    'Must be a Version range or empty',
+  );
 }
 
 VersionConstraint _compatibleWithIfPossible(VersionRange versionRange) {

@@ -13,17 +13,18 @@ void main() {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await runPub(
-        args: [
-          'global',
-          'activate',
-          '--source',
-          'path',
-          '../foo',
-          '-x',
-          'anything',
-          '--no-executables'
-        ],
-        error: contains('Cannot pass both --no-executables and --executable.'),
-        exitCode: exit_codes.USAGE);
+      args: [
+        'global',
+        'activate',
+        '--source',
+        'path',
+        '../foo',
+        '-x',
+        'anything',
+        '--no-executables'
+      ],
+      error: contains('Cannot pass both --no-executables and --executable.'),
+      exitCode: exit_codes.USAGE,
+    );
   });
 }

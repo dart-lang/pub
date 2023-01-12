@@ -62,9 +62,11 @@ void main() {
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      )
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -73,15 +75,21 @@ void main() {
   testWithGolden('lists executables only from immediate dependencies',
       (ctx) async {
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      )
     ]).create();
 
     await d.dir('foo', [
-      d.libPubspec('foo', '1.0.0', deps: {
-        'baz': {'path': '../baz'}
-      }),
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        deps: {
+          'baz': {'path': '../baz'}
+        },
+      ),
       d.dir('bin', [d.file('bar.dart', _validMain)])
     ]).create();
 
@@ -95,17 +103,21 @@ void main() {
 
   testWithGolden('applies formatting before printing executables', (ctx) async {
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../foo'},
-        'bar': {'path': '../bar'}
-      }),
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'},
+          'bar': {'path': '../bar'}
+        },
+      ),
       d.dir('bin', [d.file('myapp.dart', _validMain)])
     ]).create();
 
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin',
-          [d.file('baz.dart', _validMain), d.file('foo.dart', _validMain)])
+      d.dir(
+        'bin',
+        [d.file('baz.dart', _validMain), d.file('foo.dart', _validMain)],
+      )
     ]).create();
 
     await d.dir('bar', [
@@ -142,8 +154,10 @@ void main() {
 
     await d.dir('foo-2.0', [
       d.libPubspec('foo', '2.0.0'),
-      d.dir('bin',
-          [d.file('bar.dart', _validMain), d.file('baz.dart', _validMain)])
+      d.dir(
+        'bin',
+        [d.file('bar.dart', _validMain), d.file('baz.dart', _validMain)],
+      )
     ]).create();
 
     await d.dir(appPath, [

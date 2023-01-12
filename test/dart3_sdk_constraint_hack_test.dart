@@ -18,7 +18,8 @@ void main() {
 
     await pubGet(
       error: contains(
-          'Because myapp doesn\'t support null safety, version solving failed'),
+        'Because myapp doesn\'t support null safety, version solving failed',
+      ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -32,7 +33,8 @@ void main() {
 
     await pubGet(
       error: contains(
-          'Because myapp requires SDK version >=2.12.0 <3.1.0, version solving failed'),
+        'Because myapp requires SDK version >=2.12.0 <3.1.0, version solving failed',
+      ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -47,7 +49,8 @@ void main() {
 
     await pubGet(
       error: contains(
-          'Because myapp doesn\'t support null safety, version solving failed'),
+        'Because myapp doesn\'t support null safety, version solving failed',
+      ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -62,7 +65,8 @@ void main() {
 
     await pubGet(
       error: contains(
-          'Because myapp doesn\'t support null safety, version solving failed'),
+        'Because myapp doesn\'t support null safety, version solving failed',
+      ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -129,17 +133,22 @@ void main() {
 
   test('When the constraint is not rewritten, a helpful hint is given',
       () async {
-    await d.appDir(dependencies: {
-      'foo': 'any'
-    }, pubspec: {
-      'environment': {'sdk': '^2.12.0'}
-    }).create();
+    await d.appDir(
+      dependencies: {'foo': 'any'},
+      pubspec: {
+        'environment': {'sdk': '^2.12.0'}
+      },
+    ).create();
     final server = await servePackages();
 
     // foo is not null safe.
-    server.serve('foo', '1.0.0', pubspec: {
-      'environment': {'sdk': '>=2.10.0 <3.0.0'}
-    });
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'environment': {'sdk': '>=2.10.0 <3.0.0'}
+      },
+    );
     await pubGet(
       error: contains(
         'The lower bound of "sdk: \'>=2.10.0 <3.0.0\'" must be 2.12.0 or higher to enable null safety.'

@@ -57,12 +57,12 @@ void main() {
       ..serve('foo', '2.0.0');
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'lib': '1.0.0',
-        'foo': '1.0.0'
-      }, extras: {
-        'dependency_overrides': {'lib': '2.0.0', 'foo': '2.0.0'}
-      }),
+      d.appPubspec(
+        dependencies: {'lib': '1.0.0', 'foo': '1.0.0'},
+        extras: {
+          'dependency_overrides': {'lib': '2.0.0', 'foo': '2.0.0'}
+        },
+      ),
       d.dir('lib'),
       // empty overrides file:
       d.pubspecOverrides({
@@ -86,11 +86,14 @@ void main() {
       ..serve('lib', '2.0.0');
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'lib': '1.0.0',
-      }, extras: {
-        'dependency_overrides': {'lib': '2.0.0'}
-      }),
+      d.appPubspec(
+        dependencies: {
+          'lib': '1.0.0',
+        },
+        extras: {
+          'dependency_overrides': {'lib': '2.0.0'}
+        },
+      ),
       d.dir('lib'),
       // empty overrides file:
       d.pubspecOverrides({}),

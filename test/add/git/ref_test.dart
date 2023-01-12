@@ -13,12 +13,16 @@ void main() {
     ensureGit();
 
     final repo = d.git(
-        'foo.git', [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')]);
+      'foo.git',
+      [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')],
+    );
     await repo.create();
     await repo.runGit(['branch', 'old']);
 
-    await d.git('foo.git',
-        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
+    await d.git(
+      'foo.git',
+      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
+    ).commit();
 
     await d.appDir(dependencies: {}).create();
 
@@ -33,31 +37,38 @@ void main() {
       ])
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'git': {'url': '../foo.git', 'ref': 'old'}
-      }
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git', 'ref': 'old'}
+        }
+      },
+    ).validate();
   });
 
   test('fails when adding from an invalid ref', () async {
     ensureGit();
 
     final repo = d.git(
-        'foo.git', [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')]);
+      'foo.git',
+      [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')],
+    );
     await repo.create();
     await repo.runGit(['branch', 'new']);
 
-    await d.git('foo.git',
-        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
+    await d.git(
+      'foo.git',
+      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
+    ).commit();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
-        args: ['foo', '--git-url', '../foo.git', '--git-ref', 'old'],
-        error: contains('Unable to resolve package "foo" with the given '
-            'git parameters'),
-        exitCode: exit_codes.DATA);
+      args: ['foo', '--git-url', '../foo.git', '--git-ref', 'old'],
+      error: contains('Unable to resolve package "foo" with the given '
+          'git parameters'),
+      exitCode: exit_codes.DATA,
+    );
 
     await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [

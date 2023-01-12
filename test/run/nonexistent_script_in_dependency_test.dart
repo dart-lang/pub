@@ -14,18 +14,22 @@ void main() {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      )
     ]).create();
 
     await pubGet();
 
     var pub = await pubRun(args: ['foo:script']);
     expect(
-        pub.stderr,
-        emits(
-            "Could not find ${p.join("bin", "script.dart")} in package foo."));
+      pub.stderr,
+      emits(
+        "Could not find ${p.join("bin", "script.dart")} in package foo.",
+      ),
+    );
     await pub.shouldExit(exit_codes.NO_INPUT);
   });
 }

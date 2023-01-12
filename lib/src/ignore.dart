@@ -228,7 +228,10 @@ class Ignore {
         beneath.startsWith('./') ||
         beneath.startsWith('../')) {
       throw ArgumentError.value(
-          'must be relative and normalized', 'beneath', beneath);
+        'must be relative and normalized',
+        'beneath',
+        beneath,
+      );
     }
     if (beneath.endsWith('/')) {
       throw ArgumentError.value('must not end with /', beneath);
@@ -256,7 +259,8 @@ class Ignore {
         return <String>[];
       }
       final ignore = ignoreForDir(
-          partial == '/' ? '.' : partial.substring(1, partial.length - 1));
+        partial == '/' ? '.' : partial.substring(1, partial.length - 1),
+      );
       ignoreStack
           .add(ignore == null ? null : _IgnorePrefixPair(ignore, partial));
     }
@@ -285,10 +289,14 @@ class Ignore {
       }
       if (currentIsDir) {
         final ignore = ignoreForDir(normalizedCurrent);
-        ignoreStack.add(ignore == null
-            ? null
-            : _IgnorePrefixPair(
-                ignore, current == '/' ? current : '$current/'));
+        ignoreStack.add(
+          ignore == null
+              ? null
+              : _IgnorePrefixPair(
+                  ignore,
+                  current == '/' ? current : '$current/',
+                ),
+        );
         // Put all entities in current on the stack to be processed.
         toVisit.add(listDir(normalizedCurrent).map((x) => '/$x').toList());
         if (includeDirs) {
@@ -486,9 +494,10 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         return _IgnoreParseResult.invalid(
           pattern,
           FormatException(
-              'Pattern "$pattern" had an invalid `[a-b]` style character range',
-              pattern,
-              current),
+            'Pattern "$pattern" had an invalid `[a-b]` style character range',
+            pattern,
+            current,
+          ),
         );
       }
       expr += '[$characterRange]';
@@ -499,9 +508,10 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         return _IgnoreParseResult.invalid(
           pattern,
           FormatException(
-              'Pattern "$pattern" end of pattern inside character escape.',
-              pattern,
-              current),
+            'Pattern "$pattern" end of pattern inside character escape.',
+            pattern,
+            current,
+          ),
         );
       }
       expr += RegExp.escape(escaped);
@@ -531,12 +541,17 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
   }
   try {
     return _IgnoreParseResult(
+      pattern,
+      _IgnoreRule(
+        RegExp(expr, caseSensitive: !ignoreCase),
+        negative,
         pattern,
-        _IgnoreRule(
-            RegExp(expr, caseSensitive: !ignoreCase), negative, pattern));
+      ),
+    );
   } on FormatException catch (e) {
     throw AssertionError(
-        'Created broken expression "$expr" from ignore pattern "$pattern" -> $e');
+      'Created broken expression "$expr" from ignore pattern "$pattern" -> $e',
+    );
   }
 }
 

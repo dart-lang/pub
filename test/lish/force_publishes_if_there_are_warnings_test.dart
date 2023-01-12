@@ -16,7 +16,12 @@ void main() {
   test('--force publishes if there are warnings', () async {
     await d.validPackage.create();
     var pkg = packageMap(
-        'test_pkg', '1.0.0', null, null, {'sdk': defaultSdkConstraint});
+      'test_pkg',
+      '1.0.0',
+      null,
+      null,
+      {'sdk': defaultSdkConstraint},
+    );
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
@@ -29,20 +34,24 @@ void main() {
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+        }),
+      );
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
     final stderrLines = await pub.stderr.rest.toList();
     expect(
-        stderrLines,
-        allOf([
-          contains('Package validation found the following potential issue:'),
-          contains(
-              '* Your dependency on "foo" should have a version constraint. For example:'),
-        ]));
+      stderrLines,
+      allOf([
+        contains('Package validation found the following potential issue:'),
+        contains(
+          '* Your dependency on "foo" should have a version constraint. For example:',
+        ),
+      ]),
+    );
     expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
   });
 }

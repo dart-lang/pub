@@ -23,10 +23,11 @@ Future<void> main() async {
       RegExp('/api/packages/test_pkg/uploaders'),
       (request) {
         return shelf.Response.ok(
-            jsonEncode({
-              'success': {'message': 'Good job!'}
-            }),
-            headers: {'content-type': 'application/json'});
+          jsonEncode({
+            'success': {'message': 'Good job!'}
+          }),
+          headers: {'content-type': 'application/json'},
+        );
       },
     );
 

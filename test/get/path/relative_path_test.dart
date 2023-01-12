@@ -20,9 +20,11 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      )
     ]).create();
 
     await pubGet();
@@ -36,17 +38,23 @@ void main() {
     await d.dir('relative', [
       d.dir('foo', [
         d.libDir('foo'),
-        d.libPubspec('foo', '0.0.1', deps: {
-          'bar': {'path': '../bar'}
-        })
+        d.libPubspec(
+          'foo',
+          '0.0.1',
+          deps: {
+            'bar': {'path': '../bar'}
+          },
+        )
       ]),
       d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')])
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../relative/foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../relative/foo'}
+        },
+      )
     ]).create();
 
     await pubGet();
@@ -62,23 +70,30 @@ void main() {
     await d.dir('relative', [
       d.dir('foo', [
         d.libDir('foo'),
-        d.libPubspec('foo', '0.0.1', deps: {
-          'bar': {'path': '../bar'}
-        })
+        d.libPubspec(
+          'foo',
+          '0.0.1',
+          deps: {
+            'bar': {'path': '../bar'}
+          },
+        )
       ]),
       d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')])
     ]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../relative/foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../relative/foo'}
+        },
+      )
     ]).create();
 
     await pubGet(
-        args: ['--directory', appPath],
-        workingDirectory: d.sandbox,
-        output: contains('Changed 2 dependencies in myapp!'));
+      args: ['--directory', appPath],
+      workingDirectory: d.sandbox,
+      output: contains('Changed 2 dependencies in myapp!'),
+    );
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
@@ -91,9 +106,11 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': '../foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      )
     ]).create();
 
     await pubGet();

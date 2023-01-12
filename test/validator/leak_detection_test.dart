@@ -82,11 +82,13 @@ void main() {
           '''),
         ])
       ]).create();
-      await expectValidation(leakDetection,
-          errors: allOf(
-            hasLength(lessThanOrEqualTo(3)),
-            contains(contains('10 potential leaks detected in 1 file:')),
-          ));
+      await expectValidation(
+        leakDetection,
+        errors: allOf(
+          hasLength(lessThanOrEqualTo(3)),
+          contains(contains('10 potential leaks detected in 1 file:')),
+        ),
+      );
     });
 
     test('at-most 3 warnings when multiple files', () async {
@@ -115,11 +117,13 @@ void main() {
           '''),
         ])
       ]).create();
-      await expectValidation(leakDetection,
-          errors: allOf(
-            hasLength(lessThanOrEqualTo(3)),
-            contains(contains('12 potential leaks detected in 2 files:')),
-          ));
+      await expectValidation(
+        leakDetection,
+        errors: allOf(
+          hasLength(lessThanOrEqualTo(3)),
+          contains(contains('12 potential leaks detected in 2 files:')),
+        ),
+      );
     });
   });
 

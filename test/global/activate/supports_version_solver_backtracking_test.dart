@@ -10,12 +10,20 @@ import '../../test_pub.dart';
 void main() {
   test('performs version solver backtracking if necessary', () async {
     await servePackages()
-      ..serve('foo', '1.1.0', pubspec: {
-        'environment': {'sdk': defaultSdkConstraint}
-      })
-      ..serve('foo', '1.2.0', pubspec: {
-        'environment': {'sdk': '^3.1.3'}
-      });
+      ..serve(
+        'foo',
+        '1.1.0',
+        pubspec: {
+          'environment': {'sdk': defaultSdkConstraint}
+        },
+      )
+      ..serve(
+        'foo',
+        '1.2.0',
+        pubspec: {
+          'environment': {'sdk': '^3.1.3'}
+        },
+      );
 
     await runPub(args: ['global', 'activate', 'foo']);
 

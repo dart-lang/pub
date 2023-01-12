@@ -15,8 +15,9 @@ void main() {
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     await runPub(
-        args: ['lish', '--force'],
-        error: startsWith('A private package cannot be published.'),
-        exitCode: exit_codes.DATA);
+      args: ['lish', '--force'],
+      error: startsWith('A private package cannot be published.'),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

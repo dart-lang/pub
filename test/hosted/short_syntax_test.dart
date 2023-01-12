@@ -14,9 +14,13 @@ import '../test_pub.dart';
 void main() {
   setUp(() async {
     final server = await servePackages();
-    server.serve('foo', '1.2.3', pubspec: {
-      'environment': {'sdk': '^2.0.0'}
-    });
+    server.serve(
+      'foo',
+      '1.2.3',
+      pubspec: {
+        'environment': {'sdk': '^2.0.0'}
+      },
+    );
   });
   forBothPubGetAndUpgrade((command) {
     Future<void> testWith(dynamic dependency) async {
@@ -84,7 +88,9 @@ void main() {
       );
 
       expect(
-          lockFile['packages']['foo']['description']['url'], globalServer.url);
+        lockFile['packages']['foo']['description']['url'],
+        globalServer.url,
+      );
     });
   });
 }

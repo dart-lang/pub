@@ -12,15 +12,18 @@ import '../test_pub.dart';
 
 void main() {
   test('reports the lockfile path when there is an error in it', () async {
-    await d.dir(appPath,
-        [d.appPubspec(), d.file('pubspec.lock', 'some bad yaml')]).create();
+    await d.dir(
+      appPath,
+      [d.appPubspec(), d.file('pubspec.lock', 'some bad yaml')],
+    ).create();
 
-    await runPub(args: [
-      'list-package-dirs',
-      '--format=json'
-    ], outputJson: {
-      'error': contains('Expected a YAML mapping.'),
-      'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock'))
-    }, exitCode: exit_codes.DATA);
+    await runPub(
+      args: ['list-package-dirs', '--format=json'],
+      outputJson: {
+        'error': contains('Expected a YAML mapping.'),
+        'path': canonicalize(path.join(d.sandbox, appPath, 'pubspec.lock'))
+      },
+      exitCode: exit_codes.DATA,
+    );
   });
 }

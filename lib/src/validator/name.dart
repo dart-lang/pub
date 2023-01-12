@@ -35,9 +35,11 @@ class NameValidator extends Validator {
     var libDir = entrypoint.root.path('lib');
     return filesBeneath('lib', recursive: true)
         .map((file) => path.relative(file, from: path.dirname(libDir)))
-        .where((file) =>
-            !path.split(file).contains('src') &&
-            path.extension(file) == '.dart')
+        .where(
+          (file) =>
+              !path.split(file).contains('src') &&
+              path.extension(file) == '.dart',
+        )
         .toList();
   }
 

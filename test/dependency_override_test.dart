@@ -55,9 +55,13 @@ void main() {
         ..serve('foo', '1.0.0')
         ..serve('foo', '2.0.0')
         ..serve('foo', '3.0.0')
-        ..serve('bar', '1.0.0', pubspec: {
-          'dependencies': {'foo': '5.0.0-nonexistent'}
-        });
+        ..serve(
+          'bar',
+          '1.0.0',
+          pubspec: {
+            'dependencies': {'foo': '5.0.0-nonexistent'}
+          },
+        );
 
       await d.dir(appPath, [
         d.pubspec({
@@ -77,9 +81,13 @@ void main() {
 
     test('ignores SDK constraints', () async {
       final server = await servePackages();
-      server.serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '5.6.7-fblthp'}
-      });
+      server.serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'environment': {'sdk': '5.6.7-fblthp'}
+        },
+      );
 
       await d.dir(appPath, [
         d.pubspec({

@@ -24,9 +24,11 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: absolutePath),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'foo': {'path': absolutePath}
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': absolutePath}
+      },
+    ).validate();
   });
 
   test('adds a package from absolute path with version constraint', () async {
@@ -38,24 +40,29 @@ void main() {
 
     await pubAdd(args: ['foo:0.0.1', '--path', absolutePath]);
 
-    await d.appDir(dependencies: {
-      'foo': {'path': absolutePath, 'version': '0.0.1'}
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': absolutePath, 'version': '0.0.1'}
+      },
+    ).validate();
   });
 
   test('fails when adding multiple packages through local path', () async {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
     await d.appDir(dependencies: {}).create();
     final absolutePath = path.join(d.sandbox, 'foo');
 
     await pubAdd(
-        args: ['foo:2.0.0', 'bar:0.1.3', 'baz:1.3.1', '--path', absolutePath],
-        error: contains('--path cannot be used with multiple packages.'),
-        exitCode: exit_codes.USAGE);
+      args: ['foo:2.0.0', 'bar:0.1.3', 'baz:1.3.1', '--path', absolutePath],
+      error: contains('--path cannot be used with multiple packages.'),
+      exitCode: exit_codes.USAGE,
+    );
 
     await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
@@ -69,18 +76,21 @@ void main() {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
     await d.appDir(dependencies: {}).create();
     final absolutePath = path.join(d.sandbox, 'foo');
 
     await pubAdd(
-        args: ['foo:2.0.0', '--path', absolutePath],
-        error: equalsIgnoringWhitespace(
-            'Because myapp depends on foo from path which doesn\'t exist '
-            '(could not find package foo at "$absolutePath"), version solving '
-            'failed.'),
-        exitCode: exit_codes.DATA);
+      args: ['foo:2.0.0', '--path', absolutePath],
+      error: equalsIgnoringWhitespace(
+          'Because myapp depends on foo from path which doesn\'t exist '
+          '(could not find package foo at "$absolutePath"), version solving '
+          'failed.'),
+      exitCode: exit_codes.DATA,
+    );
 
     await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
@@ -96,12 +106,13 @@ void main() {
     final absolutePath = path.join(d.sandbox, 'foo');
 
     await pubAdd(
-        args: ['foo', '--path', absolutePath],
-        error: equalsIgnoringWhitespace(
-            'Because myapp depends on foo from path which doesn\'t exist '
-            '(could not find package foo at "$absolutePath"), version solving '
-            'failed.'),
-        exitCode: exit_codes.DATA);
+      args: ['foo', '--path', absolutePath],
+      error: equalsIgnoringWhitespace(
+          'Because myapp depends on foo from path which doesn\'t exist '
+          '(could not find package foo at "$absolutePath"), version solving '
+          'failed.'),
+      exitCode: exit_codes.DATA,
+    );
 
     await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [

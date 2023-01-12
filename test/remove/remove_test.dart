@@ -69,11 +69,12 @@ environment:
     await pubGet();
 
     await pubRemove(
-        args: ['foo', '--dry-run'],
-        output: allOf([
-          contains('These packages are no longer being depended on:'),
-          contains('- foo 1.2.3')
-        ]));
+      args: ['foo', '--dry-run'],
+      output: allOf([
+        contains('These packages are no longer being depended on:'),
+        contains('- foo 1.2.3')
+      ]),
+    );
 
     await d.appDir(dependencies: {'foo': '1.2.3'}).validate();
   });
@@ -81,8 +82,9 @@ environment:
   test('prints a warning if package does not exist', () async {
     await d.appDir().create();
     await pubRemove(
-        args: ['foo'],
-        warning: contains('Package "foo" was not found in pubspec.yaml!'));
+      args: ['foo'],
+      warning: contains('Package "foo" was not found in pubspec.yaml!'),
+    );
 
     await d.appDir().validate();
   });
@@ -92,8 +94,9 @@ environment:
       d.pubspec({'name': 'myapp'})
     ]).create();
     await pubRemove(
-        args: ['foo'],
-        warning: contains('Package "foo" was not found in pubspec.yaml!'));
+      args: ['foo'],
+      warning: contains('Package "foo" was not found in pubspec.yaml!'),
+    );
 
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'})
@@ -165,12 +168,14 @@ environment:
     ]);
     await repo.create();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'git': {'url': '../foo.git', 'path': 'subdir'}
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git', 'path': 'subdir'}
+        },
+        'bar': '1.2.3'
       },
-      'bar': '1.2.3'
-    }).create();
+    ).create();
 
     await pubGet();
 
@@ -188,10 +193,12 @@ environment:
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir(dependencies: {
-      'foo': {'path': '../foo'},
-      'bar': '1.2.3'
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': '../foo'},
+        'bar': '1.2.3'
+      },
+    ).create();
 
     await pubGet();
 
@@ -209,13 +216,15 @@ environment:
     var custom = await startPackageServer();
     custom.serve('foo', '1.2.3');
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': '1.2.3',
-        'hosted': {'name': 'foo', 'url': 'http://localhost:${custom.port}'}
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${custom.port}'}
+        },
+        'bar': '2.0.1'
       },
-      'bar': '2.0.1'
-    }).create();
+    ).create();
 
     await pubGet();
 
@@ -254,13 +263,14 @@ environment:
     expect(File(fullPath).existsSync(), true);
     final contents = File(fullPath).readAsStringSync();
     expect(
-        contents,
-        allOf([
-          contains('# comment A'),
-          contains('# comment B'),
-          contains('# comment C'),
-          contains('# comment D'),
-          contains('# comment E')
-        ]));
+      contents,
+      allOf([
+        contains('# comment A'),
+        contains('# comment B'),
+        contains('# comment C'),
+        contains('# comment D'),
+        contains('# comment E')
+      ]),
+    );
   });
 }

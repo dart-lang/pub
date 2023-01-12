@@ -43,13 +43,15 @@ Future<void> runEmbeddingToBuffer(
   final stdoutLines = await process.stdout.rest.toList();
   final stderrLines = await process.stderr.rest.toList();
 
-  buffer.writeln([
-    '\$ $_commandRunner ${args.join(' ')}',
-    if (stdoutLines.isNotEmpty) _filter(stdoutLines.join('\n')),
-    if (stderrLines.isNotEmpty)
-      _filter(stderrLines.join('\n'))
-          .replaceAll(RegExp('^', multiLine: true), '[E] '),
-  ].join('\n'));
+  buffer.writeln(
+    [
+      '\$ $_commandRunner ${args.join(' ')}',
+      if (stdoutLines.isNotEmpty) _filter(stdoutLines.join('\n')),
+      if (stderrLines.isNotEmpty)
+        _filter(stderrLines.join('\n'))
+            .replaceAll(RegExp('^', multiLine: true), '[E] '),
+    ].join('\n'),
+  );
   buffer.write('\n');
 }
 
@@ -80,7 +82,9 @@ Future<void> main() async {
     final tempDir = Directory.systemTemp.createTempSync();
     snapshot = path.join(tempDir.path, 'command_runner.dart.snapshot');
     final r = Process.runSync(
-        Platform.resolvedExecutable, ['--snapshot=$snapshot', _commandRunner]);
+      Platform.resolvedExecutable,
+      ['--snapshot=$snapshot', _commandRunner],
+    );
     expect(r.exitCode, 0, reason: r.stderr);
   });
 
@@ -165,11 +169,13 @@ main() {
       })
     ]).create();
     final app = d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': '1.0.0',
-        // The path dependency should not go to analytics.
-        'dep': {'path': '../dep'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': '1.0.0',
+          // The path dependency should not go to analytics.
+          'dep': {'path': '../dep'}
+        },
+      )
     ]);
     await app.create();
 
@@ -268,18 +274,26 @@ main() {
     ]).create();
 
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'environment': {'sdk': '^2.18.0'}
-    });
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'environment': {'sdk': '^2.18.0'}
+      },
+    );
 
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.18.3'});
     // Deleting the version-listing cache will cause it to be refetched, and the
     // warning will happen.
     File(p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'))
         .deleteSync();
-    server.serve('foo', '1.0.1', pubspec: {
-      'environment': {'sdk': '^2.18.0'}
-    });
+    server.serve(
+      'foo',
+      '1.0.1',
+      pubspec: {
+        'environment': {'sdk': '^2.18.0'}
+      },
+    );
 
     final buffer = StringBuffer();
 
@@ -416,8 +430,10 @@ String _filter(String input) {
         r'Created $FILE from stream',
       )
       .replaceAll(
-        RegExp(r'Renaming directory $SANDBOX/cache/_temp/(.*?) to',
-            multiLine: true),
+        RegExp(
+          r'Renaming directory $SANDBOX/cache/_temp/(.*?) to',
+          multiLine: true,
+        ),
         r'Renaming directory $SANDBOX/cache/_temp/',
       )
       .replaceAll(
@@ -461,8 +477,10 @@ String _filter(String input) {
         r'"generated": "$TIME",',
       )
       .replaceAll(
-        RegExp(r'( |^)(/|[A-Z]:)(.*)/tool/test-bin/pub_command_runner.dart',
-            multiLine: true),
+        RegExp(
+          r'( |^)(/|[A-Z]:)(.*)/tool/test-bin/pub_command_runner.dart',
+          multiLine: true,
+        ),
         r' tool/test-bin/pub_command_runner.dart',
       )
       .replaceAll(
@@ -483,9 +501,10 @@ String _filter(String input) {
       )
       .replaceAll(
         RegExp(
-            r'Computed checksum \d+ for foo 1.0.0 with expected CRC32C of '
-            r'\d+\.',
-            multiLine: true),
+          r'Computed checksum \d+ for foo 1.0.0 with expected CRC32C of '
+          r'\d+\.',
+          multiLine: true,
+        ),
         r'Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of '
         r'$CRC32C.',
       )
@@ -493,9 +512,10 @@ String _filter(String input) {
       /// TODO(sigurdm): This hack suppresses differences in stack-traces
       /// between dart 2.17 and 2.18. Remove when 2.18 is stable.
       .replaceAllMapped(
-          RegExp(
-            r'(^(.*)pub/src/command.dart \$LINE:\$COL(.*)$)\n\1',
-            multiLine: true,
-          ),
-          (match) => match[1]!);
+        RegExp(
+          r'(^(.*)pub/src/command.dart \$LINE:\$COL(.*)$)\n\1',
+          multiLine: true,
+        ),
+        (match) => match[1]!,
+      );
 }

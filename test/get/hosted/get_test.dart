@@ -36,12 +36,20 @@ void main() {
       server = await servePackages()
         ..serveChecksums = false
         ..serve('foo', '1.2.3')
-        ..serve('bar', '1.2.3', headers: {
-          'x-goog-hash': ['']
-        })
-        ..serve('baz', '1.2.3', headers: {
-          'x-goog-hash': ['md5=loremipsum']
-        });
+        ..serve(
+          'bar',
+          '1.2.3',
+          headers: {
+            'x-goog-hash': ['']
+          },
+        )
+        ..serve(
+          'baz',
+          '1.2.3',
+          headers: {
+            'x-goog-hash': ['md5=loremipsum']
+          },
+        );
     });
 
     test('because of omitted checksum header', () async {
@@ -71,8 +79,10 @@ void main() {
     });
 
     test('because of missing CRC32C in checksum header', () async {
-      expect(await server.peekArchiveChecksumHeader('baz', '1.2.3'),
-          'md5=loremipsum');
+      expect(
+        await server.peekArchiveChecksumHeader('baz', '1.2.3'),
+        'md5=loremipsum',
+      );
 
       await d.appDir(dependencies: {'baz': '1.2.3'}).create();
 
@@ -91,13 +101,14 @@ void main() {
     await d.appDir(dependencies: {'bad name!': '1.2.3'}).create();
 
     await pubGet(
-        error: allOf([
-          contains(
-              "Because myapp depends on bad name! any which doesn't exist (could "
-              'not find package bad name! at http://localhost:'),
-          contains('), version solving failed.')
-        ]),
-        exitCode: exit_codes.UNAVAILABLE);
+      error: allOf([
+        contains(
+            "Because myapp depends on bad name! any which doesn't exist (could "
+            'not find package bad name! at http://localhost:'),
+        contains('), version solving failed.')
+      ]),
+      exitCode: exit_codes.UNAVAILABLE,
+    );
   });
 
   test('gets a package from a non-default pub server', () async {
@@ -108,12 +119,14 @@ void main() {
     var server = await startPackageServer();
     server.serve('foo', '1.2.3');
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': '1.2.3',
-        'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+        }
+      },
+    ).create();
 
     await pubGet();
 
@@ -127,16 +140,22 @@ void main() {
       () async {
     var server = await startPackageServer();
 
-    server.serve('foo', '1.2.3', headers: {
-      'x-goog-hash': PackageServer.composeChecksumHeader(crc32c: 3381945770)
-    });
+    server.serve(
+      'foo',
+      '1.2.3',
+      headers: {
+        'x-goog-hash': PackageServer.composeChecksumHeader(crc32c: 3381945770)
+      },
+    );
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'version': '1.2.3',
-        'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+        }
+      },
+    ).create();
 
     await pubGet(
       exitCode: exit_codes.TEMP_FAIL,
@@ -156,24 +175,38 @@ void main() {
 
     setUp(() async {
       server = await servePackages()
-        ..serve('foo', '1.2.3', headers: {
-          'x-goog-hash': ['crc32c=,md5=']
-        })
-        ..serve('bar', '1.2.3', headers: {
-          'x-goog-hash': ['crc32c=loremipsum,md5=loremipsum']
-        })
-        ..serve('baz', '1.2.3', headers: {
-          'x-goog-hash': ['crc32c=MTIzNDU=,md5=NTQzMjE=']
-        });
+        ..serve(
+          'foo',
+          '1.2.3',
+          headers: {
+            'x-goog-hash': ['crc32c=,md5=']
+          },
+        )
+        ..serve(
+          'bar',
+          '1.2.3',
+          headers: {
+            'x-goog-hash': ['crc32c=loremipsum,md5=loremipsum']
+          },
+        )
+        ..serve(
+          'baz',
+          '1.2.3',
+          headers: {
+            'x-goog-hash': ['crc32c=MTIzNDU=,md5=NTQzMjE=']
+          },
+        );
     });
 
     test('when the CRC32C checksum is empty', () async {
-      await d.appDir(dependencies: {
-        'foo': {
-          'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {
+            'version': '1.2.3',
+            'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
+          }
+        },
+      ).create();
 
       await pubGet(
         exitCode: exit_codes.TEMP_FAIL,
@@ -188,12 +221,14 @@ void main() {
     });
 
     test('when the CRC32C checksum has bad encoding', () async {
-      await d.appDir(dependencies: {
-        'bar': {
-          'version': '1.2.3',
-          'hosted': {'name': 'bar', 'url': 'http://localhost:${server.port}'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'bar': {
+            'version': '1.2.3',
+            'hosted': {'name': 'bar', 'url': 'http://localhost:${server.port}'}
+          }
+        },
+      ).create();
 
       await pubGet(
         exitCode: exit_codes.TEMP_FAIL,
@@ -208,12 +243,14 @@ void main() {
     });
 
     test('when the CRC32C checksum is malformed', () async {
-      await d.appDir(dependencies: {
-        'baz': {
-          'version': '1.2.3',
-          'hosted': {'name': 'baz', 'url': 'http://localhost:${server.port}'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'baz': {
+            'version': '1.2.3',
+            'hosted': {'name': 'baz', 'url': 'http://localhost:${server.port}'}
+          }
+        },
+      ).create();
 
       await pubGet(
         exitCode: exit_codes.TEMP_FAIL,
@@ -290,19 +327,32 @@ void main() {
       await pubGet();
 
       var packages = loadYaml(
-          readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')))['packages'];
-      expect(packages,
-          containsPair('foo', containsPair('dependency', 'direct main')));
-      expect(packages,
-          containsPair('bar', containsPair('dependency', 'transitive')));
-      expect(packages,
-          containsPair('baz', containsPair('dependency', 'direct dev')));
-      expect(packages,
-          containsPair('qux', containsPair('dependency', 'transitive')));
-      expect(packages,
-          containsPair('zip', containsPair('dependency', 'direct overridden')));
-      expect(packages,
-          containsPair('zap', containsPair('dependency', 'transitive')));
+        readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
+      )['packages'];
+      expect(
+        packages,
+        containsPair('foo', containsPair('dependency', 'direct main')),
+      );
+      expect(
+        packages,
+        containsPair('bar', containsPair('dependency', 'transitive')),
+      );
+      expect(
+        packages,
+        containsPair('baz', containsPair('dependency', 'direct dev')),
+      );
+      expect(
+        packages,
+        containsPair('qux', containsPair('dependency', 'transitive')),
+      );
+      expect(
+        packages,
+        containsPair('zip', containsPair('dependency', 'direct overridden')),
+      );
+      expect(
+        packages,
+        containsPair('zap', containsPair('dependency', 'transitive')),
+      );
     });
 
     test('for overridden main and dev dependencies', () async {
@@ -318,15 +368,24 @@ void main() {
       await pubGet();
 
       var packages = loadYaml(
-          readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')))['packages'];
-      expect(packages,
-          containsPair('foo', containsPair('dependency', 'direct main')));
-      expect(packages,
-          containsPair('bar', containsPair('dependency', 'transitive')));
-      expect(packages,
-          containsPair('baz', containsPair('dependency', 'direct dev')));
-      expect(packages,
-          containsPair('qux', containsPair('dependency', 'transitive')));
+        readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
+      )['packages'];
+      expect(
+        packages,
+        containsPair('foo', containsPair('dependency', 'direct main')),
+      );
+      expect(
+        packages,
+        containsPair('bar', containsPair('dependency', 'transitive')),
+      );
+      expect(
+        packages,
+        containsPair('baz', containsPair('dependency', 'direct dev')),
+      );
+      expect(
+        packages,
+        containsPair('qux', containsPair('dependency', 'transitive')),
+      );
     });
   });
 }

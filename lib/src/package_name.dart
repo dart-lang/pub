@@ -85,8 +85,11 @@ class PackageId {
   PackageId(this.name, this.version, this.description);
 
   /// Creates an ID for the given root package.
-  static PackageId root(Package package) => PackageId(package.name,
-      package.version, ResolvedRootDescription(RootDescription(package)));
+  static PackageId root(Package package) => PackageId(
+        package.name,
+        package.version,
+        ResolvedRootDescription(RootDescription(package)),
+      );
 
   @override
   int get hashCode => Object.hash(name, version, description);
@@ -235,15 +238,18 @@ class PackageDetail {
   /// This defaults to `false`.
   final bool showDescription;
 
-  const PackageDetail(
-      {this.showVersion, bool? showSource, bool? showDescription})
-      : showSource = showDescription == true ? true : showSource,
+  const PackageDetail({
+    this.showVersion,
+    bool? showSource,
+    bool? showDescription,
+  })  : showSource = showDescription == true ? true : showSource,
         showDescription = showDescription ?? false;
 
   /// Returns a [PackageDetail] with the maximum amount of detail between [this]
   /// and [other].
   PackageDetail max(PackageDetail other) => PackageDetail(
-      showVersion: showVersion! || other.showVersion!,
-      showSource: showSource! || other.showSource!,
-      showDescription: showDescription || other.showDescription);
+        showVersion: showVersion! || other.showVersion!,
+        showSource: showSource! || other.showSource!,
+        showDescription: showDescription || other.showDescription,
+      );
 }

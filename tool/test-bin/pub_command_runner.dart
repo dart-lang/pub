@@ -63,12 +63,15 @@ class Runner extends CommandRunner<int> {
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
-        ? PubAnalytics(() => loggingAnalytics,
-            dependencyKindCustomDimensionName: 'cd1')
+        ? PubAnalytics(
+            () => loggingAnalytics,
+            dependencyKindCustomDimensionName: 'cd1',
+          )
         : null;
     addCommand(
-        pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
-          ..addSubcommand(ThrowingCommand()));
+      pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
+        ..addSubcommand(ThrowingCommand()),
+    );
     addCommand(RunCommand());
     argParser.addFlag('verbose');
   }
@@ -115,13 +118,19 @@ class _LoggingAnalytics extends AnalyticsMock {
   }
 
   @override
-  Future sendEvent(String category, String action,
-      {String? label, int? value, Map<String, String>? parameters}) {
+  Future sendEvent(
+    String category,
+    String action, {
+    String? label,
+    int? value,
+    Map<String, String>? parameters,
+  }) {
     parameters ??= <String, String>{};
     return _log(
-        'event',
-        {'category': category, 'action': action, 'label': label, 'value': value}
-          ..addAll(parameters));
+      'event',
+      {'category': category, 'action': action, 'label': label, 'value': value}
+        ..addAll(parameters),
+    );
   }
 
   @override
@@ -129,8 +138,12 @@ class _LoggingAnalytics extends AnalyticsMock {
       _log('social', {'network': network, 'action': action, 'target': target});
 
   @override
-  Future sendTiming(String variableName, int time,
-      {String? category, String? label}) {
+  Future sendTiming(
+    String variableName,
+    int time, {
+    String? category,
+    String? label,
+  }) {
     return _log('timing', {
       'variableName': variableName,
       'time': time,
