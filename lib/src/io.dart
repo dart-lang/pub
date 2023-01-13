@@ -1171,6 +1171,6 @@ final String? dartConfigDir = () {
 ///
 /// Otherwise, wrap with single quotation, and use '\'' to insert single quote.
 String escapeShellArgument(String x) =>
-    RegExp(r'^[a-zA-Z0-9-_=@.]+$').stringMatch(x) == null
+    RegExp(r'^[a-zA-Z0-9-_=@.^]+$').stringMatch(x) == null
         ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
         : x;

@@ -113,9 +113,11 @@ class PackageLister {
   }) : _isDowngrade = downgrade;
 
   /// Creates a package lister for the root [package].
-  PackageLister.root(Package package, this._systemCache,
-      {required Map<String, Version>? sdkOverrides,})
-      : _ref = PackageRef.root(package),
+  PackageLister.root(
+    Package package,
+    this._systemCache, {
+    required Map<String, Version>? sdkOverrides,
+  })  : _ref = PackageRef.root(package),
         // Treat the package as locked so we avoid the logic for finding the
         // boundaries of various constraints, which is useless for the root
         // package.

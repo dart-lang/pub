@@ -119,23 +119,31 @@ void main() {
 
     group('fails if', () {
       test("the version constraint doesn't match", () async {
-        await d.appDir(dependencies: {
-          'foo': {'sdk': 'flutter', 'version': '^1.0.0'}
-        },).create();
-        await pubCommand(command,
-            environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-            error: contains('''
-Because myapp depends on foo ^1.0.0 from sdk which doesn't match any versions, version solving failed.'''),);
+        await d.appDir(
+          dependencies: {
+            'foo': {'sdk': 'flutter', 'version': '^1.0.0'}
+          },
+        ).create();
+        await pubCommand(
+          command,
+          environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+          error: contains('''
+Because myapp depends on foo ^1.0.0 from sdk which doesn't match any versions, version solving failed.'''),
+        );
       });
 
       test('the SDK is unknown', () async {
-        await d.appDir(dependencies: {
-          'foo': {'sdk': 'unknown'}
-        },).create();
-        await pubCommand(command,
-            error: equalsIgnoringWhitespace('''
+        await d.appDir(
+          dependencies: {
+            'foo': {'sdk': 'unknown'}
+          },
+        ).create();
+        await pubCommand(
+          command,
+          error: equalsIgnoringWhitespace('''
 Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"), version solving failed.'''),
-            exitCode: exit_codes.UNAVAILABLE,);
+          exitCode: exit_codes.UNAVAILABLE,
+        );
       });
 
       test('the SDK is unavailable', () async {

@@ -14,11 +14,17 @@ void main() {
   test('suggests an upgrade to the flutter sdk', () async {
     await d.dir('flutter', [d.file('version', '1.2.3')]).create();
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'environment': {'flutter': '>=3.3.0', 'sdk': '^2.17.0'}
-    },);
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'environment': {'flutter': '>=3.3.0', 'sdk': '^2.17.0'}
+      },
+    );
     server.handle(
-        '/flutterReleases', (request) => Response.ok(releasesMockResponse),);
+      '/flutterReleases',
+      (request) => Response.ok(releasesMockResponse),
+    );
     await d.dir(appPath, [
       d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0')
     ]).create();
@@ -35,11 +41,17 @@ void main() {
 
   test('suggests an upgrade to the dart sdk', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'environment': {'sdk': '>=2.18.0 <2.18.1'}
-    },);
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'environment': {'sdk': '>=2.18.0 <2.18.1'}
+      },
+    );
     server.handle(
-        '/flutterReleases', (request) => Response.ok(releasesMockResponse),);
+      '/flutterReleases',
+      (request) => Response.ok(releasesMockResponse),
+    );
     await d.dir(appPath, [
       d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0')
     ]).create();
@@ -72,9 +84,11 @@ void main() {
       error: allOf(
         [
           contains(
-              '* Consider downgrading your constraint on foo: dart pub add foo:^0.9.0',),
+            '* Consider downgrading your constraint on foo: dart pub add foo:^0.9.0',
+          ),
           contains(
-              '* Try upgrading your constraint on bar: dart pub add dev:bar:^2.0.0',),
+            '* Try upgrading your constraint on bar: dart pub add dev:bar:^2.0.0',
+          ),
         ],
       ),
     );
@@ -95,7 +109,8 @@ void main() {
       error: allOf(
         [
           contains(
-              '* Try updating your constraint on foo: dart pub add foo:^1.0.0',),
+            '* Try updating your constraint on foo: dart pub add foo:^1.0.0',
+          ),
         ],
       ),
     );
@@ -158,6 +173,51 @@ void main() {
         '* Try an upgrade of your constraints: dart pub upgrade --major-versions',
       ),
     );
+  });
+
+  test('suggests upgrades to non-default servers', () async {
+    final server = await servePackages();
+    final server2 = await startPackageServer();
+    server.serve(
+      'foo',
+      '1.0.0',
+      deps: {
+        'bar': {'version': '2.0.0', 'hosted': server2.url}
+      },
+    );
+
+    server2.serve('bar', '1.0.0');
+    server2.serve('bar', '2.0.0');
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myApp',
+        '1.0.0',
+        deps: {
+          'foo': '^1.0.0',
+          'bar': {'version': '^1.0.0', 'hosted': server2.url},
+        },
+      )
+    ]).create();
+    await pubGet(
+      error: contains(
+        '* Try upgrading your constraint on bar: dart pub add '
+        'bar:\'{"version":"^2.0.0","hosted":"${server2.url}"}\'',
+      ),
+    );
+    await pubAdd(
+      args: ['bar:{"version":"^2.0.0","hosted":"${server2.url}"}'],
+    );
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myApp',
+        '1.0.0',
+        deps: {
+          'foo': '^1.0.0',
+          'bar': {'version': '^2.0.0', 'hosted': server2.url},
+        },
+      )
+    ]).validate();
   });
 }
 

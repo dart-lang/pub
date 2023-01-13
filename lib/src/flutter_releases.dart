@@ -40,11 +40,13 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
     if (dartVersion is! String) continue;
     final flutterVersion = release['version'];
     if (flutterVersion is! String) throw FormatException('Not a string');
-    result.add(FlutterRelease(
-      flutterVersion: Version.parse(flutterVersion),
-      dartVersion: Version.parse(dartVersion.split(' ').first),
-      channel: channel,
-    ),);
+    result.add(
+      FlutterRelease(
+        flutterVersion: Version.parse(flutterVersion),
+        dartVersion: Version.parse(dartVersion.split(' ').first),
+        channel: channel,
+      ),
+    );
   }
   return result
       // Sort releases by channel and version.
@@ -63,7 +65,8 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
 ///
 /// Returns if no such release could be found.
 Future<FlutterRelease?> inferBestFlutterRelease(
-    Map<String, VersionConstraint> sdkConstraints,) async {
+  Map<String, VersionConstraint> sdkConstraints,
+) async {
   final List<FlutterRelease> flutterReleases;
   try {
     flutterReleases = await _flutterReleases;
@@ -71,11 +74,13 @@ Future<FlutterRelease?> inferBestFlutterRelease(
     fine('Failed retrieving the list of flutter-releases: $e');
     return null;
   }
-  return flutterReleases.firstWhereOrNull((release) =>
-      (sdkConstraints['flutter'] ?? VersionConstraint.any)
-          .allows(release.flutterVersion) &&
-      (sdkConstraints['dart'] ?? VersionConstraint.any)
-          .allows(release.dartVersion),);
+  return flutterReleases.firstWhereOrNull(
+    (release) =>
+        (sdkConstraints['flutter'] ?? VersionConstraint.any)
+            .allows(release.flutterVersion) &&
+        (sdkConstraints['dart'] ?? VersionConstraint.any)
+            .allows(release.dartVersion),
+  );
 }
 
 enum Channel {

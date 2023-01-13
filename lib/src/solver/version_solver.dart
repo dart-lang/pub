@@ -503,8 +503,11 @@ class VersionSolver {
     var ref = package.toRef();
     return _packageListers.putIfAbsent(ref, () {
       if (ref.isRoot) {
-        return PackageLister.root(_root, _systemCache,
-            sdkOverrides: _sdkOverrides,);
+        return PackageLister.root(
+          _root,
+          _systemCache,
+          sdkOverrides: _sdkOverrides,
+        );
       }
 
       var locked = _getLocked(ref.name);
@@ -518,14 +521,15 @@ class VersionSolver {
       };
 
       return PackageLister(
-          _systemCache,
-          ref,
-          locked,
-          _root.dependencyType(package.name),
-          overridden,
-          _getAllowedRetracted(ref.name),
-          downgrade: _type == SolveType.downgrade,
-          sdkOverrides: _sdkOverrides,);
+        _systemCache,
+        ref,
+        locked,
+        _root.dependencyType(package.name),
+        overridden,
+        _getAllowedRetracted(ref.name),
+        downgrade: _type == SolveType.downgrade,
+        sdkOverrides: _sdkOverrides,
+      );
     });
   }
 
