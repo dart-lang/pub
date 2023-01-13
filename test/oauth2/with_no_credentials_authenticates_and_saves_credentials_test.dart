@@ -32,6 +32,6 @@ void main() {
     // do so rather than killing it so it'll write out the credentials file.
     await pub.shouldExit(1);
 
-    await d.credentialsFile(globalServer, 'access token').validate();
+    await d.credentialsFile(globalServer, 'access-token').validate();
   });
 }

@@ -15,7 +15,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': server.url, 'token': 'access token'},
+        {'url': server.url, 'token': 'access-token'},
       ]
     }).create();
     var pub = await startPublish(server, overrideDefaultHostedServer: false);
@@ -30,7 +30,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': server.url, 'token': 'access token'},
+        {'url': server.url, 'token': 'access-token'},
       ]
     }).validate();
   });

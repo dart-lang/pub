@@ -129,6 +129,19 @@ void main() {
     await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 
+  test('with invalid token returns error', () async {
+    await d.dir(configPath).create();
+
+    await runPub(
+      args: ['token', 'add', 'https://pub.dev'],
+      error: contains('The entered token is not a valid Bearer token.'),
+      input: ['auth-token@'], // '@' is not allowed in bearer tokens
+      exitCode: exit_codes.DATA,
+    );
+
+    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
+  });
+
   test('with non-secure server url returns error', () async {
     await d.dir(configPath).create();
     await runPub(

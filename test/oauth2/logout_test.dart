@@ -13,7 +13,7 @@ void main() {
     await d
         .credentialsFile(
           globalServer,
-          'access token',
+          'access-token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),
         )
@@ -31,7 +31,7 @@ void main() {
     await d
         .credentialsFile(
           globalServer,
-          'access token',
+          'access-token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),
         )
@@ -40,7 +40,7 @@ void main() {
     await d
         .legacyCredentialsFile(
           globalServer,
-          'access token',
+          'access-token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),
         )

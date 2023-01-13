@@ -23,7 +23,7 @@ void main() {
     await d
         .credentialsFile(
           globalServer,
-          'access token',
+          'access-token',
           refreshToken: 'bad refresh token',
           expiration: DateTime.now().subtract(Duration(hours: 1)),
         )
