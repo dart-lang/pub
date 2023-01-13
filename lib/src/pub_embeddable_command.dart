@@ -48,6 +48,9 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get name => 'pub';
   @override
+  get aliases => const ['packages', 'pkg'];
+
+  @override
   String get description => 'Work with packages.';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';

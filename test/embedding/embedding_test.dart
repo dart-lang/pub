@@ -392,6 +392,30 @@ main() {
       ),
     );
   });
+
+  test('synonyms "pkg" and "packages" work', () async {
+    await servePackages();
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+      }),
+    ]).create();
+
+    for (final command in ['pkg', 'packages']) {
+      final buffer = StringBuffer();
+      await runEmbeddingToBuffer(
+        [command, 'get'],
+        buffer,
+        workingDirectory: d.path(appPath),
+      );
+      expect(
+        buffer.toString(),
+        allOf(
+          contains('Got dependencies'),
+        ),
+      );
+    }
+  });
 }
 
 String _filter(String input) {
