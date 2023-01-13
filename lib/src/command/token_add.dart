@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:io';
 
 import '../authentication/credential.dart';
-import '../authentication/token_store.dart';
 import '../command.dart';
 import '../exceptions.dart';
 import '../io.dart';
