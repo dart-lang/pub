@@ -606,6 +606,9 @@ Map<String, PackageRange>? _dependencySetOfPackage(
           : null;
 }
 
+/// Return a constraint compatible with [newVersion].
+///
+/// By convention if the original constraint is pinned we return [newVersion]. Otherwise use [VersionConstraint.compatibleWith].
 VersionConstraint _bumpConstraint(
   VersionConstraint original,
   Version newVersion,
