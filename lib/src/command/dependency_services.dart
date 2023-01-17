@@ -130,7 +130,7 @@ class DependencyServicesReportCommand extends PubCommand {
                 ? null
                 : upgradeType == _UpgradeType.compatible
                     ? originalConstraint.toString()
-                    : VersionConstraint.compatibleWith(p.version).toString(),
+                    : _bumpConstraint(originalConstraint, p.version).toString(),
             'constraintWidened': originalConstraint == null
                 ? null
                 : upgradeType == _UpgradeType.compatible
@@ -143,7 +143,7 @@ class DependencyServicesReportCommand extends PubCommand {
                     ? originalConstraint.toString()
                     : originalConstraint.allows(p.version)
                         ? originalConstraint.toString()
-                        : VersionConstraint.compatibleWith(p.version)
+                        : _bumpConstraint(originalConstraint, p.version)
                             .toString(),
             'previousVersion': currentPackage?.versionOrHash(),
             'previousConstraint': originalConstraint?.toString(),
@@ -604,6 +604,24 @@ Map<String, PackageRange>? _dependencySetOfPackage(
       : pubspec.devDependencies.containsKey(package.name)
           ? pubspec.devDependencies
           : null;
+}
+
+VersionConstraint _bumpConstraint(
+  VersionConstraint original,
+  Version newVersion,
+) {
+  if (original.isEmpty) return newVersion;
+  if (original is VersionRange) {
+    if (original.min == original.max) return newVersion;
+
+    return VersionConstraint.compatibleWith(newVersion);
+  }
+
+  throw ArgumentError.value(
+    original,
+    'original',
+    'Must be a Version range or empty',
+  );
 }
 
 VersionConstraint _widenConstraint(
