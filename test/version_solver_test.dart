@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/log.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
@@ -3037,9 +3038,10 @@ Future expectResolves({
   int? tries,
   Map<String, String>? environment,
   bool downgrade = false,
+  bool colors = false,
 }) async {
   await runPub(
-    args: [downgrade ? 'downgrade' : 'get'],
+    args: [if (colors) '--color', downgrade ? 'downgrade' : 'get'],
     environment: environment,
     output: output ??
         (error == null
@@ -3130,6 +3132,33 @@ void regressions() {
     await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await expectResolves(
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+    );
+  });
+  test('uses colors to highlight package names in solve-traces', () async {
+    await d.dir('a', [d.libPubspec('a', '1.0.0')]).create();
+
+    await servePackages()
+      ..serve('a', '1.0.0')
+      ..serve(
+        'b',
+        '1.0.0',
+        deps: {
+          'a': {'path': p.join(d.sandbox, 'shared')}
+        },
+      )
+      ..serve('c', '1.0.0')
+      ..serve('c', '2.0.0')
+      ..serve('c', '3.0.0')
+      ..serve('c', '4.0.0')
+      ..serve('c', '5.0.0');
+
+    await d.appDir(dependencies: {'a': 'any', 'b': 'any', 'c': 'any'}).create();
+    await expectResolves(
+      error: '''
+Because every version of ${bold('b')} depends on ${bold('a')} from path and ${bold('myapp')} depends on ${bold('a')} from hosted, ${bold('${bold('b')} is forbidden')}.
+So, because ${bold('myapp')} depends on ${bold('b')} any, ${bold('version solving failed')}.
+''',
+      colors: true,
     );
   });
 }

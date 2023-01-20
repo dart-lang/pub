@@ -4,6 +4,7 @@
 
 import 'package:pub_semver/pub_semver.dart';
 
+import '../log.dart';
 import '../package_name.dart';
 import 'incompatibility_cause.dart';
 import 'term.dart';
@@ -476,9 +477,9 @@ class Incompatibility {
 
   /// Returns a terse representation of [term]'s package ref.
   String _terseRef(Term term, Map<String, PackageDetail>? details) =>
-      term.package
+      bold(term.package
           .toRef()
-          .toString(details == null ? null : details[term.package.name]);
+          .toString(details == null ? null : details[term.package.name]));
 
   /// Returns a terse representation of [term]'s package.
   ///
@@ -492,8 +493,10 @@ class Incompatibility {
     if (allowEvery && term!.constraint.isAny) {
       return 'every version of ${_terseRef(term, details)}';
     } else {
-      return term!.package
-          .toString(details == null ? null : details[term.package.name]);
+      return term!.package.toString(
+        detail: details == null ? null : details[term.package.name],
+        boldName: true,
+      );
     }
   }
 }

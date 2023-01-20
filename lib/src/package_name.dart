@@ -4,6 +4,7 @@
 
 import 'package:pub_semver/pub_semver.dart';
 
+import 'log.dart';
 import 'package.dart';
 import 'source.dart';
 import 'source/hosted.dart';
@@ -153,10 +154,10 @@ class PackageRange {
   PackageRef toRef() => _ref;
 
   @override
-  String toString([PackageDetail? detail]) {
+  String toString({PackageDetail? detail, bool boldName = false}) {
     detail ??= PackageDetail.defaults;
 
-    var buffer = StringBuffer(name);
+    var buffer = StringBuffer(boldName ? bold(name) : name);
     if (detail.showVersion ?? _showVersionConstraint) {
       buffer.write(' $constraint');
     }
