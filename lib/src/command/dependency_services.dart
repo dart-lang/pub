@@ -627,6 +627,9 @@ VersionConstraint _bumpConstraint(
   );
 }
 
+/// Return a constraint compatible with [newVersion], but including [original] as well.
+///
+/// By convention if the original constraint is pinned, we don't widen the constraint but return [newVersion] instead.
 VersionConstraint _widenConstraint(
   VersionConstraint original,
   Version newVersion,
