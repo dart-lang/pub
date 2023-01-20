@@ -476,10 +476,11 @@ class Incompatibility {
   }
 
   /// Returns a terse representation of [term]'s package ref.
-  String _terseRef(Term term, Map<String, PackageDetail>? details) =>
-      bold(term.package
-          .toRef()
-          .toString(details == null ? null : details[term.package.name]));
+  String _terseRef(Term term, Map<String, PackageDetail>? details) => bold(
+        term.package
+            .toRef()
+            .toString(details == null ? null : details[term.package.name]),
+      );
 
   /// Returns a terse representation of [term]'s package.
   ///
