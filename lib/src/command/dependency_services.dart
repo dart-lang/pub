@@ -635,6 +635,7 @@ VersionConstraint _widenConstraint(
   if (original is VersionRange) {
     final min = original.min;
     final max = original.max;
+    if (min == max) return newVersion;
     if (max != null && newVersion >= max) {
       return _compatibleWithIfPossible(
         VersionRange(
