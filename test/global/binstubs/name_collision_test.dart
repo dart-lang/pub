@@ -29,14 +29,19 @@ void main() {
 
     var pub = await startPub(args: ['global', 'activate', '-spath', '../bar']);
     expect(pub.stdout, emitsThrough('Installed executable bar.'));
-    expect(pub.stderr,
-        emits('Executable collide1 was already installed from foo.'));
-    expect(pub.stderr,
-        emits('Executable collide2 was already installed from foo.'));
     expect(
-        pub.stderr,
-        emits('Deactivate the other package(s) or activate bar using '
-            '--overwrite.'));
+      pub.stderr,
+      emits('Executable collide1 was already installed from foo.'),
+    );
+    expect(
+      pub.stderr,
+      emits('Executable collide2 was already installed from foo.'),
+    );
+    expect(
+      pub.stderr,
+      emits('Deactivate the other package(s) or activate bar using '
+          '--overwrite.'),
+    );
     await pub.shouldExit();
 
     await d.dir(cachePath, [

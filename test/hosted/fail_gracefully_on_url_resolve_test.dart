@@ -12,20 +12,24 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully if the url does not resolve', () async {
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': 'https://invalid-url.foo'}
-          }
-        })
+        d.appPubspec(
+          dependencies: {
+            'foo': {
+              'hosted': {'name': 'foo', 'url': 'https://invalid-url.foo'}
+            }
+          },
+        )
       ]).create();
 
-      await pubCommand(command,
-          error: 'Got socket error trying to find package foo at '
-              'https://invalid-url.foo.',
-          exitCode: exit_codes.UNAVAILABLE,
-          environment: {
-            'PUB_MAX_HTTP_RETRIES': '2',
-          });
+      await pubCommand(
+        command,
+        error: 'Got socket error trying to find package foo at '
+            'https://invalid-url.foo.',
+        exitCode: exit_codes.UNAVAILABLE,
+        environment: {
+          'PUB_MAX_HTTP_RETRIES': '2',
+        },
+      );
     });
   });
 }

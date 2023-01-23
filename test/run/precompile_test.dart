@@ -22,10 +22,16 @@ void main() {
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin',
-          [d.file('test.dart', 'main(List<String> args) => print("hello");')])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir(
+          'bin',
+          [d.file('test.dart', 'main(List<String> args) => print("hello");')],
+        )
+      ],
+    );
 
     await pubGet(args: ['--no-precompile']);
   }
@@ -58,12 +64,18 @@ void main() {
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin', [d.file('test.dart', _script)])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('test.dart', _script)])
+      ],
+    );
 
     await pubGet(
-        args: ['--no-precompile'], environment: {'PUB_CACHE': '.pub_cache'});
+      args: ['--no-precompile'],
+      environment: {'PUB_CACHE': '.pub_cache'},
+    );
 
     var pub = await pubRun(
       args: ['test'],
@@ -81,13 +93,18 @@ void main() {
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin', [d.file('test.dart', _script)])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('test.dart', _script)])
+      ],
+    );
 
     await pubGet(
-        args: ['--precompile'],
-        output: contains('Building package executables...'));
+      args: ['--precompile'],
+      output: contains('Building package executables...'),
+    );
 
     var pub = await pubRun(
       args: ['test'],
@@ -105,14 +122,19 @@ void main() {
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin', [d.file('test.dart', _script)])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('test.dart', _script)])
+      ],
+    );
 
     await pubGet(
-        args: ['--precompile'],
-        environment: {'PUB_CACHE': '.pub_cache'},
-        output: contains('Building package executables...'));
+      args: ['--precompile'],
+      environment: {'PUB_CACHE': '.pub_cache'},
+      output: contains('Building package executables...'),
+    );
 
     var pub = await pubRun(
       args: ['test'],

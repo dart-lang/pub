@@ -127,7 +127,8 @@ class Entrypoint {
       packageConfigRaw = readTextFile(packageConfigPath);
     } on FileException {
       dataError(
-          'The "$packageConfigPath" file does not exist, please run "$topLevelProgram pub get".');
+        'The "$packageConfigPath" file does not exist, please run "$topLevelProgram pub get".',
+      );
     }
     late PackageConfig result;
     try {
@@ -185,7 +186,8 @@ class Entrypoint {
   /// The path to the entrypoint's ".dart_tool/package_config.json" file
   /// relative to the current working directory .
   late String packageConfigPath = p.relative(
-      p.normalize(p.join(_configRoot!, '.dart_tool', 'package_config.json')));
+    p.normalize(p.join(_configRoot!, '.dart_tool', 'package_config.json')),
+  );
 
   /// The path to the entrypoint package's pubspec.
   String get pubspecPath => p.normalize(root.path('pubspec.yaml'));
@@ -232,17 +234,24 @@ class Entrypoint {
     String rootDir,
     this.cache, {
     bool withPubspecOverrides = true,
-  })  : root = Package.load(null, rootDir, cache.sources,
-            withPubspecOverrides: withPubspecOverrides),
+  })  : root = Package.load(
+          null,
+          rootDir,
+          cache.sources,
+          withPubspecOverrides: withPubspecOverrides,
+        ),
         globalDir = null {
     if (p.isWithin(cache.rootDir, rootDir)) {
       fail('Cannot operate on packages inside the cache.');
     }
   }
 
-  Entrypoint.inMemory(this.root, this.cache,
-      {required LockFile? lockFile, SolveResult? solveResult})
-      : _lockFile = lockFile,
+  Entrypoint.inMemory(
+    this.root,
+    this.cache, {
+    required LockFile? lockFile,
+    SolveResult? solveResult,
+  })  : _lockFile = lockFile,
         globalDir = null {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
@@ -251,8 +260,13 @@ class Entrypoint {
 
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passed as an optimization.
-  Entrypoint.global(this.globalDir, this.root, this._lockFile, this.cache,
-      {SolveResult? solveResult}) {
+  Entrypoint.global(
+    this.globalDir,
+    this.root,
+    this._lockFile,
+    this.cache, {
+    SolveResult? solveResult,
+  }) {
     if (solveResult != null) {
       _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
     }
@@ -342,11 +356,6 @@ Cannot do `--enforce-lockfile` without an existing `pubspec.lock`.
 Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     }
 
-    if (!summaryOnly && hasPubspecOverrides) {
-      log.warning(
-          'Warning: pubspec.yaml has overrides from $pubspecOverridesPath');
-    }
-
     SolveResult result;
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
@@ -362,7 +371,8 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     } catch (e) {
       if (summaryOnly && (e is ApplicationException)) {
         throw ApplicationException(
-            'Resolving dependencies$suffix failed.${forDetails()}');
+          'Resolving dependencies$suffix failed.${forDetails()}',
+        );
       } else {
         rethrow;
       }
@@ -471,11 +481,13 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
       // Don't do more than `Platform.numberOfProcessors - 1` compilations
       // concurrently. Though at least one.
       final pool = Pool(max(Platform.numberOfProcessors - 1, 1));
-      return waitAndPrintErrors(executables.map((executable) async {
-        await pool.withResource(() async {
-          return _precompileExecutable(executable);
-        });
-      }));
+      return waitAndPrintErrors(
+        executables.map((executable) async {
+          await pool.withResource(() async {
+            return _precompileExecutable(executable);
+          });
+        }),
+      );
     });
   }
 
@@ -533,19 +545,29 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
     assert(p.isRelative(executable.relativePath));
     final versionSuffix = sdk.version;
     return isGlobal
-        ? p.join(_snapshotPath,
-            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot')
-        : p.join(_snapshotPath, executable.package,
-            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot');
+        ? p.join(
+            _snapshotPath,
+            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot',
+          )
+        : p.join(
+            _snapshotPath,
+            executable.package,
+            '${p.basename(executable.relativePath)}-$versionSuffix.snapshot',
+          );
   }
 
   String incrementalDillPathOfExecutable(Executable executable) {
     assert(p.isRelative(executable.relativePath));
     return isGlobal
-        ? p.join(_incrementalDillsPath,
-            '${p.basename(executable.relativePath)}.incremental.dill')
-        : p.join(_incrementalDillsPath, executable.package,
-            '${p.basename(executable.relativePath)}.incremental.dill');
+        ? p.join(
+            _incrementalDillsPath,
+            '${p.basename(executable.relativePath)}.incremental.dill',
+          )
+        : p.join(
+            _incrementalDillsPath,
+            executable.package,
+            '${p.basename(executable.relativePath)}.incremental.dill',
+          );
   }
 
   /// The absolute path of [executable] resolved relative to [this].
@@ -612,7 +634,8 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
 
     if (!entryExists(lockFilePath)) {
       dataError(
-          'No $lockFilePath file found, please run "$topLevelProgram pub get" first.');
+        'No $lockFilePath file found, please run "$topLevelProgram pub get" first.',
+      );
     }
     if (!entryExists(packageConfigPath)) {
       dataError(
@@ -723,8 +746,10 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
       if (source is CachedSource) continue;
 
       try {
-        if (cache.load(id).dependencies.values.every((dep) =>
-            overrides.contains(dep.name) || _isDependencyUpToDate(dep))) {
+        if (cache.load(id).dependencies.values.every(
+              (dep) =>
+                  overrides.contains(dep.name) || _isDependencyUpToDate(dep),
+            )) {
           continue;
         }
       } on FileException {
@@ -965,7 +990,8 @@ See https://dart.dev/go/sdk-constraint
         final keyNode = environment.nodes.entries
             .firstWhere((e) => (e.key as YamlNode).value == sdk)
             .key as YamlNode;
-        throw SourceSpanApplicationException('''
+        throw SourceSpanApplicationException(
+          '''
 $pubspecPath refers to an unknown sdk '$sdk'.
 
 Did you mean to add it as a dependency?
@@ -974,7 +1000,9 @@ Either remove the constraint, or upgrade to a version of pub that supports the
 given sdk.
 
 See https://dart.dev/go/sdk-constraint
-''', keyNode.span);
+''',
+          keyNode.span,
+        );
       }
     }
   }

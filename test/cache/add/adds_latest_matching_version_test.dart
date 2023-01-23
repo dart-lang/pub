@@ -20,15 +20,16 @@ void main() {
       ..serve('foo', '2.0.0');
 
     await runPub(
-        args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0'],
-        silent: allOf([
-          contains('Downloading foo 1.2.3...'),
-          contains('X-Pub-OS: ${Platform.operatingSystem}'),
-          contains('X-Pub-Command: cache add'),
-          contains('X-Pub-Session-ID:'),
-          contains('X-Pub-Environment: test-environment'),
-          isNot(contains('X-Pub-Reason')),
-        ]));
+      args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0'],
+      silent: allOf([
+        contains('Downloading foo 1.2.3...'),
+        contains('X-Pub-OS: ${Platform.operatingSystem}'),
+        contains('X-Pub-Command: cache add'),
+        contains('X-Pub-Session-ID:'),
+        contains('X-Pub-Environment: test-environment'),
+        isNot(contains('X-Pub-Reason')),
+      ]),
+    );
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
     await d.hostedCache([

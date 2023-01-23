@@ -83,7 +83,8 @@ class SolveResult {
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
         .where(
-            (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name))
+          (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name),
+        )
         .toList();
 
     var sdkConstraints = <String, VersionConstraint>{};
@@ -113,13 +114,22 @@ class SolveResult {
         .map((id) => id.name)
         .toSet();
 
-    return changed.union(_previousLockFile.packages.keys
-        .where((package) => !availableVersions.containsKey(package))
-        .toSet());
+    return changed.union(
+      _previousLockFile.packages.keys
+          .where((package) => !availableVersions.containsKey(package))
+          .toSet(),
+    );
   }
 
-  SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
-      this.availableVersions, this.attemptedSolutions, this.resolutionTime);
+  SolveResult(
+    this._root,
+    this._previousLockFile,
+    this.packages,
+    this.pubspecs,
+    this.availableVersions,
+    this.attemptedSolutions,
+    this.resolutionTime,
+  );
 
   /// Send analytics about the package resolution.
   void sendAnalytics(PubAnalytics pubAnalytics) {
@@ -155,7 +165,8 @@ class SolveResult {
         },
       );
       log.fine(
-          'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
+        'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind',
+      );
     }
 
     analytics.sendTiming(
@@ -164,7 +175,8 @@ class SolveResult {
       category: 'pub-get',
     );
     log.fine(
-        'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds');
+      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds',
+    );
   }
 
   @override

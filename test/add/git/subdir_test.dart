@@ -20,7 +20,8 @@ void main() {
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
-        args: ['sub', '--git-url', '../foo.git', '--git-path', 'subdir']);
+      args: ['sub', '--git-url', '../foo.git', '--git-path', 'subdir'],
+    );
 
     await d.dir(cachePath, [
       d.dir('git', [
@@ -32,15 +33,18 @@ void main() {
     ]).validate();
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'sub',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
+        name: 'sub',
+        path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir'),
+      ),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'sub': {
-        'git': {'url': '../foo.git', 'path': 'subdir'}
-      }
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'subdir'}
+        }
+      },
+    ).validate();
   });
 
   test('adds a package in a deep subdirectory', () async {
@@ -56,7 +60,8 @@ void main() {
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
-        args: ['sub', '--git-url', '../foo.git', '--git-path', 'sub/dir']);
+      args: ['sub', '--git-url', '../foo.git', '--git-path', 'sub/dir'],
+    );
 
     await d.dir(cachePath, [
       d.dir('git', [
@@ -71,14 +76,17 @@ void main() {
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'sub',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir')),
+        name: 'sub',
+        path: pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir'),
+      ),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'sub': {
-        'git': {'url': '../foo.git', 'path': 'sub/dir'}
-      }
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'sub/dir'}
+        }
+      },
+    ).validate();
   });
 }

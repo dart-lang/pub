@@ -18,11 +18,13 @@ void main() {
         ..serve('baz', '1.0.0')
         ..serve('baz', '1.0.1');
 
-      await d.appDir(dependencies: {
-        'foo': '^1.0.0',
-        'bar': '^0.1.0',
-        'baz': '^1.0.0',
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': '^1.0.0',
+          'bar': '^0.1.0',
+          'baz': '^1.0.0',
+        },
+      ).create();
 
       await pubGet();
 
@@ -36,11 +38,13 @@ void main() {
         ]),
       );
 
-      await d.appDir(dependencies: {
-        'foo': '^2.0.0',
-        'bar': '^0.2.0',
-        'baz': '^1.0.0',
-      }).validate();
+      await d.appDir(
+        dependencies: {
+          'foo': '^2.0.0',
+          'bar': '^0.2.0',
+          'baz': '^1.0.0',
+        },
+      ).validate();
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '2.0.0'),
         d.packageConfigEntry(name: 'bar', version: '0.2.0'),
@@ -104,10 +108,12 @@ void main() {
         ..serve('foo', '2.0.0')
         ..serve('bar', '0.1.0');
 
-      await d.appDir(dependencies: {
-        'foo': '^1.0.0',
-        'bar': '^0.1.0',
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': '^1.0.0',
+          'bar': '^0.1.0',
+        },
+      ).create();
 
       await pubGet();
 
@@ -122,10 +128,12 @@ void main() {
         ]),
       );
 
-      await d.appDir(dependencies: {
-        'foo': '^2.0.0', // bumped
-        'bar': '^0.1.0',
-      }).validate();
+      await d.appDir(
+        dependencies: {
+          'foo': '^2.0.0', // bumped
+          'bar': '^0.1.0',
+        },
+      ).validate();
 
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '2.0.0'),
@@ -227,18 +235,24 @@ void main() {
       /// resolved first
       await servePackages()
         ..serve('foo', '1.0.0')
-        ..serve('foo', '2.0.0', pubspec: {
-          'dependencies': {'bar': '1.0.0'}
-        })
+        ..serve(
+          'foo',
+          '2.0.0',
+          pubspec: {
+            'dependencies': {'bar': '1.0.0'}
+          },
+        )
         ..serve('bar', '1.0.0')
         ..serve('bar', '2.0.0')
         ..serve('bar', '3.0.0')
         ..serve('bar', '4.0.0');
 
-      await d.appDir(dependencies: {
-        'foo': '^1.0.0',
-        'bar': '^2.0.0',
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': '^1.0.0',
+          'bar': '^2.0.0',
+        },
+      ).create();
 
       await pubGet();
 
@@ -251,10 +265,12 @@ void main() {
         ]),
       );
 
-      await d.appDir(dependencies: {
-        'foo': '^1.0.0',
-        'bar': '^4.0.0',
-      }).validate();
+      await d.appDir(
+        dependencies: {
+          'foo': '^1.0.0',
+          'bar': '^4.0.0',
+        },
+      ).validate();
 
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.0.0'),

@@ -108,13 +108,14 @@ class GlobalPackages {
     PackageRef packageRef;
     try {
       packageRef = cache.git.parseRef(
-          name,
-          {
-            'url': repo,
-            if (path != null) 'path': path,
-            if (ref != null) 'ref': ref,
-          },
-          containingDir: '.');
+        name,
+        {
+          'url': repo,
+          if (path != null) 'path': path,
+          if (ref != null) 'ref': ref,
+        },
+        containingDir: '.',
+      );
     } on FormatException catch (e) {
       throw ApplicationException(e.message);
     }
@@ -146,9 +147,10 @@ class GlobalPackages {
     String? url,
   }) async {
     await _installInCache(
-        cache.hosted.refFor(name, url: url).withConstraint(constraint),
-        executables,
-        overwriteBinStubs: overwriteBinStubs);
+      cache.hosted.refFor(name, url: url).withConstraint(constraint),
+      executables,
+      overwriteBinStubs: overwriteBinStubs,
+    );
   }
 
   /// Makes the local package at [path] globally active.
@@ -160,9 +162,12 @@ class GlobalPackages {
   /// if [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
-  Future<void> activatePath(String path, List<String>? executables,
-      {required bool overwriteBinStubs,
-      required PubAnalytics? analytics}) async {
+  Future<void> activatePath(
+    String path,
+    List<String>? executables, {
+    required bool overwriteBinStubs,
+    required PubAnalytics? analytics,
+  }) async {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
@@ -190,22 +195,35 @@ class GlobalPackages {
     tryDeleteEntry(_packageDir(name));
     tryRenameDir(tempDir, _packageDir(name));
 
-    _updateBinStubs(entrypoint, entrypoint.root, executables,
-        overwriteBinStubs: overwriteBinStubs);
+    _updateBinStubs(
+      entrypoint,
+      entrypoint.root,
+      executables,
+      overwriteBinStubs: overwriteBinStubs,
+    );
     log.message('Activated ${_formatPackage(id)}.');
   }
 
   /// Installs the package [dep] and its dependencies into the system cache.
   ///
   /// If [silent] less logging will be printed.
-  Future<void> _installInCache(PackageRange dep, List<String>? executables,
-      {required bool overwriteBinStubs, bool silent = false}) async {
+  Future<void> _installInCache(
+    PackageRange dep,
+    List<String>? executables, {
+    required bool overwriteBinStubs,
+    bool silent = false,
+  }) async {
     final name = dep.name;
     LockFile? originalLockFile = _describeActive(name, cache);
 
     // Create a dummy package with just [dep] so we can do resolution on it.
-    var root = Package.inMemory(Pubspec('pub global activate',
-        dependencies: [dep], sources: cache.sources));
+    var root = Package.inMemory(
+      Pubspec(
+        'pub global activate',
+        dependencies: [dep],
+        sources: cache.sources,
+      ),
+    );
 
     // Resolve it and download its dependencies.
     //
@@ -360,12 +378,18 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
       entrypoint = Entrypoint.global(
-          _packageDir(id.name), cache.loadCached(id), lockFile, cache);
+        _packageDir(id.name),
+        cache.loadCached(id),
+        lockFile,
+        cache,
+      );
     } else {
       // For uncached sources (i.e. path), the ID just points to the real
       // directory for the package.
       entrypoint = Entrypoint(
-          (id.description.description as PathDescription).path, cache);
+        (id.description.description as PathDescription).path,
+        cache,
+      );
     }
 
     entrypoint.root.pubspec.sdkConstraints.forEach((sdkName, constraint) {
@@ -414,11 +438,14 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   ///
   /// Returns the exit code from the executable.
   Future<int> runExecutable(
-      Entrypoint entrypoint, exec.Executable executable, List<String> args,
-      {bool enableAsserts = false,
-      required Future<void> Function(exec.Executable) recompile,
-      List<String> vmArgs = const [],
-      required bool alwaysUseSubprocess}) async {
+    Entrypoint entrypoint,
+    exec.Executable executable,
+    List<String> args, {
+    bool enableAsserts = false,
+    required Future<void> Function(exec.Executable) recompile,
+    List<String> vmArgs = const [],
+    required bool alwaysUseSubprocess,
+  }) async {
     return await exec.runExecutable(
       entrypoint,
       executable,
@@ -504,10 +531,11 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           executables.putIfAbsent(package, () => []).add(executable);
         } catch (error, stackTrace) {
           log.error(
-              'Error reading binstub for '
-              '"${p.basenameWithoutExtension(entry)}"',
-              error,
-              stackTrace);
+            'Error reading binstub for '
+            '"${p.basenameWithoutExtension(entry)}"',
+            error,
+            stackTrace,
+          );
 
           tryDeleteEntry(entry);
         }
@@ -596,8 +624,12 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         log.fine('Replacing old binstub $file');
         deleteEntry(file);
         _createBinStub(
-            entrypoint.root, p.basenameWithoutExtension(file), binStubScript,
-            overwrite: true, snapshot: entrypoint.pathOfExecutable(executable));
+          entrypoint.root,
+          p.basenameWithoutExtension(file),
+          binStubScript,
+          overwrite: true,
+          snapshot: entrypoint.pathOfExecutable(executable),
+        );
       }
     }
   }
@@ -621,8 +653,12 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user if
   /// the bin directory isn't on their path.
   void _updateBinStubs(
-      Entrypoint entrypoint, Package package, List<String>? executables,
-      {required bool overwriteBinStubs, bool suggestIfNotOnPath = true}) {
+    Entrypoint entrypoint,
+    Package package,
+    List<String>? executables, {
+    required bool overwriteBinStubs,
+    bool suggestIfNotOnPath = true,
+  }) {
     // Remove any previously activated binstubs for this package, in case the
     // list of executables has changed.
     _deleteBinStubs(package.name);
@@ -685,8 +721,10 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
     // Show errors for any unknown executables.
     if (executables != null) {
-      var unknown = ordered(executables
-          .where((exe) => !package.pubspec.executables.keys.contains(exe)));
+      var unknown = ordered(
+        executables
+            .where((exe) => !package.pubspec.executables.keys.contains(exe)),
+      );
       if (unknown.isNotEmpty) {
         dataError("Unknown ${namedSequence('executable', unknown)}.");
       }
@@ -878,7 +916,9 @@ fi
       var binDir = _binStubDir;
       if (binDir.startsWith(Platform.environment['HOME']!)) {
         binDir = p.join(
-            r'$HOME', p.relative(binDir, from: Platform.environment['HOME']));
+          r'$HOME',
+          p.relative(binDir, from: Platform.environment['HOME']),
+        );
       }
 
       log.warning("${log.yellow('Warning:')} Pub installs executables into "

@@ -280,19 +280,30 @@ class _ErrorGroupStream<T> extends Stream<T> {
     _stream = inner.isBroadcast
         ? _controller.stream.asBroadcastStream(onCancel: (sub) => sub.cancel())
         : _controller.stream;
-    _subscription =
-        inner.listen(_controller.add, onError: _group._signalError, onDone: () {
-      _isDone = true;
-      _group._signalStreamComplete(this);
-      _controller.close();
-    });
+    _subscription = inner.listen(
+      _controller.add,
+      onError: _group._signalError,
+      onDone: () {
+        _isDone = true;
+        _group._signalStreamComplete(this);
+        _controller.close();
+      },
+    );
   }
 
   @override
-  StreamSubscription<T> listen(void Function(T)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return _stream.listen(onData,
-        onError: onError, onDone: onDone, cancelOnError: true);
+  StreamSubscription<T> listen(
+    void Function(T)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return _stream.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: true,
+    );
   }
 
   /// Signal that an error from [_group] should be propagated through [this],

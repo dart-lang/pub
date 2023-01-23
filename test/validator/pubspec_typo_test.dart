@@ -82,8 +82,10 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(pubspecTypo,
-          warnings: hasLength(lessThanOrEqualTo(3)));
+      await expectValidation(
+        pubspecTypo,
+        warnings: hasLength(lessThanOrEqualTo(3)),
+      );
     });
   });
 }

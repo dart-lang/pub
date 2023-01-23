@@ -14,11 +14,12 @@ void main() {
       ..serve('foo', '1.0.1');
 
     await runPub(
-        args: ['global', 'activate', 'foo', '>1.1.0'],
-        error: equalsIgnoringWhitespace("""
+      args: ['global', 'activate', 'foo', '>1.1.0'],
+      error: equalsIgnoringWhitespace("""
           Because pub global activate depends on foo >1.1.0 which doesn't match
             any versions, version solving failed.
         """),
-        exitCode: exit_codes.DATA);
+      exitCode: exit_codes.DATA,
+    );
   });
 }

@@ -13,11 +13,15 @@ void main() {
       'gets a dependency with broken dev dependencies from a pub '
       'server', () async {
     final server = await servePackages();
-    server.serve('foo', '1.2.3', pubspec: {
-      'dev_dependencies': {
-        'busted': {'not a real source': null}
-      }
-    });
+    server.serve(
+      'foo',
+      '1.2.3',
+      pubspec: {
+        'dev_dependencies': {
+          'busted': {'not a real source': null}
+        }
+      },
+    );
 
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 

@@ -33,16 +33,20 @@ void main() {
     createEntrypoint();
 
     expect(
-        entrypoint!.root.listFiles(),
-        unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, 'file1.txt'),
-          p.join(root, 'file2.txt'),
-          p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.txt'),
-          p.join(root, Uri.encodeComponent('\\/%+-='),
-              Uri.encodeComponent('\\/%+-=')),
-        ]));
+      entrypoint!.root.listFiles(),
+      unorderedEquals([
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'file1.txt'),
+        p.join(root, 'file2.txt'),
+        p.join(root, 'subdir', 'subfile1.txt'),
+        p.join(root, 'subdir', 'subfile2.txt'),
+        p.join(
+          root,
+          Uri.encodeComponent('\\/%+-='),
+          Uri.encodeComponent('\\/%+-='),
+        ),
+      ]),
+    );
   });
 
   // On windows symlinks to directories are distinct from symlinks to files.
@@ -64,7 +68,9 @@ void main() {
       ]),
     ]).create();
     createDirectorySymlink(
-        p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'a');
+      p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+      'a',
+    );
 
     createEntrypoint();
 
@@ -95,8 +101,10 @@ void main() {
     final root = p.join(d.sandbox, 'symlink');
     createDirectorySymlink(root, appPath);
 
-    final entrypoint = Entrypoint(p.join(d.sandbox, 'symlink'),
-        SystemCache(rootDir: p.join(d.sandbox, cachePath)));
+    final entrypoint = Entrypoint(
+      p.join(d.sandbox, 'symlink'),
+      SystemCache(rootDir: p.join(d.sandbox, cachePath)),
+    );
 
     expect(entrypoint.root.listFiles(), {
       p.join(root, 'pubspec.yaml'),
@@ -127,7 +135,8 @@ void main() {
           (e) => e.message,
           'message',
           contains(
-              'Pub does not support publishing packages with non-resolving symlink:'),
+            'Pub does not support publishing packages with non-resolving symlink:',
+          ),
         ),
       ),
     );
@@ -155,7 +164,8 @@ void main() {
           (e) => e.message,
           'message',
           contains(
-              'Pub does not support publishing packages with non-resolving symlink:'),
+            'Pub does not support publishing packages with non-resolving symlink:',
+          ),
         ),
       ),
     );

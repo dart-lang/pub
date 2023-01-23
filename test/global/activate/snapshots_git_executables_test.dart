@@ -22,9 +22,11 @@ void main() {
     ]).create();
 
     await runPub(
-        args: ['global', 'activate', '-sgit', '../foo.git'],
-        output: allOf(
-            [contains('Built foo:hello.'), contains('Built foo:goodbye.')]));
+      args: ['global', 'activate', '-sgit', '../foo.git'],
+      output: allOf(
+        [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
+      ),
+    );
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
@@ -33,7 +35,9 @@ void main() {
           d.dir('bin', [
             d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
             d.file(
-                'goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
+              'goodbye.dart-$versionSuffix.snapshot',
+              contains('goodbye!'),
+            ),
             d.nothing('shell.sh-$versionSuffix.snapshot'),
             d.nothing('subdir')
           ])

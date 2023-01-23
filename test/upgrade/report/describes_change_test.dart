@@ -62,15 +62,17 @@ void main() {
     ]).create();
 
     // Create the first lockfile.
-    await d.appDir(dependencies: {
-      'unchanged': 'any',
-      'contents_changed': '1.0.0',
-      'version_upgraded': '1.0.0',
-      'version_downgraded': '2.0.0',
-      'source_changed': 'any',
-      'package_removed': 'any',
-      'description_changed': {'path': '../description_changed_1'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'unchanged': 'any',
+        'contents_changed': '1.0.0',
+        'version_upgraded': '1.0.0',
+        'version_downgraded': '2.0.0',
+        'source_changed': 'any',
+        'package_removed': 'any',
+        'description_changed': {'path': '../description_changed_1'}
+      },
+    ).create();
 
     await pubGet();
     server.serve(
@@ -80,31 +82,36 @@ void main() {
     );
 
     // Change the pubspec.
-    await d.appDir(dependencies: {
-      'unchanged': 'any',
-      'version_upgraded': 'any',
-      'version_downgraded': '1.0.0',
-      'source_changed': {'path': '../source_changed'},
-      'package_added': 'any',
-      'description_changed': {'path': '../description_changed_2'},
-      'contents_changed': '1.0.0',
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'unchanged': 'any',
+        'version_upgraded': 'any',
+        'version_downgraded': '1.0.0',
+        'source_changed': {'path': '../source_changed'},
+        'package_added': 'any',
+        'description_changed': {'path': '../description_changed_2'},
+        'contents_changed': '1.0.0',
+      },
+    ).create();
 
     // Upgrade everything.
     await pubUpgrade(
-        output: allOf([
-          contains('Resolving dependencies...'),
-          contains(
-              '* description_changed 1.0.0 from path ..${separator}description_changed_2 (was 1.0.0 from path ..${separator}description_changed_1)'),
-          contains('  unchanged 1.0.0'),
-          contains(
-              '* source_changed 2.0.0 from path ..${separator}source_changed (was 1.0.0)'),
-          contains('> version_upgraded 2.0.0 (was 1.0.0'),
-          contains('< version_downgraded 1.0.0 (was 2.0.0'),
-          contains('+ package_added 1.0.0'),
-          contains('- package_removed 1.0.0'),
-          contains('~ contents_changed 1.0.0 (was 1.0.0)'),
-        ]),
-        environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
+      output: allOf([
+        contains('Resolving dependencies...'),
+        contains(
+          '* description_changed 1.0.0 from path ..${separator}description_changed_2 (was 1.0.0 from path ..${separator}description_changed_1)',
+        ),
+        contains('  unchanged 1.0.0'),
+        contains(
+          '* source_changed 2.0.0 from path ..${separator}source_changed (was 1.0.0)',
+        ),
+        contains('> version_upgraded 2.0.0 (was 1.0.0'),
+        contains('< version_downgraded 1.0.0 (was 2.0.0'),
+        contains('+ package_added 1.0.0'),
+        contains('- package_removed 1.0.0'),
+        contains('~ contents_changed 1.0.0 (was 1.0.0)'),
+      ]),
+      environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'},
+    );
   });
 }

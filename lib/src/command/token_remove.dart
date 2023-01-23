@@ -39,7 +39,8 @@ class TokenRemoveCommand extends PubCommand {
 
     if (argResults.rest.isEmpty) {
       usageException(
-          'The [hosted-url] for a package repository must be specified.');
+        'The [hosted-url] for a package repository must be specified.',
+      );
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }
@@ -52,7 +53,8 @@ class TokenRemoveCommand extends PubCommand {
         log.message('Removed secret token for package repository: $hostedUrl');
       } else {
         throw DataException(
-            'No secret token for package repository "$hostedUrl" was found.');
+          'No secret token for package repository "$hostedUrl" was found.',
+        );
       }
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'

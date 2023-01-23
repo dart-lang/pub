@@ -64,7 +64,7 @@ FileDescriptor outOfDateSnapshot(String name) => file(
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-Descriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
+FileDescriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
       'pubspec.yaml',
       yaml({
         ...contents,
@@ -96,7 +96,7 @@ Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
 /// the current SDK version.
 ///
 /// [extras] is additional fields of the pubspec.
-Descriptor libPubspec(
+FileDescriptor libPubspec(
   String name,
   String version, {
   Map? deps,
@@ -132,7 +132,9 @@ Descriptor libDir(String name, [String? code]) {
 /// Describes a directory whose name ends with a hyphen followed by an
 /// alphanumeric hash.
 Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
-    RegExp("$name${r'-[a-f0-9]+'}"), (dirName) => dir(dirName, contents));
+      RegExp("$name${r'-[a-f0-9]+'}"),
+      (dirName) => dir(dirName, contents),
+    );
 
 /// Describes a directory for a Git repo with a dart package.
 /// This directory is of the form found in the revision cache of the global
@@ -215,8 +217,12 @@ String hostedCachePath({int? port}) =>
 /// Describes the file that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.
-Descriptor credentialsFile(PackageServer server, String accessToken,
-    {String? refreshToken, DateTime? expiration}) {
+Descriptor credentialsFile(
+  PackageServer server,
+  String accessToken, {
+  String? refreshToken,
+  DateTime? expiration,
+}) {
   return dir(
     configPath,
     [
@@ -233,8 +239,12 @@ Descriptor credentialsFile(PackageServer server, String accessToken,
   );
 }
 
-Descriptor legacyCredentialsFile(PackageServer server, String accessToken,
-    {String? refreshToken, DateTime? expiration}) {
+Descriptor legacyCredentialsFile(
+  PackageServer server,
+  String accessToken, {
+  String? refreshToken,
+  DateTime? expiration,
+}) {
   return dir(
     cachePath,
     [
@@ -320,11 +330,17 @@ PackageConfigEntry packageConfigEntry({
 }) {
   if (version != null && path != null) {
     throw ArgumentError.value(
-        path, 'path', 'Only one of "version" and "path" can be provided');
+      path,
+      'path',
+      'Only one of "version" and "path" can be provided',
+    );
   }
   if (version == null && path == null) {
     throw ArgumentError.value(
-        version, 'version', 'Either "version" or "path" must be given');
+      version,
+      'version',
+      'Either "version" or "path" must be given',
+    );
   }
   Uri rootUri;
   if (version != null) {

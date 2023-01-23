@@ -18,17 +18,22 @@ void main() {
 
     var path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
-        args: ['global', 'activate', '--source', 'path', '../foo'],
-        output: endsWith('Activated foo 1.0.0 at path "$path".'));
+      args: ['global', 'activate', '--source', 'path', '../foo'],
+      output: endsWith('Activated foo 1.0.0 at path "$path".'),
+    );
   });
 
   // Regression test for #1751
   test('activates a package at a local path with a relative path dependency',
       () async {
     await d.dir('foo', [
-      d.libPubspec('foo', '1.0.0', deps: {
-        'bar': {'path': '../bar'}
-      }),
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        deps: {
+          'bar': {'path': '../bar'}
+        },
+      ),
       d.dir('bin', [
         d.file('foo.dart', """
         import 'package:bar/bar.dart';
@@ -45,13 +50,15 @@ void main() {
 
     var path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
-        args: ['global', 'activate', '--source', 'path', '../foo'],
-        output: endsWith('Activated foo 1.0.0 at path "$path".'));
+      args: ['global', 'activate', '--source', 'path', '../foo'],
+      output: endsWith('Activated foo 1.0.0 at path "$path".'),
+    );
 
     await runPub(
-        args: ['global', 'run', 'foo'],
-        output: endsWith('ok'),
-        workingDirectory: p.current);
+      args: ['global', 'run', 'foo'],
+      output: endsWith('ok'),
+      workingDirectory: p.current,
+    );
   });
 
   test("Doesn't precompile binaries when activating from path", () async {
@@ -70,10 +77,10 @@ void main() {
     ]).create();
 
     await runPub(
-        args: ['global', 'activate', '--source', 'path', '../foo'],
-        output: allOf([
-          contains('Activated foo 1.0.0 at path'),
-          isNot(contains('Built'))
-        ]));
+      args: ['global', 'activate', '--source', 'path', '../foo'],
+      output: allOf(
+        [contains('Activated foo 1.0.0 at path'), isNot(contains('Built'))],
+      ),
+    );
   });
 }

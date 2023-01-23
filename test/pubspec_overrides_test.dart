@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -22,12 +23,12 @@ void main() {
         }),
       ]).create();
 
+      final overridesPath = p.join('.', 'pubspec_overrides.yaml');
       await pubCommand(
         command,
-        warning:
-            'Warning: pubspec.yaml has overrides from pubspec_overrides.yaml\n'
-            'Warning: You are using these overridden dependencies:\n'
-            '! lib 2.0.0',
+        output: contains(
+          '! lib 2.0.0 (overridden in $overridesPath)',
+        ),
       );
 
       await d.dir(appPath, [
@@ -45,5 +46,61 @@ void main() {
         ])
       ]).validate();
     });
+  });
+
+  test('pubspec_overrides.yaml shadows overrides from pubspec.yaml', () async {
+    await servePackages()
+      ..serve('lib', '1.0.0')
+      ..serve('lib', '2.0.0')
+      ..serve('lib', '3.0.0')
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '2.0.0');
+
+    await d.dir(appPath, [
+      d.appPubspec(
+        dependencies: {'lib': '1.0.0', 'foo': '1.0.0'},
+        extras: {
+          'dependency_overrides': {'lib': '2.0.0', 'foo': '2.0.0'}
+        },
+      ),
+      d.dir('lib'),
+      // empty overrides file:
+      d.pubspecOverrides({
+        'dependency_overrides': {'lib': '3.0.0'}
+      }),
+    ]).create();
+
+    final overridesPath = p.join('.', 'pubspec_overrides.yaml');
+    await pubGet(
+      output: allOf(
+        contains('! lib 3.0.0 (overridden in $overridesPath)'),
+        contains('+ foo 1.0.0 (2.0.0 available)'),
+      ),
+    );
+  });
+  test(
+      "An empty pubspec_overrides.yaml doesn't shadow overrides from pubspec.yaml",
+      () async {
+    await servePackages()
+      ..serve('lib', '1.0.0')
+      ..serve('lib', '2.0.0');
+
+    await d.dir(appPath, [
+      d.appPubspec(
+        dependencies: {
+          'lib': '1.0.0',
+        },
+        extras: {
+          'dependency_overrides': {'lib': '2.0.0'}
+        },
+      ),
+      d.dir('lib'),
+      // empty overrides file:
+      d.pubspecOverrides({}),
+    ]).create();
+
+    await pubGet(
+      output: contains('! lib 2.0.0 (overridden)'),
+    );
   });
 }

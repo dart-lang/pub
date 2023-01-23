@@ -104,8 +104,10 @@ class Pair<E, F> {
 /// [Chain]. By default, this chain will contain only the local stack trace, but
 /// if [captureStackChains] is passed, it will contain the full stack chain for
 /// the error.
-Future<T> captureErrors<T>(Future<T> Function() callback,
-    {bool captureStackChains = false}) {
+Future<T> captureErrors<T>(
+  Future<T> Function() callback, {
+  bool captureStackChains = false,
+}) {
   var completer = Completer<T>();
   void wrappedCallback() {
     Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
@@ -121,9 +123,12 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
   }
 
   if (captureStackChains) {
-    Chain.capture(wrappedCallback, onError: (error, stackTrace) {
-      if (!completer.isCompleted) completer.completeError(error, stackTrace);
-    });
+    Chain.capture(
+      wrappedCallback,
+      onError: (error, stackTrace) {
+        if (!completer.isCompleted) completer.completeError(error, stackTrace);
+      },
+    );
   } else {
     runZonedGuarded(wrappedCallback, (e, stackTrace) {
       stackTrace = Chain([Trace.from(stackTrace)]);
@@ -140,12 +145,14 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
 ///
 /// This will wrap the first error thrown in a [SilentException] and rethrow it.
 Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
-  return Future.wait(futures.map((future) {
-    return future.catchError((error, stackTrace) {
-      log.exception(error, stackTrace);
-      throw error;
-    });
-  })).catchError((error, stackTrace) {
+  return Future.wait(
+    futures.map((future) {
+      return future.catchError((error, stackTrace) {
+        log.exception(error, stackTrace);
+        throw error;
+      });
+    }),
+  ).catchError((error, stackTrace) {
     throw SilentException(error, stackTrace);
   });
 }
@@ -155,10 +162,12 @@ Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
 ///
 /// The stream will be passed through unchanged.
 StreamTransformer<T, T> onDoneTransformer<T>(void Function() onDone) {
-  return StreamTransformer<T, T>.fromHandlers(handleDone: (sink) {
-    onDone();
-    sink.close();
-  });
+  return StreamTransformer<T, T>.fromHandlers(
+    handleDone: (sink) {
+      onDone();
+      sink.close();
+    },
+  );
 }
 
 /// Pads [source] to [length] by adding [char]s at the beginning.
@@ -299,18 +308,27 @@ Future<S?> minByAsync<S, T>(
 Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
   if (end <= start) {
     throw RangeError.range(
-        end, start + 1, null, 'end', 'must be greater than start');
+      end,
+      start + 1,
+      null,
+      'end',
+      'must be greater than start',
+    );
   }
   return values.skip(start).take(end - start);
 }
 
 /// Like [Iterable.fold], but for an asynchronous [combine] function.
-Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
-        Future<S> Function(S previous, T element) combine) =>
+Future<S> foldAsync<S, T>(
+  Iterable<T> values,
+  S initialValue,
+  Future<S> Function(S previous, T element) combine,
+) =>
     values.fold(
-        Future.value(initialValue),
-        (previousFuture, element) =>
-            previousFuture.then((previous) => combine(previous, element)));
+      Future.value(initialValue),
+      (previousFuture, element) =>
+          previousFuture.then((previous) => combine(previous, element)),
+    );
 
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
@@ -418,7 +436,7 @@ bool get canUseAnsiCodes {
       return false;
     case ForceColorOption.auto:
       return (!Platform.environment.containsKey('NO_COLOR')) &&
-          stdout.hasTerminal &&
+          terminalOutputForStdout &&
           stdout.supportsAnsiEscapes;
   }
 }
@@ -439,7 +457,7 @@ bool get canUseUnicode =>
     // The tests support unicode also on windows.
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
-    !stdout.hasTerminal ||
+    !terminalOutputForStdout ||
     !Platform.isWindows ||
     Platform.environment.containsKey('WT_SESSION');
 

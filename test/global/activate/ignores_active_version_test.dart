@@ -14,20 +14,27 @@ void main() {
         'foo',
         '1.2.3',
       )
-      ..serve('foo', '1.3.0', contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
-      ]);
+      ..serve(
+        'foo',
+        '1.3.0',
+        contents: [
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+        ],
+      );
 
     // Activate 1.2.3.
     await runPub(args: ['global', 'activate', 'foo', '1.2.3']);
 
     // Activating it again resolves to the new best version.
-    await runPub(args: ['global', 'activate', 'foo', '>1.0.0'], output: '''
+    await runPub(
+      args: ['global', 'activate', 'foo', '>1.0.0'],
+      output: '''
         Package foo is currently active at version 1.2.3.
         Resolving dependencies...
         > foo 1.3.0 (was 1.2.3)
         Building package executables...
         Built foo:foo.
-        Activated foo 1.3.0.''');
+        Activated foo 1.3.0.''',
+    );
   });
 }

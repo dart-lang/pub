@@ -20,8 +20,10 @@ void main() {
     await authorizePub(pub, globalServer);
 
     globalServer.expect('GET', '/api/packages/versions/new', (request) {
-      expect(request.headers,
-          containsPair('authorization', 'Bearer access token'));
+      expect(
+        request.headers,
+        containsPair('authorization', 'Bearer access token'),
+      );
 
       return shelf.Response(200);
     });

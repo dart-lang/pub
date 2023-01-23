@@ -156,7 +156,8 @@ void main() {
       args: ['token', 'add', 'https://pub.dartlang.org'],
       input: ['auth-token'],
       silent: contains(
-          'Using https://pub.dev instead of https://pub.dartlang.org.'),
+        'Using https://pub.dev instead of https://pub.dartlang.org.',
+      ),
     );
 
     await d.tokensFile({

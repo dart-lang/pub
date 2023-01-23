@@ -22,11 +22,13 @@ void main() {
       expect(Uri.parse(globalServer.url).path, isEmpty);
 
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url},
+        d.appPubspec(
+          dependencies: {
+            'foo': {
+              'hosted': {'name': 'foo', 'url': globalServer.url},
+            },
           },
-        }),
+        ),
       ]).create();
 
       await pubCommand(
@@ -40,11 +42,13 @@ void main() {
       server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': '${globalServer.url}/'},
+        d.appPubspec(
+          dependencies: {
+            'foo': {
+              'hosted': {'name': 'foo', 'url': '${globalServer.url}/'},
+            },
           },
-        }),
+        ),
       ]).create();
 
       await pubCommand(
@@ -63,11 +67,13 @@ void main() {
       );
 
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': '${globalServer.url}//'},
+        d.appPubspec(
+          dependencies: {
+            'foo': {
+              'hosted': {'name': 'foo', 'url': '${globalServer.url}//'},
+            },
           },
-        }),
+        ),
       ]).create();
 
       await pubCommand(
@@ -92,9 +98,13 @@ void main() {
           final res = await http.get(
             Uri.parse('${globalServer.url}/$path'),
           );
-          return Response(res.statusCode, body: res.bodyBytes, headers: {
-            'Content-Type': res.headers['content-type']!,
-          });
+          return Response(
+            res.statusCode,
+            body: res.bodyBytes,
+            headers: {
+              'Content-Type': res.headers['content-type']!,
+            },
+          );
         },
       );
     }
@@ -109,11 +119,13 @@ void main() {
       final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': testUrl},
+        d.appPubspec(
+          dependencies: {
+            'foo': {
+              'hosted': {'name': 'foo', 'url': testUrl},
+            },
           },
-        }),
+        ),
       ]).create();
 
       await pubCommand(command);
@@ -133,11 +145,13 @@ void main() {
       final normalizedUrl = '${globalServer.url}/my-folder/';
 
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': testUrl},
+        d.appPubspec(
+          dependencies: {
+            'foo': {
+              'hosted': {'name': 'foo', 'url': testUrl},
+            },
           },
-        }),
+        ),
       ]).create();
 
       await pubCommand(command);

@@ -22,18 +22,22 @@ void main() {
     await confirmPublish(pub);
 
     globalServer.expect('GET', '/api/packages/versions/new', (request) {
-      return shelf.Response(401,
-          body: jsonEncode({
-            'error': {'message': 'your token sucks'}
-          }),
-          headers: {
-            'www-authenticate': 'Bearer error="invalid_token",'
-                ' error_description="your token sucks"'
-          });
+      return shelf.Response(
+        401,
+        body: jsonEncode({
+          'error': {'message': 'your token sucks'}
+        }),
+        headers: {
+          'www-authenticate': 'Bearer error="invalid_token",'
+              ' error_description="your token sucks"'
+        },
+      );
     });
 
     await expectLater(
-        pub.stderr, emits('OAuth2 authorization failed (your token sucks).'));
+      pub.stderr,
+      emits('OAuth2 authorization failed (your token sucks).'),
+    );
     expect(pub.stdout, emits(startsWith('Uploading...')));
     await pub.kill();
   });

@@ -6,6 +6,7 @@ $ pub outdated --json
   "packages": [
     {
       "package": "bar",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",
@@ -25,6 +26,7 @@ $ pub outdated --json
     },
     {
       "package": "baz",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "2.0.0",
@@ -44,6 +46,7 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",
@@ -167,49 +170,12 @@ To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 7
-$ pub outdated --no-color --mode=null-safety
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-All your dependencies declare support for null-safety.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 8
-$ pub outdated --no-color --mode=null-safety --transitive
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-All your dependencies declare support for null-safety.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 9
-$ pub outdated --no-color --mode=null-safety --no-prereleases
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-All your dependencies declare support for null-safety.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 10
-$ pub outdated --json --mode=null-safety
-{
-  "packages": []
-}
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 11
 $ pub outdated --json --no-dev-dependencies
 {
   "packages": [
     {
       "package": "bar",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",
@@ -229,6 +195,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "baz",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "2.0.0",
@@ -248,6 +215,7 @@ $ pub outdated --json --no-dev-dependencies
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
       "current": {
         "version": "1.0.1",

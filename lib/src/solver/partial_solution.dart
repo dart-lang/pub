@@ -69,8 +69,15 @@ class PartialSolution {
 
   /// Adds an assignment of [package] as a derivation.
   void derive(PackageRange package, bool isPositive, Incompatibility cause) {
-    _assign(Assignment.derivation(
-        package, isPositive, cause, decisionLevel, _assignments.length));
+    _assign(
+      Assignment.derivation(
+        package,
+        isPositive,
+        cause,
+        decisionLevel,
+        _assignments.length,
+      ),
+    );
   }
 
   /// Adds [assignment] to [_assignments] and [_positive] or [_negative].

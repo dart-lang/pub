@@ -10,18 +10,25 @@ import '../../test_pub.dart';
 void main() {
   test('can activate an already cached package', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+      ],
+    );
 
     await runPub(args: ['cache', 'add', 'foo']);
 
-    await runPub(args: ['global', 'activate', 'foo'], output: '''
+    await runPub(
+      args: ['global', 'activate', 'foo'],
+      output: '''
         Resolving dependencies...
         + foo 1.0.0
         Building package executables...
         Built foo:foo.
-        Activated foo 1.0.0.''');
+        Activated foo 1.0.0.''',
+    );
 
     // Should be in global package cache.
     await d.dir(cachePath, [

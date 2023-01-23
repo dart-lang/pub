@@ -23,8 +23,11 @@ class CacheAddCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
   CacheAddCommand() {
-    argParser.addFlag('all',
-        help: 'Install all matching versions.', negatable: false);
+    argParser.addFlag(
+      'all',
+      help: 'Install all matching versions.',
+      negatable: false,
+    );
 
     argParser.addOption('version', abbr: 'v', help: 'Version constraint.');
   }

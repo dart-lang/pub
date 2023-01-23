@@ -103,11 +103,12 @@ class TokenStore {
     }
     ensureDir(path.dirname(tokensFile));
     writeTextFile(
-        tokensFile,
-        jsonEncode(<String, dynamic>{
-          'version': 1,
-          'hosted': credentials.map((it) => it.toJson()).toList(),
-        }));
+      tokensFile,
+      jsonEncode(<String, dynamic>{
+        'version': 1,
+        'hosted': credentials.map((it) => it.toJson()).toList(),
+      }),
+    );
   }
 
   /// Adds [token] into store and writes into disk.

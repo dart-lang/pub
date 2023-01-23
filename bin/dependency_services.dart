@@ -36,16 +36,24 @@ class _DependencyServicesCommandRunner extends CommandRunner<int>
     final a = _argResults;
     if (a == null) {
       throw StateError(
-          'argResults cannot be used before Command.run is called.');
+        'argResults cannot be used before Command.run is called.',
+      );
     }
     return a;
   }
 
   _DependencyServicesCommandRunner()
-      : super('dependency_services', 'Support for automatic upgrades',
-            usageLineLength: lineLength) {
-    argParser.addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+      : super(
+          'dependency_services',
+          'Support for automatic upgrades',
+          usageLineLength: lineLength,
+        ) {
+    argParser.addFlag(
+      'verbose',
+      abbr: 'v',
+      negatable: false,
+      help: 'Shortcut for "--verbosity=all".',
+    );
     PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',

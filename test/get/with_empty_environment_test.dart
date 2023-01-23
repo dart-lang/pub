@@ -14,8 +14,11 @@ void main() {
 
     await d.appDir(dependencies: {'foo': 'any'}).create();
 
-    await pubGet(environment: {
-      '_PUB_TEST_CONFIG_DIR': null,
-    }, includeParentHomeAndPath: false);
+    await pubGet(
+      environment: {
+        '_PUB_TEST_CONFIG_DIR': null,
+      },
+      includeParentHomeAndPath: false,
+    );
   });
 }

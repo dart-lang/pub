@@ -142,9 +142,12 @@ class SourceSpanApplicationException extends SourceSpanFormatException
   final String? explanation;
   final String? hint;
 
-  SourceSpanApplicationException(String message, SourceSpan? span,
-      {this.hint, this.explanation})
-      : super(message, span);
+  SourceSpanApplicationException(
+    String message,
+    SourceSpan? span, {
+    this.hint,
+    this.explanation,
+  }) : super(message, span);
 
   @override
   String toString({color}) {

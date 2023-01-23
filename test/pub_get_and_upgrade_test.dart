@@ -15,10 +15,12 @@ void main() {
       test('a pubspec', () async {
         await d.dir(appPath, []).create();
 
-        await pubCommand(command,
-            error: RegExp(r'Could not find a file named "pubspec.yaml" '
-                r'in "[^\n]*"\.'),
-            exitCode: exit_codes.NO_INPUT);
+        await pubCommand(
+          command,
+          error: RegExp(r'Could not find a file named "pubspec.yaml" '
+              r'in "[^\n]*"\.'),
+          exitCode: exit_codes.NO_INPUT,
+        );
       });
 
       test('a pubspec with a "name" key', () async {
@@ -28,9 +30,11 @@ void main() {
           })
         ]).create();
 
-        await pubCommand(command,
-            error: contains('Missing the required "name" field.'),
-            exitCode: exit_codes.DATA);
+        await pubCommand(
+          command,
+          error: contains('Missing the required "name" field.'),
+          exitCode: exit_codes.DATA,
+        );
       });
     });
 
@@ -46,7 +50,8 @@ void main() {
 
       await d.dir('myapp', [
         d.packageConfigFile(
-            [d.packageConfigEntry(name: 'myapp_name', path: '.')]),
+          [d.packageConfigEntry(name: 'myapp_name', path: '.')],
+        ),
       ]).validate();
     });
 
@@ -75,26 +80,34 @@ void main() {
       ]).create();
 
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'foo': {'path': '../deps/foo'},
-          'bar': {'path': '../deps/bar'}
-        })
+        d.appPubspec(
+          dependencies: {
+            'foo': {'path': '../deps/foo'},
+            'bar': {'path': '../deps/bar'}
+          },
+        )
       ]).create();
 
-      await pubCommand(command,
-          error: RegExp(r'bar from path is incompatible with foo from path'));
+      await pubCommand(
+        command,
+        error: RegExp(r'bar from path is incompatible with foo from path'),
+      );
     });
 
     test('does not allow a dependency on itself', () async {
       await d.dir(appPath, [
-        d.appPubspec(dependencies: {
-          'myapp': {'path': '.'}
-        })
+        d.appPubspec(
+          dependencies: {
+            'myapp': {'path': '.'}
+          },
+        )
       ]).create();
 
-      await pubCommand(command,
-          error: contains('A package may not list itself as a dependency.'),
-          exitCode: exit_codes.DATA);
+      await pubCommand(
+        command,
+        error: contains('A package may not list itself as a dependency.'),
+        exitCode: exit_codes.DATA,
+      );
     });
 
     test('does not allow a dev dependency on itself', () async {
@@ -107,9 +120,11 @@ void main() {
         })
       ]).create();
 
-      await pubCommand(command,
-          error: contains('A package may not list itself as a dependency.'),
-          exitCode: exit_codes.DATA);
+      await pubCommand(
+        command,
+        error: contains('A package may not list itself as a dependency.'),
+        exitCode: exit_codes.DATA,
+      );
     });
   });
 }

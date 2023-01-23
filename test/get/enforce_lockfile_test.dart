@@ -52,17 +52,25 @@ Try running `dart pub get` to create `pubspec.lock`.
     await appDir(dependencies: {'foo': '^1.0.0'}).create();
     await dir(appPath, [
       dir('example', [
-        libPubspec('example', '0.0.0', deps: {
-          'bar': '1.0.0',
-          'myapp': {'path': '../'}
-        })
+        libPubspec(
+          'example',
+          '0.0.0',
+          deps: {
+            'bar': '1.0.0',
+            'myapp': {'path': '../'}
+          },
+        )
       ])
     ]).create();
     await pubGet(args: ['--example']);
 
-    server.serve('bar', '1.0.0', contents: [
-      file('README.md', 'Including this will change the content-hash.'),
-    ]);
+    server.serve(
+      'bar',
+      '1.0.0',
+      contents: [
+        file('README.md', 'Including this will change the content-hash.'),
+      ],
+    );
     // Deleting the version-listing cache will cause it to be refetched, and the
     // error will happen.
     File(p.join(globalServer.cachingPath, '.cache', 'bar-versions.json'))
@@ -79,7 +87,8 @@ Try running `dart pub get` to create `pubspec.lock`.
         contains('Resolving dependencies in $example...'),
       ),
       error: contains(
-          'Unable to satisfy `$examplePubspec` using `$exampleLockfile` in $example. For details run `dart pub get --directory $example --enforce-lockfile'),
+        'Unable to satisfy `$examplePubspec` using `$exampleLockfile` in $example. For details run `dart pub get --directory $example --enforce-lockfile',
+      ),
       exitCode: DATA,
     );
   });
@@ -128,9 +137,13 @@ Try running `dart pub get` to create `pubspec.lock`.
     server.serve('foo', '1.0.0');
     await appDir(dependencies: {'foo': '^1.0.0'}).create();
     await pubGet();
-    server.serve('foo', '1.0.0', contents: [
-      file('README.md', 'Including this will change the content-hash.'),
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        file('README.md', 'Including this will change the content-hash.'),
+      ],
+    );
     // Deleting the version-listing cache will cause it to be refetched, and the
     // error will happen.
     File(p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'))
@@ -166,9 +179,13 @@ Try running `dart pub get` to create `pubspec.lock`.
     await appDir(dependencies: {'foo': '^1.0.0'}).create();
     await pubGet();
     await runPub(args: ['cache', 'clean', '-f']);
-    server.serve('foo', '1.0.0', contents: [
-      file('README.md', 'Including this will change the content-hash.'),
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        file('README.md', 'Including this will change the content-hash.'),
+      ],
+    );
 
     await pubGet(
       args: ['--enforce-lockfile'],

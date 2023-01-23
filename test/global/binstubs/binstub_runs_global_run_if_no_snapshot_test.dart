@@ -19,8 +19,9 @@ void main() {
 
     // Path packages are mutable, so no snapshot is created.
     await runPub(
-        args: ['global', 'activate', '--source', 'path', '../foo'],
-        output: contains('Installed executable foo-script.'));
+      args: ['global', 'activate', '--source', 'path', '../foo'],
+      output: contains('Installed executable foo-script.'),
+    );
 
     await d.dir(cachePath, [
       d.dir('bin', [

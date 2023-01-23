@@ -10,9 +10,13 @@ import '../../test_pub.dart';
 void main() {
   test('recompiles activated executable snapshots', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
@@ -20,12 +24,15 @@ void main() {
       d.dir('global_packages/foo/bin', [d.file('script.dart.snapshot', 'junk')])
     ]).create();
 
-    await runPub(args: ['cache', 'repair'], output: '''
+    await runPub(
+      args: ['cache', 'repair'],
+      output: '''
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
           Building package executables...
           Built foo:script.
-          Reactivated 1 package.''');
+          Reactivated 1 package.''',
+    );
 
     var pub = await pubRun(global: true, args: ['foo:script']);
     expect(pub.stdout, emits('ok'));

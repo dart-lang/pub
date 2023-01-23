@@ -49,8 +49,11 @@ bool get isInstalled => command != null;
 ///
 /// Returns the stdout as a list of strings if it succeeded. Completes to an
 /// exception if it failed.
-Future<List<String>> run(List<String> args,
-    {String? workingDir, Map<String, String>? environment}) async {
+Future<List<String>> run(
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+}) async {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
@@ -58,12 +61,19 @@ Future<List<String>> run(List<String> args,
 
   log.muteProgress();
   try {
-    final result = await runProcess(command!, args,
-        workingDir: workingDir,
-        environment: {...?environment, 'LANG': 'en_GB'});
+    final result = await runProcess(
+      command!,
+      args,
+      workingDir: workingDir,
+      environment: {...?environment, 'LANG': 'en_GB'},
+    );
     if (!result.success) {
-      throw GitException(args, result.stdout.join('\n'),
-          result.stderr.join('\n'), result.exitCode);
+      throw GitException(
+        args,
+        result.stdout.join('\n'),
+        result.stderr.join('\n'),
+        result.exitCode,
+      );
     }
     return result.stdout;
   } finally {
@@ -72,18 +82,29 @@ Future<List<String>> run(List<String> args,
 }
 
 /// Like [run], but synchronous.
-List<String> runSync(List<String> args,
-    {String? workingDir, Map<String, String>? environment}) {
+List<String> runSync(
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+}) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
   }
 
-  final result = runProcessSync(command!, args,
-      workingDir: workingDir, environment: environment);
+  final result = runProcessSync(
+    command!,
+    args,
+    workingDir: workingDir,
+    environment: environment,
+  );
   if (!result.success) {
-    throw GitException(args, result.stdout.join('\n'), result.stderr.join('\n'),
-        result.exitCode);
+    throw GitException(
+      args,
+      result.stdout.join('\n'),
+      result.stderr.join('\n'),
+      result.exitCode,
+    );
   }
 
   return result.stdout;
