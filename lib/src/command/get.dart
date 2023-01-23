@@ -67,7 +67,7 @@ class GetCommand extends PubCommand {
     );
   }
 
-  bool shouldRunPostHook() {
+  bool shouldRunPostGetHook() {
     final flutterRoot = Platform.environment['FLUTTER_ROOT'];
     if (flutterRoot == null) {
       return false;
@@ -84,6 +84,31 @@ class GetCommand extends PubCommand {
     });
 
     return hasFlutterDependency;
+  }
+
+  Future<int> runPostGetHook() async {
+    final String flutterRoot = Platform.environment['FLUTTER_ROOT']!;
+    final String flutterToolPath = p.join(flutterRoot, 'bin', 'flutter');
+
+    final StreamSubscription<ProcessSignal> subscription =
+        ProcessSignal.sigint.watch().listen((e) {});
+    final Process process = await Process.start(
+      flutterToolPath,
+      [
+        'pub',
+        '_post_pub_get',
+        '-C',
+        directory,
+        '--update-version-and-package-config',
+        '--regenerate-platform-specific-tooling',
+        argResults['example'] ? '--example' : '',
+      ],
+      mode: ProcessStartMode.inheritStdio,
+    );
+
+    final int exitCode = await process.exitCode;
+    await subscription.cancel();
+    return exitCode;
   }
 
   @override
@@ -104,8 +129,10 @@ class GetCommand extends PubCommand {
       enforceLockfile: argResults['enforce-lockfile'],
     );
 
-    if (shouldRunPostHook()) {
-      print('should run post hook');
+    if (!argResults['dry-run'] && shouldRunPostGetHook()) {
+      print('Running post get hook...');
+      final exitCode = await runPostGetHook();
+      print('exit code: $exitCode');
     }
 
     var example = entrypoint.example;
