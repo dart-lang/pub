@@ -2,6 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// These tests only work on case-sensitive file systems (ie. only on linux).
+@OnPlatform({
+  'windows': Skip('Windows file system is case-insensitive'),
+  'mac-os': Skip('MacOS file system is case-insensitive')
+})
+
 import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
