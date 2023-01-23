@@ -108,4 +108,19 @@ void main() {
       ),
     );
   });
+  test('Rewrite only happens after Dart 3', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=2.19.1 <3.0.0'}
+      }),
+    ]).create();
+
+    await pubGet(
+      error: contains(
+        'Because myapp requires SDK version >=2.19.1 <3.0.0, version solving failed.',
+      ),
+      environment: {'_PUB_TEST_SDK_VERSION': '2.19.0'},
+    );
+  });
 }
