@@ -18,28 +18,32 @@ void main() {
     ]).create();
 
     await runPub(
-        args: ['global', 'activate', '-sgit', '../foo.git'],
-        output: allOf(
-            startsWith('Resolving dependencies...\n'
-                '+ foo 1.0.0 from git ..${separator}foo.git at '),
-            // Specific revision number goes here.
-            endsWith('Building package executables...\n'
-                'Built foo:foo.\n'
-                'Activated foo 1.0.0 from Git repository "..${separator}foo.git".')));
+      args: ['global', 'activate', '-sgit', '../foo.git'],
+      output: allOf(
+        startsWith('Resolving dependencies...\n'
+            '+ foo 1.0.0 from git ..${separator}foo.git at '),
+        // Specific revision number goes here.
+        endsWith('Building package executables...\n'
+            'Built foo:foo.\n'
+            'Activated foo 1.0.0 from Git repository "..${separator}foo.git".'),
+      ),
+    );
 
     await d.git('foo.git', [d.libPubspec('foo', '1.0.1')]).commit();
 
     // Activating it again pulls down the latest commit.
     await runPub(
-        args: ['global', 'activate', '-sgit', '../foo.git'],
-        output: allOf(
-            startsWith('Package foo is currently active from Git repository '
-                '"..${separator}foo.git".\n'
-                'Resolving dependencies...\n'
-                '> foo 1.0.1 from git ..${separator}foo.git at '),
-            // Specific revision number goes here.
-            endsWith('Building package executables...\n'
-                'Built foo:foo.\n'
-                'Activated foo 1.0.1 from Git repository "..${separator}foo.git".')));
+      args: ['global', 'activate', '-sgit', '../foo.git'],
+      output: allOf(
+        startsWith('Package foo is currently active from Git repository '
+            '"..${separator}foo.git".\n'
+            'Resolving dependencies...\n'
+            '> foo 1.0.1 from git ..${separator}foo.git at '),
+        // Specific revision number goes here.
+        endsWith('Building package executables...\n'
+            'Built foo:foo.\n'
+            'Activated foo 1.0.1 from Git repository "..${separator}foo.git".'),
+      ),
+    );
   });
 }

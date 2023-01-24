@@ -14,7 +14,7 @@ void main() {
       ..serve('foo', '1.1.0')
       ..serve('foo', '1.2.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Get once so it gets cached.
     await pubGet();

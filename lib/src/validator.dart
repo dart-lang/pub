@@ -19,6 +19,7 @@ import 'validator/dependency_override.dart';
 import 'validator/deprecated_fields.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
+import 'validator/file_case.dart';
 import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
 import 'validator/gitignore.dart';
@@ -26,7 +27,6 @@ import 'validator/language_version.dart';
 import 'validator/leak_detection.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
-import 'validator/null_safety_mixed_mode.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/pubspec_typo.dart';
@@ -90,11 +90,12 @@ abstract class Validator {
     }
 
     var allowedSdks = VersionRange(
-        min: firstSdkVersion,
-        includeMin: true,
-        max: firstSdkVersion.isPreRelease
-            ? firstSdkVersion.nextPatch
-            : firstSdkVersion.nextBreaking);
+      min: firstSdkVersion,
+      includeMin: true,
+      max: firstSdkVersion.isPreRelease
+          ? firstSdkVersion.nextPatch
+          : firstSdkVersion.nextBreaking,
+    );
 
     var newSdkConstraint = entrypoint
         .root.pubspec.dartSdkConstraint.originalConstraint
@@ -126,12 +127,17 @@ abstract class Validator {
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<void> runAll(Entrypoint entrypoint, Future<int> packageSize,
-      Uri serverUrl, List<String> files,
-      {required List<String> hints,
-      required List<String> warnings,
-      required List<String> errors}) async {
+  static Future<void> runAll(
+    Entrypoint entrypoint,
+    Future<int> packageSize,
+    Uri serverUrl,
+    List<String> files, {
+    required List<String> hints,
+    required List<String> warnings,
+    required List<String> errors,
+  }) async {
     var validators = [
+      FileCaseValidator(),
       AnalyzeValidator(),
       GitignoreValidator(),
       PubspecValidator(),
@@ -152,7 +158,6 @@ abstract class Validator {
       FlutterPluginFormatValidator(),
       LanguageVersionValidator(),
       RelativeVersionNumberingValidator(),
-      NullSafetyMixedModeValidator(),
       PubspecTypoValidator(),
       LeakDetectionValidator(),
       SizeValidator(),
@@ -164,10 +169,12 @@ abstract class Validator {
       serverUrl,
       files,
     );
-    return await Future.wait(validators.map((validator) async {
-      validator.context = context;
-      await validator.validate();
-    })).then((_) {
+    return await Future.wait(
+      validators.map((validator) async {
+        validator.context = context;
+        await validator.validate();
+      }),
+    ).then((_) {
       hints.addAll([for (final validator in validators) ...validator.hints]);
       warnings
           .addAll([for (final validator in validators) ...validator.warnings]);
@@ -228,5 +235,9 @@ class ValidationContext {
   final List<String> files;
 
   ValidationContext(
-      this.entrypoint, this.packageSize, this.serverUrl, this.files);
+    this.entrypoint,
+    this.packageSize,
+    this.serverUrl,
+    this.files,
+  );
 }

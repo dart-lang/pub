@@ -12,11 +12,13 @@ void main() {
   test('an immutable application sees a file: package config', () async {
     await servePackages()
       ..serve('bar', '1.0.0')
-      ..serve('foo', '1.0.0', deps: {
-        'bar': '1.0.0'
-      }, contents: [
-        d.dir('bin', [
-          d.file('script.dart', """
+      ..serve(
+        'foo',
+        '1.0.0',
+        deps: {'bar': '1.0.0'},
+        contents: [
+          d.dir('bin', [
+            d.file('script.dart', """
 import 'dart:isolate';
 
 main() async {
@@ -28,8 +30,9 @@ main() async {
       Uri.parse('package:bar/resource.txt')));
 }
 """)
-        ])
-      ]);
+          ])
+        ],
+      );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
@@ -37,8 +40,11 @@ main() async {
 
     expect(pub.stdout, emitsThrough('null'));
 
-    var packageConfigPath = p.join(d.sandbox, cachePath,
-        'global_packages/foo/.dart_tool/package_config.json');
+    var packageConfigPath = p.join(
+      d.sandbox,
+      cachePath,
+      'global_packages/foo/.dart_tool/package_config.json',
+    );
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
     var fooResourcePath =
@@ -56,9 +62,11 @@ main() async {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': '../foo'}
-      }),
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      ),
       d.dir('bin', [
         d.file('script.dart', """
 import 'dart:isolate';

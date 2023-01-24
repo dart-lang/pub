@@ -14,12 +14,12 @@ void main() {
       ..serve('downgraded', '2.0.0')
       ..serve('downgraded', '3.0.0-dev');
 
-    await d.appDir({'downgraded': '3.0.0-dev'}).create();
+    await d.appDir(dependencies: {'downgraded': '3.0.0-dev'}).create();
 
     await pubGet();
 
     // Loosen the constraints.
-    await d.appDir({'downgraded': '>=2.0.0'}).create();
+    await d.appDir(dependencies: {'downgraded': '>=2.0.0'}).create();
 
     await pubDowngrade(output: contains('downgraded 2.0.0 (was 3.0.0-dev)'));
   });

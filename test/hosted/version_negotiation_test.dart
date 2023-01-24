@@ -14,43 +14,56 @@ void main() {
     test('sends the correct Accept header', () async {
       await servePackages();
 
-      await d.appDir({
-        'foo': {
-          'hosted': {'name': 'foo', 'url': globalServer.url}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {
+            'hosted': {'name': 'foo', 'url': globalServer.url}
+          }
+        },
+      ).create();
 
       globalServer.expect('GET', '/api/packages/foo', (request) {
         expect(
-            request.headers['accept'], equals('application/vnd.pub.v2+json'));
+          request.headers['accept'],
+          equals('application/vnd.pub.v2+json'),
+        );
         return shelf.Response(404);
       });
 
-      await pubCommand(command,
-          output: anything, exitCode: exit_codes.UNAVAILABLE);
+      await pubCommand(
+        command,
+        output: anything,
+        exitCode: exit_codes.UNAVAILABLE,
+      );
     });
 
     test('prints a friendly error if the version is out-of-date', () async {
       await servePackages();
 
-      await d.appDir({
-        'foo': {
-          'hosted': {'name': 'foo', 'url': globalServer.url}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {
+            'hosted': {'name': 'foo', 'url': globalServer.url}
+          }
+        },
+      ).create();
 
       var pub = await startPub(args: [command.name]);
 
       globalServer.expect(
-          'GET', '/api/packages/foo', (request) => shelf.Response(406));
+        'GET',
+        '/api/packages/foo',
+        (request) => shelf.Response(406),
+      );
 
       await pub.shouldExit(1);
 
       expect(
-          pub.stderr,
-          emitsLines(
-              'Pub 0.1.2+3 is incompatible with the current version of localhost.\n'
-              'Upgrade pub to the latest version and try again.'));
+        pub.stderr,
+        emitsLines(
+            'Pub 3.1.2+3 is incompatible with the current version of localhost.\n'
+            'Upgrade pub to the latest version and try again.'),
+      );
     });
   });
 }

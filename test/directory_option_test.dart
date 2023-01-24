@@ -23,10 +23,11 @@ Future<void> main() async {
       RegExp('/api/packages/test_pkg/uploaders'),
       (request) {
         return shelf.Response.ok(
-            jsonEncode({
-              'success': {'message': 'Good job!'}
-            }),
-            headers: {'content-type': 'application/json'});
+          jsonEncode({
+            'success': {'message': 'Good job!'}
+          }),
+          headers: {'content-type': 'application/json'},
+        );
       },
     );
 
@@ -40,7 +41,6 @@ main() => print('Hi');
       dir('example', [
         pubspec({
           'name': 'example',
-          'environment': {'sdk': '>=0.1.2 <0.2.0'},
           'dependencies': {
             'test_pkg': {'path': '../'}
           }
@@ -49,7 +49,6 @@ main() => print('Hi');
       dir('example2', [
         pubspec({
           'name': 'example',
-          'environment': {'sdk': '>=0.1.2 <0.2.0'},
           'dependencies': {
             'myapp': {'path': '../'} // Wrong name of dependency
           }

@@ -26,8 +26,12 @@ class SdkSource extends Source {
 
   /// Parses an SDK dependency.
   @override
-  PackageRef parseRef(String name, description,
-      {String? containingDir, LanguageVersion? languageVersion}) {
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingDir,
+    LanguageVersion? languageVersion,
+  }) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
     }
@@ -36,8 +40,12 @@ class SdkSource extends Source {
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir}) {
+  PackageId parseId(
+    String name,
+    Version version,
+    description, {
+    String? containingDir,
+  }) {
     if (description is! String) {
       throw FormatException('The description must be an SDK name.');
     }
@@ -51,7 +59,10 @@ class SdkSource extends Source {
 
   @override
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache) async {
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  ) async {
     final description = ref.description;
     if (description is! SdkDescription) {
       throw ArgumentError('Wrong source');
@@ -78,9 +89,11 @@ class SdkSource extends Source {
   ///
   /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
-  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) =>
-      Pubspec.load(_verifiedPackagePath(ref), cache.sources,
-          expectedName: ref.name);
+  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) => Pubspec.load(
+        _verifiedPackagePath(ref),
+        cache.sources,
+        expectedName: ref.name,
+      );
 
   /// Returns the path for the given [ref].
   ///
@@ -106,12 +119,16 @@ class SdkSource extends Source {
     if (path != null) return path;
 
     throw PackageNotFoundException(
-        'could not find package ${ref.name} in the ${sdk.name} SDK');
+      'could not find package ${ref.name} in the ${sdk.name} SDK',
+    );
   }
 
   @override
-  String doGetDirectory(PackageId id, SystemCache cache,
-      {String? relativeFrom}) {
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  }) {
     try {
       return _verifiedPackagePath(id.toRef());
     } on PackageNotFoundException catch (error) {

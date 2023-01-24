@@ -46,11 +46,13 @@ class FlutterPluginFormatValidator extends Validator {
     final flutterConstraint = pubspec.sdkConstraints['flutter'];
     if (usesNewPluginFormat &&
         (flutterConstraint == null ||
-            flutterConstraint.effectiveConstraint.allowsAny(VersionRange(
-              min: Version.parse('0.0.0'),
-              max: Version.parse('1.10.0'),
-              includeMin: true,
-            )))) {
+            flutterConstraint.effectiveConstraint.allowsAny(
+              VersionRange(
+                min: Version.parse('0.0.0'),
+                max: Version.parse('1.10.0'),
+                includeMin: true,
+              ),
+            ))) {
       errors.add('pubspec.yaml allows Flutter SDK version 1.9.x, which does '
           'not support the flutter.plugin.platforms key.\n'
           'Please consider increasing the Flutter SDK requirement to '

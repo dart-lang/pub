@@ -55,10 +55,12 @@ void main() {
     var message = List.generate(2048, (_) => 'a').join();
 
     respondWithWwwAuthenticate('bearer realm="pub", message="$message"');
-    await expectPubErrorMessage(allOf(
-      isNot(contains(message)),
-      contains(message.substring(0, 1024)),
-    ));
+    await expectPubErrorMessage(
+      allOf(
+        isNot(contains(message)),
+        contains(message.substring(0, 1024)),
+      ),
+    );
   });
 
   test('does not prints message if realm is not equals to pub', () async {

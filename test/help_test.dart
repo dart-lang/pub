@@ -28,10 +28,12 @@ Iterable<List<String>> _extractCommands(
   final names = <String>{};
   yield* cmds
       .where((sub) => !sub.hidden && names.add(sub.name))
-      .map((sub) => _extractCommands(
-            [...parents, sub.name],
-            sub.subcommands.values,
-          ))
+      .map(
+        (sub) => _extractCommands(
+          [...parents, sub.name],
+          sub.subcommands.values,
+        ),
+      )
       .expand((cmds) => cmds);
 }
 

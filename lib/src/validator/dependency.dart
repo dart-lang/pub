@@ -39,8 +39,10 @@ class DependencyValidator extends Validator {
         return;
       }
 
-      validateSdkConstraint(sdk.firstPubVersion,
-          "Older versions of pub don't support the ${sdk.name} SDK.");
+      validateSdkConstraint(
+        sdk.firstPubVersion,
+        "Older versions of pub don't support the ${sdk.name} SDK.",
+      );
     }
 
     /// Warn that dependencies should use the hosted source.
@@ -196,8 +198,10 @@ class DependencyValidator extends Validator {
 
           final description = dependency.description;
           if (description is GitDescription && description.path != '.') {
-            validateSdkConstraint(_firstGitPathVersion,
-                "Older versions of pub don't support Git path dependencies.");
+            validateSdkConstraint(
+              _firstGitPathVersion,
+              "Older versions of pub don't support Git path dependencies.",
+            );
           }
         } else {
           if (constraint.isAny) {
@@ -222,8 +226,10 @@ class DependencyValidator extends Validator {
     await validateDependencies(entrypoint.root.pubspec.dependencies.values);
 
     if (hasCaretDep) {
-      validateSdkConstraint(_firstCaretVersion,
-          "Older versions of pub don't support ^ version constraints.");
+      validateSdkConstraint(
+        _firstCaretVersion,
+        "Older versions of pub don't support ^ version constraints.",
+      );
     }
   }
 }

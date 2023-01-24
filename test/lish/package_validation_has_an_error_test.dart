@@ -15,7 +15,7 @@ void main() {
         'name': 'test_pkg',
         'homepage': 'https://pub.dev',
         'version': '1.0.0',
-        'environment': {'sdk': '>=0.1.2 <0.2.0'}
+        'environment': {'sdk': defaultSdkConstraint}
       }),
     ]).create();
 
@@ -24,8 +24,9 @@ void main() {
 
     await pub.shouldExit(exit_codes.DATA);
     expect(
-        pub.stderr,
-        emitsThrough('Sorry, your package is missing some '
-            "requirements and can't be published yet."));
+      pub.stderr,
+      emitsThrough('Sorry, your package is missing some '
+          "requirements and can't be published yet."),
+    );
   });
 }

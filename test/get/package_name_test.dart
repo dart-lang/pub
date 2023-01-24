@@ -15,8 +15,9 @@ void main() {
     ]).create();
 
     await pubGet(
-        error: contains('"name" field must be a valid Dart identifier.'),
-        exitCode: exit_codes.DATA);
+      error: contains('"name" field must be a valid Dart identifier.'),
+      exitCode: exit_codes.DATA,
+    );
 
     await d.dir(appPath, [
       // The lockfile should not be created.
@@ -34,8 +35,9 @@ void main() {
     ]).create();
 
     await pubGet(
-        error: contains('"name" field may not be a Dart reserved word.'),
-        exitCode: exit_codes.DATA);
+      error: contains('"name" field may not be a Dart reserved word.'),
+      exitCode: exit_codes.DATA,
+    );
 
     await d.dir(appPath, [
       // The lockfile should not be created.
@@ -57,7 +59,8 @@ void main() {
 
     await d.dir(appPath, [
       d.packageConfigFile(
-          [d.packageConfigEntry(name: 'foo.bar.baz', path: '.')])
+        [d.packageConfigEntry(name: 'foo.bar.baz', path: '.')],
+      )
     ]).validate();
   });
 }

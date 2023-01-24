@@ -41,30 +41,37 @@ void main() {
 
     test('uses indentation for maps', () {
       expect(
-          yamlToString({
-            'a': {'b': 1, 'c': 2},
-            'd': 3
-          }),
-          equals('''
+        yamlToString({
+          'a': {'b': 1, 'c': 2},
+          'd': 3
+        }),
+        equals('''
 a:
   b: 1
   c: 2
-d: 3'''));
+d: 3'''),
+      );
     });
 
     test('sorts map keys', () {
-      expect(yamlToString({'a': 1, 'c': 2, 'b': 3, 'd': 4}), equals('''
+      expect(
+        yamlToString({'a': 1, 'c': 2, 'b': 3, 'd': 4}),
+        equals('''
 a: 1
 b: 3
 c: 2
-d: 4'''));
+d: 4'''),
+      );
     });
 
     test('quotes map keys as needed', () {
-      expect(yamlToString({'no': 1, 'yes!': 2, '123': 3}), equals('''
+      expect(
+        yamlToString({'no': 1, 'yes!': 2, '123': 3}),
+        equals('''
 "123": 3
 no: 1
-"yes!": 2'''));
+"yes!": 2'''),
+      );
     });
 
     test('handles non-string map keys', () {
@@ -73,24 +80,32 @@ no: 1
       map[123] = 'num';
       map[true] = 'bool';
 
-      expect(yamlToString(map), equals('''
+      expect(
+        yamlToString(map),
+        equals('''
 123: num
 null: null
-true: bool'''));
+true: bool'''),
+      );
     });
 
     test('handles empty maps', () {
       expect(yamlToString({}), equals('{}'));
-      expect(yamlToString({'a': {}, 'b': {}}), equals('''
+      expect(
+        yamlToString({'a': {}, 'b': {}}),
+        equals('''
 a: {}
-b: {}'''));
+b: {}'''),
+      );
     });
   });
 
   group('niceDuration()', () {
     test('formats duration longer than a minute correctly', () {
-      expect(niceDuration(Duration(minutes: 3, seconds: 1, milliseconds: 337)),
-          equals('3:01.3s'));
+      expect(
+        niceDuration(Duration(minutes: 3, seconds: 1, milliseconds: 337)),
+        equals('3:01.3s'),
+      );
     });
 
     test('does not display extra zero when duration is less than a minute', () {
@@ -135,8 +150,9 @@ b: {}'''));
         }
 
         final w = expectLater(
-            minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
-            completion('a'));
+          minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
+          completion('a'),
+        );
         completer('aa').complete();
         completer('b').complete();
         completer('a').complete();
@@ -152,8 +168,9 @@ b: {}'''));
         }
 
         final w = expectLater(
-            minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
-            completion('a'));
+          minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
+          completion('a'),
+        );
         completer('ccc').complete();
         completer('a').complete();
         completer('b').complete();

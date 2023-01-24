@@ -11,8 +11,11 @@ import 'test_pub.dart';
 void main() {
   setUp(() async {
     await servePackages()
-      ..serve('normal', '1.2.3',
-          deps: {'transitive': 'any', 'circular_a': 'any'})
+      ..serve(
+        'normal',
+        '1.2.3',
+        deps: {'transitive': 'any', 'circular_a': 'any'},
+      )
       ..serve('transitive', '1.2.3', deps: {'shared': 'any'})
       ..serve('shared', '1.2.3', deps: {'other': 'any'})
       ..serve('dev_only', '1.2.3')
@@ -24,8 +27,10 @@ void main() {
       ..serve('circular_a', '1.2.3', deps: {'circular_b': 'any'})
       ..serve('circular_b', '1.2.3', deps: {'circular_a': 'any'});
 
-    await d.dir('from_path',
-        [d.libDir('from_path'), d.libPubspec('from_path', '1.2.3')]).create();
+    await d.dir(
+      'from_path',
+      [d.libDir('from_path'), d.libPubspec('from_path', '1.2.3')],
+    ).create();
 
     await d.dir(appPath, [
       d.pubspec({
@@ -44,8 +49,10 @@ void main() {
   group('lists all dependencies', () {
     test('in compact form', () async {
       await pubGet();
-      await runPub(args: ['deps', '-s', 'compact'], output: '''
-          Dart SDK 0.1.2+3
+      await runPub(
+        args: ['deps', '-s', 'compact'],
+        output: '''
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -67,13 +74,16 @@ void main() {
           - other 1.0.0 [myapp]
           - shared 1.2.3 [other]
           - transitive 1.2.3 [shared]
-          ''');
+          ''',
+      );
     });
 
     test('in list form', () async {
       await pubGet();
-      await runPub(args: ['deps', '--style', 'list'], output: '''
-          Dart SDK 0.1.2+3
+      await runPub(
+        args: ['deps', '--style', 'list'],
+        output: '''
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -104,13 +114,16 @@ void main() {
             - other any
           - transitive 1.2.3
             - shared any
-          ''');
+          ''',
+      );
     });
 
     test('in tree form', () async {
       await pubGet();
-      await runPub(args: ['deps'], output: '''
-          Dart SDK 0.1.2+3
+      await runPub(
+        args: ['deps'],
+        output: '''
+          Dart SDK 3.1.2+3
           myapp 0.0.0
           ├── from_path 1.2.3
           ├── normal 1.2.3
@@ -126,11 +139,14 @@ void main() {
               └── shared 1.2.3
                   └── other 1.0.0
                       └── myapp...
-          ''');
+          ''',
+      );
     });
     test('in json form', () async {
       await pubGet();
-      await runPub(args: ['deps', '--json'], output: '''
+      await runPub(
+        args: ['deps', '--json'],
+        output: '''
 {
   "root": "myapp",
   "packages": [
@@ -244,11 +260,12 @@ void main() {
   "sdks": [
     {
       "name": "Dart",
-      "version": "0.1.2+3"
+      "version": "3.1.2+3"
     }
   ],
   "executables": []
-}''');
+}''',
+      );
     });
 
     test('with the Flutter SDK, if applicable', () async {
@@ -256,9 +273,10 @@ void main() {
 
       await d.dir('flutter', [d.file('version', '4.3.2+1')]).create();
       await runPub(
-          args: ['deps'],
-          output: contains('Flutter SDK 4.3.2+1'),
-          environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')});
+        args: ['deps'],
+        output: contains('Flutter SDK 4.3.2+1'),
+        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+      );
     });
 
     test('with the Fuchsia SDK, if applicable', () async {
@@ -266,17 +284,20 @@ void main() {
 
       await d.dir('fuchsia', [d.file('version', '4.3.2+1')]).create();
       await runPub(
-          args: ['deps'],
-          output: contains('Fuchsia SDK 4.3.2+1'),
-          environment: {'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia')});
+        args: ['deps'],
+        output: contains('Fuchsia SDK 4.3.2+1'),
+        environment: {'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia')},
+      );
     });
   });
 
   group('lists non-dev dependencies', () {
     test('in compact form', () async {
       await pubGet();
-      await runPub(args: ['deps', '-s', 'compact', '--no-dev'], output: '''
-          Dart SDK 0.1.2+3
+      await runPub(
+        args: ['deps', '-s', 'compact', '--no-dev'],
+        output: '''
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -294,13 +315,16 @@ void main() {
           - other 1.0.0 [myapp]
           - shared 1.2.3 [other]
           - transitive 1.2.3 [shared]
-          ''');
+          ''',
+      );
     });
 
     test('in list form', () async {
       await pubGet();
-      await runPub(args: ['deps', '--style', 'list', '--no-dev'], output: '''
-          Dart SDK 0.1.2+3
+      await runPub(
+        args: ['deps', '--style', 'list', '--no-dev'],
+        output: '''
+          Dart SDK 3.1.2+3
           myapp 0.0.0
 
           dependencies:
@@ -325,13 +349,16 @@ void main() {
             - other any
           - transitive 1.2.3
             - shared any
-          ''');
+          ''',
+      );
     });
 
     test('in tree form', () async {
       await pubGet();
-      await runPub(args: ['deps', '--no-dev'], output: '''
-          Dart SDK 0.1.2+3
+      await runPub(
+        args: ['deps', '--no-dev'],
+        output: '''
+          Dart SDK 3.1.2+3
           myapp 0.0.0
           ├── from_path 1.2.3
           ├── normal 1.2.3
@@ -344,7 +371,8 @@ void main() {
           │               └── myapp...
           ├── overridden 2.0.0
           └── override_only 1.2.3
-          ''');
+          ''',
+      );
     });
   });
 }

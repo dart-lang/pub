@@ -18,7 +18,8 @@ class ChangelogValidator extends Validator {
   @override
   Future<void> validate() async {
     final changelog = filesBeneath('.', recursive: false).firstWhereOrNull(
-        (entry) => p.basename(entry).contains(_changelogRegexp));
+      (entry) => p.basename(entry).contains(_changelogRegexp),
+    );
 
     if (changelog == null) {
       warnings.add('Please add a `CHANGELOG.md` to your package. '

@@ -19,10 +19,11 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serveContentHashes = true;
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final sha256 = lockfile['packages']['foo']['description']['sha256'];
     expect(sha256, hasLength(64));
     await hostedHashesCache([
@@ -36,10 +37,11 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final sha256 = lockfile['packages']['foo']['description']['sha256'];
     expect(sha256, hasLength(64));
     await hostedHashesCache([
@@ -50,9 +52,12 @@ Future<void> main() async {
   test('archive_sha256 is checked on download', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
-    server.overrideArchiveSha256('foo', '1.0.0',
-        'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279');
-    await appDir({'foo': 'any'}).create();
+    server.overrideArchiveSha256(
+      'foo',
+      '1.0.0',
+      'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279',
+    );
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet(
       exitCode: exit_codes.TEMP_FAIL,
       silent: contains('Attempt #2'),
@@ -69,10 +74,13 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = true;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
-    server.serve('foo', '1.0.0',
-        contents: [file('new_file.txt', 'This file could be malicious.')]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [file('new_file.txt', 'This file could be malicious.')],
+    );
     // Pub get will not revisit the file-listing if everything resolves, and only compare with a cached value.
     await pubGet();
     // Deleting the version-listing cache will cause it to be refetched, and the
@@ -83,13 +91,15 @@ Future<void> main() async {
       warning: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
-            'The existing content-hash from pubspec.lock doesn\'t match contents for:'),
+          'The existing content-hash from pubspec.lock doesn\'t match contents for:',
+        ),
         contains('* foo-1.0.0 from "${server.url}"\n'),
       ),
       exitCode: exit_codes.SUCCESS,
     );
     final lockfile = loadYaml(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final newHash = lockfile['packages']['foo']['description']['sha256'];
     expect(newHash, await server.peekArchiveSha256('foo', '1.0.0'));
   });
@@ -100,10 +110,13 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
-    server.serve('foo', '1.0.0',
-        contents: [file('new_file.txt', 'This file could be malicious.')]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [file('new_file.txt', 'This file could be malicious.')],
+    );
     // Deleting the hash-file cache will cause it to be refetched, and the
     // warning will happen.
     File(p.join(globalServer.hashesCachingPath, 'foo-1.0.0.sha256'))
@@ -119,7 +132,8 @@ Future<void> main() async {
       exitCode: exit_codes.SUCCESS,
     );
     final lockfile = loadYaml(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final newHash = lockfile['packages']['foo']['description']['sha256'];
     expect(newHash, await server.peekArchiveSha256('foo', '1.0.0'));
   });
@@ -130,19 +144,23 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final originalHash = lockfile['packages']['foo']['description']['sha256'];
     // Create wrong hash on disk.
     await hostedHashesCache([
-      file('foo-1.0.0.sha256',
-          'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279'),
+      file(
+        'foo-1.0.0.sha256',
+        'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279',
+      ),
     ]).create();
 
     await pubGet(
-        warning: 'Cached version of foo-1.0.0 has wrong hash - redownloading.');
+      warning: 'Cached version of foo-1.0.0 has wrong hash - redownloading.',
+    );
     await hostedHashesCache([
       file('foo-1.0.0.sha256', originalHash),
     ]).validate();
@@ -153,18 +171,22 @@ Future<void> main() async {
     final server = await servePackages();
     server.serveContentHashes = true;
     server.serve('foo', '1.0.0');
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     final lockfile = loadYaml(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final originalHash = lockfile['packages']['foo']['description']['sha256'];
     await hostedHashesCache([
-      file('foo-1.0.0.sha256',
-          'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279'),
+      file(
+        'foo-1.0.0.sha256',
+        'e7a7a0f6d9873e4c40cf68cc3cc9ca5b6c8cef6a2220241bdada4b9cb0083279',
+      ),
     ]).create();
 
     await pubGet(
-        warning: 'Cached version of foo-1.0.0 has wrong hash - redownloading.');
+      warning: 'Cached version of foo-1.0.0 has wrong hash - redownloading.',
+    );
     await hostedHashesCache([
       file('foo-1.0.0.sha256', originalHash),
     ]).validate();
@@ -176,11 +198,12 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serveContentHashes = false;
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     // Pretend we had no hash in the lockfile.
     final lockfile = YamlEditor(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final originalContentHash = lockfile
         .remove(['packages', 'foo', 'description', 'sha256']).value as String;
     File(p.join(sandbox, appPath, 'pubspec.lock')).writeAsStringSync(
@@ -188,7 +211,8 @@ Future<void> main() async {
     );
     await pubGet();
     final lockfile2 = YamlEditor(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     expect(
       lockfile2.parseAt(['packages', 'foo', 'description', 'sha256']).value,
       originalContentHash,
@@ -201,11 +225,12 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serveContentHashes = true;
-    await appDir({'foo': 'any'}).create();
+    await appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
     // Pretend we had no hash in the lockfile.
     final lockfile = YamlEditor(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     final originalContentHash = lockfile
         .remove(['packages', 'foo', 'description', 'sha256']).value as String;
     File(p.join(sandbox, appPath, 'pubspec.lock')).writeAsStringSync(
@@ -213,7 +238,8 @@ Future<void> main() async {
     );
     await pubGet();
     final lockfile2 = YamlEditor(
-        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync());
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
     expect(
       lockfile2.parseAt(['packages', 'foo', 'description', 'sha256']).value,
       originalContentHash,

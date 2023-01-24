@@ -251,7 +251,10 @@ void write(Level level, message) {
 /// Logs the spawning of an [executable] process with [arguments] at [io]
 /// level.
 void process(
-    String executable, List<String> arguments, String workingDirectory) {
+  String executable,
+  List<String> arguments,
+  String workingDirectory,
+) {
   io("Spawning \"$executable ${arguments.join(' ')}\" in "
       '${p.absolute(workingDirectory)}');
 }
@@ -410,10 +413,10 @@ Platform: ${Platform.operatingSystem}
 /// Unless the user has overriden the verbosity,
 ///
 /// This is useful to not pollute stdout when the output is piped somewhere.
-Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
+Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
   final oldVerbosity = verbosity;
-  if (verbosity == Verbosity.normal && !stdout.hasTerminal) {
-    verbosity = Verbosity.warning;
+  if (verbosity == Verbosity.normal && !terminalOutputForStdout) {
+    verbosity = Verbosity.error;
   }
   final result = await callback();
   verbosity = oldVerbosity;
@@ -436,8 +439,11 @@ Future<T> progress<T>(String message, Future<T> Function() callback) {
 }
 
 /// Like [progress] but erases the message once done.
-Future<T> spinner<T>(String message, Future<T> Function() callback,
-    {bool condition = true}) {
+Future<T> spinner<T>(
+  String message,
+  Future<T> Function() callback, {
+  bool condition = true,
+}) {
   if (condition) {
     _stopProgress();
 

@@ -36,9 +36,13 @@ void main() {
   test("includes dev dependency's transitive dependencies", () async {
     await d.dir('foo', [
       d.libDir('foo'),
-      d.libPubspec('foo', '0.0.1', deps: {
-        'bar': {'path': '../bar'}
-      })
+      d.libPubspec(
+        'foo',
+        '0.0.1',
+        deps: {
+          'bar': {'path': '../bar'}
+        },
+      )
     ]).create();
 
     await d
@@ -77,9 +81,11 @@ void main() {
         .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': '../foo'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'}
+        },
+      )
     ]).create();
 
     await pubGet();

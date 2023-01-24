@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'io.dart';
 import 'log.dart' as log;
 import 'utils.dart';
 
@@ -39,7 +40,7 @@ class Progress {
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels
     // with non-JSON output.
-    if (!canAnimateOutput ||
+    if (terminalOutputForStdout ||
         !log.verbosity.isLevelVisible(level) ||
         fine ||
         log.verbosity.isLevelVisible(log.Level.fine)) {

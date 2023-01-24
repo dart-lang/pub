@@ -15,7 +15,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
 
     await pubRemove(args: ['foo']);
@@ -35,14 +35,14 @@ void main() {
     await d.dir(appPath, [
       d.file('pubspec.yaml', '''
 name: myapp
-dependencies: 
+dependencies:
   foo: 1.2.3
 
 dev_dependencies:
   bar: 2.0.0
 
 environment:
-  sdk: '>=0.1.2 <1.0.0'
+  sdk: '$defaultSdkConstraint'
 ''')
     ]).create();
 
@@ -65,24 +65,26 @@ environment:
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
 
     await pubRemove(
-        args: ['foo', '--dry-run'],
-        output: allOf([
-          contains('These packages are no longer being depended on:'),
-          contains('- foo 1.2.3')
-        ]));
+      args: ['foo', '--dry-run'],
+      output: allOf([
+        contains('These packages are no longer being depended on:'),
+        contains('- foo 1.2.3')
+      ]),
+    );
 
-    await d.appDir({'foo': '1.2.3'}).validate();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).validate();
   });
 
   test('prints a warning if package does not exist', () async {
     await d.appDir().create();
     await pubRemove(
-        args: ['foo'],
-        warning: contains('Package "foo" was not found in pubspec.yaml!'));
+      args: ['foo'],
+      warning: contains('Package "foo" was not found in pubspec.yaml!'),
+    );
 
     await d.appDir().validate();
   });
@@ -92,8 +94,9 @@ environment:
       d.pubspec({'name': 'myapp'})
     ]).create();
     await pubRemove(
-        args: ['foo'],
-        warning: contains('Package "foo" was not found in pubspec.yaml!'));
+      args: ['foo'],
+      warning: contains('Package "foo" was not found in pubspec.yaml!'),
+    );
 
     await d.dir(appPath, [
       d.pubspec({'name': 'myapp'})
@@ -165,12 +168,14 @@ environment:
     ]);
     await repo.create();
 
-    await d.appDir({
-      'foo': {
-        'git': {'url': '../foo.git', 'path': 'subdir'}
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git', 'path': 'subdir'}
+        },
+        'bar': '1.2.3'
       },
-      'bar': '1.2.3'
-    }).create();
+    ).create();
 
     await pubGet();
 
@@ -179,7 +184,7 @@ environment:
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'bar', version: '1.2.3'),
     ]).validate();
-    await d.appDir({'bar': '1.2.3'}).validate();
+    await d.appDir(dependencies: {'bar': '1.2.3'}).validate();
   });
 
   test('removes path dependencies', () async {
@@ -188,10 +193,12 @@ environment:
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    await d.appDir({
-      'foo': {'path': '../foo'},
-      'bar': '1.2.3'
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': '../foo'},
+        'bar': '1.2.3'
+      },
+    ).create();
 
     await pubGet();
 
@@ -199,7 +206,7 @@ environment:
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'bar', version: '1.2.3'),
     ]).validate();
-    await d.appDir({'bar': '1.2.3'}).validate();
+    await d.appDir(dependencies: {'bar': '1.2.3'}).validate();
   });
 
   test('removes hosted dependencies', () async {
@@ -209,13 +216,15 @@ environment:
     var custom = await startPackageServer();
     custom.serve('foo', '1.2.3');
 
-    await d.appDir({
-      'foo': {
-        'version': '1.2.3',
-        'hosted': {'name': 'foo', 'url': 'http://localhost:${custom.port}'}
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'version': '1.2.3',
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${custom.port}'}
+        },
+        'bar': '2.0.1'
       },
-      'bar': '2.0.1'
-    }).create();
+    ).create();
 
     await pubGet();
 
@@ -223,7 +232,7 @@ environment:
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'bar', version: '2.0.1'),
     ]).validate();
-    await d.appDir({'bar': '2.0.1'}).validate();
+    await d.appDir(dependencies: {'bar': '2.0.1'}).validate();
   });
 
   test('preserves comments', () async {
@@ -241,7 +250,7 @@ environment:
             foo: 1.0.0 # comment D
           # comment E
         environment:
-          sdk: '>=0.1.2 <1.0.0'
+          sdk: '$defaultSdkConstraint'
     '''),
     ]).create();
 
@@ -249,18 +258,19 @@ environment:
 
     await pubRemove(args: ['bar']);
 
-    await d.appDir({'foo': '1.0.0'}).validate();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).validate();
     final fullPath = p.join(d.sandbox, appPath, 'pubspec.yaml');
     expect(File(fullPath).existsSync(), true);
     final contents = File(fullPath).readAsStringSync();
     expect(
-        contents,
-        allOf([
-          contains('# comment A'),
-          contains('# comment B'),
-          contains('# comment C'),
-          contains('# comment D'),
-          contains('# comment E')
-        ]));
+      contents,
+      allOf([
+        contains('# comment A'),
+        contains('# comment B'),
+        contains('# comment C'),
+        contains('# comment D'),
+        contains('# comment E')
+      ]),
+    );
   });
 }

@@ -20,18 +20,20 @@ void main() {
     await servePackages()
       ..serve('foo', '1.1.2')
       ..serve('bar', '1.2.3');
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
     final cache = path.join(d.sandbox, cachePath);
     expect(listDir(cache, includeHidden: true), contains(endsWith('hosted')));
     await runPub(
-        args: ['cache', 'clean', '--force'],
-        output: 'Removing pub cache directory $cache.');
+      args: ['cache', 'clean', '--force'],
+      output: 'Removing pub cache directory $cache.',
+    );
 
     expect(
-        listDir(cache, includeHidden: true),
-        // The README.md will be reconstructed.
-        [pathInCache('README.md')]);
+      listDir(cache, includeHidden: true),
+      // The README.md will be reconstructed.
+      [pathInCache('README.md')],
+    );
   });
 
   test('running pub cache clean deletes cache only with confirmation',
@@ -39,7 +41,7 @@ void main() {
     await servePackages()
       ..serve('foo', '1.1.2')
       ..serve('bar', '1.2.3');
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
     final cache = path.join(d.sandbox, cachePath);
     expect(
@@ -66,8 +68,11 @@ void main() {
       expect(await process.exitCode, 0);
     }
     expect(
-        listDir(cache,
-            includeHidden: true), // The README.md will be reconstructed.
-        [pathInCache('README.md')]);
+      listDir(
+        cache,
+        includeHidden: true,
+      ), // The README.md will be reconstructed.
+      [pathInCache('README.md')],
+    );
   });
 }

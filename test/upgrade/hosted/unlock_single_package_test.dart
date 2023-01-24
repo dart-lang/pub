@@ -14,7 +14,7 @@ void main() {
     server.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});
     server.serve('bar', '1.0.0');
 
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
     await pubGet();
 

@@ -14,7 +14,7 @@ void main() {
     final server = await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': 'any'})
       ..serve('bar', '1.0.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet();
 
@@ -33,7 +33,7 @@ void main() {
       ..serve('bar', '1.0.0')
       ..serve('bar', '2.0.0')
       ..serve('bar', '2.0.1-pre');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet();
 
@@ -52,7 +52,7 @@ void main() {
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0-pre'})
       ..serve('bar', '1.0.0-pre')
       ..serve('bar', '2.0.1-pre');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet();
 
@@ -63,6 +63,7 @@ void main() {
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(
-        output: contains('bar 1.0.0-pre (retracted, 2.0.1-pre available)'));
+      output: contains('bar 1.0.0-pre (retracted, 2.0.1-pre available)'),
+    );
   });
 }

@@ -33,7 +33,10 @@ class RootSource extends Source {
 
   @override
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache) async {
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  ) async {
     final description = ref.description;
     if (description is! RootDescription) {
       throw ArgumentError('Wrong source');
@@ -42,21 +45,32 @@ class RootSource extends Source {
   }
 
   @override
-  String doGetDirectory(PackageId id, SystemCache cache,
-      {String? relativeFrom}) {
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  }) {
     // TODO(sigurdm): Should we support this.
     throw UnsupportedError('Cannot get the directory of the root package');
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir}) {
+  PackageId parseId(
+    String name,
+    Version version,
+    description, {
+    String? containingDir,
+  }) {
     throw UnsupportedError('Trying to parse a root package description.');
   }
 
   @override
-  PackageRef parseRef(String name, description,
-      {String? containingDir, required LanguageVersion languageVersion}) {
+  PackageRef parseRef(
+    String name,
+    description, {
+    String? containingDir,
+    required LanguageVersion languageVersion,
+  }) {
     throw UnsupportedError('Trying to parse a root package description.');
   }
 }

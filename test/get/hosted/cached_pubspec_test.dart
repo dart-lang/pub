@@ -12,7 +12,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
     // Get once so it gets cached.
     await pubGet();
@@ -30,7 +30,9 @@ void main() {
     await pubGet();
 
     // The get should not have requested the pubspec since it's local already.
-    expect(server.requestedPaths,
-        isNot(contains('packages/foo/versions/1.2.3.yaml')));
+    expect(
+      server.requestedPaths,
+      isNot(contains('packages/foo/versions/1.2.3.yaml')),
+    );
   });
 }

@@ -16,21 +16,29 @@ void main() {
 
     await d.git('foo.git', [
       d.libDir('foo'),
-      d.libPubspec('foo', '1.0.0', deps: {
-        'foo_dep': {
-          'git': p
-              .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
-              .toString()
-        }
-      })
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        deps: {
+          'foo_dep': {
+            'git': p
+                .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
+                .toString()
+          }
+        },
+      )
     ]).create();
 
-    await d.git('foo_dep.git',
-        [d.libDir('foo_dep'), d.libPubspec('foo_dep', '1.0.0')]).create();
+    await d.git(
+      'foo_dep.git',
+      [d.libDir('foo_dep'), d.libPubspec('foo_dep', '1.0.0')],
+    ).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
 
     await pubGet();
 
@@ -49,13 +57,17 @@ void main() {
 
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
-      d.libPubspec('foo', '1.0.0', deps: {
-        'foo_dep': {
-          'git': p
-              .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
-              .toString()
-        }
-      })
+      d.libPubspec(
+        'foo',
+        '1.0.0',
+        deps: {
+          'foo_dep': {
+            'git': p
+                .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
+                .toString()
+          }
+        },
+      )
     ]).create();
 
     await d.git('foo_dep.git', [

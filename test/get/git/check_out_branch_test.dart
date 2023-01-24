@@ -12,18 +12,24 @@ void main() {
     ensureGit();
 
     var repo = d.git(
-        'foo.git', [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')]);
+      'foo.git',
+      [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')],
+    );
     await repo.create();
     await repo.runGit(['branch', 'old']);
 
-    await d.git('foo.git',
-        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
+    await d.git(
+      'foo.git',
+      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
+    ).commit();
 
-    await d.appDir({
-      'foo': {
-        'git': {'url': '../foo.git', 'ref': 'old'}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git', 'ref': 'old'}
+        }
+      },
+    ).create();
 
     await pubGet();
 

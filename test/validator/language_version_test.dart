@@ -12,8 +12,10 @@ import 'utils.dart';
 
 Validator validator() => LanguageVersionValidator();
 
-Future<void> setup(
-    {required String sdkConstraint, String? libraryLanguageVersion}) async {
+Future<void> setup({
+  required String sdkConstraint,
+  String? libraryLanguageVersion,
+}) async {
   await d.validPackage.create();
   await d.dir(appPath, [
     d.pubspec({
@@ -38,13 +40,17 @@ void main() {
 
     test('opts in to older language versions', () async {
       await setup(
-          sdkConstraint: '>=2.4.0 <3.0.0', libraryLanguageVersion: '2.0');
+        sdkConstraint: '>=2.4.0 <3.0.0',
+        libraryLanguageVersion: '2.0',
+      );
       await d.dir(appPath, []).create();
       await expectValidation(validator);
     });
     test('opts in to same language versions', () async {
       await setup(
-          sdkConstraint: '>=2.4.0 <3.0.0', libraryLanguageVersion: '2.4');
+        sdkConstraint: '>=2.4.0 <3.0.0',
+        libraryLanguageVersion: '2.4',
+      );
       await d.dir(appPath, []).create();
       await expectValidation(validator);
     });
@@ -60,7 +66,9 @@ void main() {
   group('should error if it', () {
     test('opts in to a newer version.', () async {
       await setup(
-          sdkConstraint: '>=2.4.1 <3.0.0', libraryLanguageVersion: '2.5');
+        sdkConstraint: '>=2.4.1 <3.0.0',
+        libraryLanguageVersion: '2.5',
+      );
       await expectValidation(validator, errors: isNotEmpty);
     });
     test('opts in to a newer version, with non-range constraint.', () async {

@@ -13,11 +13,15 @@ void main() {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
 
     await pubGet();
 
@@ -33,11 +37,14 @@ void main() {
     var originalFooSpec = packageSpec('foo');
 
     await d.git(
-        'foo.git', [d.libDir('zoo'), d.libPubspec('zoo', '1.0.0')]).commit();
+      'foo.git',
+      [d.libDir('zoo'), d.libPubspec('zoo', '1.0.0')],
+    ).commit();
 
     await pubUpgrade(
-        error: contains('"name" field doesn\'t match expected name "foo".'),
-        exitCode: exit_codes.DATA);
+      error: contains('"name" field doesn\'t match expected name "foo".'),
+      exitCode: exit_codes.DATA,
+    );
 
     expect(packageSpec('foo'), originalFooSpec);
   });

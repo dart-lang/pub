@@ -25,7 +25,8 @@ void main() {
     expect(
       pub.stderr,
       emitsThrough(
-          "Sorry, your package is missing a requirement and can't be published yet."),
+        "Sorry, your package is missing a requirement and can't be published yet.",
+      ),
     );
   });
 }

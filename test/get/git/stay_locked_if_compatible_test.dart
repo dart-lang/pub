@@ -13,23 +13,31 @@ void main() {
       'constraint', () async {
     ensureGit();
 
-    await d.git('foo.git',
-        [d.libDir('foo', 'foo 1.0.0'), d.libPubspec('foo', '1.0.0')]).create();
+    await d.git(
+      'foo.git',
+      [d.libDir('foo', 'foo 1.0.0'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'}
+      },
+    ).create();
 
     await pubGet();
 
     var originalFooSpec = packageSpec('foo');
 
-    await d.git('foo.git',
-        [d.libDir('foo', 'foo 1.0.1'), d.libPubspec('foo', '1.0.1')]).commit();
+    await d.git(
+      'foo.git',
+      [d.libDir('foo', 'foo 1.0.1'), d.libPubspec('foo', '1.0.1')],
+    ).commit();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git', 'version': '>=1.0.0'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git', 'version': '>=1.0.0'}
+      },
+    ).create();
 
     await pubGet();
 

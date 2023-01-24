@@ -50,7 +50,8 @@ abstract class PubCommand extends Command<int> {
     final a = super.argResults;
     if (a == null) {
       throw StateError(
-          'argResults cannot be used before Command.run is called.');
+        'argResults cannot be used before Command.run is called.',
+      );
     }
     return a;
   }
@@ -92,7 +93,9 @@ abstract class PubCommand extends Command<int> {
   // it but we want to initialize it based on [allowTrailingOptions].
   @override
   late final ArgParser argParser = ArgParser(
-      allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
+    allowTrailingOptions: allowTrailingOptions,
+    usageLineLength: lineLength,
+  );
 
   /// Override this to use offline-only sources instead of hitting the network.
   ///
@@ -187,8 +190,10 @@ abstract class PubCommand extends Command<int> {
 
     var crashed = false;
     try {
-      await captureErrors<void>(() async => runProtected(),
-          captureStackChains: _pubTopLevel.captureStackChains);
+      await captureErrors<void>(
+        () async => runProtected(),
+        captureStackChains: _pubTopLevel.captureStackChains,
+      );
       if (_exitCodeOverride != null) {
         return _exitCodeOverride!;
       }
@@ -323,7 +328,8 @@ and attaching the relevant parts of that log file.
       if (list.isEmpty) {
         // this is a top-level command
         final rootCommand = pubCommandAliases.entries.singleWhereOrNull(
-            (element) => element.value.contains(command!.name));
+          (element) => element.value.contains(command!.name),
+        );
         if (rootCommand != null) {
           commandName = rootCommand.key;
         }

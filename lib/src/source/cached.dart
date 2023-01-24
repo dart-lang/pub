@@ -36,8 +36,11 @@ abstract class CachedSource extends Source {
   }
 
   @override
-  String doGetDirectory(PackageId id, SystemCache cache,
-          {String? relativeFrom}) =>
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  }) =>
       getDirectoryInCache(id, cache);
 
   String getDirectoryInCache(PackageId id, SystemCache cache);
