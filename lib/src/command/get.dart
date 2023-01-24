@@ -130,9 +130,9 @@ class GetCommand extends PubCommand {
     );
 
     if (!argResults['dry-run'] && shouldRunPostGetHook()) {
-      print('Running post get hook...');
+      log.message('Running post get hook...');
       final exitCode = await runPostGetHook();
-      print('exit code: $exitCode');
+      log.message('exit code: $exitCode');
     }
 
     var example = entrypoint.example;
