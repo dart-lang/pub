@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:test/test.dart';
+
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
@@ -358,5 +360,19 @@ Future<void> main() async {
   testWithGolden('does not allow arguments - handles bad flags', (ctx) async {
     await ctx.run(['outdated', 'random_argument']);
     await ctx.run(['outdated', '--bad_flag']);
+  });
+
+  testWithGolden('Handles packages that are not found on server', (ctx) async {
+    await servePackages();
+    await d.appDir(
+      dependencies: {'foo': 'any'},
+      pubspec: {
+        'dependency_overrides': {
+          'foo': {'path': '../foo'},
+        },
+      },
+    ).create();
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
+    await ctx.run(['outdated']);
   });
 }
