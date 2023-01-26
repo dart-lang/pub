@@ -167,5 +167,30 @@ void main() {
         ),
       );
     });
+
+    test(
+        'Gives a hint if package has a <3.0.0 constraint that is interpreted as <4.0.0',
+        () async {
+      await d.dir(appPath, [
+        d.rawPubspec({
+          'name': 'test_pkg',
+          'version': '1.0.0',
+          'environment': {'sdk': '^2.19.0'}
+        })
+      ]).create();
+      await expectValidation(
+        sdkConstraint,
+        hints: anyElement(
+          '''
+The declared sdk constraint is '^2.19.0', this is interpreted as '>=2.19.0 <4.0.0'.
+
+Consider updating the sdk constraint to:
+
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+''',
+        ),
+      );
+    });
   });
 }
