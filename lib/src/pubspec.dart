@@ -201,9 +201,7 @@ class Pubspec extends PubspecBase {
     var yaml = parent['environment'];
     final VersionConstraint originalDartSdkConstraint;
     if (yaml == null) {
-      originalDartSdkConstraint = _includeDefaultSdkConstraint
-          ? _defaultUpperBoundSdkConstraint
-          : VersionConstraint.any;
+      originalDartSdkConstraint = VersionConstraint.any;
     } else if (yaml is! YamlMap) {
       _error(
         '"environment" field must be a map.',
@@ -216,7 +214,6 @@ class Pubspec extends PubspecBase {
         _FileType.pubspec,
       );
     }
-
     var constraints = {
       'dart': _interpretDartSdkConstraint(
         originalDartSdkConstraint,

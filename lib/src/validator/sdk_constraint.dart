@@ -46,9 +46,13 @@ class SdkConstraintValidator extends Validator {
             'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
             'For more information on pre-releases.');
       }
-      if (effectiveConstraint is VersionRange) {
-        if (originalConstraint != effectiveConstraint) {
-          hints.add('''
+      if (
+          // We only want to give this hint if there was no other problems with
+          // the sdk constraint.
+          warnings.isEmpty &&
+              errors.isEmpty &&
+              originalConstraint != effectiveConstraint) {
+        hints.add('''
 The declared sdk constraint is '$originalConstraint', this is interpreted as '$effectiveConstraint'.
 
 Consider updating the sdk constraint to:
@@ -56,7 +60,6 @@ Consider updating the sdk constraint to:
 environment:
   sdk: '$effectiveConstraint'
 ''');
-        }
       }
     }
 
