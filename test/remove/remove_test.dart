@@ -273,4 +273,28 @@ environment:
       ]),
     );
   });
+  test('removes dependencies or dev_dependencies key if empty', () async {
+    await servePackages()
+      ..serve('foo', '1.2.3')
+      ..serve('bar', '2.3.4');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'bar': '>=2.3.4'},
+        'dev_dependencies': {'foo': '^1.2.3'}
+      })
+    ]).create();
+    await pubGet();
+
+    await pubRemove(args: ['foo', 'bar']);
+
+    await d.appPackageConfigFile([]).validate();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+      })
+    ]).validate();
+  });
 }
