@@ -51,7 +51,7 @@ const contentHashesDocumentationUrl = 'https://dart.dev/go/content-hashes';
 /// backwards compatibility with `pubspec.lock`-files which contain
 /// `https://pub.dartlang.org`.
 ///
-/// Throws [FormatException] if there is anything wrong [hostedUrl].
+/// Throws [FormatException] if there is anything wrong with [hostedUrl].
 ///
 /// [1]: ../../../doc/repository-spec-v2.md
 Uri validateAndNormalizeHostedUrl(String hostedUrl) {
@@ -194,8 +194,8 @@ class HostedSource extends CachedSource {
   /// Returns a reference to a hosted package named [name].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
-  /// should be downloaded. [url] most be normalized and validated using
-  /// [validateAndNormalizeHostedUrl].
+  /// should be downloaded. [url] will be normalized and validated using
+  /// [validateAndNormalizeHostedUrl]. This can throw a [FormatException].
   PackageRef refFor(String name, {String? url}) {
     final d = HostedDescription(name, url ?? defaultUrl);
     return PackageRef(name, d);
@@ -258,7 +258,7 @@ class HostedSource extends CachedSource {
       name,
       version,
       ResolvedHostedDescription(
-        HostedDescription(name, Uri.parse(url).toString()),
+        HostedDescription(name, url),
         sha256: sha256 == null ? null : hexDecode(sha256),
       ),
     );
@@ -291,8 +291,7 @@ class HostedSource extends CachedSource {
       // environment, we throw an error if something that looks like a URI is
       // used as a package name.
       if (canUseShorthandSyntax) {
-        return HostedDescription(
-            packageName, validateAndNormalizeHostedUrl(description).toString());
+        return HostedDescription(packageName, description);
       } else {
         if (_looksLikePackageName.hasMatch(description)) {
           // Valid use of `hosted: package` dependency with an old SDK
@@ -319,14 +318,11 @@ class HostedSource extends CachedSource {
           'a minimum Dart SDK constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.0 or higher.');
     }
 
-    var url = defaultUrl;
     final u = description['url'];
-    if (u != null) {
-      if (u is! String) {
-        throw FormatException("The 'url' key must be a string value.");
-      }
-      url = validateAndNormalizeHostedUrl(u).toString();
+    if (u != null && u is! String) {
+      throw FormatException("The 'url' key must be a string value.");
     }
+    final url = u ?? defaultUrl;
 
     return HostedDescription(name, url);
   }
@@ -915,7 +911,7 @@ class HostedSource extends CachedSource {
               package.name,
               package.version,
               ResolvedHostedDescription(
-                HostedDescription(package.name, url),
+                HostedDescription._(package.name, url),
                 sha256: null,
               ),
             );
@@ -1178,10 +1174,7 @@ See $contentHashesDocumentationUrl.
         pubspec.name,
         pubspec.version,
         ResolvedHostedDescription(
-          HostedDescription(
-            pubspec.name,
-            validateAndNormalizeHostedUrl(cache.hosted.defaultUrl).toString(),
-          ),
+          HostedDescription(pubspec.name, defaultUrl),
           sha256: contentHash,
         ),
       );
@@ -1283,7 +1276,12 @@ class HostedDescription extends Description {
   final String packageName;
   final String url;
 
-  HostedDescription(this.packageName, this.url);
+  HostedDescription._(this.packageName, this.url);
+  factory HostedDescription(String packageName, String url) =>
+      HostedDescription._(
+        packageName,
+        validateAndNormalizeHostedUrl(url).toString(),
+      );
 
   @override
   int get hashCode => Object.hash(packageName, url);
