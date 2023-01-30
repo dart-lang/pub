@@ -53,9 +53,9 @@ class SdkConstraintValidator extends Validator {
               errors.isEmpty &&
               originalConstraint != effectiveConstraint) {
         hints.add('''
-The declared sdk constraint is '$originalConstraint', this is interpreted as '$effectiveConstraint'.
+The declared SDK constraint is '$originalConstraint', this is interpreted as '$effectiveConstraint'.
 
-Consider updating the sdk constraint to:
+Consider updating the SDK constraint to:
 
 environment:
   sdk: '$effectiveConstraint'
