@@ -439,7 +439,7 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
     }
 
     if (!dryRun && hasChanges && shouldRunFlutterPackageHook()) {
-      log.message('Running Flutter package hook...');
+      log.message('Running Flutter package hook in ${root.dir}...');
       await runFlutterPackageHook();
     }
   }
@@ -1047,17 +1047,27 @@ See https://dart.dev/go/sdk-constraint
     final String? flutterRoot = FlutterSdk().rootDirectory;
     assert(flutterRoot != null);
     final String flutterToolPath = p.join(flutterRoot!, 'bin', 'flutter');
-    final ProcessResult processResult = await Process.run(
-      flutterToolPath,
-      [
-        'pub',
-        '_post_pub_get',
-        '-C',
-        root.dir,
-      ],
-    );
+    final Process process = await Process.start(flutterToolPath, [
+      'pub',
+      '_post_pub_get',
+      '-C',
+      root.dir,
+    ]);
 
-    final int exitCode = processResult.exitCode;
+    final StreamSubscription<List<int>> stdoutSubscription =
+        process.stdout.listen(stdout.add);
+    final StreamSubscription<List<int>> stderrSubscription =
+        process.stderr.listen(stderr.add);
+
+    // You must read all data out of the stdout and stderr streams.
+    await Future.wait<void>(<Future<void>>[
+      stdoutSubscription.asFuture<void>(),
+      stderrSubscription.asFuture<void>(),
+    ]);
+    unawaited(stdoutSubscription.cancel());
+    unawaited(stderrSubscription.cancel());
+
+    exitCode = await process.exitCode;
     if (exitCode != 0) {
       throw ApplicationException('The Flutter package hook failed.');
     }
