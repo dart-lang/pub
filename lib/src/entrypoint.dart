@@ -29,9 +29,11 @@ import 'package_name.dart';
 import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
+import 'sdk/flutter.dart';
 import 'solver.dart';
 import 'solver/report.dart';
 import 'source/cached.dart';
+import 'source/sdk.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -434,6 +436,11 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
         // dependencies, it shouldn't fail unless that fails.
         log.exception(error, stackTrace);
       }
+    }
+
+    if (!dryRun && hasChanges && shouldRunFlutterPackageHook()) {
+      log.message('Running Flutter package hook...');
+      await runFlutterPackageHook();
     }
   }
 
@@ -1017,4 +1024,42 @@ See https://dart.dev/go/sdk-constraint
   /// results.
   bool get _summaryOnlyEnvironment =>
       (Platform.environment['PUB_SUMMARY_ONLY'] ?? '0') != '0';
+
+  /// Checks if the Flutter SDK is available and whether this is a Flutter app
+  /// package.
+  bool shouldRunFlutterPackageHook() {
+    if (!FlutterSdk().isAvailable) {
+      return false;
+    }
+
+    // TODO: sky_engine check
+    final hasFlutterDependency = root.dependencies.values.any((package) {
+      return package.name == 'flutter' &&
+          package.source.runtimeType == SdkSource;
+    });
+
+    return hasFlutterDependency;
+  }
+
+  /// Calls a hook on the Flutter tool that performs steps necessary for Flutter
+  /// packages (e.g. code-gen).
+  Future<void> runFlutterPackageHook() async {
+    final String? flutterRoot = FlutterSdk().rootDirectory;
+    assert(flutterRoot != null);
+    final String flutterToolPath = p.join(flutterRoot!, 'bin', 'flutter');
+    final ProcessResult processResult = await Process.run(
+      flutterToolPath,
+      [
+        'pub',
+        '_post_pub_get',
+        '-C',
+        root.dir,
+      ],
+    );
+
+    final int exitCode = processResult.exitCode;
+    if (exitCode != 0) {
+      throw ApplicationException('The Flutter package hook failed.');
+    }
+  }
 }

@@ -3,17 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
-
-import 'package:path/path.dart' as p;
 
 import '../command.dart';
-import '../io.dart';
 import '../log.dart' as log;
-// import '../pubspec.dart';
 import '../solver.dart';
-import '../source/sdk.dart';
-// import '../system_cache.dart';
 
 /// Handles the `get` pub command.
 class GetCommand extends PubCommand {
@@ -67,50 +60,6 @@ class GetCommand extends PubCommand {
     );
   }
 
-  bool shouldRunPostGetHook() {
-    final flutterRoot = Platform.environment['FLUTTER_ROOT'];
-    if (flutterRoot == null) {
-      return false;
-    }
-    if (!fileExists(p.join(flutterRoot, 'version'))) {
-      return false;
-    }
-
-    // TODO: sky_engine check
-    final hasFlutterDependency =
-        entrypoint.root.dependencies.values.any((package) {
-      return package.name == 'flutter' &&
-          package.source.runtimeType == SdkSource;
-    });
-
-    return hasFlutterDependency;
-  }
-
-  Future<int> runPostGetHook() async {
-    final String flutterRoot = Platform.environment['FLUTTER_ROOT']!;
-    final String flutterToolPath = p.join(flutterRoot, 'bin', 'flutter');
-
-    final StreamSubscription<ProcessSignal> subscription =
-        ProcessSignal.sigint.watch().listen((e) {});
-    final Process process = await Process.start(
-      flutterToolPath,
-      [
-        'pub',
-        '_post_pub_get',
-        '-C',
-        directory,
-        '--update-version-and-package-config',
-        '--regenerate-platform-specific-tooling',
-        argResults['example'] ? '--example' : '',
-      ],
-      mode: ProcessStartMode.inheritStdio,
-    );
-
-    final int exitCode = await process.exitCode;
-    await subscription.cancel();
-    return exitCode;
-  }
-
   @override
   Future<void> runProtected() async {
     if (argResults.wasParsed('packages-dir')) {
@@ -128,12 +77,6 @@ class GetCommand extends PubCommand {
       analytics: analytics,
       enforceLockfile: argResults['enforce-lockfile'],
     );
-
-    if (!argResults['dry-run'] && shouldRunPostGetHook()) {
-      log.message('Running post get hook...');
-      final exitCode = await runPostGetHook();
-      log.message('exit code: $exitCode');
-    }
 
     var example = entrypoint.example;
     if (argResults['example'] && example != null) {
