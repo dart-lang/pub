@@ -66,6 +66,7 @@ class _DependencyServicesCommandRunner extends CommandRunner<int>
     addCommand(DependencyServicesListCommand());
     addCommand(DependencyServicesReportCommand());
     addCommand(DependencyServicesApplyCommand());
+    addCommand(DependencyServicesSmallestUpdateCommand());
   }
 
   @override

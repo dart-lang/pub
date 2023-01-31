@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package_name.dart';
@@ -76,6 +77,42 @@ Pubspec stripVersionUpperBounds(
     sdkConstraints: original.sdkConstraints,
     dependencies: stripUpperBounds(original.dependencies),
     devDependencies: stripUpperBounds(original.devDependencies),
+    dependencyOverrides: original.dependencyOverrides.values,
+  );
+}
+
+/// Returns a pubspec with the same dependencies as [original] but with all
+/// version constraints replaced by `>=c` where `c`, is the member of `current`
+/// that has same name as the dependency.
+Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
+  List<PackageRange> fixBounds(
+    Map<String, PackageRange> constrained,
+  ) {
+    final result = <PackageRange>[];
+
+    for (final name in constrained.keys) {
+      final packageRange = constrained[name]!;
+      final currentVersion = current.firstWhereOrNull((id) => id.name == name);
+      if (currentVersion == null) {
+        result.add(packageRange);
+      } else {
+        result.add(
+          packageRange.toRef().withConstraint(
+                VersionRange(min: currentVersion.version, includeMin: true),
+              ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  return Pubspec(
+    original.name,
+    version: original.version,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: fixBounds(original.dependencies),
+    devDependencies: fixBounds(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
   );
 }

@@ -86,6 +86,13 @@ class VersionSolver {
   )   : _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
+  /// Prime the solver with [incompatibilities].
+  void addIncompatibilities(Iterable<Incompatibility> incompatibilities) {
+    for (final incompatibility in incompatibilities) {
+      _addIncompatibility(incompatibility);
+    }
+  }
+
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
   Future<SolveResult> solve() async {

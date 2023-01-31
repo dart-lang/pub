@@ -68,7 +68,9 @@ extension on GoldenTestContext {
     final errLines = outputLines(process.stderr);
     final exitCode = await process.exitCode;
 
-    final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
+    final pipe = stdin == null
+        ? ''
+        : ' echo ${filterUnstableText(escapeShellArgument(stdin))} |';
     buffer.writeln(
       [
         '\$$pipe dependency_services ${args.map(escapeShellArgument).join(' ')}',
@@ -105,6 +107,30 @@ Future<void> _listReportApply(
   });
 
   await context.runDependencyServices(['apply'], stdin: input);
+  manifestAndLockfile(context);
+}
+
+Future<void> _smallestUpdate(
+  GoldenTestContext context,
+  String disallowedPackage,
+  List<String> disallowedVersions, {
+  void Function(Map)? resultAssertions,
+}) async {
+  manifestAndLockfile(context);
+  final input = json.encode({
+    'disallowed': {
+      'name': disallowedPackage,
+      'url': globalServer.url,
+      'versions': disallowedVersions.map((d) => {'range': d}).toList()
+    }
+  });
+  final report =
+      await context.runDependencyServices(['smallest-update'], stdin: input);
+  if (resultAssertions != null) {
+    resultAssertions(json.decode(report));
+  }
+
+  // await context.runDependencyServices(['apply'], stdin: input);
   manifestAndLockfile(context);
 }
 
@@ -418,6 +444,45 @@ Future<void> main() async {
         );
       },
     );
+  });
+
+  testWithGolden('Finds smallest possible upgrade', (context) async {
+    final server = await servePackages();
+    server.serve('foo', '1.1.1'); // This version will be disallowed.
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+    server.serve(
+      'foo',
+      '1.0.0',
+    ); // We don't want the downgrade to go below the current.
+
+    server.serve(
+      'foo',
+      '1.1.2',
+    ); // This will also be disallowed, a minimal update should not find this.
+    server.serve('foo', '1.1.3'); // We would like this to be the new version.
+    server.serve('foo', '1.1.4'); // This version would not be a minimal update.
+
+    await _smallestUpdate(context, 'foo', ['1.1.1', '1.1.2']);
+  });
+
+  testWithGolden('Smallest possible upgrade can upgrade beyond breaking',
+      (context) async {
+    final server = await servePackages();
+    server.serve('foo', '1.1.1'); // This version will be disallowed.
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+
+    server.serve(
+      'foo',
+      '2.0.0',
+    ); // This will also be disallowed, a minimal update should not find this.
+    server.serve('foo', '2.0.1'); // We would like this to be the new version.
+    server.serve('foo', '2.0.2'); // This version would not be a minimal update.
+
+    await _smallestUpdate(context, 'foo', ['1.1.1', '2.0.0']);
   });
 }
 

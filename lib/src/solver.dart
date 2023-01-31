@@ -7,6 +7,7 @@ import 'dart:async';
 import 'lock_file.dart';
 import 'package.dart';
 import 'solver/failure.dart';
+import 'solver/incompatibility.dart';
 import 'solver/result.dart';
 import 'solver/type.dart';
 import 'solver/version_solver.dart';
@@ -27,21 +28,29 @@ export 'solver/type.dart';
 /// If [unlock] is empty [SolveType.get] interprets this as lock everything,
 /// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
+///
+/// [extraIncompatibilities] can contain a list of things that are not allowed
+/// for this solve.
 Future<SolveResult> resolveVersions(
   SolveType type,
   SystemCache cache,
   Package root, {
   LockFile? lockFile,
   Iterable<String> unlock = const [],
+  Iterable<Incompatibility>? extraIncompatibilities,
 }) {
   lockFile ??= LockFile.empty();
-  return VersionSolver(
+  final solver = VersionSolver(
     type,
     cache,
     root,
     lockFile,
     unlock,
-  ).solve();
+  );
+  if (extraIncompatibilities != null) {
+    solver.addIncompatibilities(extraIncompatibilities);
+  }
+  return solver.solve();
 }
 
 /// Attempts to select the best concrete versions for all of the transitive
@@ -64,6 +73,7 @@ Future<SolveResult?> tryResolveVersions(
   Package root, {
   LockFile? lockFile,
   Iterable<String>? unlock,
+  Iterable<Incompatibility>? extraIncompatibilities,
 }) async {
   try {
     return await resolveVersions(
@@ -72,6 +82,7 @@ Future<SolveResult?> tryResolveVersions(
       root,
       lockFile: lockFile,
       unlock: unlock ?? [],
+      extraIncompatibilities: extraIncompatibilities,
     );
   } on SolveFailure {
     return null;

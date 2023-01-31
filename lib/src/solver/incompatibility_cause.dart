@@ -129,3 +129,15 @@ class PackageNotFoundCause extends IncompatibilityCause {
   @override
   String? get hint => exception.hint;
 }
+
+/// The incompatibility represents a package that couldn't be found by its
+/// source.
+class PackageVersionForbiddenCause extends IncompatibilityCause {
+  /// The reason this package version was forbidden.
+  final String? reason;
+
+  PackageVersionForbiddenCause({this.reason}) : super._();
+
+  @override
+  String? get hint => reason;
+}
