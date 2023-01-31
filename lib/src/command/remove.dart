@@ -147,7 +147,7 @@ class RemoveCommand extends PubCommand {
           found = true;
           // Check if the dependencies or dev_dependencies map is now empty
           // If it is empty, remove the key as well
-          if (dependenciesNode.isEmpty) {
+          if ((yamlEditor.parseAt([dependencyKey]) as YamlMap).isEmpty) {
             yamlEditor.remove([dependencyKey]);
           }
         }
