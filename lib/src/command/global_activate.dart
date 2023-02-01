@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
-import '../source/hosted.dart';
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
@@ -91,14 +91,6 @@ class GlobalActivateCommand extends PubCommand {
     }
 
     final overwrite = argResults['overwrite'] as bool;
-    Uri? hostedUrl;
-    if (argResults.wasParsed('hosted-url')) {
-      try {
-        hostedUrl = validateAndNormalizeHostedUrl(argResults['hosted-url']);
-      } on FormatException catch (e) {
-        usageException('Invalid hosted-url: $e');
-      }
-    }
 
     Iterable<String> args = argResults.rest;
 
@@ -138,6 +130,13 @@ class GlobalActivateCommand extends PubCommand {
       case 'hosted':
         var package = readArg('No package to activate given.');
 
+        PackageRef ref;
+        try {
+          ref = cache.hosted.refFor(package, url: argResults['hosted-url']);
+        } on FormatException catch (e) {
+          usageException('Invalid hosted-url: $e');
+        }
+
         // Parse the version constraint, if there is one.
         var constraint = VersionConstraint.any;
         if (args.isNotEmpty) {
@@ -150,11 +149,9 @@ class GlobalActivateCommand extends PubCommand {
 
         validateNoExtraArgs();
         return globals.activateHosted(
-          package,
-          constraint,
+          ref.withConstraint(constraint),
           executables,
           overwriteBinStubs: overwrite,
-          url: hostedUrl?.toString(),
         );
 
       case 'path':
