@@ -1047,12 +1047,15 @@ See https://dart.dev/go/sdk-constraint
     final String? flutterRoot = FlutterSdk().rootDirectory;
     assert(flutterRoot != null);
     final String flutterToolPath = p.join(flutterRoot!, 'bin', 'flutter');
-    final Process process = await Process.start(flutterToolPath, [
-      'pub',
-      '_post_pub_get',
-      '-C',
-      root.dir,
-    ]);
+    final Process process = await Process.start(
+      flutterToolPath,
+      [
+        'pub',
+        '_post_pub_get',
+        '-C',
+        root.dir,
+      ],
+    );
 
     final StreamSubscription<List<int>> stdoutSubscription =
         process.stdout.listen(stdout.add);
