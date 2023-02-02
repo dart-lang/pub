@@ -182,9 +182,9 @@ void main() {
         sdkConstraint,
         hints: anyElement(
           '''
-The declared sdk constraint is '^2.19.0', this is interpreted as '>=2.19.0 <4.0.0'.
+The declared SDK constraint is '^2.19.0', this is interpreted as '>=2.19.0 <4.0.0'.
 
-Consider updating the sdk constraint to:
+Consider updating the SDK constraint to:
 
 environment:
   sdk: '>=2.19.0 <4.0.0'
