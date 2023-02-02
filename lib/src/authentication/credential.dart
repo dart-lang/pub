@@ -157,7 +157,7 @@ class Credential {
   /// We limit tokens to be valid bearer tokens according to
   /// https://www.rfc-editor.org/rfc/rfc6750#section-2.1
   static bool isValidBearerToken(String candidate) {
-    return RegExp(r'^[a-zA-Z0-9._~+/=-]*$').hasMatch(candidate);
+    return RegExp(r'^[a-zA-Z0-9._~+/=-]+$').hasMatch(candidate);
   }
 
   static String _normalizeUrl(String url) {
