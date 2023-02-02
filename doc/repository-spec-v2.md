@@ -135,7 +135,7 @@ details on token management see: `dart pub token --help`.
 
 The tokens are inserted verbatim in the header, therefore they have to adhere to
  https://www.rfc-editor.org/rfc/rfc6750#section-2.1. This means they must match
- the regex: `^[a-zA-Z0-9._~+/=-]*$`.
+ the regex: `^[a-zA-Z0-9._~+/=-]+$`.
 
 
 ### Missing Authentication or Invalid Token
