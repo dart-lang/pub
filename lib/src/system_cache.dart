@@ -269,8 +269,14 @@ class SystemCache {
     if (package == null) {
       return null;
     }
-    // TODO: Pass some maxAge to getVersions
-    final available = await getVersions(package);
+
+    final List<PackageId> available;
+    try {
+      // TODO: Pass some maxAge to getVersions
+      available = await getVersions(package);
+    } on PackageNotFoundException {
+      return null;
+    }
     if (available.isEmpty) {
       return null;
     }

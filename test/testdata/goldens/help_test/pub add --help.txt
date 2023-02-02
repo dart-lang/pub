@@ -22,16 +22,16 @@ For example:
   * Add multiple dependencies:
     `dart pub add foo dev:bar`
   * Add a path dependency:
-    `dart pub add 'foo{"path":"../foo"}'`
+    `dart pub add 'foo:{"path":"../foo"}'`
   * Add a hosted dependency:
-    `dart pub add 'foo{"hosted":"my-pub.dev"}'`
+    `dart pub add 'foo:{"hosted":"my-pub.dev"}'`
   * Add an sdk dependency:
-    `dart pub add 'foo{"sdk":"flutter"}'`
+    `dart pub add 'foo:{"sdk":"flutter"}'`
   * Add a git dependency:
-    `dart pub add 'foo{"git":"https://github.com/foo/foo"}'`
+    `dart pub add 'foo:{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
     `dart pub add \
-      'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
+      'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
 
 Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor]
        ...]

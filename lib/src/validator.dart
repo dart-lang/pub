@@ -19,6 +19,7 @@ import 'validator/dependency_override.dart';
 import 'validator/deprecated_fields.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
+import 'validator/file_case.dart';
 import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
 import 'validator/gitignore.dart';
@@ -136,6 +137,7 @@ abstract class Validator {
     required List<String> errors,
   }) async {
     var validators = [
+      FileCaseValidator(),
       AnalyzeValidator(),
       GitignoreValidator(),
       PubspecValidator(),

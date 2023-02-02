@@ -62,16 +62,16 @@ For example:
   * Add multiple dependencies:
     `$topLevelProgram pub add foo dev:bar`
   * Add a path dependency:
-    `$topLevelProgram pub add 'foo{"path":"../foo"}'`
+    `$topLevelProgram pub add 'foo:{"path":"../foo"}'`
   * Add a hosted dependency:
-    `$topLevelProgram pub add 'foo{"hosted":"my-pub.dev"}'`
+    `$topLevelProgram pub add 'foo:{"hosted":"my-pub.dev"}'`
   * Add an sdk dependency:
-    `$topLevelProgram pub add 'foo{"sdk":"flutter"}'`
+    `$topLevelProgram pub add 'foo:{"sdk":"flutter"}'`
   * Add a git dependency:
-    `$topLevelProgram pub add 'foo{"git":"https://github.com/foo/foo"}'`
+    `$topLevelProgram pub add 'foo:{"git":"https://github.com/foo/foo"}'`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add \\
-      'foo{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
+      'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
 
   @override
   String get argumentsDescription =>

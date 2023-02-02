@@ -140,14 +140,13 @@ class GlobalPackages {
   /// [url] is an optional custom pub server URL. If not null, the package to be
   /// activated will be fetched from this URL instead of the default pub URL.
   Future<void> activateHosted(
-    String name,
-    VersionConstraint constraint,
+    PackageRange range,
     List<String>? executables, {
     required bool overwriteBinStubs,
     String? url,
   }) async {
     await _installInCache(
-      cache.hosted.refFor(name, url: url).withConstraint(constraint),
+      range,
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
