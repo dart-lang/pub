@@ -12,8 +12,9 @@ void main() {
     await servePackages();
 
     await runPub(
-        args: ['global', 'run', 'foo:bar'],
-        error: startsWith('No active package foo.'),
-        exitCode: exit_codes.DATA);
+      args: ['global', 'run', 'foo:bar'],
+      error: startsWith('No active package foo.'),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

@@ -12,12 +12,16 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
 
-    await d.dir('foo',
-        [d.libDir('foo', 'foo 0.0.1'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir(
+      'foo',
+      [d.libDir('foo', 'foo 0.0.1'), d.libPubspec('foo', '0.0.1')],
+    ).create();
 
-    await d.appDir(dependencies: {
-      'foo': {'path': '../foo'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': '../foo'}
+      },
+    ).create();
 
     await pubGet();
 

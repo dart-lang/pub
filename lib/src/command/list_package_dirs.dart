@@ -25,10 +25,17 @@ class ListPackageDirsCommand extends PubCommand {
   bool get hidden => true;
 
   ListPackageDirsCommand() {
-    argParser.addOption('format',
-        help: 'How output should be displayed.', allowed: ['json']);
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'format',
+      help: 'How output should be displayed.',
+      allowed: ['json'],
+    );
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
@@ -37,19 +44,22 @@ class ListPackageDirsCommand extends PubCommand {
 
     if (!fileExists(entrypoint.lockFilePath)) {
       dataError(
-          'Package "myapp" has no lockfile. Please run "$topLevelProgram pub get" first.');
+        'Package "myapp" has no lockfile. Please run "$topLevelProgram pub get" first.',
+      );
     }
 
     var output = {};
 
     // Include the local paths to all locked packages.
-    var packages = mapMap(entrypoint.lockFile.packages,
-        value: (String name, PackageId package) {
-      var packageDir = cache.getDirectory(package);
-      // Normalize paths and make them absolute for backwards compatibility
-      // with the protocol used by the analyzer.
-      return p.normalize(p.absolute(p.join(packageDir, 'lib')));
-    });
+    var packages = mapMap(
+      entrypoint.lockFile.packages,
+      value: (String name, PackageId package) {
+        var packageDir = cache.getDirectory(package);
+        // Normalize paths and make them absolute for backwards compatibility
+        // with the protocol used by the analyzer.
+        return p.normalize(p.absolute(p.join(packageDir, 'lib')));
+      },
+    );
 
     // Include the self link.
     packages[entrypoint.root.name] =

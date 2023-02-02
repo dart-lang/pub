@@ -44,11 +44,14 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
-    Entrypoint entrypoint, Executable executable, List<String> args,
-    {bool enableAsserts = false,
-    required Future<void> Function(Executable) recompile,
-    List<String> vmArgs = const [],
-    required bool alwaysUseSubprocess}) async {
+  Entrypoint entrypoint,
+  Executable executable,
+  List<String> args, {
+  bool enableAsserts = false,
+  required Future<void> Function(Executable) recompile,
+  List<String> vmArgs = const [],
+  required bool alwaysUseSubprocess,
+}) async {
   final package = executable.package;
 
   // Make sure the package is an immediate dependency of the entrypoint or the
@@ -147,10 +150,13 @@ Future<int> runExecutable(
 /// otherwise starts new vm in a subprocess. If [alwaysUseSubprocess] is `true`
 /// a new process will always be started.
 Future<int> _runDartProgram(
-    String path, List<String> args, String packageConfig,
-    {bool enableAsserts = false,
-    List<String> vmArgs = const <String>[],
-    required bool alwaysUseSubprocess}) async {
+  String path,
+  List<String> args,
+  String packageConfig, {
+  bool enableAsserts = false,
+  List<String> vmArgs = const <String>[],
+  required bool alwaysUseSubprocess,
+}) async {
   path = p.absolute(path);
   packageConfig = p.absolute(packageConfig);
 
@@ -158,8 +164,13 @@ Future<int> _runDartProgram(
   // That provides better signal handling, and possibly faster startup.
   if ((!alwaysUseSubprocess) && vmArgs.isEmpty) {
     var argList = args.toList();
-    return await isolate.runUri(p.toUri(path), argList, '',
-        enableAsserts: enableAsserts, packageConfig: p.toUri(packageConfig));
+    return await isolate.runUri(
+      p.toUri(path),
+      argList,
+      '',
+      enableAsserts: enableAsserts,
+      packageConfig: p.toUri(packageConfig),
+    );
   } else {
     // By ignoring sigint, only the child process will get it when
     // they are sent to the current process group. That is what happens when
@@ -300,8 +311,9 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   if (!fileExists(p.join(root, 'pubspec.yaml'))) {
     throw CommandResolutionFailedException._(
-        'Could not find file `$descriptor`',
-        CommandResolutionIssue.fileNotFound);
+      'Could not find file `$descriptor`',
+      CommandResolutionIssue.fileNotFound,
+    );
   }
   final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
   try {
@@ -310,7 +322,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   } on DataException catch (e) {
     log.fine('Resolution not up to date: ${e.message}. Redoing.');
     try {
-      await warningsOnlyUnlessTerminal(
+      await errorsOnlyUnlessTerminal(
         () => entrypoint.acquireDependencies(
           SolveType.get,
           analytics: analytics,
@@ -318,7 +330,9 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       );
     } on ApplicationException catch (e) {
       throw CommandResolutionFailedException._(
-          e.toString(), CommandResolutionIssue.pubGetFailed);
+        e.toString(),
+        CommandResolutionIssue.pubGetFailed,
+      );
     }
   }
 
@@ -368,7 +382,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     if (!fileExists(snapshotPath) ||
         entrypoint.packageGraph.isPackageMutable(package)) {
       try {
-        await warningsOnlyUnlessTerminal(
+        await errorsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(
             executable,
             additionalSources: additionalSources,

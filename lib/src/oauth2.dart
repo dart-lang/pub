@@ -23,9 +23,11 @@ import 'utils.dart';
 /// The global HTTP client with basic retries. Used instead of retryForHttp for
 /// OAuth calls because the OAuth2 package requires a client to be passed. While
 /// the retry logic is more basic, this is fine for the publishing process.
-final _retryHttpClient = RetryClient(globalHttpClient,
-    when: (response) => response.statusCode >= 500,
-    whenError: (e, _) => isHttpIOException(e));
+final _retryHttpClient = RetryClient(
+  globalHttpClient,
+  when: (response) => response.statusCode >= 500,
+  whenError: (e, _) => isHttpIOException(e),
+);
 
 /// The pub client's OAuth2 identifier.
 const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
@@ -105,7 +107,8 @@ void logout(SystemCache cache) {
     }
   } else {
     log.message(
-        'No existing credentials file $credentialsFile. Cannot log out.');
+      'No existing credentials file $credentialsFile. Cannot log out.',
+    );
   }
 }
 
@@ -153,12 +156,14 @@ Future<Client> _getClient(SystemCache cache) async {
   var credentials = loadCredentials(cache);
   if (credentials == null) return await _authorize();
 
-  var client = Client(credentials,
-      identifier: _identifier,
-      secret: _secret,
-      // Google's OAuth2 API doesn't support basic auth.
-      basicAuth: false,
-      httpClient: _retryHttpClient);
+  var client = Client(
+    credentials,
+    identifier: _identifier,
+    secret: _secret,
+    // Google's OAuth2 API doesn't support basic auth.
+    basicAuth: false,
+    httpClient: _retryHttpClient,
+  );
   _saveCredentials(cache, client.credentials);
   return client;
 }
@@ -232,12 +237,13 @@ String _legacyCredentialsFile(SystemCache cache) {
 ///
 /// Returns a Future that completes to a fully-authorized [Client].
 Future<Client> _authorize() async {
-  var grant =
-      AuthorizationCodeGrant(_identifier, _authorizationEndpoint, tokenEndpoint,
-          secret: _secret,
-          // Google's OAuth2 API doesn't support basic auth.
-          basicAuth: false,
-          httpClient: _retryHttpClient);
+  var grant = AuthorizationCodeGrant(
+    _identifier, _authorizationEndpoint, tokenEndpoint,
+    secret: _secret,
+    // Google's OAuth2 API doesn't support basic auth.
+    basicAuth: false,
+    httpClient: _retryHttpClient,
+  );
 
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as
@@ -261,8 +267,9 @@ Future<Client> _authorize() async {
   });
 
   var authUrl = grant.getAuthorizationUrl(
-      Uri.parse('http://localhost:${server.port}'),
-      scopes: _scopes);
+    Uri.parse('http://localhost:${server.port}'),
+    scopes: _scopes,
+  );
 
   log.message(
       'Pub needs your authorization to upload packages on your behalf.\n'

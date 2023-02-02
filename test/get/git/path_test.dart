@@ -22,11 +22,13 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir(dependencies: {
-      'sub': {
-        'git': {'url': '../foo.git', 'path': 'subdir'}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'subdir'}
+        }
+      },
+    ).create();
 
     await pubGet();
 
@@ -41,8 +43,9 @@ void main() {
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'sub',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir')),
+        name: 'sub',
+        path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir'),
+      ),
     ]).validate();
   });
 
@@ -56,11 +59,13 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir(dependencies: {
-      'sub': {
-        'git': {'url': '../foo.git', 'path': 'sub/dir%25'}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'sub': {
+          'git': {'url': '../foo.git', 'path': 'sub/dir%25'}
+        }
+      },
+    ).create();
 
     await pubGet();
 
@@ -77,28 +82,33 @@ void main() {
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'sub',
-          path:
-              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
+        name: 'sub',
+        path: pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25'),
+      ),
     ]).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
+      p.join(d.sandbox, appPath, 'pubspec.lock'),
+      SystemCache().sources,
+    );
 
     expect(
-        (lockFile.packages['sub']!.description.description as GitDescription)
-            .path,
-        'sub/dir%25',
-        reason: 'use uris to specify the path relative to the repo');
+      (lockFile.packages['sub']!.description.description as GitDescription)
+          .path,
+      'sub/dir%25',
+      reason: 'use uris to specify the path relative to the repo',
+    );
   });
 
   group('requires path to be absolute', () {
     test('absolute path', () async {
-      await d.appDir(dependencies: {
-        'sub': {
-          'git': {'url': '../foo.git', 'path': '/subdir'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'sub': {
+            'git': {'url': '../foo.git', 'path': '/subdir'}
+          }
+        },
+      ).create();
 
       await pubGet(
         error: contains(
@@ -108,11 +118,13 @@ void main() {
       );
     });
     test('scheme', () async {
-      await d.appDir(dependencies: {
-        'sub': {
-          'git': {'url': '../foo.git', 'path': 'https://subdir'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'sub': {
+            'git': {'url': '../foo.git', 'path': 'https://subdir'}
+          }
+        },
+      ).create();
 
       await pubGet(
         error: contains(
@@ -122,11 +134,13 @@ void main() {
       );
     });
     test('fragment', () async {
-      await d.appDir(dependencies: {
-        'sub': {
-          'git': {'url': '../foo.git', 'path': 'subdir/dir#fragment'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'sub': {
+            'git': {'url': '../foo.git', 'path': 'subdir/dir#fragment'}
+          }
+        },
+      ).create();
 
       await pubGet(
         error: contains(
@@ -137,11 +151,13 @@ void main() {
     });
 
     test('query', () async {
-      await d.appDir(dependencies: {
-        'sub': {
-          'git': {'url': '../foo.git', 'path': 'subdir/dir?query'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'sub': {
+            'git': {'url': '../foo.git', 'path': 'subdir/dir?query'}
+          }
+        },
+      ).create();
 
       await pubGet(
         error: contains(
@@ -152,14 +168,16 @@ void main() {
     });
 
     test('authority', () async {
-      await d.appDir(dependencies: {
-        'sub': {
-          'git': {
-            'url': '../foo.git',
-            'path': 'bob:pwd@somewhere.example.com/subdir'
+      await d.appDir(
+        dependencies: {
+          'sub': {
+            'git': {
+              'url': '../foo.git',
+              'path': 'bob:pwd@somewhere.example.com/subdir'
+            }
           }
-        }
-      }).create();
+        },
+      ).create();
 
       await pubGet(
         error: contains(
@@ -181,14 +199,16 @@ void main() {
     ]);
     await repo.create();
 
-    await d.appDir(dependencies: {
-      'sub': {
-        'git': {
-          'url': p.toUri(p.join(d.sandbox, 'foo.git')).toString(),
-          'path': 'sub/dir%25'
+    await d.appDir(
+      dependencies: {
+        'sub': {
+          'git': {
+            'url': p.toUri(p.join(d.sandbox, 'foo.git')).toString(),
+            'path': 'sub/dir%25'
+          }
         }
-      }
-    }).create();
+      },
+    ).create();
 
     await pubGet();
 
@@ -205,40 +225,49 @@ void main() {
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'sub',
-          path:
-              pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25')),
+        name: 'sub',
+        path: pathInCache('git/foo-${await repo.revParse('HEAD')}/sub/dir%25'),
+      ),
     ]).validate();
 
     final lockFile = LockFile.load(
-        p.join(d.sandbox, appPath, 'pubspec.lock'), SystemCache().sources);
+      p.join(d.sandbox, appPath, 'pubspec.lock'),
+      SystemCache().sources,
+    );
 
     expect(
-        (lockFile.packages['sub']!.description.description as GitDescription)
-            .path,
-        'sub/dir%25',
-        reason: 'use uris to specify the path relative to the repo');
+      (lockFile.packages['sub']!.description.description as GitDescription)
+          .path,
+      'sub/dir%25',
+      reason: 'use uris to specify the path relative to the repo',
+    );
   });
 
   test('depends on multiple packages in subdirectories', () async {
     ensureGit();
 
     var repo = d.git('foo.git', [
-      d.dir('subdir1',
-          [d.libPubspec('sub1', '1.0.0'), d.libDir('sub1', '1.0.0')]),
       d.dir(
-          'subdir2', [d.libPubspec('sub2', '1.0.0'), d.libDir('sub2', '1.0.0')])
+        'subdir1',
+        [d.libPubspec('sub1', '1.0.0'), d.libDir('sub1', '1.0.0')],
+      ),
+      d.dir(
+        'subdir2',
+        [d.libPubspec('sub2', '1.0.0'), d.libDir('sub2', '1.0.0')],
+      )
     ]);
     await repo.create();
 
-    await d.appDir(dependencies: {
-      'sub1': {
-        'git': {'url': '../foo.git', 'path': 'subdir1'}
+    await d.appDir(
+      dependencies: {
+        'sub1': {
+          'git': {'url': '../foo.git', 'path': 'subdir1'}
+        },
+        'sub2': {
+          'git': {'url': '../foo.git', 'path': 'subdir2'}
+        }
       },
-      'sub2': {
-        'git': {'url': '../foo.git', 'path': 'subdir2'}
-      }
-    }).create();
+    ).create();
 
     await pubGet();
 
@@ -254,11 +283,13 @@ void main() {
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'sub1',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1')),
+        name: 'sub1',
+        path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir1'),
+      ),
       d.packageConfigEntry(
-          name: 'sub2',
-          path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2')),
+        name: 'sub2',
+        path: pathInCache('git/foo-${await repo.revParse('HEAD')}/subdir2'),
+      ),
     ]).validate();
   });
 
@@ -268,7 +299,9 @@ void main() {
 
     var repo = d.git('foo.git', [
       d.dir(
-          'subdir', [d.libPubspec('sub1', '1.0.0'), d.libDir('sub1', '1.0.0')])
+        'subdir',
+        [d.libPubspec('sub1', '1.0.0'), d.libDir('sub1', '1.0.0')],
+      )
     ]);
     await repo.create();
     var oldRevision = await repo.revParse('HEAD');
@@ -277,18 +310,22 @@ void main() {
 
     await d.git('foo.git', [
       d.dir(
-          'subdir', [d.libPubspec('sub2', '1.0.0'), d.libDir('sub2', '1.0.0')])
+        'subdir',
+        [d.libPubspec('sub2', '1.0.0'), d.libDir('sub2', '1.0.0')],
+      )
     ]).commit();
     var newRevision = await repo.revParse('HEAD');
 
-    await d.appDir(dependencies: {
-      'sub1': {
-        'git': {'url': '../foo.git', 'path': 'subdir', 'ref': oldRevision}
+    await d.appDir(
+      dependencies: {
+        'sub1': {
+          'git': {'url': '../foo.git', 'path': 'subdir', 'ref': oldRevision}
+        },
+        'sub2': {
+          'git': {'url': '../foo.git', 'path': 'subdir'}
+        }
       },
-      'sub2': {
-        'git': {'url': '../foo.git', 'path': 'subdir'}
-      }
-    }).create();
+    ).create();
 
     await pubGet();
 
@@ -306,9 +343,13 @@ void main() {
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(
-          name: 'sub1', path: pathInCache('git/foo-$oldRevision/subdir')),
+        name: 'sub1',
+        path: pathInCache('git/foo-$oldRevision/subdir'),
+      ),
       d.packageConfigEntry(
-          name: 'sub2', path: pathInCache('git/foo-$newRevision/subdir')),
+        name: 'sub2',
+        path: pathInCache('git/foo-$newRevision/subdir'),
+      ),
     ]).validate();
   });
 }

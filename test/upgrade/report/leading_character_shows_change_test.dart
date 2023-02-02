@@ -70,7 +70,9 @@ void main() {
     ]).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r'''
+    await pubUpgrade(
+      output: RegExp(
+        r'''
 Resolving dependencies\.\.\..*
 \+ added .*
 \* description_changed .*
@@ -81,6 +83,10 @@ Resolving dependencies\.\.\..*
 > upgraded .*
 These packages are no longer being depended on:
 - removed .*
-''', multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
+''',
+        multiLine: true,
+      ),
+      environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'},
+    );
   });
 }

@@ -15,9 +15,11 @@ void main() {
     await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet(
-        args: ['--dry-run'],
-        output: allOf(
-            [contains('+ foo 1.0.0'), contains('Would change 1 dependency.')]));
+      args: ['--dry-run'],
+      output: allOf(
+        [contains('+ foo 1.0.0'), contains('Would change 1 dependency.')],
+      ),
+    );
 
     await d.dir(appPath, [
       // The lockfile should not be created.

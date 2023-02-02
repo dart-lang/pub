@@ -19,22 +19,26 @@ void main() {
       ..discontinue('foo')
       ..discontinue('transitive');
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued)
   transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
-''');
+''',
+    );
     server.discontinue('foo', replacementText: 'bar');
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
   transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
-''');
+''',
+    );
   });
 
   test('Warns about discontinued dev_dependencies', () async {
@@ -60,21 +64,25 @@ environment:
       ..discontinue('transitive');
 
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued)
     transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
-''');
+''',
+    );
     server.discontinue('foo', replacementText: 'bar');
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
   transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
-''');
+''',
+    );
   });
 }

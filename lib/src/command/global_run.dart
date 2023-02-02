@@ -28,10 +28,12 @@ class GlobalRunCommand extends PubCommand {
   GlobalRunCommand({this.alwaysUseSubprocess = false}) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
-    argParser.addMultiOption('enable-experiment',
-        help: 'Runs the executable in a VM with the given experiments enabled. '
-            '(Will disable snapshotting, resulting in slower startup).',
-        valueHelp: 'experiment');
+    argParser.addMultiOption(
+      'enable-experiment',
+      help: 'Runs the executable in a VM with the given experiments enabled. '
+          '(Will disable snapshotting, resulting in slower startup).',
+      valueHelp: 'experiment',
+    );
     argParser.addFlag(
       'sound-null-safety',
       help: 'Override the default null safety execution mode.',
@@ -78,8 +80,9 @@ class GlobalRunCommand extends PubCommand {
       args,
       vmArgs: vmArgs,
       enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-      recompile: (executable) => log.warningsOnlyUnlessTerminal(
-          () => globalEntrypoint.precompileExecutable(executable)),
+      recompile: (executable) => log.errorsOnlyUnlessTerminal(
+        () => globalEntrypoint.precompileExecutable(executable),
+      ),
       alwaysUseSubprocess: alwaysUseSubprocess,
     );
     overrideExitCode(exitCode);

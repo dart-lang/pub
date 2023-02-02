@@ -15,10 +15,11 @@ void main() {
     ]).create();
 
     await runPub(
-        args: ['cache', 'repair'],
-        error: contains('Failed to reactivate foo:'),
-        output: contains('Failed to reactivate 1 package:\n'
-            '- foo'),
-        exitCode: exit_codes.UNAVAILABLE);
+      args: ['cache', 'repair'],
+      error: contains('Failed to reactivate foo:'),
+      output: contains('Failed to reactivate 1 package:\n'
+          '- foo'),
+      exitCode: exit_codes.UNAVAILABLE,
+    );
   });
 }

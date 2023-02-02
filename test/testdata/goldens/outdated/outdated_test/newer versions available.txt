@@ -114,18 +114,10 @@ foo           *1.2.3   *1.3.0      *2.0.0      3.0.0
 dev_dependencies:
 builder       *1.2.3   *1.3.0      2.0.0       2.0.0   
 
-transitive dependencies:
-transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0   
-transitive2   -        -           1.0.0       1.0.0   
-
-transitive dev_dependencies:
-dev_trans     *1.0.0   -           *1.0.0      2.0.0   
-transitive3   -        -           1.0.0       1.0.0   
-
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -166,18 +158,10 @@ local_package  0.0.1 (path)  0.0.1 (path)  0.0.1 (path)  0.0.1 (path)
 dev_dependencies:
 builder        *1.2.3        *1.3.0        2.0.0         2.0.0         
 
-transitive dependencies:
-transitive     *1.2.3        *1.3.0        *1.3.0        2.0.0         
-transitive2    -             -             1.0.0         1.0.0         
-
-transitive dev_dependencies:
-dev_trans      *1.0.0        -             *1.0.0        2.0.0         
-transitive3    -             -             1.0.0         1.0.0         
-
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -195,18 +179,10 @@ foo           *1.2.3   *1.3.0      *2.0.0      3.0.0
 dev_dependencies:
 builder       *1.2.3   *1.3.0      *2.0.0      3.0.0-alpha  
 
-transitive dependencies:
-transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0        
-transitive2   -        -           1.0.0       1.0.0        
-
-transitive dev_dependencies:
-dev_trans     *1.0.0   -           *1.0.0      2.0.0        
-transitive3   -        -           1.0.0       1.0.0        
-
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -221,11 +197,8 @@ Package Name  Current  Upgradable  Resolvable  Latest
 direct dependencies:
 foo           *1.2.3   *1.3.0      3.0.0       3.0.0   
 
-transitive dependencies:
-transitive    *1.2.3   2.0.0       2.0.0       2.0.0   
-
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
+1 upgradable dependency is locked (in pubspec.lock) to an older version.
+To update it, use `dart pub upgrade`.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -245,113 +218,15 @@ foo           *1.2.3   *1.3.0      *2.0.0      3.0.0
 dev_dependencies:
 builder       *1.2.3   *1.3.0      2.0.0       2.0.0   
 
-transitive dependencies:
-transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0   
-transitive2   -        -           1.0.0       1.0.0   
-
-transitive dev_dependencies:
-dev_trans     *1.0.0   -           *1.0.0      2.0.0   
-transitive3   -        -           1.0.0       1.0.0   
-
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 7
-$ pub outdated --no-color --mode=null-safety
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-Package Name  Current  Upgradable  Resolvable  Latest  
-
-direct dependencies: all support null safety.
-
-dev_dependencies: all support null safety.
-All dependencies opt in to null-safety.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 8
-$ pub outdated --no-color --mode=null-safety --transitive
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-Package Name  Current  Upgradable  Resolvable  Latest  
-
-direct dependencies: all support null safety.
-
-dev_dependencies: all support null safety.
-
-transitive dependencies:
-transitive2   -        -           ✓1.0.0      ✓1.0.0  
-
-transitive dev_dependencies:
-transitive3   -        -           ✓1.0.0      ✓1.0.0  
-All dependencies opt in to null-safety.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 9
-$ pub outdated --no-color --mode=null-safety --no-prereleases
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-Package Name  Current  Upgradable  Resolvable  Latest  
-
-direct dependencies: all support null safety.
-
-dev_dependencies: all support null safety.
-All dependencies opt in to null-safety.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 10
-$ pub outdated --json --mode=null-safety
-{
-  "packages": [
-    {
-      "package": "transitive2",
-      "kind": "transitive",
-      "isDiscontinued": false,
-      "current": null,
-      "upgradable": null,
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": true
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": true
-      }
-    },
-    {
-      "package": "transitive3",
-      "kind": "transitive",
-      "isDiscontinued": false,
-      "current": null,
-      "upgradable": null,
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": true
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": true
-      }
-    }
-  ]
-}
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 11
 $ pub outdated --json --no-dev-dependencies
 {
   "packages": [

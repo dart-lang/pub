@@ -29,7 +29,11 @@ class Assignment extends Term {
 
   /// Creates a derivation: an assignment that's automatically propagated from
   /// incompatibilities.
-  Assignment.derivation(PackageRange package, bool isPositive, this.cause,
-      this.decisionLevel, this.index)
-      : super(package, isPositive);
+  Assignment.derivation(
+    PackageRange package,
+    bool isPositive,
+    this.cause,
+    this.decisionLevel,
+    this.index,
+  ) : super(package, isPositive);
 }

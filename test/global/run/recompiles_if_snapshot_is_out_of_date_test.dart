@@ -12,9 +12,13 @@ import '../../test_pub.dart';
 void main() {
   test('recompiles a script if the snapshot is out-of-date', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
@@ -28,8 +32,15 @@ void main() {
       ])
     ]).create();
 
-    deleteEntry(p.join(d.dir(cachePath).io.path, 'global_packages', 'foo',
-        'bin', 'script.dart-$versionSuffix.snapshot'));
+    deleteEntry(
+      p.join(
+        d.dir(cachePath).io.path,
+        'global_packages',
+        'foo',
+        'bin',
+        'script.dart-$versionSuffix.snapshot',
+      ),
+    );
     var pub = await pubRun(global: true, args: ['foo:script']);
     // In the real world this would just print "hello!", but since we collect
     // all output we see the precompilation messages as well.
@@ -40,8 +51,10 @@ void main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin',
-              [d.file('script.dart-$versionSuffix.snapshot', contains('ok'))])
+          d.dir(
+            'bin',
+            [d.file('script.dart-$versionSuffix.snapshot', contains('ok'))],
+          )
         ])
       ])
     ]).validate();

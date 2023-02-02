@@ -77,16 +77,17 @@ class Incompatibility {
     }
 
     return Incompatibility._(
-        byName.values.expand((byRef) {
-          // If there are any positive terms for a given package, we can discard
-          // any negative terms.
-          var positiveTerms =
-              byRef.values.where((term) => term.isPositive).toList();
-          if (positiveTerms.isNotEmpty) return positiveTerms;
+      byName.values.expand((byRef) {
+        // If there are any positive terms for a given package, we can discard
+        // any negative terms.
+        var positiveTerms =
+            byRef.values.where((term) => term.isPositive).toList();
+        if (positiveTerms.isNotEmpty) return positiveTerms;
 
-          return byRef.values;
-        }).toList(),
-        cause);
+        return byRef.values;
+      }).toList(),
+      cause,
+    );
   }
 
   Incompatibility._(this.terms, this.cause);
@@ -222,8 +223,12 @@ class Incompatibility {
   ///
   /// If [thisLine] and/or [otherLine] are passed, they indicate line numbers
   /// that should be associated with [this] and [other], respectively.
-  String andToString(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
+  String andToString(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
     var requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
     if (requiresBoth != null) return requiresBoth;
 
@@ -246,8 +251,12 @@ class Incompatibility {
   /// and Y", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String? _tryRequiresBoth(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
+  String? _tryRequiresBoth(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
     var thisPositive = _singleTermWhere((term) => term.isPositive);
@@ -281,8 +290,12 @@ class Incompatibility {
   /// Z", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String? _tryRequiresThrough(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
+  String? _tryRequiresThrough(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
     var thisNegative = _singleTermWhere((term) => !term.isPositive);
@@ -344,10 +357,12 @@ class Incompatibility {
       buffer.write('requires ');
     }
 
-    buffer.write(latter.terms
-        .where((term) => !term.isPositive)
-        .map((term) => _terse(term, details))
-        .join(' or '));
+    buffer.write(
+      latter.terms
+          .where((term) => !term.isPositive)
+          .map((term) => _terse(term, details))
+          .join(' or '),
+    );
 
     if (latterLine != null) buffer.write(' ($latterLine)');
 
@@ -358,8 +373,12 @@ class Incompatibility {
   /// forbidden", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String? _tryRequiresForbidden(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
+  String? _tryRequiresForbidden(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
     if (terms.length != 1 && other.terms.length != 1) return null;
 
     Incompatibility prior;
@@ -391,9 +410,11 @@ class Incompatibility {
       buffer.write('if $priorString then ');
     } else {
       buffer.write(_terse(positives.first, details, allowEvery: true));
-      buffer.write(prior.cause == IncompatibilityCause.dependency
-          ? ' depends on '
-          : ' requires ');
+      buffer.write(
+        prior.cause == IncompatibilityCause.dependency
+            ? ' depends on '
+            : ' requires ',
+      );
     }
 
     if (latter.cause == IncompatibilityCause.unknownSource) {
@@ -463,8 +484,11 @@ class Incompatibility {
   ///
   /// If [allowEvery] is `true`, this will return "every version of foo" instead
   /// of "foo any".
-  String _terse(Term? term, Map<String, PackageDetail>? details,
-      {bool allowEvery = false}) {
+  String _terse(
+    Term? term,
+    Map<String, PackageDetail>? details, {
+    bool allowEvery = false,
+  }) {
     if (allowEvery && term!.constraint.isAny) {
       return 'every version of ${_terseRef(term, details)}';
     } else {

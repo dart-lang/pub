@@ -26,15 +26,23 @@ class UploaderCommand extends PubCommand {
   Uri get server => Uri.parse(argResults['server']);
 
   UploaderCommand() {
-    argParser.addOption('server',
-        defaultsTo: Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dev',
-        help: 'The package server on which the package is hosted.\n',
-        hide: true);
-    argParser.addOption('package',
-        help: 'The package whose uploaders will be modified.\n'
-            '(defaults to the current package)');
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'server',
+      defaultsTo: Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dev',
+      help: 'The package server on which the package is hosted.\n',
+      hide: true,
+    );
+    argParser.addOption(
+      'package',
+      help: 'The package whose uploaders will be modified.\n'
+          '(defaults to the current package)',
+    );
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override

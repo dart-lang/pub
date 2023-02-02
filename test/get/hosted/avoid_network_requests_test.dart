@@ -39,12 +39,13 @@ void main() {
     // The get should not have done any network requests since the lock file is
     // up to date.
     expect(
-        globalServer.requestedPaths,
-        unorderedEquals([
-          // Bar should be requested because it's new, but not foo.
-          'api/packages/bar',
-          // Need to download it.
-          'packages/bar/versions/1.2.0.tar.gz'
-        ]));
+      globalServer.requestedPaths,
+      unorderedEquals([
+        // Bar should be requested because it's new, but not foo.
+        'api/packages/bar',
+        // Need to download it.
+        'packages/bar/versions/1.2.0.tar.gz'
+      ]),
+    );
   });
 }

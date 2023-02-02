@@ -64,7 +64,8 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   /// The language version implied by a Dart sdk version.
   factory LanguageVersion.fromLanguageVersionToken(
-          LanguageVersionToken version) =>
+    LanguageVersionToken version,
+  ) =>
       LanguageVersion(version.major, version.minor);
 
   bool get supportsNullSafety => this >= firstVersionWithNullSafety;

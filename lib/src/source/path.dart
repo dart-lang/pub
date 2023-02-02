@@ -38,7 +38,11 @@ class PathSource extends Source {
   ///
   /// If [path] is relative it is resolved relative to [relativeTo]
   PackageId idFor(
-      String name, Version version, String path, String relativeTo) {
+    String name,
+    Version version,
+    String path,
+    String relativeTo,
+  ) {
     return PackageId(
       name,
       version,
@@ -84,8 +88,12 @@ class PathSource extends Source {
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir}) {
+  PackageId parseId(
+    String name,
+    Version version,
+    description, {
+    String? containingDir,
+  }) {
     if (description is! Map) {
       throw FormatException('The description must be a map.');
     }
@@ -130,7 +138,10 @@ class PathSource extends Source {
 
   @override
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache) async {
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  ) async {
     final description = ref.description;
     if (description is! PathDescription) {
       throw ArgumentError('Wrong source');
@@ -139,7 +150,10 @@ class PathSource extends Source {
     // version.
     var pubspec = _loadPubspec(ref, cache);
     var id = PackageId(
-        ref.name, pubspec.version, ResolvedPathDescription(description));
+      ref.name,
+      pubspec.version,
+      ResolvedPathDescription(description),
+    );
     // Store the pubspec in memory if we need to refer to it again.
     cache.cachedPubspecs[id] = pubspec;
     return [id];
@@ -212,7 +226,8 @@ class PathDescription extends Description {
   }) {
     return relative
         ? PathSource.relativePathWithPosixSeparators(
-            p.relative(path, from: containingDir))
+            p.relative(path, from: containingDir),
+          )
         : path;
   }
 

@@ -17,7 +17,7 @@ Usage: pub remove [override:]<package1> [[override:]<package2>...]
 -n, --dry-run            Report what dependencies would change but don't change
                          any.
     --[no-]precompile    Precompile executables in immediate dependencies.
--C, --directory=<dir>    Run this in the directory<dir>.
+-C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-remove for detailed documentation.

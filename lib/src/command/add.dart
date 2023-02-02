@@ -128,18 +128,28 @@ For example:
       hide: true,
     );
 
-    argParser.addFlag('offline',
-        help: 'Use cached packages instead of accessing the network.');
+    argParser.addFlag(
+      'offline',
+      help: 'Use cached packages instead of accessing the network.',
+    );
 
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: "Report what dependencies would change but don't change any.");
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: "Report what dependencies would change but don't change any.",
+    );
 
-    argParser.addFlag('precompile',
-        help: 'Build executables in immediate dependencies.');
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
+    argParser.addFlag(
+      'precompile',
+      help: 'Build executables in immediate dependencies.',
+    );
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
     argParser.addFlag(
       'example',
       help:
@@ -187,7 +197,10 @@ Specify multiple sdk packages with descriptors.''');
       /// that a resolution exists before we update pubspec.yaml.
       // TODO(sigurdm): We should really use a spinner here.
       solveResult = await resolveVersions(
-          SolveType.upgrade, cache, Package.inMemory(updatedPubSpec));
+        SolveType.upgrade,
+        cache,
+        Package.inMemory(updatedPubSpec),
+      );
     } on GitException {
       final name = updates.first.ref.name;
       dataError('Unable to resolve package "$name" with the given '
@@ -223,9 +236,12 @@ Specify multiple sdk packages with descriptors.''');
       /// to this new dependency.
       final newRoot = Package.inMemory(updatedPubSpec);
 
-      await Entrypoint.inMemory(newRoot, cache,
-              solveResult: solveResult, lockFile: entrypoint.lockFile)
-          .acquireDependencies(
+      await Entrypoint.inMemory(
+        newRoot,
+        cache,
+        solveResult: solveResult,
+        lockFile: entrypoint.lockFile,
+      ).acquireDependencies(
         SolveType.get,
         dryRun: true,
         precompile: argResults.shouldPrecompile,
@@ -306,7 +322,8 @@ Specify multiple sdk packages with descriptors.''');
     } else {
       if (dependencyNames.contains(name)) {
         log.message(
-            '"$name" is already in "dependencies". Will try to update the constraint.');
+          '"$name" is already in "dependencies". Will try to update the constraint.',
+        );
         dependencies.removeWhere((element) => element.name == name);
       }
 
@@ -359,7 +376,8 @@ Specify multiple sdk packages with descriptors.''');
         if (match2.namedGroup('prefix') != null &&
             match2.namedGroup('descriptor') != null) {
           usageException(
-              'The only allowed prefixes are "dev:" and "override:"');
+            'The only allowed prefixes are "dev:" and "override:"',
+          );
         } else {
           final packageName = match2.namedGroup('descriptor') == null
               ? match2.namedGroup('prefix')
@@ -477,7 +495,8 @@ Specify multiple sdk packages with descriptors.''');
       }
       if (couldParseAsNewStyle) {
         usageException(
-            '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.');
+          '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.',
+        );
       } else {
         usageException('Invalid version constraint: ${e.message}');
       }
@@ -512,7 +531,9 @@ Specify multiple sdk packages with descriptors.''');
       );
     } else if (path != null) {
       ref = PackageRef(
-          packageName, PathDescription(p.absolute(path), p.isRelative(path)));
+        packageName,
+        PathDescription(p.absolute(path), p.isRelative(path)),
+      );
     } else if (argResults.sdk != null) {
       ref = cache.sdk.parseRef(packageName, argResults.sdk);
     } else {
@@ -590,13 +611,16 @@ Specify multiple sdk packages with descriptors.''');
         // Use the pubspec parsing mechanism for parsing the descriptor.
         final Pubspec dummyPubspec;
         try {
-          dummyPubspec = Pubspec.fromMap({
-            'dependencies': {
-              packageName: parsedDescriptor,
-            }
-          }, cache.sources,
-              // Resolve relative paths relative to current, not where the pubspec.yaml is.
-              location: p.toUri(p.join(p.current, 'descriptor')));
+          dummyPubspec = Pubspec.fromMap(
+            {
+              'dependencies': {
+                packageName: parsedDescriptor,
+              }
+            },
+            cache.sources,
+            // Resolve relative paths relative to current, not where the pubspec.yaml is.
+            location: p.toUri(p.join(p.current, 'descriptor')),
+          );
         } on FormatException catch (e) {
           usageException('Failed parsing package specification: ${e.message}');
         }
@@ -657,8 +681,9 @@ Specify multiple sdk packages with descriptors.''');
       } else {
         pubspecInformation = {
           ref.source.name: ref.description.serializeForPubspec(
-              containingDir: entrypoint.root.dir,
-              languageVersion: entrypoint.root.pubspec.languageVersion),
+            containingDir: entrypoint.root.dir,
+            languageVersion: entrypoint.root.pubspec.languageVersion,
+          ),
           if (description is HostedDescription || constraint != null)
             'version': versionConstraintString
         };
@@ -672,9 +697,12 @@ Specify multiple sdk packages with descriptors.''');
         // Handle the case where [dependencyKey] does not already exist.
         // We ensure it is in Block-style by default.
         yamlEditor.update(
-            [dependencyKey],
-            wrapAsYamlNode({name: pubspecInformation},
-                collectionStyle: CollectionStyle.BLOCK));
+          [dependencyKey],
+          wrapAsYamlNode(
+            {name: pubspecInformation},
+            collectionStyle: CollectionStyle.BLOCK,
+          ),
+        );
       } else {
         final packagePath = [dependencyKey, name];
 

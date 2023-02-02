@@ -63,8 +63,10 @@ class SdkConstraintValidator extends Validator {
     for (var sdk in sdks.values) {
       if (sdk.identifier == 'dart') continue;
       if (entrypoint.root.pubspec.sdkConstraints.containsKey(sdk.identifier)) {
-        validateSdkConstraint(sdk.firstPubVersion,
-            "Older versions of pub don't support ${sdk.name} SDK constraints.");
+        validateSdkConstraint(
+          sdk.firstPubVersion,
+          "Older versions of pub don't support ${sdk.name} SDK constraints.",
+        );
       }
     }
   }

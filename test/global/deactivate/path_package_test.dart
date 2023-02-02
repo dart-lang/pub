@@ -20,7 +20,8 @@ void main() {
 
     var path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
-        args: ['global', 'deactivate', 'foo'],
-        output: 'Deactivated package foo 1.0.0 at path "$path".');
+      args: ['global', 'deactivate', 'foo'],
+      output: 'Deactivated package foo 1.0.0 at path "$path".',
+    );
   });
 }

@@ -15,9 +15,10 @@ void main() {
     await pubGet();
     var pub = await pubRun(args: ['foo:script']);
     expect(
-        pub.stderr,
-        emits('Could not find package "foo". Did you forget to add a '
-            'dependency?'));
+      pub.stderr,
+      emits('Could not find package "foo". Did you forget to add a '
+          'dependency?'),
+    );
     await pub.shouldExit(exit_codes.DATA);
   });
 }

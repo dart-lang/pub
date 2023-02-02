@@ -13,8 +13,9 @@ void main() {
       ..serve('foo', '1.2.3');
 
     await runPub(
-        args: ['cache', 'add', 'foo', '-v', '>2.0.0'],
-        error: 'Package foo has no versions that match >2.0.0.',
-        exitCode: 1);
+      args: ['cache', 'add', 'foo', '-v', '>2.0.0'],
+      error: 'Package foo has no versions that match >2.0.0.',
+      exitCode: 1,
+    );
   });
 }

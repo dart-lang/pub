@@ -21,8 +21,12 @@ void main() {
 
     test('declares an "import" as a dependency in lib/', () async {
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0',
-            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'silly_monkey': '^1.2.3'},
+          sdk: '>=1.8.0 <2.0.0',
+        ),
         d.dir('lib', [
           d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
@@ -35,8 +39,12 @@ void main() {
 
     test('declares an "export" as a dependency in lib/', () async {
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0',
-            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'silly_monkey': '^1.2.3'},
+          sdk: '>=1.8.0 <2.0.0',
+        ),
         d.dir('lib', [
           d.file('library.dart', r'''
             export 'package:silly_monkey/silly_monkey.dart';
@@ -49,8 +57,12 @@ void main() {
 
     test('declares an "import" as a dependency in bin/', () async {
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0',
-            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'silly_monkey': '^1.2.3'},
+          sdk: '>=1.8.0 <2.0.0',
+        ),
         d.dir('bin', [
           d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
@@ -76,8 +88,13 @@ void main() {
               'declares an "$port" as a '
               '${isDev ? 'dev ' : ''}dependency in $devDir/', () async {
             await d.dir(appPath, [
-              d.libPubspec('test_pkg', '1.0.0',
-                  deps: deps, devDeps: devDeps, sdk: '>=1.8.0 <2.0.0'),
+              d.libPubspec(
+                'test_pkg',
+                '1.0.0',
+                deps: deps,
+                devDeps: devDeps,
+                sdk: '>=1.8.0 <2.0.0',
+              ),
               d.dir(devDir, [
                 d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
@@ -151,8 +168,12 @@ void main() {
 
     test('has analysis_options.yaml that excludes files', () async {
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0',
-            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'silly_monkey': '^1.2.3'},
+          sdk: '>=1.8.0 <2.0.0',
+        ),
         d.dir('lib', [
           d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
@@ -181,8 +202,12 @@ linter:
 
     test('has lib/analysis_options.yaml that excludes files', () async {
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0',
-            deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          deps: {'silly_monkey': '^1.2.3'},
+          sdk: '>=1.8.0 <2.0.0',
+        ),
         d.dir('lib', [
           d.file('library.dart', r'''
             import 'package:silly_monkey/silly_monkey.dart';
@@ -227,9 +252,12 @@ linter:
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(strictDeps, errors: [
-        matches('does not have silly_monkey in the `dependencies` section')
-      ]);
+      await expectValidation(
+        strictDeps,
+        errors: [
+          matches('does not have silly_monkey in the `dependencies` section')
+        ],
+      );
     });
 
     test('does not declare an "export" as a dependency', () async {
@@ -237,9 +265,12 @@ linter:
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(strictDeps, errors: [
-        matches('does not have silly_monkey in the `dependencies` section')
-      ]);
+      await expectValidation(
+        strictDeps,
+        errors: [
+          matches('does not have silly_monkey in the `dependencies` section')
+        ],
+      );
     });
 
     test('has an invalid URI', () async {
@@ -254,8 +285,12 @@ linter:
       for (var codeDir in ['bin', 'lib']) {
         test('declares an "$port" as a devDependency for $codeDir/', () async {
           await d.dir(appPath, [
-            d.libPubspec('test_pkg', '1.0.0',
-                devDeps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
+            d.libPubspec(
+              'test_pkg',
+              '1.0.0',
+              devDeps: {'silly_monkey': '^1.2.3'},
+              sdk: '>=1.8.0 <2.0.0',
+            ),
             d.dir(codeDir, [
               d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
@@ -281,10 +316,14 @@ linter:
             ]),
           ]).create();
 
-          await expectValidation(strictDeps, warnings: [
-            matches(
-                'does not have silly_monkey in the `dependencies` or `dev_dependencies` section')
-          ]);
+          await expectValidation(
+            strictDeps,
+            warnings: [
+              matches(
+                'does not have silly_monkey in the `dependencies` or `dev_dependencies` section',
+              )
+            ],
+          );
         });
       }
     }
@@ -304,8 +343,12 @@ linter:
 
       test('"package:silly_monkey"', () async {
         await d.dir(appPath, [
-          d.libPubspec('test_pkg', '1.0.0',
-              deps: {'silly_monkey': '^1.2.3'}, sdk: '>=1.8.0 <2.0.0'),
+          d.libPubspec(
+            'test_pkg',
+            '1.0.0',
+            deps: {'silly_monkey': '^1.2.3'},
+            sdk: '>=1.8.0 <2.0.0',
+          ),
           d.dir('lib', [
             d.file('library.dart', r'''
             import 'package:silly_monkey';

@@ -39,9 +39,11 @@ void main() {
       d.pubspec({'name': 'bar'})
     ]).create();
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'bar': {'path': '../bar'}
-      })
+      d.appPubspec(
+        dependencies: {
+          'bar': {'path': '../bar'}
+        },
+      )
     ]).create();
 
     await pubGet();
@@ -65,7 +67,8 @@ void main() {
       });
 
       _requiresPubGet(
-          'No pubspec.lock file found, please run "dart pub get" first.');
+        'No pubspec.lock file found, please run "dart pub get" first.',
+      );
     });
 
     group("there's no package_config.json", () {
@@ -74,7 +77,8 @@ void main() {
       });
 
       _requiresPubGet(
-          'No .dart_tool${p.separator}package_config.json file found, please run "dart pub get".');
+        'No .dart_tool${p.separator}package_config.json file found, please run "dart pub get".',
+      );
     });
 
     group('the pubspec has a new dependency', () {
@@ -82,9 +86,11 @@ void main() {
         await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {
-            'foo': {'path': '../foo'}
-          })
+          d.appPubspec(
+            dependencies: {
+              'foo': {'path': '../foo'}
+            },
+          )
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -123,16 +129,17 @@ void main() {
 
         await d.dir(appPath, [
           d.file(
-              'pubspec.lock',
-              yaml({
-                'packages': {
-                  'foo': {
-                    'description': 'foo',
-                    'version': '1.0.0',
-                    'source': 'sdk'
-                  }
+            'pubspec.lock',
+            yaml({
+              'packages': {
+                'foo': {
+                  'description': 'foo',
+                  'version': '1.0.0',
+                  'source': 'sdk'
                 }
-              }))
+              }
+            }),
+          )
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -148,9 +155,11 @@ void main() {
         await d.dir('bar', [d.libPubspec('foo', '1.0.0')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {
-            'foo': {'path': '../bar'}
-          })
+          d.appPubspec(
+            dependencies: {
+              'foo': {'path': '../bar'}
+            },
+          )
         ]).create();
 
         await pubGet();
@@ -210,9 +219,11 @@ void main() {
         await d.dir('bar', [d.libPubspec('foo', '1.0.0')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {
-            'foo': {'path': '../bar'}
-          })
+          d.appPubspec(
+            dependencies: {
+              'foo': {'path': '../bar'}
+            },
+          )
         ]).create();
 
         await pubGet();
@@ -243,9 +254,13 @@ void main() {
       setUp(() async {
         // Avoid using a path dependency because it triggers the full validation
         // logic. We want to be sure SDK-validation works without that logic.
-        server.serve('foo', '3.0.0', pubspec: {
-          'environment': {'sdk': '>=1.0.0 <2.0.0'}
-        });
+        server.serve(
+          'foo',
+          '3.0.0',
+          pubspec: {
+            'environment': {'sdk': '>=1.0.0 <2.0.0'}
+          },
+        );
 
         await d.dir(appPath, [
           d.pubspec({
@@ -269,12 +284,16 @@ void main() {
         'current Flutter SDK', () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      server.serve('foo', '3.0.0', pubspec: {
-        'environment': {
-          'flutter': '>=1.0.0 <2.0.0',
-          'sdk': defaultSdkConstraint
-        }
-      });
+      server.serve(
+        'foo',
+        '3.0.0',
+        pubspec: {
+          'environment': {
+            'flutter': '>=1.0.0 <2.0.0',
+            'sdk': defaultSdkConstraint
+          }
+        },
+      );
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
@@ -289,11 +308,12 @@ void main() {
       // Run pub manually here because otherwise we don't have access to
       // d.sandbox.
       await runPub(
-          args: ['run', 'script'],
-          environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: "Flutter 0.9.0 is incompatible with your dependencies' SDK "
-              'constraints. Please run "dart pub get" again.',
-          exitCode: exit_codes.DATA);
+        args: ['run', 'script'],
+        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+        error: "Flutter 0.9.0 is incompatible with your dependencies' SDK "
+            'constraints. Please run "dart pub get" again.',
+        exitCode: exit_codes.DATA,
+      );
     });
 
     group("a path dependency's dependency doesn't match the lockfile", () {
@@ -303,9 +323,11 @@ void main() {
         ]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {
-            'bar': {'path': '../bar'}
-          })
+          d.appPubspec(
+            dependencies: {
+              'bar': {'path': '../bar'}
+            },
+          )
         ]).create();
 
         await pubGet();
@@ -336,9 +358,11 @@ void main() {
         ]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {
-            'bar': {'path': '../bar'}
-          })
+          d.appPubspec(
+            dependencies: {
+              'bar': {'path': '../bar'}
+            },
+          )
         ]).create();
 
         await pubGet();
@@ -401,9 +425,11 @@ void main() {
         ]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {
-            'foo': {'path': '../foo'}
-          })
+          d.appPubspec(
+            dependencies: {
+              'foo': {'path': '../foo'}
+            },
+          )
         ]).create();
 
         await pubGet();
@@ -431,9 +457,13 @@ void main() {
 
     group("an overridden dependency's SDK constraint is unmatched", () {
       setUp(() async {
-        server.serve('bar', '1.0.0', pubspec: {
-          'environment': {'sdk': '0.0.0-fake'}
-        });
+        server.serve(
+          'bar',
+          '1.0.0',
+          pubspec: {
+            'environment': {'sdk': '0.0.0-fake'}
+          },
+        );
 
         await d.dir(appPath, [
           d.pubspec({
@@ -454,12 +484,16 @@ void main() {
         () async {
       // Avoid using a path dependency because it triggers the full validation
       // logic. We want to be sure SDK-validation works without that logic.
-      server.serve('foo', '3.0.0', pubspec: {
-        'environment': {
-          'flutter': '>=1.0.0 <2.0.0',
-          'sdk': defaultSdkConstraint
-        }
-      });
+      server.serve(
+        'foo',
+        '3.0.0',
+        pubspec: {
+          'environment': {
+            'flutter': '>=1.0.0 <2.0.0',
+            'sdk': defaultSdkConstraint
+          }
+        },
+      );
 
       await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
@@ -487,7 +521,10 @@ void _requiresPubGet(String message) {
       if (command == 'run') args.add('script');
 
       return runPub(
-          args: args, error: contains(message), exitCode: exit_codes.DATA);
+        args: args,
+        error: contains(message),
+        exitCode: exit_codes.DATA,
+      );
     });
   }
 }

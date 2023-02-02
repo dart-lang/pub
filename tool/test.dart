@@ -32,11 +32,12 @@ Future<void> main(List<String> args) async {
   try {
     stderr.writeln('Building snapshot');
     await precompile(
-        executablePath: path.join('bin', 'pub.dart'),
-        outputPath: pubSnapshotFilename,
-        incrementalDillPath: pubSnapshotIncrementalFilename,
-        name: 'bin/pub.dart',
-        packageConfigPath: path.join('.dart_tool', 'package_config.json'));
+      executablePath: path.join('bin', 'pub.dart'),
+      outputPath: pubSnapshotFilename,
+      incrementalDillPath: pubSnapshotIncrementalFilename,
+      name: 'bin/pub.dart',
+      packageConfigPath: path.join('.dart_tool', 'package_config.json'),
+    );
     testProcess = await Process.start(
       Platform.resolvedExecutable,
       ['run', 'test', ...args],

@@ -14,9 +14,11 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': path.join(d.sandbox, 'foo')}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': path.join(d.sandbox, 'foo')}
+        },
+      )
     ]).create();
 
     await pubGet();

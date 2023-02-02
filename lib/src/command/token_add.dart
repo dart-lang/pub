@@ -27,16 +27,19 @@ class TokenAddCommand extends PubCommand {
   String? get envVar => argResults['env-var'];
 
   TokenAddCommand() {
-    argParser.addOption('env-var',
-        help: 'Read the secret token from this environment variable when '
-            'making requests.');
+    argParser.addOption(
+      'env-var',
+      help: 'Read the secret token from this environment variable when '
+          'making requests.',
+    );
   }
 
   @override
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException(
-          'The [hosted-url] for a package repository must be given.');
+        'The [hosted-url] for a package repository must be given.',
+      );
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }

@@ -13,12 +13,16 @@ import 'package:test_process/test_process.dart';
 
 import '../test_pub.dart';
 
-Future authorizePub(TestProcess pub, PackageServer server,
-    [String accessToken = 'access token']) async {
+Future authorizePub(
+  TestProcess pub,
+  PackageServer server, [
+  String accessToken = 'access token',
+]) async {
   await expectLater(
-      pub.stdout,
-      emits('Pub needs your authorization to upload packages on your '
-          'behalf.'));
+    pub.stdout,
+    emits('Pub needs your authorization to upload packages on your '
+        'behalf.'),
+  );
 
   var line = await pub.stdout.next;
   var match =
@@ -44,8 +48,9 @@ void handleAccessTokenRequest(PackageServer server, String accessToken) {
     expect(body, matches(RegExp(r'(^|&)code=access\+code(&|$)')));
 
     return shelf.Response.ok(
-        jsonEncode({'access_token': accessToken, 'token_type': 'bearer'}),
-        headers: {'content-type': 'application/json'});
+      jsonEncode({'access_token': accessToken, 'token_type': 'bearer'}),
+      headers: {'content-type': 'application/json'},
+    );
   });
 }
 

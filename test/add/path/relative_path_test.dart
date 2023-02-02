@@ -23,9 +23,11 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'foo': {'path': '../foo'}
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': '../foo'}
+      },
+    ).validate();
   });
 
   test('can use relative path with a path descriptor', () async {
@@ -64,21 +66,24 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'foo': {'path': '../foo'}
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': '../foo'}
+      },
+    ).validate();
   });
 
   test('fails if path does not exist', () async {
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
-        args: ['foo', '--path', '../foo'],
-        error: equalsIgnoringWhitespace(
-            'Because myapp depends on foo from path which doesn\'t exist '
-            '(could not find package foo at "..${Platform.pathSeparator}foo"), '
-            'version solving failed.'),
-        exitCode: exit_codes.DATA);
+      args: ['foo', '--path', '../foo'],
+      error: equalsIgnoringWhitespace(
+          'Because myapp depends on foo from path which doesn\'t exist '
+          '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+          'version solving failed.'),
+      exitCode: exit_codes.DATA,
+    );
 
     await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
@@ -96,26 +101,31 @@ void main() {
 
     await pubAdd(args: ['foo:0.0.1', '--path', '../foo']);
 
-    await d.appDir(dependencies: {
-      'foo': {'path': '../foo', 'version': '0.0.1'}
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': '../foo', 'version': '0.0.1'}
+      },
+    ).validate();
   });
 
   test('fails when adding with an invalid version constraint', () async {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
-        args: ['foo:2.0.0', '--path', '../foo'],
-        error: equalsIgnoringWhitespace(
-            'Because myapp depends on foo from path which doesn\'t exist '
-            '(could not find package foo at "..${Platform.pathSeparator}foo"), '
-            'version solving failed.'),
-        exitCode: exit_codes.DATA);
+      args: ['foo:2.0.0', '--path', '../foo'],
+      error: equalsIgnoringWhitespace(
+          'Because myapp depends on foo from path which doesn\'t exist '
+          '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+          'version solving failed.'),
+      exitCode: exit_codes.DATA,
+    );
 
     await d.appDir(dependencies: {}).validate();
     await d.dir(appPath, [
@@ -180,9 +190,11 @@ void main() {
       d.packageConfigEntry(name: 'bar', path: '../bar'),
     ]).validate();
 
-    await d.appDir(dependencies: {
-      'foo': {'path': '../foo'},
-      'bar': {'path': '../bar'},
-    }).validate();
+    await d.appDir(
+      dependencies: {
+        'foo': {'path': '../foo'},
+        'bar': {'path': '../bar'},
+      },
+    ).validate();
   });
 }

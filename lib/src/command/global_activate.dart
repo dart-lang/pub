@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
-import '../source/hosted.dart';
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
@@ -20,37 +20,59 @@ class GlobalActivateCommand extends PubCommand {
   String get argumentsDescription => '<package> [version-constraint]';
 
   GlobalActivateCommand() {
-    argParser.addOption('source',
-        abbr: 's',
-        help: 'The source used to find the package.',
-        allowed: ['git', 'hosted', 'path'],
-        defaultsTo: 'hosted');
+    argParser.addOption(
+      'source',
+      abbr: 's',
+      help: 'The source used to find the package.',
+      allowed: ['git', 'hosted', 'path'],
+      defaultsTo: 'hosted',
+    );
 
     argParser.addOption('git-path', help: 'Path of git package in repository');
 
-    argParser.addOption('git-ref',
-        help: 'Git branch or commit to be retrieved');
+    argParser.addOption(
+      'git-ref',
+      help: 'Git branch or commit to be retrieved',
+    );
 
-    argParser.addMultiOption('features',
-        abbr: 'f', help: 'Feature(s) to enable.', hide: true);
+    argParser.addMultiOption(
+      'features',
+      abbr: 'f',
+      help: 'Feature(s) to enable.',
+      hide: true,
+    );
 
-    argParser.addMultiOption('omit-features',
-        abbr: 'F', help: 'Feature(s) to disable.', hide: true);
+    argParser.addMultiOption(
+      'omit-features',
+      abbr: 'F',
+      help: 'Feature(s) to disable.',
+      hide: true,
+    );
 
-    argParser.addFlag('no-executables',
-        negatable: false, help: 'Do not put executables on PATH.');
+    argParser.addFlag(
+      'no-executables',
+      negatable: false,
+      help: 'Do not put executables on PATH.',
+    );
 
-    argParser.addMultiOption('executable',
-        abbr: 'x', help: 'Executable(s) to place on PATH.');
+    argParser.addMultiOption(
+      'executable',
+      abbr: 'x',
+      help: 'Executable(s) to place on PATH.',
+    );
 
-    argParser.addFlag('overwrite',
-        negatable: false,
-        help: 'Overwrite executables from other packages with the same name.');
+    argParser.addFlag(
+      'overwrite',
+      negatable: false,
+      help: 'Overwrite executables from other packages with the same name.',
+    );
 
-    argParser.addOption('hosted-url',
-        abbr: 'u',
-        help:
-            'A custom pub server URL for the package. Only applies when using the `hosted` source.');
+    argParser.addOption(
+      'hosted-url',
+      abbr: 'u',
+      help:
+          'A custom pub server URL for the package. Only applies when using the `hosted` source.',
+    );
   }
 
   @override
@@ -69,14 +91,6 @@ class GlobalActivateCommand extends PubCommand {
     }
 
     final overwrite = argResults['overwrite'] as bool;
-    Uri? hostedUrl;
-    if (argResults.wasParsed('hosted-url')) {
-      try {
-        hostedUrl = validateAndNormalizeHostedUrl(argResults['hosted-url']);
-      } on FormatException catch (e) {
-        usageException('Invalid hosted-url: $e');
-      }
-    }
 
     Iterable<String> args = argResults.rest;
 
@@ -97,7 +111,8 @@ class GlobalActivateCommand extends PubCommand {
     if (argResults['source'] != 'git' &&
         (argResults['git-path'] != null || argResults['git-ref'] != null)) {
       usageException(
-          'Options `--git-path` and `--git-ref` can only be used with --source=git.');
+        'Options `--git-path` and `--git-ref` can only be used with --source=git.',
+      );
     }
 
     switch (argResults['source']) {
@@ -115,6 +130,13 @@ class GlobalActivateCommand extends PubCommand {
       case 'hosted':
         var package = readArg('No package to activate given.');
 
+        PackageRef ref;
+        try {
+          ref = cache.hosted.refFor(package, url: argResults['hosted-url']);
+        } on FormatException catch (e) {
+          usageException('Invalid hosted-url: $e');
+        }
+
         // Parse the version constraint, if there is one.
         var constraint = VersionConstraint.any;
         if (args.isNotEmpty) {
@@ -127,11 +149,9 @@ class GlobalActivateCommand extends PubCommand {
 
         validateNoExtraArgs();
         return globals.activateHosted(
-          package,
-          constraint,
+          ref.withConstraint(constraint),
           executables,
           overwriteBinStubs: overwrite,
-          url: hostedUrl?.toString(),
         );
 
       case 'path':

@@ -57,12 +57,14 @@ class LoginCommand extends PubCommand {
           return _UserInfo(name, email);
         } else {
           log.fine(
-              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}');
+            'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
+          );
           return null;
         }
       } on FormatException catch (e) {
         log.fine(
-            'Bad response from $userInfoEndpoint ($e): ${userInfoRequest.body}');
+          'Bad response from $userInfoEndpoint ($e): ${userInfoRequest.body}',
+        );
         return null;
       }
     });

@@ -30,9 +30,15 @@ For example:
   * Add an sdk dependency:
     `dart pub add 'foo:{"sdk":"flutter"}'`
   * Add a git dependency:
+<<<<<<< HEAD
     `dart pub add 'foo:{"git":"https://github.com/foo/foo"}'`
   * Add a dependency override:
     `dart pub add 'override:foo:1.0.0`
+||||||| f3cf3ac9
+    `dart pub add 'foo{"git":"https://github.com/foo/foo"}'`
+=======
+    `dart pub add 'foo:{"git":"https://github.com/foo/foo"}'`
+>>>>>>> origin/master
   * Add a git dependency with a path and ref specified:
     `dart pub add \
       'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`

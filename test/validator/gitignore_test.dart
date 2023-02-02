@@ -42,13 +42,15 @@ void main() {
     ]).create();
 
     await expectValidation(
-        allOf([
-          contains('Package has 1 warning.'),
-          contains('foo.txt'),
-          contains(
-              'Consider adjusting your `.gitignore` files to not ignore those files'),
-        ]),
-        exit_codes.DATA);
+      allOf([
+        contains('Package has 1 warning.'),
+        contains('foo.txt'),
+        contains(
+          'Consider adjusting your `.gitignore` files to not ignore those files',
+        ),
+      ]),
+      exit_codes.DATA,
+    );
   });
 
   test('should not fail on missing git', () async {
@@ -61,8 +63,10 @@ void main() {
     await pubGet();
     await setUpFakeGitScript(bash: 'echo "Not git"', batch: 'echo "Not git"');
     await expectValidation(
-        allOf([contains('Package has 0 warnings.')]), exit_codes.SUCCESS,
-        environment: extendedPathEnv());
+      allOf([contains('Package has 0 warnings.')]),
+      exit_codes.SUCCESS,
+      environment: extendedPathEnv(),
+    );
   });
 
   test('Should also consider gitignores from above the package root', () async {
@@ -78,22 +82,27 @@ void main() {
     final packageRoot = p.join(d.sandbox, 'reporoot', 'myapp');
     await pubGet(workingDirectory: packageRoot);
 
-    await expectValidation(contains('Package has 0 warnings.'), 0,
-        workingDirectory: packageRoot);
+    await expectValidation(
+      contains('Package has 0 warnings.'),
+      0,
+      workingDirectory: packageRoot,
+    );
 
     await d.dir('reporoot', [
       d.file('.gitignore', '*.txt'),
     ]).create();
 
     await expectValidation(
-        allOf([
-          contains('Package has 1 warning.'),
-          contains('foo.txt'),
-          contains(
-              'Consider adjusting your `.gitignore` files to not ignore those files'),
-        ]),
-        exit_codes.DATA,
-        workingDirectory: packageRoot);
+      allOf([
+        contains('Package has 1 warning.'),
+        contains('foo.txt'),
+        contains(
+          'Consider adjusting your `.gitignore` files to not ignore those files',
+        ),
+      ]),
+      exit_codes.DATA,
+      workingDirectory: packageRoot,
+    );
   });
 
   test('Should not follow symlinks', () async {
@@ -108,7 +117,10 @@ void main() {
       recursive: true,
     );
 
-    await expectValidation(contains('Package has 0 warnings.'), 0,
-        workingDirectory: packageRoot);
+    await expectValidation(
+      contains('Package has 0 warnings.'),
+      0,
+      workingDirectory: packageRoot,
+    );
   });
 }

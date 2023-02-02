@@ -17,23 +17,26 @@ void main() {
 
     // Install a couple of versions first.
     await runPub(
-        args: ['cache', 'add', 'foo', '-v', '1.2.1'],
-        silent: contains('Downloading foo 1.2.1...'));
+      args: ['cache', 'add', 'foo', '-v', '1.2.1'],
+      silent: contains('Downloading foo 1.2.1...'),
+    );
 
     await runPub(
-        args: ['cache', 'add', 'foo', '-v', '1.2.3'],
-        silent: contains('Downloading foo 1.2.3...'));
+      args: ['cache', 'add', 'foo', '-v', '1.2.3'],
+      silent: contains('Downloading foo 1.2.3...'),
+    );
 
     // They should show up as already installed now.
     await runPub(
-        args: ['cache', 'add', 'foo', '--all'],
-        silent: allOf([
-          contains('Downloading foo 1.2.2...'),
-          contains('Downloading foo 2.0.0...')
-        ]),
-        output: '''
+      args: ['cache', 'add', 'foo', '--all'],
+      silent: allOf([
+        contains('Downloading foo 1.2.2...'),
+        contains('Downloading foo 2.0.0...')
+      ]),
+      output: '''
 Already cached foo 1.2.1.
-Already cached foo 1.2.3.''');
+Already cached foo 1.2.3.''',
+    );
 
     await d.cacheDir({'foo': '1.2.1'}).validate();
     await d.cacheDir({'foo': '1.2.2'}).validate();

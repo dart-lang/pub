@@ -15,8 +15,10 @@ Validator deprecatedFields() => DeprecatedFieldsValidator();
 void main() {
   setUp(d.validPackage.create);
 
-  test('should not warn if neither transformers or web is included',
-      () => expectValidation(deprecatedFields));
+  test(
+    'should not warn if neither transformers or web is included',
+    () => expectValidation(deprecatedFields),
+  );
 
   test('should warn if pubspec has a transformers section', () async {
     await d.dir(appPath, [

@@ -122,11 +122,12 @@ void main() {
       await d.appDir(dependencies: {}).create();
 
       await pubAdd(
-          args: ['foo:>1.2.0 <2.0.0'],
-          error: contains(
-              "Because myapp depends on foo >1.2.0 <2.0.0 which doesn't "
-              'match any versions, version solving failed.'),
-          exitCode: exit_codes.DATA);
+        args: ['foo:>1.2.0 <2.0.0'],
+        error:
+            contains("Because myapp depends on foo >1.2.0 <2.0.0 which doesn't "
+                'match any versions, version solving failed.'),
+        exitCode: exit_codes.DATA,
+      );
 
       await d.appDir(dependencies: {}).validate();
       await d.dir(appPath, [
@@ -146,11 +147,12 @@ void main() {
       await d.appDir(dependencies: {'bar': '2.0.3'}).create();
 
       await pubAdd(
-          args: ['foo:1.2.3'],
-          error: contains(
-              'Because every version of foo depends on bar 2.0.4 and myapp '
-              'depends on bar 2.0.3, foo is forbidden.'),
-          exitCode: exit_codes.DATA);
+        args: ['foo:1.2.3'],
+        error: contains(
+            'Because every version of foo depends on bar 2.0.4 and myapp '
+            'depends on bar 2.0.3, foo is forbidden.'),
+        exitCode: exit_codes.DATA,
+      );
 
       await d.appDir(dependencies: {'bar': '2.0.3'}).validate();
       await d.dir(appPath, [

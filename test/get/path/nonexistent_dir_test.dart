@@ -14,17 +14,20 @@ void main() {
     var badPath = path.join(d.sandbox, 'bad_path');
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {
-        'foo': {'path': badPath}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': badPath}
+        },
+      )
     ]).create();
 
     await pubGet(
-        error: allOf([
-          contains("Because myapp depends on foo from path which doesn't exist "
-              '(could not find package foo at'),
-          contains('bad_path"), version solving failed.')
-        ]),
-        exitCode: exit_codes.NO_INPUT);
+      error: allOf([
+        contains("Because myapp depends on foo from path which doesn't exist "
+            '(could not find package foo at'),
+        contains('bad_path"), version solving failed.')
+      ]),
+      exitCode: exit_codes.NO_INPUT,
+    );
   });
 }

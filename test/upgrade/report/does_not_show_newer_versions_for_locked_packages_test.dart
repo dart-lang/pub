@@ -21,19 +21,28 @@ void main() {
 
     // Constraint everything to the first version.
     await d.appDir(
-        dependencies: {'not_upgraded': '1.0.0', 'upgraded': '1.0.0'}).create();
+      dependencies: {'not_upgraded': '1.0.0', 'upgraded': '1.0.0'},
+    ).create();
 
     await pubGet();
 
     // Loosen the constraints.
     await d.appDir(
-        dependencies: {'not_upgraded': 'any', 'upgraded': 'any'}).create();
+      dependencies: {'not_upgraded': 'any', 'upgraded': 'any'},
+    ).create();
 
     // Only upgrade "upgraded".
-    await pubUpgrade(args: ['upgraded'], output: RegExp(r'''
+    await pubUpgrade(
+      args: ['upgraded'],
+      output: RegExp(
+        r'''
 Resolving dependencies\.\.\..*
   not_upgraded 1\.0\.0 \(2\.0\.0 available\)
 . upgraded 2\.0\.0 \(was 1\.0\.0\)
-''', multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
+''',
+        multiLine: true,
+      ),
+      environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'},
+    );
   });
 }

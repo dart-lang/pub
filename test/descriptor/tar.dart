@@ -25,8 +25,12 @@ class TarFileDescriptor extends FileDescriptor {
     return withTempDir((tempDir) async {
       await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
-      var createdContents = listDir(tempDir,
-          recursive: true, includeHidden: true, includeDirs: false);
+      var createdContents = listDir(
+        tempDir,
+        recursive: true,
+        includeHidden: true,
+        includeDirs: false,
+      );
       var bytes =
           await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
@@ -49,10 +53,12 @@ class TarFileDescriptor extends FileDescriptor {
 
   @override
   Stream<List<int>> readAsBytes() {
-    return Stream<List<int>>.fromFuture(withTempDir((tempDir) async {
-      await create(tempDir);
-      return readBinaryFile(path.join(tempDir, name));
-    }));
+    return Stream<List<int>>.fromFuture(
+      withTempDir((tempDir) async {
+        await create(tempDir);
+        return readBinaryFile(path.join(tempDir, name));
+      }),
+    );
   }
 }
 

@@ -10,19 +10,25 @@ import '../../test_pub.dart';
 void main() {
   test('snapshots the executables for a hosted package', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [
-        d.file('hello.dart', "void main() => print('hello!');"),
-        d.file('goodbye.dart', "void main() => print('goodbye!');"),
-        d.file('shell.sh', 'echo shell'),
-        d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")])
-      ])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [
+          d.file('hello.dart', "void main() => print('hello!');"),
+          d.file('goodbye.dart', "void main() => print('goodbye!');"),
+          d.file('shell.sh', 'echo shell'),
+          d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")])
+        ])
+      ],
+    );
 
     await runPub(
-        args: ['global', 'activate', 'foo'],
-        output: allOf(
-            [contains('Built foo:hello.'), contains('Built foo:goodbye.')]));
+      args: ['global', 'activate', 'foo'],
+      output: allOf(
+        [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
+      ),
+    );
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
@@ -31,7 +37,9 @@ void main() {
           d.dir('bin', [
             d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
             d.file(
-                'goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
+              'goodbye.dart-$versionSuffix.snapshot',
+              contains('goodbye!'),
+            ),
             d.nothing('shell.sh-$versionSuffix.snapshot'),
             d.nothing('subdir')
           ])

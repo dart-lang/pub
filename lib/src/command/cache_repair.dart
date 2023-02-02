@@ -26,11 +26,12 @@ class CacheRepairCommand extends PubCommand {
     // Delete any eventual temp-files left in the cache.
     cache.deleteTempDir();
     // Repair every cached source.
-    final repairResults =
-        (await Future.wait(<CachedSource>[cache.hosted, cache.git].map(
-      (source) => source.repairCachedPackages(cache),
-    )))
-            .expand((x) => x);
+    final repairResults = (await Future.wait(
+      <CachedSource>[cache.hosted, cache.git].map(
+        (source) => source.repairCachedPackages(cache),
+      ),
+    ))
+        .expand((x) => x);
 
     final successes = repairResults.where((result) => result.success);
     final failures = repairResults.where((result) => !result.success);
@@ -43,7 +44,8 @@ class CacheRepairCommand extends PubCommand {
     if (failures.isNotEmpty) {
       var packages = pluralize('package', failures.length);
       var buffer = StringBuffer(
-          'Failed to reinstall ${log.red(failures.length)} $packages:\n');
+        'Failed to reinstall ${log.red(failures.length)} $packages:\n',
+      );
 
       for (var failure in failures) {
         buffer.write('- ${log.bold(failure.packageName)} ${failure.version}');
@@ -60,16 +62,20 @@ class CacheRepairCommand extends PubCommand {
     if (globalRepairResults.first.isNotEmpty) {
       var packages = pluralize('package', globalRepairResults.first.length);
       log.message(
-          'Reactivated ${log.green(globalRepairResults.first.length)} $packages.');
+        'Reactivated ${log.green(globalRepairResults.first.length)} $packages.',
+      );
     }
 
     if (globalRepairResults.last.isNotEmpty) {
       var packages = pluralize('package', globalRepairResults.last.length);
       log.message(
-          'Failed to reactivate ${log.red(globalRepairResults.last.length)} $packages:');
-      log.message(globalRepairResults.last
-          .map((name) => '- ${log.bold(name)}')
-          .join('\n'));
+        'Failed to reactivate ${log.red(globalRepairResults.last.length)} $packages:',
+      );
+      log.message(
+        globalRepairResults.last
+            .map((name) => '- ${log.bold(name)}')
+            .join('\n'),
+      );
     }
 
     if (successes.isEmpty && failures.isEmpty) {

@@ -24,13 +24,17 @@ class DowngradeCommand extends PubCommand {
   bool get isOffline => argResults['offline'];
 
   DowngradeCommand() {
-    argParser.addFlag('offline',
-        help: 'Use cached packages instead of accessing the network.');
+    argParser.addFlag(
+      'offline',
+      help: 'Use cached packages instead of accessing the network.',
+    );
 
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: "Report what dependencies would change but don't change any.");
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: "Report what dependencies would change but don't change any.",
+    );
 
     argParser.addFlag('packages-dir', hide: true);
 
@@ -40,15 +44,22 @@ class DowngradeCommand extends PubCommand {
       hide: true,
     );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
     if (argResults.wasParsed('packages-dir')) {
-      log.warning(log.yellow(
-          'The --packages-dir flag is no longer used and does nothing.'));
+      log.warning(
+        log.yellow(
+          'The --packages-dir flag is no longer used and does nothing.',
+        ),
+      );
     }
     var dryRun = argResults['dry-run'];
 

@@ -43,8 +43,10 @@ late final String snapshot;
 
 extension on GoldenTestContext {
   /// Returns the stdout.
-  Future<String> runDependencyServices(List<String> args,
-      {String? stdin}) async {
+  Future<String> runDependencyServices(
+    List<String> args, {
+    String? stdin,
+  }) async {
     final buffer = StringBuffer();
     buffer.writeln('## Section ${args.join(' ')}');
     final process = await Process.start(
@@ -67,12 +69,14 @@ extension on GoldenTestContext {
     final exitCode = await process.exitCode;
 
     final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
-    buffer.writeln([
-      '\$$pipe dependency_services ${args.map(escapeShellArgument).join(' ')}',
-      ...await outLines,
-      ...(await errLines).map((e) => '[STDERR] $e'),
-      if (exitCode != 0) '[EXIT CODE] $exitCode',
-    ].join('\n'));
+    buffer.writeln(
+      [
+        '\$$pipe dependency_services ${args.map(escapeShellArgument).join(' ')}',
+        ...await outLines,
+        ...(await errLines).map((e) => '[STDERR] $e'),
+        if (exitCode != 0) '[EXIT CODE] $exitCode',
+      ].join('\n'),
+    );
 
     expectNextSection(buffer.toString());
     return (await outLines).join('\n');
@@ -136,19 +140,20 @@ Future<void> main() async {
     ]).create();
     await pubGet();
     server.dontAllowDownloads();
-    await _listReportApply(context, [
-      _PackageVersion('foo', '2.2.3'),
-      _PackageVersion('transitive', null)
-    ], reportAssertions: (report) {
-      expect(
-        findChangeVersion(report, 'singleBreaking', 'foo'),
-        '2.2.3',
-      );
-      expect(
-        findChangeVersion(report, 'singleBreaking', 'transitive'),
-        null,
-      );
-    });
+    await _listReportApply(
+      context,
+      [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', null)],
+      reportAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'singleBreaking', 'foo'),
+          '2.2.3',
+        );
+        expect(
+          findChangeVersion(report, 'singleBreaking', 'transitive'),
+          null,
+        );
+      },
+    );
   });
 
   testWithGolden('No pubspec.lock', (context) async {
@@ -207,14 +212,18 @@ Future<void> main() async {
 
     server.dontAllowDownloads();
 
-    await _listReportApply(context, [
-      _PackageVersion('foo', '1.2.4'),
-    ], reportAssertions: (report) {
-      expect(
-        findChangeVersion(report, 'compatible', 'foo'),
-        '1.2.4',
-      );
-    });
+    await _listReportApply(
+      context,
+      [
+        _PackageVersion('foo', '1.2.4'),
+      ],
+      reportAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'compatible', 'foo'),
+          '1.2.4',
+        );
+      },
+    );
   });
 
   testWithGolden('Preserves no content-hashes', (context) async {
@@ -274,19 +283,20 @@ Future<void> main() async {
     await pubGet();
     server.dontAllowDownloads();
 
-    await _listReportApply(context, [
-      _PackageVersion('foo', '2.2.3'),
-      _PackageVersion('transitive', '1.0.0')
-    ], reportAssertions: (report) {
-      expect(
-        findChangeVersion(report, 'singleBreaking', 'foo'),
-        '2.2.3',
-      );
-      expect(
-        findChangeVersion(report, 'singleBreaking', 'transitive'),
-        '1.0.0',
-      );
-    });
+    await _listReportApply(
+      context,
+      [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', '1.0.0')],
+      reportAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'singleBreaking', 'foo'),
+          '2.2.3',
+        );
+        expect(
+          findChangeVersion(report, 'singleBreaking', 'transitive'),
+          '1.0.0',
+        );
+      },
+    );
   });
 
   testWithGolden('multibreaking', (context) async {
@@ -318,20 +328,27 @@ Future<void> main() async {
 
     server.dontAllowDownloads();
 
-    await _listReportApply(context, [
-      _PackageVersion('foo', '3.0.1',
-          constraint: VersionConstraint.parse('^3.0.0')),
-      _PackageVersion('bar', '2.0.0')
-    ], reportAssertions: (report) {
-      expect(
-        findChangeVersion(report, 'multiBreaking', 'foo'),
-        '3.0.1',
-      );
-      expect(
-        findChangeVersion(report, 'multiBreaking', 'bar'),
-        '2.0.0',
-      );
-    });
+    await _listReportApply(
+      context,
+      [
+        _PackageVersion(
+          'foo',
+          '3.0.1',
+          constraint: VersionConstraint.parse('^3.0.0'),
+        ),
+        _PackageVersion('bar', '2.0.0')
+      ],
+      reportAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'multiBreaking', 'foo'),
+          '3.0.1',
+        );
+        expect(
+          findChangeVersion(report, 'multiBreaking', 'bar'),
+          '2.0.0',
+        );
+      },
+    );
   });
   testWithGolden('Relative paths are allowed', (context) async {
     // We cannot update path-dependencies, but they should be allowed.
@@ -339,37 +356,48 @@ Future<void> main() async {
     server.serve('foo', '1.0.0');
     await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir(dependencies: {
-      'foo': '^1.0.0',
-      'bar': {'path': '../bar'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': '^1.0.0',
+        'bar': {'path': '../bar'}
+      },
+    ).create();
     await pubGet();
     server.serve('foo', '2.0.0');
-    await _listReportApply(context, [
-      _PackageVersion('foo', '2.0.0',
-          constraint: VersionConstraint.parse('^2.0.0')),
-    ], reportAssertions: (report) {
-      expect(
-        findChangeVersion(report, 'multiBreaking', 'foo'),
-        '2.0.0',
-      );
-    });
+    await _listReportApply(
+      context,
+      [
+        _PackageVersion(
+          'foo',
+          '2.0.0',
+          constraint: VersionConstraint.parse('^2.0.0'),
+        ),
+      ],
+      reportAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'multiBreaking', 'foo'),
+          '2.0.0',
+        );
+      },
+    );
   });
 
   testWithGolden('Can update a git package', (context) async {
     await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
     await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir(dependencies: {
-      'foo': {
-        'git': {'url': '../foo.git'}
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git'}
+        },
+        'bar': {
+          // A git dependency with a version constraint.
+          'git': {'url': '../bar.git'},
+          'version': '^1.0.0',
+        }
       },
-      'bar': {
-        // A git dependency with a version constraint.
-        'git': {'url': '../bar.git'},
-        'version': '^1.0.0',
-      }
-    }).create();
+    ).create();
     await pubGet();
     final secondVersion = d.git('foo.git', [d.libPubspec('foo', '2.0.0')]);
     await secondVersion.commit();
@@ -378,14 +406,18 @@ Future<void> main() async {
     final barSecondVersion = d.git('bar.git', [d.libPubspec('bar', '2.0.0')]);
     await barSecondVersion.commit();
 
-    await _listReportApply(context, [
-      _PackageVersion('foo', newRef),
-    ], reportAssertions: (report) {
-      expect(
-        findChangeVersion(report, 'multiBreaking', 'foo'),
-        newRef,
-      );
-    });
+    await _listReportApply(
+      context,
+      [
+        _PackageVersion('foo', newRef),
+      ],
+      reportAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'multiBreaking', 'foo'),
+          newRef,
+        );
+      },
+    );
   });
 }
 
@@ -417,7 +449,8 @@ extension on PackageServer {
     // the test becomes useless.
     handle(RegExp(r'/.+\.tar\.gz'), (request) {
       return shelf.Response.notFound(
-          'This test should not download archives! Requested ${request.url}');
+        'This test should not download archives! Requested ${request.url}',
+      );
     });
   }
 }

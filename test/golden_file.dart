@@ -217,8 +217,10 @@ class GoldenTestContext {
 /// Such a file can eg. be viewed in vscode with this plugin:
 /// https://marketplace.visualstudio.com/items?itemName=iliazeus.vscode-ansi
 void testWithGolden(
-    String name, FutureOr<void> Function(GoldenTestContext ctx) fn,
-    {bool colors = false}) {
+  String name,
+  FutureOr<void> Function(GoldenTestContext ctx) fn, {
+  bool colors = false,
+}) {
   final ctx = GoldenTestContext._(
     _findCurrentTestFilename(),
     name,

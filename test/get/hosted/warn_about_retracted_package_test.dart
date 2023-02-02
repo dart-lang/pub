@@ -63,6 +63,7 @@ void main() {
     expect(fileExists(barVersionsCache), isTrue);
     deleteEntry(barVersionsCache);
     await pubGet(
-        output: contains('bar 1.0.0-pre (retracted, 2.0.1-pre available)'));
+      output: contains('bar 1.0.0-pre (retracted, 2.0.1-pre available)'),
+    );
   });
 }

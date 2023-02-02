@@ -20,9 +20,11 @@ void main() {
     await confirmPublish(pub);
 
     globalServer.expect('GET', '/api/packages/versions/new', (request) async {
-      return shelf.Response.notFound(jsonEncode({
-        'error': {'message': 'your request sucked'}
-      }));
+      return shelf.Response.notFound(
+        jsonEncode({
+          'error': {'message': 'your request sucked'}
+        }),
+      );
     });
 
     expect(pub.stderr, emits('your request sucked'));

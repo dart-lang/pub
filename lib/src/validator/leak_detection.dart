@@ -34,31 +34,33 @@ class LeakDetectionValidator extends Validator {
     );
 
     final pool = Pool(20); // don't read more than 20 files concurrently!
-    final leaks = await Future.wait(files.map((f) async {
-      final relPath = entrypoint.root.relative(f);
+    final leaks = await Future.wait(
+      files.map((f) async {
+        final relPath = entrypoint.root.relative(f);
 
-      // Skip files matching patterns in `false_secrets`
-      final nixPath = p.posix.joinAll(p.split(relPath));
-      if (falseSecrets.ignores(nixPath)) {
-        return <LeakMatch>[];
-      }
+        // Skip files matching patterns in `false_secrets`
+        final nixPath = p.posix.joinAll(p.split(relPath));
+        if (falseSecrets.ignores(nixPath)) {
+          return <LeakMatch>[];
+        }
 
-      String text;
-      try {
-        // On Windows, we can't open some files without normalizing them
-        final file = File(p.normalize(p.absolute(f)));
-        text = await pool.withResource(
-          () async => await file.readAsString(encoding: _utf8AllowMalformed),
-        );
-      } on IOException {
-        // Pass, ignore files we can't read, let something else error later!
-        return <LeakMatch>[];
-      }
+        String text;
+        try {
+          // On Windows, we can't open some files without normalizing them
+          final file = File(p.normalize(p.absolute(f)));
+          text = await pool.withResource(
+            () async => await file.readAsString(encoding: _utf8AllowMalformed),
+          );
+        } on IOException {
+          // Pass, ignore files we can't read, let something else error later!
+          return <LeakMatch>[];
+        }
 
-      return leakPatterns
-          .map((p) => p.findPossibleLeaks(relPath, text))
-          .expand((i) => i);
-    })).then((lists) => lists.expand((i) => i).toList());
+        return leakPatterns
+            .map((p) => p.findPossibleLeaks(relPath, text))
+            .expand((i) => i);
+      }),
+    ).then((lists) => lists.expand((i) => i).toList());
 
     // Convert detected leaks to errors, if we have more than 3 then we return
     // the first 2 leaks, followed by a general summary of leaks.
@@ -76,14 +78,16 @@ class LeakDetectionValidator extends Validator {
         ..sort();
       final s = files.length > 1 ? 's' : '';
 
-      errors.add([
-        '${leaks.length} potential leaks detected in ${files.length} file$s:',
-        ...files.take(10).map((f) => '- /$f'),
-        if (files.length > 10) '...',
-        '',
-        'Add git-ignore style patterns to `false_secrets` in `pubspec.yaml`',
-        'to ignore this. See $_falseSecretsDocumentationLink'
-      ].join('\n'));
+      errors.add(
+        [
+          '${leaks.length} potential leaks detected in ${files.length} file$s:',
+          ...files.take(10).map((f) => '- /$f'),
+          if (files.length > 10) '...',
+          '',
+          'Add git-ignore style patterns to `false_secrets` in `pubspec.yaml`',
+          'to ignore this. See $_falseSecretsDocumentationLink'
+        ].join('\n'),
+      );
     } else if (leaks.isNotEmpty) {
       // If we have 3 leaks we return all leaks, but only include the message
       // about how ignore them in the last warning.

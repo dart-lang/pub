@@ -7,7 +7,6 @@ import 'dart:async';
 import 'package:collection/collection.dart' show IterableExtension;
 
 import '../exceptions.dart';
-import '../null_safety_analysis.dart';
 import '../package_name.dart';
 import '../validator.dart';
 
@@ -16,6 +15,9 @@ import '../validator.dart';
 class RelativeVersionNumberingValidator extends Validator {
   static const String semverUrl =
       'https://dart.dev/tools/pub/versioning#semantic-versions';
+
+  static const String nullSafetyGuideUrl =
+      'https://dart.dev/null-safety/migration-guide';
 
   @override
   Future<void> validate() async {
@@ -43,7 +45,7 @@ class RelativeVersionNumberingValidator extends Validator {
       hints.add(
           'You\'re about to publish a package that opts into null safety.\n'
           'The previous version (${previousVersion.version}) isn\'t opted in.\n'
-          'See ${NullSafetyAnalysis.guideUrl} for best practices.');
+          'See $nullSafetyGuideUrl for best practices.');
     } else if (!currentOptedIn && previousOptedIn) {
       hints.add(
           'You\'re about to publish a package that doesn\'t opt into null safety,\n'
