@@ -109,7 +109,7 @@ class DependencyValidator extends Validator {
       }
       warnings.add('$message\n'
           'Without a constraint, you\'re promising to support ${log.bold("all")} '
-          'future versions of "${dep.name}".');
+          'future versions of "${dep.name}".''\n');
     }
 
     /// Warn that dependencies should allow more than a single version.
