@@ -72,7 +72,7 @@ class TokenAddCommand extends PubCommand {
 
     if (!Credential.isValidBearerToken(token)) {
       dataError('The entered token is not a valid Bearer token. '
-          'It should match `^[a-zA-Z0-9._~+/=-]*\$`');
+          'A token may only contain `a-zA-Z0-9._~+/=-`');
     }
 
     tokenStore.addCredential(Credential.token(hostedUrl, token));
