@@ -24,7 +24,7 @@ dependencies that users will have when they use it.
 
 This might be necessary for packages with cyclic dependencies.
 
-Please be extra careful when publising.''');
+Please be extra careful when publishing.''');
     }
     return Future.value();
   }
