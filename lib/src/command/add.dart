@@ -79,7 +79,7 @@ For example:
 
   @override
   String get argumentsDescription =>
-      '[options] [dev|override:]<package>[:descriptor] [dev|override:]<package>[:descriptor] ...]';
+      '[options] [dev:|override:]<package>[:descriptor] [dev:|override:]<package>[:descriptor] ...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
