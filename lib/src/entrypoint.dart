@@ -305,10 +305,10 @@ class Entrypoint {
   ///
   /// Performs version resolution according to [SolveType].
   ///
-  /// The iterable [unlock] specifies the list of packages whose versions can be 
+  /// The iterable [unlock] specifies the list of packages whose versions can be
   /// changed even if they are locked in the pubspec.lock file.
-  /// 
-  /// [analytics] holds the information needed for the embedded pub command to 
+  ///
+  /// [analytics] holds the information needed for the embedded pub command to
   /// send analytics.
   ///
   /// Shows a report of the changes made relative to the previous lockfile. If
