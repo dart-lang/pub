@@ -305,11 +305,11 @@ class Entrypoint {
   ///
   /// Performs version resolution according to [SolveType].
   ///
-  /// [useLatest], if provided, defines a list of packages that will be unlocked
-  /// and forced to their latest versions. If [upgradeAll] is true, the previous
-  /// lockfile is ignored and all packages are re-resolved from scratch.
-  /// Otherwise, it will attempt to preserve the versions of all previously
-  /// locked packages.
+  /// The iterable [unlock] specifies the list of packages whose versions can be 
+  /// changed even if they are locked in the pubspec.lock file.
+  /// 
+  /// [analytics] holds the information needed for the embedded pub command to 
+  /// send analytics.
   ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
