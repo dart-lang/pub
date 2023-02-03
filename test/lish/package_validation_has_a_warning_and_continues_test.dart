@@ -22,7 +22,7 @@ void main() {
     File(d.path(p.join(appPath, 'README.md'))).deleteSync();
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
     expect(pub.stdout, emitsThrough(startsWith('Package has 1 warning.')));
     pub.stdin.writeln('y');

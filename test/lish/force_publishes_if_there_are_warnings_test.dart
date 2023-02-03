@@ -27,7 +27,7 @@ void main() {
 
     (await servePackages()).serve('foo', '1.0.0');
 
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer, args: ['--force']);
 
     handleUploadForm(globalServer);

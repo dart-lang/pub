@@ -34,7 +34,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url, 'token': 'access token'},
+        {'url': globalServer.url, 'token': 'access-token'},
       ]
     }).create();
   });

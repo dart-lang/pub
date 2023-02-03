@@ -11,6 +11,7 @@ import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../source/hosted.dart';
+import '../utils.dart';
 
 /// Handles the `token add` pub command.
 class TokenAddCommand extends PubCommand {
@@ -67,6 +68,11 @@ class TokenAddCommand extends PubCommand {
     final token = await stdinPrompt('Enter secret token:', echoMode: false);
     if (token.isEmpty) {
       usageException('Token is not provided.');
+    }
+
+    if (!Credential.isValidBearerToken(token)) {
+      dataError('The entered token is not a valid Bearer token. '
+          'A token may only contain `a-zA-Z0-9._~+/=-`');
     }
 
     tokenStore.addCredential(Credential.token(hostedUrl, token));
