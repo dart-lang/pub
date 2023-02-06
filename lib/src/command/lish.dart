@@ -17,6 +17,7 @@ import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../progress.dart';
 import '../solver/type.dart';
 import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
@@ -298,14 +299,17 @@ the \$PUB_HOSTED_URL environment variable.''',
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(
-      entrypoint,
-      packageSize,
-      host,
-      files,
-      hints: hints,
-      warnings: warnings,
-      errors: errors,
+    await log.spinner(
+      'Validating package',
+      () async => await Validator.runAll(
+        entrypoint,
+        packageSize,
+        host,
+        files,
+        hints: hints,
+        warnings: warnings,
+        errors: errors,
+      ),
     );
 
     if (errors.isNotEmpty) {
