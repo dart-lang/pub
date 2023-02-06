@@ -17,7 +17,6 @@ import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
-import '../progress.dart';
 import '../solver/type.dart';
 import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
