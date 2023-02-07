@@ -16,7 +16,7 @@ class TokenCommand extends PubCommand {
   String get description => '''
 Manage authentication tokens for hosted pub repositories.
 
-The tokens will be used for authorizing both when retrieving dependencies and 
+The tokens will be used for authorizing both when retrieving dependencies and
 for publishing.
 
 Tokens are stored in ${tokenStore.tokensFile}.

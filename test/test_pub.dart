@@ -952,7 +952,8 @@ String filterUnstableText(String input) {
   // Any paths in output should be relative to the sandbox and with forward
   // slashes to be stable across platforms.
   input = input.replaceAll(d.sandbox, r'$SANDBOX');
-  input = input.replaceAllMapped(RegExp(r'\\(\S)'), (match) => '/${match[1]}');
+  input =
+      input.replaceAllMapped(RegExp(r'\\(\S|\.)'), (match) => '/${match[1]}');
   var port = _globalServer?.port;
   if (port != null) {
     input = input.replaceAll(port.toString(), '\$PORT');
