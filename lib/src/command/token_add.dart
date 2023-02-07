@@ -7,6 +7,7 @@ import 'dart:io';
 
 import '../authentication/credential.dart';
 import '../command.dart';
+import '../command_runner.dart';
 import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -18,12 +19,23 @@ class TokenAddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
-  String get description =>
-      'Add authentication tokens for a package repository.';
+  String get description => '''
+Add an authentication token for a package repository.
+
+The token will be used for authorizing against <hosted-url> both when
+retrieving dependencies and for publishing.
+
+Tokens are stored in ${tokenStore.tokensFile}.
+
+This command will prompt for the secret token over stdin. (Unless `--env-var` is
+used).
+
+For interactive auhtorization against pub.dev, use `$topLevelProgram pub login`.''';
   @override
-  String get invocation => 'pub token add';
+  String get argumentsDescription => '[options] <hosted-url>';
+
   @override
-  String get argumentsDescription => '[hosted-url]';
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
   String? get envVar => argResults['env-var'];
 
@@ -32,6 +44,7 @@ class TokenAddCommand extends PubCommand {
       'env-var',
       help: 'Read the secret token from this environment variable when '
           'making requests.',
+      valueHelp: 'VARIABLE',
     );
   }
 
