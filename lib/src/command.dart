@@ -37,7 +37,17 @@ const pubCommandAliases = {
   'upgrade': ['update'],
 };
 
-final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
+final lineLength = _lineLength();
+
+int _lineLength() {
+  final fromEnv = Platform.environment['_PUB_TERMINAL_COLUMNS'];
+  if (fromEnv != null) {
+    final parsed = int.tryParse(fromEnv);
+    if (parsed != null && parsed > 0) return parsed;
+  }
+  if (stdout.hasTerminal) return stdout.terminalColumns;
+  return 80;
+}
 
 /// The base class for commands for the pub executable.
 ///
