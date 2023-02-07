@@ -29,6 +29,7 @@ Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 │   ├── file_9.dart (<1 KB)
 │   └── test_pkg.dart (<1 KB)
 └── pubspec.yaml (<1 KB)
+Validating package...
 
 Publishing is forever; packages cannot be unpublished.
 Policy details are available at https://pub.dev/policy

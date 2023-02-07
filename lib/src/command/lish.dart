@@ -298,14 +298,17 @@ the \$PUB_HOSTED_URL environment variable.''',
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(
-      entrypoint,
-      packageSize,
-      host,
-      files,
-      hints: hints,
-      warnings: warnings,
-      errors: errors,
+    await log.spinner(
+      'Validating package',
+      () async => await Validator.runAll(
+        entrypoint,
+        packageSize,
+        host,
+        files,
+        hints: hints,
+        warnings: warnings,
+        errors: errors,
+      ),
     );
 
     if (errors.isNotEmpty) {
