@@ -40,7 +40,7 @@ const pubCommandAliases = {
 final lineLength = _lineLength();
 
 int _lineLength() {
-  final fromEnv = Platform.environment['_PUB_TERMINAL_COLUMNS'];
+  final fromEnv = Platform.environment['_PUB_TEST_TERMINAL_COLUMNS'];
   if (fromEnv != null) {
     final parsed = int.tryParse(fromEnv);
     if (parsed != null && parsed > 0) return parsed;

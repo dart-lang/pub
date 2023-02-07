@@ -46,7 +46,7 @@ Future<void> main() async {
         [...c, '--help'],
         environment: {
           // Use more columns to avoid unintended line breaking.
-          '_PUB_TEST_COLUMNS': '200'
+          '_PUB_TEST_TERMINAL_COLUMNS': '200'
         },
       );
     });
