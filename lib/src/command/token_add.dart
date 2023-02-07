@@ -48,7 +48,8 @@ class TokenAddCommand extends PubCommand {
 
     try {
       var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
-      var isLocalhost = ['localhost', '127.0.0.1', '::1'].contains(hostedUrl.host);
+      var isLocalhost =
+          ['localhost', '127.0.0.1', '::1'].contains(hostedUrl.host);
       if (!hostedUrl.isScheme('HTTPS') && !isLocalhost) {
         throw FormatException('url must be https://, '
             'insecure repositories cannot use authentication.');

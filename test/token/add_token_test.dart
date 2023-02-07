@@ -153,7 +153,9 @@ void main() {
     await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 
-  test('with non-secure localhost url creates pub-tokens.json that contains token', () async {
+  test(
+      'with non-secure localhost url creates pub-tokens.json that contains token',
+      () async {
     await d.dir(configPath).create();
 
     await runPub(
