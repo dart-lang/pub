@@ -153,6 +153,22 @@ void main() {
     await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
   });
 
+  test('with non-secure localhost url creates pub-tokens.json that contains token', () async {
+    await d.dir(configPath).create();
+
+    await runPub(
+      args: ['token', 'add', 'http://localhost/'],
+      input: ['auth-token'],
+    );
+
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': 'http://localhost', 'token': 'auth-token'}
+      ]
+    }).validate();
+  });
+
   test('with empty environment gives error message', () async {
     await runPub(
       args: ['token', 'add', 'https://mypub.com'],
