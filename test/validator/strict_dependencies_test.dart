@@ -244,8 +244,10 @@ linter:
         import 'package:$bad';
       ''').create();
 
-      await expectValidationDeprecated(strictDeps,
-          errors: [matches('Invalid URL.')]);
+      await expectValidationDeprecated(
+        strictDeps,
+        errors: [matches('Invalid URL.')],
+      );
     });
 
     test('does not declare an "import" as a dependency', () async {
