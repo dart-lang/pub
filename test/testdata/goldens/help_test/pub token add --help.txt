@@ -16,8 +16,7 @@ For interactive auhtorization against pub.dev, use `dart pub login`.
 
 Usage: pub token add [options] <hosted-url>
 -h, --help                  Print this usage information.
-    --env-var=<VARIABLE>    Read the secret token from this environment variable
-                            when making requests.
+    --env-var=<VARIABLE>    Read the secret token from this environment variable when making requests.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-token for detailed documentation.
