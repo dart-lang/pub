@@ -17,7 +17,7 @@ void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    test('looks normal', () => expectValidation(strictDeps));
+    test('looks normal', () => expectValidationDeprecated(strictDeps));
 
     test('declares an "import" as a dependency in lib/', () async {
       await d.dir(appPath, [
@@ -34,7 +34,7 @@ void main() {
         ]),
       ]).create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('declares an "export" as a dependency in lib/', () async {
@@ -52,7 +52,7 @@ void main() {
         ]),
       ]).create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('declares an "import" as a dependency in bin/', () async {
@@ -70,7 +70,7 @@ void main() {
         ]),
       ]).create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     for (var port in ['import', 'export']) {
@@ -102,7 +102,7 @@ void main() {
               ]),
             ]).create();
 
-            await expectValidation(strictDeps);
+            await expectValidationDeprecated(strictDeps);
           });
         }
       }
@@ -115,7 +115,7 @@ void main() {
         import 'dart:typed_data';
       ''').create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('imports itself', () async {
@@ -123,7 +123,7 @@ void main() {
         import 'package:test_pkg/test_pkg.dart';
       ''').create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('has a relative import', () async {
@@ -131,7 +131,7 @@ void main() {
         import 'some/relative/path.dart';
       ''').create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('has an absolute import', () async {
@@ -139,7 +139,7 @@ void main() {
         import 'file://shared/some/library.dart';
       ''').create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('has a parse error preventing reading directives', () async {
@@ -147,7 +147,7 @@ void main() {
         import not_supported_keyword 'dart:async';
       ''').create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('has a top-level Dart file with an invalid dependency', () async {
@@ -155,7 +155,7 @@ void main() {
         import 'package:';
       ''').create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('has a Dart-like file with an invalid dependency', () async {
@@ -163,7 +163,7 @@ void main() {
         import 'package:';
       ''').create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('has analysis_options.yaml that excludes files', () async {
@@ -197,7 +197,7 @@ linter:
 '''),
       ]).create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
 
     test('has lib/analysis_options.yaml that excludes files', () async {
@@ -232,7 +232,7 @@ linter:
         ]),
       ]).create();
 
-      await expectValidation(strictDeps);
+      await expectValidationDeprecated(strictDeps);
     });
   });
 
@@ -244,7 +244,8 @@ linter:
         import 'package:$bad';
       ''').create();
 
-      await expectValidation(strictDeps, errors: [matches('Invalid URL.')]);
+      await expectValidationDeprecated(strictDeps,
+          errors: [matches('Invalid URL.')]);
     });
 
     test('does not declare an "import" as a dependency', () async {
@@ -252,7 +253,7 @@ linter:
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(
+      await expectValidationDeprecated(
         strictDeps,
         errors: [
           matches('does not have silly_monkey in the `dependencies` section')
@@ -265,7 +266,7 @@ linter:
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
-      await expectValidation(
+      await expectValidationDeprecated(
         strictDeps,
         errors: [
           matches('does not have silly_monkey in the `dependencies` section')
@@ -278,7 +279,7 @@ linter:
         import 'package:/';
       ''').create();
 
-      await expectValidation(strictDeps, errors: isNotEmpty);
+      await expectValidationDeprecated(strictDeps, errors: isNotEmpty);
     });
 
     for (var port in ['import', 'export']) {
@@ -298,7 +299,7 @@ linter:
             ]),
           ]).create();
 
-          await expectValidation(strictDeps, errors: isNotEmpty);
+          await expectValidationDeprecated(strictDeps, errors: isNotEmpty);
         });
       }
     }
@@ -316,7 +317,7 @@ linter:
             ]),
           ]).create();
 
-          await expectValidation(
+          await expectValidationDeprecated(
             strictDeps,
             warnings: [
               matches(
@@ -338,7 +339,7 @@ linter:
           ]),
         ]).create();
 
-        await expectValidation(strictDeps, errors: isNotEmpty);
+        await expectValidationDeprecated(strictDeps, errors: isNotEmpty);
       });
 
       test('"package:silly_monkey"', () async {
@@ -356,7 +357,7 @@ linter:
           ]),
         ]).create();
 
-        await expectValidation(strictDeps, errors: isNotEmpty);
+        await expectValidationDeprecated(strictDeps, errors: isNotEmpty);
       });
 
       test('"package:/"', () async {
@@ -368,7 +369,7 @@ linter:
           ]),
         ]).create();
 
-        await expectValidation(strictDeps, errors: isNotEmpty);
+        await expectValidationDeprecated(strictDeps, errors: isNotEmpty);
       });
 
       test('"package:/]"', () async {
@@ -380,7 +381,7 @@ linter:
           ]),
         ]).create();
 
-        await expectValidation(strictDeps, errors: isNotEmpty);
+        await expectValidationDeprecated(strictDeps, errors: isNotEmpty);
       });
     });
   });

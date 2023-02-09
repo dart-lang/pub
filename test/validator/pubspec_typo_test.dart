@@ -16,7 +16,7 @@ void main() {
   group('should consider a package valid if it', () {
     setUp(d.validPackage.create);
 
-    test('looks normal', () => expectValidation(pubspecTypo));
+    test('looks normal', () => expectValidationDeprecated(pubspecTypo));
 
     test('has no typos', () async {
       await d.dir(appPath, [
@@ -38,7 +38,7 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(pubspecTypo);
+      await expectValidationDeprecated(pubspecTypo);
     });
 
     test('has different keys which are likely not typos', () async {
@@ -52,7 +52,7 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(pubspecTypo);
+      await expectValidationDeprecated(pubspecTypo);
     });
   });
 
@@ -67,7 +67,7 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(pubspecTypo, warnings: isNotEmpty);
+      await expectValidationDeprecated(pubspecTypo, warnings: isNotEmpty);
     });
 
     test('contains typos but does not issue too many warnings', () async {
@@ -82,7 +82,7 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(
+      await expectValidationDeprecated(
         pubspecTypo,
         warnings: hasLength(lessThanOrEqualTo(3)),
       );

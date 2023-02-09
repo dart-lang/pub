@@ -9,7 +9,7 @@ import '../test_pub.dart';
 // TODO(sigurdm) consider rewriting all validator tests as integration tests.
 // That would make them more robust, and test actual end2end behaviour.
 
-Future<void> expectValidation(
+Future<void> expectValidationDeprecated(
   ValidatorCreator fn, {
   hints,
   warnings,

@@ -24,7 +24,7 @@ void main() {
       })
     ]).create();
 
-    await expectValidation(dependencyOverride);
+    await expectValidationDeprecated(dependencyOverride);
   });
 
   group('should consider a package invalid if', () {
@@ -36,7 +36,8 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(dependencyOverride, warnings: isNotEmpty);
+      await expectValidationDeprecated(dependencyOverride,
+          warnings: isNotEmpty);
     });
 
     test('it has any non-dev dependency overrides', () async {
@@ -51,7 +52,8 @@ void main() {
         })
       ]).create();
 
-      await expectValidation(dependencyOverride, warnings: isNotEmpty);
+      await expectValidationDeprecated(dependencyOverride,
+          warnings: isNotEmpty);
     });
   });
 }
