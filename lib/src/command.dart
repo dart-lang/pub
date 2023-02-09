@@ -75,12 +75,7 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  late final Entrypoint entrypoint =
-      Entrypoint(directory, cache, withPubspecOverrides: withPubspecOverrides);
-
-  /// Whether `pubspec_overrides.yaml` is taken into account, when creating
-  /// [entrypoint].
-  bool get withPubspecOverrides => true;
+  late final Entrypoint entrypoint = Entrypoint(directory, cache);
 
   /// The URL for web documentation for this command.
   String? get docUrl => null;
