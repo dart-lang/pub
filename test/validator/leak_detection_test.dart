@@ -25,7 +25,7 @@ void main() {
           '''),
         ])
       ]).create();
-      await expectValidation(leakDetection);
+      await expectValidationDeprecated(leakDetection);
     });
 
     test('contains a source file listed in false_secrets', () async {
@@ -43,7 +43,7 @@ void main() {
           '''),
         ])
       ]).create();
-      await expectValidation(leakDetection, errors: isEmpty);
+      await expectValidationDeprecated(leakDetection, errors: isEmpty);
     });
   });
 
@@ -57,7 +57,7 @@ void main() {
           '''),
         ])
       ]).create();
-      await expectValidation(leakDetection, errors: isNotEmpty);
+      await expectValidationDeprecated(leakDetection, errors: isNotEmpty);
     });
   });
 
@@ -82,7 +82,7 @@ void main() {
           '''),
         ])
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         leakDetection,
         errors: allOf(
           hasLength(lessThanOrEqualTo(3)),
@@ -117,7 +117,7 @@ void main() {
           '''),
         ])
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         leakDetection,
         errors: allOf(
           hasLength(lessThanOrEqualTo(3)),
