@@ -7,7 +7,7 @@ Add an authentication token for a package repository.
 The token will be used for authorizing against <hosted-url> both when
 retrieving dependencies and for publishing.
 
-Tokens are stored in $SANDBOX/.config/pub-tokens.json.
+Tokens are stored in $SANDBOX/.config/dart/pub-tokens.json.
 
 This command will prompt for the secret token over stdin. (Unless `--env-var` is
 used).
