@@ -250,8 +250,14 @@ Future<Client> _authorize() async {
   // the code is received.
   var completer = Completer();
   var server = await bindServer('localhost', 0);
+  var authUrl = grant.getAuthorizationUrl(
+    Uri.parse('http://localhost:${server.port}'),
+    scopes: _scopes,
+  );
   shelf_io.serveRequests(server, (request) {
-    if (request.url.path.isNotEmpty) {
+    if (request.url.path == 'redirect') {
+      return shelf.Response.movedPermanently(authUrl);
+    } else if (request.url.path.isNotEmpty) {
       return shelf.Response.notFound('Invalid URI.');
     }
 
@@ -266,14 +272,9 @@ Future<Client> _authorize() async {
     return shelf.Response.found('https://pub.dev/authorized');
   });
 
-  var authUrl = grant.getAuthorizationUrl(
-    Uri.parse('http://localhost:${server.port}'),
-    scopes: _scopes,
-  );
-
   log.message(
       'Pub needs your authorization to upload packages on your behalf.\n'
-      'In a web browser, go to $authUrl\n'
+      'In a web browser, go to http://localhost:${server.port}/redirect\n'
       'Then click "Allow access".\n\n'
       'Waiting for your authorization...');
 
