@@ -22,7 +22,7 @@ void main() {
     globalServer.expect('GET', '/api/packages/versions/new', (request) {
       expect(
         request.headers,
-        containsPair('authorization', 'Bearer access token'),
+        containsPair('authorization', 'Bearer access-token'),
       );
 
       return shelf.Response(200);
