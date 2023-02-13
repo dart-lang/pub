@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart' show EnvironmentKeys;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
@@ -393,25 +394,22 @@ main() {
     );
   });
 
-  test('synonyms "pkg" and "packages" work', () async {
+  test('"pkg" and "packages" will trigger a suggestion of "pub"', () async {
     await servePackages();
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-      }),
-    ]).create();
-
+    await d.appDir().create();
     for (final command in ['pkg', 'packages']) {
       final buffer = StringBuffer();
       await runEmbeddingToBuffer(
         [command, 'get'],
         buffer,
         workingDirectory: d.path(appPath),
+        exitCode: USAGE,
       );
       expect(
         buffer.toString(),
         allOf(
-          contains('Got dependencies'),
+          contains('Did you mean one of these?'),
+          contains('  pub'),
         ),
       );
     }
