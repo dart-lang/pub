@@ -25,8 +25,7 @@ Future authorizePub(
   );
 
   var line = await pub.stdout.next;
-  final match1 =
-      RegExp(r'(http://localhost:[0-9]+/redirect)').firstMatch(line)!;
+  final match1 = RegExp(r'(http://localhost:[0-9]+/login)').firstMatch(line)!;
   final localhostRedirectUrl = Uri.parse(match1.group(1)!);
   final redirectResponse = await (http.Request('GET', localhostRedirectUrl)
         ..followRedirects = false)

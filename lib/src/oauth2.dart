@@ -255,7 +255,7 @@ Future<Client> _authorize() async {
     scopes: _scopes,
   );
   shelf_io.serveRequests(server, (request) {
-    if (request.url.path == 'redirect') {
+    if (request.url.path == 'login') {
       return shelf.Response.movedPermanently(authUrl);
     } else if (request.url.path.isNotEmpty) {
       return shelf.Response.notFound('Invalid URI.');
@@ -274,7 +274,7 @@ Future<Client> _authorize() async {
 
   log.message(
       'Pub needs your authorization to upload packages on your behalf.\n'
-      'In a web browser, go to http://localhost:${server.port}/redirect\n'
+      'In a web browser, go to http://localhost:${server.port}/login\n'
       'Then click "Allow access".\n\n'
       'Waiting for your authorization...');
 
