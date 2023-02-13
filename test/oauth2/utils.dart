@@ -25,12 +25,18 @@ Future authorizePub(
   );
 
   var line = await pub.stdout.next;
-  var match =
-      RegExp(r'[?&]redirect_uri=([0-9a-zA-Z.%+-]+)[$&]').firstMatch(line)!;
-  expect(match, isNotNull);
+  final match1 =
+      RegExp(r'(http://localhost:[0-9]+/redirect)').firstMatch(line)!;
+  final localhostRedirectUrl = Uri.parse(match1.group(1)!);
+  final redirectResponse = await (http.Request('GET', localhostRedirectUrl)
+        ..followRedirects = false)
+      .send();
+  expect(redirectResponse.statusCode, 301);
+  final match2 = RegExp(r'[?&]redirect_uri=([0-9a-zA-Z.%+-]+)[$&]')
+      .firstMatch(redirectResponse.headers['location']!)!;
 
-  var redirectUrl = Uri.parse(Uri.decodeComponent(match.group(1)!));
-  redirectUrl = _addQueryParameters(redirectUrl, {'code': 'access code'});
+  var redirectUrl2 = Uri.parse(Uri.decodeComponent(match2.group(1)!));
+  redirectUrl2 = _addQueryParameters(redirectUrl2, {'code': 'access code'});
 
   // Expect the /token request
   handleAccessTokenRequest(server, accessToken);
@@ -38,7 +44,7 @@ Future authorizePub(
   // Call the redirect url as the browser would otherwise do after successful
   // sign-in with Google account.
   var response =
-      await (http.Request('GET', redirectUrl)..followRedirects = false).send();
+      await (http.Request('GET', redirectUrl2)..followRedirects = false).send();
   expect(response.headers['location'], equals('https://pub.dev/authorized'));
 }
 
