@@ -61,7 +61,9 @@ For interactive auhtorization against pub.dev, use `$topLevelProgram pub login`.
 
     try {
       var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
-      if (!hostedUrl.isScheme('HTTPS')) {
+      var isLocalhost =
+          ['localhost', '127.0.0.1', '::1'].contains(hostedUrl.host);
+      if (!hostedUrl.isScheme('HTTPS') && !isLocalhost) {
         throw FormatException('url must be https://, '
             'insecure repositories cannot use authentication.');
       }

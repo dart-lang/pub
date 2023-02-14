@@ -35,7 +35,7 @@ void main() {
   group('should consider a package valid if it', () {
     test('has no library-level language version annotations', () async {
       await setup(sdkConstraint: '>=2.4.0 <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test('opts in to older language versions', () async {
@@ -44,7 +44,7 @@ void main() {
         libraryLanguageVersion: '2.0',
       );
       await d.dir(appPath, []).create();
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
     test('opts in to same language versions', () async {
       await setup(
@@ -52,14 +52,14 @@ void main() {
         libraryLanguageVersion: '2.4',
       );
       await d.dir(appPath, []).create();
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test('opts in to older language version, with non-range constraint',
         () async {
       await setup(sdkConstraint: '2.7.0', libraryLanguageVersion: '2.3');
       await d.dir(appPath, []).create();
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
   });
 
@@ -69,11 +69,11 @@ void main() {
         sdkConstraint: '>=2.4.1 <3.0.0',
         libraryLanguageVersion: '2.5',
       );
-      await expectValidation(validator, errors: isNotEmpty);
+      await expectValidationDeprecated(validator, errors: isNotEmpty);
     });
     test('opts in to a newer version, with non-range constraint.', () async {
       await setup(sdkConstraint: '2.7.0', libraryLanguageVersion: '2.8');
-      await expectValidation(validator, errors: isNotEmpty);
+      await expectValidationDeprecated(validator, errors: isNotEmpty);
     });
   });
 }

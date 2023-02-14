@@ -16,7 +16,7 @@ void main() {
   group('should consider a package valid if it', () {
     test('has no SDK constraint', () async {
       await d.validPackage.create();
-      await expectValidation(sdkConstraint);
+      await expectValidationDeprecated(sdkConstraint);
     });
 
     test('has an SDK constraint without ^', () async {
@@ -24,7 +24,7 @@ void main() {
         appPath,
         [d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <2.0.0')],
       ).create();
-      await expectValidation(sdkConstraint);
+      await expectValidationDeprecated(sdkConstraint);
     });
 
     test('has an SDK constraint with ^', () async {
@@ -32,14 +32,14 @@ void main() {
         appPath,
         [d.libPubspec('test_pkg', '1.0.0', sdk: '^1.8.0')],
       ).create();
-      await expectValidation(sdkConstraint);
+      await expectValidationDeprecated(sdkConstraint);
     });
 
     test('depends on a pre-release Dart SDK from a pre-release', () async {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0-dev.1', sdk: '>=1.8.0-dev.1 <2.0.0')
       ]).create();
-      await expectValidation(sdkConstraint);
+      await expectValidationDeprecated(sdkConstraint);
     });
 
     test(
@@ -52,7 +52,7 @@ void main() {
           'environment': {'sdk': '>=1.19.0 <2.0.0', 'flutter': '^1.2.3'}
         })
       ]).create();
-      await expectValidation(sdkConstraint);
+      await expectValidationDeprecated(sdkConstraint);
     });
 
     test(
@@ -65,7 +65,7 @@ void main() {
           'environment': {'sdk': '>=2.0.0-dev.51.0 <2.0.0', 'fuchsia': '^1.2.3'}
         })
       ]).create();
-      await expectValidation(sdkConstraint);
+      await expectValidationDeprecated(sdkConstraint);
     });
   });
 
@@ -75,7 +75,7 @@ void main() {
         appPath,
         [d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0')],
       ).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('should have an upper bound constraint')),
       );
@@ -88,7 +88,7 @@ void main() {
           'version': '1.0.0',
         }),
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('should have an upper bound constraint')),
       );
@@ -104,7 +104,7 @@ void main() {
           'environment': {'sdk': '>=1.18.0 <1.50.0', 'flutter': '^1.2.3'}
         })
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('">=1.19.0 <1.50.0"')),
       );
@@ -118,7 +118,7 @@ void main() {
           'environment': {'flutter': '^1.2.3'}
         })
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('"^1.19.0"')),
       );
@@ -134,7 +134,7 @@ void main() {
           'environment': {'sdk': '>=2.0.0-dev.50.0 <2.0.0', 'fuchsia': '^1.2.3'}
         })
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('"^2.0.0"')),
       );
@@ -148,7 +148,7 @@ void main() {
           'environment': {'fuchsia': '^1.2.3'}
         })
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('"^2.0.0"')),
       );
@@ -158,7 +158,7 @@ void main() {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0-dev.1 <2.0.0')
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         warnings: anyElement(
           contains(
@@ -178,7 +178,7 @@ void main() {
           'environment': {'sdk': '^2.19.0'}
         })
       ]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         sdkConstraint,
         hints: anyElement(
           '''

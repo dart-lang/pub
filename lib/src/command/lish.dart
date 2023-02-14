@@ -34,8 +34,6 @@ class LishCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-lish';
   @override
   bool get takesArguments => false;
-  @override
-  bool get withPubspecOverrides => false;
 
   /// The URL of the server to which to upload the package.
   late final Uri host = () {

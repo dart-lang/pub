@@ -39,7 +39,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test(
@@ -62,7 +62,7 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test('is opting in to null-safety with previous null-safe version',
@@ -77,7 +77,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test(
@@ -93,7 +93,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.12.0-dev <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test(
@@ -116,20 +116,20 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test('is opting in to null-safety with no existing versions', () async {
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       await servePackages();
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test('is not opting in to null-safety with no existing versions', () async {
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
       await servePackages();
 
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test(
@@ -152,7 +152,7 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
 
     test(
@@ -175,7 +175,7 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidation(validator);
+      await expectValidationDeprecated(validator);
     });
   });
 
@@ -192,7 +192,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
 
     test(
@@ -208,7 +208,7 @@ void main() {
         },
       );
 
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
     test(
         'is not opting in to null-safety with previous non-null-safe stable version. '
@@ -230,7 +230,7 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
 
     test(
@@ -253,7 +253,7 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
 
     test('is not opting in to null-safety with previous null-safe version',
@@ -268,7 +268,7 @@ void main() {
       );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
 
     test(
@@ -291,7 +291,7 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
 
     test(
@@ -314,7 +314,7 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
 
     test(
@@ -329,7 +329,7 @@ void main() {
           'environment': {'sdk': '>=2.9.0<3.0.0'}
         },
       );
-      await expectValidation(validator, hints: isNotEmpty);
+      await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
   });
 }

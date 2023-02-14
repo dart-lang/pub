@@ -31,9 +31,12 @@ GitRepoDescriptor git(String name, [List<Descriptor>? contents]) =>
 TarFileDescriptor tar(String name, [List<Descriptor>? contents]) =>
     TarFileDescriptor(name, contents ?? <Descriptor>[]);
 
+FileDescriptor validPubspec({Map<String, Object?>? extras}) =>
+    libPubspec('test_pkg', '1.0.0', sdk: '>=3.1.2 <=3.2.0', extras: extras);
+
 /// Describes a package that passes all validation.
 DirectoryDescriptor get validPackage => dir(appPath, [
-      libPubspec('test_pkg', '1.0.0', sdk: '>=3.1.2 <=3.2.0'),
+      validPubspec(),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
@@ -102,13 +105,13 @@ FileDescriptor libPubspec(
   Map? deps,
   Map? devDeps,
   String? sdk,
-  Map<String, Object> extras = const {},
+  Map<String, Object?>? extras,
 }) {
   var map = packageMap(name, version, deps, devDeps);
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
   }
-  return pubspec({...map, ...extras});
+  return pubspec({...map, ...extras ?? {}});
 }
 
 /// Describes a file named `pubspec_overrides.yaml` by default, with the given
