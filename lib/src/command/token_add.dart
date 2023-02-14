@@ -30,7 +30,7 @@ Tokens are stored in ${tokenStore.tokensFile}.
 This command will prompt for the secret token over stdin.
 (Unless `--env-var` is used).
 
-For interactive auhtorization against pub.dev, use `$topLevelProgram pub login`.''';
+For interactive authorization against pub.dev, use `$topLevelProgram pub login`.''';
   @override
   String get argumentsDescription => '[options] <hosted-url>';
 
