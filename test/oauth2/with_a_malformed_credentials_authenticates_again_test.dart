@@ -16,10 +16,7 @@ void main() {
     await d.validPackage.create();
 
     await servePackages();
-    await d.dir(
-      configPath,
-      [d.file('pub-credentials.json', '{bad json')],
-    ).create();
+    await configDir([d.file('pub-credentials.json', '{bad json')]).create();
 
     var pub = await startPublish(globalServer);
     await confirmPublish(pub);

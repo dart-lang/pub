@@ -226,8 +226,7 @@ Descriptor credentialsFile(
   String? refreshToken,
   DateTime? expiration,
 }) {
-  return dir(
-    configPath,
+  return configDir(
     [
       file(
         'pub-credentials.json',
@@ -284,7 +283,7 @@ String _credentialsFileContent(
 /// Describes the file in the system cache that contains credentials for
 /// third party hosted pub servers.
 Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
-  return dir(configPath, [file('pub-tokens.json', jsonEncode(contents))]);
+  return configDir([file('pub-tokens.json', jsonEncode(contents))]);
 }
 
 /// Describes the application directory, containing only a pubspec specifying

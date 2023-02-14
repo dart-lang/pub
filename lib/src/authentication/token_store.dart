@@ -29,7 +29,7 @@ class TokenStore {
   /// [Credential].
   List<Credential> _loadCredentials() {
     final result = <Credential>[];
-    final path = _tokensFile;
+    final path = tokensFile;
     if (path == null || !fileExists(path)) {
       return result;
     }
@@ -97,7 +97,7 @@ class TokenStore {
 
   /// Writes [credentials] into "pub-tokens.json".
   void _saveCredentials(List<Credential> credentials) {
-    final tokensFile = _tokensFile;
+    final tokensFile = this.tokensFile;
     if (tokensFile == null) {
       missingConfigDir();
     }
@@ -171,7 +171,7 @@ class TokenStore {
 
   /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {
-    final tokensFile = _tokensFile;
+    final tokensFile = this.tokensFile;
     if (tokensFile == null) {
       missingConfigDir();
     } else if (!fileExists(tokensFile)) {
@@ -185,7 +185,7 @@ class TokenStore {
   /// Full path to the "pub-tokens.json" file.
   ///
   /// `null` if no config directory could be found.
-  String? get _tokensFile {
+  String? get tokensFile {
     var dir = configDir;
     return dir == null ? null : path.join(dir, 'pub-tokens.json');
   }

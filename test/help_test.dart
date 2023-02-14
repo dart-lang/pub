@@ -42,7 +42,13 @@ Future<void> main() async {
   final cmds = _extractCommands([], PubCommandRunner().commands.values);
   for (final c in cmds) {
     testWithGolden('pub ${c.join(' ')} --help', (ctx) async {
-      await ctx.run([...c, '--help']);
+      await ctx.run(
+        [...c, '--help'],
+        environment: {
+          // Use more columns to avoid unintended line breaking.
+          '_PUB_TEST_TERMINAL_COLUMNS': '200'
+        },
+      );
     });
   }
 }

@@ -12,8 +12,7 @@ Usage: pub outdated [options]
                                    (defaults to on)
     --json                         Output the results using a json format.
     --[no-]prereleases             Include prereleases in latest version.
-    --[no-]show-all                Include dependencies that are already
-                                   fullfilling --mode.
+    --[no-]show-all                Include dependencies that are already fullfilling --mode.
     --[no-]transitive              Show transitive dependencies.
 -C, --directory=<dir>              Run this in the directory <dir>.
 
