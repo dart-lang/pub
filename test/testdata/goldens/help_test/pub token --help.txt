@@ -7,9 +7,9 @@ Manage authentication tokens for hosted pub repositories.
 The tokens will be used for authorizing both when retrieving dependencies and
 for publishing.
 
-Tokens are stored in $SANDBOX/.config/dart/pub-tokens.json.
+Tokens are stored in `$SANDBOX/.config/dart/pub-tokens.json`.
 
-For interactive auhtorization against pub.dev, use `dart pub login`.
+For interactive authorization against pub.dev, use `dart pub login`.
 
 Usage: pub token [arguments...]
 -h, --help    Print this usage information.
