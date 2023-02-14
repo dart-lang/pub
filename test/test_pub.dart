@@ -61,6 +61,9 @@ const String cachePath = 'cache';
 /// sandbox directory.
 const String configPath = '.config';
 
+d.DirectoryDescriptor configDir(Iterable<d.Descriptor> contents) =>
+    d.dir(configPath, [d.dir('dart', contents)]);
+
 /// The path of the mock app directory used for tests, relative to the sandbox
 /// directory.
 const String appPath = 'myapp';

@@ -21,7 +21,7 @@ void main() {
 
     await runPub(args: ['logout'], output: contains('Logging out of pub.dev.'));
 
-    await d.dir(configPath, [d.nothing('pub-credentials.json')]).validate();
+    await configDir([d.nothing('pub-credentials.json')]).validate();
   });
 
   test(

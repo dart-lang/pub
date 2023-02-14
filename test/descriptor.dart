@@ -223,8 +223,7 @@ Descriptor credentialsFile(
   String? refreshToken,
   DateTime? expiration,
 }) {
-  return dir(
-    configPath,
+  return configDir(
     [
       file(
         'pub-credentials.json',
