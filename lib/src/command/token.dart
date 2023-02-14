@@ -21,7 +21,7 @@ for publishing.
 
 Tokens are stored in `${tokenStore.tokensFile}`.
 
-For interactive auhtorization against pub.dev, use `$topLevelProgram pub login`.''';
+For interactive authorization against pub.dev, use `$topLevelProgram pub login`.''';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
