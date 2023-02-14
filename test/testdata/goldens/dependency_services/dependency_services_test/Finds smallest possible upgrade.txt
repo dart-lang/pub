@@ -18,8 +18,8 @@ sdks:
   dart: ">=3.0.2 <4.0.0"
 -------------------------------- END OF OUTPUT ---------------------------------
 
-## Section smallest-update
-$ echo '{"disallowed":{"name":"foo","url":"http://localhost:$PORT","versions":[{"range":"1.1.1"},{"range":"1.1.2"}]}}' | dependency_services smallest-update
+## Section report
+$ echo '{"disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[{"range":"1.1.1"},{"range":"1.1.2"}]}]}' | dependency_services report
 {
   "dependencies": [
     {
@@ -36,6 +36,90 @@ $ echo '{"disallowed":{"name":"foo","url":"http://localhost:$PORT","versions":[{
       },
       "latest": "1.1.4",
       "constraint": "^1.0.0",
+      "compatible": [
+        {
+          "name": "foo",
+          "version": "1.1.4",
+          "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT",
+              "sha256": "4e29148fe4f00dc3e48082c074a538bc10030ed519622ee350815d5b2fd96a6d"
+            }
+          },
+          "constraintBumped": "^1.0.0",
+          "constraintWidened": "^1.0.0",
+          "constraintBumpedIfNeeded": "^1.0.0",
+          "previousVersion": "1.1.1",
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT",
+              "sha256": "ee9afb23699244da9e40f5001a3600e529c3696f2b8696906fd43ea8e54e0457"
+            }
+          }
+        }
+      ],
+      "singleBreaking": [
+        {
+          "name": "foo",
+          "version": "1.1.4",
+          "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT",
+              "sha256": "4e29148fe4f00dc3e48082c074a538bc10030ed519622ee350815d5b2fd96a6d"
+            }
+          },
+          "constraintBumped": "^1.1.4",
+          "constraintWidened": "^1.0.0",
+          "constraintBumpedIfNeeded": "^1.0.0",
+          "previousVersion": "1.1.1",
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT",
+              "sha256": "ee9afb23699244da9e40f5001a3600e529c3696f2b8696906fd43ea8e54e0457"
+            }
+          }
+        }
+      ],
+      "multiBreaking": [
+        {
+          "name": "foo",
+          "version": "1.1.4",
+          "kind": "direct",
+          "source": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT",
+              "sha256": "4e29148fe4f00dc3e48082c074a538bc10030ed519622ee350815d5b2fd96a6d"
+            }
+          },
+          "constraintBumped": "^1.1.4",
+          "constraintWidened": "^1.0.0",
+          "constraintBumpedIfNeeded": "^1.0.0",
+          "previousVersion": "1.1.1",
+          "previousConstraint": "^1.0.0",
+          "previousSource": {
+            "type": "hosted",
+            "description": {
+              "name": "foo",
+              "url": "http://localhost:$PORT",
+              "sha256": "ee9afb23699244da9e40f5001a3600e529c3696f2b8696906fd43ea8e54e0457"
+            }
+          }
+        }
+      ],
       "smallestUpdate": [
         {
           "name": "foo",

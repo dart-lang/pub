@@ -55,6 +55,10 @@ class DependencyServicesReportCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    final stdinString = await utf8.decodeStream(stdin);
+    final input = json.decode(stdinString.isEmpty ? '{}' : stdinString);
+    final disallowed = _parseDisallowed(input, cache);
+
     final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
 
     final breakingPubspec = stripVersionUpperBounds(compatiblePubspec);
@@ -94,6 +98,31 @@ class DependencyServicesReportCommand extends PubCommand {
         singleBreakingVersion = singleBreakingPackagesResult
             ?.firstWhereOrNull((element) => element.name == package.name);
       }
+      PackageId? smallestUpgrade;
+      final disallowedRanges = disallowed
+          .firstWhereOrNull((disallowed) => disallowed.ref == package.toRef());
+      if (disallowedRanges != null &&
+          !disallowedRanges.constraints.every(
+            (element) => !element.constraint.allows(package.version),
+          )) {
+        // Current version disallowed by restrictions.
+        final atLeastCurrentPubspec = atLeastCurrent(
+          compatiblePubspec,
+          entrypoint.lockFile.packages.values.toList(),
+        );
+
+        final smallestUpgradeResult = await _tryResolve(
+          atLeastCurrentPubspec,
+          cache,
+          solveType: SolveType.downgrade,
+          extraIncompatibilities:
+              disallowed.expand((x) => x.toIncompatibilities()),
+        );
+
+        smallestUpgrade = smallestUpgradeResult
+            ?.firstWhereOrNull((element) => element.name == package.name);
+      }
+
       dependencies.add({
         'name': package.name,
         'version': package.versionOrHash(),
@@ -132,119 +161,17 @@ class DependencyServicesReportCommand extends PubCommand {
                 currentPackages: currentPackages,
               )
             : [],
-      });
-    }
-    log.message(JsonEncoder.withIndent('  ').convert(result));
-  }
-}
-
-class DependencyServicesSmallestUpdateCommand extends PubCommand {
-  @override
-  String get name => 'smallest-update';
-
-  @override
-  String get description =>
-      'Output a machine-digestible report of upgrading a given dependency';
-
-  @override
-  String get argumentsDescription => '[options]';
-
-  @override
-  bool get takesArguments => false;
-
-  DependencyServicesSmallestUpdateCommand() {
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
-  }
-
-  _DisallowedPackageRanges _parseDisallowed(
-    Map<String, Object?> input,
-  ) {
-    final disallowed = input['disallowed'] as Map<String, Object?>;
-    final ref = PackageRef(
-      disallowed['name'] as String,
-      HostedDescription(
-        disallowed['name'] as String,
-        disallowed['url'] as String? ?? cache.hosted.defaultUrl,
-      ),
-    );
-    final constraints = disallowed['versions'] as List<Object?>;
-    return _DisallowedPackageRanges(
-      ref: ref,
-      constraints: constraints.map(
-        (v) {
-          final entry = v as Map<String, Object?>;
-          final range = VersionConstraint.parse(entry['range'] as String);
-          final reason = entry['reason'] as String?;
-          return _ConstraintWithReason(range, reason);
-        },
-      ).toList(),
-    );
-  }
-
-  @override
-  Future<void> runProtected() async {
-    final input = json.decode(await utf8.decodeStream(stdin));
-    final disallowed = _parseDisallowed(input);
-    if (disallowed.constraints.isEmpty) {
-      // No disallowed versions.
-      log.message('{}');
-      return;
-    }
-    final target = disallowed.ref.name;
-    final currentPackages = await _computeCurrentPackages(entrypoint, cache);
-    final package = currentPackages[target];
-    if (package == null) {
-      // target package not part of dependencies.
-      log.message('{}');
-      return;
-    }
-    if (disallowed.constraints
-        .every((element) => !element.constraint.allows(package.version))) {
-      // Current version allowed by restrictions.
-      log.message('{}');
-      return;
-    }
-    final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
-    final atLeastCurrentPubspec = atLeastCurrent(
-      compatiblePubspec,
-      entrypoint.lockFile.packages.values.toList(),
-    );
-    final solveResult = await _tryResolve(
-      atLeastCurrentPubspec,
-      cache,
-      solveType: SolveType.downgrade,
-      extraIncompatibilities: disallowed.toIncompatibilities(),
-    );
-    if (solveResult == null) {
-      // Could not resolve.
-      log.message('{}');
-      return;
-    }
-    var result = <String, Object?>{
-      'dependencies': [
-        {
-          'name': package.name,
-          'version': package.versionOrHash(),
-          'kind': _kindString(compatiblePubspec, target),
-          'source': _source(package, containingDir: directory),
-          'latest':
-              (await cache.getLatest(package.toRef(), version: package.version))
-                  ?.versionOrHash(),
-          'constraint':
-              _constraintOf(compatiblePubspec, package.name)?.toString(),
+        if (smallestUpgrade != null)
           'smallestUpdate': await _computeUpgradeSet(
             compatiblePubspec,
-            solveResult.firstWhere((element) => element.name == target),
+            smallestUpgrade,
             entrypoint,
             cache,
             currentPackages: currentPackages,
             upgradeType: _UpgradeType.smallestUpdate,
           ),
-        }
-      ]
-    };
-
+      });
+    }
     log.message(JsonEncoder.withIndent('  ').convert(result));
   }
 }
@@ -656,9 +583,12 @@ bool _lockFileHasContentHashes(dynamic lockfile) {
 
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
 /// resolution was found.
-Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache,
-    {SolveType solveType = SolveType.upgrade,
-    Iterable<Incompatibility>? extraIncompatibilities}) async {
+Future<List<PackageId>?> _tryResolve(
+  Pubspec pubspec,
+  SystemCache cache, {
+  SolveType solveType = SolveType.upgrade,
+  Iterable<Incompatibility>? extraIncompatibilities,
+}) async {
   final solveResult = await tryResolveVersions(
     solveType,
     cache,
@@ -833,4 +763,45 @@ Future<List<Object>> _computeUpgradeSet(
           )
         },
   ];
+}
+
+List<_DisallowedPackageRanges> _parseDisallowed(
+  Map<String, Object?> input,
+  SystemCache cache,
+) {
+  final disallowedList = input['disallowed'];
+  if (disallowedList == null) {
+    return [];
+  }
+  if (disallowedList is! List<Object?>) {
+    throw FormatException('Disallowed should be a list of maps');
+  }
+  final result = <_DisallowedPackageRanges>[];
+  for (final disallowed in disallowedList) {
+    if (disallowed is! Map) {
+      throw FormatException('Disallowed should be a list of maps');
+    }
+    final ref = PackageRef(
+      disallowed['name'] as String,
+      HostedDescription(
+        disallowed['name'] as String,
+        disallowed['url'] as String? ?? cache.hosted.defaultUrl,
+      ),
+    );
+    final constraints = disallowed['versions'] as List<Object?>;
+    result.add(
+      _DisallowedPackageRanges(
+        ref: ref,
+        constraints: constraints.map(
+          (v) {
+            final entry = v as Map<String, Object?>;
+            final range = VersionConstraint.parse(entry['range'] as String);
+            final reason = entry['reason'] as String?;
+            return _ConstraintWithReason(range, reason);
+          },
+        ).toList(),
+      ),
+    );
+  }
+  return result;
 }
