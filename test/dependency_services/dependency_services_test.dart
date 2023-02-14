@@ -59,18 +59,15 @@ extension on GoldenTestContext {
       environment: getPubTestEnvironment(),
       workingDirectory: p.join(d.sandbox, appPath),
     );
-    if (stdin != null) {
-      process.stdin.write(stdin);
-      await process.stdin.flush();
-      await process.stdin.close();
-    }
+    process.stdin.write(stdin);
+    await process.stdin.flush();
+    await process.stdin.close();
+
     final outLines = outputLines(process.stdout);
     final errLines = outputLines(process.stderr);
     final exitCode = await process.exitCode;
 
-    final pipe = stdin == null
-        ? ''
-        : ' echo ${filterUnstableText(escapeShellArgument(stdin))} |';
+    final pipe = ' echo ${filterUnstableText(escapeShellArgument(stdin))} |';
     buffer.writeln(
       [
         '\$$pipe dependency_services ${args.map(escapeShellArgument).join(' ')}',
