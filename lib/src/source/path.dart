@@ -191,16 +191,27 @@ class PathSource extends Source {
   /// normalized path to the package.
   ///
   /// It must be a map, with a "path" key containing a path that points to an
-  /// existing directory. Throws an [ApplicationException] if the path is
-  /// invalid.
+  /// existing directory. Throws an [PackageNotFoundException] if the path is
+  /// invalid or a pubspec.yaml file doesn't exist at the location.
   String _validatePath(String name, PathDescription description) {
     final dir = description.path;
 
-    if (dirExists(dir)) return dir;
-
+    if (dirExists(dir)) {
+      final pubspecPath = p.join(dir, 'pubspec.yaml');
+      if (!fileExists(pubspecPath)) {
+        throw PackageNotFoundException(
+          'No pubspec.yaml found for package $name in $dir.',
+          innerError: FileException('$pubspecPath doesn\'t exist', pubspecPath),
+        );
+      }
+      return dir;
+    }
     if (fileExists(dir)) {
-      fail('Path dependency for package $name must refer to a directory, '
-          'not a file. Was "$dir".');
+      throw PackageNotFoundException(
+        'Path dependency for package $name must refer to a directory, '
+        'not a file. Was "$dir".',
+        innerError: FileException('$dir is not a directory.', dir),
+      );
     }
     throw PackageNotFoundException(
       'could not find package $name at "${description.format()}"',
