@@ -19,7 +19,7 @@ Manage authentication tokens for hosted pub repositories.
 The tokens will be used for authorizing both when retrieving dependencies and
 for publishing.
 
-Tokens are stored in ${tokenStore.tokensFile}.
+Tokens are stored in `${tokenStore.tokensFile}`.
 
 For interactive auhtorization against pub.dev, use `$topLevelProgram pub login`.''';
   @override
