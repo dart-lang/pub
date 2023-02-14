@@ -143,7 +143,7 @@ void main() {
   });
 
   test('with non-secure server url returns error', () async {
-    await d.dir(configPath).create();
+    await configDir([]).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
       error: contains('insecure repositories cannot use authentication'),
