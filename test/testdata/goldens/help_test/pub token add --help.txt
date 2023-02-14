@@ -12,7 +12,7 @@ Tokens are stored in $SANDBOX/.config/dart/pub-tokens.json.
 This command will prompt for the secret token over stdin.
 (Unless `--env-var` is used).
 
-For interactive auhtorization against pub.dev, use `dart pub login`.
+For interactive authorization against pub.dev, use `dart pub login`.
 
 Usage: pub token add [options] <hosted-url>
 -h, --help                  Print this usage information.
