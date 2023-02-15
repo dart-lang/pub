@@ -24,8 +24,8 @@ void main() {
     ]).create();
 
     await pubGet(
-      error: RegExp(r'Could not find a file named "pubspec.yaml" '
-          r'in "[^\n]*"\.'),
+      error: 'Because myapp depends on foo from path which doesn\'t exist '
+          '(No pubspec.yaml found for package foo in $fooPath.), version solving failed.',
       exitCode: exit_codes.NO_INPUT,
     );
   });
