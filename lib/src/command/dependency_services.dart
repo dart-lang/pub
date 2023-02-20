@@ -805,3 +805,39 @@ List<_DisallowedPackageRanges> _parseDisallowed(
   }
   return result;
 }
+
+/// Returns a pubspec with the same dependencies as [original] but with all
+/// version constraints replaced by `>=c` where `c`, is the member of `current`
+/// that has same name as the dependency.
+Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
+  List<PackageRange> fixBounds(
+    Map<String, PackageRange> constrained,
+  ) {
+    final result = <PackageRange>[];
+
+    for (final name in constrained.keys) {
+      final packageRange = constrained[name]!;
+      final currentVersion = current.firstWhereOrNull((id) => id.name == name);
+      if (currentVersion == null) {
+        result.add(packageRange);
+      } else {
+        result.add(
+          packageRange.toRef().withConstraint(
+                VersionRange(min: currentVersion.version, includeMin: true),
+              ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  return Pubspec(
+    original.name,
+    version: original.version,
+    sdkConstraints: original.sdkConstraints,
+    dependencies: fixBounds(original.dependencies),
+    devDependencies: fixBounds(original.devDependencies),
+    dependencyOverrides: original.dependencyOverrides.values,
+  );
+}

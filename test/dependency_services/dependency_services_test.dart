@@ -109,18 +109,18 @@ Future<void> _listReportApply(
 
 Future<void> _smallestUpdate(
   GoldenTestContext context,
-  String disallowedPackage,
-  List<String> disallowedVersions, {
+  Map<String, List<String>> disallowedVersions, {
   void Function(Map)? resultAssertions,
 }) async {
   manifestAndLockfile(context);
   final input = json.encode({
     'disallowed': [
-      {
-        'name': disallowedPackage,
-        'url': globalServer.url,
-        'versions': disallowedVersions.map((d) => {'range': d}).toList()
-      }
+      for (final e in disallowedVersions.entries)
+        {
+          'name': e.key,
+          'url': globalServer.url,
+          'versions': e.value.map((d) => {'range': d}).toList()
+        }
     ]
   });
   final report = await context.runDependencyServices(['report'], stdin: input);
@@ -464,8 +464,9 @@ Future<void> main() async {
 
     await _smallestUpdate(
       context,
-      'foo',
-      ['1.1.1', '1.1.2'],
+      {
+        'foo': ['1.1.1', '1.1.2']
+      },
       resultAssertions: (r) {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '1.1.3');
       },
@@ -489,8 +490,9 @@ Future<void> main() async {
 
     await _smallestUpdate(
       context,
-      'foo',
-      ['1.1.1', '2.0.0'],
+      {
+        'foo': ['1.1.1', '2.0.0']
+      },
       resultAssertions: (r) {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
       },
@@ -503,6 +505,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('bar', '1.0.0');
     server.serve('bar', '2.0.0');
+    server.serve('bar', '2.2.0');
 
     server.serve(
       'foo',
@@ -531,11 +534,13 @@ Future<void> main() async {
 
     await _smallestUpdate(
       context,
-      'foo',
-      ['1.1.1', '2.0.0'],
+      {
+        'foo': ['1.1.1', '2.0.0'],
+        'bar': ['2.0.0']        
+      },
       resultAssertions: (r) {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
-        expect(findChangeVersion(r, 'smallestUpdate', 'bar'), '2.0.0');
+        expect(findChangeVersion(r, 'smallestUpdate', 'bar'), '2.2.0');
       },
     );
   });
