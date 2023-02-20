@@ -47,6 +47,10 @@ class PubAnalytics {
 class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get name => 'pub';
+
+  @override
+  get suggestionAliases => const ['packages', 'pkg'];
+
   @override
   String get description => 'Work with packages.';
   @override
