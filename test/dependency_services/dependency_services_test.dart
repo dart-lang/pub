@@ -107,7 +107,7 @@ Future<void> _listReportApply(
   manifestAndLockfile(context);
 }
 
-Future<void> _smallestUpdate(
+Future<void> _reportWithForbidden(
   GoldenTestContext context,
   Map<String, List<String>> disallowedVersions, {
   void Function(Map)? resultAssertions,
@@ -175,6 +175,39 @@ Future<void> main() async {
         expect(
           findChangeVersion(report, 'singleBreaking', 'transitive'),
           null,
+        );
+      },
+    );
+  });
+
+  testWithGolden('Ignoring version', (context) async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      })
+    ]).create();
+    await pubGet();
+
+    server.serve('foo', '1.0.1'); // should get this.
+    server.serve('foo', '1.0.2'); // ignored
+    server.serve('foo', '1.0.3', deps: {'transitive': '1.0.0'});
+    server.serve('transitive', '1.0.0'); // ignored
+    await _reportWithForbidden(
+      context,
+      {
+        'foo': ['1.0.2'],
+        'transitive': ['1.0.0'],
+      },
+      resultAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'compatible', 'foo'),
+          '1.0.1',
         );
       },
     );
@@ -462,7 +495,7 @@ Future<void> main() async {
     server.serve('foo', '1.1.3'); // We would like this to be the new version.
     server.serve('foo', '1.1.4'); // This version would not be a minimal update.
 
-    await _smallestUpdate(
+    await _reportWithForbidden(
       context,
       {
         'foo': ['1.1.1', '1.1.2']
@@ -488,7 +521,7 @@ Future<void> main() async {
     server.serve('foo', '2.0.1'); // We would like this to be the new version.
     server.serve('foo', '2.0.2'); // This version would not be a minimal update.
 
-    await _smallestUpdate(
+    await _reportWithForbidden(
       context,
       {
         'foo': ['1.1.1', '2.0.0']
@@ -532,11 +565,11 @@ Future<void> main() async {
       deps: {'bar': '^2.0.0'},
     ); // This version would not be a minimal update.
 
-    await _smallestUpdate(
+    await _reportWithForbidden(
       context,
       {
         'foo': ['1.1.1', '2.0.0'],
-        'bar': ['2.0.0']        
+        'bar': ['2.0.0']
       },
       resultAssertions: (r) {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');

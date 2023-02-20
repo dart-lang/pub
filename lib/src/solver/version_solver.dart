@@ -86,10 +86,15 @@ class VersionSolver {
   )   : _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
-  /// Prime the solver with [incompatibilities].
-  void addIncompatibilities(Iterable<Incompatibility> incompatibilities) {
-    for (final incompatibility in incompatibilities) {
-      _addIncompatibility(incompatibility);
+  /// Prime the solver with [constraints].
+  void addConstraints(Iterable<ConstraintAndCause> constraints) {
+    for (final constraint in constraints) {
+      _addIncompatibility(
+        Incompatibility(
+          [Term(constraint.range, false)],
+          PackageVersionForbiddenCause(reason: constraint.cause),
+        ),
+      );
     }
   }
 
@@ -574,4 +579,14 @@ class VersionSolver {
     // Indent for the previous selections.
     log.solver(prefixLines(message, prefix: '  ' * _solution.decisionLevel));
   }
+}
+
+// An additional constraint to a version resolution.
+class ConstraintAndCause {
+  /// Stated in the **negative** like constraints in the pubspec, meaning that
+  /// to forbid a version you must do
+  /// `VersionConstraint.any.difference(version)`.
+  final PackageRange range;
+  final String? cause;
+  ConstraintAndCause(this.range, this.cause);
 }

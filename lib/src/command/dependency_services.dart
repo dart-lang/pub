@@ -24,9 +24,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
-import '../solver/incompatibility.dart';
-import '../solver/incompatibility_cause.dart';
-import '../solver/term.dart';
+import '../solver/version_solver.dart';
 import '../source/git.dart';
 import '../source/hosted.dart';
 import '../system_cache.dart';
@@ -57,16 +55,23 @@ class DependencyServicesReportCommand extends PubCommand {
   Future<void> runProtected() async {
     final stdinString = await utf8.decodeStream(stdin);
     final input = json.decode(stdinString.isEmpty ? '{}' : stdinString);
-    final disallowed = _parseDisallowed(input, cache);
+    final extraConstraints = _parseDisallowed(input, cache);
 
     final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
 
     final breakingPubspec = stripVersionUpperBounds(compatiblePubspec);
 
-    final compatiblePackagesResult =
-        await _tryResolve(compatiblePubspec, cache);
+    final compatiblePackagesResult = await _tryResolve(
+      compatiblePubspec,
+      cache,
+      extraConstraints: extraConstraints,
+    );
 
-    final breakingPackagesResult = await _tryResolve(breakingPubspec, cache);
+    final breakingPackagesResult = await _tryResolve(
+      breakingPubspec,
+      cache,
+      extraConstraints: extraConstraints,
+    );
 
     final currentPackages = await _computeCurrentPackages(entrypoint, cache);
 
@@ -99,12 +104,9 @@ class DependencyServicesReportCommand extends PubCommand {
             ?.firstWhereOrNull((element) => element.name == package.name);
       }
       PackageId? smallestUpgrade;
-      final disallowedRanges = disallowed
-          .firstWhereOrNull((disallowed) => disallowed.ref == package.toRef());
-      if (disallowedRanges != null &&
-          !disallowedRanges.constraints.every(
-            (element) => !element.constraint.allows(package.version),
-          )) {
+      if (extraConstraints.any(
+        (c) => c.range.toRef() == package.toRef() && !c.range.allows(package),
+      )) {
         // Current version disallowed by restrictions.
         final atLeastCurrentPubspec = atLeastCurrent(
           compatiblePubspec,
@@ -115,12 +117,26 @@ class DependencyServicesReportCommand extends PubCommand {
           atLeastCurrentPubspec,
           cache,
           solveType: SolveType.downgrade,
-          extraIncompatibilities:
-              disallowed.expand((x) => x.toIncompatibilities()),
+          extraConstraints: extraConstraints,
         );
 
         smallestUpgrade = smallestUpgradeResult
             ?.firstWhereOrNull((element) => element.name == package.name);
+      }
+
+      Future<List<Object>> computeUpgradeSet(
+        PackageId? package,
+        _UpgradeType upgradeType,
+      ) async {
+        return await _computeUpgradeSet(
+          compatiblePubspec,
+          package,
+          entrypoint,
+          cache,
+          currentPackages: currentPackages,
+          upgradeType: upgradeType,
+          extraConstraints: extraConstraints,
+        );
       }
 
       dependencies.add({
@@ -133,42 +149,26 @@ class DependencyServicesReportCommand extends PubCommand {
                 ?.versionOrHash(),
         'constraint':
             _constraintOf(compatiblePubspec, package.name)?.toString(),
-        'compatible': await _computeUpgradeSet(
-          compatiblePubspec,
+        'compatible': await computeUpgradeSet(
           compatibleVersion,
-          entrypoint,
-          cache,
-          upgradeType: _UpgradeType.compatible,
-          currentPackages: currentPackages,
+          _UpgradeType.compatible,
         ),
         'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
             ? []
-            : await _computeUpgradeSet(
-                compatiblePubspec,
+            : await computeUpgradeSet(
                 singleBreakingVersion,
-                entrypoint,
-                cache,
-                upgradeType: _UpgradeType.singleBreaking,
-                currentPackages: currentPackages,
+                _UpgradeType.singleBreaking,
               ),
         'multiBreaking': kind != 'transitive' && multiBreakingVersion != null
-            ? await _computeUpgradeSet(
-                compatiblePubspec,
+            ? await computeUpgradeSet(
                 multiBreakingVersion,
-                entrypoint,
-                cache,
-                upgradeType: _UpgradeType.multiBreaking,
-                currentPackages: currentPackages,
+                _UpgradeType.multiBreaking,
               )
             : [],
         if (smallestUpgrade != null)
-          'smallestUpdate': await _computeUpgradeSet(
-            compatiblePubspec,
+          'smallestUpdate': await computeUpgradeSet(
             smallestUpgrade,
-            entrypoint,
-            cache,
-            currentPackages: currentPackages,
-            upgradeType: _UpgradeType.smallestUpdate,
+            _UpgradeType.smallestUpdate,
           ),
       });
     }
@@ -587,40 +587,16 @@ Future<List<PackageId>?> _tryResolve(
   Pubspec pubspec,
   SystemCache cache, {
   SolveType solveType = SolveType.upgrade,
-  Iterable<Incompatibility>? extraIncompatibilities,
+  Iterable<ConstraintAndCause>? extraConstraints,
 }) async {
   final solveResult = await tryResolveVersions(
     solveType,
     cache,
     Package.inMemory(pubspec),
-    extraIncompatibilities: extraIncompatibilities,
+    extraConstraints: extraConstraints,
   );
 
   return solveResult?.packages;
-}
-
-class _DisallowedPackageRanges {
-  final List<_ConstraintWithReason> constraints;
-  final PackageRef ref;
-  _DisallowedPackageRanges({
-    required this.ref,
-    required this.constraints,
-  });
-
-  List<Incompatibility> toIncompatibilities() => constraints
-      .map(
-        (c) => Incompatibility(
-          [Term(PackageRange(ref, c.constraint), true)],
-          PackageVersionForbiddenCause(reason: c.reason),
-        ),
-      )
-      .toList();
-}
-
-class _ConstraintWithReason {
-  final String? reason;
-  final VersionConstraint constraint;
-  _ConstraintWithReason(this.constraint, this.reason);
 }
 
 VersionConstraint? _constraintOf(Pubspec pubspec, String packageName) {
@@ -672,6 +648,7 @@ Future<List<Object>> _computeUpgradeSet(
   SystemCache cache, {
   required Map<String, PackageId> currentPackages,
   required _UpgradeType upgradeType,
+  required List<ConstraintAndCause> extraConstraints,
 }) async {
   if (package == null) return [];
   final lockFile = entrypoint.lockFile;
@@ -699,11 +676,12 @@ Future<List<Object>> _computeUpgradeSet(
     cache,
     Package.inMemory(pubspec),
     lockFile: lockFile,
+    extraConstraints: extraConstraints,
   );
 
   // TODO(sigurdm): improve error messages.
   if (resolution == null) {
-    throw DataException('Failed resolving');
+    return [];
   }
 
   return [
@@ -765,7 +743,7 @@ Future<List<Object>> _computeUpgradeSet(
   ];
 }
 
-List<_DisallowedPackageRanges> _parseDisallowed(
+List<ConstraintAndCause> _parseDisallowed(
   Map<String, Object?> input,
   SystemCache cache,
 ) {
@@ -776,7 +754,7 @@ List<_DisallowedPackageRanges> _parseDisallowed(
   if (disallowedList is! List<Object?>) {
     throw FormatException('Disallowed should be a list of maps');
   }
-  final result = <_DisallowedPackageRanges>[];
+  final result = <ConstraintAndCause>[];
   for (final disallowed in disallowedList) {
     if (disallowed is! Map) {
       throw FormatException('Disallowed should be a list of maps');
@@ -789,19 +767,18 @@ List<_DisallowedPackageRanges> _parseDisallowed(
       ),
     );
     final constraints = disallowed['versions'] as List<Object?>;
-    result.add(
-      _DisallowedPackageRanges(
-        ref: ref,
-        constraints: constraints.map(
-          (v) {
-            final entry = v as Map<String, Object?>;
-            final range = VersionConstraint.parse(entry['range'] as String);
-            final reason = entry['reason'] as String?;
-            return _ConstraintWithReason(range, reason);
-          },
-        ).toList(),
-      ),
-    );
+    final reason = disallowed['reason'] as String?;
+
+    for (final v in constraints) {
+      final entry = v as Map<String, Object?>;
+      final range = VersionConstraint.parse(entry['range'] as String);
+      result.add(
+        ConstraintAndCause(
+          PackageRange(ref, VersionConstraint.any.difference(range)),
+          reason,
+        ),
+      );
+    }
   }
   return result;
 }

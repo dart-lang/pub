@@ -4,10 +4,11 @@
 
 import 'dart:async';
 
+import 'package:pub_semver/pub_semver.dart';
+
 import 'lock_file.dart';
 import 'package.dart';
 import 'solver/failure.dart';
-import 'solver/incompatibility.dart';
 import 'solver/result.dart';
 import 'solver/type.dart';
 import 'solver/version_solver.dart';
@@ -29,15 +30,15 @@ export 'solver/type.dart';
 /// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
 ///
-/// [extraIncompatibilities] can contain a list of things that are not allowed
-/// for this solve.
+/// [extraConstraints] can contain a list of extra constraints for this
+/// resolution.
 Future<SolveResult> resolveVersions(
   SolveType type,
   SystemCache cache,
   Package root, {
   LockFile? lockFile,
   Iterable<String> unlock = const [],
-  Iterable<Incompatibility>? extraIncompatibilities,
+  Iterable<ConstraintAndCause>? extraConstraints,
 }) {
   lockFile ??= LockFile.empty();
   final solver = VersionSolver(
@@ -47,8 +48,8 @@ Future<SolveResult> resolveVersions(
     lockFile,
     unlock,
   );
-  if (extraIncompatibilities != null) {
-    solver.addIncompatibilities(extraIncompatibilities);
+  if (extraConstraints != null) {
+    solver.addConstraints(extraConstraints);
   }
   return solver.solve();
 }
@@ -73,7 +74,7 @@ Future<SolveResult?> tryResolveVersions(
   Package root, {
   LockFile? lockFile,
   Iterable<String>? unlock,
-  Iterable<Incompatibility>? extraIncompatibilities,
+  Iterable<ConstraintAndCause>? extraConstraints,
 }) async {
   try {
     return await resolveVersions(
@@ -82,7 +83,7 @@ Future<SolveResult?> tryResolveVersions(
       root,
       lockFile: lockFile,
       unlock: unlock ?? [],
-      extraIncompatibilities: extraIncompatibilities,
+      extraConstraints: extraConstraints,
     );
   } on SolveFailure {
     return null;

@@ -27,7 +27,7 @@ sdks:
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section report
-$ echo '{"disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[{"range":"1.1.1"},{"range":"2.0.0"}]}]}' | dependency_services report
+$ echo '{"disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[{"range":"1.1.1"},{"range":"2.0.0"}]},{"name":"bar","url":"http://localhost:$PORT","versions":[{"range":"2.0.0"}]}]}' | dependency_services report
 {
   "dependencies": [
     {
@@ -42,26 +42,26 @@ $ echo '{"disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[
           "sha256": "8cd4b5a00de63aa592f4240249affd87abf49de4281233870f22b30919f87d42"
         }
       },
-      "latest": "2.0.0",
+      "latest": "2.2.0",
       "constraint": "^1.0.0",
       "compatible": [],
       "singleBreaking": [],
       "multiBreaking": [
         {
           "name": "bar",
-          "version": "2.0.0",
+          "version": "2.2.0",
           "kind": "direct",
           "source": {
             "type": "hosted",
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "c18d05ba37cefcbe1b6754d05637fb2bf802e50c54eb0e0e33742a44e8417d1f"
+              "sha256": "3c51e3f45f9b993f18c64ab5c55e5f8149c98bac06b0c3e9100fef98385afe4f"
             }
           },
-          "constraintBumped": "^2.0.0",
+          "constraintBumped": "^2.2.0",
           "constraintWidened": ">=1.0.0 <3.0.0",
-          "constraintBumpedIfNeeded": "^2.0.0",
+          "constraintBumpedIfNeeded": "^2.2.0",
           "previousVersion": "1.0.0",
           "previousConstraint": "^1.0.0",
           "previousSource": {
@@ -146,19 +146,19 @@ $ echo '{"disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[
         },
         {
           "name": "bar",
-          "version": "2.0.0",
+          "version": "2.2.0",
           "kind": "direct",
           "source": {
             "type": "hosted",
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "c18d05ba37cefcbe1b6754d05637fb2bf802e50c54eb0e0e33742a44e8417d1f"
+              "sha256": "3c51e3f45f9b993f18c64ab5c55e5f8149c98bac06b0c3e9100fef98385afe4f"
             }
           },
-          "constraintBumped": "^2.0.0",
+          "constraintBumped": "^2.2.0",
           "constraintWidened": ">=1.0.0 <3.0.0",
-          "constraintBumpedIfNeeded": "^2.0.0",
+          "constraintBumpedIfNeeded": "^2.2.0",
           "previousVersion": "1.0.0",
           "previousConstraint": "^1.0.0",
           "previousSource": {
@@ -200,19 +200,19 @@ $ echo '{"disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[
         },
         {
           "name": "bar",
-          "version": "2.0.0",
+          "version": "2.2.0",
           "kind": "direct",
           "source": {
             "type": "hosted",
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "c18d05ba37cefcbe1b6754d05637fb2bf802e50c54eb0e0e33742a44e8417d1f"
+              "sha256": "3c51e3f45f9b993f18c64ab5c55e5f8149c98bac06b0c3e9100fef98385afe4f"
             }
           },
-          "constraintBumped": "^2.0.0",
+          "constraintBumped": "^2.2.0",
           "constraintWidened": ">=1.0.0 <3.0.0",
-          "constraintBumpedIfNeeded": "^2.0.0",
+          "constraintBumpedIfNeeded": "^2.2.0",
           "previousVersion": "1.0.0",
           "previousConstraint": "^1.0.0",
           "previousSource": {
