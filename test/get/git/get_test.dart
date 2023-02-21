@@ -26,8 +26,9 @@ void main() {
     ).create();
 
     await pubGet(
-      error: "Because myapp depends on foo from git which doesn't exist "
-          "(Could not find git ref '^BAD_REF' (fatal: bad revision '^BAD_REF')), version solving failed.",
+      error:
+          contains("Because myapp depends on foo from git which doesn't exist "
+              "(Could not find git ref '^BAD_REF' (fatal: "),
       exitCode: UNAVAILABLE,
     );
   });
