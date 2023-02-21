@@ -75,11 +75,13 @@ For example:
     `$topLevelProgram pub add 'override:foo:1.0.0`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add \\
-      'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
+      'foo:{"git":{"url":"../foo.git","ref":"<branch>","path":"<subdir>"}}'`''';
 
   @override
   String get argumentsDescription =>
-      '[options] [dev:|override:]<package>[:descriptor] [dev:|override:]<package>[:descriptor] ...]';
+      '[options] [<section>:]<package>[:descriptor] '
+      '[<section>:]<package2>[:descriptor] ...]';
+
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
