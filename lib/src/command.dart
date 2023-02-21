@@ -37,7 +37,17 @@ const pubCommandAliases = {
   'upgrade': ['update'],
 };
 
-final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
+final lineLength = _lineLength();
+
+int _lineLength() {
+  final fromEnv = Platform.environment['_PUB_TEST_TERMINAL_COLUMNS'];
+  if (fromEnv != null) {
+    final parsed = int.tryParse(fromEnv);
+    if (parsed != null && parsed > 0) return parsed;
+  }
+  if (stdout.hasTerminal) return stdout.terminalColumns;
+  return 80;
+}
 
 /// The base class for commands for the pub executable.
 ///
@@ -75,12 +85,7 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  late final Entrypoint entrypoint =
-      Entrypoint(directory, cache, withPubspecOverrides: withPubspecOverrides);
-
-  /// Whether `pubspec_overrides.yaml` is taken into account, when creating
-  /// [entrypoint].
-  bool get withPubspecOverrides => true;
+  late final Entrypoint entrypoint = Entrypoint(directory, cache);
 
   /// The URL for web documentation for this command.
   String? get docUrl => null;

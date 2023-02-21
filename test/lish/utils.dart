@@ -13,7 +13,7 @@ void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
   server.expect('GET', '$path/api/packages/versions/new', (request) {
     expect(
       request.headers,
-      containsPair('authorization', 'Bearer access token'),
+      containsPair('authorization', 'Bearer access-token'),
     );
 
     body ??= {

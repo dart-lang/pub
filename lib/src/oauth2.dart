@@ -30,8 +30,8 @@ final _retryHttpClient = RetryClient(
 );
 
 /// The pub client's OAuth2 identifier.
-const _identifier = '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.'
-    'googleusercontent.com';
+const _identifier =
+    '818368855108-8grd2eg9tj9f38os6f1urbcvsq399u8n.apps.googleusercontent.com';
 
 /// The pub client's OAuth2 secret.
 ///

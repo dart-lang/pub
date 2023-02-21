@@ -1,4 +1,4 @@
-// Copyright (c) 2013, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2023, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -13,12 +13,15 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  test('--force publishes if there are no warnings or errors', () async {
-    await servePackages();
+  test('archives and uploads a package with unicode filenames', () async {
     await d.validPackage.create();
-    await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer, args: ['--force']);
+    await d.dir(appPath, [d.file('🦄.yml')]).create();
 
+    await servePackages();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    var pub = await startPublish(globalServer);
+
+    await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
@@ -30,7 +33,18 @@ void main() {
       );
     });
 
+    expect(pub.stdout, emits(startsWith('Uploading...')));
+    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
     await pub.shouldExit(exit_codes.SUCCESS);
-    expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
+  });
+
+  test('Can download and unpack package with unicode in file-name', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', contents: [d.file('🦄.yml')]);
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
+    await pubGet();
+    await d.hostedCache([
+      d.dir('foo-1.0.0', [d.file('🦄.yml')]),
+    ]).validate();
   });
 }

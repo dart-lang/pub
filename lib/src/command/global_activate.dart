@@ -7,7 +7,10 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
+import '../command_runner.dart';
+import '../io.dart';
 import '../package_name.dart';
+import '../pubspec.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
@@ -148,6 +151,14 @@ class GlobalActivateCommand extends PubCommand {
         }
 
         validateNoExtraArgs();
+
+        if (!packageNameRegExp.hasMatch(package)) {
+          final suggestion = dirExists(package)
+              ? '\n\nDid you mean `$topLevelProgram pub global activate --source path ${escapeShellArgument(package)}`?'
+              : '';
+
+          usageException('Not a valid package name: "$package"$suggestion');
+        }
         return globals.activateHosted(
           ref.withConstraint(constraint),
           executables,

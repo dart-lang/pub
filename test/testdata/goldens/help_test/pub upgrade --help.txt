@@ -7,11 +7,9 @@ Upgrade the current package's dependencies to latest versions.
 Usage: pub upgrade [dependencies...]
 -h, --help               Print this usage information.
     --[no-]offline       Use cached packages instead of accessing the network.
--n, --dry-run            Report what dependencies would change but don't change
-                         any.
+-n, --dry-run            Report what dependencies would change but don't change any.
     --[no-]precompile    Precompile executables in immediate dependencies.
-    --major-versions     Upgrades packages to their latest resolvable versions,
-                         and updates pubspec.yaml.
+    --major-versions     Upgrades packages to their latest resolvable versions, and updates pubspec.yaml.
 -C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.

@@ -14,7 +14,7 @@ void main() {
   test('upload form is missing url', () async {
     await servePackages();
     await d.validPackage.create();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);

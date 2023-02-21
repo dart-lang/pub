@@ -1156,7 +1156,7 @@ class PubProcessResult {
 final String? dartConfigDir = () {
   if (runningFromTest &&
       Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
-    return Platform.environment['_PUB_TEST_CONFIG_DIR'];
+    return path.join(Platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
   }
   try {
     return applicationConfigHome('dart');

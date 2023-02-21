@@ -340,7 +340,19 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   /// Returns `false` if no package with [name] was currently active.
   bool deactivate(String name) {
     var dir = p.join(_directory, name);
-    if (!dirExists(dir)) return false;
+    if (!dirExists(_directory)) {
+      return false;
+    }
+    // By listing all files instead of using only `dirExists` this check will
+    // work on case-preserving file-systems.
+    final files = listDir(_directory);
+    if (!files.contains(dir)) {
+      return false;
+    }
+    if (!dirExists(dir)) {
+      // This can happen if `dir` was really a file.
+      return false;
+    }
 
     _deleteBinStubs(name);
 

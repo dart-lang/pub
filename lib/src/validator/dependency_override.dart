@@ -16,15 +16,20 @@ class DependencyOverrideValidator extends Validator {
     var overridden = MapKeySet(entrypoint.root.dependencyOverrides);
     var dev = MapKeySet(entrypoint.root.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {
-      warnings.add('''
-Your pubspec.yaml is overriding non-dev dependencies.
+      final overridesFile =
+          entrypoint.root.pubspec.dependencyOverridesFromOverridesFile
+              ? entrypoint.pubspecOverridesPath
+              : entrypoint.pubspecPath;
+
+      hints.add('''
+Non-dev dependencies are overridden in $overridesFile.
 
 This indicates you are not testing your package against the same versions of its
 dependencies that users will have when they use it.
 
 This might be necessary for packages with cyclic dependencies.
 
-Please be extra careful when publising.''');
+Please be extra careful when publishing.''');
     }
     return Future.value();
   }

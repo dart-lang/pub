@@ -6,6 +6,7 @@ import 'dart:io';
 
 import '../exceptions.dart';
 import '../source/hosted.dart';
+import '../utils.dart';
 
 /// Token is a structure for storing authentication credentials for third-party
 /// pub registries. A token holds registry [url], credential [kind] and [token]
@@ -116,19 +117,26 @@ class Credential {
       );
     }
 
+    final String tokenValue;
     final environment = env;
     if (environment != null) {
       final value = Platform.environment[environment];
       if (value == null) {
-        throw DataException(
+        dataError(
           'Saved credential for "$url" pub repository requires environment '
           'variable named "$env" but not defined.',
         );
       }
-      return Future.value('Bearer $value');
+      tokenValue = value;
+    } else {
+      tokenValue = token!;
+    }
+    if (!isValidBearerToken(tokenValue)) {
+      dataError('Credential token for $url is not a valid Bearer token. '
+          'It should match `^[a-zA-Z0-9._~+/=-]+\$`');
     }
 
-    return Future.value('Bearer $token');
+    return Future.value('Bearer $tokenValue');
   }
 
   /// Returns whether or not given [url] could be authenticated using this
@@ -143,6 +151,14 @@ class Credential {
   /// future SDK used by pub tool from old SDK.
   // Either [token] or [env] should be defined to be valid.
   bool isValid() => (token == null) ^ (env == null);
+
+  /// Whether [candidate] can be used as a bearer token.
+  ///
+  /// We limit tokens to be valid bearer tokens according to
+  /// https://www.rfc-editor.org/rfc/rfc6750#section-2.1
+  static bool isValidBearerToken(String candidate) {
+    return RegExp(r'^[a-zA-Z0-9._~+/=-]+$').hasMatch(candidate);
+  }
 
   static String _normalizeUrl(String url) {
     return (url.endsWith('/') ? url : '$url/').toLowerCase();

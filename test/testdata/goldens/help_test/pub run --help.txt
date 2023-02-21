@@ -7,10 +7,8 @@ Run an executable from a package.
 Usage: pub run <executable> [arguments...]
 -h, --help                              Print this usage information.
     --[no-]enable-asserts               Enable assert statements.
-    --enable-experiment=<experiment>    Runs the executable in a VM with the
-                                        given experiments enabled.
-                                        (Will disable snapshotting, resulting in
-                                        slower startup).
+    --enable-experiment=<experiment>    Runs the executable in a VM with the given experiments enabled.
+                                        (Will disable snapshotting, resulting in slower startup).
 -C, --directory=<dir>                   Run this in the directory <dir>.
 
 Run "pub help" to see global options.
