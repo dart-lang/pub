@@ -56,6 +56,7 @@ class DependencyServicesReportCommand extends PubCommand {
     final stdinString = await utf8.decodeStream(stdin);
     final input = json.decode(stdinString.isEmpty ? '{}' : stdinString);
     final extraConstraints = _parseDisallowed(input, cache);
+    final targetPackageName = input['target'] as String?;
 
     final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
 
@@ -78,7 +79,12 @@ class DependencyServicesReportCommand extends PubCommand {
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
 
-    for (final package in currentPackages.values) {
+    final targetPackage =
+        targetPackageName == null ? null : currentPackages[targetPackageName];
+
+    for (final package in targetPackage == null
+        ? currentPackages.values
+        : <PackageId>[targetPackage]) {
       final compatibleVersion = compatiblePackagesResult
           ?.firstWhereOrNull((element) => element.name == package.name);
       final multiBreakingVersion = breakingPackagesResult

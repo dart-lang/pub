@@ -111,9 +111,11 @@ Future<void> _reportWithForbidden(
   GoldenTestContext context,
   Map<String, List<String>> disallowedVersions, {
   void Function(Map)? resultAssertions,
+  String? targetPackage,
 }) async {
   manifestAndLockfile(context);
   final input = json.encode({
+    'target': targetPackage,
     'disallowed': [
       for (final e in disallowedVersions.entries)
         {
@@ -500,6 +502,7 @@ Future<void> main() async {
       {
         'foo': ['1.1.1', '1.1.2']
       },
+      targetPackage: 'foo',
       resultAssertions: (r) {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '1.1.3');
       },
@@ -526,6 +529,7 @@ Future<void> main() async {
       {
         'foo': ['1.1.1', '2.0.0']
       },
+      targetPackage: 'foo',
       resultAssertions: (r) {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
       },
@@ -571,6 +575,7 @@ Future<void> main() async {
         'foo': ['1.1.1', '2.0.0'],
         'bar': ['2.0.0']
       },
+      targetPackage: 'foo',
       resultAssertions: (r) {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
         expect(findChangeVersion(r, 'smallestUpdate', 'bar'), '2.2.0');

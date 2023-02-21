@@ -19,7 +19,7 @@ sdks:
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section report
-$ echo '{"disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[{"range":"1.1.1"},{"range":"2.0.0"}]}]}' | dependency_services report
+$ echo '{"target":"foo","disallowed":[{"name":"foo","url":"http://localhost:$PORT","versions":[{"range":"1.1.1"},{"range":"2.0.0"}]}]}' | dependency_services report
 {
   "dependencies": [
     {
