@@ -56,7 +56,10 @@ class DependencyServicesReportCommand extends PubCommand {
     final stdinString = await utf8.decodeStream(stdin);
     final input = json.decode(stdinString.isEmpty ? '{}' : stdinString);
     final extraConstraints = _parseDisallowed(input, cache);
-    final targetPackageName = input['target'] as String?;
+    final targetPackageName = input['target'];
+    if (targetPackageName is! String?) {
+      throw FormatException('"target" should be a String.');
+    }
 
     final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
 
@@ -765,19 +768,39 @@ List<ConstraintAndCause> _parseDisallowed(
     if (disallowed is! Map) {
       throw FormatException('Disallowed should be a list of maps');
     }
+    final name = disallowed['name'];
+    if (name is! String) {
+      throw FormatException('"name" should be a string.');
+    }
+    final url = disallowed['url'] ?? cache.hosted.defaultUrl;
+    if (url is! String) {
+      throw FormatException('"url" should be a string.');
+    }
     final ref = PackageRef(
-      disallowed['name'] as String,
+      name,
       HostedDescription(
-        disallowed['name'] as String,
-        disallowed['url'] as String? ?? cache.hosted.defaultUrl,
+        name,
+        url,
       ),
     );
-    final constraints = disallowed['versions'] as List<Object?>;
-    final reason = disallowed['reason'] as String?;
-
-    for (final v in constraints) {
-      final entry = v as Map<String, Object?>;
-      final range = VersionConstraint.parse(entry['range'] as String);
+    final constraints = disallowed['versions'];
+    if (constraints is! List) {
+      throw FormatException('"versions" should be a list.');
+    }
+    final reason = disallowed['reason'];
+    if (reason is! String?) {
+      throw FormatException('"reason", if present, should be a string.');
+    }
+    for (final entry in constraints) {
+      if (entry is! Map) {
+        throw FormatException(
+            'Each element of "versions" should be an object.');
+      }
+      final rangeString = entry['range'];
+      if (rangeString is! String) {
+        throw FormatException('"range" should be a string');
+      }
+      final range = VersionConstraint.parse(rangeString);
       result.add(
         ConstraintAndCause(
           PackageRange(ref, VersionConstraint.any.difference(range)),
