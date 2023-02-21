@@ -77,11 +77,16 @@ To remove a dependency override of a package prefix the package name with
       usageException('Must specify a package to be removed.');
     }
 
-    final packages = Set<String>.from(argResults.rest);
+    final targets = Set<String>.from(argResults.rest).map((descriptor) {
+      final isOverride = descriptor.startsWith('override:');
+      final name =
+          isOverride ? descriptor.substring('override:'.length) : descriptor;
+      return _PackageRemoval(name, removeFromOverride: isOverride);
+    });
 
     if (isDryRun) {
       final rootPubspec = entrypoint.root.pubspec;
-      final newPubspec = _removePackagesFromPubspec(rootPubspec, packages);
+      final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
       final newRoot = Package.inMemory(newPubspec);
 
       await Entrypoint.inMemory(newRoot, cache, lockFile: entrypoint.lockFile)
@@ -93,7 +98,7 @@ To remove a dependency override of a package prefix the package name with
       );
     } else {
       /// Update the pubspec.
-      _writeRemovalToPubspec(packages);
+      _writeRemovalToPubspec(targets);
 
       /// Create a new [Entrypoint] since we have to reprocess the updated
       /// pubspec file.
@@ -116,57 +121,53 @@ To remove a dependency override of a package prefix the package name with
     }
   }
 
-  Pubspec _removePackagesFromPubspec(Pubspec original, Set<String> packages) {
-    final overrides = packages
-        .where((p) => p.startsWith('override:'))
-        .map((e) => e.substring('override:'.length));
-    final otherPackages = packages.where((p) => !p.startsWith('override:'));
+  Pubspec _removePackagesFromPubspec(
+    Pubspec original,
+    Iterable<_PackageRemoval> packages,
+  ) {
+    final dependencies = {...original.dependencies};
+    final devDependencies = {...original.devDependencies};
+    final overrides = {...original.dependencyOverrides};
 
-    final originalDependencies = original.dependencies.values;
-    final originalDevDependencies = original.devDependencies.values;
-
-    final newDependencies = originalDependencies
-        .where((dependency) => !otherPackages.contains(dependency.name));
-    final newDevDependencies = originalDevDependencies
-        .where((dependency) => !otherPackages.contains(dependency.name));
-    final newOverrides = original.dependencyOverrides.values
-        .where((dependency) => !overrides.contains(dependency.name));
-
+    for (final package in packages) {
+      if (package.removeFromOverride) {
+        overrides.remove(package.name);
+      } else {
+        dependencies.remove(package.name);
+        devDependencies.remove(package.name);
+      }
+    }
     return Pubspec(
       original.name,
       version: original.version,
       sdkConstraints: original.sdkConstraints,
-      dependencies: newDependencies,
-      devDependencies: newDevDependencies,
-      dependencyOverrides: newOverrides,
+      dependencies: dependencies.values,
+      devDependencies: devDependencies.values,
+      dependencyOverrides: overrides.values,
     );
   }
 
   /// Writes the changes to the pubspec file
-  void _writeRemovalToPubspec(Set<String> packages) {
+  void _writeRemovalToPubspec(Iterable<_PackageRemoval> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
 
-    for (var package in packages) {
-      var isOverride = false;
-      if (package.startsWith('override:')) {
-        package = package.substring('override:'.length);
-        isOverride = true;
-      }
+    for (final package in packages) {
+      final dependencyKeys = package.removeFromOverride
+          ? ['dependency_overrides']
+          : ['dependencies', 'dev_dependencies'];
       var found = false;
+      final name = package.name;
 
       /// There may be packages where the dependency is declared both in
-      /// dependencies and dev_dependencies.
-      for (final dependencyKey in isOverride
-          ? ['dependency_overrides']
-          : ['dependencies', 'dev_dependencies']) {
+      /// dependencies and dev_dependencies - remove it from both in that case.
+      for (final dependencyKey in dependencyKeys) {
         final dependenciesNode = yamlEditor
             .parseAt([dependencyKey], orElse: () => YamlScalar.wrap(null));
 
-        if (dependenciesNode is YamlMap &&
-            dependenciesNode.containsKey(package)) {
-          yamlEditor.remove([dependencyKey, package]);
+        if (dependenciesNode is YamlMap && dependenciesNode.containsKey(name)) {
+          yamlEditor.remove([dependencyKey, name]);
           found = true;
           // Check if the dependencies or dev_dependencies map is now empty
           // If it is empty, remove the key as well
@@ -175,13 +176,20 @@ To remove a dependency override of a package prefix the package name with
           }
         }
       }
-
       if (!found) {
-        log.warning('Package "$package" was not found in pubspec.yaml!');
+        log.warning(
+          'Package "$name" was not found in ${entrypoint.pubspecPath}!',
+        );
       }
-
-      /// Windows line endings are already handled by [yamlEditor]
-      writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
     }
+
+    /// Windows line endings are already handled by [yamlEditor]
+    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
   }
+}
+
+class _PackageRemoval {
+  final String name;
+  final bool removeFromOverride;
+  _PackageRemoval(this.name, {required this.removeFromOverride});
 }
