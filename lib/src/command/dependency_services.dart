@@ -794,7 +794,8 @@ List<ConstraintAndCause> _parseDisallowed(
     for (final entry in constraints) {
       if (entry is! Map) {
         throw FormatException(
-            'Each element of "versions" should be an object.');
+          'Each element of "versions" should be an object.',
+        );
       }
       final rangeString = entry['range'];
       if (rangeString is! String) {
