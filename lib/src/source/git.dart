@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../exceptions.dart';
 import '../git.dart' as git;
 import '../io.dart';
 import '../language_version.dart';
@@ -624,8 +625,18 @@ class GitSource extends CachedSource {
   ///
   /// This assumes that the canonical clone already exists.
   Future<String> _firstRevision(String path, String reference) async {
-    var lines = await git
-        .run(['rev-list', '--max-count=1', reference], workingDir: path);
+    final List<String> lines;
+    try {
+      lines = await git
+          .run(['rev-list', '--max-count=1', reference], workingDir: path);
+    } on git.GitException catch (e) {
+      throw PackageNotFoundException(
+        "Could not find git ref '$reference' (${e.stderr})",
+      );
+    }
+    if (lines.isEmpty) {
+      throw PackageNotFoundException("Could not find git ref '$reference'.");
+    }
     return lines.first;
   }
 
