@@ -31,8 +31,7 @@ To remove a dependency override of a package prefix the package name with
 ''';
 
   @override
-  String get argumentsDescription =>
-      '[override:]<package1> [[override:]<package2>...]';
+  String get argumentsDescription => '<package1> [<package2>...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
