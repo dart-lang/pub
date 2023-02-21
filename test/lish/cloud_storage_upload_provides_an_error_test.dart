@@ -13,7 +13,7 @@ void main() {
   test('cloud storage upload provides an error', () async {
     await servePackages();
     await d.validPackage.create();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);

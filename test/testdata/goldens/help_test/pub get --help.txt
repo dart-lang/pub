@@ -4,13 +4,11 @@
 $ pub get --help
 Get the current package's dependencies.
 
-Usage: pub get <subcommand> [arguments...]
+Usage: pub get
 -h, --help                Print this usage information.
     --[no-]offline        Use cached packages instead of accessing the network.
--n, --dry-run             Report what dependencies would change but don't change
-                          any.
-    --enforce-lockfile    Enforce pubspec.lock. Fail resolution if pubspec.lock
-                          does not satisfy pubspec.yaml
+-n, --dry-run             Report what dependencies would change but don't change any.
+    --enforce-lockfile    Enforce pubspec.lock. Fail resolution if pubspec.lock does not satisfy pubspec.yaml
     --[no-]precompile     Build executables in immediate dependencies.
 -C, --directory=<dir>     Run this in the directory <dir>.
 

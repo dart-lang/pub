@@ -18,7 +18,7 @@ void main() {
   test('archives and uploads a package', () async {
     await servePackages();
     await d.validPackage.create();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
@@ -44,7 +44,7 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url, 'token': 'access token'},
+        {'url': globalServer.url, 'token': 'access-token'},
       ]
     }).create();
     var pub = await startPublish(globalServer);
@@ -79,7 +79,7 @@ void main() {
       globalServer,
       path: '/sub/folder',
       overrideDefaultHostedServer: false,
-      environment: {'TOKEN': 'access token'},
+      environment: {'TOKEN': 'access-token'},
     );
 
     await confirmPublish(pub);
@@ -124,7 +124,7 @@ void main() {
     await d.dir(p.join(appPath, 'empty')).create();
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);

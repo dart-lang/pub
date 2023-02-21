@@ -166,13 +166,13 @@ To remove a dependency override of a package prefix the package name with
 
         if (dependenciesNode is YamlMap &&
             dependenciesNode.containsKey(package)) {
-          if (dependenciesNode.length == 1) {
-            yamlEditor.remove([dependencyKey]);
-          } else {
-            yamlEditor.remove([dependencyKey, package]);
-          }
-
+          yamlEditor.remove([dependencyKey, package]);
           found = true;
+          // Check if the dependencies or dev_dependencies map is now empty
+          // If it is empty, remove the key as well
+          if ((yamlEditor.parseAt([dependencyKey]) as YamlMap).isEmpty) {
+            yamlEditor.remove([dependencyKey]);
+          }
         }
       }
 

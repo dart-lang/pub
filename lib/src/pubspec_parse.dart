@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
@@ -192,7 +191,7 @@ abstract class PubspecBase {
     var yaml = fields['executables'];
     if (yaml == null) return _executables!;
 
-    if (yaml is! Map) {
+    if (yaml is! YamlMap) {
       _error(
         '"executables" field must be a map.',
         fields.nodes['executables']?.span,
@@ -268,7 +267,6 @@ abstract class PubspecBase {
   }
 
   /// Throws a [SourceSpanApplicationException] with the given message.
-  @alwaysThrows
   void _error(String message, SourceSpan? span) {
     throw SourceSpanApplicationException(message, span);
   }

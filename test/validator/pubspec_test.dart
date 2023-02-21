@@ -13,7 +13,7 @@ void main() {
   test('should consider a package valid if it has a pubspec', () async {
     await d.validPackage.create();
 
-    await expectValidation(PubspecValidator.new);
+    await expectValidationDeprecated(PubspecValidator.new);
   });
 
   test('should consider a package invalid if it has a .gitignored pubspec',
@@ -22,6 +22,6 @@ void main() {
     await d.validPackage.create();
     await repo.create();
 
-    await expectValidation(PubspecValidator.new, errors: isNotEmpty);
+    await expectValidationDeprecated(PubspecValidator.new, errors: isNotEmpty);
   });
 }

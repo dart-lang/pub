@@ -34,8 +34,6 @@ class LishCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-lish';
   @override
   bool get takesArguments => false;
-  @override
-  bool get withPubspecOverrides => false;
 
   /// The URL of the server to which to upload the package.
   late final Uri host = () {
@@ -298,14 +296,17 @@ the \$PUB_HOSTED_URL environment variable.''',
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(
-      entrypoint,
-      packageSize,
-      host,
-      files,
-      hints: hints,
-      warnings: warnings,
-      errors: errors,
+    await log.spinner(
+      'Validating package',
+      () async => await Validator.runAll(
+        entrypoint,
+        packageSize,
+        host,
+        files,
+        hints: hints,
+        warnings: warnings,
+        errors: errors,
+      ),
     );
 
     if (errors.isNotEmpty) {

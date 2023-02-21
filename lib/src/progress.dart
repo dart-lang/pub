@@ -40,7 +40,7 @@ class Progress {
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels
     // with non-JSON output.
-    if (terminalOutputForStdout ||
+    if (!terminalOutputForStdout ||
         !log.verbosity.isLevelVisible(level) ||
         fine ||
         log.verbosity.isLevelVisible(log.Level.fine)) {

@@ -17,4 +17,15 @@ void main() {
       exitCode: exit_codes.DATA,
     );
   });
+
+  test('errors if the package exists with another casing', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await runPub(args: ['global', 'activate', 'foo']);
+    await runPub(
+      args: ['global', 'deactivate', 'Foo'],
+      error: 'No active package Foo.',
+      exitCode: exit_codes.DATA,
+    );
+  });
 }

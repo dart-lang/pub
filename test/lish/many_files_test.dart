@@ -40,7 +40,7 @@ void main() {
       ],
     ).create();
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
     pub.stdin.writeln('y');
     handleUploadForm(globalServer);
@@ -107,7 +107,7 @@ void main() {
     }
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);

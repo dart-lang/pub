@@ -18,6 +18,8 @@ class GetCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
   @override
   bool get isOffline => argResults['offline'];
+  @override
+  String get argumentsDescription => '';
 
   GetCommand() {
     argParser.addFlag(

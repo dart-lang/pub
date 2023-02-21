@@ -37,12 +37,10 @@ For example:
     `dart pub add \
       'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`
 
-Usage: pub add [options] [dev:|override:]<package>[:descriptor]
-       [dev:|override:]<package>[:descriptor] ...]
+Usage: pub add [options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor] ...]
 -h, --help               Print this usage information.
     --[no-]offline       Use cached packages instead of accessing the network.
--n, --dry-run            Report what dependencies would change but don't change
-                         any.
+-n, --dry-run            Report what dependencies would change but don't change any.
     --[no-]precompile    Build executables in immediate dependencies.
 -C, --directory=<dir>    Run this in the directory <dir>.
 

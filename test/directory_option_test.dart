@@ -18,7 +18,7 @@ Future<void> main() async {
       ..serve('foo', '1.0.0')
       ..serve('foo', '0.1.2')
       ..serve('bar', '1.2.3');
-    await credentialsFile(globalServer, 'access token').create();
+    await credentialsFile(globalServer, 'access-token').create();
     globalServer.handle(
       RegExp('/api/packages/test_pkg/uploaders'),
       (request) {

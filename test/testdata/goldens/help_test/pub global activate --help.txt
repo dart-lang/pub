@@ -12,10 +12,8 @@ Usage: pub global activate <package> [version-constraint]
     --git-ref           Git branch or commit to be retrieved
     --no-executables    Do not put executables on PATH.
 -x, --executable        Executable(s) to place on PATH.
-    --overwrite         Overwrite executables from other packages with the same
-                        name.
--u, --hosted-url        A custom pub server URL for the package. Only applies
-                        when using the `hosted` source.
+    --overwrite         Overwrite executables from other packages with the same name.
+-u, --hosted-url        A custom pub server URL for the package. Only applies when using the `hosted` source.
 
 Run "pub help" to see global options.
 

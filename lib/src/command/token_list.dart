@@ -12,7 +12,7 @@ class TokenListCommand extends PubCommand {
   @override
   String get description => 'List servers for which a token exists.';
   @override
-  String get invocation => 'pub token list';
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
   @override
   Future<void> runProtected() async {

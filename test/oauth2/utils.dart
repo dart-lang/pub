@@ -16,7 +16,7 @@ import '../test_pub.dart';
 Future authorizePub(
   TestProcess pub,
   PackageServer server, [
-  String accessToken = 'access token',
+  String accessToken = 'access-token',
 ]) async {
   await expectLater(
     pub.stdout,
