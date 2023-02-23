@@ -1010,4 +1010,58 @@ environment:
       ]),
     );
   });
+
+  test('adds to overrides', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+
+    await d.dir('local_foo', [d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.dir(appPath, [
+      d.file('pubspec.yaml', '''
+name: myapp
+dependencies:
+  foo: ^1.0.0
+environment:
+  sdk: '$defaultSdkConstraint'
+'''),
+    ]).create();
+
+    await pubGet();
+
+    await pubAdd(
+      args: ['override:bar'],
+      exitCode: exit_codes.USAGE,
+      error: contains('A dependency override needs an explicit descriptor.'),
+    );
+
+    // Can override a transitive dependency.
+    await pubAdd(args: ['override:bar:2.0.0']);
+    await d.dir(appPath, [
+      d.file(
+        'pubspec.yaml',
+        contains('''
+dependency_overrides:
+  bar: 2.0.0
+'''),
+      )
+    ]).validate();
+
+    // Can override with a descriptor:
+    await pubAdd(args: ['override:foo:{"path": "../local_foo"}']);
+
+    await d.dir(appPath, [
+      d.file(
+        'pubspec.yaml',
+        contains('''
+dependency_overrides:
+  bar: 2.0.0
+  foo:
+    path: ../local_foo
+'''),
+      )
+    ]).validate();
+  });
 }

@@ -538,7 +538,7 @@ Future<PubProcess> startPub({
     dartArgs,
     environment: mergedEnvironment,
     workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
-    description: args.isEmpty ? 'pub' : 'pub ${args.first}',
+    description: args.isEmpty ? 'pub' : 'pub ${args.join(' ')}',
     includeParentEnvironment: false,
   );
 }

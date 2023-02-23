@@ -2,9 +2,16 @@
 
 ## Section 0
 $ pub remove --help
-Removes a dependency from the current package.
+Removes dependencies from `pubspec.yaml`.
 
-Usage: pub remove <package>
+Invoking `dart pub remove foo bar` will remove `foo` and `bar` from either
+`dependencies` or `dev_dependencies` in `pubspec.yaml`.
+
+To remove a dependency override of a package prefix the package name with
+'override:'.
+
+
+Usage: pub remove <package1> [<package2>...]
 -h, --help               Print this usage information.
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change any.
