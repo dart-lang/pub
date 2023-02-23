@@ -19,6 +19,7 @@ import 'dart.dart' as dart;
 import 'exceptions.dart';
 import 'executable.dart';
 import 'io.dart';
+import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
@@ -959,21 +960,21 @@ Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$su
   /// We don't allow unknown sdks.
   void _checkSdkConstraint(Pubspec pubspec) {
     final dartSdkConstraint = pubspec.dartSdkConstraint.effectiveConstraint;
-    if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
-      // Suggest an sdk constraint giving the same language version as the
-      // current sdk.
-      var suggestedConstraint = VersionConstraint.compatibleWith(
-        Version(sdk.version.major, sdk.version.minor, 0),
+    // Suggest an sdk constraint giving the same language version as the
+    // current sdk.
+    var suggestedConstraint = VersionConstraint.compatibleWith(
+      Version(sdk.version.major, sdk.version.minor, 0),
+    );
+    // But if somehow that doesn't work, we fallback to safe sanity, mostly
+    // important for tests, or if we jump to 3.x without patching this code.
+    if (!suggestedConstraint.allows(sdk.version)) {
+      suggestedConstraint = VersionRange(
+        min: sdk.version,
+        max: sdk.version.nextBreaking,
+        includeMin: true,
       );
-      // But if somehow that doesn't work, we fallback to safe sanity, mostly
-      // important for tests, or if we jump to 3.x without patching this code.
-      if (!suggestedConstraint.allows(sdk.version)) {
-        suggestedConstraint = VersionRange(
-          min: sdk.version,
-          max: sdk.version.nextBreaking,
-          includeMin: true,
-        );
-      }
+    }
+    if (dartSdkConstraint is! VersionRange || dartSdkConstraint.min == null) {
       throw DataException('''
 $pubspecPath has no lower-bound SDK constraint.
 You should edit $pubspecPath to contain an SDK constraint:
@@ -982,6 +983,24 @@ environment:
   sdk: '${suggestedConstraint.asCompatibleWithIfPossible()}'
 
 See https://dart.dev/go/sdk-constraint
+''');
+    }
+    if (!LanguageVersion.fromSdkConstraint(dartSdkConstraint)
+        .supportsNullSafety) {
+      throw DataException('''
+The lower bound of "sdk: '$dartSdkConstraint'" must be 2.12.0'
+or higher to enable null safety.
+
+The current version of the Dart SDK (${sdk.version}) does not support non-null
+safety code.
+
+Consider using an older, compatible Dart SDK or try the following sdk
+constraint:
+
+environment:
+  sdk: '${suggestedConstraint.asCompatibleWithIfPossible()}'
+
+For details, see https://dart.dev/null-safety
 ''');
     }
     for (final sdk in pubspec.sdkConstraints.keys) {
