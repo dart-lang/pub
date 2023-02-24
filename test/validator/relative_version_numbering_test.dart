@@ -27,44 +27,6 @@ Future<void> setup({required String sdkConstraint}) async {
 
 void main() {
   group('should consider a package valid if it', () {
-    test('is not opting in to null-safety with previous non-null-safe version',
-        () async {
-      final server = await servePackages();
-      server.serve(
-        'test_pkg',
-        '0.0.1',
-        pubspec: {
-          'environment': {'sdk': '>=2.9.0<3.0.0'}
-        },
-      );
-
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidationDeprecated(validator);
-    });
-
-    test(
-        'is not opting in to null-safety with previous non-null-safe version. '
-        'Even with a later null-safe version', () async {
-      await servePackages()
-        ..serve(
-          'test_pkg',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
-          },
-        )
-        ..serve(
-          'test_pkg',
-          '2.0.0',
-          pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
-          },
-        );
-
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidationDeprecated(validator);
-    });
-
     test('is opting in to null-safety with previous null-safe version',
         () async {
       final server = await servePackages();
@@ -125,36 +87,6 @@ void main() {
       await expectValidationDeprecated(validator);
     });
 
-    test('is not opting in to null-safety with no existing versions', () async {
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await servePackages();
-
-      await expectValidationDeprecated(validator);
-    });
-
-    test(
-        'is not opting in to null-safety with previous null-safe stable version. '
-        'With an in-between not null-safe prerelease', () async {
-      await servePackages()
-        ..serve(
-          'test_pkg',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
-          },
-        )
-        ..serve(
-          'test_pkg',
-          '0.0.2-dev',
-          pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
-          },
-        );
-
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidationDeprecated(validator);
-    });
-
     test(
         'opts in to null-safety, with previous stable version not-null-safe. '
         'With an in-between non-null-safe prerelease', () async {
@@ -196,44 +128,6 @@ void main() {
     });
 
     test(
-        'is not opting in to null-safety with no existing stable versions. '
-        'With a previous in-between null-safe prerelease', () async {
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      final server = await servePackages();
-      server.serve(
-        'test_pkg',
-        '0.0.2-dev',
-        pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'}
-        },
-      );
-
-      await expectValidationDeprecated(validator, hints: isNotEmpty);
-    });
-    test(
-        'is not opting in to null-safety with previous non-null-safe stable version. '
-        'With an in-between null-safe prerelease', () async {
-      await servePackages()
-        ..serve(
-          'test_pkg',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
-          },
-        )
-        ..serve(
-          'test_pkg',
-          '0.0.2-dev',
-          pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
-          },
-        );
-
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidationDeprecated(validator, hints: isNotEmpty);
-    });
-
-    test(
         'opts in to null-safety, with previous version not-null-safe. '
         'Even with a later null-safe version', () async {
       await servePackages()
@@ -253,44 +147,6 @@ void main() {
         );
 
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidationDeprecated(validator, hints: isNotEmpty);
-    });
-
-    test('is not opting in to null-safety with previous null-safe version',
-        () async {
-      final server = await servePackages();
-      server.serve(
-        'test_pkg',
-        '0.0.1',
-        pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'}
-        },
-      );
-
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
-      await expectValidationDeprecated(validator, hints: isNotEmpty);
-    });
-
-    test(
-        'is not opting in to null-safety with previous null-safe version. '
-        'Even with a later non-null-safe version', () async {
-      await servePackages()
-        ..serve(
-          'test_pkg',
-          '0.0.1',
-          pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
-          },
-        )
-        ..serve(
-          'test_pkg',
-          '2.0.0',
-          pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
-          },
-        );
-
-      await setup(sdkConstraint: '>=2.9.0 <3.0.0');
       await expectValidationDeprecated(validator, hints: isNotEmpty);
     });
 

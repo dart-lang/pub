@@ -16,12 +16,6 @@ import '../source/path.dart';
 import '../source/sdk.dart';
 import '../validator.dart';
 
-/// The first Dart SDK version that supported caret constraints.
-final _firstCaretVersion = Version.parse('1.8.0-dev.3.0');
-
-/// The first Dart SDK version that supported Git path dependencies.
-final _firstGitPathVersion = Version.parse('2.0.0-dev.1.0');
-
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
   @override
@@ -38,11 +32,6 @@ class DependencyValidator extends Validator {
         errors.add('Unknown SDK "$identifier" for dependency "${dep.name}".');
         return;
       }
-
-      validateSdkConstraint(
-        sdk.firstPubVersion,
-        "Older versions of pub don't support the ${sdk.name} SDK.",
-      );
     }
 
     /// Warn that dependencies should use the hosted source.
@@ -195,14 +184,6 @@ class DependencyValidator extends Validator {
           warnAboutSdkSource(dependency);
         } else if (dependency.source is! HostedSource) {
           await warnAboutSource(dependency);
-
-          final description = dependency.description;
-          if (description is GitDescription && description.path != '.') {
-            validateSdkConstraint(
-              _firstGitPathVersion,
-              "Older versions of pub don't support Git path dependencies.",
-            );
-          }
         } else {
           if (constraint.isAny) {
             warnAboutNoConstraint(dependency);
@@ -224,12 +205,5 @@ class DependencyValidator extends Validator {
     }
 
     await validateDependencies(entrypoint.root.pubspec.dependencies.values);
-
-    if (hasCaretDep) {
-      validateSdkConstraint(
-        _firstCaretVersion,
-        "Older versions of pub don't support ^ version constraints.",
-      );
-    }
   }
 }

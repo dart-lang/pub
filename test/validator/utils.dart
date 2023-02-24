@@ -28,13 +28,16 @@ Future<void> expectValidation({
   error,
   int exitCode = 0,
   Map<String, String> environment = const {},
+  List<String>? extraArgs,
+  String? workingDirectory,
 }) async {
   await runPub(
     error: error ?? contains('Package has 0 warnings.'),
-    args: ['publish', '--dry-run'],
+    args: ['publish', '--dry-run', ...?extraArgs],
     // workingDirectory: d.path(appPath),
     exitCode: exitCode,
     environment: environment,
+    workingDirectory: workingDirectory,
   );
 }
 

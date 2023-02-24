@@ -258,7 +258,7 @@ void main() {
           'foo',
           '3.0.0',
           pubspec: {
-            'environment': {'sdk': '>=1.0.0 <2.0.0'}
+            'environment': {'sdk': '>=3.0.0 <3.1.0'}
           },
         );
 
@@ -267,12 +267,12 @@ void main() {
             'name': 'myapp',
             'dependencies': {'foo': '3.0.0'},
             'environment': {
-              'sdk': '>=1.0.0 <2.0.0',
+              'sdk': '>=3.0.0 <3.1.0',
             },
           }),
         ]).create();
 
-        await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.2.3+4'});
+        await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'});
       });
 
       _requiresPubGet("Dart 3.1.2+3 is incompatible with your dependencies' "
