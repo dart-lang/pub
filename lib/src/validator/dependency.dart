@@ -10,7 +10,6 @@ import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
 import '../sdk.dart';
-import '../source/git.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
 import '../source/sdk.dart';
