@@ -94,66 +94,6 @@ void main() {
       );
     });
 
-    test(
-        'has a Flutter SDK constraint with a too-broad SDK '
-        'constraint', () async {
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'sdk': '>=1.18.0 <1.50.0', 'flutter': '^1.2.3'}
-        })
-      ]).create();
-      await expectValidationDeprecated(
-        sdkConstraint,
-        errors: anyElement(contains('">=1.19.0 <1.50.0"')),
-      );
-    });
-
-    test('has a Flutter SDK constraint with no SDK constraint', () async {
-      await d.dir(appPath, [
-        d.rawPubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'flutter': '^1.2.3'}
-        })
-      ]).create();
-      await expectValidationDeprecated(
-        sdkConstraint,
-        errors: anyElement(contains('"^1.19.0"')),
-      );
-    });
-
-    test(
-        'has a Fuchsia SDK constraint with a too-broad SDK '
-        'constraint', () async {
-      await d.dir(appPath, [
-        d.rawPubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0-dev.1',
-          'environment': {'sdk': '>=2.0.0-dev.50.0 <2.0.0', 'fuchsia': '^1.2.3'}
-        })
-      ]).create();
-      await expectValidationDeprecated(
-        sdkConstraint,
-        errors: anyElement(contains('"^2.0.0"')),
-      );
-    });
-
-    test('has a Fuchsia SDK constraint with no SDK constraint', () async {
-      await d.dir(appPath, [
-        d.rawPubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-          'environment': {'fuchsia': '^1.2.3'}
-        })
-      ]).create();
-      await expectValidationDeprecated(
-        sdkConstraint,
-        errors: anyElement(contains('"^2.0.0"')),
-      );
-    });
-
     test('depends on a pre-release sdk from a non-pre-release', () async {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0-dev.1 <2.0.0')

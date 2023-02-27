@@ -15,8 +15,6 @@ class FuchsiaSdk extends Sdk {
   String get name => 'Fuchsia';
   @override
   bool get isAvailable => _isAvailable;
-  @override
-  Version get firstPubVersion => Version.parse('2.0.0-dev.51.0');
 
   static final bool _isAvailable = _rootDirectory != null;
   static final String? _rootDirectory =
