@@ -339,15 +339,6 @@ class Entrypoint {
     summaryOnly = summaryOnly || _summaryOnlyEnvironment;
     final suffix = root.isInMemory || root.dir == '.' ? '' : ' in ${root.dir}';
 
-    String forDetails() {
-      if (!summaryOnly) return '';
-      final enforceLockfileOption =
-          enforceLockfile ? ' --enforce-lockfile' : '';
-      final directoryOption =
-          root.isInMemory || root.dir == '.' ? '' : ' --directory ${root.dir}';
-      return ' For details run `$topLevelProgram pub ${type.toString()}$directoryOption$enforceLockfileOption`';
-    }
-
     if (enforceLockfile && !fileExists(lockFilePath)) {
       throw ApplicationException('''
 Retrieving dependencies failed$suffix.
@@ -357,26 +348,16 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     }
 
     SolveResult result;
-    try {
-      result = await log.progress('Resolving dependencies$suffix', () async {
-        _checkSdkConstraint(root.pubspec);
-        return resolveVersions(
-          type,
-          cache,
-          root,
-          lockFile: lockFile,
-          unlock: unlock ?? [],
-        );
-      });
-    } catch (e) {
-      if (summaryOnly && (e is ApplicationException)) {
-        throw ApplicationException(
-          'Resolving dependencies$suffix failed.${forDetails()}',
-        );
-      } else {
-        rethrow;
-      }
-    }
+    result = await log.progress('Resolving dependencies$suffix', () async {
+      _checkSdkConstraint(root.pubspec);
+      return resolveVersions(
+        type,
+        cache,
+        root,
+        lockFile: lockFile,
+        unlock: unlock ?? [],
+      );
+    });
 
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
@@ -397,13 +378,11 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     final hasChanges = await report.show();
     await report.summarize();
     if (enforceLockfile && hasChanges) {
-      var suggestion = summaryOnly
-          ? ''
-          : '''
-\n\nTo update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
-`--enforce-lockfile`.''';
       dataError('''
-Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.${forDetails()}$suggestion''');
+Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.
+
+To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
+`--enforce-lockfile`.''');
     }
 
     if (!(dryRun || enforceLockfile)) {

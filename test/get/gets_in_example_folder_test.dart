@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -57,7 +58,7 @@ Got dependencies in $dotExample.''',
       expect(exampleLockFile.existsSync(), true);
     });
 
-    test('Failures are met with a suggested command', () async {
+    test('Failures are not summarized', () async {
       await d.dir(appPath, [
         d.appPubspec(),
         d.dir('example', [
@@ -72,9 +73,9 @@ Got dependencies in $dotExample.''',
       await pubGet(
         args: ['--example'],
         error: contains(
-          'Resolving dependencies in $dotExample failed. For details run `dart pub get --directory $dotExample`',
+          'Error on line 1, column 9 of example/pubspec.yaml: "name" field must be a valid Dart identifier.',
         ),
-        exitCode: 1,
+        exitCode: DATA,
       );
       await pubGet(
         args: ['--directory', dotExample],
