@@ -44,7 +44,7 @@ void main() {
         args: ['--example'],
         output: command.name == 'get'
             ? '''
-Resolving dependencies... 
+Resolving dependencies...
 Got dependencies!
 Resolving dependencies in $dotExample...
 Got dependencies in $dotExample.'''
@@ -73,7 +73,7 @@ Got dependencies in $dotExample.''',
       await pubGet(
         args: ['--example'],
         error: contains(
-          'Error on line 1, column 9 of example/pubspec.yaml: "name" field must be a valid Dart identifier.',
+          'Error on line 1, column 9 of example${p.separator}pubspec.yaml',
         ),
         exitCode: DATA,
       );
