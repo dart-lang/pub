@@ -77,6 +77,8 @@ Try running `dart pub get` to create `pubspec.lock`.
         .deleteSync();
 
     final example = p.join('.', 'example');
+    final examplePubspec = p.join('example', 'pubspec.yaml');
+    final examplePubspecLock = p.join('example', 'pubspec.lock');
 
     await pubGet(
       args: ['--enforce-lockfile', '--example'],
@@ -86,10 +88,10 @@ Try running `dart pub get` to create `pubspec.lock`.
       ),
       error: allOf(
         contains(
-          'Unable to satisfy `example/pubspec.yaml` using `example/pubspec.lock` in ./example.',
+          'Unable to satisfy `$examplePubspec` using `$examplePubspecLock` in $example.',
         ),
         contains(
-            'To update `example/pubspec.lock` run `dart pub get` in ./example without\n'
+            'To update `$examplePubspecLock` run `dart pub get` in $example without\n'
             '`--enforce-lockfile`.'),
       ),
       exitCode: DATA,
