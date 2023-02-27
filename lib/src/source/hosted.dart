@@ -1161,8 +1161,11 @@ See $contentHashesDocumentationUrl.
 
       var tempDir = cache.createTempDir();
       try {
-        await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
-
+        try {
+          await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
+        } on FormatException catch (e) {
+          dataError('Failed to extract `$archivePath`: ${e.message}.');
+        }
         ensureDir(p.dirname(destPath));
       } catch (e) {
         deleteEntry(tempDir);

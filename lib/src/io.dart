@@ -983,6 +983,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
   destination = path.absolute(destination);
   final reader = TarReader(stream.transform(gzip.decoder));
+  final paths = <String>{};
   while (await reader.moveNext()) {
     final entry = reader.current;
 
@@ -991,6 +992,11 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
       // Tar file names always use forward slashes
       ...path.posix.split(entry.name),
     ]);
+    if (!paths.add(filePath)) {
+      // The tar file contained the same entry twice. Assume it is broken.
+      await reader.cancel();
+      throw FormatException('Tar file contained duplicate path ${entry.name}');
+    }
 
     if (!path.isWithin(destination, filePath)) {
       // The tar contains entries that would be written outside of the
