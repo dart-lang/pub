@@ -375,8 +375,11 @@ class GitSource extends CachedSource {
       final path = description.path;
       await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
         if (!entryExists(revisionCachePath)) {
-          await _clone(_repoCachePath(description, cache), revisionCachePath);
-          await _checkOut(revisionCachePath, resolvedRef);
+          await _createWorktree(
+            _repoCachePath(description, cache),
+            revisionCachePath,
+            resolvedRef,
+          );
           _writePackageList(revisionCachePath, [path]);
           didUpdate = true;
         } else {
@@ -415,7 +418,7 @@ class GitSource extends CachedSource {
     final result = <RepairResult>[];
 
     var packages = listDir(rootDir)
-        .where((entry) => dirExists(p.join(entry, '.git')))
+        .where((entry) => entryExists(p.join(entry, '.git')))
         .expand((revisionCachePath) {
           return _readPackageList(revisionCachePath).map((relative) {
             // If we've already failed to load another package from this
@@ -535,7 +538,7 @@ class GitSource extends CachedSource {
     var path = _repoCachePath(description, cache);
     assert(!_updatedRepos.contains(path));
     try {
-      await _clone(description.url, path, mirror: true);
+      await _mirrorClone(description.url, path);
     } catch (_) {
       await _deleteGitRepoIfInvalid(path);
       rethrow;
@@ -555,7 +558,7 @@ class GitSource extends CachedSource {
   ) async {
     var path = _repoCachePath(description, cache);
     if (_updatedRepos.contains(path)) return false;
-    await git.run(['fetch'], workingDir: path);
+    await git.run(['fetch', 'origin'], workingDir: path);
     _updatedRepos.add(path);
     return true;
   }
@@ -619,7 +622,7 @@ class GitSource extends CachedSource {
   /// The path in a revision cache repository in which we keep a list of the
   /// packages in the repository.
   String _packageListPath(String revisionCachePath) =>
-      p.join(revisionCachePath, '.git/pub-packages');
+      p.join(revisionCachePath, '.pub-packages');
 
   /// Runs "git rev-list" on [reference] in [path] and returns the first result.
   ///
@@ -640,33 +643,38 @@ class GitSource extends CachedSource {
     return lines.first;
   }
 
-  /// Clones the repo at the URI [from] to the path [to] on the local
-  /// filesystem.
-  ///
-  /// If [mirror] is true, creates a bare, mirrored clone. This doesn't check
-  /// out the working tree, but instead makes the repository a local mirror of
-  /// the remote repository. See the manpage for `git clone` for more
-  /// information.
-  ///
-  /// If [shallow] is true, creates a shallow clone that contains no history
-  /// for the repository.
-  Future<void> _clone(
-    String from,
-    String to, {
-    bool mirror = false,
-  }) async {
+  /// Creates a bare clone of the repo at the URI [from] to the path [to] on the
+  /// local filesystem.
+  Future<void> _mirrorClone(String from, String to) async {
     // Git on Windows does not seem to automatically create the destination
     // directory.
     ensureDir(to);
-    var args = ['clone', if (mirror) '--mirror', from, to];
-
-    await git.run(args);
+    await git.run(['clone', '--mirror', from, to]);
   }
 
-  /// Checks out the reference [ref] in [repoPath].
-  Future<void> _checkOut(String repoPath, String ref) {
-    return git
-        .run(['checkout', ref], workingDir: repoPath).then((result) => null);
+  /// Makes a working tree of the repo at the path [from] at ref [ref] to the
+  /// path [to] on the local filesystem.
+  ///
+  /// Also checks out any submodules.
+  Future<void> _createWorktree(String from, String to, String ref) async {
+    // Git on Windows does not seem to automatically create the destination
+    // directory.
+    ensureDir(to);
+    await git.run(
+      [
+        'worktree', 'add',
+        // Checkout <branch> even if already checked out in other worktree.
+        // Should not be necessary, but cannot hurt either.
+        '--force',
+        to,
+        ref,
+      ],
+      workingDir: from,
+    );
+    await git.run(
+      ['submodule', 'update', '--init', '--recursive'],
+      workingDir: to,
+    );
   }
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(

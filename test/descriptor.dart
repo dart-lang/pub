@@ -288,8 +288,15 @@ Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
 
 /// Describes the application directory, containing only a pubspec specifying
 /// the given [dependencies].
-DirectoryDescriptor appDir({Map? dependencies, Map<String, Object>? pubspec}) =>
-    dir(appPath, [appPubspec(dependencies: dependencies, extras: pubspec)]);
+DirectoryDescriptor appDir({
+  Map? dependencies,
+  Map<String, Object>? pubspec,
+  Iterable<Descriptor>? contents,
+}) =>
+    dir(
+      appPath,
+      [appPubspec(dependencies: dependencies, extras: pubspec), ...?contents],
+    );
 
 /// Describes a `.dart_tools/package_config.json` file.
 ///

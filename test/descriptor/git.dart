@@ -3,9 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:pub/src/git.dart' as git;
+import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
 /// Describes a Git repository and its contents.
@@ -79,5 +81,35 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     for (var command in commands) {
       await _runGit(command, parent);
     }
+  }
+
+  /// Serves this git directory on localhost a fresh port
+  /// returns the port.
+  Future<int> serve() async {
+    // Use this to invent a fresh host.
+    final s = await ServerSocket.bind('localhost', 0);
+    int port = s.port;
+    await s.close();
+    final process = await Process.start(
+      'git',
+      [
+        'daemon',
+        '--verbose',
+        '--export-all',
+        '--base-path=.git',
+        '--reuseaddr',
+        '--strict-paths',
+        '--port=$port',
+        '.git/'
+      ],
+      workingDirectory: path.join(sandbox, name),
+    );
+    final c = Completer();
+    process.stderr.listen((x) {
+      if (!c.isCompleted) c.complete();
+    });
+    await c.future;
+    addTearDown(process.kill);
+    return port;
   }
 }
