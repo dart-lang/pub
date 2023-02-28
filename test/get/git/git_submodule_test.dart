@@ -56,7 +56,7 @@ void main() {
     await foo.runGit(['lfs', 'install']);
 
     await d.dir('foo.git', [
-      d.dir('lib', [d.file('foo.dart', 'main() => print("hello");')])
+      d.dir('lib', [d.file('foo.dart', 'main() => print("hi");')])
     ]).create();
     await foo.runGit(['lfs', 'track', 'lib/foo.dart']);
     await foo.runGit(['add', '.gitattributes']);
