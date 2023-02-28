@@ -109,7 +109,10 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       if (!c.isCompleted) c.complete();
     });
     await c.future;
-    addTearDown(process.kill);
+    addTearDown(() async {
+      process.kill();
+      await process.exitCode;
+    });
     return port;
   }
 }
