@@ -1125,39 +1125,43 @@ See $contentHashesDocumentationUrl.
       // download.
       final expectedSha256 = versionInfo.archiveSha256;
 
-      await withAuthenticatedClient(cache, Uri.parse(description.url),
-          (client) async {
-        // In addition to HTTP errors, this will retry crc32c/sha256 errors as
-        // well because [PackageIntegrityException] subclasses
-        // [PubHttpException].
-        await retryForHttp('downloading "$archiveUrl"', () async {
-          final request = http.Request('GET', archiveUrl);
-          request.attachMetadataHeaders();
-          final response = await client.fetchAsStream(request);
+      try {
+        await withAuthenticatedClient(cache, Uri.parse(description.url),
+            (client) async {
+          // In addition to HTTP errors, this will retry crc32c/sha256 errors as
+          // well because [PackageIntegrityException] subclasses
+          // [PubHttpException].
+          await retryForHttp('downloading "$archiveUrl"', () async {
+            final request = http.Request('GET', archiveUrl);
+            request.attachMetadataHeaders();
+            final response = await client.fetchAsStream(request);
 
-          Stream<List<int>> stream = response.stream;
-          final expectedCrc32c = _parseCrc32c(response.headers, fileName);
-          if (expectedCrc32c != null) {
-            stream = _validateCrc32c(
-              response.stream,
-              expectedCrc32c,
-              id,
-              archiveUrl,
+            Stream<List<int>> stream = response.stream;
+            final expectedCrc32c = _parseCrc32c(response.headers, fileName);
+            if (expectedCrc32c != null) {
+              stream = _validateCrc32c(
+                response.stream,
+                expectedCrc32c,
+                id,
+                archiveUrl,
+              );
+            }
+            stream = validateSha256(
+              stream,
+              (expectedSha256 == null) ? null : Digest(expectedSha256),
             );
-          }
-          stream = validateSha256(
-            stream,
-            (expectedSha256 == null) ? null : Digest(expectedSha256),
-          );
 
-          // We download the archive to disk instead of streaming it directly
-          // into the tar unpacking. This simplifies stream handling.
-          // Package:tar cancels the stream when it reaches end-of-archive, and
-          // cancelling a http stream makes it not reusable.
-          // There are ways around this, and we might revisit this later.
-          await createFileFromStream(stream, archivePath);
+            // We download the archive to disk instead of streaming it directly
+            // into the tar unpacking. This simplifies stream handling.
+            // Package:tar cancels the stream when it reaches end-of-archive, and
+            // cancelling a http stream makes it not reusable.
+            // There are ways around this, and we might revisit this later.
+            await createFileFromStream(stream, archivePath);
+          });
         });
-      });
+      } on Exception catch (error, stackTrace) {
+        _throwFriendlyError(error, stackTrace, id.name, description.url);
+      }
 
       var tempDir = cache.createTempDir();
       try {
@@ -1265,7 +1269,7 @@ See $contentHashesDocumentationUrl.
   /// this tries to translate into a more user friendly error message.
   ///
   /// Always throws an error, either the original one or a better one.
-  Never _throwFriendlyError(
+  static Never _throwFriendlyError(
     Exception error,
     StackTrace stackTrace,
     String package,
