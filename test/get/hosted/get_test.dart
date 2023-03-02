@@ -417,7 +417,9 @@ void main() {
     final downloadPattern =
         RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
     server.handle(
-        downloadPattern, (request) => Response(403, body: 'Go away!'));
+      downloadPattern,
+      (request) => Response(403, body: 'Go away!'),
+    );
     await d.appDir(dependencies: {'foo': 'any'}).create();
     await pubGet(
       error: contains('Package not available (authorization failed).'),
