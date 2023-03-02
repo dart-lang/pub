@@ -320,10 +320,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (force) return true;
 
     String formatWarningCount() {
-      final hs = hints.length == 1 ? '' : 's';
-      final hintText = hints.isEmpty ? '' : ' and ${hints.length} hint$hs.';
-      final ws = warnings.length == 1 ? '' : 's';
-      return '\nPackage has ${warnings.length} warning$ws$hintText.';
+      final hintText = hints.isEmpty
+          ? ''
+          : ' and ${hints.length} ${pluralize('hint', hints.length)}';
+      return '\nPackage has ${warnings.length} '
+          '${pluralize('warning', warnings.length)}$hintText.';
     }
 
     if (dryRun) {

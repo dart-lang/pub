@@ -324,10 +324,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       final wouldBe = _dryRun ? 'would be made to' : 'to';
       log.message('\nNo changes $wouldBe pubspec.yaml!');
     } else {
-      final s = changes.length == 1 ? '' : 's';
-
       final changed = _dryRun ? 'Would change' : 'Changed';
-      log.message('\n$changed ${changes.length} constraint$s in pubspec.yaml:');
+      log.message('\n$changed ${changes.length} '
+          '${pluralize('constraint', changes.length)} in pubspec.yaml:');
       changes.forEach((from, to) {
         log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
       });
