@@ -139,12 +139,22 @@ bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
     var result = runProcessSync(command, ['--version']);
+    final output = result.stdout;
 
-    if (result.stdout.length != 1) return false;
-    final output = result.stdout.single;
-    final match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(output);
+    // Some users may have configured commands such as autorun, which may
+    // produce additional output, so we need to look for "git version"
+    // in every line of the output.
+    Match? match;
+    String? versionString;
+    for (var line in output) {
+      match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(line);
+      if (match != null) {
+        versionString = line;
+        break;
+      }
+    }
+    if (match == null || versionString == null) return false;
 
-    if (match == null) return false;
     // Git seems to use many parts in the version number. We just check the
     // first two.
     final major = int.parse(match[1]!);
@@ -153,7 +163,7 @@ bool _tryGitCommand(String command) {
       // We just warn here, as some features might work with older versions of
       // git.
       log.warning('''
-You have a very old version of git (version ${output.substring('git version '.length)}),
+You have a very old version of git (version ${versionString.substring('git version '.length)}),
 for $topLevelProgram it is recommended to use git version 2.14 or newer.
 ''');
     }
