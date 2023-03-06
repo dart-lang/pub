@@ -438,7 +438,7 @@ class HostedSource extends CachedSource {
 
     // Cache the response on disk.
     // Don't cache overly big responses.
-    if (bodyText.length < 100 * 1024) {
+    if (bodyText.length < 500 * 1024) {
       await _cacheVersionListingResponse(body, ref, cache);
     }
     return result;
