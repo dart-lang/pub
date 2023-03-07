@@ -145,15 +145,13 @@ bool _tryGitCommand(String command) {
     // produce additional output, so we need to look for "git version"
     // in every line of the output.
     Match? match;
-    String? versionString;
     for (var line in output) {
       match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(line);
       if (match != null) {
-        versionString = line;
         break;
       }
     }
-    if (match == null || versionString == null) return false;
+    if (match == null) return false;
 
     // Git seems to use many parts in the version number. We just check the
     // first two.
@@ -163,7 +161,7 @@ bool _tryGitCommand(String command) {
       // We just warn here, as some features might work with older versions of
       // git.
       log.warning('''
-You have a very old version of git (version ${versionString.substring('git version '.length)}),
+You have a very old version of git (version $major.$minor),
 for $topLevelProgram it is recommended to use git version 2.14 or newer.
 ''');
     }
