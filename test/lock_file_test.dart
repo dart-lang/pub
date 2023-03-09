@@ -322,7 +322,7 @@ packages:
         expectComesFromPubDev('retry');
       });
 
-      test('Reads pub.dartlang.org as pub.dev in hosted descriptions', () {
+      test('Complains about malformed content-hashes', () {
         expect(
           () => LockFile.parse(
             '''
