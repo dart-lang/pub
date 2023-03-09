@@ -322,6 +322,32 @@ packages:
         expectComesFromPubDev('retry');
       });
 
+      test('Reads pub.dartlang.org as pub.dev in hosted descriptions', () {
+        expect(
+          () => LockFile.parse(
+            '''
+packages:
+  retry:
+    dependency: transitive
+    description:
+      name: retry
+      url: "https://pub.dev"
+      sha256: abc # Not long enough
+    source: hosted
+    version: "1.0.0"
+''',
+            sources,
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('Content-hash has incorrect length'),
+            ),
+          ),
+        );
+      });
+
       test('ignores extra stuff in file', () {
         LockFile.parse(
           '''
