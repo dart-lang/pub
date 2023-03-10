@@ -270,9 +270,27 @@ class HostedSource extends CachedSource {
       version,
       ResolvedHostedDescription(
         HostedDescription(name, url),
-        sha256: sha256 == null ? null : hexDecode(sha256),
+        sha256: _parseContentHash(sha256),
       ),
     );
+  }
+
+  /// Decodes a sha256 hash from a lock-file or package-listing.
+  /// It is expected to be a hex-encoded String of length 64.
+  ///
+  /// Throws a [FormatException] if the string cannot be decoded.
+  Uint8List? _parseContentHash(String? encoded) {
+    if (encoded == null) return null;
+    if (encoded.length != 64) {
+      throw FormatException('Content-hash has incorrect length');
+    }
+    try {
+      return hexDecode(encoded);
+    } on FormatException catch (e) {
+      return throw FormatException(
+        'Badly formatted content-hash: ${e.message}',
+      );
+    }
   }
 
   /// Parses the description for a package.
@@ -390,7 +408,7 @@ class HostedSource extends CachedSource {
         pubspec,
         Uri.parse(archiveUrl),
         status,
-        archiveSha256 == null ? null : hexDecode(archiveSha256),
+        _parseContentHash(archiveSha256),
       );
     }).toList();
   }
@@ -893,8 +911,11 @@ class HostedSource extends CachedSource {
   /// Loads the hash at `hashPath(id)`.
   Uint8List? sha256FromCache(PackageId id, SystemCache cache) {
     try {
-      return hexDecode(readTextFile(hashPath(id, cache)));
+      return _parseContentHash(readTextFile(hashPath(id, cache)));
     } on io.IOException {
+      return null;
+    } on FormatException catch (e) {
+      log.fine('Bad content-hash in cache: $e, ignoring cache entry');
       return null;
     }
   }
