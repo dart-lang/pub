@@ -225,9 +225,6 @@ class GlobalPackages {
     );
 
     // Resolve it and download its dependencies.
-    //
-    // TODO(nweiz): If this produces a SolveFailure that's caused by [dep] not
-    // being available, report that as a [dataError].
     SolveResult result;
     try {
       result = await log.spinner(
@@ -240,6 +237,8 @@ class GlobalPackages {
           in error.incompatibility.externalIncompatibilities) {
         if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
         if (incompatibility.terms.single.package.name != name) continue;
+        // If the SolveFailure iss caused by [dep] not
+        // being available, report that as a [dataError].
         dataError(error.toString());
       }
       rethrow;
