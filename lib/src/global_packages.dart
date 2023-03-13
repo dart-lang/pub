@@ -237,7 +237,7 @@ class GlobalPackages {
           in error.incompatibility.externalIncompatibilities) {
         if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
         if (incompatibility.terms.single.package.name != name) continue;
-        // If the SolveFailure iss caused by [dep] not
+        // If the SolveFailure is caused by [dep] not
         // being available, report that as a [dataError].
         dataError(error.toString());
       }
