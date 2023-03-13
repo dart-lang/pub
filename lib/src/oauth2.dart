@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart' show IterableExtension;
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
 import 'package:path/path.dart' as path;
@@ -99,12 +98,6 @@ void logout(SystemCache cache) {
     log.message('Logging out of pub.dev.');
     log.message('Deleting $credentialsFile');
     _clearCredentials(cache);
-    // Test if we also have a legacy credentials file.
-    final legacyCredentialsFile = _legacyCredentialsFile(cache);
-    if (entryExists(legacyCredentialsFile)) {
-      log.message('Also deleting legacy credentials at $legacyCredentialsFile');
-      deleteEntry(legacyCredentialsFile);
-    }
   } else {
     log.message(
       'No existing credentials file $credentialsFile. Cannot log out.',
@@ -211,26 +204,12 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 
 /// The path to the file in which the user's OAuth2 credentials are stored.
 ///
-/// This used to be PUB_CACHE/credentials.json. But the pub cache is not the
-/// best place for storing secrets, as it might be shared.
-///
-/// To provide backwards compatibility we use the legacy file if only it exists.
-///
 /// Returns `null` if there is no good place for the file.
 String? _credentialsFile(SystemCache cache) {
   final configDir = dartConfigDir;
-
-  final newCredentialsFile =
-      configDir == null ? null : path.join(configDir, 'pub-credentials.json');
-  var file = [
-    if (newCredentialsFile != null) newCredentialsFile,
-    _legacyCredentialsFile(cache)
-  ].firstWhereOrNull(fileExists);
-  return file ?? newCredentialsFile;
-}
-
-String _legacyCredentialsFile(SystemCache cache) {
-  return path.join(cache.rootDir, 'credentials.json');
+  return configDir == null
+      ? null
+      : path.join(configDir, 'pub-credentials.json');
 }
 
 /// Gets the user to authorize pub as a client of pub.dev via oauth2.
