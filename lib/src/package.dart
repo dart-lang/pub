@@ -321,4 +321,3 @@ class Package {
     ).map(resolve).toList();
   }
 }
-
