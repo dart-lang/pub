@@ -11,7 +11,6 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
-import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../git.dart';
 import '../io.dart';
@@ -184,10 +183,13 @@ Specify multiple sdk packages with descriptors.''');
     final updates =
         argResults.rest.map((p) => _parsePackage(p, argResults)).toList();
 
-    var updatedPubSpec = entrypoint.root.pubspec;
+    /// Compute a pubspec that will depend on all the given packages, but the
+    /// actual constraint will only be determined after a resolution decides the
+    /// best version.
+    var resolutionPubspec = entrypoint.root.pubspec;
     for (final update in updates) {
       /// Perform version resolution in-memory.
-      updatedPubSpec = await _addPackageToPubspec(updatedPubSpec, update);
+      resolutionPubspec = await _addPackageToPubspec(resolutionPubspec, update);
     }
 
     late SolveResult solveResult;
@@ -201,7 +203,7 @@ Specify multiple sdk packages with descriptors.''');
       solveResult = await resolveVersions(
         SolveType.upgrade,
         cache,
-        Package.inMemory(updatedPubSpec),
+        Package.inMemory(resolutionPubspec),
       );
     } on GitException {
       final name = updates.first.ref.name;
@@ -224,7 +226,7 @@ Specify multiple sdk packages with descriptors.''');
       /// Assert that [resultPackage] is within the original user's expectations.
       final constraint = update.constraint;
       if (constraint != null && !constraint.allows(resultPackage.version)) {
-        final dependencyOverrides = updatedPubSpec.dependencyOverrides;
+        final dependencyOverrides = resolutionPubspec.dependencyOverrides;
         if (dependencyOverrides.isNotEmpty) {
           dataError('"$name" resolved to "${resultPackage.version}" which '
               'does not satisfy constraint "$constraint". This could be '
@@ -232,50 +234,42 @@ Specify multiple sdk packages with descriptors.''');
         }
       }
     }
-    if (argResults.isDryRun) {
-      /// Even if it is a dry run, run `acquireDependencies` so that the user
-      /// gets a report on the other packages that might change version due
-      /// to this new dependency.
-      final newRoot = Package.inMemory(updatedPubSpec);
-
-      await Entrypoint.inMemory(
-        newRoot,
-        cache,
-        solveResult: solveResult,
-        lockFile: entrypoint.lockFile,
-      ).acquireDependencies(
-        SolveType.get,
-        dryRun: true,
-        precompile: argResults.shouldPrecompile,
-        analytics: analytics,
-      );
-    } else {
+    final newPubspecText = _updatePubspec(solveResult.packages, updates);
+    if (!argResults.isDryRun) {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-      _updatePubspec(
-        solveResult.packages,
-        updates,
-      );
+      writeTextFile(entrypoint.pubspecPath, newPubspecText);
+    }
 
-      /// Create a new [Entrypoint] since we have to reprocess the updated
-      /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory, cache);
-      await updatedEntrypoint.acquireDependencies(
+    /// Even if it is a dry run, run `acquireDependencies` so that the user
+    /// gets a report on the other packages that might change version due
+    /// to this new dependency.
+    await entrypoint
+        .withPubspec(
+          Pubspec.parse(
+            newPubspecText,
+            cache.sources,
+            location: Uri.parse(entrypoint.pubspecPath),
+          ),
+        )
+        .acquireDependencies(
+          SolveType.get,
+          dryRun: argResults.isDryRun,
+          precompile: !argResults.isDryRun && argResults.shouldPrecompile,
+          analytics: argResults.isDryRun ? null : analytics,
+        );
+
+    if (!argResults.isDryRun &&
+        argResults.example &&
+        entrypoint.example != null) {
+      await entrypoint.example!.acquireDependencies(
         SolveType.get,
         precompile: argResults.shouldPrecompile,
+        summaryOnly: true,
         analytics: analytics,
       );
-
-      if (argResults.example && entrypoint.example != null) {
-        await entrypoint.example!.acquireDependencies(
-          SolveType.get,
-          precompile: argResults.shouldPrecompile,
-          summaryOnly: true,
-          analytics: analytics,
-        );
-      }
     }
 
     if (isOffline) {
@@ -656,8 +650,8 @@ Specify multiple sdk packages with descriptors.''');
     );
   }
 
-  /// Writes the changes to the pubspec file.
-  void _updatePubspec(
+  /// Calculates the updates to the pubspec file.
+  String _updatePubspec(
     List<PackageId> resultPackages,
     List<_ParseResult> updates,
   ) {
@@ -683,7 +677,7 @@ Specify multiple sdk packages with descriptors.''');
       } else {
         pubspecInformation = {
           ref.source.name: ref.description.serializeForPubspec(
-            containingDir: entrypoint.root.dir,
+            containingDir: entrypoint.rootDir,
             languageVersion: entrypoint.root.pubspec.languageVersion,
           ),
           if (description is HostedDescription || constraint != null)
@@ -730,8 +724,7 @@ Specify multiple sdk packages with descriptors.''');
       }
     }
 
-    /// Windows line endings are already handled by [yamlEditor]
-    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
+    return yamlEditor.toString();
   }
 }
 

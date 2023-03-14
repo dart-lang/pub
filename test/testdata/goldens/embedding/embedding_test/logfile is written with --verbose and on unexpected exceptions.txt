@@ -325,6 +325,12 @@ PUB_CACHE: "$SANDBOX/cache"
 Command: dart pub fail
 Platform: $OS
 
+---- $SANDBOX/empty/pubspec.yaml ----
+<No pubspec.yaml>
+---- End pubspec.yaml ----
+---- $SANDBOX/empty/pubspec.lock ----
+<No pubspec.lock>
+---- End pubspec.lock ----
 ---- Log transcript ----
 FINE: Pub 3.1.2+3
 ERR : Bad state: Pub has crashed

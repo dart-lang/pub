@@ -260,11 +260,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     var package = entrypoint.root;
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
-      '${tree.fromFiles(files, baseDir: entrypoint.root.dir, showFileSizes: true)}',
+      '${tree.fromFiles(files, baseDir: entrypoint.rootDir, showFileSizes: true)}',
     );
 
     var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
+        createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
 
     // Validate the package.
     var isValid = await _validate(

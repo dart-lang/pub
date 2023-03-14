@@ -41,7 +41,7 @@ class ListPackageDirsCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     log.json.enabled = true;
-
+    entrypoint.assertUpToDate();
     if (!fileExists(entrypoint.lockFilePath)) {
       dataError(
         'Package "myapp" has no lockfile. Please run "$topLevelProgram pub get" first.',

@@ -27,8 +27,8 @@ class DirectoryValidator extends Validator {
     for (final file in files) {
       // Find the topmost directory name of [file].
       final dir = path.join(
-        entrypoint.root.dir,
-        path.split(path.relative(file, from: entrypoint.root.dir)).first,
+        entrypoint.rootDir,
+        path.split(path.relative(file, from: entrypoint.rootDir)).first,
       );
       if (!visited.add(dir)) continue;
       if (!dirExists(dir)) continue;

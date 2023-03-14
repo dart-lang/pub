@@ -178,7 +178,7 @@ class GlobalPackages {
     _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
-    var fullPath = canonicalize(entrypoint.root.dir);
+    var fullPath = canonicalize(entrypoint.rootDir);
     var id = cache.path.idFor(
       name,
       entrypoint.root.version,
@@ -262,7 +262,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       if (!silent) {
         await SolveReport(
           SolveType.get,
-          root,
+          null,
+          root.pubspec,
           originalLockFile ?? LockFile.empty(),
           lockFile,
           result.availableVersions,
@@ -575,7 +576,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
             );
           } else {
             await activatePath(
-              entrypoint.root.dir,
+              entrypoint.rootDir,
               packageExecutables,
               overwriteBinStubs: true,
               analytics: null,
