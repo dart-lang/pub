@@ -11,7 +11,6 @@ import 'package:path/path.dart' as p;
 
 import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
-import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
@@ -24,7 +23,6 @@ import 'command/logout.dart';
 import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
-import 'command/serve.dart';
 import 'command/token.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
@@ -140,7 +138,6 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.
     addCommand(AddCommand());
-    addCommand(BuildCommand());
     addCommand(CacheCommand());
     addCommand(DepsCommand());
     addCommand(DowngradeCommand());
@@ -151,7 +148,6 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(OutdatedCommand());
     addCommand(RemoveCommand());
     addCommand(RunCommand());
-    addCommand(ServeCommand());
     addCommand(UpgradeCommand());
     addCommand(UploaderCommand());
     addCommand(LoginCommand());
