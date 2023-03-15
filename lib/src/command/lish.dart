@@ -210,7 +210,7 @@ class LishCommand extends PubCommand {
         //
         // This allows us to use `dart pub token add` to inject a token for use
         // with the official servers.
-        await oauth2.withClient(cache, (client) {
+        await oauth2.withClient((client) {
           return _publishUsingClient(packageBytes, client);
         });
       } else {
