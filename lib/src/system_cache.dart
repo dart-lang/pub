@@ -32,7 +32,8 @@ import 'utils.dart';
 /// cache.
 class SystemCache {
   /// The root directory where this package cache is located.
-  final String rootDir;
+  String get rootDir => _rootDir ??= defaultDir;
+  String? _rootDir;
 
   String rootDirForSource(CachedSource source) => p.join(rootDir, source.name);
 
@@ -101,7 +102,7 @@ Consider setting the `PUB_CACHE` variable manually.
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
   SystemCache({String? rootDir, this.isOffline = false})
-      : rootDir = rootDir ?? SystemCache.defaultDir,
+      : _rootDir = rootDir,
         tokenStore = TokenStore(dartConfigDir);
 
   /// Loads the package identified by [id].
