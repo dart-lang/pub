@@ -91,6 +91,7 @@ Consider setting the `PUB_CACHE` variable manually.
   SdkSource get sdk => SdkSource.instance;
 
   /// The default credential store.
+  /// TODO(sigurdm): this does not really belong in the cache.
   final TokenStore tokenStore;
 
   /// If true, cached sources will attempt to use the cached packages for
