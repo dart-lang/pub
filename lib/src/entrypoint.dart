@@ -617,17 +617,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// TODO(sigurdm): we should consider if we can instead in all places update
   /// the resolution automatically.
   void assertUpToDate({bool checkForSdkUpdate = false}) {
-    FileStat? tryStatFile(String path) {
-      var stat = File(path).statSync();
-      if (stat.type == FileSystemEntityType.link) {
-        stat = File(File(path).resolveSymbolicLinksSync()).statSync();
-      }
-      if (stat.type == FileSystemEntityType.file) {
-        return stat;
-      }
-      return null;
-    }
-
     if (isCached) return;
     final pubspecStat = tryStatFile(pubspecPath);
     if (pubspecStat == null) {
