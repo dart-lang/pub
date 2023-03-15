@@ -16,7 +16,6 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
-import 'system_cache.dart';
 import 'utils.dart';
 
 /// The global HTTP client with basic retries. Used instead of retryForHttp for
@@ -113,20 +112,20 @@ void logout() {
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
-Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
-  return _getClient(cache).then((client) {
+Future<T> withClient<T>(Future<T> Function(Client) fn) {
+  return _getClient().then((client) {
     return fn(client).whenComplete(() {
       // TODO(sigurdm): refactor the http subsystem, so we can close [client]
       // here.
 
       // Be sure to save the credentials even when an error happens.
-      _saveCredentials(cache, client.credentials);
+      _saveCredentials(client.credentials);
     });
   }).catchError((error) {
     if (error is ExpirationException) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
-      return withClient(cache, fn);
+      return withClient(fn);
     } else if (error is AuthorizationException) {
       var message = 'OAuth2 authorization failed';
       if (error.description != null) {
@@ -134,7 +133,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
       }
       log.error('$message.');
       _clearCredentials();
-      return withClient(cache, fn);
+      return withClient(fn);
     } else {
       throw error;
     }
@@ -145,8 +144,8 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
 ///
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
-Future<Client> _getClient(SystemCache cache) async {
-  var credentials = loadCredentials(cache);
+Future<Client> _getClient() async {
+  var credentials = loadCredentials();
   if (credentials == null) return await _authorize();
 
   var client = Client(
@@ -157,7 +156,7 @@ Future<Client> _getClient(SystemCache cache) async {
     basicAuth: false,
     httpClient: _retryHttpClient,
   );
-  _saveCredentials(cache, client.credentials);
+  _saveCredentials(client.credentials);
   return client;
 }
 
@@ -166,7 +165,7 @@ Future<Client> _getClient(SystemCache cache) async {
 ///
 /// If the credentials can't be loaded for any reason, the returned [Future]
 /// completes to `null`.
-Credentials? loadCredentials(SystemCache cache) {
+Credentials? loadCredentials() {
   log.fine('Loading OAuth2 credentials.');
 
   try {
@@ -192,7 +191,7 @@ Credentials? loadCredentials(SystemCache cache) {
 
 /// Save the user's OAuth2 credentials to the in-memory cache and the
 /// filesystem.
-void _saveCredentials(SystemCache cache, Credentials credentials) {
+void _saveCredentials(Credentials credentials) {
   log.fine('Saving OAuth2 credentials.');
   _credentials = credentials;
   var credentialsPath = _credentialsFile();
