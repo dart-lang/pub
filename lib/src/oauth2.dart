@@ -83,21 +83,21 @@ final _scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 Credentials? _credentials;
 
 /// Delete the cached credentials, if they exist.
-void _clearCredentials(SystemCache cache) {
+void _clearCredentials() {
   _credentials = null;
-  var credentialsFile = _credentialsFile(cache);
+  var credentialsFile = _credentialsFile();
   if (credentialsFile != null && entryExists(credentialsFile)) {
     deleteEntry(credentialsFile);
   }
 }
 
 /// Try to delete the cached credentials.
-void logout(SystemCache cache) {
-  var credentialsFile = _credentialsFile(cache);
+void logout() {
+  var credentialsFile = _credentialsFile();
   if (credentialsFile != null && entryExists(credentialsFile)) {
     log.message('Logging out of pub.dev.');
     log.message('Deleting $credentialsFile');
-    _clearCredentials(cache);
+    _clearCredentials();
   } else {
     log.message(
       'No existing credentials file $credentialsFile. Cannot log out.',
@@ -133,7 +133,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
         message = '$message (${error.description})';
       }
       log.error('$message.');
-      _clearCredentials(cache);
+      _clearCredentials();
       return withClient(cache, fn);
     } else {
       throw error;
@@ -172,7 +172,7 @@ Credentials? loadCredentials(SystemCache cache) {
   try {
     if (_credentials != null) return _credentials;
 
-    var path = _credentialsFile(cache);
+    var path = _credentialsFile();
     if (path == null || !fileExists(path)) return null;
 
     var credentials = Credentials.fromJson(readTextFile(path));
@@ -195,7 +195,7 @@ Credentials? loadCredentials(SystemCache cache) {
 void _saveCredentials(SystemCache cache, Credentials credentials) {
   log.fine('Saving OAuth2 credentials.');
   _credentials = credentials;
-  var credentialsPath = _credentialsFile(cache);
+  var credentialsPath = _credentialsFile();
   if (credentialsPath != null) {
     ensureDir(path.dirname(credentialsPath));
     writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
@@ -205,7 +205,7 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 /// The path to the file in which the user's OAuth2 credentials are stored.
 ///
 /// Returns `null` if there is no good place for the file.
-String? _credentialsFile(SystemCache cache) {
+String? _credentialsFile() {
   final configDir = dartConfigDir;
   return configDir == null
       ? null
