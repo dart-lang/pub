@@ -6,10 +6,8 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
-import '../package.dart';
 import '../pubspec.dart';
 import '../solver.dart';
 
@@ -84,40 +82,28 @@ To remove a dependency override of a package prefix the package name with
       return _PackageRemoval(name, removeFromOverride: isOverride);
     });
 
-    if (isDryRun) {
-      final rootPubspec = entrypoint.root.pubspec;
-      final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
-      final newRoot = Package.inMemory(newPubspec);
-
-      await Entrypoint.inMemory(newRoot, cache, lockFile: entrypoint.lockFile)
-          .acquireDependencies(
-        SolveType.get,
-        precompile: argResults['precompile'],
-        dryRun: true,
-        analytics: null,
-      );
-    } else {
+    if (!isDryRun) {
       /// Update the pubspec.
       _writeRemovalToPubspec(targets);
+    }
+    final rootPubspec = entrypoint.root.pubspec;
+    final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
 
-      /// Create a new [Entrypoint] since we have to reprocess the updated
-      /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory, cache);
-      await updatedEntrypoint.acquireDependencies(
+    await entrypoint.withPubspec(newPubspec).acquireDependencies(
+          SolveType.get,
+          precompile: !isDryRun && argResults['precompile'],
+          dryRun: isDryRun,
+          analytics: isDryRun ? null : analytics,
+        );
+
+    var example = entrypoint.example;
+    if (!isDryRun && argResults['example'] && example != null) {
+      await example.acquireDependencies(
         SolveType.get,
         precompile: argResults['precompile'],
+        summaryOnly: true,
         analytics: analytics,
       );
-
-      var example = entrypoint.example;
-      if (argResults['example'] && example != null) {
-        await example.acquireDependencies(
-          SolveType.get,
-          precompile: argResults['precompile'],
-          summaryOnly: true,
-          analytics: analytics,
-        );
-      }
     }
   }
 

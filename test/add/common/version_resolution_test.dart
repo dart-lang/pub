@@ -28,6 +28,12 @@ void main() {
     server.serve('foo', '3.1.0');
     server.serve('foo', '2.5.0');
 
+    await pubAdd(
+      args: ['foo', '--dry-run'],
+      output: allOf(
+        contains('> foo 3.5.0 (was 3.2.1)'),
+      ),
+    );
     await pubAdd(args: ['foo']);
 
     await d.appDir(dependencies: {'foo': '^3.5.0', 'bar': '1.0.0'}).validate();

@@ -433,6 +433,27 @@ class Pubspec extends PubspecBase {
     collectError(() => sdkConstraints);
     return errors;
   }
+
+  /// Returns the type of dependency from this package onto [name].
+  DependencyType dependencyType(String? name) {
+    if (dependencies.containsKey(name)) {
+      return DependencyType.direct;
+    } else if (devDependencies.containsKey(name)) {
+      return DependencyType.dev;
+    } else {
+      return DependencyType.none;
+    }
+  }
+}
+
+/// The type of dependency from one package to another.
+enum DependencyType {
+  direct,
+  dev,
+  none;
+
+  @override
+  String toString() => name;
 }
 
 /// Parses the dependency field named [field], and returns the corresponding

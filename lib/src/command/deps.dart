@@ -10,6 +10,7 @@ import '../command.dart';
 import '../command_runner.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../pubspec.dart';
 import '../sdk.dart';
 import '../utils.dart';
 
@@ -101,7 +102,7 @@ class DepsCommand extends PubCommand {
                 : currentPackage.dependencies)
             .keys
             .toList();
-        final dependencyType = entrypoint.root.dependencyType(current);
+        final dependencyType = entrypoint.root.pubspec.dependencyType(current);
         final kind = currentPackage == entrypoint.root
             ? 'root'
             : (dependencyType == DependencyType.direct

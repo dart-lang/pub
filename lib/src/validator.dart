@@ -215,7 +215,7 @@ abstract class Validator {
   /// entrypoint).
   // TODO(sigurdm): Consider moving this to a more central location.
   List<String> filesBeneath(String dir, {required bool recursive}) {
-    final base = p.canonicalize(p.join(entrypoint.root.dir, dir));
+    final base = p.canonicalize(p.join(entrypoint.rootDir, dir));
     return files
         .where(
           recursive

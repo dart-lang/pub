@@ -23,7 +23,7 @@ class StrictDependenciesValidator extends Validator {
   /// Files that do not parse and directives that don't import or export
   /// `package:` URLs are ignored.
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
-    final packagePath = p.normalize(p.absolute(entrypoint.root.dir));
+    final packagePath = p.normalize(p.absolute(entrypoint.rootDir));
     final AnalysisContextManager analysisContextManager =
         AnalysisContextManager(packagePath);
 

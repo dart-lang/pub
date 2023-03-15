@@ -18,7 +18,7 @@ class AnalyzeValidator extends Validator {
   @override
   Future<void> validate() async {
     final dirsToAnalyze = ['lib', 'test', 'bin']
-        .map((dir) => p.join(entrypoint.root.dir, dir))
+        .map((dir) => p.join(entrypoint.rootDir, dir))
         .where(dirExists);
     final result = await runProcess(
       Platform.resolvedExecutable,
@@ -26,7 +26,7 @@ class AnalyzeValidator extends Validator {
         'analyze',
         '--fatal-infos',
         ...dirsToAnalyze,
-        p.join(entrypoint.root.dir, 'pubspec.yaml')
+        p.join(entrypoint.rootDir, 'pubspec.yaml')
       ],
     );
     if (result.exitCode != 0) {

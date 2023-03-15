@@ -81,6 +81,20 @@ bool linkExists(String link) => Link(link).existsSync();
 /// points to a file.
 bool fileExists(String file) => File(file).existsSync();
 
+/// Stats [path], assuming it or the entry it is a link to is a file.
+///
+/// Returns `null` if it is not a file (eg. a directory or not existing).
+FileStat? tryStatFile(String path) {
+  var stat = File(path).statSync();
+  if (stat.type == FileSystemEntityType.link) {
+    stat = File(File(path).resolveSymbolicLinksSync()).statSync();
+  }
+  if (stat.type == FileSystemEntityType.file) {
+    return stat;
+  }
+  return null;
+}
+
 /// Returns the canonical path for [pathString].
 ///
 /// This is the normalized, absolute path, with symlinks resolved. As in
