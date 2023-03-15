@@ -67,8 +67,6 @@ Future<int> runExecutable(
     }
   }
 
-  entrypoint.migrateCache();
-
   var snapshotPath = entrypoint.pathOfExecutable(executable);
 
   // Don't compile snapshots for mutable packages, since their code may
