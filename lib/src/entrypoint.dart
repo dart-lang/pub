@@ -451,8 +451,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
   /// Precompiles all [_builtExecutables].
   Future<void> precompileExecutables() async {
-    migrateCache();
-
     final executables = _builtExecutables;
 
     if (executables.isEmpty) return;
@@ -925,26 +923,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       dataError('The sdk was updated since last package resolution. Please run '
           '"$topLevelProgram pub get" again.');
     }
-  }
-
-  /// If the entrypoint uses the old-style `.pub` cache directory, migrates it
-  /// to the new-style `.dart_tool/pub` directory.
-  void migrateCache() {
-    // Cached packages don't have these.
-    if (isCached) return;
-
-    var oldPath = p.join(_configRoot!, '.pub');
-    if (!dirExists(oldPath)) return;
-
-    var newPath = root.path('.dart_tool/pub');
-
-    // If both the old and new directories exist, something weird is going on.
-    // Do nothing to avoid making things worse. Pub will prefer the new
-    // directory anyway.
-    if (dirExists(newPath)) return;
-
-    ensureDir(p.dirname(newPath));
-    renameDir(oldPath, newPath);
   }
 
   /// We require an SDK constraint lower-bound as of Dart 2.12.0

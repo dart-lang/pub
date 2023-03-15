@@ -8,7 +8,6 @@ import 'package:usage/usage.dart';
 import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
 import 'command/add.dart';
-import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
@@ -90,7 +89,6 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     //
     // New commands should (most likely) be included in both lists.
     addSubcommand(AddCommand());
-    addSubcommand(BuildCommand());
     addSubcommand(CacheCommand());
     addSubcommand(DepsCommand());
     addSubcommand(DowngradeCommand());

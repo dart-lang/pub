@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart' show IterableExtension;
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
 import 'package:path/path.dart' as path;
@@ -17,7 +16,6 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'http.dart';
 import 'io.dart';
 import 'log.dart' as log;
-import 'system_cache.dart';
 import 'utils.dart';
 
 /// The global HTTP client with basic retries. Used instead of retryForHttp for
@@ -84,27 +82,21 @@ final _scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 Credentials? _credentials;
 
 /// Delete the cached credentials, if they exist.
-void _clearCredentials(SystemCache cache) {
+void _clearCredentials() {
   _credentials = null;
-  var credentialsFile = _credentialsFile(cache);
+  var credentialsFile = _credentialsFile();
   if (credentialsFile != null && entryExists(credentialsFile)) {
     deleteEntry(credentialsFile);
   }
 }
 
 /// Try to delete the cached credentials.
-void logout(SystemCache cache) {
-  var credentialsFile = _credentialsFile(cache);
+void logout() {
+  var credentialsFile = _credentialsFile();
   if (credentialsFile != null && entryExists(credentialsFile)) {
     log.message('Logging out of pub.dev.');
     log.message('Deleting $credentialsFile');
-    _clearCredentials(cache);
-    // Test if we also have a legacy credentials file.
-    final legacyCredentialsFile = _legacyCredentialsFile(cache);
-    if (entryExists(legacyCredentialsFile)) {
-      log.message('Also deleting legacy credentials at $legacyCredentialsFile');
-      deleteEntry(legacyCredentialsFile);
-    }
+    _clearCredentials();
   } else {
     log.message(
       'No existing credentials file $credentialsFile. Cannot log out.',
@@ -120,28 +112,28 @@ void logout(SystemCache cache) {
 /// This takes care of loading and saving the client's credentials, as well as
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
-Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
-  return _getClient(cache).then((client) {
+Future<T> withClient<T>(Future<T> Function(Client) fn) {
+  return _getClient().then((client) {
     return fn(client).whenComplete(() {
       // TODO(sigurdm): refactor the http subsystem, so we can close [client]
       // here.
 
       // Be sure to save the credentials even when an error happens.
-      _saveCredentials(cache, client.credentials);
+      _saveCredentials(client.credentials);
     });
   }).catchError((error) {
     if (error is ExpirationException) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
-      return withClient(cache, fn);
+      return withClient(fn);
     } else if (error is AuthorizationException) {
       var message = 'OAuth2 authorization failed';
       if (error.description != null) {
         message = '$message (${error.description})';
       }
       log.error('$message.');
-      _clearCredentials(cache);
-      return withClient(cache, fn);
+      _clearCredentials();
+      return withClient(fn);
     } else {
       throw error;
     }
@@ -152,8 +144,8 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
 ///
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
-Future<Client> _getClient(SystemCache cache) async {
-  var credentials = loadCredentials(cache);
+Future<Client> _getClient() async {
+  var credentials = loadCredentials();
   if (credentials == null) return await _authorize();
 
   var client = Client(
@@ -164,7 +156,7 @@ Future<Client> _getClient(SystemCache cache) async {
     basicAuth: false,
     httpClient: _retryHttpClient,
   );
-  _saveCredentials(cache, client.credentials);
+  _saveCredentials(client.credentials);
   return client;
 }
 
@@ -173,13 +165,13 @@ Future<Client> _getClient(SystemCache cache) async {
 ///
 /// If the credentials can't be loaded for any reason, the returned [Future]
 /// completes to `null`.
-Credentials? loadCredentials(SystemCache cache) {
+Credentials? loadCredentials() {
   log.fine('Loading OAuth2 credentials.');
 
   try {
     if (_credentials != null) return _credentials;
 
-    var path = _credentialsFile(cache);
+    var path = _credentialsFile();
     if (path == null || !fileExists(path)) return null;
 
     var credentials = Credentials.fromJson(readTextFile(path));
@@ -199,10 +191,10 @@ Credentials? loadCredentials(SystemCache cache) {
 
 /// Save the user's OAuth2 credentials to the in-memory cache and the
 /// filesystem.
-void _saveCredentials(SystemCache cache, Credentials credentials) {
+void _saveCredentials(Credentials credentials) {
   log.fine('Saving OAuth2 credentials.');
   _credentials = credentials;
-  var credentialsPath = _credentialsFile(cache);
+  var credentialsPath = _credentialsFile();
   if (credentialsPath != null) {
     ensureDir(path.dirname(credentialsPath));
     writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
@@ -211,26 +203,12 @@ void _saveCredentials(SystemCache cache, Credentials credentials) {
 
 /// The path to the file in which the user's OAuth2 credentials are stored.
 ///
-/// This used to be PUB_CACHE/credentials.json. But the pub cache is not the
-/// best place for storing secrets, as it might be shared.
-///
-/// To provide backwards compatibility we use the legacy file if only it exists.
-///
 /// Returns `null` if there is no good place for the file.
-String? _credentialsFile(SystemCache cache) {
+String? _credentialsFile() {
   final configDir = dartConfigDir;
-
-  final newCredentialsFile =
-      configDir == null ? null : path.join(configDir, 'pub-credentials.json');
-  var file = [
-    if (newCredentialsFile != null) newCredentialsFile,
-    _legacyCredentialsFile(cache)
-  ].firstWhereOrNull(fileExists);
-  return file ?? newCredentialsFile;
-}
-
-String _legacyCredentialsFile(SystemCache cache) {
-  return path.join(cache.rootDir, 'credentials.json');
+  return configDir == null
+      ? null
+      : path.join(configDir, 'pub-credentials.json');
 }
 
 /// Gets the user to authorize pub as a client of pub.dev via oauth2.

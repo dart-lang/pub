@@ -184,9 +184,6 @@ class Package {
   static final _basicIgnoreRules = [
     '.*', // Don't include dot-files.
     '!.htaccess', // Include .htaccess anyways.
-    // TODO(sigurdm): consider removing this. `packages` folders are not used
-    // anymore.
-    'packages/',
     'pubspec.lock',
     '!pubspec.lock/', // We allow a directory called pubspec lock.
     '/pubspec_overrides.yaml',
