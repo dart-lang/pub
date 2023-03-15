@@ -116,8 +116,6 @@ class PackageIntegrityException extends PubHttpException {
 ///
 /// This includes both [ApplicationException] and any dart:io errors.
 bool isUserFacingException(error) {
-  // TODO(nweiz): unify this list with _userFacingExceptions when issue 5897 is
-  // fixed.
   return error is ApplicationException ||
       error is AnalyzerErrorGroup ||
       error is IsolateSpawnException ||
