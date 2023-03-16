@@ -968,7 +968,7 @@ String filterUnstableText(String input) {
 Future<void> runPubIntoBuffer(
   List<String> args,
   StringBuffer buffer, {
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   String? workingDirectory,
   String? stdin,
 }) async {
