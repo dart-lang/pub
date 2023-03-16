@@ -33,6 +33,23 @@ void main() {
     ]).validate();
   });
 
+  test('adds a package with a multi-component name from path', () async {
+    await d.dir('foo', [d.libPubspec('fo_o1.a', '1.0.0')]).create();
+
+    await d.appDir(dependencies: {}).create();
+
+    await pubAdd(args: ['fo_o1.a:{"path":"../foo"}']);
+
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'fo_o1.a', path: '../foo'),
+    ]).validate();
+    await d.appDir(
+      dependencies: {
+        'fo_o1.a': {'path': '../foo'}
+      },
+    ).validate();
+  });
+
   group('normally', () {
     test('adds a package from a pub server', () async {
       final server = await servePackages();
