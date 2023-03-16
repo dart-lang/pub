@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart';
+import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -404,6 +405,25 @@ void main() {
       error:
           contains('Tar file contained duplicate path blah/myduplicatefile.'),
       exitCode: DATA,
+    );
+  });
+
+  test('Fails gracefully when downloading archive', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+    );
+    final downloadPattern =
+        RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
+    server.handle(
+      downloadPattern,
+      (request) => Response(403, body: 'Go away!'),
+    );
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await pubGet(
+      error: contains('Package not available (authorization failed).'),
+      exitCode: UNAVAILABLE,
     );
   });
 }
