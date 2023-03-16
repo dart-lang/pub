@@ -347,7 +347,7 @@ Specify multiple sdk packages with descriptors.''');
 
   static final _argRegExp = RegExp(
     r'^(?:(?<prefix>dev|override):)?'
-    r'(?<name>[a-zA-Z0-9$.]+)'
+    r'(?<name>[a-zA-Z0-9_.]+)'
     r'(?::(?<descriptor>.*))?$',
   );
 
