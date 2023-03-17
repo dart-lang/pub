@@ -206,8 +206,7 @@ String toSentence(Iterable iter, {String conjunction = 'and'}) {
 /// [plural] is passed, that's used instead.
 String pluralize(String name, int number, {String? plural}) {
   if (number == 1) return name;
-  if (plural != null) return plural;
-  return '${name}s';
+  return plural ?? '${name}s';
 }
 
 /// Returns [text] with the first letter capitalized.

@@ -210,7 +210,7 @@ class LishCommand extends PubCommand {
         //
         // This allows us to use `dart pub token add` to inject a token for use
         // with the official servers.
-        await oauth2.withClient(cache, (client) {
+        await oauth2.withClient((client) {
           return _publishUsingClient(packageBytes, client);
         });
       } else {
@@ -260,11 +260,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     var package = entrypoint.root;
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
-      '${tree.fromFiles(files, baseDir: entrypoint.root.dir, showFileSizes: true)}',
+      '${tree.fromFiles(files, baseDir: entrypoint.rootDir, showFileSizes: true)}',
     );
 
     var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
+        createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
 
     // Validate the package.
     var isValid = await _validate(
@@ -320,10 +320,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (force) return true;
 
     String formatWarningCount() {
-      final hs = hints.length == 1 ? '' : 's';
-      final hintText = hints.isEmpty ? '' : ' and ${hints.length} hint$hs.';
-      final ws = warnings.length == 1 ? '' : 's';
-      return '\nPackage has ${warnings.length} warning$ws$hintText.';
+      final hintText = hints.isEmpty
+          ? ''
+          : ' and ${hints.length} ${pluralize('hint', hints.length)}';
+      return '\nPackage has ${warnings.length} '
+          '${pluralize('warning', warnings.length)}$hintText.';
     }
 
     if (dryRun) {

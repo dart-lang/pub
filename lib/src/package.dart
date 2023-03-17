@@ -181,23 +181,9 @@ class Package {
     return p.relative(path, from: dir);
   }
 
-  /// Returns the type of dependency from this package onto [name].
-  DependencyType dependencyType(String? name) {
-    if (pubspec.fields['dependencies']?.containsKey(name) ?? false) {
-      return DependencyType.direct;
-    } else if (pubspec.fields['dev_dependencies']?.containsKey(name) ?? false) {
-      return DependencyType.dev;
-    } else {
-      return DependencyType.none;
-    }
-  }
-
   static final _basicIgnoreRules = [
     '.*', // Don't include dot-files.
     '!.htaccess', // Include .htaccess anyways.
-    // TODO(sigurdm): consider removing this. `packages` folders are not used
-    // anymore.
-    'packages/',
     'pubspec.lock',
     '!pubspec.lock/', // We allow a directory called pubspec lock.
     '/pubspec_overrides.yaml',
@@ -331,23 +317,4 @@ class Package {
       isDir: (dir) => dirExists(resolve(dir)),
     ).map(resolve).toList();
   }
-}
-
-/// The type of dependency from one package to another.
-class DependencyType {
-  /// A dependency declared in `dependencies`.
-  static const direct = DependencyType._('direct');
-
-  /// A dependency declared in `dev_dependencies`.
-  static const dev = DependencyType._('dev');
-
-  /// No dependency exists.
-  static const none = DependencyType._('none');
-
-  final String _name;
-
-  const DependencyType._(this._name);
-
-  @override
-  String toString() => _name;
 }

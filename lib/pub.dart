@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:args/command_runner.dart';
-import 'src/command_runner.dart';
 import 'src/pub_embeddable_command.dart';
 export 'src/executable.dart'
     show
@@ -26,7 +25,3 @@ Command<int> pubCommand({
   required bool Function() isVerbose,
 }) =>
     PubEmbeddableCommand(analytics, isVerbose);
-
-/// Support for the `pub` toplevel command.
-@Deprecated('Use [pubCommand] instead.')
-CommandRunner<int> deprecatedpubCommand() => PubCommandRunner();

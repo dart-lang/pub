@@ -8,7 +8,6 @@ import 'package:pub_semver/pub_semver.dart';
 import '../command_runner.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
-import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source/hosted.dart';
@@ -25,7 +24,9 @@ import 'type.dart';
 /// It's a report builder.
 class SolveReport {
   final SolveType _type;
-  final Package _root;
+  // The report will contain "in [_location]" if given.
+  final String? _location;
+  final Pubspec _rootPubspec;
   final LockFile _previousLockFile;
   final LockFile _newLockFile;
   final SystemCache _cache;
@@ -46,7 +47,8 @@ class SolveReport {
 
   SolveReport(
     this._type,
-    this._root,
+    this._location,
+    this._rootPubspec,
     this._previousLockFile,
     this._newLockFile,
     this._availableVersions,
@@ -141,7 +143,7 @@ $contentHashesDocumentationUrl
     // Count how many dependencies actually changed.
     var dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
-    dependencies.remove(_root.name);
+    dependencies.remove(_rootPubspec.name);
 
     var numChanged = dependencies.where((name) {
       var oldId = _previousLockFile.packages[name];
@@ -156,8 +158,8 @@ $contentHashesDocumentationUrl
     }).length;
 
     var suffix = '';
-    if (!_root.isInMemory) {
-      final dir = _root.dir;
+    final dir = _location;
+    if (dir != null) {
       if (dir != '.') {
         suffix = ' in $dir';
       }
@@ -218,7 +220,7 @@ $contentHashesDocumentationUrl
     final output = StringBuffer();
     // Show the new set of dependencies ordered by name.
     var names = _newLockFile.packages.keys.toList();
-    names.remove(_root.name);
+    names.remove(_rootPubspec.name);
     names.sort();
     var hasChanges = false;
     for (final name in names) {
@@ -227,7 +229,7 @@ $contentHashesDocumentationUrl
     // Show any removed ones.
     var removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
-    removed.remove(_root.name); // Never consider root.
+    removed.remove(_rootPubspec.name); // Never consider root.
     if (removed.isNotEmpty) {
       output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
@@ -249,8 +251,8 @@ $contentHashesDocumentationUrl
       final status = await id.source
           .status(id.toRef(), id.version, _cache, maxAge: Duration(days: 3));
       if (status.isDiscontinued &&
-          (_root.dependencyType(id.name) == DependencyType.direct ||
-              _root.dependencyType(id.name) == DependencyType.dev)) {
+          (_rootPubspec.dependencyType(id.name) == DependencyType.direct ||
+              _rootPubspec.dependencyType(id.name) == DependencyType.dev)) {
         numDiscontinued++;
       }
     }
@@ -306,7 +308,7 @@ $contentHashesDocumentationUrl
     var oldId = _previousLockFile.packages[name];
     var id = newId ?? oldId!;
 
-    var isOverridden = _root.dependencyOverrides.containsKey(id.name);
+    var isOverridden = _rootPubspec.dependencyOverrides.containsKey(id.name);
 
     // If the package was previously a dependency but the dependency has
     // changed in some way.
@@ -386,8 +388,8 @@ $contentHashesDocumentationUrl
           message = '(retracted)';
         }
       } else if (status.isDiscontinued &&
-          (_root.dependencyType(name) == DependencyType.direct ||
-              _root.dependencyType(name) == DependencyType.dev)) {
+          [DependencyType.direct, DependencyType.dev]
+              .contains(_rootPubspec.dependencyType(name))) {
         if (status.discontinuedReplacedBy == null) {
           message = '(discontinued)';
         } else {
@@ -428,10 +430,12 @@ $contentHashesDocumentationUrl
 
     // Highlight overridden packages.
     if (isOverridden) {
-      final location = _root.pubspec.dependencyOverridesFromOverridesFile
-          ? ' in ${p.join(_root.dir, Pubspec.pubspecOverridesFilename)}'
-          : '';
-      output.write(' ${log.magenta('(overridden$location)')}');
+      final location = _location;
+      final overrideLocation =
+          location != null && _rootPubspec.dependencyOverridesFromOverridesFile
+              ? ' in ${p.join(location, Pubspec.pubspecOverridesFilename)}'
+              : '';
+      output.write(' ${log.magenta('(overridden$overrideLocation)')}');
     }
 
     if (message != null) output.write(' ${log.cyan(message)}');

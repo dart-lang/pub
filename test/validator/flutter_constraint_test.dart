@@ -12,7 +12,6 @@ Future<void> expectValidation(error, int exitCode) async {
     error: error,
     args: ['publish', '--dry-run'],
     environment: {
-      '_PUB_TEST_SDK_VERSION': '2.12.0',
       'FLUTTER_ROOT': fakeFlutterRoot.io.path,
     },
     workingDirectory: d.path(appPath),
@@ -36,16 +35,13 @@ Future<void> setup({
       'homepage': 'https://example.com/',
       'version': '1.0.0',
       'environment': {
-        'sdk': '>=2.9.0 <3.0.0',
+        'sdk': '^3.0.0',
         if (flutterConstraint != null) 'flutter': flutterConstraint
       },
     }),
   ]).create();
   await pubGet(
-    environment: {
-      '_PUB_TEST_SDK_VERSION': '2.12.0',
-      'FLUTTER_ROOT': fakeFlutterRoot.io.path
-    },
+    environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path},
   );
 }
 

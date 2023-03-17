@@ -23,6 +23,7 @@ import 'source/hosted.dart';
 import 'source/path.dart';
 import 'source/sdk.dart';
 import 'source/unknown.dart';
+import 'utils.dart';
 
 /// The system-wide cache of downloaded packages.
 ///
@@ -31,7 +32,8 @@ import 'source/unknown.dart';
 /// cache.
 class SystemCache {
   /// The root directory where this package cache is located.
-  final String rootDir;
+  String get rootDir => _rootDir ??= defaultDir;
+  String? _rootDir;
 
   String rootDirForSource(CachedSource source) => p.join(rootDir, source.name);
 
@@ -41,21 +43,26 @@ class SystemCache {
     if (Platform.environment.containsKey('PUB_CACHE')) {
       return Platform.environment['PUB_CACHE']!;
     } else if (Platform.isWindows) {
-      // %LOCALAPPDATA% is preferred as the cache location over %APPDATA%, because the latter is synchronised between
-      // devices when the user roams between them, whereas the former is not.
-      // The default cache dir used to be in %APPDATA%, so to avoid breaking old installs,
-      // we use the old dir in %APPDATA% if it exists. Else, we use the new default location
-      // in %LOCALAPPDATA%.
-      //  TODO(sigurdm): handle missing APPDATA.
-      var appData = Platform.environment['APPDATA']!;
-      var appDataCacheDir = p.join(appData, 'Pub', 'Cache');
-      if (dirExists(appDataCacheDir)) {
-        return appDataCacheDir;
+      // %LOCALAPPDATA% is used as the cache location over %APPDATA%, because
+      // the latter is synchronised between devices when the user roams between
+      // them, whereas the former is not.
+      final localAppData = Platform.environment['LOCALAPPDATA'];
+      if (localAppData == null) {
+        dataError('''
+Could not find the pub cache. No `LOCALAPPDATA` environment variable exists.
+Consider setting the `PUB_CACHE` variable manually.
+''');
       }
-      var localAppData = Platform.environment['LOCALAPPDATA']!;
       return p.join(localAppData, 'Pub', 'Cache');
     } else {
-      return '${Platform.environment['HOME']}/.pub-cache';
+      final home = Platform.environment['HOME'];
+      if (home == null) {
+        dataError('''
+Could not find the pub cache. No `HOME` environment variable exists.
+Consider setting the `PUB_CACHE` variable manually.
+''');
+      }
+      return p.join(home, '.pub-cache');
     }
   })();
 
@@ -84,6 +91,7 @@ class SystemCache {
   SdkSource get sdk => SdkSource.instance;
 
   /// The default credential store.
+  /// TODO(sigurdm): this does not really belong in the cache.
   final TokenStore tokenStore;
 
   /// If true, cached sources will attempt to use the cached packages for
@@ -95,7 +103,7 @@ class SystemCache {
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
   SystemCache({String? rootDir, this.isOffline = false})
-      : rootDir = rootDir ?? SystemCache.defaultDir,
+      : _rootDir = rootDir,
         tokenStore = TokenStore(dartConfigDir);
 
   /// Loads the package identified by [id].

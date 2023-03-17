@@ -15,8 +15,6 @@ class FlutterSdk extends Sdk {
   String get name => 'Flutter';
   @override
   bool get isAvailable => _isAvailable;
-  @override
-  Version get firstPubVersion => Version.parse('1.19.0');
 
   // We only consider the Flutter SDK to present if we find a root directory
   // and the root directory contains a valid 'version' file.

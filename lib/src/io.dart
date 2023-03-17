@@ -81,6 +81,20 @@ bool linkExists(String link) => Link(link).existsSync();
 /// points to a file.
 bool fileExists(String file) => File(file).existsSync();
 
+/// Stats [path], assuming it or the entry it is a link to is a file.
+///
+/// Returns `null` if it is not a file (eg. a directory or not existing).
+FileStat? tryStatFile(String path) {
+  var stat = File(path).statSync();
+  if (stat.type == FileSystemEntityType.link) {
+    stat = File(File(path).resolveSymbolicLinksSync()).statSync();
+  }
+  if (stat.type == FileSystemEntityType.file) {
+    return stat;
+  }
+  return null;
+}
+
 /// Returns the canonical path for [pathString].
 ///
 /// This is the normalized, absolute path, with symlinks resolved. As in
@@ -917,8 +931,7 @@ T _doProcess<T>(
     String? workingDirectory,
     Map<String, String>? environment,
     bool runInShell,
-  })
-      fn,
+  }) fn,
   String executable,
   List<String> args, {
   String? workingDir,
@@ -983,6 +996,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
   destination = path.absolute(destination);
   final reader = TarReader(stream.transform(gzip.decoder));
+  final paths = <String>{};
   while (await reader.moveNext()) {
     final entry = reader.current;
 
@@ -991,6 +1005,11 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
       // Tar file names always use forward slashes
       ...path.posix.split(entry.name),
     ]);
+    if (!paths.add(filePath)) {
+      // The tar file contained the same entry twice. Assume it is broken.
+      await reader.cancel();
+      throw FormatException('Tar file contained duplicate path ${entry.name}');
+    }
 
     if (!path.isWithin(destination, filePath)) {
       // The tar contains entries that would be written outside of the
