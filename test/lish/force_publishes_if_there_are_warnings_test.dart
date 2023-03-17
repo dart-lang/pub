@@ -14,7 +14,7 @@ import 'utils.dart';
 
 void main() {
   test('--force publishes if there are warnings', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     var pkg = packageMap(
       'test_pkg',
       '1.0.0',

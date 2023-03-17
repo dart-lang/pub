@@ -14,7 +14,7 @@ import 'utils.dart';
 void main() {
   test('package creation provides a malformed error', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 

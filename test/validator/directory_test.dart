@@ -14,7 +14,7 @@ Validator directory() => DirectoryValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('looks normal', () => expectValidationDeprecated(directory));
 
@@ -41,7 +41,7 @@ void main() {
   group(
       'should consider a package invalid if it has a top-level directory '
       'named', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     var names = [
       'benchmarks',

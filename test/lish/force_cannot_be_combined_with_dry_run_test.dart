@@ -10,7 +10,7 @@ import '../test_pub.dart';
 
 void main() {
   test('--force cannot be combined with --dry-run', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await runPub(
       args: ['lish', '--force', '--dry-run'],

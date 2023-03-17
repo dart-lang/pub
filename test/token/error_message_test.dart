@@ -29,7 +29,7 @@ Future<void> expectPubErrorMessage(dynamic matcher) {
 
 void main() {
   setUp(() async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await servePackages();
     await d.tokensFile({
       'version': 1,

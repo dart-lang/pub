@@ -12,7 +12,7 @@ import '../test_pub.dart';
 void main() {
   test('--dry-run package validation on valid package has no warnings',
       () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await servePackages();
     var pub = await startPublish(globalServer, args: ['--dry-run']);

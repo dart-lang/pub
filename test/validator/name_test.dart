@@ -16,7 +16,7 @@ Validator name() => NameValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('looks normal', () => expectValidationDeprecated(name));
 
@@ -41,7 +41,7 @@ void main() {
   });
 
   group('should consider a package invalid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('has a package name that contains upper-case letters', () async {
       await d.dir(appPath, [d.libPubspec('TestPkg', '1.0.0')]).create();
