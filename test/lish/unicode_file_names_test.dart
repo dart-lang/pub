@@ -14,7 +14,7 @@ import 'utils.dart';
 
 void main() {
   test('archives and uploads a package with unicode filenames', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.dir(appPath, [d.file('🦄.yml')]).create();
 
     await servePackages();

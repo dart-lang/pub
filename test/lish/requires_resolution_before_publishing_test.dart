@@ -11,7 +11,7 @@ import '../test_pub.dart';
 void main() {
   test('does not publish if no resolution can be found', () async {
     await servePackages(); // No packages.
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await runPub(
       args: ['lish'],

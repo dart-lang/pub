@@ -15,7 +15,7 @@ Validator flutterPluginFormat() => FlutterPluginFormatValidator();
 void main() {
   group('should consider a package valid if it', () {
     test('is not a plugin', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       return expectValidationDeprecated(flutterPluginFormat);
     });
 

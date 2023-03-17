@@ -12,7 +12,7 @@ import '../test_pub.dart';
 void main() {
   test('dry-run package validation gives a warning', () async {
     (await servePackages()).serve('foo', '1.0.0');
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     var pkg = packageMap(
       'test_pkg',

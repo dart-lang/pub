@@ -14,7 +14,7 @@ Validator pubspecField() => PubspecFieldValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('looks normal', () => expectValidationDeprecated(pubspecField));
 
@@ -75,7 +75,7 @@ void main() {
   });
 
   group('should consider a package invalid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('is missing the "description" field', () async {
       var pkg = packageMap('test_pkg', '1.0.0');

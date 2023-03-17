@@ -15,7 +15,7 @@ Validator sdkConstraint() => SdkConstraintValidator();
 void main() {
   group('should consider a package valid if it', () {
     test('has no SDK constraint', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       await expectValidationDeprecated(sdkConstraint);
     });
 

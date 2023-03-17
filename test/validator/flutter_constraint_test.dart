@@ -27,7 +27,7 @@ Future<void> setup({
 }) async {
   fakeFlutterRoot = d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);
   await fakeFlutterRoot.create();
-  await d.validPackage.create();
+  await d.validPackage().create();
   await d.dir(appPath, [
     d.pubspec({
       'name': 'test_pkg',

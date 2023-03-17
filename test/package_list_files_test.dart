@@ -366,7 +366,7 @@ void main() {
     });
 
     test('.pubignore', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       await d.dir(appPath, [
         d.file('.pubignore', '''
 /lib/ignored.dart

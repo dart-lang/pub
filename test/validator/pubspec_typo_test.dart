@@ -14,7 +14,7 @@ Validator pubspecTypo() => PubspecTypoValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('looks normal', () => expectValidationDeprecated(pubspecTypo));
 
@@ -57,7 +57,7 @@ void main() {
   });
 
   group('should has warnings if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('contains typos', () async {
       await d.dir(appPath, [

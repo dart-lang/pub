@@ -14,7 +14,7 @@ Validator changelog() => ChangelogValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('has a CHANGELOG that includes the current package version', () async {
       await d.dir(appPath, [

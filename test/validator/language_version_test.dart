@@ -16,7 +16,7 @@ Future<void> setup({
   required String sdkConstraint,
   String? libraryLanguageVersion,
 }) async {
-  await d.validPackage.create();
+  await d.validPackage().create();
   await d.dir(appPath, [
     d.pubspec({
       'name': 'test_pkg',

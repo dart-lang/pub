@@ -11,7 +11,7 @@ import '../test_pub.dart';
 void main() {
   test('upload form provides invalid JSON', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await servePackages();
     await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
