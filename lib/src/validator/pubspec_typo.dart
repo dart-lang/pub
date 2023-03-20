@@ -69,5 +69,5 @@ const _validPubspecKeys = [
   'screenshots',
   'platforms',
   'funding',
-  'topics',
+  'topic',
 ];
