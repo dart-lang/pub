@@ -32,7 +32,7 @@ For example:
   * Add a git dependency:
     `dart pub add 'foo:{"git":"https://github.com/foo/foo"}'`
   * Add a dependency override:
-    `dart pub add 'override:foo:1.0.0`
+    `dart pub add 'override:foo:1.0.0'`
   * Add a git dependency with a path and ref specified:
     `dart pub add \
       'foo:{"git":{"url":"../foo.git","ref":"<branch>","path":"<subdir>"}}'`

@@ -71,7 +71,7 @@ For example:
   * Add a git dependency:
     `$topLevelProgram pub add 'foo:{"git":"https://github.com/foo/foo"}'`
   * Add a dependency override:
-    `$topLevelProgram pub add 'override:foo:1.0.0`
+    `$topLevelProgram pub add 'override:foo:1.0.0'`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add \\
       'foo:{"git":{"url":"../foo.git","ref":"<branch>","path":"<subdir>"}}'`''';
