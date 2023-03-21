@@ -130,7 +130,7 @@ class DependencyServicesReportCommand extends PubCommand {
                 ? null
                 : upgradeType == _UpgradeType.compatible
                     ? originalConstraint.toString()
-                    : VersionConstraint.compatibleWith(p.version).toString(),
+                    : _bumpConstraint(originalConstraint, p.version).toString(),
             'constraintWidened': originalConstraint == null
                 ? null
                 : upgradeType == _UpgradeType.compatible
@@ -143,7 +143,7 @@ class DependencyServicesReportCommand extends PubCommand {
                     ? originalConstraint.toString()
                     : originalConstraint.allows(p.version)
                         ? originalConstraint.toString()
-                        : VersionConstraint.compatibleWith(p.version)
+                        : _bumpConstraint(originalConstraint, p.version)
                             .toString(),
             'previousVersion': currentPackage?.versionOrHash(),
             'previousConstraint': originalConstraint?.toString(),
@@ -606,6 +606,30 @@ Map<String, PackageRange>? _dependencySetOfPackage(
           : null;
 }
 
+/// Return a constraint compatible with [newVersion].
+///
+/// By convention if the original constraint is pinned we return [newVersion]. Otherwise use [VersionConstraint.compatibleWith].
+VersionConstraint _bumpConstraint(
+  VersionConstraint original,
+  Version newVersion,
+) {
+  if (original.isEmpty) return newVersion;
+  if (original is VersionRange) {
+    if (original.min == original.max) return newVersion;
+
+    return VersionConstraint.compatibleWith(newVersion);
+  }
+
+  throw ArgumentError.value(
+    original,
+    'original',
+    'Must be a Version range or empty',
+  );
+}
+
+/// Return a constraint compatible with [newVersion], but including [original] as well.
+///
+/// By convention if the original constraint is pinned, we don't widen the constraint but return [newVersion] instead.
 VersionConstraint _widenConstraint(
   VersionConstraint original,
   Version newVersion,
@@ -614,6 +638,7 @@ VersionConstraint _widenConstraint(
   if (original is VersionRange) {
     final min = original.min;
     final max = original.max;
+    if (min == max) return newVersion;
     if (max != null && newVersion >= max) {
       return _compatibleWithIfPossible(
         VersionRange(
