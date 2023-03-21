@@ -72,7 +72,7 @@ class DepsCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     // Explicitly Run this in the directorycase we don't access `entrypoint.packageGraph`.
-    entrypoint.assertUpToDate();
+    await entrypoint.ensureUpToDate();
     final buffer = StringBuffer();
 
     if (argResults['json']) {
@@ -89,6 +89,7 @@ class DepsCommand extends PubCommand {
       if (argResults.wasParsed('style')) {
         usageException('Cannot combine --json and --style.');
       }
+      await entrypoint.ensureUpToDate();
       final visited = <String>[];
       final toVisit = [entrypoint.root.name];
       final packagesJson = <dynamic>[];
