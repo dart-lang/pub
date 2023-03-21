@@ -236,7 +236,7 @@ void testEnsurePubspecResolved() {
         await _touch('pubspec.lock');
 
         await _implicitPubGet('The pubspec.lock file has changed since the '
-            '.dart_tool${p.separator}package_config.json file was generated');
+            '.dart_tool/package_config.json file was generated');
       });
 
       test("the lock file's SDK constraint doesn't match the current SDK",
@@ -340,8 +340,7 @@ void testEnsurePubspecResolved() {
           d.libPubspec('bar', '1.0.0', deps: {'foo': '2.0.0'})
         ]).create();
 
-        await _implicitPubGet(
-            '${p.join('..', 'bar', 'pubspec.yaml')} has changed '
+        await _implicitPubGet('../bar/pubspec.yaml has changed '
             'since the pubspec.lock file was generated.');
       });
 
