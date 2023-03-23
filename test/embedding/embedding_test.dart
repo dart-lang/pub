@@ -15,6 +15,7 @@ import 'package:test_process/test_process.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
+import 'ensure_pubspec_resolved.dart';
 
 const _commandRunner = 'tool/test-bin/pub_command_runner.dart';
 
@@ -27,16 +28,21 @@ Future<void> runEmbeddingToBuffer(
   List<String> args,
   StringBuffer buffer, {
   String? workingDirectory,
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   dynamic exitCode = 0,
 }) async {
+  final combinedEnvironment = getPubTestEnvironment();
+  (environment ?? {}).forEach((key, value) {
+    if (value == null) {
+      combinedEnvironment.remove(key);
+    } else {
+      combinedEnvironment[key] = value;
+    }
+  });
   final process = await TestProcess.start(
     Platform.resolvedExecutable,
     ['--enable-asserts', snapshot, ...args],
-    environment: {
-      ...getPubTestEnvironment(),
-      ...?environment,
-    },
+    environment: combinedEnvironment,
     workingDirectory: workingDirectory,
   );
   await process.shouldExit(exitCode);
@@ -414,6 +420,8 @@ main() {
       );
     }
   });
+
+  testEnsurePubspecResolved();
 }
 
 String _filter(String input) {
