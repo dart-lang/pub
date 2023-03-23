@@ -128,7 +128,16 @@ class HostedSource extends CachedSource {
   static String pubDartlangUrl = 'https://pub.dartlang.org';
 
   static bool isPubDevUrl(String url) {
-    final origin = Uri.parse(url).origin;
+    final parsedUrl = Uri.parse(url);
+    if (parsedUrl.scheme != 'http' && parsedUrl.scheme != 'https') {
+      // A non http(s) url is not pub.dev.
+      return false;
+    }
+    if (parsedUrl.host.isEmpty) {
+      // The empty host is not pub.dev.
+      return false;
+    }
+    final origin = parsedUrl.origin;
     // Allow the defaultHostedUrl to be overriden when running from tests
     if (runningFromTest &&
         io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
@@ -1380,6 +1389,11 @@ class HostedDescription extends Description {
   final String url;
 
   HostedDescription._(this.packageName, this.url);
+
+  // This can be used to construct a description with any specific url.
+  factory HostedDescription.raw(String packageName, String url) =>
+      HostedDescription._(packageName, url);
+
   factory HostedDescription(String packageName, String url) =>
       HostedDescription._(
         packageName,
@@ -1437,16 +1451,10 @@ class ResolvedHostedDescription extends ResolvedDescription {
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
-    late final String url;
-    try {
-      url = validateAndNormalizeHostedUrl(description.url).toString();
-    } on FormatException catch (e) {
-      throw ArgumentError.value(url, 'url', 'url must be normalized: $e');
-    }
     final hash = sha256;
     return {
       'name': description.packageName,
-      'url': url.toString(),
+      'url': description.url,
       if (hash != null) 'sha256': hexEncode(hash),
     };
   }
