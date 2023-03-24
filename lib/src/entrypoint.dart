@@ -612,9 +612,14 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   Future<void> ensureUpToDate({
     bool checkForSdkUpdate = false,
     PubAnalytics? analytics,
+    bool summaryOnly = true,
   }) async {
     if (!_isUpToDate(checkForSdkUpdate: checkForSdkUpdate)) {
-      await acquireDependencies(SolveType.get, analytics: analytics);
+      await acquireDependencies(
+        SolveType.get,
+        analytics: analytics,
+        summaryOnly: summaryOnly,
+      );
     } else {
       log.fine('Package Config up to date.');
     }
