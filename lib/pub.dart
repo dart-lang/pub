@@ -32,15 +32,25 @@ Command<int> pubCommand({
 /// .dart_tool/package_config.json are up-to-date and all packages are
 /// downloaded to the cache.
 ///
-/// Will attempt
+/// Will compare file timestamps to see if full resolution can be skipped.
+///
+/// If [summaryOnly] is `true` (the default) only a short summary is shown of
+/// the solve.
+///
+/// If [onlyOutputWhenTerminal] is `true` (the default) there will be no
+/// output if no terminal is attached.
 Future<void> ensurePubspecResolved(
   String dir, {
   PubAnalytics? analytics,
   bool isOffline = false,
   bool checkForSdkUpdate = false,
+  bool summaryOnly = true,
+  bool onlyOutputWhenTerminal = true,
 }) async {
   await Entrypoint(dir, SystemCache(isOffline: isOffline)).ensureUpToDate(
     analytics: analytics,
     checkForSdkUpdate: checkForSdkUpdate,
+    summaryOnly: summaryOnly,
+    onlyOutputWhenTerminal: onlyOutputWhenTerminal,
   );
 }
