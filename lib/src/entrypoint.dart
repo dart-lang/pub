@@ -603,23 +603,40 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
   }
 
-  /// Does a fast-pass check to see if the resolution is up-to-date ([_isUpToDate]).
-  /// If not, run a resolution with `pub get` semantics.
+  /// Does a fast-pass check to see if the resolution is up-to-date
+  /// ([_isUpToDate]). If not, run a resolution with `pub get` semantics.
   ///
   /// If [checkForSdkUpdate] is `true`, the resolution is considered outdated if
   /// the package_config.json was created by a different sdk. See
   /// [_isPackageConfigGeneratedBySameDartSdk].
+  ///
+  /// If [summaryOnly] is `true` (the default) only a short summary is shown of
+  /// the solve.
+  ///
+  /// If [onlyOutputWhenTerminal] is `true` (the default) there will be no
+  /// output if no terminal is attached.
   Future<void> ensureUpToDate({
     bool checkForSdkUpdate = false,
     PubAnalytics? analytics,
     bool summaryOnly = true,
+    bool onlyOutputWhenTerminal = true,
   }) async {
     if (!_isUpToDate(checkForSdkUpdate: checkForSdkUpdate)) {
-      await acquireDependencies(
-        SolveType.get,
-        analytics: analytics,
-        summaryOnly: summaryOnly,
-      );
+      if (onlyOutputWhenTerminal) {
+        await log.errorsOnlyUnlessTerminal(() async {
+          await acquireDependencies(
+            SolveType.get,
+            analytics: analytics,
+            summaryOnly: summaryOnly,
+          );
+        });
+      } else {
+        await acquireDependencies(
+          SolveType.get,
+          analytics: analytics,
+          summaryOnly: summaryOnly,
+        );
+      }
     } else {
       log.fine('Package Config up to date.');
     }

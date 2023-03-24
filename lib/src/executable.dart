@@ -314,9 +314,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
   try {
-    await errorsOnlyUnlessTerminal(() async {
-      await entrypoint.ensureUpToDate(checkForSdkUpdate: true);
-    });
+    await entrypoint.ensureUpToDate(checkForSdkUpdate: true);
   } on ApplicationException catch (e) {
     throw CommandResolutionFailedException._(
       e.toString(),
