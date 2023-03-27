@@ -669,9 +669,12 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
 
     // Manually parse the lockfile because a full YAML parse is relatively slow
-    // and this is on the hot path for "pub run".
+    // and this is on the hot path for [ensureUpToDate].
     var lockFileText = readTextFile(lockFilePath);
     var hasPathDependencies = lockFileText.contains('\n    source: path\n');
+    if (hasPathDependencies) {
+      if (!_arePackagesAvailable(packageConfigStat)) return false;
+    }
 
     var lockFileModified = lockFileStat.modified;
 
@@ -685,7 +688,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
 
     var touchedLockFile = false;
-    if (pubspecChanged || pubspecOverridesChanged || hasPathDependencies) {
+    if (pubspecChanged || pubspecOverridesChanged) {
       // If `pubspec.lock` is older than `pubspec.yaml` or
       // `pubspec_overrides.yaml`, or we have path dependencies, then we check
       // that `pubspec.lock` is a correct solution for the requirements in
@@ -696,19 +699,18 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       if (!_isLockFileUpToDate()) {
         return false;
       }
-      if (_arePackagesAvailable()) {
+      if (_arePackagesAvailable(packageConfigStat)) {
         touchedLockFile = true;
         touch(lockFilePath);
       } else {
         var filePath = pubspecChanged ? pubspecPath : pubspecOverridesPath;
-        log.fine('The $filePath file has changed since the $lockFilePath '
-            'file was generated, please run "$topLevelProgram pub get" again.');
+        log.fine(
+            'The $filePath file has changed since the $lockFilePath file was generated.');
         return false;
       }
     }
 
-    if (packageConfigStat.modified.isBefore(lockFileModified) ||
-        hasPathDependencies) {
+    if (packageConfigStat.modified.isBefore(lockFileModified)) {
       // If `package_config.json` is older than `pubspec.lock` or we have
       // path dependencies, then we check that `package_config.json` is a
       // correct configuration on the local machine. This aims to:
@@ -797,26 +799,36 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     return locked != null && dep.allows(locked);
   }
 
-  /// Determines whether all of the packages in the lockfile are already
-  /// installed and available.
-  bool _arePackagesAvailable() {
-    return lockFile.packages.values.every((package) {
-      if (package.source is UnknownSource) return false;
-
-      // We only care about cached sources. Uncached sources aren't "installed".
-      // If one of those is missing, we want to show the user the file not
-      // found error later since installing won't accomplish anything.
-      var source = package.source;
-      if (source is! CachedSource) return true;
-
-      // Get the directory.
-      var dir = cache.getDirectory(package, relativeFrom: '.');
-      // See if the directory is there and looks like a package.
-      return fileExists(p.join(dir, 'pubspec.yaml'));
-    });
+  /// Determines whether all of the packages in the [packageConfig] are
+  /// older than [packageConfigStat].
+  bool _arePackagesAvailable(FileStat packageConfigStat) {
+    // When a package has path-dependencies, they can mutate independently of
+    for (final package in packageConfig.packages) {
+      var dependencyPubspecPath = p.join(
+        p.dirname(packageConfigPath),
+        package.rootUri.path,
+        'pubspec.yaml',
+      );
+      final dependencyPubspecStat = tryStatFile(dependencyPubspecPath);
+      if (dependencyPubspecStat == null) {
+        // A dependency without a pubspec is not really a thing currently
+        // except for the flutter_gen package. But conceptually they cannot
+        // affect the resolution, so we skip it.
+        continue;
+      }
+      // If the pubspec of a dependency has been modified we need a new
+      // resolution.
+      if (packageConfigStat.modified.isBefore(dependencyPubspecStat.modified)) {
+        log.fine(
+          '${p.normalize(dependencyPubspecPath)} was modified after $packageConfigPath was generated.',
+        );
+        return false;
+      }
+    }
+    return true;
   }
 
-  /// Determines [lockFile] agrees with the given [packagePathsMapping].
+  /// Determines whether [lockFile] agrees with the given [packagePathsMapping].
   ///
   /// The [packagePathsMapping] is a mapping from package names to paths where
   /// the packages are located. (The library is located under

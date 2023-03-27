@@ -378,8 +378,9 @@ void testEnsurePubspecResolved() {
           ),
         ]).create();
 
-        await _implicitPubGet('../bar/pubspec.yaml has changed '
-            'since the pubspec.lock file was generated.');
+        await _implicitPubGet(
+          '../bar/pubspec.yaml was modified after .dart_tool/package_config.json was generated.',
+        );
       });
     });
 
