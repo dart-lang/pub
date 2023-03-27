@@ -705,7 +705,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       } else {
         var filePath = pubspecChanged ? pubspecPath : pubspecOverridesPath;
         log.fine(
-            'The $filePath file has changed since the $lockFilePath file was generated.');
+          'The $filePath file has changed since the $lockFilePath file was generated.',
+        );
         return false;
       }
     }
