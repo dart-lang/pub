@@ -802,8 +802,13 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
   /// Determines whether all of the packages in the [packageConfig] are
   /// older than [packageConfigStat].
+  ///
+  /// The [packageConfigStat] is passed as an optimization to avoid statting the
+  /// same file again.
   bool _arePackagesAvailable(FileStat packageConfigStat) {
     // When a package has path-dependencies, they can mutate independently of
+    // the main package, We need to check all of them to see that they are
+    // latest modified before the .dart_tool/package_config.json.
     for (final package in packageConfig.packages) {
       var dependencyPubspecPath = p.join(
         p.dirname(packageConfigPath),
