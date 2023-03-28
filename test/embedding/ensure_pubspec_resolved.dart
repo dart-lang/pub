@@ -166,8 +166,8 @@ void testEnsurePubspecResolved() {
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
 
-        await _implicitPubGet('The pubspec.yaml file has changed since the '
-            'pubspec.lock file was generated');
+        await _implicitPubGet(
+            'pubspec.yaml was modified after .dart_tool/package_config.json was generated.');
       });
 
       test('the pubspec has an incompatible version of a dependency', () async {
@@ -340,8 +340,9 @@ void testEnsurePubspecResolved() {
           d.libPubspec('bar', '1.0.0', deps: {'foo': '2.0.0'})
         ]).create();
 
-        await _implicitPubGet('../bar/pubspec.yaml has changed '
-            'since the pubspec.lock file was generated.');
+        await _implicitPubGet(
+          'pubspec.yaml was modified after .dart_tool/package_config.json was generated.',
+        );
       });
 
       test(
