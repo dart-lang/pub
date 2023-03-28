@@ -3,10 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:args/command_runner.dart';
-import 'package:pub/src/exceptions.dart';
+
 import 'src/entrypoint.dart';
+import 'src/exceptions.dart';
 import 'src/pub_embeddable_command.dart';
 import 'src/system_cache.dart';
+
 export 'src/executable.dart'
     show
         getExecutableForCommand,
