@@ -57,6 +57,7 @@ To remove a dependency override of a package prefix the package name with
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also update dependencies in `example/` (if it exists).',
       hide: true,
     );

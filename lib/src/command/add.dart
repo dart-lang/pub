@@ -153,6 +153,7 @@ For example:
     );
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help:
           'Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).',
       hide: true,

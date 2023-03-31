@@ -40,6 +40,7 @@ class DowngradeCommand extends PubCommand {
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also run in `example/` (if it exists).',
       hide: true,
     );
