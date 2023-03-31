@@ -31,7 +31,7 @@ void main() {
         ])
       ]).create();
 
-      await pubCommand(command, args: []);
+      await pubCommand(command, args: ['--no-example']);
       final lockFile = File(p.join(d.sandbox, appPath, 'pubspec.lock'));
       final exampleLockFile = File(
         p.join(d.sandbox, appPath, 'example', 'pubspec.lock'),
