@@ -116,7 +116,7 @@ void main() {
     );
   });
 
-  test('should warn if package contains infos in test folder', () async {
+  test('should warn if package contains warnings in test folder', () async {
     await d.dir(appPath, [
       d.validPubspec(),
       d.file('LICENSE', 'Eh, do what you want.'),
@@ -136,7 +136,7 @@ void main() {
       error: allOf([
         contains('`dart analyze` found the following issue(s):'),
         contains('Analyzing lib, test, pubspec.yaml...'),
-        contains('info -'),
+        contains('warning -'),
         contains("The value of the local variable 'a' isn't used"),
         contains('Package has 1 warning.')
       ]),
