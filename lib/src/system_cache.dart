@@ -126,16 +126,6 @@ Consider setting the `PUB_CACHE` variable manually.
     }
   }
 
-  /// Determines if the system cache contains the package identified by [id].
-  bool contains(PackageId id) {
-    final source = id.source;
-
-    if (source is CachedSource) {
-      return source.isInSystemCache(id, this);
-    }
-    throw ArgumentError('Package $id is not cacheable.');
-  }
-
   /// Create a new temporary directory within the system cache.
   ///
   /// The system cache maintains its own temporary directory that it uses to
@@ -241,7 +231,7 @@ Consider setting the `PUB_CACHE` variable manually.
   ///
   /// Returns [id] with an updated [ResolvedDescription], this can be different
   /// if the content-hash changed while downloading.
-  Future<PackageId> downloadPackage(PackageId id) async {
+  Future<DownloadPackageResult> downloadPackage(PackageId id) async {
     final source = id.source;
     assert(source is CachedSource);
     final result = await (source as CachedSource).downloadToSystemCache(
@@ -258,7 +248,7 @@ Consider setting the `PUB_CACHE` variable manually.
     if (result.didUpdate) {
       _ensureReadme();
     }
-    return result.packageId;
+    return result;
   }
 
   /// Get the latest version of [package].
