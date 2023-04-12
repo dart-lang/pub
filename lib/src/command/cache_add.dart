@@ -72,15 +72,10 @@ class CacheAddCommand extends PubCommand {
     }
 
     Future<void> downloadVersion(id) async {
-      if (cache.contains(id)) {
-        // TODO(rnystrom): Include source and description if not hosted.
-        // See solve_report.dart for code to harvest.
+      final result = await cache.downloadPackage(id);
+      if (!result.didUpdate) {
         log.message('Already cached ${id.name} ${id.version}.');
-        return;
       }
-
-      // Download it.
-      await cache.downloadPackage(id);
     }
 
     if (argResults['all']) {
