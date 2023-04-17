@@ -19,7 +19,7 @@ void main() {
 
     await pubGet(
       error: contains(
-        'The current version of the Dart SDK (3.5.0) does not support non-null\nsafety code.',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       exitCode: DATA,
@@ -51,7 +51,7 @@ void main() {
 
     await pubGet(
       error: contains(
-        'The current version of the Dart SDK (3.5.0) does not support non-null\nsafety code.',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       exitCode: DATA,
@@ -68,7 +68,7 @@ void main() {
 
     await pubGet(
       error: contains(
-        'The current version of the Dart SDK (3.5.0) does not support non-null\nsafety code.',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       exitCode: DATA,

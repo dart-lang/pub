@@ -988,14 +988,7 @@ See https://dart.dev/go/sdk-constraint
 The lower bound of "sdk: '$dartSdkConstraint'" must be 2.12.0'
 or higher to enable null safety.
 
-The current version of the Dart SDK (${sdk.version}) does not support non-null
-safety code.
-
-Consider using an older, compatible Dart SDK or try the following sdk
-constraint:
-
-environment:
-  sdk: '${suggestedConstraint.asCompatibleWithIfPossible()}'
+The current Dart SDK (${sdk.version}) only supports null safety.
 
 For details, see https://dart.dev/null-safety
 ''');
