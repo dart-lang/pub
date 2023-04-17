@@ -98,11 +98,8 @@ Got dependencies in myapp/example.
 ## Section 10
 $ pub run -C myapp 'bin/app.dart'
 Building package executable...
-[STDERR] Failed to build test_pkg:app:
-[STDERR] myapp/bin/app.dart:1:1: Error: The specified language version is too high. The highest supported language version is 3.0.
-[STDERR] main() => print('Hi');
-[STDERR] ^
-[EXIT CODE] 1
+Built test_pkg:app.
+Hi
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

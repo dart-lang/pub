@@ -2,6 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
+import 'package:pub/src/language_version.dart';
+import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -57,9 +61,12 @@ void main() {
 
   group('should warn if it', () {
     test('opts in to a newer version.', () async {
+      final nextVersion =
+          Version.parse(Platform.version.split(' ').first).nextMajor;
       await setup(
         sdkConstraint: '^3.0.0',
-        libraryLanguageVersion: '3.1',
+        libraryLanguageVersion:
+            LanguageVersion.fromVersion(nextVersion).toString(),
       );
       await expectValidationWarning(
         'The language version override can\'t specify a version greater than the latest known language version',
