@@ -50,14 +50,7 @@ void main() {
 The lower bound of "sdk: '>=2.9.0 <4.0.0'" must be 2.12.0'
 or higher to enable null safety.
 
-The current version of the Dart SDK (3.1.2+3) does not support non-null
-safety code.
-
-Consider using an older, compatible Dart SDK or try the following sdk
-constraint:
-
-environment:
-  sdk: '^3.1.0'
+The current Dart SDK (3.1.2+3) only supports null safety.
 
 For details, see https://dart.dev/null-safety
 ''',
