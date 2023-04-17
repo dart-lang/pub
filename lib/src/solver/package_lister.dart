@@ -166,7 +166,20 @@ class PackageLister {
     // non-prerelease version if one exists, or the latest prerelease version
     // otherwise.
     PackageId? bestPrerelease;
-    for (var id in _isDowngrade ? versions : versions.reversed) {
+    final ordered = (_isDowngrade ? versions : versions.reversed).toList();
+
+    // If we are allowing a retracted verson, always consider it the least good.
+    // We want `dart pub upgrade` to avoid that version, even if it means
+    // downgrading.
+    if (_allowedRetractedVersion != null) {
+      for (var i = 0; i < ordered.length; i++) {
+        if (ordered[i].version == _allowedRetractedVersion) {
+          final retracted = ordered.removeAt(i);
+          ordered.add(retracted);
+        }
+      }
+    }
+    for (var id in ordered) {
       if (isPastLimit(id.version)) break;
 
       if (!constraint.allows(id.version)) continue;
