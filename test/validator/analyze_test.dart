@@ -34,7 +34,7 @@ void main() {
   });
 
   test(
-      'follows analysis_options.yaml and should warn if package contains errors in pubspec.yaml',
+      'follows analysis_options.yaml and should not warn if package contains only infos',
       () async {
     await d.dir(appPath, [
       d.libPubspec(
@@ -50,6 +50,32 @@ void main() {
 linter:
   rules:
     - secure_pubspec_urls
+''')
+    ]).create();
+
+    await expectValidation();
+  });
+
+  test(
+      'follows analysis_options.yaml and should warn if package contains warnings in pubspec.yaml',
+      () async {
+    await d.dir(appPath, [
+      d.libPubspec(
+        'test_pkg', '1.0.0',
+        sdk: '^3.0.0',
+        // Using http where https is recommended.
+        extras: {'repository': 'http://repo.org/'},
+      ),
+      d.file('LICENSE', 'Eh, do what you want.'),
+      d.file('README.md', "This package isn't real."),
+      d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+      d.file('analysis_options.yaml', '''
+linter:
+  rules:
+    - secure_pubspec_urls
+analyzer:
+  errors:
+    secure_pubspec_urls: warning
 ''')
     ]).create();
 
