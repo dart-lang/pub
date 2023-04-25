@@ -898,8 +898,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     // Check if language version specified in the `package_config.json` is
     // correct. This is important for path dependencies as these can mutate.
-    for (final pkg in packageConfig.packages) {
-      if (pkg.name == root.name || pkg.name == 'flutter_gen') continue;
+    for (final pkg in packageConfig.nonInjectedPackages) {
+      if (pkg.name == root.name) continue;
       final id = lockFile.packages[pkg.name];
       if (id == null) {
         assert(
