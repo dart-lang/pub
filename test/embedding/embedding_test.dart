@@ -99,6 +99,32 @@ Future<void> main() async {
     File(snapshot).parent.deleteSync(recursive: true);
   });
 
+  test('Can depend on package:flutter_gen', () async {
+    // Regression test for https://github.com/dart-lang/pub/issues/3314.
+    final server = await servePackages();
+    server.serve(
+      'flutter_gen',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('flutter_gen.dart', 'main() {print("hi");}')])
+      ],
+    );
+
+    await d.appDir(
+      dependencies: {'flutter_gen': '^1.0.0'},
+    ).create();
+    await pubGet();
+    final buffer = StringBuffer();
+
+    await runEmbeddingToBuffer(
+      ['run', 'flutter_gen'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: getPubTestEnvironment(),
+    );
+    expect(buffer.toString(), contains('hi'));
+  });
+
   testWithGolden('run works, though hidden', (ctx) async {
     await servePackages();
     await d.dir(appPath, [

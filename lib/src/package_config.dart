@@ -160,8 +160,12 @@ class PackageConfig {
   //
   // See https://github.com/flutter/flutter/issues/73870 .
   Iterable<PackageConfigEntry> get nonInjectedPackages =>
-      packages.where((package) => package.name != 'flutter_gen');
+      packages.where((package) => !_isInjectedFlutterGenPackage(package));
 }
+
+bool _isInjectedFlutterGenPackage(PackageConfigEntry package) =>
+    package.name == 'flutter_gen' &&
+    package.rootUri.toString() == 'flutter_gen';
 
 class PackageConfigEntry {
   /// Package name.
