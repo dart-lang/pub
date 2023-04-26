@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
 
@@ -97,7 +98,11 @@ String packageAddDescription(Entrypoint entrypoint, PackageId id) {
   final resolvedDescription = id.description;
   final String descriptor;
   final d = resolvedDescription.description.serializeForPubspec(
-    containingDir: entrypoint.root.dir,
+    containingDir: Directory.current
+        .path // The add command will resolve file names relative to CWD.
+    // This currently should have no implications as we don't create suggestions
+    // for path-packages.
+    ,
     languageVersion: entrypoint.root.pubspec.languageVersion,
   );
   if (d == null) {

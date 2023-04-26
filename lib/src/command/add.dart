@@ -18,7 +18,6 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
-import '../sdk.dart';
 import '../solver.dart';
 import '../source/git.dart';
 import '../source/hosted.dart';
@@ -614,9 +613,6 @@ Specify multiple sdk packages with descriptors.''');
               'dependencies': {
                 packageName: parsedDescriptor,
               },
-              'environment': {
-                'sdk': sdk.version.toString(),
-              }
             },
             cache.sources,
             // Resolve relative paths relative to current, not where the pubspec.yaml is.
