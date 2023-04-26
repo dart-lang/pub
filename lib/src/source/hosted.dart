@@ -1399,6 +1399,10 @@ class HostedDescription extends Description {
     if (url == source.defaultUrl) {
       return null;
     }
+    if (languageVersion >=
+        LanguageVersion.firstVersionWithShorterHostedSyntax) {
+      return url;
+    }
     return {'url': url, 'name': packageName};
   }
 
