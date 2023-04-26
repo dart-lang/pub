@@ -24,8 +24,8 @@ jobs:
       matrix:
         sdk: [dev]
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
-      - uses: dart-lang/setup-dart@6a218f2413a3e78e9087f638a238f6b40893203d
+      - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+      - uses: dart-lang/setup-dart@d6a63dab3335f427404425de0fbfed4686d93c4f
         with:
           sdk: ${{ matrix.sdk }}
       - id: install
@@ -52,8 +52,8 @@ jobs:
         sdk: [dev]
         shard: [0, 1, 2, 3, 4, 5, 6]
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
-      - uses: dart-lang/setup-dart@6a218f2413a3e78e9087f638a238f6b40893203d
+      - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+      - uses: dart-lang/setup-dart@d6a63dab3335f427404425de0fbfed4686d93c4f
         with:
           sdk: ${{ matrix.sdk }}
       - name: Install dependencies
@@ -70,5 +70,5 @@ jobs:
           cat "$_TESTS_FILE.${{ matrix.shard }}"
         shell: bash
       - name: Run tests
-        run: dart test --use-data-isolate-strategy --preset travis $(cat $_TESTS_FILE.${{ matrix.shard }})
+        run: dart test --preset travis $(cat $_TESTS_FILE.${{ matrix.shard }})
         shell: bash

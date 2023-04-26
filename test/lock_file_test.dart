@@ -287,6 +287,67 @@ packages:
         );
       });
 
+      test('Reads pub.dartlang.org as pub.dev in hosted descriptions', () {
+        final lockfile = LockFile.parse(
+          '''
+packages:
+  characters:
+    dependency: transitive
+    description:
+      name: characters
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.2.1"
+  retry:
+    dependency: transitive
+    description:
+      name: retry
+      url: "https://pub.dev"
+      sha256:
+    source: hosted
+    version: "1.0.0"
+''',
+          sources,
+        );
+        void expectComesFromPubDev(String name) {
+          final description = lockfile.packages[name]!.description.description
+              as HostedDescription;
+          expect(
+            description.url,
+            'https://pub.dev',
+          );
+        }
+
+        expectComesFromPubDev('characters');
+        expectComesFromPubDev('retry');
+      });
+
+      test('Complains about malformed content-hashes', () {
+        expect(
+          () => LockFile.parse(
+            '''
+packages:
+  retry:
+    dependency: transitive
+    description:
+      name: retry
+      url: "https://pub.dev"
+      sha256: abc # Not long enough
+    source: hosted
+    version: "1.0.0"
+''',
+            sources,
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('Content-hash has incorrect length'),
+            ),
+          ),
+        );
+      });
+
       test('ignores extra stuff in file', () {
         LockFile.parse(
           '''

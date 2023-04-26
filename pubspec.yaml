@@ -1,13 +1,13 @@
 name: pub
 
 environment:
-  sdk: '>=2.17.0 <3.0.0'
+  sdk: '^3.0.0-0'
 
 dependencies:
   # Note: Pub's test infrastructure assumes that any dependencies used in tests
   # will be hosted dependencies.
   analyzer: ^5.1.0
-  args: ^2.1.0
+  args: ^2.4.0
   async: ^2.6.1
   cli_util: ^0.3.5
   collection: ^1.15.0

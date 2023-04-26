@@ -29,7 +29,7 @@ const _pathMax = 260 - 1;
 
 void main() {
   testWithGolden('displays all files', (context) async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.dir(
       appPath,
       [
@@ -40,7 +40,7 @@ void main() {
       ],
     ).create();
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
     pub.stdin.writeln('y');
     handleUploadForm(globalServer);
@@ -64,7 +64,7 @@ void main() {
   test(
       'archives and uploads a package with more files than can fit on '
       'the command line', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     int argMax;
     if (Platform.isWindows) {
@@ -107,7 +107,7 @@ void main() {
     }
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);

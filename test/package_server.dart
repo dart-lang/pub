@@ -45,19 +45,27 @@ class PackageServer {
   bool serveChecksums = true;
 
   PackageServer._(this._inner) {
+    final outerZone = Zone.current;
     _inner.mount((request) {
-      final path = request.url.path;
-      requestedPaths.add(path);
-
-      final pathWithInitialSlash = '/$path';
-      for (final entry in _handlers.reversed) {
-        final match = entry.pattern.matchAsPrefix(pathWithInitialSlash);
-        if (match != null && match.end == pathWithInitialSlash.length) {
-          final a = entry.handler(request);
-          return a;
+      try {
+        final path = request.url.path;
+        requestedPaths.add(path);
+        final pathWithInitialSlash = '/$path';
+        for (final entry in _handlers.reversed) {
+          final match = entry.pattern.matchAsPrefix(pathWithInitialSlash);
+          if (match != null && match.end == pathWithInitialSlash.length) {
+            final a = entry.handler(request);
+            return a;
+          }
         }
+        return shelf.Response.notFound('Could not find ${request.url}');
+      } catch (e, st) {
+        // Because shelf swallows all errors we catch here and redirect to the
+        // zone error handler.
+        outerZone.handleUncaughtError(e, st);
+        _inner.close();
+        rethrow;
       }
-      return shelf.Response.notFound('Could not find ${request.url}');
     });
   }
 

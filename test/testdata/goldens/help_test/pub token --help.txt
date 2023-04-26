@@ -4,13 +4,21 @@
 $ pub token --help
 Manage authentication tokens for hosted pub repositories.
 
+The tokens will be used for authorizing both when retrieving dependencies and
+for publishing.
+
+Tokens are stored in `$SANDBOX/.config/dart/pub-tokens.json`.
+
+For interactive authorization against pub.dev, use `dart pub login`.
+
 Usage: pub token [arguments...]
 -h, --help    Print this usage information.
 
 Available subcommands:
-  add      Add authentication tokens for a package repository.
+  add      Add an authentication token for a package repository.
   list     List servers for which a token exists.
-  remove   Remove secret token for package repository.
+  remove   Remove secret token for package repository at <hosted-url>.
 
 Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-token for detailed documentation.
 

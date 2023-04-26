@@ -12,11 +12,12 @@ class TokenRemoveCommand extends PubCommand {
   @override
   String get name => 'remove';
   @override
-  String get description => 'Remove secret token for package repository.';
+  String get description => '''
+Remove secret token for package repository at <hosted-url>.''';
   @override
-  String get invocation => 'pub token remove';
+  String get argumentsDescription => '<hosted-url> | --all';
   @override
-  String get argumentsDescription => '[hosted-url]';
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
   bool get isAll => argResults['all'];
 

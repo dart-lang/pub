@@ -29,12 +29,12 @@ Future<void> expectPubErrorMessage(dynamic matcher) {
 
 void main() {
   setUp(() async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await servePackages();
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url, 'token': 'access token'},
+        {'url': globalServer.url, 'token': 'access-token'},
       ]
     }).create();
   });

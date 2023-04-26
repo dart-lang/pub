@@ -2,12 +2,22 @@
 
 ## Section 0
 $ pub token add --help
-Add authentication tokens for a package repository.
+Add an authentication token for a package repository.
 
-Usage: pub token add
--h, --help       Print this usage information.
-    --env-var    Read the secret token from this environment variable when
-                 making requests.
+The token will be used for authorizing against <hosted-url> both when
+retrieving dependencies and for publishing.
+
+Tokens are stored in $SANDBOX/.config/dart/pub-tokens.json.
+
+This command will prompt for the secret token over stdin.
+(Unless `--env-var` is used).
+
+For interactive authorization against pub.dev, use `dart pub login`.
+
+Usage: pub token add [options] <hosted-url>
+-h, --help                  Print this usage information.
+    --env-var=<VARIABLE>    Read the secret token from this environment variable when making requests.
 
 Run "pub help" to see global options.
+See https://dart.dev/tools/pub/cmd/pub-token for detailed documentation.
 

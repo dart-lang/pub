@@ -40,7 +40,7 @@ class UploaderCommand extends PubCommand {
     argParser.addOption(
       'directory',
       abbr: 'C',
-      help: 'Run this in the directory<dir>.',
+      help: 'Run this in the directory <dir>.',
       valueHelp: 'dir',
     );
   }

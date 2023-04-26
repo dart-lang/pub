@@ -14,12 +14,12 @@ void main() {
       'with an expired credentials.json without a refresh token, '
       'authenticates again and saves credentials.json', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await d
         .credentialsFile(
           globalServer,
-          'access token',
+          'access-token',
           expiration: DateTime.now().subtract(Duration(hours: 1)),
         )
         .create();

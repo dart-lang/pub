@@ -18,7 +18,7 @@ void main() {
       'foo',
       '1.2.3',
       pubspec: {
-        'environment': {'sdk': '^2.0.0'}
+        'environment': {'sdk': '^2.12.0'}
       },
     );
   });
@@ -73,15 +73,11 @@ void main() {
           deps: {
             'foo': {'hosted': 'foo', 'version': '^1.2.3'}
           },
-          sdk: '^2.0.0',
+          sdk: '^2.14.0',
         ),
       ]).create();
 
-      await pubCommand(
-        command,
-        exitCode: 0,
-        environment: {'_PUB_TEST_SDK_VERSION': '2.15.0'},
-      );
+      await pubCommand(command);
 
       final lockFile = loadYaml(
         await File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsString(),

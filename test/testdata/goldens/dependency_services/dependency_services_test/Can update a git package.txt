@@ -179,7 +179,7 @@ $ dependency_services report
               "path": "."
             }
           },
-          "constraintBumped": "^2.0.0",
+          "constraintBumped": "2.0.0",
           "constraintWidened": "any",
           "constraintBumpedIfNeeded": "any",
           "previousVersion": "9e8b8ad5091bec2c4724b1e0c8ff9d6e32a7eaa4",

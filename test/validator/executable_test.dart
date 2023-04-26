@@ -13,7 +13,7 @@ import 'utils.dart';
 Validator executable() => ExecutableValidator();
 
 void main() {
-  setUp(d.validPackage.create);
+  setUp(d.validPackage().create);
 
   group('should consider a package valid if it', () {
     test('has executables that are present', () async {
@@ -28,7 +28,7 @@ void main() {
           d.file('two.dart', "main() => print('ok');")
         ])
       ]).create();
-      await expectValidation(executable);
+      await expectValidationDeprecated(executable);
     });
   });
 
@@ -41,7 +41,7 @@ void main() {
           'executables': {'nope': 'not_there', 'nada': null}
         })
       ]).create();
-      await expectValidation(executable, warnings: isNotEmpty);
+      await expectValidationDeprecated(executable, warnings: isNotEmpty);
     });
 
     test('has .gitignored one or more listed executables', () async {
@@ -57,7 +57,7 @@ void main() {
         ]),
         d.file('.gitignore', 'bin')
       ]).create();
-      await expectValidation(executable, warnings: isNotEmpty);
+      await expectValidationDeprecated(executable, warnings: isNotEmpty);
     });
   });
 }

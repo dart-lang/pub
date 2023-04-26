@@ -157,7 +157,7 @@ class GoldenTestContext {
   /// log stdout/stderr and exit code to golden file.
   Future<void> run(
     List<String> args, {
-    Map<String, String>? environment,
+    Map<String, String?>? environment,
     String? workingDirectory,
     String? stdin,
   }) async {

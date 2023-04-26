@@ -524,7 +524,7 @@ class VersionSolver {
         _systemCache,
         ref,
         locked,
-        _root.dependencyType(package.name),
+        _root.pubspec.dependencyType(package.name),
         overridden,
         _getAllowedRetracted(ref.name),
         downgrade: _type == SolveType.downgrade,

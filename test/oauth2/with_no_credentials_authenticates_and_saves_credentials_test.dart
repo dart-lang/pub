@@ -13,7 +13,7 @@ void main() {
   test(
       'with no credentials.json, authenticates and saves '
       'credentials.json', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await servePackages();
     var pub = await startPublish(globalServer);
     await confirmPublish(pub);
@@ -22,7 +22,7 @@ void main() {
     globalServer.expect('GET', '/api/packages/versions/new', (request) {
       expect(
         request.headers,
-        containsPair('authorization', 'Bearer access token'),
+        containsPair('authorization', 'Bearer access-token'),
       );
 
       return shelf.Response(200);
@@ -32,6 +32,6 @@ void main() {
     // do so rather than killing it so it'll write out the credentials file.
     await pub.shouldExit(1);
 
-    await d.credentialsFile(globalServer, 'access token').validate();
+    await d.credentialsFile(globalServer, 'access-token').validate();
   });
 }

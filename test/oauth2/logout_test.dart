@@ -13,7 +13,7 @@ void main() {
     await d
         .credentialsFile(
           globalServer,
-          'access token',
+          'access-token',
           refreshToken: 'refresh token',
           expiration: DateTime.now().add(Duration(hours: 1)),
         )
@@ -21,44 +21,9 @@ void main() {
 
     await runPub(args: ['logout'], output: contains('Logging out of pub.dev.'));
 
-    await d.dir(configPath, [d.nothing('pub-credentials.json')]).validate();
+    await configDir([d.nothing('pub-credentials.json')]).validate();
   });
 
-  test(
-      'with an existing credentials file stored in the legacy location, deletes both.',
-      () async {
-    await servePackages();
-    await d
-        .credentialsFile(
-          globalServer,
-          'access token',
-          refreshToken: 'refresh token',
-          expiration: DateTime.now().add(Duration(hours: 1)),
-        )
-        .create();
-
-    await d
-        .legacyCredentialsFile(
-          globalServer,
-          'access token',
-          refreshToken: 'refresh token',
-          expiration: DateTime.now().add(Duration(hours: 1)),
-        )
-        .create();
-
-    await runPub(
-      args: ['logout'],
-      output: allOf(
-        [
-          contains('Logging out of pub.dev.'),
-          contains('Also deleting legacy credentials at ')
-        ],
-      ),
-    );
-
-    await d.dir(cachePath, [d.nothing('credentials.json')]).validate();
-    await d.dir(configPath, [d.nothing('pub-credentials.json')]).validate();
-  });
   test('with no existing credentials.json, notifies.', () async {
     await d.dir(configPath, [d.nothing('pub-credentials.json')]).create();
     await runPub(

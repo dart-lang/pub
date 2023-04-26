@@ -13,6 +13,7 @@ import 'io.dart';
 import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
+import 'sdk.dart';
 import 'system_cache.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
@@ -160,7 +161,10 @@ class Pubspec extends PubspecBase {
     // If a package is null safe it should also be compatible with dart 3.
     // Therefore we rewrite a null-safety enabled constraint with the upper
     // bound <3.0.0 to be have upper bound <4.0.0
-    if (constraint is VersionRange &&
+    //
+    // Only do this rewrite after dart 3.
+    if (sdk.version.major >= 3 &&
+        constraint is VersionRange &&
         LanguageVersion.fromSdkConstraint(constraint) >=
             LanguageVersion.firstVersionWithNullSafety &&
         // <3.0.0 is parsed into a max of 3.0.0-0, so that is what we look for
@@ -197,9 +201,7 @@ class Pubspec extends PubspecBase {
     var yaml = parent['environment'];
     final VersionConstraint originalDartSdkConstraint;
     if (yaml == null) {
-      originalDartSdkConstraint = _includeDefaultSdkConstraint
-          ? _defaultUpperBoundSdkConstraint
-          : VersionConstraint.any;
+      originalDartSdkConstraint = VersionConstraint.any;
     } else if (yaml is! YamlMap) {
       _error(
         '"environment" field must be a map.',
@@ -212,7 +214,6 @@ class Pubspec extends PubspecBase {
         _FileType.pubspec,
       );
     }
-
     var constraints = {
       'dart': _interpretDartSdkConstraint(
         originalDartSdkConstraint,
@@ -432,6 +433,27 @@ class Pubspec extends PubspecBase {
     collectError(() => sdkConstraints);
     return errors;
   }
+
+  /// Returns the type of dependency from this package onto [name].
+  DependencyType dependencyType(String? name) {
+    if (dependencies.containsKey(name)) {
+      return DependencyType.direct;
+    } else if (devDependencies.containsKey(name)) {
+      return DependencyType.dev;
+    } else {
+      return DependencyType.none;
+    }
+  }
+}
+
+/// The type of dependency from one package to another.
+enum DependencyType {
+  direct,
+  dev,
+  none;
+
+  @override
+  String toString() => name;
 }
 
 /// Parses the dependency field named [field], and returns the corresponding

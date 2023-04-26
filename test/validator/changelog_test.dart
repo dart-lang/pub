@@ -14,7 +14,7 @@ Validator changelog() => ChangelogValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('has a CHANGELOG that includes the current package version', () async {
       await d.dir(appPath, [
@@ -26,7 +26,7 @@ void main() {
 * Passes Turing test.
 '''),
       ]).create();
-      await expectValidation(changelog);
+      await expectValidationDeprecated(changelog);
     });
   });
 
@@ -35,7 +35,7 @@ void main() {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0'),
       ]).create();
-      await expectValidation(changelog, warnings: isNotEmpty);
+      await expectValidationDeprecated(changelog, warnings: isNotEmpty);
     });
 
     test('has has a CHANGELOG not named CHANGELOG.md', () async {
@@ -48,7 +48,7 @@ void main() {
 * Passes Turing test.
 '''),
       ]).create();
-      await expectValidation(changelog, warnings: isNotEmpty);
+      await expectValidationDeprecated(changelog, warnings: isNotEmpty);
     });
 
     test('has a CHANGELOG that doesn\'t include the current package version',
@@ -62,7 +62,7 @@ void main() {
 * Passes Turing test.
 '''),
       ]).create();
-      await expectValidation(changelog, warnings: isNotEmpty);
+      await expectValidationDeprecated(changelog, warnings: isNotEmpty);
     });
 
     test('has a CHANGELOG with invalid utf-8', () async {
@@ -70,7 +70,7 @@ void main() {
         d.libPubspec('test_pkg', '1.0.0'),
         d.file('CHANGELOG.md', [192]),
       ]).create();
-      await expectValidation(changelog, warnings: isNotEmpty);
+      await expectValidationDeprecated(changelog, warnings: isNotEmpty);
     });
   });
 }

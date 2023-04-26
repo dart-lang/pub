@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as path;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -25,8 +26,9 @@ void main() {
     ]).create();
 
     await pubGet(
-      error: 'Path dependency for package foo must refer to a '
-          'directory, not a file. Was "$dummyPath".',
+      error: 'Because myapp depends on foo from path which doesn\'t exist '
+          '(Path dependency for package foo must refer to a directory, not a file. Was "$dummyPath".), version solving failed.',
+      exitCode: exit_codes.NO_INPUT,
     );
   });
 }

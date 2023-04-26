@@ -30,7 +30,7 @@ class GitignoreValidator extends Validator {
             '--exclude-standard',
             '--recurse-submodules'
           ],
-          workingDir: entrypoint.root.dir,
+          workingDir: entrypoint.rootDir,
         );
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
@@ -39,9 +39,9 @@ class GitignoreValidator extends Validator {
         // --recurse-submodules we just continue silently.
         return;
       }
-      final root = git.repoRoot(entrypoint.root.dir) ?? entrypoint.root.dir;
+      final root = git.repoRoot(entrypoint.rootDir) ?? entrypoint.rootDir;
       var beneath = p.posix.joinAll(
-        p.split(p.normalize(p.relative(entrypoint.root.dir, from: root))),
+        p.split(p.normalize(p.relative(entrypoint.rootDir, from: root))),
       );
       if (beneath == './') {
         beneath = '';
@@ -73,7 +73,7 @@ class GitignoreValidator extends Validator {
         },
         isDir: (dir) => dirExists(resolve(dir)),
       ).map((file) {
-        final relative = p.relative(resolve(file), from: entrypoint.root.dir);
+        final relative = p.relative(resolve(file), from: entrypoint.rootDir);
         return Platform.isWindows
             ? p.posix.joinAll(p.split(relative))
             : relative;

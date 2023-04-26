@@ -15,8 +15,8 @@ Validator flutterPluginFormat() => FlutterPluginFormatValidator();
 void main() {
   group('should consider a package valid if it', () {
     test('is not a plugin', () async {
-      await d.validPackage.create();
-      return expectValidation(flutterPluginFormat);
+      await d.validPackage().create();
+      return expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.9.0 package', () async {
@@ -27,7 +27,7 @@ void main() {
         'flutter': '>=1.9.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0 package', () async {
@@ -38,7 +38,7 @@ void main() {
         'flutter': '>=1.10.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0-0 package', () async {
@@ -49,7 +49,7 @@ void main() {
         'flutter': '>=1.10.0-0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a flutter 1.10.0 plugin with the new format', () async {
@@ -70,7 +70,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
   });
 
@@ -96,7 +96,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
@@ -121,7 +121,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains('Instead use the flutter.plugin.platforms key'),
@@ -147,7 +147,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
@@ -176,7 +176,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
@@ -201,7 +201,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
@@ -229,7 +229,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
@@ -257,7 +257,7 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(

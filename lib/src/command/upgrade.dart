@@ -72,6 +72,7 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also run in `example/` (if it exists).',
       hide: true,
     );
@@ -79,7 +80,7 @@ class UpgradeCommand extends PubCommand {
     argParser.addOption(
       'directory',
       abbr: 'C',
-      help: 'Run this in the directory<dir>.',
+      help: 'Run this in the directory <dir>.',
       valueHelp: 'dir',
     );
   }
@@ -113,7 +114,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     if (_upgradeMajorVersions) {
       if (argResults['example'] && entrypoint.example != null) {
         log.warning(
-          'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
+          'Running `upgrade --major-versions` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
         );
       }
       await _runUpgradeMajorVersions();
@@ -240,35 +241,26 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final solveType =
         argResults.rest.isEmpty ? SolveType.upgrade : SolveType.get;
 
-    if (_dryRun) {
-      // Even if it is a dry run, run `acquireDependencies` so that the user
-      // gets a report on changes.
-      await Entrypoint.inMemory(
-        Package.inMemory(
-          Pubspec.parse(newPubspecText, cache.sources),
-        ),
-        cache,
-        lockFile: entrypoint.lockFile,
-        solveResult: solveResult,
-      ).acquireDependencies(
-        solveType,
-        dryRun: true,
-        precompile: _precompile,
-        analytics: null, // No analytics for dry-run
-      );
-    } else {
+    if (!_dryRun) {
       if (changes.isNotEmpty) {
         writeTextFile(entrypoint.pubspecPath, newPubspecText);
       }
-      // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
-      //       we can show the changes when not in --dry-run mode. For now we only show
-      //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint(directory, cache).acquireDependencies(
-        solveType,
-        precompile: _precompile,
-        analytics: analytics,
-      );
     }
+
+    await entrypoint
+        .withPubspec(
+          Pubspec.parse(
+            newPubspecText,
+            cache.sources,
+            location: Uri.parse(entrypoint.pubspecPath),
+          ),
+        )
+        .acquireDependencies(
+          solveType,
+          dryRun: _dryRun,
+          precompile: !_dryRun && _precompile,
+          analytics: _dryRun ? null : analytics, // No analytics for dry-run
+        );
 
     _outputChangeSummary(changes);
 
@@ -324,10 +316,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       final wouldBe = _dryRun ? 'would be made to' : 'to';
       log.message('\nNo changes $wouldBe pubspec.yaml!');
     } else {
-      final s = changes.length == 1 ? '' : 's';
-
       final changed = _dryRun ? 'Would change' : 'Changed';
-      log.message('\n$changed ${changes.length} constraint$s in pubspec.yaml:');
+      log.message('\n$changed ${changes.length} '
+          '${pluralize('constraint', changes.length)} in pubspec.yaml:');
       changes.forEach((from, to) {
         log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
       });

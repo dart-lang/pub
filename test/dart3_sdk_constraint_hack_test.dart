@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -18,9 +19,10 @@ void main() {
 
     await pubGet(
       error: contains(
-        'Because myapp doesn\'t support null safety, version solving failed',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      exitCode: DATA,
     );
   });
   test('The bound of ">=2.12.0 <3.1.0" is not modified', () async {
@@ -49,9 +51,10 @@ void main() {
 
     await pubGet(
       error: contains(
-        'Because myapp doesn\'t support null safety, version solving failed',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      exitCode: DATA,
     );
   });
 
@@ -65,9 +68,10 @@ void main() {
 
     await pubGet(
       error: contains(
-        'Because myapp doesn\'t support null safety, version solving failed',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      exitCode: DATA,
     );
   });
 
@@ -154,6 +158,22 @@ void main() {
         'The lower bound of "sdk: \'>=2.10.0 <3.0.0\'" must be 2.12.0 or higher to enable null safety.'
         '\nFor details, see https://dart.dev/null-safety',
       ),
+    );
+  });
+
+  test('Rewrite only happens after Dart 3', () async {
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=2.19.1 <3.0.0'}
+      }),
+    ]).create();
+
+    await pubGet(
+      error: contains(
+        'Because myapp requires SDK version >=2.19.1 <3.0.0, version solving failed.',
+      ),
+      environment: {'_PUB_TEST_SDK_VERSION': '2.19.0'},
     );
   });
 }

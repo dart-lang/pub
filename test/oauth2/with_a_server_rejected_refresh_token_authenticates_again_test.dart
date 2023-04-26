@@ -17,13 +17,13 @@ void main() {
   test(
       'with a server-rejected refresh token, authenticates again and '
       'saves credentials.json', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await servePackages();
     await d
         .credentialsFile(
           globalServer,
-          'access token',
+          'access-token',
           refreshToken: 'bad refresh token',
           expiration: DateTime.now().subtract(Duration(hours: 1)),
         )

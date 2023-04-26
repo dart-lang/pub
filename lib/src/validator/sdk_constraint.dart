@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../sdk.dart';
 import '../validator.dart';
 
 /// A validator of the SDK constraint.
@@ -17,25 +16,13 @@ import '../validator.dart';
 /// * is not depending on a prerelease, unless the package itself is a
 /// prerelease.
 class SdkConstraintValidator extends Validator {
-  /// Get SDK version constraint from `pubspec.yaml` without any defaults or
-  /// overrides.
-  VersionConstraint _sdkConstraintFromPubspecYaml() {
-    final env = entrypoint.root.pubspec.fields['environment'];
-    if (env is Map && env['sdk'] is String) {
-      try {
-        return VersionConstraint.parse(env['sdk']);
-      } on FormatException {
-        // ignore
-      }
-    }
-    return VersionConstraint.any;
-  }
-
   @override
   Future validate() async {
-    final dartConstraint = _sdkConstraintFromPubspecYaml();
-    if (dartConstraint is VersionRange) {
-      if (dartConstraint.max == null) {
+    final dartConstraint = entrypoint.root.pubspec.dartSdkConstraint;
+    final originalConstraint = dartConstraint.originalConstraint;
+    final effectiveConstraint = dartConstraint.effectiveConstraint;
+    if (originalConstraint is VersionRange) {
+      if (originalConstraint.max == null) {
         errors.add(
             'Published packages should have an upper bound constraint on the '
             'Dart SDK (typically this should restrict to less than the next '
@@ -44,7 +31,7 @@ class SdkConstraintValidator extends Validator {
             'instructions on setting an sdk version constraint.');
       }
 
-      final constraintMin = dartConstraint.min;
+      final constraintMin = originalConstraint.min;
       final packageVersion = entrypoint.root.version;
 
       if (constraintMin != null &&
@@ -58,15 +45,20 @@ class SdkConstraintValidator extends Validator {
             'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
             'For more information on pre-releases.');
       }
-    }
+      if (
+          // We only want to give this hint if there was no other problems with
+          // the sdk constraint.
+          warnings.isEmpty &&
+              errors.isEmpty &&
+              originalConstraint != effectiveConstraint) {
+        hints.add('''
+The declared SDK constraint is '$originalConstraint', this is interpreted as '$effectiveConstraint'.
 
-    for (var sdk in sdks.values) {
-      if (sdk.identifier == 'dart') continue;
-      if (entrypoint.root.pubspec.sdkConstraints.containsKey(sdk.identifier)) {
-        validateSdkConstraint(
-          sdk.firstPubVersion,
-          "Older versions of pub don't support ${sdk.name} SDK constraints.",
-        );
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '$effectiveConstraint'
+''');
       }
     }
   }

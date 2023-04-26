@@ -140,14 +140,13 @@ class GlobalPackages {
   /// [url] is an optional custom pub server URL. If not null, the package to be
   /// activated will be fetched from this URL instead of the default pub URL.
   Future<void> activateHosted(
-    String name,
-    VersionConstraint constraint,
+    PackageRange range,
     List<String>? executables, {
     required bool overwriteBinStubs,
     String? url,
   }) async {
     await _installInCache(
-      cache.hosted.refFor(name, url: url).withConstraint(constraint),
+      range,
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
@@ -179,7 +178,7 @@ class GlobalPackages {
     _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
-    var fullPath = canonicalize(entrypoint.root.dir);
+    var fullPath = canonicalize(entrypoint.rootDir);
     var id = cache.path.idFor(
       name,
       entrypoint.root.version,
@@ -226,9 +225,6 @@ class GlobalPackages {
     );
 
     // Resolve it and download its dependencies.
-    //
-    // TODO(nweiz): If this produces a SolveFailure that's caused by [dep] not
-    // being available, report that as a [dataError].
     SolveResult result;
     try {
       result = await log.spinner(
@@ -241,6 +237,8 @@ class GlobalPackages {
           in error.incompatibility.externalIncompatibilities) {
         if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
         if (incompatibility.terms.single.package.name != name) continue;
+        // If the SolveFailure is caused by [dep] not
+        // being available, report that as a [dataError].
         dataError(error.toString());
       }
       rethrow;
@@ -263,7 +261,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       if (!silent) {
         await SolveReport(
           SolveType.get,
-          root,
+          null,
+          root.pubspec,
           originalLockFile ?? LockFile.empty(),
           lockFile,
           result.availableVersions,
@@ -341,7 +340,19 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   /// Returns `false` if no package with [name] was currently active.
   bool deactivate(String name) {
     var dir = p.join(_directory, name);
-    if (!dirExists(dir)) return false;
+    if (!dirExists(_directory)) {
+      return false;
+    }
+    // By listing all files instead of using only `dirExists` this check will
+    // work on case-preserving file-systems.
+    final files = listDir(_directory);
+    if (!files.contains(dir)) {
+      return false;
+    }
+    if (!dirExists(dir)) {
+      // This can happen if `dir` was really a file.
+      return false;
+    }
 
     _deleteBinStubs(name);
 
@@ -564,7 +575,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
             );
           } else {
             await activatePath(
-              entrypoint.root.dir,
+              entrypoint.rootDir,
               packageExecutables,
               overwriteBinStubs: true,
               analytics: null,

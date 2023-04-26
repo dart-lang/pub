@@ -23,7 +23,7 @@ class LoginCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    final credentials = oauth2.loadCredentials(cache);
+    final credentials = oauth2.loadCredentials();
     if (credentials == null) {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
@@ -44,7 +44,7 @@ class LoginCommand extends PubCommand {
   }
 
   Future<_UserInfo?> _retrieveUserInfo() async {
-    return await oauth2.withClient(cache, (client) async {
+    return await oauth2.withClient((client) async {
       final discovery = await oauth2.fetchOidcDiscoveryDocument();
       final userInfoEndpoint = discovery['userinfo_endpoint'];
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));

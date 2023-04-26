@@ -14,7 +14,7 @@ import 'utils.dart';
 
 void main() {
   test('--force publishes if there are warnings', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     var pkg = packageMap(
       'test_pkg',
       '1.0.0',
@@ -27,7 +27,7 @@ void main() {
 
     (await servePackages()).serve('foo', '1.0.0');
 
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer, args: ['--force']);
 
     handleUploadForm(globalServer);

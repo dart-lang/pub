@@ -12,8 +12,8 @@ import 'utils.dart';
 void main() {
   test('package creation provides invalid JSON', () async {
     await servePackages();
-    await d.validPackage.create();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);

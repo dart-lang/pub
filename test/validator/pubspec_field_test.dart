@@ -14,16 +14,16 @@ Validator pubspecField() => PubspecFieldValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
-    test('looks normal', () => expectValidation(pubspecField));
+    test('looks normal', () => expectValidationDeprecated(pubspecField));
 
     test('has an HTTPS homepage URL', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg['homepage'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField);
+      await expectValidationDeprecated(pubspecField);
     });
 
     test('has an HTTPS repository URL instead of homepage', () async {
@@ -32,7 +32,7 @@ void main() {
       pkg['repository'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField);
+      await expectValidationDeprecated(pubspecField);
     });
 
     test('has an HTTPS documentation URL', () async {
@@ -40,7 +40,7 @@ void main() {
       pkg['documentation'] = 'https://pub.dev';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField);
+      await expectValidationDeprecated(pubspecField);
     });
 
     test('has empty executables', () async {
@@ -48,7 +48,7 @@ void main() {
       pkg['executables'] = <String, String>{};
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField);
+      await expectValidationDeprecated(pubspecField);
     });
 
     test('has executables', () async {
@@ -59,7 +59,7 @@ void main() {
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField);
+      await expectValidationDeprecated(pubspecField);
     });
   });
 
@@ -70,19 +70,19 @@ void main() {
       pkg.remove('homepage');
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, warnings: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, warnings: isNotEmpty);
     });
   });
 
   group('should consider a package invalid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('is missing the "description" field', () async {
       var pkg = packageMap('test_pkg', '1.0.0');
       pkg.remove('description');
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has a non-string "homepage" field', () async {
@@ -90,7 +90,7 @@ void main() {
       pkg['homepage'] = 12;
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has a non-string "repository" field', () async {
@@ -98,7 +98,7 @@ void main() {
       pkg['repository'] = 12;
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has a non-string "description" field', () async {
@@ -106,7 +106,7 @@ void main() {
       pkg['description'] = 12;
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has a non-HTTP homepage URL', () async {
@@ -114,7 +114,7 @@ void main() {
       pkg['homepage'] = 'file:///foo/bar';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has a non-HTTP documentation URL', () async {
@@ -122,7 +122,7 @@ void main() {
       pkg['documentation'] = 'file:///foo/bar';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has a non-HTTP repository URL', () async {
@@ -130,7 +130,7 @@ void main() {
       pkg['repository'] = 'file:///foo/bar';
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has invalid executables', () async {
@@ -138,7 +138,7 @@ void main() {
       pkg['executables'] = <String>['wrong-thing'];
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
 
     test('has invalid executables mapping to a number', () async {
@@ -148,7 +148,7 @@ void main() {
       };
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidation(pubspecField, errors: isNotEmpty);
+      await expectValidationDeprecated(pubspecField, errors: isNotEmpty);
     });
   });
 }

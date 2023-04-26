@@ -18,6 +18,8 @@ class GetCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
   @override
   bool get isOffline => argResults['offline'];
+  @override
+  String get argumentsDescription => '';
 
   GetCommand() {
     argParser.addFlag(
@@ -48,6 +50,7 @@ class GetCommand extends PubCommand {
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also run in `example/` (if it exists).',
       hide: true,
     );
@@ -55,7 +58,7 @@ class GetCommand extends PubCommand {
     argParser.addOption(
       'directory',
       abbr: 'C',
-      help: 'Run this in the directory<dir>.',
+      help: 'Run this in the directory <dir>.',
       valueHelp: 'dir',
     );
   }

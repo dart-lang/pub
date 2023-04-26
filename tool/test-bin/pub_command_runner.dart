@@ -33,6 +33,24 @@ class ThrowingCommand extends PubCommand {
   }
 }
 
+// A command for testing the ensurePubspecResolved functionality
+class EnsurePubspecResolvedCommand extends PubCommand {
+  @override
+  String get name => 'ensure-pubspec-resolved';
+
+  @override
+  String get description => 'Resolves pubspec.yaml if needed';
+
+  @override
+  bool get hidden => true;
+
+  @override
+  Future<int> runProtected() async {
+    await ensurePubspecResolved('.');
+    return 0;
+  }
+}
+
 class RunCommand extends Command<int> {
   @override
   String get name => 'run';
@@ -70,7 +88,8 @@ class Runner extends CommandRunner<int> {
         : null;
     addCommand(
       pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
-        ..addSubcommand(ThrowingCommand()),
+        ..addSubcommand(ThrowingCommand())
+        ..addSubcommand(EnsurePubspecResolvedCommand()),
     );
     addCommand(RunCommand());
     argParser.addFlag('verbose');

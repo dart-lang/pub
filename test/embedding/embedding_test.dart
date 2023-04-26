@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart' show EnvironmentKeys;
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
@@ -14,6 +15,7 @@ import 'package:test_process/test_process.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
+import 'ensure_pubspec_resolved.dart';
 
 const _commandRunner = 'tool/test-bin/pub_command_runner.dart';
 
@@ -26,16 +28,21 @@ Future<void> runEmbeddingToBuffer(
   List<String> args,
   StringBuffer buffer, {
   String? workingDirectory,
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   dynamic exitCode = 0,
 }) async {
+  final combinedEnvironment = getPubTestEnvironment();
+  (environment ?? {}).forEach((key, value) {
+    if (value == null) {
+      combinedEnvironment.remove(key);
+    } else {
+      combinedEnvironment[key] = value;
+    }
+  });
   final process = await TestProcess.start(
     Platform.resolvedExecutable,
     ['--enable-asserts', snapshot, ...args],
-    environment: {
-      ...getPubTestEnvironment(),
-      ...?environment,
-    },
+    environment: combinedEnvironment,
     workingDirectory: workingDirectory,
   );
   await process.shouldExit(exitCode);
@@ -387,11 +394,33 @@ main() {
       buffer.toString(),
       allOf(
         contains('Resolving dependencies'),
-        contains('+ foo 1.0.0'),
         contains('42'),
       ),
     );
   });
+
+  test('"pkg" and "packages" will trigger a suggestion of "pub"', () async {
+    await servePackages();
+    await d.appDir().create();
+    for (final command in ['pkg', 'packages']) {
+      final buffer = StringBuffer();
+      await runEmbeddingToBuffer(
+        [command, 'get'],
+        buffer,
+        workingDirectory: d.path(appPath),
+        exitCode: USAGE,
+      );
+      expect(
+        buffer.toString(),
+        allOf(
+          contains('Did you mean one of these?'),
+          contains('  pub'),
+        ),
+      );
+    }
+  });
+
+  testEnsurePubspecResolved();
 }
 
 String _filter(String input) {

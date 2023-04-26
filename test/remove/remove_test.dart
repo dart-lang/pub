@@ -235,6 +235,35 @@ environment:
     await d.appDir(dependencies: {'bar': '2.0.1'}).validate();
   });
 
+  test('removes overrides', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', deps: {'bar': '1.0.0'});
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'foo': '^1.0.0'},
+        'dev_dependencies': {'bar': '^2.0.0'},
+        'dependency_overrides': {'bar': '1.0.0'}
+      })
+    ]).create();
+
+    await pubGet();
+
+    // Cannot remove the constraint on bar, would create conflict.
+    await pubRemove(
+      args: ['override:bar'],
+      error: contains('version solving failed.'),
+      exitCode: 1,
+    );
+    await pubRemove(args: ['override:bar', 'foo']);
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'bar', version: '2.0.0'),
+    ]).validate();
+  });
+
   test('preserves comments', () async {
     await servePackages()
       ..serve('bar', '1.0.0')
@@ -272,5 +301,29 @@ environment:
         contains('# comment E')
       ]),
     );
+  });
+  test('removes dependencies or dev_dependencies key if empty', () async {
+    await servePackages()
+      ..serve('foo', '1.2.3')
+      ..serve('bar', '2.3.4');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {'bar': '>=2.3.4'},
+        'dev_dependencies': {'foo': '^1.2.3'}
+      })
+    ]).create();
+    await pubGet();
+
+    await pubRemove(args: ['foo', 'bar']);
+
+    await d.appPackageConfigFile([]).validate();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+      })
+    ]).validate();
   });
 }

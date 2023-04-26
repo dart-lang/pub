@@ -9,7 +9,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
-    show IterableExtension, IterableNullableExtension, ListEquality, maxBy;
+    show IterableExtension, IterableNullableExtension, maxBy;
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
@@ -51,7 +51,7 @@ const contentHashesDocumentationUrl = 'https://dart.dev/go/content-hashes';
 /// backwards compatibility with `pubspec.lock`-files which contain
 /// `https://pub.dartlang.org`.
 ///
-/// Throws [FormatException] if there is anything wrong [hostedUrl].
+/// Throws [FormatException] if there is anything wrong with [hostedUrl].
 ///
 /// [1]: ../../../doc/repository-spec-v2.md
 Uri validateAndNormalizeHostedUrl(String hostedUrl) {
@@ -128,7 +128,16 @@ class HostedSource extends CachedSource {
   static String pubDartlangUrl = 'https://pub.dartlang.org';
 
   static bool isPubDevUrl(String url) {
-    final origin = Uri.parse(url).origin;
+    final parsedUrl = Uri.parse(url);
+    if (parsedUrl.scheme != 'http' && parsedUrl.scheme != 'https') {
+      // A non http(s) url is not pub.dev.
+      return false;
+    }
+    if (parsedUrl.host.isEmpty) {
+      // The empty host is not pub.dev.
+      return false;
+    }
+    final origin = parsedUrl.origin;
     // Allow the defaultHostedUrl to be overriden when running from tests
     if (runningFromTest &&
         io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
@@ -195,8 +204,8 @@ class HostedSource extends CachedSource {
   /// Returns a reference to a hosted package named [name].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
-  /// should be downloaded. [url] most be normalized and validated using
-  /// [validateAndNormalizeHostedUrl].
+  /// should be downloaded. [url] will be normalized and validated using
+  /// [validateAndNormalizeHostedUrl]. This can throw a [FormatException].
   PackageRef refFor(String name, {String? url}) {
     final d = HostedDescription(name, url ?? defaultUrl);
     return PackageRef(name, d);
@@ -269,10 +278,28 @@ class HostedSource extends CachedSource {
       name,
       version,
       ResolvedHostedDescription(
-        HostedDescription(name, Uri.parse(url).toString()),
-        sha256: sha256 == null ? null : hexDecode(sha256),
+        HostedDescription(name, url),
+        sha256: _parseContentHash(sha256),
       ),
     );
+  }
+
+  /// Decodes a sha256 hash from a lock-file or package-listing.
+  /// It is expected to be a hex-encoded String of length 64.
+  ///
+  /// Throws a [FormatException] if the string cannot be decoded.
+  Uint8List? _parseContentHash(String? encoded) {
+    if (encoded == null) return null;
+    if (encoded.length != 64) {
+      throw FormatException('Content-hash has incorrect length');
+    }
+    try {
+      return hexDecode(encoded);
+    } on FormatException catch (e) {
+      return throw FormatException(
+        'Badly formatted content-hash: ${e.message}',
+      );
+    }
   }
 
   /// Parses the description for a package.
@@ -302,10 +329,7 @@ class HostedSource extends CachedSource {
       // environment, we throw an error if something that looks like a URI is
       // used as a package name.
       if (canUseShorthandSyntax) {
-        return HostedDescription(
-          packageName,
-          validateAndNormalizeHostedUrl(description).toString(),
-        );
+        return HostedDescription(packageName, description);
       } else {
         if (_looksLikePackageName.hasMatch(description)) {
           // Valid use of `hosted: package` dependency with an old SDK
@@ -332,14 +356,11 @@ class HostedSource extends CachedSource {
           'a minimum Dart SDK constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.0 or higher.');
     }
 
-    var url = defaultUrl;
     final u = description['url'];
-    if (u != null) {
-      if (u is! String) {
-        throw FormatException("The 'url' key must be a string value.");
-      }
-      url = validateAndNormalizeHostedUrl(u).toString();
+    if (u != null && u is! String) {
+      throw FormatException("The 'url' key must be a string value.");
     }
+    final url = u ?? defaultUrl;
 
     return HostedDescription(name, url);
   }
@@ -396,7 +417,7 @@ class HostedSource extends CachedSource {
         pubspec,
         Uri.parse(archiveUrl),
         status,
-        archiveSha256 == null ? null : hexDecode(archiveSha256),
+        _parseContentHash(archiveSha256),
       );
     }).toList();
   }
@@ -444,7 +465,7 @@ class HostedSource extends CachedSource {
 
     // Cache the response on disk.
     // Don't cache overly big responses.
-    if (bodyText.length < 100 * 1024) {
+    if (bodyText.length < 500 * 1024) {
       await _cacheVersionListingResponse(body, ref, cache);
     }
     return result;
@@ -836,28 +857,6 @@ class HostedSource extends CachedSource {
     );
   }
 
-  /// Determines if the package identified by [id] is already downloaded to the
-  /// system cache and has the expected content-hash.
-  @override
-  bool isInSystemCache(PackageId id, SystemCache cache) {
-    if ((id.description as ResolvedHostedDescription).sha256 != null) {
-      try {
-        final cachedSha256 = readTextFile(hashPath(id, cache));
-        if (!const ListEquality().equals(
-          hexDecode(cachedSha256),
-          (id.description as ResolvedHostedDescription).sha256,
-        )) {
-          return false;
-        }
-      } on io.IOException {
-        // Most likely the hash file was not written, because we had a legacy
-        // entry.
-        return false;
-      }
-    }
-    return dirExists(getDirectoryInCache(id, cache));
-  }
-
   /// The system cache directory for the hosted source contains subdirectories
   /// for each separate repository URL that's used on the system.
   ///
@@ -899,8 +898,11 @@ class HostedSource extends CachedSource {
   /// Loads the hash at `hashPath(id)`.
   Uint8List? sha256FromCache(PackageId id, SystemCache cache) {
     try {
-      return hexDecode(readTextFile(hashPath(id, cache)));
+      return _parseContentHash(readTextFile(hashPath(id, cache)));
     } on io.IOException {
+      return null;
+    } on FormatException catch (e) {
+      log.fine('Bad content-hash in cache: $e, ignoring cache entry');
       return null;
     }
   }
@@ -963,7 +965,7 @@ class HostedSource extends CachedSource {
                   package.name,
                   package.version,
                   ResolvedHostedDescription(
-                    HostedDescription(package.name, url),
+                    HostedDescription._(package.name, url),
                     sha256: null,
                   ),
                 );
@@ -1131,44 +1133,51 @@ See $contentHashesDocumentationUrl.
       // download.
       final expectedSha256 = versionInfo.archiveSha256;
 
-      await withAuthenticatedClient(cache, Uri.parse(description.url),
-          (client) async {
-        // In addition to HTTP errors, this will retry crc32c/sha256 errors as
-        // well because [PackageIntegrityException] subclasses
-        // [PubHttpException].
-        await retryForHttp('downloading "$archiveUrl"', () async {
-          final request = http.Request('GET', archiveUrl);
-          request.attachMetadataHeaders();
-          final response = await client.fetchAsStream(request);
+      try {
+        await withAuthenticatedClient(cache, Uri.parse(description.url),
+            (client) async {
+          // In addition to HTTP errors, this will retry crc32c/sha256 errors as
+          // well because [PackageIntegrityException] subclasses
+          // [PubHttpException].
+          await retryForHttp('downloading "$archiveUrl"', () async {
+            final request = http.Request('GET', archiveUrl);
+            request.attachMetadataHeaders();
+            final response = await client.fetchAsStream(request);
 
-          Stream<List<int>> stream = response.stream;
-          final expectedCrc32c = _parseCrc32c(response.headers, fileName);
-          if (expectedCrc32c != null) {
-            stream = _validateCrc32c(
-              response.stream,
-              expectedCrc32c,
-              id,
-              archiveUrl,
+            Stream<List<int>> stream = response.stream;
+            final expectedCrc32c = _parseCrc32c(response.headers, fileName);
+            if (expectedCrc32c != null) {
+              stream = _validateCrc32c(
+                response.stream,
+                expectedCrc32c,
+                id,
+                archiveUrl,
+              );
+            }
+            stream = validateSha256(
+              stream,
+              (expectedSha256 == null) ? null : Digest(expectedSha256),
             );
-          }
-          stream = validateSha256(
-            stream,
-            (expectedSha256 == null) ? null : Digest(expectedSha256),
-          );
 
-          // We download the archive to disk instead of streaming it directly
-          // into the tar unpacking. This simplifies stream handling.
-          // Package:tar cancels the stream when it reaches end-of-archive, and
-          // cancelling a http stream makes it not reusable.
-          // There are ways around this, and we might revisit this later.
-          await createFileFromStream(stream, archivePath);
+            // We download the archive to disk instead of streaming it directly
+            // into the tar unpacking. This simplifies stream handling.
+            // Package:tar cancels the stream when it reaches end-of-archive, and
+            // cancelling a http stream makes it not reusable.
+            // There are ways around this, and we might revisit this later.
+            await createFileFromStream(stream, archivePath);
+          });
         });
-      });
+      } on Exception catch (error, stackTrace) {
+        _throwFriendlyError(error, stackTrace, id.name, description.url);
+      }
 
       var tempDir = cache.createTempDir();
       try {
-        await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
-
+        try {
+          await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
+        } on FormatException catch (e) {
+          dataError('Failed to extract `$archivePath`: ${e.message}.');
+        }
         ensureDir(p.dirname(destPath));
       } catch (e) {
         deleteEntry(tempDir);
@@ -1244,10 +1253,7 @@ See $contentHashesDocumentationUrl.
         pubspec.name,
         pubspec.version,
         ResolvedHostedDescription(
-          HostedDescription(
-            pubspec.name,
-            validateAndNormalizeHostedUrl(cache.hosted.defaultUrl).toString(),
-          ),
+          HostedDescription(pubspec.name, defaultUrl),
           sha256: contentHash,
         ),
       );
@@ -1271,7 +1277,7 @@ See $contentHashesDocumentationUrl.
   /// this tries to translate into a more user friendly error message.
   ///
   /// Always throws an error, either the original one or a better one.
-  Never _throwFriendlyError(
+  static Never _throwFriendlyError(
     Exception error,
     StackTrace stackTrace,
     String package,
@@ -1360,7 +1366,17 @@ class HostedDescription extends Description {
   final String packageName;
   final String url;
 
-  HostedDescription(this.packageName, this.url);
+  HostedDescription._(this.packageName, this.url);
+
+  // This can be used to construct a description with any specific url.
+  factory HostedDescription.raw(String packageName, String url) =>
+      HostedDescription._(packageName, url);
+
+  factory HostedDescription(String packageName, String url) =>
+      HostedDescription._(
+        packageName,
+        validateAndNormalizeHostedUrl(url).toString(),
+      );
 
   @override
   int get hashCode => Object.hash(packageName, url);
@@ -1417,16 +1433,10 @@ class ResolvedHostedDescription extends ResolvedDescription {
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
-    late final String url;
-    try {
-      url = validateAndNormalizeHostedUrl(description.url).toString();
-    } on FormatException catch (e) {
-      throw ArgumentError.value(url, 'url', 'url must be normalized: $e');
-    }
     final hash = sha256;
     return {
       'name': description.packageName,
-      'url': url.toString(),
+      'url': description.url,
       if (hash != null) 'sha256': hexEncode(hash),
     };
   }

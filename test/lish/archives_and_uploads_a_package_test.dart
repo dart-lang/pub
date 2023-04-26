@@ -17,8 +17,8 @@ import 'utils.dart';
 void main() {
   test('archives and uploads a package', () async {
     await servePackages();
-    await d.validPackage.create();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
@@ -40,11 +40,11 @@ void main() {
 
   test('archives and uploads a package using token', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url, 'token': 'access token'},
+        {'url': globalServer.url, 'token': 'access-token'},
       ]
     }).create();
     var pub = await startPublish(globalServer);
@@ -68,7 +68,7 @@ void main() {
 
   test('publishes to hosted-url with path', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
@@ -79,7 +79,7 @@ void main() {
       globalServer,
       path: '/sub/folder',
       overrideDefaultHostedServer: false,
-      environment: {'TOKEN': 'access token'},
+      environment: {'TOKEN': 'access-token'},
     );
 
     await confirmPublish(pub);
@@ -105,7 +105,7 @@ void main() {
   test('with an empty Git submodule', () async {
     await d.git('empty').create();
 
-    var repo = d.git(appPath, d.validPackage.contents);
+    var repo = d.git(appPath, d.validPackage().contents);
     await repo.create();
 
     await repo.runGit([
@@ -124,7 +124,7 @@ void main() {
     await d.dir(p.join(appPath, 'empty')).create();
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
+    await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
     await confirmPublish(pub);

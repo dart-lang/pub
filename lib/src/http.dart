@@ -13,7 +13,7 @@ import 'package:pool/pool.dart';
 
 import 'command.dart';
 import 'log.dart' as log;
-import 'package.dart';
+import 'pubspec.dart';
 import 'sdk.dart';
 import 'source/hosted.dart';
 import 'utils.dart';
