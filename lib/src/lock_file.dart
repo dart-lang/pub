@@ -426,7 +426,7 @@ class LockFile {
     var data = {
       'sdks': mapMap(
         sdkConstraints,
-        value: (_, constraint) => constraint.toString(),
+        value: (_, constraint) => constraint.effectiveConstraint.toString(),
       ),
       'packages': packageMap
     };
