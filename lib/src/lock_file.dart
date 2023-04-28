@@ -138,6 +138,7 @@ class LockFile {
           final originalConstraint = _parseVersionConstraint(constraint);
           // Reinterpret the sdk constraints here, in case they were written by
           // an old sdk that did not do reinterpretations.
+          // TODO(sigurdm): push the switching into `SdkConstraint`.
           sdkConstraints[name] = switch (name) {
             'dart' => SdkConstraint.interpretDartSdkConstraint(
                 originalConstraint,
