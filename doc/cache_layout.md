@@ -13,8 +13,9 @@ cache conventions.
 
 ## Location
 
-For the Dart SDK the default pub cache location is `$HOME/.pub_cache` on Linux
-and Mac OS, and `%LOCALAPPDATA%/Pub/Cache` on Windows.
+The global default pub-cache is located at:
+ * `$HOME/.pub_cache` on Linux and Mac OS,
+ * `%LOCALAPPDATA%/Pub/Cache` on Windows.
 
 For the Flutter SDK after 3.8 uses the same folder. Before it would use the same
 folder if it was found, and otherwise  use `$FLUTTER_ROOT/.pub_cache`.
