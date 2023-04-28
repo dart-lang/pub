@@ -21,7 +21,7 @@ Prior to Flutter 3.8.0, the Flutter SDK declared `PUB_CACHE=$FLUTTER_ROOT/.pub_c
 
 The default location of the pub-cache can be overridden using the environment variable `PUB_CACHE`.
 
-In this document we refer to this as `.pub_cache`.
+For the remainder of this document we refer to the location of the pub-cache as `$PUB_CACHE`.```
 
 ## Layout
 
