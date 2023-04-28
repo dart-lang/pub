@@ -96,7 +96,10 @@ class SolveResult {
     }
     return LockFile(
       resolvedPackageIds,
-      sdkConstraints: sdkConstraints,
+      sdkConstraints: {
+        for (final MapEntry(:key, :value) in sdkConstraints.entries)
+          key: SdkConstraint(value),
+      },
       mainDependencies: MapKeySet(_root.dependencies),
       devDependencies: MapKeySet(_root.devDependencies),
       overriddenDependencies: MapKeySet(_root.dependencyOverrides),

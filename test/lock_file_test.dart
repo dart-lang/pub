@@ -94,8 +94,8 @@ packages:
       test('allows an old-style SDK constraint', () {
         var lockFile = LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
         expect(
-          lockFile.sdkConstraints,
-          containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')),
+          lockFile.sdkConstraints['dart']!.effectiveConstraint,
+          VersionConstraint.parse('>=1.2.3 <4.0.0'),
         );
         expect(lockFile.sdkConstraints, isNot(contains('flutter')));
         expect(lockFile.sdkConstraints, isNot(contains('fuchsia')));
@@ -112,16 +112,16 @@ sdks:
           sources,
         );
         expect(
-          lockFile.sdkConstraints,
-          containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')),
+          lockFile.sdkConstraints['dart']!.effectiveConstraint,
+          VersionConstraint.parse('>=1.2.3 <4.0.0'),
         );
         expect(
-          lockFile.sdkConstraints,
-          containsPair('flutter', VersionConstraint.parse('^0.1.2')),
+          lockFile.sdkConstraints['flutter']!.effectiveConstraint,
+          VersionConstraint.parse('>=0.1.2'),
         );
         expect(
-          lockFile.sdkConstraints,
-          containsPair('fuchsia', VersionConstraint.parse('^5.6.7')),
+          lockFile.sdkConstraints['fuchsia']!.effectiveConstraint,
+          VersionConstraint.parse('^5.6.7'),
         );
       });
 
