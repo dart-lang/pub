@@ -32,7 +32,7 @@ old sdk can share the same cache.
 Here are the top-level folders you can find in a Pub cache.
 
 ```plaintext
-.pub-cache/
+$PUB_CACHE/
 ├── global_packages/  # Globally activated packages
 ├── bin/              # Executables compiled from globally activated packages.
 ├── git/              # Cloned git packages
@@ -58,7 +58,7 @@ The `hosted/` folder contains one folder per repository that Pub has retrieved p
 See [hosted](../lib/src/source/hosted.dart) for details.
 
 ```plaintext
-.pub-cache/hosted
+$PUB_CACHE/hosted
 ├── pub.dartlang.org
 ├── pub.dev
 └── pub.flutter-io.cn
@@ -73,11 +73,11 @@ The url of the repository is encoded to a directory name with a weird URI-like
 encoding. This is a mistake that seems costly to fix, but is worth being aware
 of.
 
-Each repository folder has a sub-folder per `$package-$version` that is
+Each repository folder has a sub-folder per `$package-$version/` that is
 downloaded from that repository:
 
 ```plaintext
-.pub-cache/hosted/pub.dev/
+$PUB_CACHE/hosted/pub.dev/
 ├── .cache/
 ├── args-2.3.2/
 ├── retry-1.0.0/
@@ -86,7 +86,7 @@ downloaded from that repository:
 └── yaml_edit-2.1.0/
 ```
 
-A package name can always be used as a file-name (TODO: should we have a length-restriction on package-names?).
+A package name can always be used as a file-name (TODO: should we have a length-restriction on package-names? https://github.com/dart-lang/pub/issues/3895).
 
 A serialized version string can always be encoded as a file-name.
 
@@ -98,7 +98,7 @@ The `.cache/` folder is storing the last version listing response for each
 package:
 
 ```plaintext
-.pub-cache/hosted/pub.dev/.cache
+$PUB_CACHE/hosted/pub.dev/.cache
 ├── args-versions.json
 ├── retry-versions.json
 ├── yaml_edit-versions.json
@@ -108,12 +108,12 @@ package:
 These are used as a heuristic to speed up version resolution. They are
 timestamped with the time of retrieval.
 
-(This should arguably have been called something like `.pub-cache/hosted-version-listings` to separate cleanly from the package downloads).
+(This should arguably have been called something like `$PUB_CACHE/hosted-version-listings` to separate cleanly from the package downloads).
 
 Adding further files or folders inside `hosted/` unless the start with a '.' will break
 the `dart pub cache clean` command from older SDKs and should be avoided. (It assumes all folders/files are packages that need to be restored).
 
-The `.pub-cache/hosted-hashes/` folder has a file per package-version with the sha256 hash of the downloaded archive:
+The `$PUB_CACHE/hosted-hashes/` folder has a file per package-version with the sha256 hash of the downloaded archive:
 
 ```plaintext
 $PUB_CACHE/hosted-hashes/
@@ -150,7 +150,7 @@ deeper inside using `path`. Two packages can share the same checkout.
 It is laid out as this example:
 
 ```plaintext
-.pub-cache/git/
+$PUB_CACHE/git/
 ├── cache/
 │   ├── pana-72b499ded128c6590fbda1b7e87de1c8bbb38a04/
 │   └── pub-d666e8aee885cce49978e27a66c99ee08ce3995f/
@@ -179,7 +179,7 @@ the global package conventions.
 The folder is laid out like in this example:
 
 ```plaintext
-.pub-cache/global_packages/
+$PUB_CACHE/global_packages/
 ├── stagehand/
 │   ├── bin/
 │   │   └── stagehand.dart-2.19.0.snapshot
@@ -214,7 +214,7 @@ limitations, and we should probably rethink this). A re-activation of the
 package will delete all the existing snapshots.
 
 The `incremental` is used while compiling them. (TODO: We should probably remove
-this after succesful compilation).
+this after succesful compilation https://github.com/dart-lang/pub/issues/3896).
 
 For packages activated with `--source=path` the lockfile is special-cased to just point
 to the activated path, and `.dart_tool/package_config.json`, snapshots are
