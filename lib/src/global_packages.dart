@@ -434,7 +434,6 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 ${log.bold(name)} as globally activated doesn't support Dart ${sdk.version}.
 
 try:
-`$topLevelProgram pub global deactivate $name` followed by
 `$topLevelProgram pub global activate $name` to reactivate.
 ''');
       } else {

@@ -118,7 +118,6 @@ void main() {
 foo as globally activated doesn't support Dart 3.0.0.
 
 try:
-`dart pub global deactivate foo` followed by
 `dart pub global activate foo` to reactivate.""",
       ),
       exitCode: exit_codes.DATA,
