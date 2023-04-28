@@ -17,8 +17,7 @@ The global default pub-cache is located at:
  * `$HOME/.pub_cache` on Linux and Mac OS,
  * `%LOCALAPPDATA%/Pub/Cache` on Windows.
 
-For the Flutter SDK after 3.8 uses the same folder. Before it would use the same
-folder if it was found, and otherwise  use `$FLUTTER_ROOT/.pub_cache`.
+Prior to Flutter 3.8.0, the Flutter SDK declared `PUB_CACHE=$FLUTTER_ROOT/.pub_cache` overriding the default global pub-cache.
 
 The environment variable `PUB_CACHE` can be used to override the location of the
 pub cache.
