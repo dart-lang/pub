@@ -427,9 +427,16 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         dataError('${log.bold(name)} as globally activated requires '
             'unknown SDK "$name".');
       } else if (sdkName == 'dart') {
-        if (constraint.allows((sdk as DartSdk).version)) return;
-        dataError("${log.bold(name)} as globally activated doesn't "
-            'support Dart ${sdk.version}, try: $topLevelProgram pub global activate $name');
+        if (constraint.effectiveConstraint.allows((sdk as DartSdk).version)) {
+          return;
+        }
+        dataError('''
+${log.bold(name)} as globally activated doesn't support Dart ${sdk.version}.
+
+try:
+`$topLevelProgram pub global deactivate $name` followed by
+`$topLevelProgram pub global activate $name` to reactivate.
+''');
       } else {
         dataError('${log.bold(name)} as globally activated requires the '
             '${sdk.name} SDK, which is unsupported for global executables.');

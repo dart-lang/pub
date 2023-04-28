@@ -15,6 +15,7 @@ import 'io.dart';
 import 'language_version.dart';
 import 'package_config.dart';
 import 'package_name.dart';
+import 'pubspec.dart';
 import 'sdk.dart' show sdk;
 import 'system_cache.dart';
 import 'utils.dart';
@@ -26,7 +27,7 @@ class LockFile {
 
   /// The intersections of all SDK constraints for all locked packages, indexed
   /// by SDK identifier.
-  Map<String, VersionConstraint> sdkConstraints;
+  Map<String, SdkConstraint> sdkConstraints;
 
   /// Dependency names that appeared in the root package's `dependencies`
   /// section.
@@ -49,7 +50,7 @@ class LockFile {
   /// analysis server to provide better auto-completion.
   LockFile(
     Iterable<PackageId> ids, {
-    Map<String, VersionConstraint>? sdkConstraints,
+    Map<String, SdkConstraint>? sdkConstraints,
     Set<String>? mainDependencies,
     Set<String>? devDependencies,
     Set<String>? overriddenDependencies,
@@ -58,7 +59,7 @@ class LockFile {
             ids.where((id) => !id.isRoot),
             key: (id) => id.name,
           ),
-          sdkConstraints ?? {'dart': VersionConstraint.any},
+          sdkConstraints ?? {'dart': SdkConstraint(VersionConstraint.any)},
           mainDependencies ?? const UnmodifiableSetView.empty(),
           devDependencies ?? const UnmodifiableSetView.empty(),
           overriddenDependencies ?? const UnmodifiableSetView.empty(),
@@ -74,7 +75,7 @@ class LockFile {
 
   LockFile.empty()
       : packages = const {},
-        sdkConstraints = {'dart': VersionConstraint.any},
+        sdkConstraints = {'dart': SdkConstraint(VersionConstraint.any)},
         mainDependencies = const UnmodifiableSetView.empty(),
         devDependencies = const UnmodifiableSetView.empty(),
         overriddenDependencies = const UnmodifiableSetView.empty();
@@ -114,14 +115,17 @@ class LockFile {
       'YAML mapping',
     );
 
-    final sdkConstraints = <String, VersionConstraint>{};
+    final sdkConstraints = <String, SdkConstraint>{};
     final sdkNode =
         _getEntry<YamlScalar?>(parsed, 'sdk', 'string', required: false);
     if (sdkNode != null) {
       // Lockfiles produced by pub versions from 1.14.0 through 1.18.0 included
       // a top-level "sdk" field which encoded the unified constraint on the
       // Dart SDK. They had no way of specifying constraints on other SDKs.
-      sdkConstraints['dart'] = _parseVersionConstraint(sdkNode);
+      sdkConstraints['dart'] = SdkConstraint.interpretDartSdkConstraint(
+        _parseVersionConstraint(sdkNode),
+        defaultUpperBoundConstraint: null,
+      );
     }
 
     final sdksField =
@@ -131,7 +135,18 @@ class LockFile {
       _parseEachEntry<String, YamlScalar>(
         sdksField,
         (name, constraint) {
-          sdkConstraints[name] = _parseVersionConstraint(constraint);
+          final originalConstraint = _parseVersionConstraint(constraint);
+          // Reinterpret the sdk constraints here, in case they were written by
+          // an old sdk that did not do reinterpretations.
+          sdkConstraints[name] = switch (name) {
+            'dart' => SdkConstraint.interpretDartSdkConstraint(
+                originalConstraint,
+                defaultUpperBoundConstraint: null,
+              ),
+            'flutter' =>
+              SdkConstraint.interpretFlutterSdkConstraint(originalConstraint),
+            _ => SdkConstraint(originalConstraint),
+          };
         },
         'string',
         'string',
