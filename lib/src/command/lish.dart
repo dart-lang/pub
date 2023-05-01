@@ -82,7 +82,8 @@ class LishCommand extends PubCommand {
     argParser.addFlag(
       'skip-validation',
       negatable: false,
-      help: "Don't do any validations or resolution, just publish.",
+      help:
+          'Publish without validation and resolution (this will ignore errors).',
     );
     argParser.addOption(
       'server',
