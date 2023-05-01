@@ -79,6 +79,11 @@ class LishCommand extends PubCommand {
       negatable: false,
       help: 'Publish without confirmation if there are no errors.',
     );
+    argParser.addFlag(
+      'skip-validation',
+      negatable: false,
+      help: "Don't do any validations or resolution, just publish.",
+    );
     argParser.addOption(
       'server',
       help: 'The package server to which to upload this package.',
@@ -251,7 +256,13 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
-    await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+    if (!argResults['skip-validation']) {
+      await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+    } else {
+      log.warning(
+        'Running with `skip-validation`. No client-side validation is done.',
+      );
+    }
 
     var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root.name}.');
@@ -267,10 +278,12 @@ the \$PUB_HOSTED_URL environment variable.''',
         createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
 
     // Validate the package.
-    var isValid = await _validate(
-      packageBytesFuture.then((bytes) => bytes.length),
-      files,
-    );
+    var isValid = argResults['skip-validation']
+        ? true
+        : await _validate(
+            packageBytesFuture.then((bytes) => bytes.length),
+            files,
+          );
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;
