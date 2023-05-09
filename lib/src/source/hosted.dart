@@ -554,23 +554,27 @@ class HostedSource extends CachedSource {
       if (maxAge == null || now.difference(stat.modified) < maxAge) {
         try {
           final cachedDoc = jsonDecode(readTextFile(cachePath));
+          if (cachedDoc is! Map) {
+            throw FormatException('Broken cached version listing response');
+          }
           final timestamp = cachedDoc['_fetchedAt'];
-          if (timestamp is String) {
-            final parsedTimestamp = DateTime.parse(timestamp);
-            final cacheAge = DateTime.now().difference(parsedTimestamp);
-            if (maxAge != null && cacheAge > maxAge) {
-              // Too old according to internal timestamp - delete.
-              tryDeleteEntry(cachePath);
-            } else {
-              var res = _versionInfoFromPackageListing(
-                cachedDoc,
-                ref,
-                Uri.file(cachePath),
-                cache,
-              );
-              _responseCache[ref] = Pair(parsedTimestamp, res);
-              return res;
-            }
+          if (timestamp is! String) {
+            throw FormatException('Broken cached version listing response');
+          }
+          final parsedTimestamp = DateTime.parse(timestamp);
+          final cacheAge = DateTime.now().difference(parsedTimestamp);
+          if (maxAge != null && cacheAge > maxAge) {
+            // Too old according to internal timestamp - delete.
+            tryDeleteEntry(cachePath);
+          } else {
+            var res = _versionInfoFromPackageListing(
+              cachedDoc,
+              ref,
+              Uri.file(cachePath),
+              cache,
+            );
+            _responseCache[ref] = Pair(parsedTimestamp, res);
+            return res;
           }
         } on io.IOException {
           // Could not read the file. Delete if it exists.
