@@ -8,6 +8,7 @@ Usage: pub publish [options]
 -h, --help               Print this usage information.
 -n, --dry-run            Validate but do not publish the package.
 -f, --force              Publish without confirmation if there are no errors.
+    --skip-validation    Publish without validation and resolution (this will ignore errors).
 -C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.
