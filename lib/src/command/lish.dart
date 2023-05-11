@@ -66,6 +66,8 @@ class LishCommand extends PubCommand {
   /// Whether the publish requires confirmation.
   bool get force => argResults['force'];
 
+  bool get skipValidation => argResults['skip-validation'];
+
   LishCommand() {
     argParser.addFlag(
       'dry-run',
@@ -257,7 +259,7 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
-    if (!argResults['skip-validation']) {
+    if (!skipValidation) {
       await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
     } else {
       log.warning(
@@ -279,7 +281,7 @@ the \$PUB_HOSTED_URL environment variable.''',
         createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
 
     // Validate the package.
-    var isValid = argResults['skip-validation']
+    var isValid = skipValidation
         ? true
         : await _validate(
             packageBytesFuture.then((bytes) => bytes.length),
