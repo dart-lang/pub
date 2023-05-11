@@ -99,7 +99,7 @@ class VersionSolver {
     _addIncompatibility(
       Incompatibility(
         [Term(PackageRange.root(_root), false)],
-        IncompatibilityCause.root,
+        RootIncompatibilityCause(),
       ),
     );
 
@@ -351,7 +351,7 @@ class VersionSolver {
       _addIncompatibility(
         Incompatibility(
           [Term(candidate.toRef().withConstraint(VersionConstraint.any), true)],
-          IncompatibilityCause.unknownSource,
+          UnknownSourceIncompatibilityCause(),
         ),
       );
       return candidate.name;
@@ -373,7 +373,7 @@ class VersionSolver {
       _addIncompatibility(
         Incompatibility(
           [Term(package.toRef().withConstraint(VersionConstraint.any), true)],
-          PackageNotFoundCause(error),
+          PackageNotFoundIncompatibilityCause(error),
         ),
       );
       return package.name;
@@ -393,7 +393,7 @@ class VersionSolver {
         _addIncompatibility(
           Incompatibility(
             [Term(package, true)],
-            IncompatibilityCause.noVersions,
+            NoVersionsIncompatibilityCause(),
           ),
         );
         return package.name;

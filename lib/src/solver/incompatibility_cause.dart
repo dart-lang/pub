@@ -10,22 +10,8 @@ import '../sdk.dart';
 import 'incompatibility.dart';
 
 /// The reason an [Incompatibility]'s terms are incompatible.
-abstract class IncompatibilityCause {
-  const IncompatibilityCause._();
-
-  /// The incompatibility represents the requirement that the root package
-  /// exists.
-  static const IncompatibilityCause root = _Cause('root');
-
-  /// The incompatibility represents a package's dependency.
-  static const IncompatibilityCause dependency = _Cause('dependency');
-
-  /// The incompatibility indicates that the package has no versions that match
-  /// the given constraint.
-  static const IncompatibilityCause noVersions = _Cause('no versions');
-
-  /// The incompatibility indicates that the package has an unknown source.
-  static const IncompatibilityCause unknownSource = _Cause('unknown source');
+sealed class IncompatibilityCause {
+  IncompatibilityCause();
 
   /// Human readable notice / information providing context for this
   /// incompatibility.
@@ -43,6 +29,23 @@ abstract class IncompatibilityCause {
   String? get hint => null;
 }
 
+/// The incompatibility represents the requirement that the root package
+/// exists.
+class RootIncompatibilityCause extends IncompatibilityCause {}
+
+/// The incompatibility represents a package's dependency.
+class DependencyIncompatibilityCause extends IncompatibilityCause {
+  
+  
+}
+
+/// The incompatibility indicates that the package has no versions that match
+/// the given constraint.
+class NoVersionsIncompatibilityCause extends IncompatibilityCause {}
+
+/// The incompatibility indicates that the package has an unknown source.
+class UnknownSourceIncompatibilityCause extends IncompatibilityCause {}
+
 /// The incompatibility was derived from two existing incompatibilities during
 /// conflict resolution.
 class ConflictCause extends IncompatibilityCause {
@@ -54,22 +57,12 @@ class ConflictCause extends IncompatibilityCause {
   /// from which the target incompatibility was derived.
   final Incompatibility other;
 
-  ConflictCause(this.conflict, this.other) : super._();
-}
-
-/// A class for stateless [IncompatibilityCause]s.
-class _Cause extends IncompatibilityCause {
-  final String _name;
-
-  const _Cause(this._name) : super._();
-
-  @override
-  String toString() => _name;
+  ConflictCause(this.conflict, this.other);
 }
 
 /// The incompatibility represents a package's SDK constraint being
 /// incompatible with the current SDK.
-class SdkCause extends IncompatibilityCause {
+class SdkIncompatibilityCause extends IncompatibilityCause {
   /// The union of all the incompatible versions' constraints on the SDK.
   // TODO(zarah): Investigate if this can be non-nullable
   final VersionConstraint? constraint;
@@ -111,16 +104,16 @@ class SdkCause extends IncompatibilityCause {
     return sdk.installMessage;
   }
 
-  SdkCause(this.constraint, this.sdk) : super._();
+  SdkIncompatibilityCause(this.constraint, this.sdk);
 }
 
 /// The incompatibility represents a package that couldn't be found by its
 /// source.
-class PackageNotFoundCause extends IncompatibilityCause {
+class PackageNotFoundIncompatibilityCause extends IncompatibilityCause {
   /// The exception indicating why the package couldn't be found.
   final PackageNotFoundException exception;
 
-  PackageNotFoundCause(this.exception) : super._();
+  PackageNotFoundIncompatibilityCause(this.exception);
 
   @override
   String? get hint => exception.hint;

@@ -54,7 +54,7 @@ Future<String?> suggestResolutionAlternatives(
       break;
     }
     final cause = externalIncompatibility.cause;
-    if (cause is SdkCause) {
+    if (cause is SdkIncompatibilityCause) {
       addSuggestionIfPresent(await resolutionContext.suggestSdkUpdate(cause));
     } else {
       for (final term in externalIncompatibility.terms) {
@@ -132,7 +132,9 @@ class _ResolutionContext {
 
   /// If [cause] mentions an sdk, attempt resolving using another released
   /// version of Flutter/Dart. Return that as a suggestion if found.
-  Future<_ResolutionSuggestion?> suggestSdkUpdate(SdkCause cause) async {
+  Future<_ResolutionSuggestion?> suggestSdkUpdate(
+    SdkIncompatibilityCause cause,
+  ) async {
     final sdkName = cause.sdk.identifier;
     if (!(sdkName == 'dart' || (sdkName == 'flutter' && runningFromFlutter))) {
       // Only make sdk upgrade suggestions for Flutter and Dart.

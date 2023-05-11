@@ -96,7 +96,7 @@ class Incompatibility {
   /// for packages with the given names.
   @override
   String toString([Map<String, PackageDetail>? details]) {
-    if (cause == IncompatibilityCause.dependency) {
+    if (cause is DependencyIncompatibilityCause) {
       assert(terms.length == 2);
 
       var depender = terms.first;
@@ -106,11 +106,11 @@ class Incompatibility {
 
       return '${_terse(depender, details, allowEvery: true)} depends on '
           '${_terse(dependee, details)}';
-    } else if (cause is SdkCause) {
+    } else if (cause is SdkIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
-      var cause = this.cause as SdkCause;
+      var cause = this.cause as SdkIncompatibilityCause;
       var buffer = StringBuffer(_terse(terms.first, details, allowEvery: true));
       if (cause.noNullSafetyCause) {
         buffer.write(' doesn\'t support null safety');
@@ -124,24 +124,24 @@ class Incompatibility {
         }
       }
       return buffer.toString();
-    } else if (cause == IncompatibilityCause.noVersions) {
+    } else if (cause is NoVersionsIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
       return 'no versions of ${_terseRef(terms.first, details)} '
           'match ${terms.first.constraint}';
-    } else if (cause is PackageNotFoundCause) {
+    } else if (cause is PackageNotFoundIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
-      var cause = this.cause as PackageNotFoundCause;
+      var cause = this.cause as PackageNotFoundIncompatibilityCause;
       return "${_terseRef(terms.first, details)} doesn't exist "
           '(${cause.exception.message})';
-    } else if (cause == IncompatibilityCause.unknownSource) {
+    } else if (cause is UnknownSourceIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
       return '${terms.first.package.name} comes from unknown source '
           '"${terms.first.package.source}"';
-    } else if (cause == IncompatibilityCause.root) {
+    } else if (cause is RootIncompatibilityCause) {
       // [IncompatibilityCause.root] is only used when a package depends on the
       // entrypoint with an incompatible version, so we want to print the
       // entrypoint's actual version to make it clear why this failed.
@@ -265,8 +265,8 @@ class Incompatibility {
 
     var buffer =
         StringBuffer('${_terse(thisPositive, details, allowEvery: true)} ');
-    var isDependency = cause == IncompatibilityCause.dependency &&
-        other.cause == IncompatibilityCause.dependency;
+    var isDependency = cause is DependencyIncompatibilityCause &&
+        other.cause is DependencyIncompatibilityCause;
     buffer.write(isDependency ? 'depends on' : 'requires');
     buffer.write(' both $thisNegatives');
     if (thisLine != null) buffer.write(' ($thisLine)');
@@ -329,7 +329,7 @@ class Incompatibility {
           priorPositives.map((term) => _terse(term, details)).join(' or ');
       buffer.write('if $priorString then ');
     } else {
-      var verb = prior.cause == IncompatibilityCause.dependency
+      var verb = prior.cause is DependencyIncompatibilityCause
           ? 'depends on'
           : 'requires';
       buffer.write('${_terse(priorPositives.first, details, allowEvery: true)} '
@@ -340,7 +340,7 @@ class Incompatibility {
     if (priorLine != null) buffer.write(' ($priorLine)');
     buffer.write(' which ');
 
-    if (latter.cause == IncompatibilityCause.dependency) {
+    if (latter.cause is DependencyIncompatibilityCause) {
       buffer.write('depends on ');
     } else {
       buffer.write('requires ');
@@ -400,13 +400,13 @@ class Incompatibility {
     } else {
       buffer.write(_terse(positives.first, details, allowEvery: true));
       buffer.write(
-        prior.cause == IncompatibilityCause.dependency
+        prior.cause is DependencyIncompatibilityCause
             ? ' depends on '
             : ' requires ',
       );
     }
 
-    if (latter.cause == IncompatibilityCause.unknownSource) {
+    if (latter.cause is UnknownSourceIncompatibilityCause) {
       var package = latter.terms.first.package;
       buffer.write('${package.name} ');
       if (priorLine != null) buffer.write('($priorLine) ');
@@ -418,8 +418,8 @@ class Incompatibility {
     buffer.write('${_terse(latter.terms.first, details)} ');
     if (priorLine != null) buffer.write('($priorLine) ');
 
-    if (latter.cause is SdkCause) {
-      var cause = latter.cause as SdkCause;
+    if (latter.cause is SdkIncompatibilityCause) {
+      var cause = latter.cause as SdkIncompatibilityCause;
       if (cause.noNullSafetyCause) {
         buffer.write('which doesn\'t support null safety');
       } else {
@@ -431,11 +431,11 @@ class Incompatibility {
           buffer.write('SDK version ${cause.constraint}');
         }
       }
-    } else if (latter.cause == IncompatibilityCause.noVersions) {
+    } else if (latter.cause is NoVersionsIncompatibilityCause) {
       buffer.write("which doesn't match any versions");
-    } else if (latter.cause is PackageNotFoundCause) {
+    } else if (latter.cause is PackageNotFoundIncompatibilityCause) {
       buffer.write("which doesn't exist "
-          '(${(latter.cause as PackageNotFoundCause).exception.message})');
+          '(${(latter.cause as PackageNotFoundIncompatibilityCause).exception.message})');
     } else {
       buffer.write('which is forbidden');
     }
