@@ -326,7 +326,7 @@ class PackageLister {
   Incompatibility _dependency(PackageRange depender, PackageRange target) {
     return Incompatibility(
       [Term(depender, true), Term(target, false)],
-      DependencyIncompatibilityCause(),
+      DependencyIncompatibilityCause(depender, target),
     );
   }
 

@@ -6,7 +6,9 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
 import '../language_version.dart';
+import '../package_name.dart';
 import '../sdk.dart';
+import '../source/sdk.dart';
 import 'incompatibility.dart';
 
 /// The reason an [Incompatibility]'s terms are incompatible.
@@ -35,8 +37,24 @@ class RootIncompatibilityCause extends IncompatibilityCause {}
 
 /// The incompatibility represents a package's dependency.
 class DependencyIncompatibilityCause extends IncompatibilityCause {
-  
-  
+  final PackageRange depender;
+  final PackageRange target;
+  DependencyIncompatibilityCause(this.depender, this.target);
+
+  @override
+  String? get notice {
+    final dependerDescription = depender.description;
+    if (dependerDescription is SdkDescription) {
+      final targetConstraint = target.constraint;
+      if (targetConstraint is Version) {
+        return '''
+Note: ${target.name} is pinned to version $targetConstraint by ${depender.name} from the ${dependerDescription.sdk} SDK.
+See https://dart.dev/go/version-pinning for details.
+''';
+      }
+    }
+    return null;
+  }
 }
 
 /// The incompatibility indicates that the package has no versions that match
