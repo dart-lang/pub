@@ -142,7 +142,7 @@ class Incompatibility {
       return '${terms.first.package.name} comes from unknown source '
           '"${terms.first.package.source}"';
     } else if (cause is RootIncompatibilityCause) {
-      // [IncompatibilityCause.root] is only used when a package depends on the
+      // [RootIncompatibilityCause] is only used when a package depends on the
       // entrypoint with an incompatible version, so we want to print the
       // entrypoint's actual version to make it clear why this failed.
       assert(terms.length == 1);

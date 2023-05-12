@@ -34,7 +34,8 @@ sealed class IncompatibilityCause {
 /// The incompatibility represents the requirement that the root package
 /// exists.
 class RootIncompatibilityCause extends IncompatibilityCause {
-  const RootIncompatibilityCause();
+  factory RootIncompatibilityCause() => const RootIncompatibilityCause._();
+  const RootIncompatibilityCause._();
 }
 
 /// The incompatibility represents a package's dependency.
@@ -62,12 +63,16 @@ See https://dart.dev/go/sdk-version-pinning for details.
 /// The incompatibility indicates that the package has no versions that match
 /// the given constraint.
 class NoVersionsIncompatibilityCause extends IncompatibilityCause {
-  const NoVersionsIncompatibilityCause();
+  factory NoVersionsIncompatibilityCause() =>
+      const NoVersionsIncompatibilityCause._();
+  const NoVersionsIncompatibilityCause._();
 }
 
 /// The incompatibility indicates that the package has an unknown source.
 class UnknownSourceIncompatibilityCause extends IncompatibilityCause {
-  const UnknownSourceIncompatibilityCause();
+  factory UnknownSourceIncompatibilityCause() =>
+      const UnknownSourceIncompatibilityCause._();
+  const UnknownSourceIncompatibilityCause._();
 }
 
 /// The incompatibility was derived from two existing incompatibilities during
