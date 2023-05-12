@@ -13,7 +13,7 @@ import 'incompatibility.dart';
 
 /// The reason an [Incompatibility]'s terms are incompatible.
 sealed class IncompatibilityCause {
-  IncompatibilityCause();
+  const IncompatibilityCause();
 
   /// Human readable notice / information providing context for this
   /// incompatibility.
@@ -33,7 +33,9 @@ sealed class IncompatibilityCause {
 
 /// The incompatibility represents the requirement that the root package
 /// exists.
-class RootIncompatibilityCause extends IncompatibilityCause {}
+class RootIncompatibilityCause extends IncompatibilityCause {
+  const RootIncompatibilityCause();
+}
 
 /// The incompatibility represents a package's dependency.
 class DependencyIncompatibilityCause extends IncompatibilityCause {
@@ -59,10 +61,14 @@ See https://dart.dev/go/version-pinning for details.
 
 /// The incompatibility indicates that the package has no versions that match
 /// the given constraint.
-class NoVersionsIncompatibilityCause extends IncompatibilityCause {}
+class NoVersionsIncompatibilityCause extends IncompatibilityCause {
+  const NoVersionsIncompatibilityCause();
+}
 
 /// The incompatibility indicates that the package has an unknown source.
-class UnknownSourceIncompatibilityCause extends IncompatibilityCause {}
+class UnknownSourceIncompatibilityCause extends IncompatibilityCause {
+  const UnknownSourceIncompatibilityCause();
+}
 
 /// The incompatibility was derived from two existing incompatibilities during
 /// conflict resolution.

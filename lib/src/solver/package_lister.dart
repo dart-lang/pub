@@ -209,7 +209,7 @@ class PackageLister {
       return [
         Incompatibility(
           [Term(id.toRange(), true)],
-          NoVersionsIncompatibilityCause(),
+          const NoVersionsIncompatibilityCause(),
         )
       ];
     } on PackageNotFoundException {
@@ -219,7 +219,7 @@ class PackageLister {
       return [
         Incompatibility(
           [Term(id.toRange(), true)],
-          NoVersionsIncompatibilityCause(),
+          const NoVersionsIncompatibilityCause(),
         )
       ];
     }
