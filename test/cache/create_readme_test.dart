@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -43,7 +44,7 @@ void main() async {
       contents: [d.file('bin/foo.dart', "main() {print('Hello');}")],
     );
     await runPub(args: ['global', 'activate', 'foo']);
-    File(d.path(cachePath, 'README.md')).deleteSync();
+    File(p.join(d.sandbox, cachePath, 'README.md')).deleteSync();
     // Replace the created snapshot with one that really doesn't work with the
     // current dart.
     await d.dir(cachePath, [
