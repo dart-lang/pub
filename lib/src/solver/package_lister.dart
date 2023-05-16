@@ -275,7 +275,8 @@ class PackageLister {
     var index = lowerBound(
       versions,
       id,
-      compare: (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
+      compare: (PackageId id1, PackageId id2) =>
+          id1.version.compareTo(id2.version),
     );
     assert(index < versions.length);
     assert(versions[index].version == id.version);

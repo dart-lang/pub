@@ -135,7 +135,8 @@ class GlobalActivateCommand extends PubCommand {
 
         PackageRef ref;
         try {
-          ref = cache.hosted.refFor(package, url: argResults['hosted-url'] as String?);
+          ref = cache.hosted
+              .refFor(package, url: argResults['hosted-url'] as String?);
         } on FormatException catch (e) {
           usageException('Invalid hosted-url: $e');
         }

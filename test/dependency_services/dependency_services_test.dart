@@ -254,7 +254,8 @@ Future<void> main() async {
     final lockFileYaml = YamlEditor(
       lockFile.readAsStringSync(),
     );
-    for (final p in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
+    for (final p
+        in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
       lockFileYaml.remove(['packages', p.key, 'description', 'sha256']);
     }
     lockFile.writeAsStringSync(lockFileYaml.toString());
@@ -289,7 +290,8 @@ Future<void> main() async {
     final lockFileYaml = YamlEditor(
       lockFile.readAsStringSync(),
     );
-    for (final p in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
+    for (final p
+        in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
       lockFileYaml.update(
         ['packages', p.key, 'description', 'url'],
         'https://pub.dartlang.org',

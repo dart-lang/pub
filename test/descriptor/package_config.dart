@@ -54,7 +54,7 @@ class PackageConfigFileDescriptor extends Descriptor {
 
     Map<String, dynamic> rawJson = json.decode(
       await File(packageConfigFile).readAsString(),
-    ) as Map<String, dynamic> ;
+    ) as Map<String, dynamic>;
     PackageConfig config;
     try {
       config = PackageConfig.fromJson(rawJson);

@@ -765,8 +765,11 @@ Future<PubProcessResult> runProcess(
       );
     }
 
-    var pubResult =
-        PubProcessResult(result.stdout as String, result.stderr as String, result.exitCode);
+    var pubResult = PubProcessResult(
+      result.stdout as String,
+      result.stderr as String,
+      result.exitCode,
+    );
     log.processResult(executable, pubResult);
     return pubResult;
   });
@@ -833,8 +836,11 @@ PubProcessResult runProcessSync(
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
-  var pubResult =
-      PubProcessResult(result.stdout as String, result.stderr as String, result.exitCode);
+  var pubResult = PubProcessResult(
+    result.stdout as String,
+    result.stderr as String,
+    result.exitCode,
+  );
   log.processResult(executable, pubResult);
   return pubResult;
 }
