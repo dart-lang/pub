@@ -331,12 +331,6 @@ Consider setting the `PUB_CACHE` variable manually.
     final legacyCacheDeprecatedFile =
         p.join(legacyCacheLocation, 'DEPRECATED.md');
     final stat = tryStatFile(legacyCacheDeprecatedFile);
-    if (stat != null) {
-      log.fine('''
-${DateTime.now().difference(stat.changed) > Duration(days: 7)} ${stat.changed}'''); // XXX remove
-    }
-    log.fine('''
-${dirExists(legacyCacheLocation)}'''); // XXX remove
     if ((stat == null ||
             DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
         dirExists(legacyCacheLocation)) {
