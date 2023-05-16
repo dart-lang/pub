@@ -14,7 +14,7 @@ void main() async {
     if (oldCacheDir.existsSync()) {
       fail('Cannot run test with existing $oldCacheLocation');
     }
-    oldCacheDir.createSync();
+    oldCacheDir.createSync(recursive: true);
     addTearDown(() => oldCacheDir.deleteSync(recursive: true));
 
     final server = await servePackages();
