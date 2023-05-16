@@ -1101,6 +1101,6 @@ dependency_overrides:
 
     await pubGet();
 
-    await pubAdd(args: ['foo'], output: contains('foo: ^1.0.0'));
+    await pubAdd(args: ['foo'], output: contains('foo: +1.0.0'));
   });
 }
