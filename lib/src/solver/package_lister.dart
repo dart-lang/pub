@@ -209,7 +209,7 @@ class PackageLister {
       return [
         Incompatibility(
           [Term(id.toRange(), true)],
-          IncompatibilityCause.noVersions,
+          NoVersionsIncompatibilityCause(),
         )
       ];
     } on PackageNotFoundException {
@@ -219,7 +219,7 @@ class PackageLister {
       return [
         Incompatibility(
           [Term(id.toRange(), true)],
-          IncompatibilityCause.noVersions,
+          NoVersionsIncompatibilityCause(),
         )
       ];
     }
@@ -236,7 +236,7 @@ class PackageLister {
           return [
             Incompatibility(
               [Term(depender, true)],
-              SdkCause(
+              SdkIncompatibilityCause(
                 pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
                 sdk,
               ),
@@ -323,11 +323,12 @@ class PackageLister {
 
   /// Returns an [Incompatibility] that represents a dependency from [depender]
   /// onto [target].
-  Incompatibility _dependency(PackageRange depender, PackageRange target) =>
-      Incompatibility(
-        [Term(depender, true), Term(target, false)],
-        IncompatibilityCause.dependency,
-      );
+  Incompatibility _dependency(PackageRange depender, PackageRange target) {
+    return Incompatibility(
+      [Term(depender, true), Term(target, false)],
+      DependencyIncompatibilityCause(depender, target),
+    );
+  }
 
   /// If the version at [index] in [_versions] isn't compatible with the current
   /// version of [sdk], returns an [Incompatibility] indicating that.
@@ -363,7 +364,7 @@ class PackageLister {
 
     return Incompatibility(
       [Term(_ref.withConstraint(incompatibleVersions), true)],
-      SdkCause(sdkConstraint, sdk),
+      SdkIncompatibilityCause(sdkConstraint, sdk),
     );
   }
 

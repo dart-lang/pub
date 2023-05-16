@@ -32,7 +32,7 @@ class SolveFailure implements ApplicationException {
   PackageNotFoundException? get packageNotFound {
     for (var incompatibility in incompatibility.externalIncompatibilities) {
       var cause = incompatibility.cause;
-      if (cause is PackageNotFoundCause) return cause.exception;
+      if (cause is PackageNotFoundIncompatibilityCause) return cause.exception;
     }
     return null;
   }
