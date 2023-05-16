@@ -79,7 +79,8 @@ class GlobalRunCommand extends PubCommand {
       Executable.adaptProgramName(package, executable),
       args,
       vmArgs: vmArgs,
-      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+      enableAsserts:
+          asBool(argResults['enable-asserts']) || asBool(argResults['checked']),
       recompile: (executable) => log.errorsOnlyUnlessTerminal(
         () => globalEntrypoint.precompileExecutable(executable),
       ),

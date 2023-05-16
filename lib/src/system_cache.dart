@@ -67,8 +67,10 @@ Consider setting the `PUB_CACHE` variable manually.
   })();
 
   /// The available sources.
-  late final _sources =
-      Map.fromIterable([hosted, git, path, sdk], key: (source) => source.name);
+  late final _sources = Map<String, Source>.fromIterable(
+    [hosted, git, path, sdk],
+    key: (source) => (source as Source).name,
+  );
 
   Source sources(String? name) {
     return name == null

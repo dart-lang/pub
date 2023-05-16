@@ -79,7 +79,7 @@ void main() {
             '${result.stderr}');
       }
 
-      argMax = int.parse(result.stdout);
+      argMax = int.parse(result.stdout as String);
     }
 
     var appRoot = p.join(d.sandbox, appPath);

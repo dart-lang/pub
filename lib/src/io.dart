@@ -755,7 +755,7 @@ Future<PubProcessResult> runProcess(
         Process.run,
         executable,
         args,
-        workingDir: workingDir,
+        workingDir: workingDir as String?,
         environment: environment,
         runInShell: runInShell,
       );
@@ -766,7 +766,7 @@ Future<PubProcessResult> runProcess(
     }
 
     var pubResult =
-        PubProcessResult(result.stdout, result.stderr, result.exitCode);
+        PubProcessResult(result.stdout as String, result.stderr as String, result.exitCode);
     log.processResult(executable, pubResult);
     return pubResult;
   });
@@ -834,7 +834,7 @@ PubProcessResult runProcessSync(
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
   var pubResult =
-      PubProcessResult(result.stdout, result.stderr, result.exitCode);
+      PubProcessResult(result.stdout as String, result.stderr as String, result.exitCode);
   log.processResult(executable, pubResult);
   return pubResult;
 }

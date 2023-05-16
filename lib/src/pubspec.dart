@@ -105,7 +105,7 @@ class Pubspec extends PubspecBase {
         if (!const {'dependency_overrides'}.contains(key.value)) {
           throw SourceSpanApplicationException(
             'pubspec_overrides.yaml only supports the `dependency_overrides` field.',
-            key.span,
+            (key as YamlNode).span,
           );
         }
       });
@@ -177,9 +177,12 @@ class Pubspec extends PubspecBase {
       yaml.nodes.forEach((nameNode, constraintNode) {
         final name = nameNode.value;
         if (name is! String) {
-          _error('SDK names must be strings.', nameNode.span);
+          _error('SDK names must be strings.', (nameNode as YamlNode).span);
         } else if (name == 'dart') {
-          _error('Use "sdk" to for Dart SDK constraints.', nameNode.span);
+          _error(
+            'Use "sdk" to for Dart SDK constraints.',
+            (nameNode as YamlNode).span,
+          );
         }
         if (name == 'sdk') return;
 
@@ -254,13 +257,22 @@ class Pubspec extends PubspecBase {
     this.dependencyOverridesFromOverridesFile = false,
   })  : _dependencies = dependencies == null
             ? null
-            : Map.fromIterable(dependencies, key: (range) => range.name),
+            : Map.fromIterable(
+                dependencies,
+                key: (range) => (range as PackageRange).name,
+              ),
         _devDependencies = devDependencies == null
             ? null
-            : Map.fromIterable(devDependencies, key: (range) => range.name),
+            : Map.fromIterable(
+                devDependencies,
+                key: (range) => (range as PackageRange).name,
+              ),
         _dependencyOverrides = dependencyOverrides == null
             ? null
-            : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
+            : Map.fromIterable(
+                dependencyOverrides,
+                key: (range) => (range as PackageRange).name,
+              ),
         _givenSdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': SdkConstraint(VersionConstraint.any)}),
         _includeDefaultSdkConstraint = false,
@@ -429,15 +441,21 @@ Map<String, PackageRange> _parseDependencies(
   var nonStringNode =
       node.nodes.keys.firstWhere((e) => e.value is! String, orElse: () => null);
   if (nonStringNode != null) {
-    _error('A dependency name must be a string.', nonStringNode.span);
+    _error(
+      'A dependency name must be a string.',
+      (nonStringNode as YamlNode).span,
+    );
   }
 
   node.nodes.forEach(
     (nameNode, specNode) {
-      var name = nameNode.value;
+      var name = nameNode.value as String;
       var spec = specNode.value;
       if (packageName != null && name == packageName) {
-        _error('A package may not list itself as a dependency.', nameNode.span);
+        _error(
+          'A package may not list itself as a dependency.',
+          (nameNode as YamlNode).span,
+        );
       }
 
       YamlNode? descriptionNode;
@@ -472,13 +490,13 @@ Map<String, PackageRange> _parseDependencies(
           sourceName = 'hosted';
         }
 
-        sourceName ??= sourceNames.single;
-        if (sourceName is! String) {
+        if (sourceNames.single is! String) {
           _error(
             'A source name must be a string.',
-            specMap.nodes.keys.single.span,
+            (specMap.nodes.keys.single as YamlNode).span,
           );
         }
+        sourceName ??= sourceNames.single as String;
 
         descriptionNode ??= specMap.nodes[sourceName];
       } else {
@@ -544,7 +562,7 @@ VersionConstraint _parseVersionConstraint(
     'version constraint',
     node.span,
     () {
-      var constraint = VersionConstraint.parse(node.value);
+      var constraint = VersionConstraint.parse(node.value as String);
       return constraint;
     },
     packageName,

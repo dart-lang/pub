@@ -148,7 +148,7 @@ class Entrypoint {
     }
     late PackageConfig result;
     try {
-      result = PackageConfig.fromJson(json.decode(packageConfigRaw));
+      result = PackageConfig.fromJson(json.decode(packageConfigRaw) as Object);
     } on FormatException {
       badPackageConfig();
     }

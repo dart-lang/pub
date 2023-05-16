@@ -102,7 +102,7 @@ Future<void> _listReportApply(
   await context.runDependencyServices(['list']);
   final report = await context.runDependencyServices(['report']);
   if (reportAssertions != null) {
-    reportAssertions(json.decode(report));
+    reportAssertions(json.decode(report) as Map);
   }
   final input = json.encode({
     'dependencyChanges': upgrades,
@@ -120,7 +120,7 @@ Future<void> main() async {
       '--snapshot=$snapshot',
       p.join('bin', 'dependency_services.dart'),
     ]);
-    expect(r.exitCode, 0, reason: r.stderr);
+    expect(r.exitCode, 0, reason: r.stderr as String);
   });
 
   tearDownAll(() {
@@ -254,7 +254,7 @@ Future<void> main() async {
     final lockFileYaml = YamlEditor(
       lockFile.readAsStringSync(),
     );
-    for (final p in lockFileYaml.parseAt(['packages']).value.entries) {
+    for (final p in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
       lockFileYaml.remove(['packages', p.key, 'description', 'sha256']);
     }
     lockFile.writeAsStringSync(lockFileYaml.toString());
@@ -289,7 +289,7 @@ Future<void> main() async {
     final lockFileYaml = YamlEditor(
       lockFile.readAsStringSync(),
     );
-    for (final p in lockFileYaml.parseAt(['packages']).value.entries) {
+    for (final p in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
       lockFileYaml.update(
         ['packages', p.key, 'description', 'url'],
         'https://pub.dartlang.org',

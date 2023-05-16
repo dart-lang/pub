@@ -10,6 +10,7 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../pubspec.dart';
 import '../solver.dart';
+import '../utils.dart';
 
 /// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
 /// and performs an operation similar to `pub get`. Unlike `pub add`, this
@@ -33,9 +34,9 @@ To remove a dependency override of a package prefix the package name with
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
-  bool get isOffline => argResults['offline'];
+  bool get isOffline => asBool(argResults['offline']);
 
-  bool get isDryRun => argResults['dry-run'];
+  bool get isDryRun => asBool(argResults['dry-run']);
 
   RemoveCommand() {
     argParser.addFlag(
@@ -92,16 +93,18 @@ To remove a dependency override of a package prefix the package name with
 
     await entrypoint.withPubspec(newPubspec).acquireDependencies(
           SolveType.get,
-          precompile: !isDryRun && argResults['precompile'],
+          precompile: !isDryRun && asBool(argResults['precompile']),
           dryRun: isDryRun,
           analytics: isDryRun ? null : analytics,
         );
 
     var example = entrypoint.example;
-    if (!isDryRun && argResults['example'] && example != null) {
+    if (!isDryRun &&
+        asBool(argResults['example'], whenNull: true) &&
+        example != null) {
       await example.acquireDependencies(
         SolveType.get,
-        precompile: argResults['precompile'],
+        precompile: asBool(argResults['precompile']),
         summaryOnly: true,
         analytics: analytics,
       );

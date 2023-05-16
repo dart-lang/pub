@@ -40,7 +40,7 @@ class LishCommand extends PubCommand {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
-        return validateAndNormalizeHostedUrl(argResults['server']);
+        return validateAndNormalizeHostedUrl(asString(argResults['server']));
       } on FormatException catch (e) {
         usageException('Invalid server: $e');
       }
@@ -61,12 +61,12 @@ class LishCommand extends PubCommand {
   }();
 
   /// Whether the publish is just a preview.
-  bool get dryRun => argResults['dry-run'];
+  bool get dryRun => asBool(argResults['dry-run']);
 
   /// Whether the publish requires confirmation.
-  bool get force => argResults['force'];
+  bool get force => asBool(argResults['force']);
 
-  bool get skipValidation => argResults['skip-validation'];
+  bool get skipValidation => asBool(argResults['skip-validation']);
 
   LishCommand() {
     argParser.addFlag(
@@ -134,7 +134,7 @@ class LishCommand extends PubCommand {
           if (fields is! Map) invalidServerResponse(parametersResponse);
           fields.forEach((key, value) {
             if (value is! String) invalidServerResponse(parametersResponse);
-            request.fields[key] = value;
+            request.fields[key as String] = value;
           });
 
           request.followRedirects = false;

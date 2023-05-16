@@ -753,21 +753,21 @@ class _ParseResult {
 }
 
 extension on ArgResults {
-  bool get isDev => this['dev'];
-  bool get isDryRun => this['dry-run'];
-  String? get gitUrl => this['git-url'];
-  String? get gitPath => this['git-path'];
-  String? get gitRef => this['git-ref'];
-  String? get hostedUrl => this['hosted-url'];
-  String? get path => this['path'];
-  String? get sdk => this['sdk'];
+  bool get isDev => asBool(this['dev']);
+  bool get isDryRun => asBool(this['dry-run']);
+  String? get gitUrl => this['git-url'] as String?;
+  String? get gitPath => this['git-path'] as String?;
+  String? get gitRef => this['git-ref'] as String?;
+  String? get hostedUrl => this['hosted-url'] as String?;
+  String? get path => this['path'] as String?;
+  String? get sdk => this['sdk'] as String?;
   bool get hasOldStyleOptions =>
       hasGitOptions ||
       path != null ||
       sdk != null ||
       hostedUrl != null ||
       isDev;
-  bool get shouldPrecompile => this['precompile'];
-  bool get example => this['example'];
+  bool get shouldPrecompile => asBool(this['precompile']);
+  bool get example => asBool(this['example']);
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
 }

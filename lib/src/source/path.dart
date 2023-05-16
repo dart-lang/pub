@@ -14,6 +14,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
+import '../utils.dart';
 
 /// A package [Source] that gets packages from a given local file path.
 class PathSource extends Source {
@@ -117,7 +118,7 @@ class PathSource extends Source {
       }
 
       path = p.normalize(
-        p.absolute(p.join(containingDir, description['path'])),
+        p.absolute(p.join(containingDir, asString(description['path']))),
       );
     }
 

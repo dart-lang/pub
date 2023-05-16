@@ -106,14 +106,14 @@ class GitSource extends CachedSource {
           'must be a string.');
     }
 
-    final url = description['url'];
+    final url = asString(description['url']);
     return PackageId(
       name,
       version,
       GitResolvedDescription(
         GitDescription(
           url: url,
-          ref: ref ?? 'HEAD',
+          ref: asString(ref, whenNull: 'HEAD'),
           path: _validatedPath(
             description['path'],
           ),

@@ -9,7 +9,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  String hostedDir(package) {
+  String hostedDir(String package) {
     return path.join(d.sandbox, cachePath, 'hosted', 'pub.dev', package);
   }
 

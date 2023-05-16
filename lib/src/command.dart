@@ -68,7 +68,7 @@ abstract class PubCommand extends Command<int> {
 
   String get directory {
     return (argResults.options.contains('directory')
-            ? argResults['directory']
+            ? asString(argResults['directory'])
             : null) ??
         _pubTopLevel.directory;
   }

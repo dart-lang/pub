@@ -101,7 +101,8 @@ class RunCommand extends PubCommand {
       entrypoint,
       Executable.adaptProgramName(package, executable),
       args,
-      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
+      enableAsserts:
+          asBool(argResults['enable-asserts']) || asBool(argResults['checked']),
       recompile: (executable) => log.errorsOnlyUnlessTerminal(
         () => entrypoint.precompileExecutable(executable),
       ),

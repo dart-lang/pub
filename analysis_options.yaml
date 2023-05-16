@@ -9,6 +9,9 @@ analyzer:
   exclude:
    - lib/src/third_party/**
 
+  language:
+    strict-casts: true
+
 linter:
   rules:
     - avoid_catching_errors

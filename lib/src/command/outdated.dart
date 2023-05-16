@@ -39,7 +39,8 @@ class OutdatedCommand extends PubCommand {
 
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
-  bool get _shouldShowSpinner => terminalOutputForStdout && !argResults['json'];
+  bool get _shouldShowSpinner =>
+      terminalOutputForStdout && !asBool(argResults['json']);
 
   @override
   bool get takesArguments => false;
@@ -118,9 +119,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
     final mode = _OutdatedMode();
 
-    final includeDevDependencies = argResults['dev-dependencies'];
-    final includeDependencyOverrides = argResults['dependency-overrides'];
-    if (argResults['json'] && argResults.wasParsed('transitive')) {
+    final includeDevDependencies = asBool(argResults['dev-dependencies']);
+    final includeDependencyOverrides =
+        asBool(argResults['dependency-overrides']);
+    if (asBool(argResults['json']) && argResults.wasParsed('transitive')) {
       usageException('Cannot specify both `--json` and `--transitive`\n'
           'The json report always includes transitive dependencies.');
     }
@@ -288,8 +290,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
     rows.sort();
 
-    final showAll = argResults['show-all'] || argResults['up-to-date'];
-    if (argResults['json']) {
+    final showAll =
+        asBool(argResults['show-all']) || asBool(argResults['up-to-date']);
+    if (asBool(argResults['json'])) {
       await _outputJson(
         rows,
         mode,
@@ -321,7 +324,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   bool get showTransitiveDependencies {
-    return argResults['transitive'];
+    return asBool(argResults['transitive']);
   }
 
   late final bool prereleases = () {
@@ -330,10 +333,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     // 'pre-releases'.
     // Otherwise fall back to the default implied by the mode.
     if (argResults.wasParsed('prereleases')) {
-      return argResults['prereleases'];
+      return asBool(argResults['prereleases']);
     }
     if (argResults.wasParsed('pre-releases')) {
-      return argResults['pre-releases'];
+      return asBool(argResults['pre-releases']);
     }
     return false;
   }();
@@ -367,7 +370,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   ) async {
     final nameToId = Map<String, PackageId>.fromIterable(
       resolution,
-      key: (id) => id.name,
+      key: (id) => asString(id.name),
     );
 
     final nonDevDependencies = <String>{root.name};
@@ -865,7 +868,7 @@ enum _DependencyKind {
 _FormattedString _format(
   String value,
   String Function(String) format, {
-  prefix = '',
+  String? prefix = '',
 }) {
   return _FormattedString(value, format: format, prefix: prefix);
 }
@@ -887,10 +890,10 @@ class _MarkedVersionDetails {
   _MarkedVersionDetails(
     this._versionDetails, {
     required this.asDesired,
-    format,
-    prefix = '',
-    suffix = '',
-    jsonExplanation,
+    String Function(String)? format,
+    String? prefix = '',
+    String? suffix = '',
+    MapEntry<String, Object>? jsonExplanation,
   })  : _format = format,
         _prefix = prefix,
         _suffix = suffix,
@@ -927,8 +930,8 @@ class _FormattedString {
   _FormattedString(
     this.value, {
     String Function(String)? format,
-    prefix,
-    suffix,
+    String? prefix,
+    String? suffix,
   })  : _format = format ?? _noFormat,
         _prefix = prefix ?? '',
         _suffix = suffix ?? '';

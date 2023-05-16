@@ -204,10 +204,11 @@ class _Entry {
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
-void error(message, [error, StackTrace? trace]) {
+void error(Object? message, [error, StackTrace? trace]) {
   message ??= '';
+  var strMessage = message.toString();
   if (error != null) {
-    message = message.isEmpty ? '$error' : '$message: $error';
+    message = strMessage.isEmpty ? '$error' : '$strMessage: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
   }
   write(Level.error, message);
@@ -232,7 +233,7 @@ void fine(message) => write(Level.fine, message);
 /// Logs [message] at [level].
 void write(Level level, message) {
   message = message.toString();
-  var lines = splitLines(message);
+  var lines = splitLines(message as String);
 
   // Discard a trailing newline. This is useful since StringBuffers often end
   // up with an extra newline at the end from using [writeln].
@@ -505,33 +506,33 @@ String gray(text) {
 /// that supports that.
 ///
 /// Use this to highlight something interesting but neither good nor bad.
-String cyan(text) => _addColor(text, _cyan);
+String cyan(Object text) => _addColor(text, _cyan);
 
 /// Wraps [text] in the ANSI escape codes to color it green when on a platform
 /// that supports that.
 ///
 /// Use this to highlight something successful or otherwise positive.
-String green(text) => _addColor(text, _green);
+String green(Object text) => _addColor(text, _green);
 
 /// Wraps [text] in the ANSI escape codes to color it magenta when on a
 /// platform that supports that.
 ///
 /// Use this to highlight something risky that the user should be aware of but
 /// may intend to do.
-String magenta(text) => _addColor(text, _magenta);
+String magenta(Object text) => _addColor(text, _magenta);
 
 /// Wraps [text] in the ANSI escape codes to color it red when on a platform
 /// that supports that.
 ///
 /// Use this to highlight unequivocal errors, problems, or failures.
-String red(text) => _addColor(text, _red);
+String red(Object text) => _addColor(text, _red);
 
 /// Wraps [text] in the ANSI escape codes to color it yellow when on a platform
 /// that supports that.
 ///
 /// Use this to highlight warnings, cautions or other things that are bad but
 /// do not prevent the user's goal from being reached.
-String yellow(text) => _addColor(text, _yellow);
+String yellow(Object text) => _addColor(text, _yellow);
 
 /// Returns [text] colored using the given [colorCode].
 ///
@@ -603,7 +604,7 @@ class _JsonLogger {
   /// is enabled.
   ///
   /// Always prints to stdout.
-  void error(error, [stackTrace]) {
+  void error(error, [StackTrace? stackTrace]) {
     var errorJson = {'error': error.toString()};
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;

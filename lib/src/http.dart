@@ -180,11 +180,11 @@ extension AttachHeaders on http.Request {
 void handleJsonSuccess(http.Response response) {
   var parsed = parseJsonResponse(response);
   if (parsed['success'] is! Map ||
-      !parsed['success'].containsKey('message') ||
+      !(parsed['success'] as Map).containsKey('message') ||
       parsed['success']['message'] is! String) {
     invalidServerResponse(response);
   }
-  log.message(log.green(parsed['success']['message']));
+  log.message(log.green(parsed['success']['message'] as Object));
 }
 
 /// Handles an unsuccessful JSON-formatted response from pub.dev.
@@ -200,11 +200,11 @@ void handleJsonError(http.BaseResponse response) {
   }
   var errorMap = parseJsonResponse(response);
   if (errorMap['error'] is! Map ||
-      !errorMap['error'].containsKey('message') ||
+      !(errorMap['error'] as Map).containsKey('message') ||
       errorMap['error']['message'] is! String) {
     invalidServerResponse(response);
   }
-  fail(log.red(errorMap['error']['message']));
+  fail(log.red(errorMap['error']['message'] as Object));
 }
 
 /// Parses a response body, assuming it's JSON-formatted.
@@ -214,7 +214,7 @@ void handleJsonError(http.BaseResponse response) {
 Map parseJsonResponse(http.Response response) {
   Object value;
   try {
-    value = jsonDecode(response.body);
+    value = jsonDecode(response.body) as Object;
   } on FormatException {
     invalidServerResponse(response);
   }

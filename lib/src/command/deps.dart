@@ -32,7 +32,7 @@ class DepsCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// Whether to include dev dependencies.
-  bool get _includeDev => argResults['dev'];
+  bool get _includeDev => asBool(argResults['dev']);
 
   DepsCommand() {
     argParser.addOption(
@@ -75,7 +75,7 @@ class DepsCommand extends PubCommand {
     await entrypoint.ensureUpToDate();
     final buffer = StringBuffer();
 
-    if (argResults['json']) {
+    if (asBool(argResults['json'])) {
       if (argResults.wasParsed('dev')) {
         usageException(
           'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.',
@@ -150,7 +150,7 @@ class DepsCommand extends PubCommand {
         ),
       );
     } else {
-      if (argResults['executables']) {
+      if (asBool(argResults['executables'])) {
         _outputExecutables(buffer);
       } else {
         for (var sdk in sdks.values) {

@@ -33,7 +33,7 @@ class UpgradeCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
   @override
-  bool get isOffline => argResults['offline'];
+  bool get isOffline => asBool(argResults['offline']);
 
   UpgradeCommand() {
     argParser.addFlag(
@@ -88,14 +88,14 @@ class UpgradeCommand extends PubCommand {
   /// Avoid showing spinning progress messages when not in a terminal.
   bool get _shouldShowSpinner => terminalOutputForStdout;
 
-  bool get _dryRun => argResults['dry-run'];
+  bool get _dryRun => asBool(argResults['dry-run']);
 
-  bool get _precompile => argResults['precompile'];
+  bool get _precompile => asBool(argResults['precompile']);
 
   bool get _upgradeNullSafety =>
-      argResults['nullsafety'] || argResults['null-safety'];
+      asBool(argResults['nullsafety']) || asBool(argResults['null-safety']);
 
-  bool get _upgradeMajorVersions => argResults['major-versions'];
+  bool get _upgradeMajorVersions => asBool(argResults['major-versions']);
 
   @override
   Future<void> runProtected() async {
@@ -112,7 +112,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
 
     if (_upgradeMajorVersions) {
-      if (argResults['example'] && entrypoint.example != null) {
+      if (asBool(argResults['example'], whenNull: true) &&
+          entrypoint.example != null) {
         log.warning(
           'Running `upgrade --major-versions` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
         );
@@ -121,7 +122,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     } else {
       await _runUpgrade(entrypoint);
     }
-    if (argResults['example'] && entrypoint.example != null) {
+    if (asBool(argResults['example'], whenNull: true) &&
+        entrypoint.example != null) {
       // Reload the entrypoint to ensure we pick up potential changes that has
       // been made.
       final exampleEntrypoint = Entrypoint(directory, cache).example!;

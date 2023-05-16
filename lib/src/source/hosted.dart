@@ -279,7 +279,7 @@ class HostedSource extends CachedSource {
       version,
       ResolvedHostedDescription(
         HostedDescription(name, url),
-        sha256: _parseContentHash(sha256),
+        sha256: _parseContentHash(sha256 as String?),
       ),
     );
   }
@@ -362,7 +362,7 @@ class HostedSource extends CachedSource {
     }
     final url = u ?? defaultUrl;
 
-    return HostedDescription(name, url);
+    return HostedDescription(name, url as String);
   }
 
   static final RegExp _looksLikePackageName =
@@ -408,16 +408,16 @@ class HostedSource extends CachedSource {
         throw FormatException('archive_url must be a String');
       }
       final status = PackageStatus(
-        isDiscontinued: body['isDiscontinued'] ?? false,
-        discontinuedReplacedBy: body['replacedBy'],
-        isRetracted: map['retracted'] ?? false,
+        isDiscontinued: asBool(body['isDiscontinued']),
+        discontinuedReplacedBy: body['replacedBy'] as String?,
+        isRetracted: asBool(map['retracted']),
       );
       return _VersionInfo(
         pubspec.version,
         pubspec,
         Uri.parse(archiveUrl),
         status,
-        _parseContentHash(archiveSha256),
+        _parseContentHash(archiveSha256 as String),
       );
     }).toList();
   }
@@ -458,7 +458,12 @@ class HostedSource extends CachedSource {
         throw FormatException('version listing must be a mapping');
       }
       body = decoded;
-      result = _versionInfoFromPackageListing(body, ref, url, cache);
+      result = _versionInfoFromPackageListing(
+        body as Map<String, dynamic>,
+        ref,
+        url,
+        cache,
+      );
     } on Exception catch (error, stackTrace) {
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }

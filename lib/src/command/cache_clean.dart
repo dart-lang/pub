@@ -6,6 +6,7 @@ import '../command.dart';
 import '../command_runner.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../utils.dart';
 
 class CacheCleanCommand extends PubCommand {
   @override
@@ -27,7 +28,7 @@ class CacheCleanCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     if (dirExists(cache.rootDir)) {
-      if (argResults['force'] || await confirm('''
+      if (asBool(argResults['force']) || await confirm('''
 This will remove everything inside ${cache.rootDir}.
 You will have to run `$topLevelProgram pub get` again in each project.
 Are you sure?''')) {

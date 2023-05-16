@@ -12,6 +12,7 @@ import 'package:pub/pub.dart';
 import 'package:pub/src/command.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/utils.dart';
 import 'package:usage/usage.dart';
 
 final Analytics loggingAnalytics = _LoggingAnalytics();
@@ -87,7 +88,10 @@ class Runner extends CommandRunner<int> {
           )
         : null;
     addCommand(
-      pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
+      pubCommand(
+        analytics: analytics,
+        isVerbose: () => asBool(_options['verbose']),
+      )
         ..addSubcommand(ThrowingCommand())
         ..addSubcommand(EnsurePubspecResolvedCommand()),
     );
@@ -99,7 +103,7 @@ class Runner extends CommandRunner<int> {
   Future<int> run(Iterable<String> args) async {
     try {
       _options = super.parse(args);
-      if (_options['verbose']) {
+      if (asBool(_options['verbose'])) {
         log.verbosity = log.Verbosity.all;
       }
       return await runCommand(_options);

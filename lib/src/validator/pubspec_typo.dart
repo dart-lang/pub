@@ -27,7 +27,7 @@ class PubspecTypoValidator extends Validator {
         /// Use a ratio to account allow more more typos in strings with
         /// longer lengths.
         final ratio =
-            levenshteinDistance(key, validKey) / (validKey.length + key.length);
+            levenshteinDistance(key as String, validKey) / (validKey.length + key.length);
         if (ratio < bestLevenshteinRatio) {
           bestLevenshteinRatio = ratio;
           closestKey = validKey;

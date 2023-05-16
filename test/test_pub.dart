@@ -149,7 +149,7 @@ Future<void> pubCommand(
   int? exitCode,
   Map<String, String?>? environment,
   String? workingDirectory,
-  includeParentHomeAndPath = true,
+  bool includeParentHomeAndPath = true,
 }) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
@@ -348,7 +348,7 @@ Future<void> runPub({
   String? workingDirectory,
   Map<String, String?>? environment,
   List<String>? input,
-  includeParentHomeAndPath = true,
+  bool includeParentHomeAndPath = true,
 }) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
@@ -486,7 +486,7 @@ Future<PubProcess> startPub({
   String? workingDirectory,
   Map<String, String?>? environment,
   bool verbose = true,
-  includeParentHomeAndPath = true,
+  bool includeParentHomeAndPath = true,
 }) async {
   args ??= [];
 
@@ -596,8 +596,8 @@ class PubProcess extends TestProcess {
 
   /// This is protected.
   PubProcess(
-    process,
-    description, {
+    Process process,
+    String description, {
     Encoding encoding = utf8,
     bool forwardStdio = false,
   }) : super(
@@ -721,7 +721,7 @@ LockFile _createLockFile(
   final packages = <PackageId>[
     ...dependencies.entries.map(
       (entry) => cache.path.parseId(
-        entry.key,
+        entry.key as String,
         Version(0, 0, 0),
         {'path': entry.value, 'relative': true},
         containingDir: p.join(d.sandbox, appPath),
@@ -866,15 +866,15 @@ void _validateOutputString(
 void _validateOutputJson(
   List<String> failures,
   String pipe,
-  expected,
+  Object? expected,
   String actualText,
 ) {
   late Map actual;
   try {
-    actual = jsonDecode(actualText);
+    actual = jsonDecode(actualText) as Map;
   } on FormatException {
     failures.add('Expected $pipe JSON:');
-    failures.add(expected);
+    failures.add(asString(expected));
     failures.add('Got invalid JSON:');
     failures.add(actualText);
   }
@@ -884,7 +884,7 @@ void _validateOutputJson(
   actual['log']?.removeWhere(
     (entry) =>
         entry['level'] == 'Fine' &&
-        entry['message'].startsWith('Not yet complete after'),
+        asString(entry['message']).startsWith('Not yet complete after'),
   );
 
   // Match against the expectation.

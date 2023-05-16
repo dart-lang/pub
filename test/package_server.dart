@@ -11,7 +11,7 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/crc32c.dart';
 import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/utils.dart' show hexEncode;
+import 'package:pub/src/utils.dart' show asString, hexEncode;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -342,7 +342,7 @@ class _ServedPackageVersion {
   // Overrides the calculated sha256.
   String? sha256;
 
-  Version get version => Version.parse(pubspec['version']);
+  Version get version => Version.parse(asString(pubspec['version']));
 
   _ServedPackageVersion(this.pubspec, {required this.contents, this.headers});
 

@@ -9,6 +9,7 @@ import '../command.dart';
 import '../command_runner.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../utils.dart';
 
 /// Handles the `login` pub command.
 class LoginCommand extends PubCommand {
@@ -46,12 +47,12 @@ class LoginCommand extends PubCommand {
   Future<_UserInfo?> _retrieveUserInfo() async {
     return await oauth2.withClient((client) async {
       final discovery = await oauth2.fetchOidcDiscoveryDocument();
-      final userInfoEndpoint = discovery['userinfo_endpoint'];
+      final userInfoEndpoint = asString(discovery['userinfo_endpoint']);
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
         final userInfo = json.decode(userInfoRequest.body);
-        final name = userInfo['name'];
+        final name = userInfo['name'] as String?;
         final email = userInfo['email'];
         if (email is String) {
           return _UserInfo(name, email);

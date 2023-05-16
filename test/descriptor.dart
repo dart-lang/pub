@@ -175,14 +175,14 @@ Descriptor gitPackageRepoCacheDir(String name) =>
 /// validated since they will often lack the dependencies section that the
 /// real pubspec being compared against has. You usually only need to pass
 /// `true` for this if you plan to call [create] on the resulting descriptor.
-Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
+Descriptor cacheDir(Map<String, dynamic> packages, {int? port, bool includePubspecs = false}) {
   var contents = <Descriptor>[];
   packages.forEach((name, versions) {
     if (versions is! List) versions = [versions];
     for (var version in versions) {
       var packageContents = [libDir(name, '$name $version')];
       if (includePubspecs) {
-        packageContents.add(libPubspec(name, version));
+        packageContents.add(libPubspec(name, version as String));
       }
       contents.add(dir('$name-$version', packageContents));
     }

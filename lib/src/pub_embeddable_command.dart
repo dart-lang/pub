@@ -24,6 +24,7 @@ import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'log.dart' as log;
 import 'log.dart';
+import 'utils.dart';
 
 /// The information needed for the embedded pub command to send analytics.
 @sealed
@@ -56,7 +57,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   @override
-  String get directory => argResults['directory'];
+  String get directory => asString(argResults['directory']);
 
   @override
   final PubAnalytics? analytics;
@@ -120,6 +121,6 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   bool get trace => _isVerbose;
 
   bool get _isVerbose {
-    return argResults['verbose'] || isVerbose();
+    return asBool(argResults['verbose']) || isVerbose();
   }
 }

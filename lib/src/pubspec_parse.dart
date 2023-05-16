@@ -96,7 +96,7 @@ abstract class PubspecBase {
     _version = _wrapFormatException(
       'version number',
       span,
-      () => Version.parse(version),
+      () => Version.parse(version as String),
     );
     return _version!;
   }
@@ -122,7 +122,7 @@ abstract class PubspecBase {
       // It must be "none" or a valid URL.
       if (publishTo != 'none') {
         _wrapFormatException('"publish_to" field', span, () {
-          final url = Uri.parse(publishTo);
+          final url = Uri.parse(publishTo as String);
           if (url.scheme.isEmpty) {
             throw FormatException('must be an absolute URL.');
           }
@@ -131,7 +131,7 @@ abstract class PubspecBase {
     }
 
     _parsedPublishTo = true;
-    _publishTo = publishTo;
+    _publishTo = publishTo as String?;
     return _publishTo;
   }
 
@@ -161,7 +161,7 @@ abstract class PubspecBase {
             if (value is! String) {
               falseSecretsError(node.span);
             }
-            falseSecrets.add(value);
+            falseSecrets.add(value as String);
           }
         } else {
           falseSecretsError(falseSecretsNode.span);
@@ -198,35 +198,37 @@ abstract class PubspecBase {
       );
     }
 
-    yaml.nodes.forEach((key, value) {
+    var yamlMap = yaml as YamlMap;
+
+    yamlMap.nodes.forEach((key, value) {
       if (key.value is! String) {
-        _error('"executables" keys must be strings.', key.span);
+        _error('"executables" keys must be strings.', (key as YamlNode).span);
       }
 
       final keyPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
-      if (!keyPattern.hasMatch(key.value)) {
+      if (!keyPattern.hasMatch(key.value as String)) {
         _error(
           '"executables" keys may only contain letters, '
           'numbers, hyphens and underscores.',
-          key.span,
+          (key as YamlNode).span,
         );
       }
 
       if (value.value == null) {
-        value = key;
+        value = key as YamlNode;
       } else if (value.value is! String) {
         _error('"executables" values must be strings or null.', value.span);
       }
 
       final valuePattern = RegExp(r'[/\\]');
-      if (valuePattern.hasMatch(value.value)) {
+      if (valuePattern.hasMatch(value.value as String)) {
         _error(
           '"executables" values may not contain path separators.',
           value.span,
         );
       }
 
-      _executables![key.value] = value.value;
+      _executables![key.value as String] = value.value as String;
     });
 
     return _executables!;

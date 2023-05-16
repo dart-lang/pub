@@ -110,7 +110,9 @@ Future<T> captureErrors<T>(
 }) {
   var completer = Completer<T>();
   void wrappedCallback() {
-    Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
+    Future.sync(callback)
+        .then(completer.complete)
+        .catchError((Object e, StackTrace? stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
       if (stackTrace != null) {
@@ -118,7 +120,9 @@ Future<T> captureErrors<T>(
       } else {
         stackTrace = Chain([]);
       }
-      if (!completer.isCompleted) completer.completeError(e, stackTrace);
+      if (!completer.isCompleted) {
+        completer.completeError(e, stackTrace);
+      }
     });
   }
 
@@ -147,12 +151,13 @@ Future<T> captureErrors<T>(
 Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
   return Future.wait(
     futures.map((future) {
-      return future.catchError((error, stackTrace) {
+      return future.catchError((Object error, StackTrace? stackTrace) {
         log.exception(error, stackTrace);
+        // ignore: only_throw_errors
         throw error;
       });
     }),
-  ).catchError((error, stackTrace) {
+  ).catchError((Object error, StackTrace? stackTrace) {
     throw SilentException(error, stackTrace);
   });
 }
@@ -287,7 +292,7 @@ Future<S?> minByAsync<S, T>(
 ) async {
   int? minIndex;
   T? minOrderBy;
-  List valuesList = values.toList();
+  var valuesList = values.toList();
   final orderByResults = await Future.wait(values.map(orderBy));
   for (var i = 0; i < orderByResults.length; i++) {
     final elementOrderBy = orderByResults[i];
@@ -735,3 +740,9 @@ Future<T> retry<T>(
     await Future.delayed(delay < maxDelay ? delay : maxDelay);
   }
 }
+
+bool asBool(dynamic value, {bool whenNull = false}) =>
+    value as bool? ?? whenNull;
+
+String asString(dynamic value, {String whenNull = ''}) =>
+    value as String? ?? whenNull;

@@ -84,8 +84,8 @@ class PackageConfig {
       throwFormatException('packages', 'must be a list');
     }
     final packages = <PackageConfigEntry>[];
-    for (final entry in packagesRaw) {
-      packages.add(PackageConfigEntry.fromJson(entry));
+    for (final entry in packagesRaw as List) {
+      packages.add(PackageConfigEntry.fromJson(entry as Object));
     }
 
     // Read the 'generated' property
@@ -95,7 +95,7 @@ class PackageConfig {
       if (generatedRaw is! String) {
         throwFormatException('generated', 'must be a string, if given');
       }
-      generated = DateTime.parse(generatedRaw);
+      generated = DateTime.parse(generatedRaw as String);
     }
 
     // Read the 'generator' property
@@ -114,7 +114,7 @@ class PackageConfig {
         throwFormatException('generatorVersion', 'must be a string, if given');
       }
       try {
-        generatorVersion = Version.parse(generatorVersionRaw);
+        generatorVersion = Version.parse(generatorVersionRaw as String);
       } on FormatException catch (e) {
         throwFormatException(
           'generatorVersion',
@@ -127,7 +127,7 @@ class PackageConfig {
       configVersion: configVersion as int,
       packages: packages,
       generated: generated,
-      generator: generator,
+      generator: generator as String?,
       generatorVersion: generatorVersion,
       additionalProperties: Map.fromEntries(
         root.entries.where(

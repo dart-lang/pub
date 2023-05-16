@@ -23,7 +23,7 @@ class UploaderCommand extends PubCommand {
   bool get hidden => true;
 
   /// The URL of the package hosting server.
-  Uri get server => Uri.parse(argResults['server']);
+  Uri get server => Uri.parse(asString(argResults['server']));
 
   UploaderCommand() {
     argParser.addOption(

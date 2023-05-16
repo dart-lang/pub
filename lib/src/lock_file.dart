@@ -57,7 +57,7 @@ class LockFile {
   }) : this._(
           Map.fromIterable(
             ids.where((id) => !id.isRoot),
-            key: (id) => id.name,
+            key: (id) => id.name as String,
           ),
           sdkConstraints ?? {'dart': SdkConstraint(VersionConstraint.any)},
           mainDependencies ?? const UnmodifiableSetView.empty(),
@@ -280,7 +280,7 @@ class LockFile {
         return _wrapFormatException(
           'Expected a $typeDescription.',
           node.span,
-          () => parse(node.value),
+          () => parse(node.value as String),
         );
       } else if (value is T) {
         return value;
@@ -298,7 +298,7 @@ class LockFile {
   ) {
     map.nodes.forEach((key, value) {
       f(
-        _parseNode(key, keyTypeDescription),
+        _parseNode(key as YamlNode, keyTypeDescription),
         _parseNode(value, valueTypeDescription),
       );
     });
