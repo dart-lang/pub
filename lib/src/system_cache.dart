@@ -327,35 +327,36 @@ Consider setting the `PUB_CACHE` variable manually.
 
     final appData = Platform.environment['APPDATA'];
     if (appData == null) return;
-    final oldCacheLocation = p.join(appData, 'Pub', 'Cache');
-    final oldCacheDeprecatedFile = p.join(oldCacheLocation, 'DEPRECATED.md');
-    final stat = tryStatFile(oldCacheDeprecatedFile);
+    final legacyCacheLocation = p.join(appData, 'Pub', 'Cache');
+    final legacyCacheDeprecatedFile =
+        p.join(legacyCacheLocation, 'DEPRECATED.md');
+    final stat = tryStatFile(legacyCacheDeprecatedFile);
     if (stat != null) {
       log.fine('''
 ${DateTime.now().difference(stat.changed) > Duration(days: 7)} ${stat.changed}'''); // XXX remove
     }
     log.fine('''
-${dirExists(oldCacheLocation)}'''); // XXX remove
+${dirExists(legacyCacheLocation)}'''); // XXX remove
     if ((stat == null ||
             DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
-        dirExists(oldCacheLocation)) {
+        dirExists(legacyCacheLocation)) {
       log.warning('''
-Found a legacy pub cache at $oldCacheLocation. Pub is using $defaultDir.
+Found a legacy pub cache at $legacyCacheLocation. Pub is using $defaultDir.
 
 Consider deleting the legacy cache.
 
 See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
 ''');
       try {
-        writeTextFile(oldCacheDeprecatedFile, '''
-This pub cache is legacy. Consider deleting it.
+        writeTextFile(legacyCacheDeprecatedFile, '''
+This pub cache is no longer used by recent dart releases. Consider deleting it.
 
 See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
 ''');
       } on Exception catch (e) {
         // Failing to write the DEPRECATED.md file should not disrupt other
         // operations.
-        log.fine('Failed to write $oldCacheDeprecatedFile: $e');
+        log.fine('Failed to write $legacyCacheDeprecatedFile: $e');
       }
     }
   }

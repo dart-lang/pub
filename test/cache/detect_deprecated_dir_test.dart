@@ -8,23 +8,24 @@ import '../test_pub.dart';
 
 void main() async {
   test('Detects old cache dir', skip: !Platform.isWindows, () async {
-    final oldCacheLocation =
+    final legacyCacheLocation =
         p.join(Platform.environment['APPDATA']!, 'Pub', 'Cache');
-    final oldCacheDir = Directory(oldCacheLocation);
-    if (oldCacheDir.existsSync()) {
-      fail('Cannot run test with existing $oldCacheLocation');
+    final legacyCacheDir = Directory(legacyCacheLocation);
+    if (legacyCacheDir.existsSync()) {
+      fail('Cannot run test with existing $legacyCacheLocation');
     }
-    oldCacheDir.createSync(recursive: true);
-    addTearDown(() => oldCacheDir.deleteSync(recursive: true));
+    legacyCacheDir.createSync(recursive: true);
+    stdout.writeln('A $legacyCacheLocation ${legacyCacheDir.existsSync()}');
+    addTearDown(() => legacyCacheDir.deleteSync(recursive: true));
 
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
     await pubGet(
-      warning: contains('Found a legacy pub cache at $oldCacheLocation.'),
+      warning: contains('Found a legacy pub cache at $legacyCacheLocation.'),
     );
     expect(
-      File(p.join(oldCacheLocation, 'DEPRECATED.md')).existsSync(),
+      File(p.join(legacyCacheLocation, 'DEPRECATED.md')).existsSync(),
       isTrue,
     );
     server.serve('foo', '2.0.0');
