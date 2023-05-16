@@ -341,17 +341,17 @@ Consider deleting the legacy cache.
 
 See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
 ''');
-    }
-    try {
-      writeTextFile(oldCacheDeprecatedFile, '''
+      try {
+        writeTextFile(oldCacheDeprecatedFile, '''
 This pub cache is legacy. Consider deleting it.
 
 See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
 ''');
-    } on Exception catch (e) {
-      // Failing to write the DEPRECATED.md file should not disrupt other
-      // operations.
-      log.fine('Failed to write $oldCacheDeprecatedFile: $e');
+      } on Exception catch (e) {
+        // Failing to write the DEPRECATED.md file should not disrupt other
+        // operations.
+        log.fine('Failed to write $oldCacheDeprecatedFile: $e');
+      }
     }
   }
 
