@@ -330,7 +330,12 @@ Consider setting the `PUB_CACHE` variable manually.
     final oldCacheLocation = p.join(appData, 'Pub', 'Cache');
     final oldCacheDeprecatedFile = p.join(oldCacheLocation, 'DEPRECATED.md');
     final stat = tryStatFile(oldCacheDeprecatedFile);
-
+    if (stat != null) {
+      log.fine('''
+${DateTime.now().difference(stat.changed) > Duration(days: 7)} ${stat.changed}'''); // XXX remove
+    }
+    log.fine('''
+${dirExists(oldCacheLocation)}'''); // XXX remove
     if ((stat == null ||
             DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
         dirExists(oldCacheLocation)) {
