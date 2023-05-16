@@ -417,7 +417,7 @@ class HostedSource extends CachedSource {
         pubspec,
         Uri.parse(archiveUrl),
         status,
-        _parseContentHash(archiveSha256 as String),
+        _parseContentHash(archiveSha256 as String?),
       );
     }).toList();
   }
