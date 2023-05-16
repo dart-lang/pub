@@ -17,18 +17,18 @@ void main() async {
     server.serve('foo', '1.0.0');
     await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
     await pubGet(
-      warning: contains('Found a legacy pub cache at'),
+      warning: contains('Found a legacy Pub cache at'),
       environment: {'APPDATA': d.path('APPDATA')},
     );
     expect(
-      File(p.join(sandbox, 'APPDATA', 'Pub', 'Cache' 'DEPRECATED.md'))
+      File(p.join(sandbox, 'APPDATA', 'Pub', 'Cache', 'DEPRECATED.md'))
           .existsSync(),
       isTrue,
     );
     server.serve('foo', '2.0.0');
     await d.appDir(dependencies: {'foo': '^2.0.0'}).create();
     await pubGet(
-      warning: isNot(contains('Found a legacy pub cache')),
+      warning: isNot(contains('Found a legacy Pub cache')),
     );
   });
 }

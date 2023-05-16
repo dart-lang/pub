@@ -335,7 +335,7 @@ Consider setting the `PUB_CACHE` variable manually.
             DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
         dirExists(legacyCacheLocation)) {
       log.warning('''
-Found a legacy pub cache at $legacyCacheLocation. Pub is using $defaultDir.
+Found a legacy Pub cache at $legacyCacheLocation. Pub is using $defaultDir.
 
 Consider deleting the legacy cache.
 
@@ -343,7 +343,9 @@ See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
 ''');
       try {
         writeTextFile(legacyCacheDeprecatedFile, '''
-This pub cache is no longer used by recent dart releases. Consider deleting it.
+This pub cache is no longer used by recent Dart/Flutter releases.
+
+Consider deleting it.
 
 See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
 ''');
