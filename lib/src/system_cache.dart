@@ -246,7 +246,7 @@ Consider setting the `PUB_CACHE` variable manually.
     //   downloading a package, but might be significant in the fast-case where
     //   a the cache is already valid.
     if (result.didUpdate) {
-      _ensureReadme();
+      maintainCache();
     }
     return result;
   }
@@ -303,7 +303,56 @@ Consider setting the `PUB_CACHE` variable manually.
   void clean() {
     deleteEntry(rootDir);
     ensureDir(rootDir);
+    maintainCache();
+  }
+
+  /// Tasks that ensures the cache is in a good condition.
+  /// Should be called whenever an operation updates the cache.
+  void maintainCache() {
+    /// We only want to do this once per run.
+    if (_hasMaintainedCache) return;
+    _hasMaintainedCache = true;
     _ensureReadme();
+    _checkOldCacheLocation();
+  }
+
+  /// Check for the presence of a cache at the legacy location
+  /// `%APPDATA$\Pub\Cache`.
+  ///
+  /// If it is present, give a warning and write a DEPRECATED.md in that cache.
+  ///
+  /// If DEPRECATED.md is less than 7 days old, we don't repeat the warning.
+  void _checkOldCacheLocation() {
+    if (!Platform.isWindows) return;
+
+    final appData = Platform.environment['APPDATA'];
+    if (appData == null) return;
+    final oldCacheLocation = p.join(appData, 'Pub', 'Cache');
+    final oldCacheDeprecatedFile = p.join(oldCacheLocation, 'DEPRECATED.md');
+    final stat = tryStatFile(oldCacheDeprecatedFile);
+
+    if ((stat == null ||
+            DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
+        dirExists(oldCacheLocation)) {
+      log.warning('''
+Found a legacy pub cache at $oldCacheLocation. Pub is using $defaultDir.
+
+Consider deleting the legacy cache.
+
+See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
+''');
+    }
+    try {
+      writeTextFile(oldCacheDeprecatedFile, '''
+This pub cache is legacy. Consider deleting it.
+
+See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
+''');
+    } on Exception catch (e) {
+      // Failing to write the DEPRECATED.md file should not disrupt other
+      // operations.
+      log.fine('Failed to write $oldCacheDeprecatedFile: $e');
+    }
   }
 
   /// Write a README.md file in the root of the cache directory to document the
@@ -314,9 +363,6 @@ Consider setting the `PUB_CACHE` variable manually.
   /// permission errors because we writing a `README.md` file, in a flow that
   /// the user expected wouldn't have issues with a read-only `PUB_CACHE`.
   void _ensureReadme() {
-    /// We only want to do this once per run.
-    if (_hasEnsuredReadme) return;
-    _hasEnsuredReadme = true;
     final readmePath = p.join(rootDir, 'README.md');
     try {
       writeTextFile(readmePath, '''
@@ -340,7 +386,7 @@ https://dart.dev/go/pub-cache
     }
   }
 
-  bool _hasEnsuredReadme = false;
+  bool _hasMaintainedCache = false;
 }
 
 typedef SourceRegistry = Source Function(String? name);
