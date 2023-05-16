@@ -490,13 +490,15 @@ Map<String, PackageRange> _parseDependencies(
           sourceName = 'hosted';
         }
 
-        if (sourceNames.single is! String) {
-          _error(
-            'A source name must be a string.',
-            (specMap.nodes.keys.single as YamlNode).span,
-          );
+        if (sourceName == null) {
+          if (sourceNames.single is! String) {
+            _error(
+              'A source name must be a string.',
+              (specMap.nodes.keys.single as YamlNode).span,
+            );
+          }
+          sourceName = sourceNames.single as String;
         }
-        sourceName ??= sourceNames.single as String;
 
         descriptionNode ??= specMap.nodes[sourceName];
       } else {
