@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:args/args.dart';
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -245,6 +247,15 @@ Specify multiple sdk packages with descriptors.''');
       writeTextFile(entrypoint.pubspecPath, newPubspecText);
     }
 
+    String? overridesFileContents;
+    final overridesPath =
+        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
+    try {
+      overridesFileContents = readTextFile(overridesPath);
+    } on IOException {
+      overridesFileContents = null;
+    }
+
     /// Even if it is a dry run, run `acquireDependencies` so that the user
     /// gets a report on the other packages that might change version due
     /// to this new dependency.
@@ -254,6 +265,8 @@ Specify multiple sdk packages with descriptors.''');
             newPubspecText,
             cache.sources,
             location: Uri.parse(entrypoint.pubspecPath),
+            overridesFileContents: overridesFileContents,
+            overridesLocation: Uri.file(overridesPath),
           ),
         )
         .acquireDependencies(
