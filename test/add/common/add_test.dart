@@ -1081,4 +1081,26 @@ dependency_overrides:
       )
     ]).validate();
   });
+
+  test('should take pubspec_overrides.yaml into account', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
+    await d.appDir(
+      dependencies: {
+        'bar': '^1.0.0',
+      },
+    ).create();
+    await d.dir(appPath, [
+      d.pubspecOverrides({
+        'dependency_overrides': {
+          'bar': {'path': '../bar'}
+        }
+      })
+    ]).create();
+
+    await pubGet();
+
+    await pubAdd(args: ['foo'], output: contains('+ foo 1.0.0'));
+  });
 }
