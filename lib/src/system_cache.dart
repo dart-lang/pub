@@ -256,7 +256,7 @@ Consider setting the `PUB_CACHE` variable manually.
     //   downloading a package, but might be significant in the fast-case where
     //   a the cache is already valid.
     if (result.didUpdate) {
-      _ensureReadme();
+      maintainCache();
     }
     return result.packageId;
   }
@@ -313,7 +313,83 @@ Consider setting the `PUB_CACHE` variable manually.
   void clean() {
     deleteEntry(rootDir);
     ensureDir(rootDir);
+    maintainCache();
+  }
+
+  /// Tasks that ensures the cache is in a good condition.
+  /// Should be called whenever an operation updates the cache.
+  void maintainCache() {
+    /// We only want to do this once per run.
+    if (_hasMaintainedCache) return;
+    _hasMaintainedCache = true;
     _ensureReadme();
+    _checkOldCacheLocation();
+  }
+
+  /// Check for the presence of a cache at the legacy location
+  /// `%APPDATA$\Pub\Cache`.
+  ///
+  /// If it is present, give a warning and write a DEPRECATED.md in that cache.
+  ///
+  /// If DEPRECATED.md is less than 7 days old, we don't repeat the warning.
+  void _checkOldCacheLocation() {
+    // Background:
+    // Prior to Dart 2.8 the default location for the PUB_CACHE on Windows was:
+    //   %APPDATA%\Pub\Cache
+    //
+    // Start Dart 2.8 pub started migrating the default PUB_CACHE location to:
+    //   %LOCALAPPDATA%\Pub\Cache
+    // That is:
+    //  * If a pub-cache existed in `%LOCALAPPDATA%\Pub\Cache` then it
+    //    would be used.
+    //  * If a pub-cache existed in `%APPDATA%\Pub\Cache` then it would be
+    //    used, unless a pub-cache in `%LOCALAPPDATA%\Pub\Cache` had been found.
+    //  * If no pub-cache was found, a new empty pub-cache was created in
+    //    `%LOCALAPPDATA%\Pub\Cache`.
+    //
+    // Starting in Dart 3.0 pub will no-longer look for a pub-cache in
+    // `%APPDATA%\Pub\Cache`. Instead it will always use the new location,
+    // `%LOCALAPPDATA%\Pub\Cache`, as default PUB_CACHE location.
+    //
+    // Using `%APPDATA%` caused the pub-cache to be copied with the user-profile,
+    // when using a networked Windows setup where users can login on multiple
+    // machines. This is undesirable because you are moving a lot of bytes over
+    // the network and onto whatever servers are storing the user profiles.
+    //
+    // Thus, we migrated to storing the pub-cache in `%LOCALAPPDATA%`.
+    // And finished the migration in Dart 3 to keep things simple.
+    if (!Platform.isWindows) return;
+
+    final appData = Platform.environment['APPDATA'];
+    if (appData == null) return;
+    final legacyCacheLocation = p.join(appData, 'Pub', 'Cache');
+    final legacyCacheDeprecatedFile =
+        p.join(legacyCacheLocation, 'DEPRECATED.md');
+    final stat = tryStatFile(legacyCacheDeprecatedFile);
+    if ((stat == null ||
+            DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
+        dirExists(legacyCacheLocation)) {
+      log.warning('''
+Found a legacy Pub cache at $legacyCacheLocation. Pub is using $defaultDir.
+
+Consider deleting the legacy cache.
+
+See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
+''');
+      try {
+        writeTextFile(legacyCacheDeprecatedFile, '''
+As of Dart 3 this pub cache is no longer used by Dart/Flutter.
+
+Consider deleting it, if you are not using Dart versions earlier than 2.8.0.
+
+See https://dart.dev/resources/dart-3-migration#other-tools-changes for details.
+''');
+      } on Exception catch (e) {
+        // Failing to write the DEPRECATED.md file should not disrupt other
+        // operations.
+        log.fine('Failed to write $legacyCacheDeprecatedFile: $e');
+      }
+    }
   }
 
   /// Write a README.md file in the root of the cache directory to document the
@@ -324,9 +400,6 @@ Consider setting the `PUB_CACHE` variable manually.
   /// permission errors because we writing a `README.md` file, in a flow that
   /// the user expected wouldn't have issues with a read-only `PUB_CACHE`.
   void _ensureReadme() {
-    /// We only want to do this once per run.
-    if (_hasEnsuredReadme) return;
-    _hasEnsuredReadme = true;
     final readmePath = p.join(rootDir, 'README.md');
     try {
       writeTextFile(readmePath, '''
@@ -350,7 +423,7 @@ https://dart.dev/go/pub-cache
     }
   }
 
-  bool _hasEnsuredReadme = false;
+  bool _hasMaintainedCache = false;
 }
 
 typedef SourceRegistry = Source Function(String? name);
