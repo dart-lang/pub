@@ -168,8 +168,9 @@ class LockFile {
         packageEntries,
         (name, spec) {
           // Parse the version.
-          final versionEntry = _getStringEntry(spec, 'version');
-          final version = Version.parse(versionEntry);
+          final versionEntry =
+              _getEntry<YamlScalar>(spec, 'version', 'version string');
+          final version = _parseVersion(versionEntry);
 
           // Parse the source.
           final sourceName = _getStringEntry(spec, 'source');
@@ -243,7 +244,7 @@ class LockFile {
       return fn();
     } on FormatException catch (e) {
       throw SourceSpanFormatException(
-        'Invalid $description: ${e.message}',
+        '$description: ${e.message}',
         span,
       );
     }
@@ -254,6 +255,14 @@ class LockFile {
       node,
       'version constraint',
       parse: VersionConstraint.parse,
+    );
+  }
+
+  static Version _parseVersion(YamlNode node) {
+    return _parseNode(
+      node,
+      'version',
+      parse: Version.parse,
     );
   }
 
@@ -275,19 +284,19 @@ class LockFile {
       final value = node.value;
       if (parse != null) {
         if (value is! String) {
-          _failAt('Expected a $typeDescription.', node);
+          _failAt('Expected a $typeDescription', node);
         }
         return _wrapFormatException(
-          'Expected a $typeDescription.',
+          'Expected a $typeDescription',
           node.span,
           () => parse(value),
         );
       } else if (value is T) {
         return value;
       }
-      _failAt('Expected a $typeDescription.', node);
+      _failAt('Expected a $typeDescription', node);
     }
-    _failAt('Expected a $typeDescription.', node);
+    _failAt('Expected a $typeDescription', node);
   }
 
   static void _parseEachEntry<K, V>(

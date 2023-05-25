@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
@@ -247,12 +249,23 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       }
     }
 
+    String? overridesFileContents;
+    final overridesPath =
+        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
+    try {
+      overridesFileContents = readTextFile(overridesPath);
+    } on IOException {
+      overridesFileContents = null;
+    }
+
     await entrypoint
         .withPubspec(
           Pubspec.parse(
             newPubspecText,
             cache.sources,
             location: Uri.parse(entrypoint.pubspecPath),
+            overridesFileContents: overridesFileContents,
+            overridesLocation: Uri.file(overridesPath),
           ),
         )
         .acquireDependencies(

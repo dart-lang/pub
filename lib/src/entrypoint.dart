@@ -532,6 +532,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       additionalSources: additionalSources,
       nativeAssets: nativeAssets,
     );
+    cache.maintainCache();
   }
 
   /// The location of the snapshot of the dart program at [path] in [package]
