@@ -40,7 +40,7 @@ class OutdatedCommand extends PubCommand {
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
   bool get _shouldShowSpinner =>
-      terminalOutputForStdout && !asBool(argResults['json']);
+      terminalOutputForStdout && !argResults.flag('json');
 
   @override
   bool get takesArguments => false;
@@ -119,10 +119,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
     final mode = _OutdatedMode();
 
-    final includeDevDependencies = asBool(argResults['dev-dependencies']);
-    final includeDependencyOverrides =
-        asBool(argResults['dependency-overrides']);
-    if (asBool(argResults['json']) && argResults.wasParsed('transitive')) {
+    final includeDevDependencies = argResults.flag('dev-dependencies');
+    final includeDependencyOverrides = argResults.flag('dependency-overrides');
+    if (argResults.flag('json') && argResults.wasParsed('transitive')) {
       usageException('Cannot specify both `--json` and `--transitive`\n'
           'The json report always includes transitive dependencies.');
     }
@@ -291,8 +290,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     rows.sort();
 
     final showAll =
-        asBool(argResults['show-all']) || asBool(argResults['up-to-date']);
-    if (asBool(argResults['json'])) {
+        argResults.flag('show-all') || argResults.flag('up-to-date');
+    if (argResults.flag('json')) {
       await _outputJson(
         rows,
         mode,
@@ -324,7 +323,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   bool get showTransitiveDependencies {
-    return asBool(argResults['transitive']);
+    return argResults.flag('transitive');
   }
 
   late final bool prereleases = () {
@@ -333,10 +332,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     // 'pre-releases'.
     // Otherwise fall back to the default implied by the mode.
     if (argResults.wasParsed('prereleases')) {
-      return asBool(argResults['prereleases']);
+      return argResults.flag('prereleases');
     }
     if (argResults.wasParsed('pre-releases')) {
-      return asBool(argResults['pre-releases']);
+      return argResults.flag('pre-releases');
     }
     return false;
   }();
@@ -368,10 +367,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     Package root,
     Iterable<PackageId> resolution,
   ) async {
-    final nameToId = Map<String, PackageId>.fromIterable(
-      resolution,
-      key: (id) => asString(id.name),
-    );
+    final nameToId = {for (final id in resolution) id.name: id};
 
     final nonDevDependencies = <String>{root.name};
     final queue = [...root.dependencies.keys];

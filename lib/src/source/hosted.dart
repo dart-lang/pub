@@ -407,10 +407,22 @@ class HostedSource extends CachedSource {
       if (archiveUrl is! String) {
         throw FormatException('archive_url must be a String');
       }
+      final isDiscontinued = body['isDiscontinued'] ?? false;
+      if (isDiscontinued is! bool) {
+        throw FormatException('isDiscontinued must be a bool');
+      }
+      final replacedBy = body['replacedBy'];
+      if (replacedBy is! String?) {
+        throw FormatException('replacedBy must be a String');
+      }
+      final retracted = map['retracted'] ?? false;
+      if (retracted is! bool) {
+        throw FormatException('retracted must be a bool');
+      }
       final status = PackageStatus(
-        isDiscontinued: asBool(body['isDiscontinued']),
-        discontinuedReplacedBy: body['replacedBy'] as String?,
-        isRetracted: asBool(map['retracted']),
+        isDiscontinued: isDiscontinued,
+        discontinuedReplacedBy: replacedBy,
+        isRetracted: retracted,
       );
       return _VersionInfo(
         pubspec.version,
@@ -987,7 +999,7 @@ class HostedSource extends CachedSource {
                       '${package.version}';
                   if (url != defaultUrl) message += ' from $url';
                   log.error('$message. Error:\n$error');
-                  log.fine(stackTrace);
+                  log.fine(stackTrace.toString());
 
                   tryDeleteEntry(package.dir);
                   return RepairResult(

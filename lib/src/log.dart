@@ -204,36 +204,34 @@ class _Entry {
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
-void error(Object? message, [error, StackTrace? trace]) {
-  message ??= '';
-  var strMessage = message.toString();
+void error(String message, [error, StackTrace? trace]) {
   if (error != null) {
-    message = strMessage.isEmpty ? '$error' : '$strMessage: $error';
+    message = message.isEmpty ? '$error' : '$message: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
   }
   write(Level.error, message);
-  if (trace != null) write(Level.fine, Chain.forTrace(trace));
+  if (trace != null) write(Level.fine, Chain.forTrace(trace).toString());
 }
 
 /// Logs [message] at [Level.warning].
-void warning(message) => write(Level.warning, message);
+void warning(String message) => write(Level.warning, message);
 
 /// Logs [message] at [Level.message].
-void message(message) => write(Level.message, message);
+void message(String message) => write(Level.message, message);
 
 /// Logs [message] at [Level.io].
-void io(message) => write(Level.io, message);
+void io(String message) => write(Level.io, message);
 
 /// Logs [message] at [Level.solver].
-void solver(message) => write(Level.solver, message);
+void solver(String message) => write(Level.solver, message);
 
 /// Logs [message] at [Level.fine].
-void fine(message) => write(Level.fine, message);
+void fine(String message) => write(Level.fine, message);
 
 /// Logs [message] at [level].
-void write(Level level, message) {
+void write(Level level, String message) {
   message = message.toString();
-  var lines = splitLines(message as String);
+  var lines = splitLines(message);
 
   // Discard a trailing newline. This is useful since StringBuffers often end
   // up with an extra newline at the end from using [writeln].
@@ -291,7 +289,7 @@ void processResult(String executable, PubProcessResult result) {
 }
 
 /// Logs an exception.
-void exception(exception, [StackTrace? trace]) {
+void exception(Object exception, [StackTrace? trace]) {
   if (exception is SilentException) return;
 
   var chain = trace == null ? Chain.current() : Chain.forTrace(trace);
@@ -315,9 +313,9 @@ void exception(exception, [StackTrace? trace]) {
   }
 
   if (!isUserFacingException(exception)) {
-    error(chain.terse);
+    error(chain.terse.toString());
   } else {
-    fine(chain.terse);
+    fine(chain.terse.toString());
   }
 
   if (exception is WrappedException && exception.innerError != null) {
@@ -506,38 +504,38 @@ String gray(text) {
 /// that supports that.
 ///
 /// Use this to highlight something interesting but neither good nor bad.
-String cyan(Object text) => _addColor(text, _cyan);
+String cyan(String text) => _addColor(text, _cyan);
 
 /// Wraps [text] in the ANSI escape codes to color it green when on a platform
 /// that supports that.
 ///
 /// Use this to highlight something successful or otherwise positive.
-String green(Object text) => _addColor(text, _green);
+String green(String text) => _addColor(text, _green);
 
 /// Wraps [text] in the ANSI escape codes to color it magenta when on a
 /// platform that supports that.
 ///
 /// Use this to highlight something risky that the user should be aware of but
 /// may intend to do.
-String magenta(Object text) => _addColor(text, _magenta);
+String magenta(String text) => _addColor(text, _magenta);
 
 /// Wraps [text] in the ANSI escape codes to color it red when on a platform
 /// that supports that.
 ///
 /// Use this to highlight unequivocal errors, problems, or failures.
-String red(Object text) => _addColor(text, _red);
+String red(String text) => _addColor(text, _red);
 
 /// Wraps [text] in the ANSI escape codes to color it yellow when on a platform
 /// that supports that.
 ///
 /// Use this to highlight warnings, cautions or other things that are bad but
 /// do not prevent the user's goal from being reached.
-String yellow(Object text) => _addColor(text, _yellow);
+String yellow(String text) => _addColor(text, _yellow);
 
 /// Returns [text] colored using the given [colorCode].
 ///
 /// This is resilient to the text containing other colors or bold text.
-String _addColor(Object text, String colorCode) {
+String _addColor(String text, String colorCode) {
   return colorCode +
       text
           .toString()
@@ -604,7 +602,7 @@ class _JsonLogger {
   /// is enabled.
   ///
   /// Always prints to stdout.
-  void error(error, [StackTrace? stackTrace]) {
+  void error(Object error, [StackTrace? stackTrace]) {
     var errorJson = {'error': error.toString()};
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;

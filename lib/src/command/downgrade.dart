@@ -22,7 +22,7 @@ class DowngradeCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-downgrade';
 
   @override
-  bool get isOffline => asBool(argResults['offline']);
+  bool get isOffline => argResults.flag('offline');
 
   DowngradeCommand() {
     argParser.addFlag(
@@ -63,7 +63,7 @@ class DowngradeCommand extends PubCommand {
         ),
       );
     }
-    var dryRun = asBool(argResults['dry-run']);
+    var dryRun = argResults.flag('dry-run');
 
     await entrypoint.acquireDependencies(
       SolveType.downgrade,
@@ -72,7 +72,7 @@ class DowngradeCommand extends PubCommand {
       analytics: analytics,
     );
     var example = entrypoint.example;
-    if (asBool(argResults['example'], whenNull: true) && example != null) {
+    if (argResults.flag('example') && example != null) {
       await example.acquireDependencies(
         SolveType.get,
         unlock: argResults.rest,

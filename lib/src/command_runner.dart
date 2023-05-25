@@ -43,13 +43,13 @@ bool _isrunningInsideFlutter =
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String get directory => argResults['directory'] as String;
+  String get directory => argResults.option('directory');
 
   @override
   bool get captureStackChains {
-    return asBool(argResults['trace']) ||
-        asBool(argResults['verbose']) ||
-        argResults['verbosity'] == 'all';
+    return argResults.flag('trace') ||
+        argResults.flag('verbose') ||
+        argResults.optionWithoutDefault('verbosity') == 'all';
   }
 
   @override
@@ -69,14 +69,14 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
         return log.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (asBool(argResults['verbose'])) return log.Verbosity.all;
+        if (argResults.flag('verbose')) return log.Verbosity.all;
         if (runningFromTest) return log.Verbosity.testing;
         return log.Verbosity.normal;
     }
   }
 
   @override
-  bool get trace => asBool(argResults['trace']);
+  bool get trace => argResults.flag('trace');
 
   ArgResults? _argResults;
 
@@ -171,7 +171,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Future<int?> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
-    if (asBool(topLevelResults['version'])) {
+    if (topLevelResults.flag('version')) {
       log.message('Pub ${sdk.version}');
       return 0;
     }

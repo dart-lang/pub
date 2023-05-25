@@ -18,7 +18,7 @@ class GetCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-get';
   @override
-  bool get isOffline => asBool(argResults['offline']);
+  bool get isOffline => argResults.flag('offline');
   @override
   String get argumentsDescription => '';
 
@@ -76,21 +76,21 @@ class GetCommand extends PubCommand {
 
     await entrypoint.acquireDependencies(
       SolveType.get,
-      dryRun: asBool(argResults['dry-run']),
-      precompile: asBool(argResults['precompile']),
+      dryRun: argResults.flag('dry-run'),
+      precompile: argResults.flag('precompile'),
       analytics: analytics,
-      enforceLockfile: asBool(argResults['enforce-lockfile']),
+      enforceLockfile: argResults.flag('enforce-lockfile'),
     );
 
     var example = entrypoint.example;
     if ((argResults['example'] as bool? ?? false) && example != null) {
       await example.acquireDependencies(
         SolveType.get,
-        dryRun: asBool(argResults['dry-run']),
-        precompile: asBool(argResults['precompile']),
+        dryRun: argResults.flag('dry-run'),
+        precompile: argResults.flag('precompile'),
         analytics: analytics,
         summaryOnly: true,
-        enforceLockfile: asBool(argResults['enforce-lockfile']),
+        enforceLockfile: argResults.flag('enforce-lockfile'),
       );
     }
   }

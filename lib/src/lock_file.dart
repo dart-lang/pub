@@ -55,10 +55,10 @@ class LockFile {
     Set<String>? devDependencies,
     Set<String>? overriddenDependencies,
   }) : this._(
-          Map.fromIterable(
-            ids.where((id) => !id.isRoot),
-            key: (id) => id.name as String,
-          ),
+          {
+            for (final id in ids)
+              if (!id.isRoot) id.name: id
+          },
           sdkConstraints ?? {'dart': SdkConstraint(VersionConstraint.any)},
           mainDependencies ?? const UnmodifiableSetView.empty(),
           devDependencies ?? const UnmodifiableSetView.empty(),
@@ -280,7 +280,7 @@ class LockFile {
         return _wrapFormatException(
           'Expected a $typeDescription.',
           node.span,
-          () => parse(node.value as String),
+          () => parse(value),
         );
       } else if (value is T) {
         return value;

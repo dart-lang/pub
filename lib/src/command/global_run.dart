@@ -80,7 +80,7 @@ class GlobalRunCommand extends PubCommand {
       args,
       vmArgs: vmArgs,
       enableAsserts:
-          asBool(argResults['enable-asserts']) || asBool(argResults['checked']),
+          argResults.flag('enable-asserts') || argResults.flag('checked'),
       recompile: (executable) => log.errorsOnlyUnlessTerminal(
         () => globalEntrypoint.precompileExecutable(executable),
       ),

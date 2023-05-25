@@ -96,7 +96,7 @@ abstract class PubspecBase {
     _version = _wrapFormatException(
       'version number',
       span,
-      () => Version.parse(version as String),
+      () => Version.parse(version),
     );
     return _version!;
   }
@@ -122,7 +122,7 @@ abstract class PubspecBase {
       // It must be "none" or a valid URL.
       if (publishTo != 'none') {
         _wrapFormatException('"publish_to" field', span, () {
-          final url = Uri.parse(publishTo as String);
+          final url = Uri.parse(publishTo);
           if (url.scheme.isEmpty) {
             throw FormatException('must be an absolute URL.');
           }
@@ -198,37 +198,34 @@ abstract class PubspecBase {
       );
     }
 
-    var yamlMap = yaml as YamlMap;
+    var yamlMap = yaml;
 
     yamlMap.nodes.forEach((key, value) {
-      if (key.value is! String) {
-        _error('"executables" keys must be strings.', (key as YamlNode).span);
+      key = key as YamlNode;
+      final keyValue = key.value;
+      if (keyValue is! String) {
+        _error('"executables" keys must be strings.', key.span);
       }
 
       final keyPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
-      if (!keyPattern.hasMatch(key.value as String)) {
+      if (!keyPattern.hasMatch(keyValue)) {
         _error(
           '"executables" keys may only contain letters, '
           'numbers, hyphens and underscores.',
-          (key as YamlNode).span,
+          key.span,
         );
-      }
-
-      if (value.value == null) {
-        value = key as YamlNode;
-      } else if (value.value is! String) {
-        _error('"executables" values must be strings or null.', value.span);
       }
 
       final valuePattern = RegExp(r'[/\\]');
-      if (valuePattern.hasMatch(value.value as String)) {
-        _error(
-          '"executables" values may not contain path separators.',
-          value.span,
-        );
-      }
-
-      _executables![key.value as String] = value.value as String;
+      _executables![keyValue] = switch (value.value) {
+        null => keyValue,
+        String s when valuePattern.hasMatch(s) => _error(
+            '"executables" values may not contain path separators.',
+            value.span,
+          ),
+        String s => s,
+        _ => _error('"executables" values must be strings or null.', value.span)
+      };
     });
 
     return _executables!;
@@ -269,7 +266,7 @@ abstract class PubspecBase {
   }
 
   /// Throws a [SourceSpanApplicationException] with the given message.
-  void _error(String message, SourceSpan? span) {
+  Never _error(String message, SourceSpan? span) {
     throw SourceSpanApplicationException(message, span);
   }
 }

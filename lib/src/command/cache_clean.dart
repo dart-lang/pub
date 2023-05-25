@@ -28,7 +28,7 @@ class CacheCleanCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     if (dirExists(cache.rootDir)) {
-      if (asBool(argResults['force']) || await confirm('''
+      if (argResults.flag('force') || await confirm('''
 This will remove everything inside ${cache.rootDir}.
 You will have to run `$topLevelProgram pub get` again in each project.
 Are you sure?''')) {
