@@ -56,13 +56,13 @@ class PackageConfig {
   ///
   /// Throws [FormatException], if format is invalid, this does not validate the
   /// contents only that the format is correct.
-  factory PackageConfig.fromJson(Object data) {
+  factory PackageConfig.fromJson(Object? data) {
     if (data is! Map<String, dynamic>) {
       throw FormatException('package_config.json must be a JSON object');
     }
     final root = data;
 
-    void throwFormatException(String property, String mustBe) =>
+    Never throwFormatException(String property, String mustBe) =>
         throw FormatException(
           '"$property" in .dart_tool/package_config.json $mustBe',
         );
@@ -84,7 +84,7 @@ class PackageConfig {
       throwFormatException('packages', 'must be a list');
     }
     final packages = <PackageConfigEntry>[];
-    for (final entry in packagesRaw as List) {
+    for (final entry in packagesRaw) {
       packages.add(PackageConfigEntry.fromJson(entry as Object));
     }
 
@@ -95,12 +95,12 @@ class PackageConfig {
       if (generatedRaw is! String) {
         throwFormatException('generated', 'must be a string, if given');
       }
-      generated = DateTime.parse(generatedRaw as String);
+      generated = DateTime.parse(generatedRaw);
     }
 
     // Read the 'generator' property
     final generator = root['generator'];
-    if (generator != null && generator is! String) {
+    if (generator is! String?) {
       throw FormatException(
         '"generator" in package_config.json must be a string, if given',
       );
@@ -114,7 +114,7 @@ class PackageConfig {
         throwFormatException('generatorVersion', 'must be a string, if given');
       }
       try {
-        generatorVersion = Version.parse(generatorVersionRaw as String);
+        generatorVersion = Version.parse(generatorVersionRaw);
       } on FormatException catch (e) {
         throwFormatException(
           'generatorVersion',
@@ -124,10 +124,10 @@ class PackageConfig {
     }
 
     return PackageConfig(
-      configVersion: configVersion as int,
+      configVersion: configVersion,
       packages: packages,
       generated: generated,
-      generator: generator as String?,
+      generator: generator,
       generatorVersion: generatorVersion,
       additionalProperties: Map.fromEntries(
         root.entries.where(

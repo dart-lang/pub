@@ -9,6 +9,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:args/args.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
@@ -741,8 +742,9 @@ Future<T> retry<T>(
   }
 }
 
-bool asBool(dynamic value, {bool whenNull = false}) =>
-    value as bool? ?? whenNull;
+extension RetrieveFlags on ArgResults {
+  bool flag(String name) => this[name] as bool;
 
-String asString(dynamic value, {String whenNull = ''}) =>
-    value as String? ?? whenNull;
+  String option(String name) => this[name] as String;
+  String? optionWithoutDefault(String name) => this[name] as String?;
+}

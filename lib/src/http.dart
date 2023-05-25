@@ -178,13 +178,14 @@ extension AttachHeaders on http.Request {
 /// "some message"}}`. If the format is correct, the message will be printed;
 /// otherwise an error will be raised.
 void handleJsonSuccess(http.Response response) {
-  var parsed = parseJsonResponse(response);
-  if (parsed['success'] is! Map ||
+  final parsed = parseJsonResponse(response);
+  final success = parsed['success'];
+  if (success is! Map ||
       !(parsed['success'] as Map).containsKey('message') ||
       parsed['success']['message'] is! String) {
     invalidServerResponse(response);
   }
-  log.message(log.green(parsed['success']['message'] as Object));
+  log.message(log.green(parsed['success']['message'] as String));
 }
 
 /// Handles an unsuccessful JSON-formatted response from pub.dev.
@@ -199,12 +200,13 @@ void handleJsonError(http.BaseResponse response) {
     fail(log.red('Invalid server response'));
   }
   var errorMap = parseJsonResponse(response);
-  if (errorMap['error'] is! Map ||
-      !(errorMap['error'] as Map).containsKey('message') ||
-      errorMap['error']['message'] is! String) {
+  final error = errorMap['error'];
+  if (error is! Map ||
+      !error.containsKey('message') ||
+      error['message'] is! String) {
     invalidServerResponse(response);
   }
-  fail(log.red(errorMap['error']['message'] as Object));
+  fail(log.red(error['message'] as String));
 }
 
 /// Parses a response body, assuming it's JSON-formatted.
@@ -212,9 +214,9 @@ void handleJsonError(http.BaseResponse response) {
 /// Throws a user-friendly error if the response body is invalid JSON, or if
 /// it's not a map.
 Map parseJsonResponse(http.Response response) {
-  Object value;
+  Object? value;
   try {
-    value = jsonDecode(response.body) as Object;
+    value = jsonDecode(response.body) as Object?;
   } on FormatException {
     invalidServerResponse(response);
   }

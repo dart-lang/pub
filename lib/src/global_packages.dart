@@ -615,7 +615,7 @@ try:
         message.writeln('  From ${log.bold(package)}: '
             '${toSentence(executableNames)}');
       });
-      log.error(message);
+      log.error(message.toString());
     }
 
     return Pair(successes, failures);

@@ -57,7 +57,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   @override
-  String get directory => asString(argResults['directory']);
+  String get directory => argResults.option('directory');
 
   @override
   final PubAnalytics? analytics;
@@ -121,6 +121,6 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   bool get trace => _isVerbose;
 
   bool get _isVerbose {
-    return asBool(argResults['verbose']) || isVerbose();
+    return argResults.flag('verbose') || isVerbose();
   }
 }

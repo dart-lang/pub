@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
-import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
@@ -1986,10 +1985,10 @@ Future expectResolves({
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
   var resultPubspec = Pubspec.fromMap({'dependencies': result}, registry);
 
-  var ids = Map.from(lockFile.packages);
+  var ids = {...lockFile.packages};
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
-    var id = ids.remove(dep.name) as PackageId;
+    var id = ids.remove(dep.name)!;
     final description = dep.description;
     if (description is HostedDescription &&
         (description.url == SystemCache().hosted.defaultUrl)) {

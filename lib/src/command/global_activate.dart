@@ -88,7 +88,7 @@ class GlobalActivateCommand extends PubCommand {
       }
 
       executables = argResults['executable'] as List<String>?;
-    } else if (asBool(argResults['no-executables'])) {
+    } else if (argResults.flag('no-executables')) {
       // An empty list means no executables.
       executables = [];
     }
