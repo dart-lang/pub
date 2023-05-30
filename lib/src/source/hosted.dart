@@ -9,7 +9,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
-    show IterableExtension, IterableNullableExtension, ListEquality, maxBy;
+    show IterableExtension, IterableNullableExtension, maxBy;
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
@@ -554,23 +554,27 @@ class HostedSource extends CachedSource {
       if (maxAge == null || now.difference(stat.modified) < maxAge) {
         try {
           final cachedDoc = jsonDecode(readTextFile(cachePath));
+          if (cachedDoc is! Map) {
+            throw FormatException('Broken cached version listing response');
+          }
           final timestamp = cachedDoc['_fetchedAt'];
-          if (timestamp is String) {
-            final parsedTimestamp = DateTime.parse(timestamp);
-            final cacheAge = DateTime.now().difference(parsedTimestamp);
-            if (maxAge != null && cacheAge > maxAge) {
-              // Too old according to internal timestamp - delete.
-              tryDeleteEntry(cachePath);
-            } else {
-              var res = _versionInfoFromPackageListing(
-                cachedDoc,
-                ref,
-                Uri.file(cachePath),
-                cache,
-              );
-              _responseCache[ref] = Pair(parsedTimestamp, res);
-              return res;
-            }
+          if (timestamp is! String) {
+            throw FormatException('Broken cached version listing response');
+          }
+          final parsedTimestamp = DateTime.parse(timestamp);
+          final cacheAge = DateTime.now().difference(parsedTimestamp);
+          if (maxAge != null && cacheAge > maxAge) {
+            // Too old according to internal timestamp - delete.
+            tryDeleteEntry(cachePath);
+          } else {
+            var res = _versionInfoFromPackageListing(
+              cachedDoc,
+              ref,
+              Uri.file(cachePath),
+              cache,
+            );
+            _responseCache[ref] = Pair(parsedTimestamp, res);
+            return res;
           }
         } on io.IOException {
           // Could not read the file. Delete if it exists.
@@ -855,28 +859,6 @@ class HostedSource extends CachedSource {
       ),
       didUpdate: didUpdate,
     );
-  }
-
-  /// Determines if the package identified by [id] is already downloaded to the
-  /// system cache and has the expected content-hash.
-  @override
-  bool isInSystemCache(PackageId id, SystemCache cache) {
-    if ((id.description as ResolvedHostedDescription).sha256 != null) {
-      try {
-        final cachedSha256 = readTextFile(hashPath(id, cache));
-        if (!const ListEquality().equals(
-          hexDecode(cachedSha256),
-          (id.description as ResolvedHostedDescription).sha256,
-        )) {
-          return false;
-        }
-      } on io.IOException {
-        // Most likely the hash file was not written, because we had a legacy
-        // entry.
-        return false;
-      }
-    }
-    return dirExists(getDirectoryInCache(id, cache));
   }
 
   /// The system cache directory for the hosted source contains subdirectories
@@ -1420,6 +1402,10 @@ class HostedDescription extends Description {
   }) {
     if (url == source.defaultUrl) {
       return null;
+    }
+    if (languageVersion >=
+        LanguageVersion.firstVersionWithShorterHostedSyntax) {
+      return url;
     }
     return {'url': url, 'name': packageName};
   }

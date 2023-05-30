@@ -23,8 +23,8 @@ import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
-import 'package_config.dart';
 import 'package_config.dart' show PackageConfig;
+import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
 import 'pub_embeddable_command.dart';
@@ -32,6 +32,7 @@ import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
 import 'solver/report.dart';
+import 'solver/solve_suggestions.dart';
 import 'source/cached.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -355,16 +356,30 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     }
 
     SolveResult result;
-    result = await log.progress('Resolving dependencies$suffix', () async {
-      _checkSdkConstraint(root.pubspec);
-      return resolveVersions(
-        type,
-        cache,
-        root,
-        lockFile: lockFile,
-        unlock: unlock ?? [],
+
+    try {
+      result = await log.progress('Resolving dependencies$suffix', () async {
+        _checkSdkConstraint(root.pubspec);
+        return resolveVersions(
+          type,
+          cache,
+          root,
+          lockFile: lockFile,
+          unlock: unlock ?? [],
+        );
+      });
+    } on SolveFailure catch (e) {
+      throw SolveFailure(
+        e.incompatibility,
+        suggestions: await suggestResolutionAlternatives(
+          this,
+          type,
+          e.incompatibility,
+          unlock ?? [],
+          cache,
+        ),
       );
-    });
+    }
 
     // We have to download files also with --dry-run to ensure we know the
     // archive hashes for downloaded files.
@@ -899,8 +914,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     // Check if language version specified in the `package_config.json` is
     // correct. This is important for path dependencies as these can mutate.
-    for (final pkg in packageConfig.packages) {
-      if (pkg.name == root.name || pkg.name == 'flutter_gen') continue;
+    for (final pkg in packageConfig.nonInjectedPackages) {
+      if (pkg.name == root.name) continue;
       final id = lockFile.packages[pkg.name];
       if (id == null) {
         assert(

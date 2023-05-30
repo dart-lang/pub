@@ -54,6 +54,8 @@ class PackageLister {
   /// reversed.
   final bool _isDowngrade;
 
+  final Map<String, Version> sdkOverrides;
+
   /// A map from dependency names to constraints indicating which versions of
   /// [_ref] have already had their dependencies on the given versions returned
   /// by [incompatibilitiesFor].
@@ -107,11 +109,15 @@ class PackageLister {
     this._overriddenPackages,
     this._allowedRetractedVersion, {
     bool downgrade = false,
+    this.sdkOverrides = const {},
   }) : _isDowngrade = downgrade;
 
   /// Creates a package lister for the root [package].
-  PackageLister.root(Package package, this._systemCache)
-      : _ref = PackageRef.root(package),
+  PackageLister.root(
+    Package package,
+    this._systemCache, {
+    required Map<String, Version>? sdkOverrides,
+  })  : _ref = PackageRef.root(package),
         // Treat the package as locked so we avoid the logic for finding the
         // boundaries of various constraints, which is useless for the root
         // package.
@@ -120,7 +126,8 @@ class PackageLister {
         _overriddenPackages =
             Set.unmodifiable(package.dependencyOverrides.keys),
         _isDowngrade = false,
-        _allowedRetractedVersion = null;
+        _allowedRetractedVersion = null,
+        sdkOverrides = sdkOverrides ?? {};
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -202,7 +209,7 @@ class PackageLister {
       return [
         Incompatibility(
           [Term(id.toRange(), true)],
-          IncompatibilityCause.noVersions,
+          NoVersionsIncompatibilityCause(),
         )
       ];
     } on PackageNotFoundException {
@@ -212,7 +219,7 @@ class PackageLister {
       return [
         Incompatibility(
           [Term(id.toRange(), true)],
-          IncompatibilityCause.noVersions,
+          NoVersionsIncompatibilityCause(),
         )
       ];
     }
@@ -229,7 +236,7 @@ class PackageLister {
           return [
             Incompatibility(
               [Term(depender, true)],
-              SdkCause(
+              SdkIncompatibilityCause(
                 pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
                 sdk,
               ),
@@ -316,11 +323,12 @@ class PackageLister {
 
   /// Returns an [Incompatibility] that represents a dependency from [depender]
   /// onto [target].
-  Incompatibility _dependency(PackageRange depender, PackageRange target) =>
-      Incompatibility(
-        [Term(depender, true), Term(target, false)],
-        IncompatibilityCause.dependency,
-      );
+  Incompatibility _dependency(PackageRange depender, PackageRange target) {
+    return Incompatibility(
+      [Term(depender, true), Term(target, false)],
+      DependencyIncompatibilityCause(depender, target),
+    );
+  }
 
   /// If the version at [index] in [_versions] isn't compatible with the current
   /// version of [sdk], returns an [Incompatibility] indicating that.
@@ -356,7 +364,7 @@ class PackageLister {
 
     return Incompatibility(
       [Term(_ref.withConstraint(incompatibleVersions), true)],
-      SdkCause(sdkConstraint, sdk),
+      SdkIncompatibilityCause(sdkConstraint, sdk),
     );
   }
 
@@ -461,6 +469,7 @@ class PackageLister {
     if (constraint == null) return true;
 
     return sdk.isAvailable &&
-        constraint.effectiveConstraint.allows(sdk.version!);
+        constraint.effectiveConstraint
+            .allows(sdkOverrides[sdk.identifier] ?? sdk.version!);
   }
 }

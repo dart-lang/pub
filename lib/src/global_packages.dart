@@ -235,7 +235,7 @@ class GlobalPackages {
     } on SolveFailure catch (error) {
       for (var incompatibility
           in error.incompatibility.externalIncompatibilities) {
-        if (incompatibility.cause != IncompatibilityCause.noVersions) continue;
+        if (incompatibility.cause is! NoVersionsIncompatibilityCause) continue;
         if (incompatibility.terms.single.package.name != name) continue;
         // If the SolveFailure is caused by [dep] not
         // being available, report that as a [dataError].

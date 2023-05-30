@@ -58,7 +58,7 @@ void testEnsurePubspecResolved() {
       final contents = json.decode(File(packageConfig).readAsStringSync());
       contents['packages'].add({
         'name': 'flutter_gen',
-        'rootUri': '.dart_tool/flutter_gen',
+        'rootUri': 'flutter_gen',
         'languageVersion': '2.8',
       });
       writeTextFile(packageConfig, json.encode(contents));

@@ -67,9 +67,10 @@ class SolveResult {
         if (id.source is CachedSource) {
           return await withDependencyType(_root.pubspec.dependencyType(id.name),
               () async {
-            return await cache.downloadPackage(
+            return (await cache.downloadPackage(
               id,
-            );
+            ))
+                .packageId;
           });
         }
         return id;

@@ -127,10 +127,8 @@ void main() {
         await pubCommand(
           command,
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-          error: equalsIgnoringWhitespace("""
-              Because myapp depends on foo ^1.0.0 from sdk which doesn't match
-                any versions, version solving failed.
-            """),
+          error: contains('''
+Because myapp depends on foo ^1.0.0 from sdk which doesn't match any versions, version solving failed.'''),
         );
       });
 
@@ -142,10 +140,8 @@ void main() {
         ).create();
         await pubCommand(
           command,
-          error: equalsIgnoringWhitespace("""
-              Because myapp depends on foo from sdk which doesn't exist
-                (unknown SDK "unknown"), version solving failed.
-            """),
+          error: equalsIgnoringWhitespace('''
+Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"), version solving failed.'''),
           exitCode: exit_codes.UNAVAILABLE,
         );
       });

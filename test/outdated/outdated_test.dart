@@ -70,7 +70,9 @@ Future<void> main() async {
         },
       )
       ..serve('transitive', '1.2.3')
-      ..serve('dev_trans', '1.0.0');
+      ..serve('dev_trans', '1.0.0')
+      ..serve('retracted', '1.0.0')
+      ..serve('retracted', '1.0.1');
 
     await d.dir('local_package', [
       d.libDir('local_package'),
@@ -83,7 +85,8 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
-          'local_package': {'path': '../local_package'}
+          'local_package': {'path': '../local_package'},
+          'retracted': '^1.0.0',
         },
         'dev_dependencies': {'builder': '^1.0.0'},
       })
@@ -112,7 +115,10 @@ Future<void> main() async {
       ..serve('transitive', '2.0.0')
       ..serve('transitive2', '1.0.0')
       ..serve('transitive3', '1.0.0')
-      ..serve('dev_trans', '2.0.0');
+      ..serve('dev_trans', '2.0.0')
+      // Even though the current (and latest) version is retracted, it should be
+      // the one shown in the upgradable and resolvable columns.
+      ..retractPackageVersion('retracted', '1.0.1');
     await ctx.runOutdatedTests();
   });
 

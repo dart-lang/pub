@@ -118,10 +118,8 @@ void main() {
       await pubCommand(
         command,
         args: ['--offline'],
-        error: equalsIgnoringWhitespace("""
-            Because myapp depends on foo >2.0.0 which doesn't match any
-              versions, version solving failed.
-          """),
+        error: contains('''
+Because myapp depends on foo >2.0.0 which doesn't match any versions, version solving failed.'''),
       );
     });
 

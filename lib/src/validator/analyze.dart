@@ -22,12 +22,7 @@ class AnalyzeValidator extends Validator {
         .where(dirExists);
     final result = await runProcess(
       Platform.resolvedExecutable,
-      [
-        'analyze',
-        '--fatal-infos',
-        ...dirsToAnalyze,
-        p.join(entrypoint.rootDir, 'pubspec.yaml')
-      ],
+      ['analyze', ...dirsToAnalyze, p.join(entrypoint.rootDir, 'pubspec.yaml')],
     );
     if (result.exitCode != 0) {
       final limitedOutput = limitLength(result.stdout.join('\n'), 1000);

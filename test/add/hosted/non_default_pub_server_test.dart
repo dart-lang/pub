@@ -33,11 +33,43 @@ void main() {
 
     await d.appDir(
       dependencies: {
+        'foo': {'version': '1.2.3', 'hosted': url}
+      },
+    ).validate();
+  });
+
+  test('Uses old syntax when needed', () async {
+    // Make the default server serve errors. Only the custom server should
+    // be accessed.
+    (await servePackages()).serveErrors();
+
+    final server = await startPackageServer();
+    server.serve('foo', '0.2.5');
+    server.serve('foo', '1.1.0');
+    server.serve('foo', '1.2.3');
+    final oldSyntaxSdkConstraint = {
+      'environment': {
+        'sdk': '>=2.14.0 <3.0.0' // Language version for old syntax.
+      },
+    };
+
+    await d.appDir(
+      dependencies: {},
+      pubspec: oldSyntaxSdkConstraint,
+    ).create();
+
+    final url = server.url;
+
+    await pubAdd(args: ['foo:1.2.3', '--hosted-url', url]);
+
+    await d.appDir(
+      dependencies: {
         'foo': {
           'version': '1.2.3',
           'hosted': {'name': 'foo', 'url': url}
         }
       },
+      pubspec: oldSyntaxSdkConstraint,
     ).validate();
   });
 
@@ -75,18 +107,9 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {
-          'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': url}
-        },
-        'bar': {
-          'version': '3.2.3',
-          'hosted': {'name': 'bar', 'url': url}
-        },
-        'baz': {
-          'version': '1.3.5',
-          'hosted': {'name': 'baz', 'url': url}
-        }
+        'foo': {'version': '1.2.3', 'hosted': url},
+        'bar': {'version': '3.2.3', 'hosted': url},
+        'baz': {'version': '1.3.5', 'hosted': url}
       },
     ).validate();
   });
@@ -139,10 +162,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'foo': {
-          'version': '^1.2.3',
-          'hosted': {'name': 'foo', 'url': url}
-        }
+        'foo': {'version': '^1.2.3', 'hosted': url}
       },
     ).validate();
   });
@@ -170,10 +190,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'foo': {
-          'version': '^1.2.3',
-          'hosted': {'name': 'foo', 'url': url}
-        }
+        'foo': {'version': '^1.2.3', 'hosted': url}
       },
     ).validate();
   });
@@ -202,10 +219,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'foo': {
-          'version': 'any',
-          'hosted': {'name': 'foo', 'url': url}
-        }
+        'foo': {'version': 'any', 'hosted': url}
       },
     ).validate();
   });

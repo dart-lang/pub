@@ -200,8 +200,8 @@ void withLockFile() {
 
   // Issue 1853
   test(
-      "produces a nice message for a locked dependency that's the only "
-      'version of its package', () async {
+      "produces a nice message for a locked dependency that's the only version of its package",
+      () async {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'})
       ..serve('bar', '1.0.0')
@@ -212,11 +212,9 @@ void withLockFile() {
 
     await d.appDir(dependencies: {'foo': 'any', 'bar': '<2.0.0'}).create();
     await expectResolves(
-      error: equalsIgnoringWhitespace('''
-      Because myapp depends on foo any which depends on bar >=2.0.0,
-        bar >=2.0.0 is required.
-      So, because myapp depends on bar <2.0.0, version solving failed.
-    '''),
+      error: contains('''
+Because myapp depends on foo any which depends on bar >=2.0.0, bar >=2.0.0 is required.
+So, because myapp depends on bar <2.0.0, version solving failed.'''),
     );
   });
 }
@@ -336,11 +334,9 @@ void devDependency() {
       ]).create();
 
       await expectResolves(
-        error: equalsIgnoringWhitespace('''
-        Because no versions of foo match ^2.0.0 and myapp depends on foo
-          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
-        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
-      '''),
+        error: contains('''
+Because no versions of foo match ^2.0.0 and myapp depends on foo >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
       );
     });
 
@@ -357,11 +353,9 @@ void devDependency() {
       ]).create();
 
       await expectResolves(
-        error: equalsIgnoringWhitespace('''
-        Because no versions of foo match ^2.0.0 and myapp depends on foo
-          >=1.0.0 <3.0.0, foo ^1.0.0 is required.
-        So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.
-      '''),
+        error: contains('''
+Because no versions of foo match ^2.0.0 and myapp depends on foo >=1.0.0 <3.0.0, foo ^1.0.0 is required.
+So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
       );
     });
 
@@ -378,10 +372,9 @@ void devDependency() {
       ]).create();
 
       await expectResolves(
-        error: equalsIgnoringWhitespace('''
-        Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version
-          solving failed.
-      '''),
+        error: contains(
+          'Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version solving failed.',
+        ),
       );
     });
 
@@ -441,10 +434,8 @@ void unsolvable() {
 
     await d.appDir(dependencies: {'foo': '>=1.0.0 <2.0.0'}).create();
     await expectResolves(
-      error: equalsIgnoringWhitespace("""
-      Because myapp depends on foo ^1.0.0 which doesn't match any versions,
-        version solving failed.
-    """),
+      error: contains('''
+Because myapp depends on foo ^1.0.0 which doesn't match any versions, version solving failed.'''),
     );
   });
 
@@ -575,11 +566,10 @@ void unsolvable() {
       ..serve('b', '1.0.0');
 
     await d.appDir(dependencies: {'a': 'any', 'b': '>1.0.0'}).create();
+
     await expectResolves(
-      error: equalsIgnoringWhitespace("""
-      Because myapp depends on b >1.0.0 which doesn't match any versions,
-        version solving failed.
-    """),
+      error: contains('''
+Because myapp depends on b >1.0.0 which doesn't match any versions, version solving failed.'''),
     );
   });
 
@@ -1115,11 +1105,10 @@ void dartSdkConstraint() {
     ]).create();
 
     await expectResolves(
-      error: equalsIgnoringWhitespace('''
-      The current Dart SDK version is 3.1.2+3.
+      error: contains('''
+The current Dart SDK version is 3.1.2+3.
 
-      Because myapp requires SDK version 2.12.0, version solving failed.
-    '''),
+Because myapp requires SDK version 2.12.0, version solving failed.'''),
     );
   });
 

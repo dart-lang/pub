@@ -13,6 +13,7 @@ import '../command.dart';
 import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../io.dart';
+import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -142,13 +143,19 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     await log.spinner(
       'Resolving',
       () async {
-        final upgradablePackagesResult =
-            await _tryResolve(upgradablePubspec, cache);
+        final upgradablePackagesResult = await _tryResolve(
+          upgradablePubspec,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
         hasUpgradableResolution = upgradablePackagesResult != null;
         upgradablePackages = upgradablePackagesResult ?? [];
 
-        final resolvablePackagesResult =
-            await _tryResolve(resolvablePubspec, cache);
+        final resolvablePackagesResult = await _tryResolve(
+          resolvablePubspec,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
         hasResolvableResolution = resolvablePackagesResult != null;
         resolvablePackages = resolvablePackagesResult ?? [];
       },
@@ -386,11 +393,16 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
 /// resolution was found.
-Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
+Future<List<PackageId>?> _tryResolve(
+  Pubspec pubspec,
+  SystemCache cache, {
+  LockFile? lockFile,
+}) async {
   final solveResult = await tryResolveVersions(
     SolveType.upgrade,
     cache,
     Package.inMemory(pubspec),
+    lockFile: lockFile,
   );
 
   return solveResult?.packages;
@@ -546,31 +558,35 @@ Future<void> _outputHuman(
     log.message(b.toString());
   }
 
-  var upgradable = rows
-      .where(
-        (row) =>
-            row.current != null &&
-            row.upgradable != null &&
-            row.current != row.upgradable &&
-            // Include transitive only, if we show them
-            (showTransitiveDependencies ||
-                hasKind(_DependencyKind.direct)(row) ||
-                hasKind(_DependencyKind.dev)(row)),
-      )
-      .length;
+  var upgradable = rows.where(
+    (row) {
+      final current = row.current;
+      final upgradable = row.upgradable;
+      return current != null &&
+          upgradable != null &&
+          current < upgradable &&
+          // Include transitive only, if we show them
+          (showTransitiveDependencies ||
+              hasKind(_DependencyKind.direct)(row) ||
+              hasKind(_DependencyKind.dev)(row));
+    },
+  ).length;
 
-  var notAtResolvable = rows
-      .where(
-        (row) =>
-            (row.current != null || !lockFileExists) &&
-            row.resolvable != null &&
-            row.upgradable != row.resolvable &&
-            // Include transitive only, if we show them
-            (showTransitiveDependencies ||
-                hasKind(_DependencyKind.direct)(row) ||
-                hasKind(_DependencyKind.dev)(row)),
-      )
-      .length;
+  var notAtResolvable = rows.where(
+    (row) {
+      final current = row.current;
+      final upgradable = row.upgradable;
+      final resolvable = row.resolvable;
+      return (current != null || !lockFileExists) &&
+          resolvable != null &&
+          upgradable != null &&
+          upgradable < resolvable &&
+          // Include transitive only, if we show them
+          (showTransitiveDependencies ||
+              hasKind(_DependencyKind.direct)(row) ||
+              hasKind(_DependencyKind.dev)(row));
+    },
+  ).length;
 
   if (!hasUpgradableResolution || !hasResolvableResolution) {
     log.message(mode.noResolutionText);
@@ -720,7 +736,7 @@ Showing outdated packages$directoryDescription.
 
   @override
   Future<Pubspec> resolvablePubspec(Pubspec? pubspec) async {
-    return stripVersionUpperBounds(pubspec!);
+    return stripVersionBounds(pubspec!);
   }
 }
 
@@ -762,6 +778,11 @@ class _VersionDetails {
           _overridden == other._overridden &&
           _id.source == other._id.source &&
           _pubspec.version == other._pubspec.version;
+
+  bool operator <(_VersionDetails other) =>
+      _overridden == other._overridden &&
+      _id.source == other._id.source &&
+      _pubspec.version < other._pubspec.version;
 
   @override
   int get hashCode => Object.hash(_pubspec.version, _id.source, _overridden);
