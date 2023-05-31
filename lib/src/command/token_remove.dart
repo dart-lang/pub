@@ -20,7 +20,7 @@ Remove secret token for package repository at <hosted-url>.''';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
-  bool get isAll => asBool(argResults['all']);
+  bool get isAll => argResults.flag('all');
 
   TokenRemoveCommand() {
     argParser.addFlag(

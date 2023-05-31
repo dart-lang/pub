@@ -19,6 +19,7 @@ class PubspecTypoValidator extends Validator {
       if (_validPubspecKeys.contains(key)) {
         continue;
       }
+      if (key is! String) continue;
 
       var bestLevenshteinRatio = 100.0;
       var closestKey = '';
@@ -26,8 +27,8 @@ class PubspecTypoValidator extends Validator {
       for (final validKey in _validPubspecKeys) {
         /// Use a ratio to account allow more more typos in strings with
         /// longer lengths.
-        final ratio = levenshteinDistance(key as String, validKey) /
-            (validKey.length + key.length);
+        final ratio =
+            levenshteinDistance(key, validKey) / (validKey.length + key.length);
         if (ratio < bestLevenshteinRatio) {
           bestLevenshteinRatio = ratio;
           closestKey = validKey;

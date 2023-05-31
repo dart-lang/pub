@@ -742,7 +742,7 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
 Future<PubProcessResult> runProcess(
   String executable,
   List<String> args, {
-  workingDir,
+  String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
 }) {
@@ -755,7 +755,7 @@ Future<PubProcessResult> runProcess(
         Process.run,
         executable,
         args,
-        workingDir: workingDir as String?,
+        workingDir: workingDir,
         environment: environment,
         runInShell: runInShell,
       );

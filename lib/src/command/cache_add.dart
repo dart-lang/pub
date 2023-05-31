@@ -79,7 +79,7 @@ class CacheAddCommand extends PubCommand {
       }
     }
 
-    if (asBool(argResults['all'])) {
+    if (argResults.flag('all')) {
       // Install them in ascending order.
       ids.sort((id1, id2) => id1.version.compareTo(id2.version));
       await Future.forEach(ids, downloadVersion);

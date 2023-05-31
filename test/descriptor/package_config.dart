@@ -52,9 +52,7 @@ class PackageConfigFileDescriptor extends Descriptor {
       fail("File not found: '$packageConfigFile'.");
     }
 
-    Map<String, dynamic> rawJson = json.decode(
-      await File(packageConfigFile).readAsString(),
-    ) as Map<String, dynamic>;
+    final rawJson = json.decode(await File(packageConfigFile).readAsString());
     PackageConfig config;
     try {
       config = PackageConfig.fromJson(rawJson);

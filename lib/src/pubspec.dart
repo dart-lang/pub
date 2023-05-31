@@ -102,10 +102,11 @@ class Pubspec extends PubspecBase {
     final pubspecOverridesFields = _overridesFileFields;
     if (pubspecOverridesFields != null) {
       pubspecOverridesFields.nodes.forEach((key, _) {
-        if (!const {'dependency_overrides'}.contains(key.value)) {
+        final keyNode = key as YamlNode;
+        if (!const {'dependency_overrides'}.contains(keyNode.value)) {
           throw SourceSpanApplicationException(
             'pubspec_overrides.yaml only supports the `dependency_overrides` field.',
-            (key as YamlNode).span,
+            keyNode.span,
           );
         }
       });
@@ -175,14 +176,12 @@ class Pubspec extends PubspecBase {
 
     if (yaml is YamlMap) {
       yaml.nodes.forEach((nameNode, constraintNode) {
+        if (nameNode is! YamlNode) throw AssertionError('Bad state');
         final name = nameNode.value;
         if (name is! String) {
-          _error('SDK names must be strings.', (nameNode as YamlNode).span);
+          _error('SDK names must be strings.', nameNode.span);
         } else if (name == 'dart') {
-          _error(
-            'Use "sdk" to for Dart SDK constraints.',
-            (nameNode as YamlNode).span,
-          );
+          _error('Use "sdk" to for Dart SDK constraints.', nameNode.span);
         }
         if (name == 'sdk') return;
 
@@ -257,22 +256,13 @@ class Pubspec extends PubspecBase {
     this.dependencyOverridesFromOverridesFile = false,
   })  : _dependencies = dependencies == null
             ? null
-            : Map.fromIterable(
-                dependencies,
-                key: (range) => (range as PackageRange).name,
-              ),
+            : {for (final d in dependencies) d.name: d},
         _devDependencies = devDependencies == null
             ? null
-            : Map.fromIterable(
-                devDependencies,
-                key: (range) => (range as PackageRange).name,
-              ),
+            : {for (final d in devDependencies) d.name: d},
         _dependencyOverrides = dependencyOverrides == null
             ? null
-            : Map.fromIterable(
-                dependencyOverrides,
-                key: (range) => (range as PackageRange).name,
-              ),
+            : {for (final d in dependencyOverrides) d.name: d},
         _givenSdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': SdkConstraint(VersionConstraint.any)}),
         _includeDefaultSdkConstraint = false,
@@ -438,8 +428,8 @@ Map<String, PackageRange> _parseDependencies(
     _error('"$field" field must be a map.', node.span);
   }
 
-  var nonStringNode =
-      node.nodes.keys.firstWhere((e) => e.value is! String, orElse: () => null);
+  var nonStringNode = node.nodes.keys
+      .firstWhereOrNull((e) => e is YamlScalar && e.value is! String);
   if (nonStringNode != null) {
     _error(
       'A dependency name must be a string.',
@@ -449,58 +439,52 @@ Map<String, PackageRange> _parseDependencies(
 
   node.nodes.forEach(
     (nameNode, specNode) {
-      var name = nameNode.value as String;
+      var name = (nameNode as YamlNode).value;
+      if (name is! String) {
+        _error('A dependency name must be a string.', nameNode.span);
+      }
       var spec = specNode.value;
       if (packageName != null && name == packageName) {
-        _error(
-          'A package may not list itself as a dependency.',
-          (nameNode as YamlNode).span,
-        );
+        _error('A package may not list itself as a dependency.', nameNode.span);
       }
 
-      YamlNode? descriptionNode;
-      String? sourceName;
-
+      final String? sourceName;
       VersionConstraint versionConstraint = VersionRange();
+      YamlNode? descriptionNode;
       if (spec == null) {
         sourceName = null;
       } else if (spec is String) {
         sourceName = null;
         versionConstraint =
             _parseVersionConstraint(specNode, packageName, fileType);
-      } else if (spec is Map) {
+      } else if (specNode is YamlMap) {
         // Don't write to the immutable YAML map.
-        spec = Map.from(spec);
-        var specMap = specNode as YamlMap;
-
-        if (spec.containsKey('version')) {
-          spec.remove('version');
-          versionConstraint = _parseVersionConstraint(
-            specMap.nodes['version'],
-            packageName,
-            fileType,
-          );
-        }
-
-        var sourceNames = spec.keys.toList();
-        if (sourceNames.length > 1) {
+        final versionNode = specNode.nodes['version'];
+        versionConstraint = _parseVersionConstraint(
+          versionNode,
+          packageName,
+          fileType,
+        );
+        final otherEntries = specNode.nodes.entries
+            .where((entry) => entry.key.value != 'version')
+            .toList();
+        if (otherEntries.length > 1) {
           _error('A dependency may only have one source.', specNode.span);
-        } else if (sourceNames.isEmpty) {
+        } else if (otherEntries.isEmpty) {
           // Default to a hosted dependency if no source is specified.
           sourceName = 'hosted';
-        }
-
-        if (sourceName == null) {
-          if (sourceNames.single is! String) {
-            _error(
-              'A source name must be a string.',
-              (specMap.nodes.keys.single as YamlNode).span,
-            );
+        } else {
+          switch (otherEntries.single) {
+            case MapEntry(key: YamlScalar(value: String s), value: final d):
+              sourceName = s;
+              descriptionNode = d;
+            case MapEntry(key: final k, value: _):
+              _error(
+                'A source name must be a string.',
+                (k as YamlNode).span,
+              );
           }
-          sourceName = sourceNames.single as String;
         }
-
-        descriptionNode ??= specMap.nodes[sourceName];
       } else {
         _error(
           'A dependency specification must be a string or a mapping.',
@@ -556,7 +540,8 @@ VersionConstraint _parseVersionConstraint(
   if (node?.value == null) {
     return VersionConstraint.any;
   }
-  if (node!.value is! String) {
+  final value = node!.value;
+  if (value is! String) {
     _error('A version constraint must be a string.', node.span);
   }
 
@@ -564,7 +549,7 @@ VersionConstraint _parseVersionConstraint(
     'version constraint',
     node.span,
     () {
-      var constraint = VersionConstraint.parse(node.value as String);
+      var constraint = VersionConstraint.parse(value);
       return constraint;
     },
     packageName,

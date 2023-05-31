@@ -95,7 +95,7 @@ class GitSource extends CachedSource {
     }
 
     var ref = description['ref'];
-    if (ref != null && ref is! String) {
+    if (ref is! String?) {
       throw FormatException("The 'ref' field of the description must be a "
           'string.');
     }
@@ -106,14 +106,18 @@ class GitSource extends CachedSource {
           'must be a string.');
     }
 
-    final url = asString(description['url']);
+    final url = description['url'];
+    if (url is! String) {
+      throw FormatException("The 'url' field of the description "
+          'must be a string.');
+    }
     return PackageId(
       name,
       version,
       GitResolvedDescription(
         GitDescription(
           url: url,
-          ref: asString(ref, whenNull: 'HEAD'),
+          ref: ref,
           path: _validatedPath(
             description['path'],
           ),
@@ -465,7 +469,7 @@ class GitSource extends CachedSource {
       } on git.GitException catch (error, stackTrace) {
         log.error('Failed to reset ${log.bold(package.name)} '
             '${package.version}. Error:\n$error');
-        log.fine(stackTrace);
+        log.fine(stackTrace.toString());
         result.add(
           RepairResult(package.name, package.version, this, success: false),
         );

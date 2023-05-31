@@ -710,7 +710,7 @@ LockFile _createLockFile(
   Iterable<String>? sandbox,
   Map<String, String>? hosted,
 }) {
-  var dependencies = {};
+  var dependencies = <String, dynamic>{};
 
   if (sandbox != null) {
     for (var package in sandbox) {
@@ -721,7 +721,7 @@ LockFile _createLockFile(
   final packages = <PackageId>[
     ...dependencies.entries.map(
       (entry) => cache.path.parseId(
-        entry.key as String,
+        entry.key,
         Version(0, 0, 0),
         {'path': entry.value, 'relative': true},
         containingDir: p.join(d.sandbox, appPath),
@@ -874,7 +874,7 @@ void _validateOutputJson(
     actual = jsonDecode(actualText) as Map;
   } on FormatException {
     failures.add('Expected $pipe JSON:');
-    failures.add(asString(expected));
+    failures.add(expected.toString());
     failures.add('Got invalid JSON:');
     failures.add(actualText);
   }
@@ -884,7 +884,7 @@ void _validateOutputJson(
   actual['log']?.removeWhere(
     (entry) =>
         entry['level'] == 'Fine' &&
-        asString(entry['message']).startsWith('Not yet complete after'),
+        (entry['message'] as String).startsWith('Not yet complete after'),
   );
 
   // Match against the expectation.

@@ -21,13 +21,13 @@ import 'package:pub/src/utils.dart';
 class _DependencyServicesCommandRunner extends CommandRunner<int>
     implements PubTopLevel {
   @override
-  String get directory => argResults['directory'] as String? ?? '';
+  String get directory => argResults.option('directory');
 
   @override
-  bool get captureStackChains => asBool(argResults['verbose']);
+  bool get captureStackChains => argResults.flag('verbose');
 
   @override
-  bool get trace => asBool(argResults['verbose']);
+  bool get trace => argResults.flag('verbose');
 
   ArgResults? _argResults;
 

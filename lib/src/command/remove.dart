@@ -34,9 +34,9 @@ To remove a dependency override of a package prefix the package name with
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
-  bool get isOffline => asBool(argResults['offline']);
+  bool get isOffline => argResults.flag('offline');
 
-  bool get isDryRun => asBool(argResults['dry-run']);
+  bool get isDryRun => argResults.flag('dry-run');
 
   RemoveCommand() {
     argParser.addFlag(
@@ -93,18 +93,16 @@ To remove a dependency override of a package prefix the package name with
 
     await entrypoint.withPubspec(newPubspec).acquireDependencies(
           SolveType.get,
-          precompile: !isDryRun && asBool(argResults['precompile']),
+          precompile: !isDryRun && argResults.flag('precompile'),
           dryRun: isDryRun,
           analytics: isDryRun ? null : analytics,
         );
 
     var example = entrypoint.example;
-    if (!isDryRun &&
-        asBool(argResults['example'], whenNull: true) &&
-        example != null) {
+    if (!isDryRun && argResults.flag('example') && example != null) {
       await example.acquireDependencies(
         SolveType.get,
-        precompile: asBool(argResults['precompile']),
+        precompile: argResults.flag('precompile'),
         summaryOnly: true,
         analytics: analytics,
       );

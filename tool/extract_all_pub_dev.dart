@@ -24,7 +24,7 @@ Future<List<String>> allPackageNames() async {
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
-  return List<String>.from(result['packages'] as Iterable);
+  return List<String>.from(result['packages'] as List);
 }
 
 Future<List<String>> versionArchiveUrls(String packageName) async {
@@ -33,9 +33,9 @@ Future<List<String>> versionArchiveUrls(String packageName) async {
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
-  return List<String>.from(
-    (result['versions'] as Iterable).map((v) => v['archive_url']),
-  );
+  return (result['versions'] as List)
+      .map((v) => v['archive_url'] as String)
+      .toList();
 }
 
 Future<void> main() async {
