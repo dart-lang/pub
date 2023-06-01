@@ -443,6 +443,9 @@ Map<String, PackageRange> _parseDependencies(
       if (name is! String) {
         _error('A dependency name must be a string.', nameNode.span);
       }
+      if (!packageNameRegExp.hasMatch(name)) {
+        _error('Not a valid package name.', nameNode.span);
+      }
       var spec = specNode.value;
       if (packageName != null && name == packageName) {
         _error('A package may not list itself as a dependency.', nameNode.span);
