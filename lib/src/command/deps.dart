@@ -32,7 +32,7 @@ class DepsCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// Whether to include dev dependencies.
-  bool get _includeDev => argResults['dev'];
+  bool get _includeDev => argResults.flag('dev');
 
   DepsCommand() {
     argParser.addOption(
@@ -75,7 +75,7 @@ class DepsCommand extends PubCommand {
     await entrypoint.ensureUpToDate();
     final buffer = StringBuffer();
 
-    if (argResults['json']) {
+    if (argResults.flag('json')) {
       if (argResults.wasParsed('dev')) {
         usageException(
           'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.',
@@ -150,7 +150,7 @@ class DepsCommand extends PubCommand {
         ),
       );
     } else {
-      if (argResults['executables']) {
+      if (argResults.flag('executables')) {
         _outputExecutables(buffer);
       } else {
         for (var sdk in sdks.values) {
@@ -174,7 +174,7 @@ class DepsCommand extends PubCommand {
       }
     }
 
-    log.message(buffer);
+    log.message(buffer.toString());
   }
 
   /// Outputs a list of all of the package's immediate, dev, override, and

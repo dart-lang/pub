@@ -1,6 +1,7 @@
 .buildlog
 .DS_Store
 .idea
+.vscode
 .dart_tool/
 .settings/
 /build/

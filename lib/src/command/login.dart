@@ -47,11 +47,17 @@ class LoginCommand extends PubCommand {
     return await oauth2.withClient((client) async {
       final discovery = await oauth2.fetchOidcDiscoveryDocument();
       final userInfoEndpoint = discovery['userinfo_endpoint'];
+      if (userInfoEndpoint is! String) {
+        log.fine(
+          'Bad discovery document. userinfo_endpoint not a String',
+        );
+        return null;
+      }
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
         final userInfo = json.decode(userInfoRequest.body);
-        final name = userInfo['name'];
+        final name = userInfo['name'] as String?;
         final email = userInfo['email'];
         if (email is String) {
           return _UserInfo(name, email);

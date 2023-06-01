@@ -56,13 +56,13 @@ class PackageConfig {
   ///
   /// Throws [FormatException], if format is invalid, this does not validate the
   /// contents only that the format is correct.
-  factory PackageConfig.fromJson(Object data) {
+  factory PackageConfig.fromJson(Object? data) {
     if (data is! Map<String, dynamic>) {
       throw FormatException('package_config.json must be a JSON object');
     }
     final root = data;
 
-    void throwFormatException(String property, String mustBe) =>
+    Never throwFormatException(String property, String mustBe) =>
         throw FormatException(
           '"$property" in .dart_tool/package_config.json $mustBe',
         );
@@ -85,7 +85,7 @@ class PackageConfig {
     }
     final packages = <PackageConfigEntry>[];
     for (final entry in packagesRaw) {
-      packages.add(PackageConfigEntry.fromJson(entry));
+      packages.add(PackageConfigEntry.fromJson(entry as Object));
     }
 
     // Read the 'generated' property
@@ -100,7 +100,7 @@ class PackageConfig {
 
     // Read the 'generator' property
     final generator = root['generator'];
-    if (generator != null && generator is! String) {
+    if (generator is! String?) {
       throw FormatException(
         '"generator" in package_config.json must be a string, if given',
       );
@@ -124,7 +124,7 @@ class PackageConfig {
     }
 
     return PackageConfig(
-      configVersion: configVersion as int,
+      configVersion: configVersion,
       packages: packages,
       generated: generated,
       generator: generator,

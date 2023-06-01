@@ -135,7 +135,8 @@ Future<T> withClient<T>(Future<T> Function(Client) fn) {
       _clearCredentials();
       return withClient(fn);
     } else {
-      throw error;
+      // ignore: only_throw_errors
+      throw error as Object;
     }
   });
 }
@@ -226,7 +227,7 @@ Future<Client> _authorize() async {
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as
   // the code is received.
-  var completer = Completer();
+  var completer = Completer<Client>();
   var server = await bindServer('localhost', 0);
   shelf_io.serveRequests(server, (request) {
     if (request.url.path.isNotEmpty) {

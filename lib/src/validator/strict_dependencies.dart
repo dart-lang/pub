@@ -35,7 +35,7 @@ class StrictDependenciesValidator extends Validator {
       } on AnalyzerErrorGroup catch (e, s) {
         // Ignore files that do not parse.
         log.fine(getErrorMessage(e));
-        log.fine(Chain.forTrace(s).terse);
+        log.fine(Chain.forTrace(s).terse.toString());
         continue;
       }
 

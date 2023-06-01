@@ -181,7 +181,7 @@ void main() {
     Future<String?> f(String i) async {
       isBeingProcessed[i]!.complete();
       await completers[i]!.future;
-      return Zone.current['zoneValue'];
+      return Zone.current['zoneValue'] as String?;
     }
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);

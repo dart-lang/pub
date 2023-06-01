@@ -279,7 +279,7 @@ class HostedSource extends CachedSource {
       version,
       ResolvedHostedDescription(
         HostedDescription(name, url),
-        sha256: _parseContentHash(sha256),
+        sha256: _parseContentHash(sha256 as String?),
       ),
     );
   }
@@ -362,7 +362,7 @@ class HostedSource extends CachedSource {
     }
     final url = u ?? defaultUrl;
 
-    return HostedDescription(name, url);
+    return HostedDescription(name, url as String);
   }
 
   static final RegExp _looksLikePackageName =
@@ -407,17 +407,29 @@ class HostedSource extends CachedSource {
       if (archiveUrl is! String) {
         throw FormatException('archive_url must be a String');
       }
+      final isDiscontinued = body['isDiscontinued'] ?? false;
+      if (isDiscontinued is! bool) {
+        throw FormatException('isDiscontinued must be a bool');
+      }
+      final replacedBy = body['replacedBy'];
+      if (replacedBy is! String?) {
+        throw FormatException('replacedBy must be a String');
+      }
+      final retracted = map['retracted'] ?? false;
+      if (retracted is! bool) {
+        throw FormatException('retracted must be a bool');
+      }
       final status = PackageStatus(
-        isDiscontinued: body['isDiscontinued'] ?? false,
-        discontinuedReplacedBy: body['replacedBy'],
-        isRetracted: map['retracted'] ?? false,
+        isDiscontinued: isDiscontinued,
+        discontinuedReplacedBy: replacedBy,
+        isRetracted: retracted,
       );
       return _VersionInfo(
         pubspec.version,
         pubspec,
         Uri.parse(archiveUrl),
         status,
-        _parseContentHash(archiveSha256),
+        _parseContentHash(archiveSha256 as String?),
       );
     }).toList();
   }
@@ -458,7 +470,12 @@ class HostedSource extends CachedSource {
         throw FormatException('version listing must be a mapping');
       }
       body = decoded;
-      result = _versionInfoFromPackageListing(body, ref, url, cache);
+      result = _versionInfoFromPackageListing(
+        body as Map<String, dynamic>,
+        ref,
+        url,
+        cache,
+      );
     } on Exception catch (error, stackTrace) {
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
@@ -982,7 +999,7 @@ class HostedSource extends CachedSource {
                       '${package.version}';
                   if (url != defaultUrl) message += ' from $url';
                   log.error('$message. Error:\n$error');
-                  log.fine(stackTrace);
+                  log.fine(stackTrace.toString());
 
                   tryDeleteEntry(package.dir);
                   return RepairResult(

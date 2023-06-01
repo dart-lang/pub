@@ -342,7 +342,7 @@ class _ServedPackageVersion {
   // Overrides the calculated sha256.
   String? sha256;
 
-  Version get version => Version.parse(pubspec['version']);
+  Version get version => Version.parse(pubspec['version'] as String);
 
   _ServedPackageVersion(this.pubspec, {required this.contents, this.headers});
 

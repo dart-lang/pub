@@ -6,6 +6,7 @@ import '../command.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../source/hosted.dart';
+import '../utils.dart';
 
 /// Handles the `token remove` pub command.
 class TokenRemoveCommand extends PubCommand {
@@ -19,7 +20,7 @@ Remove secret token for package repository at <hosted-url>.''';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
-  bool get isAll => argResults['all'];
+  bool get isAll => argResults.flag('all');
 
   TokenRemoveCommand() {
     argParser.addFlag(

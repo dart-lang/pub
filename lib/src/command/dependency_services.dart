@@ -69,8 +69,10 @@ class DependencyServicesReportCommand extends PubCommand {
     } else {
       final resolution = await _tryResolve(entrypoint.root.pubspec, cache) ??
           (throw DataException('Failed to resolve pubspec'));
-      currentPackages =
-          Map<String, PackageId>.fromIterable(resolution, key: (e) => e.name);
+      currentPackages = Map<String, PackageId>.fromIterable(
+        resolution,
+        key: (e) => (e as PackageId).name,
+      );
     }
     currentPackages.remove(entrypoint.root.name);
 
@@ -361,13 +363,13 @@ class DependencyServicesApplyCommand extends PubCommand {
     YamlEditor(readTextFile(entrypoint.pubspecPath));
     final toApply = <_PackageVersion>[];
     final input = json.decode(await utf8.decodeStream(stdin));
-    for (final change in input['dependencyChanges']) {
+    for (final change in input['dependencyChanges'] as Iterable) {
       toApply.add(
         _PackageVersion(
-          change['name'],
-          change['version'],
+          change['name'] as String,
+          change['version'] as String?,
           change['constraint'] != null
-              ? VersionConstraint.parse(change['constraint'])
+              ? VersionConstraint.parse(change['constraint'] as String)
               : null,
         ),
       );
@@ -421,23 +423,23 @@ class DependencyServicesApplyCommand extends PubCommand {
       }
       if (lockFileEditor != null) {
         if (targetVersion != null &&
-            lockFileYaml['packages'].containsKey(targetPackage)) {
+            (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           lockFileEditor.update(
             ['packages', targetPackage, 'version'],
             targetVersion.toString(),
           );
           // Remove the now outdated content-hash - it will be restored below
           // after resolution.
-          if (lockFileEditor
-              .parseAt(['packages', targetPackage, 'description'])
-              .value
-              .containsKey('sha256')) {
+          var packageMap = lockFileEditor
+              .parseAt(['packages', targetPackage, 'description']).value as Map;
+          var hasSha = packageMap.containsKey('sha256');
+          if (hasSha) {
             lockFileEditor.remove(
               ['packages', targetPackage, 'description', 'sha256'],
             );
           }
         } else if (targetRevision != null &&
-            lockFileYaml['packages'].containsKey(targetPackage)) {
+            (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
           final currentDescription = ref.description as GitDescription;
           final updatedRef = PackageRef(
@@ -468,7 +470,7 @@ class DependencyServicesApplyCommand extends PubCommand {
           );
         } else if (targetVersion == null &&
             targetRevision == null &&
-            !lockFileYaml['packages'].containsKey(targetPackage)) {
+            !(lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           dataError(
             'Trying to remove non-existing transitive dependency $targetPackage.',
           );

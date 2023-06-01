@@ -92,7 +92,7 @@ Future<void> main() async {
       Platform.resolvedExecutable,
       ['--snapshot=$snapshot', _commandRunner],
     );
-    expect(r.exitCode, 0, reason: r.stderr);
+    expect(r.exitCode, 0, reason: r.stderr as String);
   });
 
   tearDownAll(() {

@@ -131,7 +131,7 @@ abstract class PubspecBase {
     }
 
     _parsedPublishTo = true;
-    _publishTo = publishTo;
+    _publishTo = publishTo as String?;
     return _publishTo;
   }
 
@@ -161,7 +161,7 @@ abstract class PubspecBase {
             if (value is! String) {
               falseSecretsError(node.span);
             }
-            falseSecrets.add(value);
+            falseSecrets.add(value as String);
           }
         } else {
           falseSecretsError(falseSecretsNode.span);
@@ -198,13 +198,17 @@ abstract class PubspecBase {
       );
     }
 
-    yaml.nodes.forEach((key, value) {
-      if (key.value is! String) {
+    var yamlMap = yaml;
+
+    yamlMap.nodes.forEach((key, value) {
+      key = key as YamlNode;
+      final keyValue = key.value;
+      if (keyValue is! String) {
         _error('"executables" keys must be strings.', key.span);
       }
 
       final keyPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
-      if (!keyPattern.hasMatch(key.value)) {
+      if (!keyPattern.hasMatch(keyValue)) {
         _error(
           '"executables" keys may only contain letters, '
           'numbers, hyphens and underscores.',
@@ -212,21 +216,16 @@ abstract class PubspecBase {
         );
       }
 
-      if (value.value == null) {
-        value = key;
-      } else if (value.value is! String) {
-        _error('"executables" values must be strings or null.', value.span);
-      }
-
       final valuePattern = RegExp(r'[/\\]');
-      if (valuePattern.hasMatch(value.value)) {
-        _error(
-          '"executables" values may not contain path separators.',
-          value.span,
-        );
-      }
-
-      _executables![key.value] = value.value;
+      _executables![keyValue] = switch (value.value) {
+        null => keyValue,
+        String s when valuePattern.hasMatch(s) => _error(
+            '"executables" values may not contain path separators.',
+            value.span,
+          ),
+        String s => s,
+        _ => _error('"executables" values must be strings or null.', value.span)
+      };
     });
 
     return _executables!;
@@ -267,7 +266,7 @@ abstract class PubspecBase {
   }
 
   /// Throws a [SourceSpanApplicationException] with the given message.
-  void _error(String message, SourceSpan? span) {
+  Never _error(String message, SourceSpan? span) {
     throw SourceSpanApplicationException(message, span);
   }
 }

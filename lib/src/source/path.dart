@@ -117,7 +117,7 @@ class PathSource extends Source {
       }
 
       path = p.normalize(
-        p.absolute(p.join(containingDir, description['path'])),
+        p.absolute(p.join(containingDir, path)),
       );
     }
 
