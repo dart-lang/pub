@@ -290,6 +290,7 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
     retryIf: (e) async =>
         (e is PubHttpException && e.isIntermittent) ||
         e is TimeoutException ||
+        e is http.ClientException ||
         isHttpIOException(e),
     onRetry: (exception, attemptNumber) async =>
         log.io('Attempt #$attemptNumber for $operation'),
