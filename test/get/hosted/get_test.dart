@@ -97,22 +97,6 @@ void main() {
     });
   });
 
-  test('URL encodes the package name', () async {
-    await servePackages();
-
-    await d.appDir(dependencies: {'bad name!': '1.2.3'}).create();
-
-    await pubGet(
-      error: allOf([
-        contains(
-            "Because myapp depends on bad name! any which doesn't exist (could "
-            'not find package bad name! at http://localhost:'),
-        contains('), version solving failed.')
-      ]),
-      exitCode: exit_codes.UNAVAILABLE,
-    );
-  });
-
   test('gets a package from a non-default pub server', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.

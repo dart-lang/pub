@@ -13,7 +13,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('URL encodes the package name', () async {
+  test('Validates the package name', () async {
     await servePackages();
 
     await d.appDir(dependencies: {}).create();
