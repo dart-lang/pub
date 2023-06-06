@@ -31,7 +31,7 @@ void main() {
       'should consider a package valid if it contains no checked in otherwise ignored files',
       () async {
     await d.git('myapp', [
-      ...d.validPackage.contents,
+      ...d.validPackage().contents,
       d.file('foo.txt'),
     ]).create();
 
@@ -55,7 +55,7 @@ void main() {
 
   test('should not fail on missing git', () async {
     await d.git('myapp', [
-      ...d.validPackage.contents,
+      ...d.validPackage().contents,
       d.file('.gitignore', '*.txt'),
       d.file('foo.txt'),
     ]).create();
@@ -75,7 +75,7 @@ void main() {
         'myapp',
         [
           d.file('foo.txt'),
-          ...d.validPackage.contents,
+          ...d.validPackage().contents,
         ],
       ),
     ]).create();
@@ -107,7 +107,7 @@ void main() {
 
   test('Should not follow symlinks', () async {
     await d.git('myapp', [
-      ...d.validPackage.contents,
+      ...d.validPackage().contents,
     ]).create();
     final packageRoot = p.join(d.sandbox, 'myapp');
     await pubGet(workingDirectory: packageRoot);

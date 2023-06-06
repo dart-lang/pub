@@ -81,6 +81,20 @@ bool linkExists(String link) => Link(link).existsSync();
 /// points to a file.
 bool fileExists(String file) => File(file).existsSync();
 
+/// Stats [path], assuming it or the entry it is a link to is a file.
+///
+/// Returns `null` if it is not a file (eg. a directory or not existing).
+FileStat? tryStatFile(String path) {
+  var stat = File(path).statSync();
+  if (stat.type == FileSystemEntityType.link) {
+    stat = File(File(path).resolveSymbolicLinksSync()).statSync();
+  }
+  if (stat.type == FileSystemEntityType.file) {
+    return stat;
+  }
+  return null;
+}
+
 /// Returns the canonical path for [pathString].
 ///
 /// This is the normalized, absolute path, with symlinks resolved. As in
@@ -728,7 +742,7 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
 Future<PubProcessResult> runProcess(
   String executable,
   List<String> args, {
-  workingDir,
+  String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
 }) {
@@ -751,8 +765,11 @@ Future<PubProcessResult> runProcess(
       );
     }
 
-    var pubResult =
-        PubProcessResult(result.stdout, result.stderr, result.exitCode);
+    var pubResult = PubProcessResult(
+      result.stdout as String,
+      result.stderr as String,
+      result.exitCode,
+    );
     log.processResult(executable, pubResult);
     return pubResult;
   });
@@ -819,8 +836,11 @@ PubProcessResult runProcessSync(
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
-  var pubResult =
-      PubProcessResult(result.stdout, result.stderr, result.exitCode);
+  var pubResult = PubProcessResult(
+    result.stdout as String,
+    result.stderr as String,
+    result.exitCode,
+  );
   log.processResult(executable, pubResult);
   return pubResult;
 }
@@ -917,8 +937,7 @@ T _doProcess<T>(
     String? workingDirectory,
     Map<String, String>? environment,
     bool runInShell,
-  })
-      fn,
+  }) fn,
   String executable,
   List<String> args, {
   String? workingDir,
@@ -1177,6 +1196,6 @@ final String? dartConfigDir = () {
 ///
 /// Otherwise, wrap with single quotation, and use '\'' to insert single quote.
 String escapeShellArgument(String x) =>
-    RegExp(r'^[a-zA-Z0-9-_=@.]+$').stringMatch(x) == null
+    RegExp(r'^[a-zA-Z0-9-_=@.^]+$').stringMatch(x) == null
         ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
         : x;

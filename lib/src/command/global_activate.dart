@@ -87,8 +87,8 @@ class GlobalActivateCommand extends PubCommand {
         usageException('Cannot pass both --no-executables and --executable.');
       }
 
-      executables = argResults['executable'];
-    } else if (argResults['no-executables']) {
+      executables = argResults['executable'] as List<String>?;
+    } else if (argResults.flag('no-executables')) {
       // An empty list means no executables.
       executables = [];
     }
@@ -126,8 +126,8 @@ class GlobalActivateCommand extends PubCommand {
           repo,
           executables,
           overwriteBinStubs: overwrite,
-          path: argResults['git-path'],
-          ref: argResults['git-ref'],
+          path: argResults['git-path'] as String?,
+          ref: argResults['git-ref'] as String?,
         );
 
       case 'hosted':
@@ -135,7 +135,8 @@ class GlobalActivateCommand extends PubCommand {
 
         PackageRef ref;
         try {
-          ref = cache.hosted.refFor(package, url: argResults['hosted-url']);
+          ref = cache.hosted
+              .refFor(package, url: argResults['hosted-url'] as String?);
         } on FormatException catch (e) {
           usageException('Invalid hosted-url: $e');
         }

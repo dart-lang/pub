@@ -14,7 +14,7 @@ Validator leakDetection() => LeakDetectionValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('contains a source file without secrets', () async {
       await d.dir(appPath, [

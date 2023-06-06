@@ -15,6 +15,7 @@ import 'package:test_process/test_process.dart';
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
+import 'ensure_pubspec_resolved.dart';
 
 const _commandRunner = 'tool/test-bin/pub_command_runner.dart';
 
@@ -27,16 +28,21 @@ Future<void> runEmbeddingToBuffer(
   List<String> args,
   StringBuffer buffer, {
   String? workingDirectory,
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   dynamic exitCode = 0,
 }) async {
+  final combinedEnvironment = getPubTestEnvironment();
+  (environment ?? {}).forEach((key, value) {
+    if (value == null) {
+      combinedEnvironment.remove(key);
+    } else {
+      combinedEnvironment[key] = value;
+    }
+  });
   final process = await TestProcess.start(
     Platform.resolvedExecutable,
     ['--enable-asserts', snapshot, ...args],
-    environment: {
-      ...getPubTestEnvironment(),
-      ...?environment,
-    },
+    environment: combinedEnvironment,
     workingDirectory: workingDirectory,
   );
   await process.shouldExit(exitCode);
@@ -86,11 +92,37 @@ Future<void> main() async {
       Platform.resolvedExecutable,
       ['--snapshot=$snapshot', _commandRunner],
     );
-    expect(r.exitCode, 0, reason: r.stderr);
+    expect(r.exitCode, 0, reason: r.stderr as String);
   });
 
   tearDownAll(() {
     File(snapshot).parent.deleteSync(recursive: true);
+  });
+
+  test('Can depend on package:flutter_gen', () async {
+    // Regression test for https://github.com/dart-lang/pub/issues/3314.
+    final server = await servePackages();
+    server.serve(
+      'flutter_gen',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('flutter_gen.dart', 'main() {print("hi");}')])
+      ],
+    );
+
+    await d.appDir(
+      dependencies: {'flutter_gen': '^1.0.0'},
+    ).create();
+    await pubGet();
+    final buffer = StringBuffer();
+
+    await runEmbeddingToBuffer(
+      ['run', 'flutter_gen'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: getPubTestEnvironment(),
+    );
+    expect(buffer.toString(), contains('hi'));
   });
 
   testWithGolden('run works, though hidden', (ctx) async {
@@ -388,7 +420,6 @@ main() {
       buffer.toString(),
       allOf(
         contains('Resolving dependencies'),
-        contains('+ foo 1.0.0'),
         contains('42'),
       ),
     );
@@ -414,6 +445,8 @@ main() {
       );
     }
   });
+
+  testEnsurePubspecResolved();
 }
 
 String _filter(String input) {

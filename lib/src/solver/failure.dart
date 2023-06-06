@@ -19,6 +19,8 @@ class SolveFailure implements ApplicationException {
   /// it will have one term, which will be the root package.
   final Incompatibility incompatibility;
 
+  final String? suggestions;
+
   @override
   String get message => toString();
 
@@ -30,12 +32,12 @@ class SolveFailure implements ApplicationException {
   PackageNotFoundException? get packageNotFound {
     for (var incompatibility in incompatibility.externalIncompatibilities) {
       var cause = incompatibility.cause;
-      if (cause is PackageNotFoundCause) return cause.exception;
+      if (cause is PackageNotFoundIncompatibilityCause) return cause.exception;
     }
     return null;
   }
 
-  SolveFailure(this.incompatibility)
+  SolveFailure(this.incompatibility, {this.suggestions})
       : assert(
           incompatibility.terms.isEmpty ||
               incompatibility.terms.single.package.isRoot,
@@ -44,7 +46,10 @@ class SolveFailure implements ApplicationException {
   /// Describes how [incompatibility] was derived, and thus why version solving
   /// failed.
   @override
-  String toString() => _Writer(incompatibility).write();
+  String toString() => [
+        _Writer(incompatibility).write(),
+        if (suggestions != null) suggestions
+      ].join('\n');
 }
 
 /// A class that writes a human-readable description of the cause of a

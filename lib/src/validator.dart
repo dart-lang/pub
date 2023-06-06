@@ -23,7 +23,6 @@ import 'validator/file_case.dart';
 import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
 import 'validator/gitignore.dart';
-import 'validator/language_version.dart';
 import 'validator/leak_detection.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
@@ -156,7 +155,6 @@ abstract class Validator {
       StrictDependenciesValidator(),
       FlutterConstraintValidator(),
       FlutterPluginFormatValidator(),
-      LanguageVersionValidator(),
       RelativeVersionNumberingValidator(),
       PubspecTypoValidator(),
       LeakDetectionValidator(),
@@ -217,7 +215,7 @@ abstract class Validator {
   /// entrypoint).
   // TODO(sigurdm): Consider moving this to a more central location.
   List<String> filesBeneath(String dir, {required bool recursive}) {
-    final base = p.canonicalize(p.join(entrypoint.root.dir, dir));
+    final base = p.canonicalize(p.join(entrypoint.rootDir, dir));
     return files
         .where(
           recursive

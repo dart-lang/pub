@@ -13,7 +13,7 @@ import 'utils.dart';
 Validator executable() => ExecutableValidator();
 
 void main() {
-  setUp(d.validPackage.create);
+  setUp(d.validPackage().create);
 
   group('should consider a package valid if it', () {
     test('has executables that are present', () async {

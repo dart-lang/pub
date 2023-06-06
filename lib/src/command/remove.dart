@@ -6,12 +6,11 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
-import '../package.dart';
 import '../pubspec.dart';
 import '../solver.dart';
+import '../utils.dart';
 
 /// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
 /// and performs an operation similar to `pub get`. Unlike `pub add`, this
@@ -35,9 +34,9 @@ To remove a dependency override of a package prefix the package name with
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
-  bool get isOffline => argResults['offline'];
+  bool get isOffline => argResults.flag('offline');
 
-  bool get isDryRun => argResults['dry-run'];
+  bool get isDryRun => argResults.flag('dry-run');
 
   RemoveCommand() {
     argParser.addFlag(
@@ -59,6 +58,7 @@ To remove a dependency override of a package prefix the package name with
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also update dependencies in `example/` (if it exists).',
       hide: true,
     );
@@ -84,40 +84,28 @@ To remove a dependency override of a package prefix the package name with
       return _PackageRemoval(name, removeFromOverride: isOverride);
     });
 
-    if (isDryRun) {
-      final rootPubspec = entrypoint.root.pubspec;
-      final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
-      final newRoot = Package.inMemory(newPubspec);
-
-      await Entrypoint.inMemory(newRoot, cache, lockFile: entrypoint.lockFile)
-          .acquireDependencies(
-        SolveType.get,
-        precompile: argResults['precompile'],
-        dryRun: true,
-        analytics: null,
-      );
-    } else {
+    if (!isDryRun) {
       /// Update the pubspec.
       _writeRemovalToPubspec(targets);
+    }
+    final rootPubspec = entrypoint.root.pubspec;
+    final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
 
-      /// Create a new [Entrypoint] since we have to reprocess the updated
-      /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory, cache);
-      await updatedEntrypoint.acquireDependencies(
+    await entrypoint.withPubspec(newPubspec).acquireDependencies(
+          SolveType.get,
+          precompile: !isDryRun && argResults.flag('precompile'),
+          dryRun: isDryRun,
+          analytics: isDryRun ? null : analytics,
+        );
+
+    var example = entrypoint.example;
+    if (!isDryRun && argResults.flag('example') && example != null) {
+      await example.acquireDependencies(
         SolveType.get,
-        precompile: argResults['precompile'],
+        precompile: argResults.flag('precompile'),
+        summaryOnly: true,
         analytics: analytics,
       );
-
-      var example = entrypoint.example;
-      if (argResults['example'] && example != null) {
-        await example.acquireDependencies(
-          SolveType.get,
-          precompile: argResults['precompile'],
-          summaryOnly: true,
-          analytics: analytics,
-        );
-      }
     }
   }
 

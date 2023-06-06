@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
@@ -33,7 +35,7 @@ class UpgradeCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
   @override
-  bool get isOffline => argResults['offline'];
+  bool get isOffline => argResults.flag('offline');
 
   UpgradeCommand() {
     argParser.addFlag(
@@ -72,6 +74,7 @@ class UpgradeCommand extends PubCommand {
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also run in `example/` (if it exists).',
       hide: true,
     );
@@ -87,14 +90,14 @@ class UpgradeCommand extends PubCommand {
   /// Avoid showing spinning progress messages when not in a terminal.
   bool get _shouldShowSpinner => terminalOutputForStdout;
 
-  bool get _dryRun => argResults['dry-run'];
+  bool get _dryRun => argResults.flag('dry-run');
 
-  bool get _precompile => argResults['precompile'];
+  bool get _precompile => argResults.flag('precompile');
 
   bool get _upgradeNullSafety =>
-      argResults['nullsafety'] || argResults['null-safety'];
+      argResults.flag('nullsafety') || argResults.flag('null-safety');
 
-  bool get _upgradeMajorVersions => argResults['major-versions'];
+  bool get _upgradeMajorVersions => argResults.flag('major-versions');
 
   @override
   Future<void> runProtected() async {
@@ -111,16 +114,16 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
 
     if (_upgradeMajorVersions) {
-      if (argResults['example'] && entrypoint.example != null) {
+      if (argResults.flag('example') && entrypoint.example != null) {
         log.warning(
-          'Running `upgrade --major-versions` only in `${entrypoint.root.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
+          'Running `upgrade --major-versions` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
         );
       }
       await _runUpgradeMajorVersions();
     } else {
       await _runUpgrade(entrypoint);
     }
-    if (argResults['example'] && entrypoint.example != null) {
+    if (argResults.flag('example') && entrypoint.example != null) {
       // Reload the entrypoint to ensure we pick up potential changes that has
       // been made.
       final exampleEntrypoint = Entrypoint(directory, cache).example!;
@@ -175,7 +178,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = _directDependenciesToUpgrade();
 
-    final resolvablePubspec = stripVersionUpperBounds(
+    final resolvablePubspec = stripVersionBounds(
       entrypoint.root.pubspec,
       stripOnly: toUpgrade,
     );
@@ -240,35 +243,37 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     final solveType =
         argResults.rest.isEmpty ? SolveType.upgrade : SolveType.get;
 
-    if (_dryRun) {
-      // Even if it is a dry run, run `acquireDependencies` so that the user
-      // gets a report on changes.
-      await Entrypoint.inMemory(
-        Package.inMemory(
-          Pubspec.parse(newPubspecText, cache.sources),
-        ),
-        cache,
-        lockFile: entrypoint.lockFile,
-        solveResult: solveResult,
-      ).acquireDependencies(
-        solveType,
-        dryRun: true,
-        precompile: _precompile,
-        analytics: null, // No analytics for dry-run
-      );
-    } else {
+    if (!_dryRun) {
       if (changes.isNotEmpty) {
         writeTextFile(entrypoint.pubspecPath, newPubspecText);
       }
-      // TODO: Allow Entrypoint to be created with in-memory pubspec, so that
-      //       we can show the changes when not in --dry-run mode. For now we only show
-      //       the changes made to pubspec.yaml in dry-run mode.
-      await Entrypoint(directory, cache).acquireDependencies(
-        solveType,
-        precompile: _precompile,
-        analytics: analytics,
-      );
     }
+
+    String? overridesFileContents;
+    final overridesPath =
+        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
+    try {
+      overridesFileContents = readTextFile(overridesPath);
+    } on IOException {
+      overridesFileContents = null;
+    }
+
+    await entrypoint
+        .withPubspec(
+          Pubspec.parse(
+            newPubspecText,
+            cache.sources,
+            location: Uri.parse(entrypoint.pubspecPath),
+            overridesFileContents: overridesFileContents,
+            overridesLocation: Uri.file(overridesPath),
+          ),
+        )
+        .acquireDependencies(
+          solveType,
+          dryRun: _dryRun,
+          precompile: !_dryRun && _precompile,
+          analytics: _dryRun ? null : analytics, // No analytics for dry-run
+        );
 
     _outputChangeSummary(changes);
 
@@ -324,10 +329,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       final wouldBe = _dryRun ? 'would be made to' : 'to';
       log.message('\nNo changes $wouldBe pubspec.yaml!');
     } else {
-      final s = changes.length == 1 ? '' : 's';
-
       final changed = _dryRun ? 'Would change' : 'Changed';
-      log.message('\n$changed ${changes.length} constraint$s in pubspec.yaml:');
+      log.message('\n$changed ${changes.length} '
+          '${pluralize('constraint', changes.length)} in pubspec.yaml:');
       changes.forEach((from, to) {
         log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
       });

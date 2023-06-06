@@ -142,8 +142,9 @@ b: {}'''),
   group('minByAsync', () {
     test('is stable', () async {
       {
-        final completers = <String, Completer>{};
-        Completer completer(k) => completers.putIfAbsent(k, Completer.new);
+        final completers = <String, Completer<String>>{};
+        Completer<String> completer(String k) =>
+            completers.putIfAbsent(k, Completer.new);
         Future<int> lengthWhenComplete(String s) async {
           await completer(s).future;
           return s.length;
@@ -153,15 +154,16 @@ b: {}'''),
           minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
           completion('a'),
         );
-        completer('aa').complete();
-        completer('b').complete();
-        completer('a').complete();
-        completer('ccc').complete();
+        completer('aa').complete('');
+        completer('b').complete('');
+        completer('a').complete('');
+        completer('ccc').complete('');
         await w;
       }
       {
-        final completers = <String, Completer>{};
-        Completer completer(k) => completers.putIfAbsent(k, Completer.new);
+        final completers = <String, Completer<String>>{};
+        Completer<String> completer(String k) =>
+            completers.putIfAbsent(k, Completer.new);
         Future<int> lengthWhenComplete(String s) async {
           await completer(s).future;
           return s.length;
@@ -171,10 +173,10 @@ b: {}'''),
           minByAsync(['aa', 'a', 'b', 'ccc'], lengthWhenComplete),
           completion('a'),
         );
-        completer('ccc').complete();
-        completer('a').complete();
-        completer('b').complete();
-        completer('aa').complete();
+        completer('ccc').complete('');
+        completer('a').complete('');
+        completer('b').complete('');
+        completer('aa').complete('');
         await w;
       }
     });

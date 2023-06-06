@@ -75,6 +75,10 @@ class VersionSolver {
   /// The set of packages for which the lockfile should be ignored.
   final Set<String> _unlock;
 
+  /// If present these represents the version of an SDK to assume during
+  /// resolution.
+  final Map<String, Version> _sdkOverrides;
+
   final _stopwatch = Stopwatch();
 
   VersionSolver(
@@ -82,8 +86,10 @@ class VersionSolver {
     this._systemCache,
     this._root,
     this._lockFile,
-    Iterable<String> unlock,
-  )   : _dependencyOverrides = _root.dependencyOverrides,
+    Iterable<String> unlock, {
+    Map<String, Version> sdkOverrides = const {},
+  })  : _sdkOverrides = sdkOverrides,
+        _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
   /// Finds a set of dependencies that match the root package's constraints, or
@@ -93,7 +99,7 @@ class VersionSolver {
     _addIncompatibility(
       Incompatibility(
         [Term(PackageRange.root(_root), false)],
-        IncompatibilityCause.root,
+        RootIncompatibilityCause(),
       ),
     );
 
@@ -345,7 +351,7 @@ class VersionSolver {
       _addIncompatibility(
         Incompatibility(
           [Term(candidate.toRef().withConstraint(VersionConstraint.any), true)],
-          IncompatibilityCause.unknownSource,
+          UnknownSourceIncompatibilityCause(),
         ),
       );
       return candidate.name;
@@ -367,7 +373,7 @@ class VersionSolver {
       _addIncompatibility(
         Incompatibility(
           [Term(package.toRef().withConstraint(VersionConstraint.any), true)],
-          PackageNotFoundCause(error),
+          PackageNotFoundIncompatibilityCause(error),
         ),
       );
       return package.name;
@@ -387,7 +393,7 @@ class VersionSolver {
         _addIncompatibility(
           Incompatibility(
             [Term(package, true)],
-            IncompatibilityCause.noVersions,
+            NoVersionsIncompatibilityCause(),
           ),
         );
         return package.name;
@@ -496,7 +502,13 @@ class VersionSolver {
   PackageLister _packageLister(PackageRange package) {
     var ref = package.toRef();
     return _packageListers.putIfAbsent(ref, () {
-      if (ref.isRoot) return PackageLister.root(_root, _systemCache);
+      if (ref.isRoot) {
+        return PackageLister.root(
+          _root,
+          _systemCache,
+          sdkOverrides: _sdkOverrides,
+        );
+      }
 
       var locked = _getLocked(ref.name);
       if (locked != null && locked.toRef() != ref) locked = null;
@@ -512,10 +524,11 @@ class VersionSolver {
         _systemCache,
         ref,
         locked,
-        _root.dependencyType(package.name),
+        _root.pubspec.dependencyType(package.name),
         overridden,
         _getAllowedRetracted(ref.name),
         downgrade: _type == SolveType.downgrade,
+        sdkOverrides: _sdkOverrides,
       );
     });
   }

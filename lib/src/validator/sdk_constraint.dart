@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../sdk.dart';
 import '../validator.dart';
 
 /// A validator of the SDK constraint.
@@ -60,16 +59,6 @@ Consider updating the SDK constraint to:
 environment:
   sdk: '$effectiveConstraint'
 ''');
-      }
-    }
-
-    for (var sdk in sdks.values) {
-      if (sdk.identifier == 'dart') continue;
-      if (entrypoint.root.pubspec.sdkConstraints.containsKey(sdk.identifier)) {
-        validateSdkConstraint(
-          sdk.firstPubVersion,
-          "Older versions of pub don't support ${sdk.name} SDK constraints.",
-        );
       }
     }
   }

@@ -10,6 +10,7 @@ import 'package:pub/src/io.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../descriptor.dart' as d;
@@ -52,11 +53,15 @@ extension on GoldenTestContext {
     final process = await Process.start(
       Platform.resolvedExecutable,
       [
+        '--enable-asserts',
         snapshot,
         '--verbose',
         ...args,
       ],
-      environment: getPubTestEnvironment(),
+      environment: {
+        ...getPubTestEnvironment(),
+        '_PUB_TEST_DEFAULT_HOSTED_URL': globalServer.url,
+      },
       workingDirectory: p.join(d.sandbox, appPath),
     );
     if (stdin != null) {
@@ -98,7 +103,7 @@ Future<void> _listReportApply(
   await context.runDependencyServices(['list']);
   final report = await context.runDependencyServices(['report']);
   if (reportAssertions != null) {
-    reportAssertions(json.decode(report));
+    reportAssertions(json.decode(report) as Map);
   }
   final input = json.encode({
     'dependencyChanges': upgrades,
@@ -116,7 +121,7 @@ Future<void> main() async {
       '--snapshot=$snapshot',
       p.join('bin', 'dependency_services.dart'),
     ]);
-    expect(r.exitCode, 0, reason: r.stderr);
+    expect(r.exitCode, 0, reason: r.stderr as String);
   });
 
   tearDownAll(() {
@@ -250,7 +255,7 @@ Future<void> main() async {
     final lockFileYaml = YamlEditor(
       lockFile.readAsStringSync(),
     );
-    for (final p in lockFileYaml.parseAt(['packages']).value.entries) {
+    for (final p in (lockFileYaml.parseAt(['packages']) as YamlMap).entries) {
       lockFileYaml.remove(['packages', p.key, 'description', 'sha256']);
     }
     lockFile.writeAsStringSync(lockFileYaml.toString());
@@ -263,6 +268,46 @@ Future<void> main() async {
     await _listReportApply(context, [
       _PackageVersion('foo', '1.2.4'),
     ]);
+  });
+
+  testWithGolden('Preserves pub.dartlang.org as hosted url', (context) async {
+    final server = (await servePackages())
+      ..serve('foo', '1.2.3')
+      ..serve('bar', '1.2.3')
+      ..serveContentHashes = true;
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+        },
+      })
+    ]).create();
+    await pubGet();
+    final lockFile = File(path(p.join(appPath, 'pubspec.lock')));
+    final lockFileYaml = YamlEditor(
+      lockFile.readAsStringSync(),
+    );
+    for (final p
+        in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
+      lockFileYaml.update(
+        ['packages', p.key, 'description', 'url'],
+        'https://pub.dartlang.org',
+      );
+    }
+    lockFile.writeAsStringSync(lockFileYaml.toString());
+
+    server.serve('foo', '1.2.4');
+    server.serve('boo', '1.2.4');
+
+    await _listReportApply(
+      context,
+      [
+        _PackageVersion('foo', '1.2.4'),
+      ],
+    );
   });
 
   testWithGolden('Adding transitive', (context) async {
@@ -383,6 +428,7 @@ Future<void> main() async {
   });
 
   testWithGolden('Can update a git package', (context) async {
+    await servePackages();
     await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
     await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
 

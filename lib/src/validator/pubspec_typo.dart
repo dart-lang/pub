@@ -19,6 +19,7 @@ class PubspecTypoValidator extends Validator {
       if (_validPubspecKeys.contains(key)) {
         continue;
       }
+      if (key is! String) continue;
 
       var bestLevenshteinRatio = 100.0;
       var closestKey = '';

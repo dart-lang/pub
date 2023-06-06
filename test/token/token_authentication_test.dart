@@ -12,7 +12,7 @@ import '../test_pub.dart';
 void main() {
   test('with a pre existing environment token authenticates', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
@@ -33,7 +33,7 @@ void main() {
 
   test('with a invalid environment token fails with error', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
@@ -54,7 +54,7 @@ void main() {
 
   test('with a pre existing invalid opaque token fails with error', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
@@ -80,7 +80,7 @@ void main() {
 
   test('with a pre existing opaque token authenticates', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [

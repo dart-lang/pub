@@ -10,7 +10,7 @@ import '../test_pub.dart';
 
 void main() {
   test('package validation has a warning and is canceled', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     var pkg = packageMap(
       'test_pkg',
       '1.0.0',

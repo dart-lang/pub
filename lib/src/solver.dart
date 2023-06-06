@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:pub_semver/pub_semver.dart';
+
 import 'lock_file.dart';
 import 'package.dart';
 import 'solver/failure.dart';
@@ -33,6 +35,7 @@ Future<SolveResult> resolveVersions(
   Package root, {
   LockFile? lockFile,
   Iterable<String> unlock = const [],
+  Map<String, Version> sdkOverrides = const {},
 }) {
   lockFile ??= LockFile.empty();
   return VersionSolver(
@@ -41,6 +44,7 @@ Future<SolveResult> resolveVersions(
     root,
     lockFile,
     unlock,
+    sdkOverrides: sdkOverrides,
   ).solve();
 }
 

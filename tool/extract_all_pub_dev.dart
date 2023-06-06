@@ -24,7 +24,7 @@ Future<List<String>> allPackageNames() async {
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
-  return List<String>.from(result['packages']);
+  return List<String>.from(result['packages'] as List);
 }
 
 Future<List<String>> versionArchiveUrls(String packageName) async {
@@ -33,7 +33,9 @@ Future<List<String>> versionArchiveUrls(String packageName) async {
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
-  return List<String>.from(result['versions'].map((v) => v['archive_url']));
+  return (result['versions'] as List)
+      .map((v) => v['archive_url'] as String)
+      .toList();
 }
 
 Future<void> main() async {
@@ -41,11 +43,11 @@ Future<void> main() async {
   var failures = <Map<String, dynamic>?>[];
   if (fileExists(statusFilename)) {
     final json = jsonDecode(readTextFile(statusFilename));
-    for (final packageName in json['packages'] ?? []) {
-      alreadyDonePackages.add(packageName);
+    for (final packageName in json['packages'] as Iterable? ?? []) {
+      alreadyDonePackages.add(packageName as String);
     }
-    for (final failure in json['failures'] ?? []) {
-      failures.add(failure);
+    for (final failure in (json['failures'] ?? []) as Iterable) {
+      failures.add(failure as Map<String, dynamic>);
     }
   }
   log.message('Already processed ${alreadyDonePackages.length} packages');

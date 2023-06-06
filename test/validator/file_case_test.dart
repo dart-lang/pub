@@ -27,7 +27,7 @@ late d.DirectoryDescriptor fakeFlutterRoot;
 
 void main() {
   test('Recognizes files that only differ in capitalization.', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.dir(appPath, [d.file('Pubspec.yaml')]).create();
     await expectValidation(
       allOf(

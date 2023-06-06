@@ -13,7 +13,7 @@ import 'utils.dart';
 Validator compiledDartdoc() => CompiledDartdocValidator();
 
 void main() {
-  setUp(d.validPackage.create);
+  setUp(d.validPackage().create);
 
   group('should consider a package valid if it', () {
     test('looks normal', () => expectValidationDeprecated(compiledDartdoc));

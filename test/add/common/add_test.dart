@@ -13,7 +13,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test('URL encodes the package name', () async {
+  test('Validates the package name', () async {
     await servePackages();
 
     await d.appDir(dependencies: {}).create();
@@ -31,6 +31,23 @@ void main() {
       d.nothing('pubspec.lock'),
       d.nothing('.packages'),
     ]).validate();
+  });
+
+  test('adds a package with a multi-component name from path', () async {
+    await d.dir('foo', [d.libPubspec('fo_o1.a', '1.0.0')]).create();
+
+    await d.appDir(dependencies: {}).create();
+
+    await pubAdd(args: ['fo_o1.a:{"path":"../foo"}']);
+
+    await d.appPackageConfigFile([
+      d.packageConfigEntry(name: 'fo_o1.a', path: '../foo'),
+    ]).validate();
+    await d.appDir(
+      dependencies: {
+        'fo_o1.a': {'path': '../foo'}
+      },
+    ).validate();
   });
 
   group('normally', () {
@@ -1063,5 +1080,27 @@ dependency_overrides:
 '''),
       )
     ]).validate();
+  });
+
+  test('should take pubspec_overrides.yaml into account', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
+    await d.appDir(
+      dependencies: {
+        'bar': '^1.0.0',
+      },
+    ).create();
+    await d.dir(appPath, [
+      d.pubspecOverrides({
+        'dependency_overrides': {
+          'bar': {'path': '../bar'}
+        }
+      })
+    ]).create();
+
+    await pubGet();
+
+    await pubAdd(args: ['foo'], output: contains('+ foo 1.0.0'));
   });
 }

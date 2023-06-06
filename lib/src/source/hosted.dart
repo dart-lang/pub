@@ -9,7 +9,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart'
-    show IterableExtension, IterableNullableExtension, ListEquality, maxBy;
+    show IterableExtension, IterableNullableExtension, maxBy;
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
@@ -128,7 +128,16 @@ class HostedSource extends CachedSource {
   static String pubDartlangUrl = 'https://pub.dartlang.org';
 
   static bool isPubDevUrl(String url) {
-    final origin = Uri.parse(url).origin;
+    final parsedUrl = Uri.parse(url);
+    if (parsedUrl.scheme != 'http' && parsedUrl.scheme != 'https') {
+      // A non http(s) url is not pub.dev.
+      return false;
+    }
+    if (parsedUrl.host.isEmpty) {
+      // The empty host is not pub.dev.
+      return false;
+    }
+    final origin = parsedUrl.origin;
     // Allow the defaultHostedUrl to be overriden when running from tests
     if (runningFromTest &&
         io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
@@ -270,9 +279,27 @@ class HostedSource extends CachedSource {
       version,
       ResolvedHostedDescription(
         HostedDescription(name, url),
-        sha256: sha256 == null ? null : hexDecode(sha256),
+        sha256: _parseContentHash(sha256 as String?),
       ),
     );
+  }
+
+  /// Decodes a sha256 hash from a lock-file or package-listing.
+  /// It is expected to be a hex-encoded String of length 64.
+  ///
+  /// Throws a [FormatException] if the string cannot be decoded.
+  Uint8List? _parseContentHash(String? encoded) {
+    if (encoded == null) return null;
+    if (encoded.length != 64) {
+      throw FormatException('Content-hash has incorrect length');
+    }
+    try {
+      return hexDecode(encoded);
+    } on FormatException catch (e) {
+      return throw FormatException(
+        'Badly formatted content-hash: ${e.message}',
+      );
+    }
   }
 
   /// Parses the description for a package.
@@ -335,7 +362,7 @@ class HostedSource extends CachedSource {
     }
     final url = u ?? defaultUrl;
 
-    return HostedDescription(name, url);
+    return HostedDescription(name, url as String);
   }
 
   static final RegExp _looksLikePackageName =
@@ -380,17 +407,29 @@ class HostedSource extends CachedSource {
       if (archiveUrl is! String) {
         throw FormatException('archive_url must be a String');
       }
+      final isDiscontinued = body['isDiscontinued'] ?? false;
+      if (isDiscontinued is! bool) {
+        throw FormatException('isDiscontinued must be a bool');
+      }
+      final replacedBy = body['replacedBy'];
+      if (replacedBy is! String?) {
+        throw FormatException('replacedBy must be a String');
+      }
+      final retracted = map['retracted'] ?? false;
+      if (retracted is! bool) {
+        throw FormatException('retracted must be a bool');
+      }
       final status = PackageStatus(
-        isDiscontinued: body['isDiscontinued'] ?? false,
-        discontinuedReplacedBy: body['replacedBy'],
-        isRetracted: map['retracted'] ?? false,
+        isDiscontinued: isDiscontinued,
+        discontinuedReplacedBy: replacedBy,
+        isRetracted: retracted,
       );
       return _VersionInfo(
         pubspec.version,
         pubspec,
         Uri.parse(archiveUrl),
         status,
-        archiveSha256 == null ? null : hexDecode(archiveSha256),
+        _parseContentHash(archiveSha256 as String?),
       );
     }).toList();
   }
@@ -431,14 +470,19 @@ class HostedSource extends CachedSource {
         throw FormatException('version listing must be a mapping');
       }
       body = decoded;
-      result = _versionInfoFromPackageListing(body, ref, url, cache);
+      result = _versionInfoFromPackageListing(
+        body as Map<String, dynamic>,
+        ref,
+        url,
+        cache,
+      );
     } on Exception catch (error, stackTrace) {
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
 
     // Cache the response on disk.
     // Don't cache overly big responses.
-    if (bodyText.length < 100 * 1024) {
+    if (bodyText.length < 500 * 1024) {
       await _cacheVersionListingResponse(body, ref, cache);
     }
     return result;
@@ -527,23 +571,27 @@ class HostedSource extends CachedSource {
       if (maxAge == null || now.difference(stat.modified) < maxAge) {
         try {
           final cachedDoc = jsonDecode(readTextFile(cachePath));
+          if (cachedDoc is! Map) {
+            throw FormatException('Broken cached version listing response');
+          }
           final timestamp = cachedDoc['_fetchedAt'];
-          if (timestamp is String) {
-            final parsedTimestamp = DateTime.parse(timestamp);
-            final cacheAge = DateTime.now().difference(parsedTimestamp);
-            if (maxAge != null && cacheAge > maxAge) {
-              // Too old according to internal timestamp - delete.
-              tryDeleteEntry(cachePath);
-            } else {
-              var res = _versionInfoFromPackageListing(
-                cachedDoc,
-                ref,
-                Uri.file(cachePath),
-                cache,
-              );
-              _responseCache[ref] = Pair(parsedTimestamp, res);
-              return res;
-            }
+          if (timestamp is! String) {
+            throw FormatException('Broken cached version listing response');
+          }
+          final parsedTimestamp = DateTime.parse(timestamp);
+          final cacheAge = DateTime.now().difference(parsedTimestamp);
+          if (maxAge != null && cacheAge > maxAge) {
+            // Too old according to internal timestamp - delete.
+            tryDeleteEntry(cachePath);
+          } else {
+            var res = _versionInfoFromPackageListing(
+              cachedDoc,
+              ref,
+              Uri.file(cachePath),
+              cache,
+            );
+            _responseCache[ref] = Pair(parsedTimestamp, res);
+            return res;
           }
         } on io.IOException {
           // Could not read the file. Delete if it exists.
@@ -830,28 +878,6 @@ class HostedSource extends CachedSource {
     );
   }
 
-  /// Determines if the package identified by [id] is already downloaded to the
-  /// system cache and has the expected content-hash.
-  @override
-  bool isInSystemCache(PackageId id, SystemCache cache) {
-    if ((id.description as ResolvedHostedDescription).sha256 != null) {
-      try {
-        final cachedSha256 = readTextFile(hashPath(id, cache));
-        if (!const ListEquality().equals(
-          hexDecode(cachedSha256),
-          (id.description as ResolvedHostedDescription).sha256,
-        )) {
-          return false;
-        }
-      } on io.IOException {
-        // Most likely the hash file was not written, because we had a legacy
-        // entry.
-        return false;
-      }
-    }
-    return dirExists(getDirectoryInCache(id, cache));
-  }
-
   /// The system cache directory for the hosted source contains subdirectories
   /// for each separate repository URL that's used on the system.
   ///
@@ -893,8 +919,11 @@ class HostedSource extends CachedSource {
   /// Loads the hash at `hashPath(id)`.
   Uint8List? sha256FromCache(PackageId id, SystemCache cache) {
     try {
-      return hexDecode(readTextFile(hashPath(id, cache)));
+      return _parseContentHash(readTextFile(hashPath(id, cache)));
     } on io.IOException {
+      return null;
+    } on FormatException catch (e) {
+      log.fine('Bad content-hash in cache: $e, ignoring cache entry');
       return null;
     }
   }
@@ -970,7 +999,7 @@ class HostedSource extends CachedSource {
                       '${package.version}';
                   if (url != defaultUrl) message += ' from $url';
                   log.error('$message. Error:\n$error');
-                  log.fine(stackTrace);
+                  log.fine(stackTrace.toString());
 
                   tryDeleteEntry(package.dir);
                   return RepairResult(
@@ -1125,39 +1154,43 @@ See $contentHashesDocumentationUrl.
       // download.
       final expectedSha256 = versionInfo.archiveSha256;
 
-      await withAuthenticatedClient(cache, Uri.parse(description.url),
-          (client) async {
-        // In addition to HTTP errors, this will retry crc32c/sha256 errors as
-        // well because [PackageIntegrityException] subclasses
-        // [PubHttpException].
-        await retryForHttp('downloading "$archiveUrl"', () async {
-          final request = http.Request('GET', archiveUrl);
-          request.attachMetadataHeaders();
-          final response = await client.fetchAsStream(request);
+      try {
+        await withAuthenticatedClient(cache, Uri.parse(description.url),
+            (client) async {
+          // In addition to HTTP errors, this will retry crc32c/sha256 errors as
+          // well because [PackageIntegrityException] subclasses
+          // [PubHttpException].
+          await retryForHttp('downloading "$archiveUrl"', () async {
+            final request = http.Request('GET', archiveUrl);
+            request.attachMetadataHeaders();
+            final response = await client.fetchAsStream(request);
 
-          Stream<List<int>> stream = response.stream;
-          final expectedCrc32c = _parseCrc32c(response.headers, fileName);
-          if (expectedCrc32c != null) {
-            stream = _validateCrc32c(
-              response.stream,
-              expectedCrc32c,
-              id,
-              archiveUrl,
+            Stream<List<int>> stream = response.stream;
+            final expectedCrc32c = _parseCrc32c(response.headers, fileName);
+            if (expectedCrc32c != null) {
+              stream = _validateCrc32c(
+                response.stream,
+                expectedCrc32c,
+                id,
+                archiveUrl,
+              );
+            }
+            stream = validateSha256(
+              stream,
+              (expectedSha256 == null) ? null : Digest(expectedSha256),
             );
-          }
-          stream = validateSha256(
-            stream,
-            (expectedSha256 == null) ? null : Digest(expectedSha256),
-          );
 
-          // We download the archive to disk instead of streaming it directly
-          // into the tar unpacking. This simplifies stream handling.
-          // Package:tar cancels the stream when it reaches end-of-archive, and
-          // cancelling a http stream makes it not reusable.
-          // There are ways around this, and we might revisit this later.
-          await createFileFromStream(stream, archivePath);
+            // We download the archive to disk instead of streaming it directly
+            // into the tar unpacking. This simplifies stream handling.
+            // Package:tar cancels the stream when it reaches end-of-archive, and
+            // cancelling a http stream makes it not reusable.
+            // There are ways around this, and we might revisit this later.
+            await createFileFromStream(stream, archivePath);
+          });
         });
-      });
+      } on Exception catch (error, stackTrace) {
+        _throwFriendlyError(error, stackTrace, id.name, description.url);
+      }
 
       var tempDir = cache.createTempDir();
       try {
@@ -1265,7 +1298,7 @@ See $contentHashesDocumentationUrl.
   /// this tries to translate into a more user friendly error message.
   ///
   /// Always throws an error, either the original one or a better one.
-  Never _throwFriendlyError(
+  static Never _throwFriendlyError(
     Exception error,
     StackTrace stackTrace,
     String package,
@@ -1355,6 +1388,11 @@ class HostedDescription extends Description {
   final String url;
 
   HostedDescription._(this.packageName, this.url);
+
+  // This can be used to construct a description with any specific url.
+  factory HostedDescription.raw(String packageName, String url) =>
+      HostedDescription._(packageName, url);
+
   factory HostedDescription(String packageName, String url) =>
       HostedDescription._(
         packageName,
@@ -1381,6 +1419,10 @@ class HostedDescription extends Description {
   }) {
     if (url == source.defaultUrl) {
       return null;
+    }
+    if (languageVersion >=
+        LanguageVersion.firstVersionWithShorterHostedSyntax) {
+      return url;
     }
     return {'url': url, 'name': packageName};
   }
@@ -1412,16 +1454,10 @@ class ResolvedHostedDescription extends ResolvedDescription {
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
-    late final String url;
-    try {
-      url = validateAndNormalizeHostedUrl(description.url).toString();
-    } on FormatException catch (e) {
-      throw ArgumentError.value(url, 'url', 'url must be normalized: $e');
-    }
     final hash = sha256;
     return {
       'name': description.packageName,
-      'url': url.toString(),
+      'url': description.url,
       if (hash != null) 'sha256': hexEncode(hash),
     };
   }

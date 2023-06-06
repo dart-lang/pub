@@ -152,7 +152,7 @@ enum OutputFormat {
   gnuLongName,
 }
 
-class _WritingSink extends StreamSink<TarEntry> {
+class _WritingSink implements StreamSink<TarEntry> {
   final StreamSink<List<int>> _output;
   final _SynchronousTarSink _synchronousWriter;
   bool _closed = false;
@@ -269,7 +269,7 @@ class _SynchronousTarConverter
   }
 }
 
-class _SynchronousTarSink extends Sink<SynchronousTarEntry> {
+class _SynchronousTarSink implements Sink<SynchronousTarEntry> {
   final OutputFormat _format;
   final Sink<List<int>> _output;
 
