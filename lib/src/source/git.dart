@@ -675,10 +675,6 @@ class GitSource extends CachedSource {
       ],
       workingDir: from,
     );
-    await git.run(
-      ['submodule', 'update', '--init', '--recursive'],
-      workingDir: to,
-    );
   }
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
