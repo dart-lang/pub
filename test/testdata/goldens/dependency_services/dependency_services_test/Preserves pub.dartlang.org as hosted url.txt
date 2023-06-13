@@ -27,7 +27,7 @@ sdks:
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section list
-$ echo '' | dependency_services list
+$ dependency_services list
 {
   "dependencies": [
     {
@@ -64,7 +64,7 @@ $ echo '' | dependency_services list
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section report
-$ echo '' | dependency_services report
+$ dependency_services report
 {
   "dependencies": [
     {
