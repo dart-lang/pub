@@ -9,6 +9,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:args/args.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
@@ -110,7 +111,9 @@ Future<T> captureErrors<T>(
 }) {
   var completer = Completer<T>();
   void wrappedCallback() {
-    Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
+    Future.sync(callback)
+        .then(completer.complete)
+        .catchError((Object e, StackTrace? stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
       if (stackTrace != null) {
@@ -118,7 +121,9 @@ Future<T> captureErrors<T>(
       } else {
         stackTrace = Chain([]);
       }
-      if (!completer.isCompleted) completer.completeError(e, stackTrace);
+      if (!completer.isCompleted) {
+        completer.completeError(e, stackTrace);
+      }
     });
   }
 
@@ -147,12 +152,13 @@ Future<T> captureErrors<T>(
 Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
   return Future.wait(
     futures.map((future) {
-      return future.catchError((error, stackTrace) {
+      return future.catchError((Object error, StackTrace? stackTrace) {
         log.exception(error, stackTrace);
+        // ignore: only_throw_errors
         throw error;
       });
     }),
-  ).catchError((error, stackTrace) {
+  ).catchError((Object error, StackTrace? stackTrace) {
     throw SilentException(error, stackTrace);
   });
 }
@@ -206,8 +212,7 @@ String toSentence(Iterable iter, {String conjunction = 'and'}) {
 /// [plural] is passed, that's used instead.
 String pluralize(String name, int number, {String? plural}) {
   if (number == 1) return name;
-  if (plural != null) return plural;
-  return '${name}s';
+  return plural ?? '${name}s';
 }
 
 /// Returns [text] with the first letter capitalized.
@@ -288,7 +293,7 @@ Future<S?> minByAsync<S, T>(
 ) async {
   int? minIndex;
   T? minOrderBy;
-  List valuesList = values.toList();
+  var valuesList = values.toList();
   final orderByResults = await Future.wait(values.map(orderBy));
   for (var i = 0; i < orderByResults.length; i++) {
     final elementOrderBy = orderByResults[i];
@@ -735,4 +740,11 @@ Future<T> retry<T>(
     final delay = delayFactor * math.pow(2.0, exp) * rf;
     await Future.delayed(delay < maxDelay ? delay : maxDelay);
   }
+}
+
+extension RetrieveFlags on ArgResults {
+  bool flag(String name) => this[name] as bool;
+
+  String option(String name) => this[name] as String;
+  String? optionWithoutDefault(String name) => this[name] as String?;
 }

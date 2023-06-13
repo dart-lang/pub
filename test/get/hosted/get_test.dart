@@ -4,7 +4,9 @@
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart';
+import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -93,22 +95,6 @@ void main() {
         d.packageConfigEntry(name: 'baz', version: '1.2.3'),
       ]).validate();
     });
-  });
-
-  test('URL encodes the package name', () async {
-    await servePackages();
-
-    await d.appDir(dependencies: {'bad name!': '1.2.3'}).create();
-
-    await pubGet(
-      error: allOf([
-        contains(
-            "Because myapp depends on bad name! any which doesn't exist (could "
-            'not find package bad name! at http://localhost:'),
-        contains('), version solving failed.')
-      ]),
-      exitCode: exit_codes.UNAVAILABLE,
-    );
   });
 
   test('gets a package from a non-default pub server', () async {
@@ -387,5 +373,41 @@ void main() {
         containsPair('qux', containsPair('dependency', 'transitive')),
       );
     });
+  });
+
+  test('Fails gracefully on tar.gz with duplicate entries', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('blah', [d.file('myduplicatefile'), d.file('myduplicatefile')])
+      ],
+    );
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await pubGet(
+      error:
+          contains('Tar file contained duplicate path blah/myduplicatefile.'),
+      exitCode: DATA,
+    );
+  });
+
+  test('Fails gracefully when downloading archive', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+    );
+    final downloadPattern =
+        RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
+    server.handle(
+      downloadPattern,
+      (request) => Response(403, body: 'Go away!'),
+    );
+    await d.appDir(dependencies: {'foo': 'any'}).create();
+    await pubGet(
+      error: contains('Package not available (authorization failed).'),
+      exitCode: UNAVAILABLE,
+    );
   });
 }

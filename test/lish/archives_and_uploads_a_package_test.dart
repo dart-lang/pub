@@ -17,7 +17,7 @@ import 'utils.dart';
 void main() {
   test('archives and uploads a package', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.credentialsFile(globalServer, 'access-token').create();
     var pub = await startPublish(globalServer);
 
@@ -40,7 +40,7 @@ void main() {
 
   test('archives and uploads a package using token', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
@@ -68,7 +68,7 @@ void main() {
 
   test('publishes to hosted-url with path', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
@@ -105,7 +105,7 @@ void main() {
   test('with an empty Git submodule', () async {
     await d.git('empty').create();
 
-    var repo = d.git(appPath, d.validPackage.contents);
+    var repo = d.git(appPath, d.validPackage().contents);
     await repo.create();
 
     await repo.runGit([

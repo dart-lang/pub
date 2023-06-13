@@ -14,7 +14,7 @@ void main() {
   test(
       'with an expired credentials.json, refreshes and saves the '
       'refreshed access token to credentials.json', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await servePackages();
     await d

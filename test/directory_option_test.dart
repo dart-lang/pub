@@ -31,7 +31,7 @@ Future<void> main() async {
       },
     );
 
-    await validPackage.create();
+    await validPackage().create();
     await dir(appPath, [
       dir('bin', [
         file('app.dart', '''

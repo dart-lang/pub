@@ -7,6 +7,7 @@ import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:source_span/source_span.dart';
 import 'package:test/test.dart' hide Description;
 import 'package:yaml/yaml.dart';
 
@@ -94,8 +95,8 @@ packages:
       test('allows an old-style SDK constraint', () {
         var lockFile = LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
         expect(
-          lockFile.sdkConstraints,
-          containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')),
+          lockFile.sdkConstraints['dart']!.effectiveConstraint,
+          VersionConstraint.parse('>=1.2.3 <4.0.0'),
         );
         expect(lockFile.sdkConstraints, isNot(contains('flutter')));
         expect(lockFile.sdkConstraints, isNot(contains('fuchsia')));
@@ -112,16 +113,16 @@ sdks:
           sources,
         );
         expect(
-          lockFile.sdkConstraints,
-          containsPair('dart', VersionConstraint.parse('>=1.2.3 <4.0.0')),
+          lockFile.sdkConstraints['dart']!.effectiveConstraint,
+          VersionConstraint.parse('>=1.2.3 <4.0.0'),
         );
         expect(
-          lockFile.sdkConstraints,
-          containsPair('flutter', VersionConstraint.parse('^0.1.2')),
+          lockFile.sdkConstraints['flutter']!.effectiveConstraint,
+          VersionConstraint.parse('>=0.1.2'),
         );
         expect(
-          lockFile.sdkConstraints,
-          containsPair('fuchsia', VersionConstraint.parse('^5.6.7')),
+          lockFile.sdkConstraints['fuchsia']!.effectiveConstraint,
+          VersionConstraint.parse('^5.6.7'),
         );
       });
 
@@ -135,7 +136,7 @@ not a map
               sources,
             );
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
@@ -149,7 +150,7 @@ packages: not a map
               sources,
             );
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
@@ -166,7 +167,7 @@ packages:
               sources,
             );
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
@@ -184,7 +185,7 @@ packages:
               sources,
             );
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
@@ -201,7 +202,7 @@ packages:
               sources,
             );
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
@@ -218,7 +219,7 @@ packages:
               sources,
             );
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
@@ -236,54 +237,54 @@ packages:
               sources,
             );
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
       test("throws if the old-style SDK constraint isn't a string", () {
         expect(
           () => LockFile.parse('sdk: 1.0', sources),
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
       test('throws if the old-style SDK constraint is invalid', () {
         expect(
           () => LockFile.parse('sdk: oops', sources),
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
       test("throws if the sdks field isn't a map", () {
         expect(
           () => LockFile.parse('sdks: oops', sources),
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
       test("throws if an sdk constraint isn't a string", () {
         expect(
           () => LockFile.parse('sdks: {dart: 1.0}', sources),
-          throwsFormatException,
+          throwsSourceSpanException,
         );
         expect(
           () {
             LockFile.parse('sdks: {dart: 1.0.0, flutter: 1.0}', sources);
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
       test('throws if an sdk constraint is invalid', () {
         expect(
           () => LockFile.parse('sdks: {dart: oops}', sources),
-          throwsFormatException,
+          throwsSourceSpanException,
         );
         expect(
           () {
             LockFile.parse('sdks: {dart: 1.0.0, flutter: oops}', sources);
           },
-          throwsFormatException,
+          throwsSourceSpanException,
         );
       });
 
@@ -320,6 +321,32 @@ packages:
 
         expectComesFromPubDev('characters');
         expectComesFromPubDev('retry');
+      });
+
+      test('Complains about malformed content-hashes', () {
+        expect(
+          () => LockFile.parse(
+            '''
+packages:
+  retry:
+    dependency: transitive
+    description:
+      name: retry
+      url: "https://pub.dev"
+      sha256: abc # Not long enough
+    source: hosted
+    version: "1.0.0"
+''',
+            sources,
+          ),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('Content-hash has incorrect length'),
+            ),
+          ),
+        );
       });
 
       test('ignores extra stuff in file', () {
@@ -385,3 +412,5 @@ packages:
     });
   });
 }
+
+final throwsSourceSpanException = throwsA(isA<SourceSpanException>());

@@ -54,7 +54,8 @@ class DependencyServicesReportCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     final stdinString = await utf8.decodeStream(stdin);
-    final input = json.decode(stdinString.isEmpty ? '{}' : stdinString);
+    final input = json.decode(stdinString.isEmpty ? '{}' : stdinString)
+        as Map<String, Object?>;
     final extraConstraints = _parseDisallowed(input, cache);
     final targetPackageName = input['target'];
     if (targetPackageName is! String?) {
@@ -63,7 +64,7 @@ class DependencyServicesReportCommand extends PubCommand {
 
     final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
 
-    final breakingPubspec = stripVersionUpperBounds(compatiblePubspec);
+    final breakingPubspec = stripVersionBounds(compatiblePubspec);
 
     final compatiblePackagesResult = await _tryResolve(
       compatiblePubspec,
@@ -280,13 +281,13 @@ class DependencyServicesApplyCommand extends PubCommand {
     YamlEditor(readTextFile(entrypoint.pubspecPath));
     final toApply = <_PackageVersion>[];
     final input = json.decode(await utf8.decodeStream(stdin));
-    for (final change in input['dependencyChanges']) {
+    for (final change in input['dependencyChanges'] as Iterable) {
       toApply.add(
         _PackageVersion(
-          change['name'],
-          change['version'],
+          change['name'] as String,
+          change['version'] as String?,
           change['constraint'] != null
-              ? VersionConstraint.parse(change['constraint'])
+              ? VersionConstraint.parse(change['constraint'] as String)
               : null,
         ),
       );
@@ -300,6 +301,7 @@ class DependencyServicesApplyCommand extends PubCommand {
     final lockFileYaml = lockFile == null ? null : loadYaml(lockFile);
     final lockFileEditor = lockFile == null ? null : YamlEditor(lockFile);
     final hasContentHashes = _lockFileHasContentHashes(lockFileYaml);
+    final usesPubDev = _lockFileUsesPubDev(lockFileYaml);
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
@@ -339,23 +341,23 @@ class DependencyServicesApplyCommand extends PubCommand {
       }
       if (lockFileEditor != null) {
         if (targetVersion != null &&
-            lockFileYaml['packages'].containsKey(targetPackage)) {
+            (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           lockFileEditor.update(
             ['packages', targetPackage, 'version'],
             targetVersion.toString(),
           );
           // Remove the now outdated content-hash - it will be restored below
           // after resolution.
-          if (lockFileEditor
-              .parseAt(['packages', targetPackage, 'description'])
-              .value
-              .containsKey('sha256')) {
+          var packageMap = lockFileEditor
+              .parseAt(['packages', targetPackage, 'description']).value as Map;
+          var hasSha = packageMap.containsKey('sha256');
+          if (hasSha) {
             lockFileEditor.remove(
               ['packages', targetPackage, 'description', 'sha256'],
             );
           }
         } else if (targetRevision != null &&
-            lockFileYaml['packages'].containsKey(targetPackage)) {
+            (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
           final currentDescription = ref.description as GitDescription;
           final updatedRef = PackageRef(
@@ -386,7 +388,7 @@ class DependencyServicesApplyCommand extends PubCommand {
           );
         } else if (targetVersion == null &&
             targetRevision == null &&
-            !lockFileYaml['packages'].containsKey(targetPackage)) {
+            !(lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           dataError(
             'Trying to remove non-existing transitive dependency $targetPackage.',
           );
@@ -432,7 +434,6 @@ class DependencyServicesApplyCommand extends PubCommand {
           for (var package in solveResult.packages) {
             if (package.isRoot) continue;
             final description = package.description;
-
             // Handle content-hashes of hosted dependencies.
             if (description is ResolvedHostedDescription) {
               // Ensure we get content-hashes if the original lock-file had
@@ -454,7 +455,7 @@ class DependencyServicesApplyCommand extends PubCommand {
                     // This happens when we resolved a package from a legacy
                     // server not providing archive_sha256. As a side-effect of
                     // downloading the package we compute and store the sha256.
-                    package = await cache.downloadPackage(package);
+                    package = (await cache.downloadPackage(package)).packageId;
                   }
                 }
               } else {
@@ -464,6 +465,23 @@ class DependencyServicesApplyCommand extends PubCommand {
                   package.name,
                   package.version,
                   description.withSha256(null),
+                );
+              }
+              // Keep using https://pub.dartlang.org if the original lockfile
+              // used it. This is to support lockfiles from old sdks.
+              if (!usesPubDev &&
+                  HostedSource.isPubDevUrl(description.description.url)) {
+                package = PackageId(
+                  package.name,
+                  package.version,
+                  ResolvedHostedDescription(
+                    HostedDescription.raw(
+                      package.name,
+                      HostedSource.pubDartlangUrl,
+                    ),
+                    sha256: (package.description as ResolvedHostedDescription)
+                        .sha256,
+                  ),
                 );
               }
             }
@@ -525,6 +543,30 @@ Map<String, PackageRange>? _dependencySetOfPackage(
           : null;
 }
 
+/// Return a constraint compatible with [newVersion].
+///
+/// By convention if the original constraint is pinned we return [newVersion]. Otherwise use [VersionConstraint.compatibleWith].
+VersionConstraint _bumpConstraint(
+  VersionConstraint original,
+  Version newVersion,
+) {
+  if (original.isEmpty) return newVersion;
+  if (original is VersionRange) {
+    if (original.min == original.max) return newVersion;
+
+    return VersionConstraint.compatibleWith(newVersion);
+  }
+
+  throw ArgumentError.value(
+    original,
+    'original',
+    'Must be a Version range or empty',
+  );
+}
+
+/// Return a constraint compatible with [newVersion], but including [original] as well.
+///
+/// By convention if the original constraint is pinned, we don't widen the constraint but return [newVersion] instead.
 VersionConstraint _widenConstraint(
   VersionConstraint original,
   Version newVersion,
@@ -533,6 +575,7 @@ VersionConstraint _widenConstraint(
   if (original is VersionRange) {
     final min = original.min;
     final max = original.max;
+    if (min == max) return newVersion;
     if (max != null && newVersion >= max) {
       return _compatibleWithIfPossible(
         VersionRange(
@@ -643,8 +686,10 @@ Future<Map<String, PackageId>> _computeCurrentPackages(
   } else {
     final resolution = await _tryResolve(entrypoint.root.pubspec, cache) ??
         (throw DataException('Failed to resolve pubspec'));
-    currentPackages =
-        Map<String, PackageId>.fromIterable(resolution, key: (e) => e.name);
+    currentPackages = Map<String, PackageId>.fromIterable(
+      resolution,
+      key: (e) => (e as PackageId).name,
+    );
   }
   currentPackages.remove(entrypoint.root.name);
   return currentPackages;
@@ -663,7 +708,7 @@ Future<List<Object>> _computeUpgradeSet(
   final lockFile = entrypoint.lockFile;
   final pubspec = (upgradeType == _UpgradeType.multiBreaking ||
           upgradeType == _UpgradeType.smallestUpdate)
-      ? stripVersionUpperBounds(rootPubspec)
+      ? stripVersionBounds(rootPubspec)
       : Pubspec(
           rootPubspec.name,
           dependencies: rootPubspec.dependencies.values,
@@ -711,7 +756,7 @@ Future<List<Object>> _computeUpgradeSet(
             ? null
             : upgradeType == _UpgradeType.compatible
                 ? originalConstraint.toString()
-                : VersionConstraint.compatibleWith(p.version).toString(),
+                : _bumpConstraint(originalConstraint, p.version).toString(),
         'constraintWidened': originalConstraint == null
             ? null
             : upgradeType == _UpgradeType.compatible
@@ -723,7 +768,7 @@ Future<List<Object>> _computeUpgradeSet(
                 ? originalConstraint.toString()
                 : originalConstraint.allows(p.version)
                     ? originalConstraint.toString()
-                    : VersionConstraint.compatibleWith(p.version).toString(),
+                    : _bumpConstraint(originalConstraint, p.version).toString(),
         'previousVersion': currentPackage?.versionOrHash(),
         'previousConstraint': originalConstraint?.toString(),
         'previousSource': currentPackage == null
@@ -847,4 +892,29 @@ Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
     devDependencies: fixBounds(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
   );
+}
+
+/// `true` iff any of the packages described by the [lockfile] uses
+/// `https://pub.dev` as url.
+///
+/// Undefined for invalid lock files, but mostly `true`.
+bool _lockFileUsesPubDev(dynamic lockfile) {
+  if (lockfile is! Map) return true;
+  final packages = lockfile['packages'];
+  if (packages is! Map) return true;
+
+  /// We consider an empty lockfile ready to get content-hashes.
+  if (packages.isEmpty) return true;
+  for (final package in packages.values) {
+    if (package is! Map) return true;
+    if (package['source'] != 'hosted') continue;
+    final descriptor = package['description'];
+    if (descriptor is! Map) return true;
+    final url = descriptor['url'];
+    if (url is! String) return true;
+    if (HostedSource.isPubDevUrl(url) && url != HostedSource.pubDartlangUrl) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -15,7 +15,7 @@ Validator strictDeps() => StrictDependenciesValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('looks normal', () => expectValidationDeprecated(strictDeps));
 
@@ -237,7 +237,7 @@ linter:
   });
 
   group('should consider a package invalid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('has an invalid String value', () async {
       await d.file(path.join(appPath, 'lib', 'library.dart'), r'''

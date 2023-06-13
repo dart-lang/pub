@@ -18,7 +18,6 @@ import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
 import 'pub_embeddable_command.dart';
-import 'solver/type.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -67,8 +66,6 @@ Future<int> runExecutable(
     }
   }
 
-  entrypoint.migrateCache();
-
   var snapshotPath = entrypoint.pathOfExecutable(executable);
 
   // Don't compile snapshots for mutable packages, since their code may
@@ -93,7 +90,7 @@ Future<int> runExecutable(
   if (useSnapshot) {
     // Since we don't access the package graph, this doesn't happen
     // automatically.
-    entrypoint.assertUpToDate();
+    await entrypoint.ensureUpToDate();
 
     if (!fileExists(snapshotPath) ||
         entrypoint.packageGraph.isPackageMutable(package)) {
@@ -317,23 +314,12 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
   try {
-    // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
-    entrypoint.assertUpToDate(checkForSdkUpdate: true);
-  } on DataException catch (e) {
-    log.fine('Resolution not up to date: ${e.message}. Redoing.');
-    try {
-      await errorsOnlyUnlessTerminal(
-        () => entrypoint.acquireDependencies(
-          SolveType.get,
-          analytics: analytics,
-        ),
-      );
-    } on ApplicationException catch (e) {
-      throw CommandResolutionFailedException._(
-        e.toString(),
-        CommandResolutionIssue.pubGetFailed,
-      );
-    }
+    await entrypoint.ensureUpToDate(checkForSdkUpdate: true);
+  } on ApplicationException catch (e) {
+    throw CommandResolutionFailedException._(
+      e.toString(),
+      CommandResolutionIssue.pubGetFailed,
+    );
   }
 
   late final String command;

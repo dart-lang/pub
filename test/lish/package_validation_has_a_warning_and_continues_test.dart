@@ -17,7 +17,7 @@ import 'utils.dart';
 void main() {
   test('package validation has a warning and continues', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     // Publishing without a README.md gives a warning.
     File(d.path(p.join(appPath, 'README.md'))).deleteSync();
 

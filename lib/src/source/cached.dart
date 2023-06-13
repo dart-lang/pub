@@ -52,11 +52,6 @@ abstract class CachedSource extends Source {
   /// the system cache.
   Future<Pubspec> describeUncached(PackageId id, SystemCache cache);
 
-  /// Determines if the package identified by [id] is already downloaded to the
-  /// system cache.
-  bool isInSystemCache(PackageId id, SystemCache cache) =>
-      dirExists(getDirectoryInCache(id, cache));
-
   /// Downloads the package identified by [id] to the system cache.
   Future<DownloadPackageResult> downloadToSystemCache(
     PackageId id,

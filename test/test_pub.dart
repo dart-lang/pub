@@ -149,7 +149,7 @@ Future<void> pubCommand(
   int? exitCode,
   Map<String, String?>? environment,
   String? workingDirectory,
-  includeParentHomeAndPath = true,
+  bool includeParentHomeAndPath = true,
 }) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
@@ -348,7 +348,7 @@ Future<void> runPub({
   String? workingDirectory,
   Map<String, String?>? environment,
   List<String>? input,
-  includeParentHomeAndPath = true,
+  bool includeParentHomeAndPath = true,
 }) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
@@ -486,7 +486,7 @@ Future<PubProcess> startPub({
   String? workingDirectory,
   Map<String, String?>? environment,
   bool verbose = true,
-  includeParentHomeAndPath = true,
+  bool includeParentHomeAndPath = true,
 }) async {
   args ??= [];
 
@@ -538,7 +538,7 @@ Future<PubProcess> startPub({
     dartArgs,
     environment: mergedEnvironment,
     workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
-    description: args.isEmpty ? 'pub' : 'pub ${args.first}',
+    description: args.isEmpty ? 'pub' : 'pub ${args.join(' ')}',
     includeParentEnvironment: false,
   );
 }
@@ -596,8 +596,8 @@ class PubProcess extends TestProcess {
 
   /// This is protected.
   PubProcess(
-    process,
-    description, {
+    Process process,
+    String description, {
     Encoding encoding = utf8,
     bool forwardStdio = false,
   }) : super(
@@ -710,7 +710,7 @@ LockFile _createLockFile(
   Iterable<String>? sandbox,
   Map<String, String>? hosted,
 }) {
-  var dependencies = {};
+  var dependencies = <String, dynamic>{};
 
   if (sandbox != null) {
     for (var package in sandbox) {
@@ -866,15 +866,15 @@ void _validateOutputString(
 void _validateOutputJson(
   List<String> failures,
   String pipe,
-  expected,
+  Object? expected,
   String actualText,
 ) {
   late Map actual;
   try {
-    actual = jsonDecode(actualText);
+    actual = jsonDecode(actualText) as Map;
   } on FormatException {
     failures.add('Expected $pipe JSON:');
-    failures.add(expected);
+    failures.add(expected.toString());
     failures.add('Got invalid JSON:');
     failures.add(actualText);
   }
@@ -884,7 +884,7 @@ void _validateOutputJson(
   actual['log']?.removeWhere(
     (entry) =>
         entry['level'] == 'Fine' &&
-        entry['message'].startsWith('Not yet complete after'),
+        (entry['message'] as String).startsWith('Not yet complete after'),
   );
 
   // Match against the expectation.
@@ -968,7 +968,7 @@ String filterUnstableText(String input) {
 Future<void> runPubIntoBuffer(
   List<String> args,
   StringBuffer buffer, {
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   String? workingDirectory,
   String? stdin,
 }) async {

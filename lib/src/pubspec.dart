@@ -102,10 +102,11 @@ class Pubspec extends PubspecBase {
     final pubspecOverridesFields = _overridesFileFields;
     if (pubspecOverridesFields != null) {
       pubspecOverridesFields.nodes.forEach((key, _) {
-        if (!const {'dependency_overrides'}.contains(key.value)) {
+        final keyNode = key as YamlNode;
+        if (!const {'dependency_overrides'}.contains(keyNode.value)) {
           throw SourceSpanApplicationException(
             'pubspec_overrides.yaml only supports the `dependency_overrides` field.',
-            key.span,
+            keyNode.span,
           );
         }
       });
@@ -145,56 +146,6 @@ class Pubspec extends PubspecBase {
   /// pubspec.
   final bool _includeDefaultSdkConstraint;
 
-  SdkConstraint _interpretDartSdkConstraint(
-    VersionConstraint originalConstraint, {
-    required VersionConstraint? defaultUpperBoundConstraint,
-  }) {
-    VersionConstraint constraint = originalConstraint;
-    if (defaultUpperBoundConstraint != null &&
-        constraint is VersionRange &&
-        constraint.max == null &&
-        defaultUpperBoundConstraint.allowsAny(constraint)) {
-      constraint = VersionConstraint.intersection(
-        [constraint, defaultUpperBoundConstraint],
-      );
-    }
-    // If a package is null safe it should also be compatible with dart 3.
-    // Therefore we rewrite a null-safety enabled constraint with the upper
-    // bound <3.0.0 to be have upper bound <4.0.0
-    //
-    // Only do this rewrite after dart 3.
-    if (sdk.version.major >= 3 &&
-        constraint is VersionRange &&
-        LanguageVersion.fromSdkConstraint(constraint) >=
-            LanguageVersion.firstVersionWithNullSafety &&
-        // <3.0.0 is parsed into a max of 3.0.0-0, so that is what we look for
-        // here.
-        constraint.max == Version(3, 0, 0).firstPreRelease &&
-        constraint.includeMax == false) {
-      constraint = VersionRange(
-        min: constraint.min,
-        includeMin: constraint.includeMin,
-        // We don't have to use .firstPreRelease as the constructor will do that
-        // if needed.
-        max: Version(4, 0, 0),
-      );
-    }
-    return SdkConstraint(constraint, originalConstraint: originalConstraint);
-  }
-
-  // Flutter constraints get special treatment, as Flutter won't be using
-  // semantic versioning to mark breaking releases. We simply ignore upper
-  // bounds.
-  SdkConstraint _interpretFlutterSdkConstraint(VersionConstraint constraint) {
-    if (constraint is VersionRange) {
-      return SdkConstraint(
-        VersionRange(min: constraint.min, includeMin: constraint.includeMin),
-        originalConstraint: constraint,
-      );
-    }
-    return SdkConstraint(constraint);
-  }
-
   /// Parses the "environment" field in [parent] and returns a map from SDK
   /// identifiers to constraints on those SDKs.
   Map<String, SdkConstraint> _parseEnvironment(YamlMap parent) {
@@ -215,7 +166,7 @@ class Pubspec extends PubspecBase {
       );
     }
     var constraints = {
-      'dart': _interpretDartSdkConstraint(
+      'dart': SdkConstraint.interpretDartSdkConstraint(
         originalDartSdkConstraint,
         defaultUpperBoundConstraint: _includeDefaultSdkConstraint
             ? _defaultUpperBoundSdkConstraint
@@ -225,6 +176,7 @@ class Pubspec extends PubspecBase {
 
     if (yaml is YamlMap) {
       yaml.nodes.forEach((nameNode, constraintNode) {
+        if (nameNode is! YamlNode) throw AssertionError('Bad state');
         final name = nameNode.value;
         if (name is! String) {
           _error('SDK names must be strings.', nameNode.span);
@@ -239,7 +191,7 @@ class Pubspec extends PubspecBase {
           _FileType.pubspec,
         );
         constraints[name] = name == 'flutter'
-            ? _interpretFlutterSdkConstraint(constraint)
+            ? SdkConstraint.interpretFlutterSdkConstraint(constraint)
             : SdkConstraint(constraint);
       });
     }
@@ -304,13 +256,13 @@ class Pubspec extends PubspecBase {
     this.dependencyOverridesFromOverridesFile = false,
   })  : _dependencies = dependencies == null
             ? null
-            : Map.fromIterable(dependencies, key: (range) => range.name),
+            : {for (final d in dependencies) d.name: d},
         _devDependencies = devDependencies == null
             ? null
-            : Map.fromIterable(devDependencies, key: (range) => range.name),
+            : {for (final d in devDependencies) d.name: d},
         _dependencyOverrides = dependencyOverrides == null
             ? null
-            : Map.fromIterable(dependencyOverrides, key: (range) => range.name),
+            : {for (final d in dependencyOverrides) d.name: d},
         _givenSdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': SdkConstraint(VersionConstraint.any)}),
         _includeDefaultSdkConstraint = false,
@@ -433,6 +385,27 @@ class Pubspec extends PubspecBase {
     collectError(() => sdkConstraints);
     return errors;
   }
+
+  /// Returns the type of dependency from this package onto [name].
+  DependencyType dependencyType(String? name) {
+    if (dependencies.containsKey(name)) {
+      return DependencyType.direct;
+    } else if (devDependencies.containsKey(name)) {
+      return DependencyType.dev;
+    } else {
+      return DependencyType.none;
+    }
+  }
+}
+
+/// The type of dependency from one package to another.
+enum DependencyType {
+  direct,
+  dev,
+  none;
+
+  @override
+  String toString() => name;
 }
 
 /// Parses the dependency field named [field], and returns the corresponding
@@ -455,61 +428,66 @@ Map<String, PackageRange> _parseDependencies(
     _error('"$field" field must be a map.', node.span);
   }
 
-  var nonStringNode =
-      node.nodes.keys.firstWhere((e) => e.value is! String, orElse: () => null);
+  var nonStringNode = node.nodes.keys
+      .firstWhereOrNull((e) => e is YamlScalar && e.value is! String);
   if (nonStringNode != null) {
-    _error('A dependency name must be a string.', nonStringNode.span);
+    _error(
+      'A dependency name must be a string.',
+      (nonStringNode as YamlNode).span,
+    );
   }
 
   node.nodes.forEach(
     (nameNode, specNode) {
-      var name = nameNode.value;
+      var name = (nameNode as YamlNode).value;
+      if (name is! String) {
+        _error('A dependency name must be a string.', nameNode.span);
+      }
+      if (!packageNameRegExp.hasMatch(name)) {
+        _error('Not a valid package name.', nameNode.span);
+      }
       var spec = specNode.value;
       if (packageName != null && name == packageName) {
         _error('A package may not list itself as a dependency.', nameNode.span);
       }
 
-      YamlNode? descriptionNode;
-      String? sourceName;
-
+      final String? sourceName;
       VersionConstraint versionConstraint = VersionRange();
+      YamlNode? descriptionNode;
       if (spec == null) {
         sourceName = null;
       } else if (spec is String) {
         sourceName = null;
         versionConstraint =
             _parseVersionConstraint(specNode, packageName, fileType);
-      } else if (spec is Map) {
+      } else if (specNode is YamlMap) {
         // Don't write to the immutable YAML map.
-        spec = Map.from(spec);
-        var specMap = specNode as YamlMap;
-
-        if (spec.containsKey('version')) {
-          spec.remove('version');
-          versionConstraint = _parseVersionConstraint(
-            specMap.nodes['version'],
-            packageName,
-            fileType,
-          );
-        }
-
-        var sourceNames = spec.keys.toList();
-        if (sourceNames.length > 1) {
+        final versionNode = specNode.nodes['version'];
+        versionConstraint = _parseVersionConstraint(
+          versionNode,
+          packageName,
+          fileType,
+        );
+        final otherEntries = specNode.nodes.entries
+            .where((entry) => entry.key.value != 'version')
+            .toList();
+        if (otherEntries.length > 1) {
           _error('A dependency may only have one source.', specNode.span);
-        } else if (sourceNames.isEmpty) {
+        } else if (otherEntries.isEmpty) {
           // Default to a hosted dependency if no source is specified.
           sourceName = 'hosted';
+        } else {
+          switch (otherEntries.single) {
+            case MapEntry(key: YamlScalar(value: String s), value: final d):
+              sourceName = s;
+              descriptionNode = d;
+            case MapEntry(key: final k, value: _):
+              _error(
+                'A source name must be a string.',
+                (k as YamlNode).span,
+              );
+          }
         }
-
-        sourceName ??= sourceNames.single;
-        if (sourceName is! String) {
-          _error(
-            'A source name must be a string.',
-            specMap.nodes.keys.single.span,
-          );
-        }
-
-        descriptionNode ??= specMap.nodes[sourceName];
       } else {
         _error(
           'A dependency specification must be a string or a mapping.',
@@ -565,7 +543,8 @@ VersionConstraint _parseVersionConstraint(
   if (node?.value == null) {
     return VersionConstraint.any;
   }
-  if (node!.value is! String) {
+  final value = node!.value;
+  if (value is! String) {
     _error('A version constraint must be a string.', node.span);
   }
 
@@ -573,7 +552,7 @@ VersionConstraint _parseVersionConstraint(
     'version constraint',
     node.span,
     () {
-      var constraint = VersionConstraint.parse(node.value);
+      var constraint = VersionConstraint.parse(value);
       return constraint;
     },
     packageName,
@@ -647,6 +626,62 @@ class SdkConstraint {
     this.effectiveConstraint, {
     VersionConstraint? originalConstraint,
   }) : originalConstraint = originalConstraint ?? effectiveConstraint;
+
+  /// Implement support for down to 2.12 in the dart 3 series. Note that this
+  /// function has to be be idempotent, because we apply it both when we write
+  /// and read lock-file constraints, so applying this function a second time
+  /// should have no further effect.
+  factory SdkConstraint.interpretDartSdkConstraint(
+    VersionConstraint originalConstraint, {
+    required VersionConstraint? defaultUpperBoundConstraint,
+  }) {
+    VersionConstraint constraint = originalConstraint;
+    if (defaultUpperBoundConstraint != null &&
+        constraint is VersionRange &&
+        constraint.max == null &&
+        defaultUpperBoundConstraint.allowsAny(constraint)) {
+      constraint = VersionConstraint.intersection(
+        [constraint, defaultUpperBoundConstraint],
+      );
+    }
+    // If a package is null safe it should also be compatible with dart 3.
+    // Therefore we rewrite a null-safety enabled constraint with the upper
+    // bound <3.0.0 to be have upper bound <4.0.0
+    //
+    // Only do this rewrite after dart 3.
+    if (sdk.version.major >= 3 &&
+        constraint is VersionRange &&
+        LanguageVersion.fromSdkConstraint(constraint) >=
+            LanguageVersion.firstVersionWithNullSafety &&
+        // <3.0.0 is parsed into a max of 3.0.0-0, so that is what we look for
+        // here.
+        constraint.max == Version(3, 0, 0).firstPreRelease &&
+        constraint.includeMax == false) {
+      constraint = VersionRange(
+        min: constraint.min,
+        includeMin: constraint.includeMin,
+        // We don't have to use .firstPreRelease as the constructor will do that
+        // if needed.
+        max: Version(4, 0, 0),
+      );
+    }
+    return SdkConstraint(constraint, originalConstraint: originalConstraint);
+  }
+
+  // Flutter constraints get special treatment, as Flutter won't be using
+  // semantic versioning to mark breaking releases. We simply ignore upper
+  // bounds.
+  factory SdkConstraint.interpretFlutterSdkConstraint(
+    VersionConstraint constraint,
+  ) {
+    if (constraint is VersionRange) {
+      return SdkConstraint(
+        VersionRange(min: constraint.min, includeMin: constraint.includeMin),
+        originalConstraint: constraint,
+      );
+    }
+    return SdkConstraint(constraint);
+  }
 
   /// The language version of a constraint is determined from how it is written.
   LanguageVersion get languageVersion =>

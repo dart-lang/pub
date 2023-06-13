@@ -188,9 +188,9 @@ $ echo '' | dependency_services report
               "sha256": "f1a51ba864d7ef5702590e96167b812443ace67e15a82a0e064e735ac1376ec5"
             }
           },
-          "constraintBumped": "^1.1.0",
-          "constraintWidened": "^1.0.0",
-          "constraintBumpedIfNeeded": "^1.1.0",
+          "constraintBumped": "1.1.0",
+          "constraintWidened": "1.1.0",
+          "constraintBumpedIfNeeded": "1.1.0",
           "previousVersion": "1.0.0",
           "previousConstraint": "1.0.0",
           "previousSource": {
@@ -216,9 +216,9 @@ $ echo '' | dependency_services report
               "sha256": "f1a51ba864d7ef5702590e96167b812443ace67e15a82a0e064e735ac1376ec5"
             }
           },
-          "constraintBumped": "^1.1.0",
-          "constraintWidened": "^1.0.0",
-          "constraintBumpedIfNeeded": "^1.1.0",
+          "constraintBumped": "1.1.0",
+          "constraintWidened": "1.1.0",
+          "constraintBumpedIfNeeded": "1.1.0",
           "previousVersion": "1.0.0",
           "previousConstraint": "1.0.0",
           "previousSource": {

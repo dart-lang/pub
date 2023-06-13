@@ -11,20 +11,17 @@ import 'package:path/path.dart' as p;
 
 import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
-import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
 import 'command/get.dart';
 import 'command/global.dart';
 import 'command/lish.dart';
-import 'command/list_package_dirs.dart';
 import 'command/login.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
-import 'command/serve.dart';
 import 'command/token.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
@@ -35,6 +32,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
+import 'utils.dart';
 
 /// The name of the program that is invoking pub
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
@@ -45,13 +43,13 @@ bool _isrunningInsideFlutter =
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String get directory => argResults['directory'];
+  String get directory => argResults.option('directory');
 
   @override
   bool get captureStackChains {
-    return argResults['trace'] ||
-        argResults['verbose'] ||
-        argResults['verbosity'] == 'all';
+    return argResults.flag('trace') ||
+        argResults.flag('verbose') ||
+        argResults.optionWithoutDefault('verbosity') == 'all';
   }
 
   @override
@@ -71,14 +69,14 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
         return log.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (argResults['verbose']) return log.Verbosity.all;
+        if (argResults.flag('verbose')) return log.Verbosity.all;
         if (runningFromTest) return log.Verbosity.testing;
         return log.Verbosity.normal;
     }
   }
 
   @override
-  bool get trace => argResults['trace'];
+  bool get trace => argResults.flag('trace');
 
   ArgResults? _argResults;
 
@@ -140,18 +138,15 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.
     addCommand(AddCommand());
-    addCommand(BuildCommand());
     addCommand(CacheCommand());
     addCommand(DepsCommand());
     addCommand(DowngradeCommand());
     addCommand(GlobalCommand());
     addCommand(GetCommand());
-    addCommand(ListPackageDirsCommand());
     addCommand(LishCommand());
     addCommand(OutdatedCommand());
     addCommand(RemoveCommand());
     addCommand(RunCommand());
-    addCommand(ServeCommand());
     addCommand(UpgradeCommand());
     addCommand(UploaderCommand());
     addCommand(LoginCommand());
@@ -176,7 +171,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Future<int?> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
-    if (topLevelResults['version']) {
+    if (topLevelResults.flag('version')) {
       log.message('Pub ${sdk.version}');
       return 0;
     }

@@ -9,7 +9,7 @@ import '../test_pub.dart';
 
 void main() {
   test('--dry-run mentions that checks are not exhaustive', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await runPub(
       args: ['publish', '--dry-run'],
       output: contains('The server may enforce additional checks.'),

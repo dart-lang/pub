@@ -38,6 +38,7 @@ Future<SolveResult> resolveVersions(
   Package root, {
   LockFile? lockFile,
   Iterable<String> unlock = const [],
+  Map<String, Version> sdkOverrides = const {},
   Iterable<ConstraintAndCause>? extraConstraints,
 }) {
   lockFile ??= LockFile.empty();
@@ -47,6 +48,7 @@ Future<SolveResult> resolveVersions(
     root,
     lockFile,
     unlock,
+    sdkOverrides: sdkOverrides,
   );
   if (extraConstraints != null) {
     solver.addConstraints(extraConstraints);

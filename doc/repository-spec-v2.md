@@ -11,11 +11,11 @@ It used to be [pub.dartlang.org](https://pub.dartlang.org).
 A custom package repository is identified by a _hosted-url_, like
 `https://pub.dev` or `https://some-server.com/prefix/pub/`.
 The _hosted-url_ always includes protocol `http://` or `https://`.
-For the purpose of this specification the _hosted-url_ should always be
+For the purpose of this specification, the _hosted-url_ should always be
 normalized such that it doesn't end with a slash (`/`). As all URL end-points
 described in this specification includes slash prefix.
 
-For the remainder of this specification the placeholder `<hosted-url>` will be
+For the remainder of this specification, the placeholder `<hosted-url>` will be
 used in place of a _hosted-url_ such as:
  * `https://pub.dev`
  * `https://some-server.com/prefix/pub`
@@ -64,7 +64,7 @@ header which specifies the version of the API being used. This allows future
 versions of the API to change responses.
 
 Clients are strongly encouraged to specify an `Accept` header. But for
-compatiblity will probably want to assume API version `2`,
+compatibility will probably want to assume API version `2`,
 if no `Accept` header is specified.
 
 
@@ -110,9 +110,9 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-The `<message>` is intended to be a brief human readable explanation of what
+The `<message>` is intended to be a brief human-readable explanation of what
 when wrong and why the request failed. The `<code>` is a text string intended to
-allow clients to handle special cases without using regular expression to
+allow clients to handle special cases without using regular expressions to
 parse the `<message>`.
 
 
@@ -129,7 +129,7 @@ Tokens can be added to `dart pub` client using the command:
  * `dart pub token add <hosted-url>`
 
 This command will prompt the user for the `<token>` on stdin, reducing the risk
-that the `<token>` is accidentally stored in shell history. For security reasons
+that the `<token>` is accidentally stored in shell history. For security reasons,
 authentication can only be used when `<hosted-url>` uses HTTPS. For further
 details on token management see: `dart pub token --help`.
 
@@ -152,7 +152,7 @@ If the `dart pub` client receives a `401` response and the `dart pub` client has
 a token for the given `<hosted-url>`, then the `dart pub` client knows for sure
 that the token it has stored for the given `<hosted-url>` is invalid.
 Hence, the `dart pub` client shall remove the token from local configuration.
-Hence, a server shall not send `401` in case where a token is valid, but does
+Hence, a server shall not send `401` in cases where a token is valid but does
 not have permissions to access the package in question.
 
 When receiving a `401` response the `dart pub` client shall:
@@ -180,7 +180,7 @@ WWW-Authenticate: Bearer realm="pub", message="Obtain a token from https://pub.e
 The `dart pub` will display the `message` in the terminal, so the user can
 discover that they need to navigate to `https://pub.example.com/manage-tokens`. 
 Once the user opens this URL in the browser, the server is then free to ask the
-user to sign-in using any browser-based authentication mechanism. Once signed-in
+user to sign-in using any browser-based authentication mechanism. Once signed in
 the server can allow the user to create a token and tell the user to copy/paste
 this into stdin for `dart pub token add pub.example.com`.
 
@@ -258,8 +258,8 @@ be made to the URL given as `archive_url`.
 The response (after following redirects) must be a gzipped TAR archive.
 
 The `archive_url` may be temporary and is allowed to include query-string
-parameters. This allows for the server to return signed-URLs for S3, GCS or
-other blob storage service. If temporary URLs are returned it is wise to not set
+parameters. This allows for the server to return signed URLs for S3, GCS, or
+other blob storage services. If temporary URLs are returned it is wise to not set
 expiration to less than 25 minutes (to allow for retries and clock drift).
 
 The `archive_sha256` should be the hex-encoded sha256 checksum of the file at
@@ -267,7 +267,7 @@ archive_url. It is an optional field that allows the pub client to verify the
 integrity of the downloaded archive.
 
 The `archive_sha256` also provides an easy way for clients to detect if
-something has changed on the server. In the absense of this field the client can
+something has changed on the server. In the absence of this field, the client can
 still download the archive to obtain a checksum and detect changes to the
 archive.
 
@@ -276,7 +276,7 @@ If `<hosted-url>` for the server returning `archive_url` is a prefix of
 `archive_url` is requested. Example: if `https://pub.example.com/path` returns
 an `archive_url = 'https://pub.example.com/path/...'` then the request for
 `https://pub.example.com/path/...` will include `Authorization` header.
-This would however, not be case if the same server returned
+This would however, not be the case if the same server returned
 `archive_url = 'https://pub.example.com/blob/...'`.
 
 
@@ -303,7 +303,7 @@ This would however, not be case if the same server returned
 }
 ```
 
-To publish a package a HTTP `GET` request for
+To publish a package an HTTP `GET` request for
 `<hosted-url>/api/packages/versions/new` is made. This request returns an
 `<multipart-upload-url>` and a dictionary of fields. To upload the package
 archive a multi-part `POST` request is made to `<multipart-upload-url>` with
@@ -351,7 +351,7 @@ Location: <finalize-upload-url>
 The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
 `archive_url` the client will only attach an `Authorization` if the
 `<hosted-url>` is a prefix of `<finalize-upload-url>`. If the server wants to
-accepts the uploaded package the server should respond:
+accept the uploaded package the server should respond:
 
 ```http
 HTTP/1.1 200 Ok
@@ -366,7 +366,7 @@ Content-Type: application/vnd.pub.v2+json
 The server is allowed to consider the publishing incomplete until the `GET`
 request for `<finalize-upload-url>` has been issued. Once this request has
 succeeded the package is considered successfully published. If the server has
-caches that need to expire before newly published packages becomes available,
+caches that need to expire before newly published packages become available,
 or it has other out-of-band approvals that need to be given it's reasonable to
 inform the user about this in the `<message>`.
 
@@ -382,14 +382,14 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-This can be used to forbid git-dependencies in published packages, limit the
-archive size, or enforce any other repository specific constraints.
+This can be used to forbid git dependencies in published packages, limit the
+archive size, or enforce any other repository-specific constraints.
 
 This upload flow allows for archives to be uploaded directly to a signed POST
 URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
 [GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
 similar blob storage service. Both the
-`<multipart-upload-url>` and `<finalize-upload-url>` is allowed to contain
+`<multipart-upload-url>` and `<finalize-upload-url>` are allowed to contain
 query-string parameters, and both of these URLs need only be temporary.
 
 

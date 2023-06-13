@@ -24,7 +24,7 @@ Available subcommands:
   logout   Log out of pub.dev.
   outdated   Analyze your dependencies to find which ones can be upgraded.
   publish   Publish the current package to pub.dev.
-  remove   Removes a dependency from the current package.
+  remove   Removes dependencies from `pubspec.yaml`.
   token   Manage authentication tokens for hosted pub repositories.
   upgrade   Upgrade the current package's dependencies to latest versions.
 

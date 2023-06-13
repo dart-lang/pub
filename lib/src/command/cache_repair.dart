@@ -38,13 +38,15 @@ class CacheRepairCommand extends PubCommand {
 
     if (successes.isNotEmpty) {
       var packages = pluralize('package', successes.length);
-      log.message('Reinstalled ${log.green(successes.length)} $packages.');
+      log.message(
+        'Reinstalled ${log.green(successes.length.toString())} $packages.',
+      );
     }
 
     if (failures.isNotEmpty) {
       var packages = pluralize('package', failures.length);
       var buffer = StringBuffer(
-        'Failed to reinstall ${log.red(failures.length)} $packages:\n',
+        'Failed to reinstall ${log.red(failures.length.toString())} $packages:\n',
       );
 
       for (var failure in failures) {
@@ -62,14 +64,14 @@ class CacheRepairCommand extends PubCommand {
     if (globalRepairResults.first.isNotEmpty) {
       var packages = pluralize('package', globalRepairResults.first.length);
       log.message(
-        'Reactivated ${log.green(globalRepairResults.first.length)} $packages.',
+        'Reactivated ${log.green(globalRepairResults.first.length.toString())} $packages.',
       );
     }
 
     if (globalRepairResults.last.isNotEmpty) {
       var packages = pluralize('package', globalRepairResults.last.length);
       log.message(
-        'Failed to reactivate ${log.red(globalRepairResults.last.length)} $packages:',
+        'Failed to reactivate ${log.red(globalRepairResults.last.length.toString())} $packages:',
       );
       log.message(
         globalRepairResults.last

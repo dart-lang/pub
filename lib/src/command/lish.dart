@@ -40,7 +40,7 @@ class LishCommand extends PubCommand {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
-        return validateAndNormalizeHostedUrl(argResults['server']);
+        return validateAndNormalizeHostedUrl(argResults.option('server'));
       } on FormatException catch (e) {
         usageException('Invalid server: $e');
       }
@@ -61,10 +61,12 @@ class LishCommand extends PubCommand {
   }();
 
   /// Whether the publish is just a preview.
-  bool get dryRun => argResults['dry-run'];
+  bool get dryRun => argResults.flag('dry-run');
 
   /// Whether the publish requires confirmation.
-  bool get force => argResults['force'];
+  bool get force => argResults.flag('force');
+
+  bool get skipValidation => argResults.flag('skip-validation');
 
   LishCommand() {
     argParser.addFlag(
@@ -78,6 +80,12 @@ class LishCommand extends PubCommand {
       abbr: 'f',
       negatable: false,
       help: 'Publish without confirmation if there are no errors.',
+    );
+    argParser.addFlag(
+      'skip-validation',
+      negatable: false,
+      help:
+          'Publish without validation and resolution (this will ignore errors).',
     );
     argParser.addOption(
       'server',
@@ -126,7 +134,7 @@ class LishCommand extends PubCommand {
           if (fields is! Map) invalidServerResponse(parametersResponse);
           fields.forEach((key, value) {
             if (value is! String) invalidServerResponse(parametersResponse);
-            request.fields[key] = value;
+            request.fields[key as String] = value;
           });
 
           request.followRedirects = false;
@@ -210,7 +218,7 @@ class LishCommand extends PubCommand {
         //
         // This allows us to use `dart pub token add` to inject a token for use
         // with the official servers.
-        await oauth2.withClient(cache, (client) {
+        await oauth2.withClient((client) {
           return _publishUsingClient(packageBytes, client);
         });
       } else {
@@ -251,7 +259,13 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
-    await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+    if (!skipValidation) {
+      await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+    } else {
+      log.warning(
+        'Running with `skip-validation`. No client-side validation is done.',
+      );
+    }
 
     var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root.name}.');
@@ -260,17 +274,19 @@ the \$PUB_HOSTED_URL environment variable.''',
     var package = entrypoint.root;
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
-      '${tree.fromFiles(files, baseDir: entrypoint.root.dir, showFileSizes: true)}',
+      '${tree.fromFiles(files, baseDir: entrypoint.rootDir, showFileSizes: true)}',
     );
 
     var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
+        createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
 
     // Validate the package.
-    var isValid = await _validate(
-      packageBytesFuture.then((bytes) => bytes.length),
-      files,
-    );
+    var isValid = skipValidation
+        ? true
+        : await _validate(
+            packageBytesFuture.then((bytes) => bytes.length),
+            files,
+          );
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;
@@ -320,10 +336,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (force) return true;
 
     String formatWarningCount() {
-      final hs = hints.length == 1 ? '' : 's';
-      final hintText = hints.isEmpty ? '' : ' and ${hints.length} hint$hs.';
-      final ws = warnings.length == 1 ? '' : 's';
-      return '\nPackage has ${warnings.length} warning$ws$hintText.';
+      final hintText = hints.isEmpty
+          ? ''
+          : ' and ${hints.length} ${pluralize('hint', hints.length)}';
+      return '\nPackage has ${warnings.length} '
+          '${pluralize('warning', warnings.length)}$hintText.';
     }
 
     if (dryRun) {

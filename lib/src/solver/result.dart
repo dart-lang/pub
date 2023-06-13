@@ -65,11 +65,12 @@ class SolveResult {
     final resolvedPackageIds = await Future.wait(
       packages.map((id) async {
         if (id.source is CachedSource) {
-          return await withDependencyType(_root.dependencyType(id.name),
+          return await withDependencyType(_root.pubspec.dependencyType(id.name),
               () async {
-            return await cache.downloadPackage(
+            return (await cache.downloadPackage(
               id,
-            );
+            ))
+                .packageId;
           });
         }
         return id;
@@ -96,7 +97,10 @@ class SolveResult {
     }
     return LockFile(
       resolvedPackageIds,
-      sdkConstraints: sdkConstraints,
+      sdkConstraints: {
+        for (final MapEntry(:key, :value) in sdkConstraints.entries)
+          key: SdkConstraint(value),
+      },
       mainDependencies: MapKeySet(_root.dependencies),
       devDependencies: MapKeySet(_root.devDependencies),
       overriddenDependencies: MapKeySet(_root.dependencyOverrides),
@@ -153,7 +157,7 @@ class SolveResult {
         DependencyType.dev: 'dev',
         DependencyType.direct: 'direct',
         DependencyType.none: 'transitive'
-      }[_root.dependencyType(package.name)]!;
+      }[_root.pubspec.dependencyType(package.name)]!;
       analytics.sendEvent(
         'pub-get',
         package.name,

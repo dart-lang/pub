@@ -29,7 +29,7 @@ const _pathMax = 260 - 1;
 
 void main() {
   testWithGolden('displays all files', (context) async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.dir(
       appPath,
       [
@@ -64,7 +64,7 @@ void main() {
   test(
       'archives and uploads a package with more files than can fit on '
       'the command line', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     int argMax;
     if (Platform.isWindows) {
@@ -79,7 +79,7 @@ void main() {
             '${result.stderr}');
       }
 
-      argMax = int.parse(result.stdout);
+      argMax = int.parse(result.stdout as String);
     }
 
     var appRoot = p.join(d.sandbox, appPath);

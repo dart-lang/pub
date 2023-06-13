@@ -13,7 +13,7 @@ void main() {
   test(
       'with no credentials.json, authenticates and saves '
       'credentials.json', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await servePackages();
     var pub = await startPublish(globalServer);
     await confirmPublish(pub);

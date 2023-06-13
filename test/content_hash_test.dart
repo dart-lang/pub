@@ -245,4 +245,29 @@ Future<void> main() async {
       originalContentHash,
     );
   });
+
+  test('Badly formatted hash - warning and redownload', () async {
+    final server = await servePackages();
+    server.serveContentHashes = true;
+    server.serve('foo', '1.0.0');
+    await appDir(dependencies: {'foo': 'any'}).create();
+    await pubGet();
+    final lockfile = loadYaml(
+      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
+    final originalHash = lockfile['packages']['foo']['description']['sha256'];
+    await hostedHashesCache([
+      file(
+        'foo-1.0.0.sha256',
+        'e',
+      ),
+    ]).create();
+
+    await pubGet(
+      warning: 'Cached version of foo-1.0.0 has wrong hash - redownloading.',
+    );
+    await hostedHashesCache([
+      file('foo-1.0.0.sha256', originalHash),
+    ]).validate();
+  });
 }

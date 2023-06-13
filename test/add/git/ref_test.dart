@@ -65,8 +65,10 @@ void main() {
 
     await pubAdd(
       args: ['foo', '--git-url', '../foo.git', '--git-ref', 'old'],
-      error: contains('Unable to resolve package "foo" with the given '
-          'git parameters'),
+      error: contains(
+        'Because myapp depends on foo from git which doesn\'t exist '
+        '(Could not find git ref \'old\' (fatal:',
+      ),
       exitCode: exit_codes.DATA,
     );
 

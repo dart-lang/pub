@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../log.dart' as log;
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `cache add` pub command.
@@ -52,7 +53,7 @@ class CacheAddCommand extends PubCommand {
     var constraint = VersionConstraint.any;
     if (argResults['version'] != null) {
       try {
-        constraint = VersionConstraint.parse(argResults['version']);
+        constraint = VersionConstraint.parse(argResults['version'] as String);
       } on FormatException catch (error) {
         usageException(error.message);
       }
@@ -71,19 +72,14 @@ class CacheAddCommand extends PubCommand {
       fail('Package $package has no versions that match $constraint.');
     }
 
-    Future<void> downloadVersion(id) async {
-      if (cache.contains(id)) {
-        // TODO(rnystrom): Include source and description if not hosted.
-        // See solve_report.dart for code to harvest.
+    Future<void> downloadVersion(PackageId id) async {
+      final result = await cache.downloadPackage(id);
+      if (!result.didUpdate) {
         log.message('Already cached ${id.name} ${id.version}.');
-        return;
       }
-
-      // Download it.
-      await cache.downloadPackage(id);
     }
 
-    if (argResults['all']) {
+    if (argResults.flag('all')) {
       // Install them in ascending order.
       ids.sort((id1, id2) => id1.version.compareTo(id2.version));
       await Future.forEach(ids, downloadVersion);

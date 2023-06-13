@@ -14,7 +14,7 @@ void main() {
       'overrides', () async {
     final server = await servePackages();
     server.serve('foo', '3.0.0');
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await d.dir(appPath, [
       d.validPubspec(
@@ -32,7 +32,7 @@ void main() {
     test('it has only non-dev dependency overrides', () async {
       final server = await servePackages();
       server.serve('foo', '3.0.0');
-      await d.validPackage.create();
+      await d.validPackage().create();
 
       await d.dir(appPath, [
         d.validPubspec(
@@ -50,7 +50,7 @@ void main() {
     test('it has a pubspec_overrides.yaml', () async {
       final server = await servePackages();
       server.serve('foo', '3.0.0');
-      await d.validPackage.create();
+      await d.validPackage().create();
 
       await d.dir(appPath, [
         d.validPubspec(
@@ -73,7 +73,7 @@ void main() {
       server.serve('foo', '3.0.0');
       server.serve('bar', '3.0.0');
 
-      await d.validPackage.create();
+      await d.validPackage().create();
       await d.dir(appPath, [
         d.validPubspec(
           extras: {

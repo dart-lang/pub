@@ -17,7 +17,7 @@ import '../test_pub.dart';
 Future<void> testGetExecutable(
   String command,
   String root, {
-  allowSnapshot = true,
+  bool allowSnapshot = true,
   executable,
   packageConfig,
   errorMessage,

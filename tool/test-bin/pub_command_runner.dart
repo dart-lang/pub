@@ -12,6 +12,7 @@ import 'package:pub/pub.dart';
 import 'package:pub/src/command.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/utils.dart';
 import 'package:usage/usage.dart';
 
 final Analytics loggingAnalytics = _LoggingAnalytics();
@@ -30,6 +31,24 @@ class ThrowingCommand extends PubCommand {
   @override
   Future<int> runProtected() async {
     throw StateError('Pub has crashed');
+  }
+}
+
+// A command for testing the ensurePubspecResolved functionality
+class EnsurePubspecResolvedCommand extends PubCommand {
+  @override
+  String get name => 'ensure-pubspec-resolved';
+
+  @override
+  String get description => 'Resolves pubspec.yaml if needed';
+
+  @override
+  bool get hidden => true;
+
+  @override
+  Future<int> runProtected() async {
+    await ensurePubspecResolved('.');
+    return 0;
   }
 }
 
@@ -59,7 +78,7 @@ class RunCommand extends Command<int> {
 }
 
 class Runner extends CommandRunner<int> {
-  late ArgResults _options;
+  late ArgResults _results;
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
@@ -69,8 +88,12 @@ class Runner extends CommandRunner<int> {
           )
         : null;
     addCommand(
-      pubCommand(analytics: analytics, isVerbose: () => _options['verbose'])
-        ..addSubcommand(ThrowingCommand()),
+      pubCommand(
+        analytics: analytics,
+        isVerbose: () => _results.flag('verbose'),
+      )
+        ..addSubcommand(ThrowingCommand())
+        ..addSubcommand(EnsurePubspecResolvedCommand()),
     );
     addCommand(RunCommand());
     argParser.addFlag('verbose');
@@ -79,11 +102,11 @@ class Runner extends CommandRunner<int> {
   @override
   Future<int> run(Iterable<String> args) async {
     try {
-      _options = super.parse(args);
-      if (_options['verbose']) {
+      _results = super.parse(args);
+      if (_results.flag('verbose')) {
         log.verbosity = log.Verbosity.all;
       }
-      return await runCommand(_options);
+      return await runCommand(_results);
     } on UsageException catch (error) {
       log.exception(error);
       return exit_codes.USAGE;

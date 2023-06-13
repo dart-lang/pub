@@ -13,6 +13,7 @@ import '../command.dart';
 import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../io.dart';
+import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -38,7 +39,8 @@ class OutdatedCommand extends PubCommand {
 
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
-  bool get _shouldShowSpinner => terminalOutputForStdout && !argResults['json'];
+  bool get _shouldShowSpinner =>
+      terminalOutputForStdout && !argResults.flag('json');
 
   @override
   bool get takesArguments => false;
@@ -117,9 +119,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
     final mode = _OutdatedMode();
 
-    final includeDevDependencies = argResults['dev-dependencies'];
-    final includeDependencyOverrides = argResults['dependency-overrides'];
-    if (argResults['json'] && argResults.wasParsed('transitive')) {
+    final includeDevDependencies = argResults.flag('dev-dependencies');
+    final includeDependencyOverrides = argResults.flag('dependency-overrides');
+    if (argResults.flag('json') && argResults.wasParsed('transitive')) {
       usageException('Cannot specify both `--json` and `--transitive`\n'
           'The json report always includes transitive dependencies.');
     }
@@ -142,13 +144,19 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     await log.spinner(
       'Resolving',
       () async {
-        final upgradablePackagesResult =
-            await _tryResolve(upgradablePubspec, cache);
+        final upgradablePackagesResult = await _tryResolve(
+          upgradablePubspec,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
         hasUpgradableResolution = upgradablePackagesResult != null;
         upgradablePackages = upgradablePackagesResult ?? [];
 
-        final resolvablePackagesResult =
-            await _tryResolve(resolvablePubspec, cache);
+        final resolvablePackagesResult = await _tryResolve(
+          resolvablePubspec,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
         hasResolvableResolution = resolvablePackagesResult != null;
         resolvablePackages = resolvablePackagesResult ?? [];
       },
@@ -281,8 +289,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
     rows.sort();
 
-    final showAll = argResults['show-all'] || argResults['up-to-date'];
-    if (argResults['json']) {
+    final showAll =
+        argResults.flag('show-all') || argResults.flag('up-to-date');
+    if (argResults.flag('json')) {
       await _outputJson(
         rows,
         mode,
@@ -314,7 +323,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   bool get showTransitiveDependencies {
-    return argResults['transitive'];
+    return argResults.flag('transitive');
   }
 
   late final bool prereleases = () {
@@ -323,10 +332,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     // 'pre-releases'.
     // Otherwise fall back to the default implied by the mode.
     if (argResults.wasParsed('prereleases')) {
-      return argResults['prereleases'];
+      return argResults.flag('prereleases');
     }
     if (argResults.wasParsed('pre-releases')) {
-      return argResults['pre-releases'];
+      return argResults.flag('pre-releases');
     }
     return false;
   }();
@@ -358,10 +367,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     Package root,
     Iterable<PackageId> resolution,
   ) async {
-    final nameToId = Map<String, PackageId>.fromIterable(
-      resolution,
-      key: (id) => id.name,
-    );
+    final nameToId = {for (final id in resolution) id.name: id};
 
     final nonDevDependencies = <String>{root.name};
     final queue = [...root.dependencies.keys];
@@ -386,11 +392,16 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
 /// resolution was found.
-Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
+Future<List<PackageId>?> _tryResolve(
+  Pubspec pubspec,
+  SystemCache cache, {
+  LockFile? lockFile,
+}) async {
   final solveResult = await tryResolveVersions(
     SolveType.upgrade,
     cache,
     Package.inMemory(pubspec),
+    lockFile: lockFile,
   );
 
   return solveResult?.packages;
@@ -546,31 +557,35 @@ Future<void> _outputHuman(
     log.message(b.toString());
   }
 
-  var upgradable = rows
-      .where(
-        (row) =>
-            row.current != null &&
-            row.upgradable != null &&
-            row.current != row.upgradable &&
-            // Include transitive only, if we show them
-            (showTransitiveDependencies ||
-                hasKind(_DependencyKind.direct)(row) ||
-                hasKind(_DependencyKind.dev)(row)),
-      )
-      .length;
+  var upgradable = rows.where(
+    (row) {
+      final current = row.current;
+      final upgradable = row.upgradable;
+      return current != null &&
+          upgradable != null &&
+          current < upgradable &&
+          // Include transitive only, if we show them
+          (showTransitiveDependencies ||
+              hasKind(_DependencyKind.direct)(row) ||
+              hasKind(_DependencyKind.dev)(row));
+    },
+  ).length;
 
-  var notAtResolvable = rows
-      .where(
-        (row) =>
-            (row.current != null || !lockFileExists) &&
-            row.resolvable != null &&
-            row.upgradable != row.resolvable &&
-            // Include transitive only, if we show them
-            (showTransitiveDependencies ||
-                hasKind(_DependencyKind.direct)(row) ||
-                hasKind(_DependencyKind.dev)(row)),
-      )
-      .length;
+  var notAtResolvable = rows.where(
+    (row) {
+      final current = row.current;
+      final upgradable = row.upgradable;
+      final resolvable = row.resolvable;
+      return (current != null || !lockFileExists) &&
+          resolvable != null &&
+          upgradable != null &&
+          upgradable < resolvable &&
+          // Include transitive only, if we show them
+          (showTransitiveDependencies ||
+              hasKind(_DependencyKind.direct)(row) ||
+              hasKind(_DependencyKind.dev)(row));
+    },
+  ).length;
 
   if (!hasUpgradableResolution || !hasResolvableResolution) {
     log.message(mode.noResolutionText);
@@ -720,7 +735,7 @@ Showing outdated packages$directoryDescription.
 
   @override
   Future<Pubspec> resolvablePubspec(Pubspec? pubspec) async {
-    return stripVersionUpperBounds(pubspec!);
+    return stripVersionBounds(pubspec!);
   }
 }
 
@@ -762,6 +777,11 @@ class _VersionDetails {
           _overridden == other._overridden &&
           _id.source == other._id.source &&
           _pubspec.version == other._pubspec.version;
+
+  bool operator <(_VersionDetails other) =>
+      _overridden == other._overridden &&
+      _id.source == other._id.source &&
+      _pubspec.version < other._pubspec.version;
 
   @override
   int get hashCode => Object.hash(_pubspec.version, _id.source, _overridden);
@@ -844,7 +864,7 @@ enum _DependencyKind {
 _FormattedString _format(
   String value,
   String Function(String) format, {
-  prefix = '',
+  String? prefix = '',
 }) {
   return _FormattedString(value, format: format, prefix: prefix);
 }
@@ -866,10 +886,10 @@ class _MarkedVersionDetails {
   _MarkedVersionDetails(
     this._versionDetails, {
     required this.asDesired,
-    format,
-    prefix = '',
-    suffix = '',
-    jsonExplanation,
+    String Function(String)? format,
+    String? prefix = '',
+    String? suffix = '',
+    MapEntry<String, Object>? jsonExplanation,
   })  : _format = format,
         _prefix = prefix,
         _suffix = suffix,
@@ -906,8 +926,8 @@ class _FormattedString {
   _FormattedString(
     this.value, {
     String Function(String)? format,
-    prefix,
-    suffix,
+    String? prefix,
+    String? suffix,
   })  : _format = format ?? _noFormat,
         _prefix = prefix ?? '',
         _suffix = suffix ?? '';

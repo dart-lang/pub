@@ -23,7 +23,7 @@ class LoginCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    final credentials = oauth2.loadCredentials(cache);
+    final credentials = oauth2.loadCredentials();
     if (credentials == null) {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
@@ -44,14 +44,20 @@ class LoginCommand extends PubCommand {
   }
 
   Future<_UserInfo?> _retrieveUserInfo() async {
-    return await oauth2.withClient(cache, (client) async {
+    return await oauth2.withClient((client) async {
       final discovery = await oauth2.fetchOidcDiscoveryDocument();
       final userInfoEndpoint = discovery['userinfo_endpoint'];
+      if (userInfoEndpoint is! String) {
+        log.fine(
+          'Bad discovery document. userinfo_endpoint not a String',
+        );
+        return null;
+      }
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
         final userInfo = json.decode(userInfoRequest.body);
-        final name = userInfo['name'];
+        final name = userInfo['name'] as String?;
         final email = userInfo['email'];
         if (email is String) {
           return _UserInfo(name, email);

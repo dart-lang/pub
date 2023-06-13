@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -18,9 +19,10 @@ void main() {
 
     await pubGet(
       error: contains(
-        'Because myapp doesn\'t support null safety, version solving failed',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      exitCode: DATA,
     );
   });
   test('The bound of ">=2.12.0 <3.1.0" is not modified', () async {
@@ -49,9 +51,10 @@ void main() {
 
     await pubGet(
       error: contains(
-        'Because myapp doesn\'t support null safety, version solving failed',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      exitCode: DATA,
     );
   });
 
@@ -65,9 +68,10 @@ void main() {
 
     await pubGet(
       error: contains(
-        'Because myapp doesn\'t support null safety, version solving failed',
+        'The current Dart SDK (3.5.0) only supports null safety.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      exitCode: DATA,
     );
   });
 

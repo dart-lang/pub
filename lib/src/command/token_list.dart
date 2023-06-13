@@ -22,7 +22,7 @@ class TokenListCommand extends PubCommand {
         'repositories:',
       );
       for (final token in cache.tokenStore.credentials) {
-        log.message(token.url);
+        log.message(token.url.toString());
       }
     } else {
       log.message(

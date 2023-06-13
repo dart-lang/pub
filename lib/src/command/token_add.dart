@@ -37,7 +37,7 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
-  String? get envVar => argResults['env-var'];
+  String? get envVar => argResults['env-var'] as String?;
 
   TokenAddCommand() {
     argParser.addOption(

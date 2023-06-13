@@ -20,8 +20,6 @@ class DartSdk extends Sdk {
   bool get isAvailable => true;
   @override
   String? get installMessage => null;
-  @override
-  Version get firstPubVersion => Version.none;
 
   static final String _rootDirectory = () {
     if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');

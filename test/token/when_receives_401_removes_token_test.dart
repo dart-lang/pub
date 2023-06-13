@@ -11,7 +11,7 @@ import '../test_pub.dart';
 void main() {
   test('when receives 401 response removes saved token', () async {
     final server = await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [

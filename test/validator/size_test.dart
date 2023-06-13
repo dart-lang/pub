@@ -21,7 +21,7 @@ Future<void> expectSizeValidationError(Matcher matcher) async {
 
 void main() {
   test('considers a package valid if it is <= 100 MB', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await expectValidationDeprecated(SizeValidator.new, size: 100);
     await expectValidationDeprecated(SizeValidator.new, size: 100 * (1 << 20));
@@ -30,7 +30,7 @@ void main() {
   group('considers a package invalid if it is more than 100 MB', () {
     test('package is not under source control and no .gitignore exists',
         () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
 
       await expectSizeValidationError(
         equals('Your package is 100.0 MB. Hosted packages must '
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('package is not under source control and .gitignore exists', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       await d.dir(appPath, [d.file('.gitignore', 'ignored')]).create();
 
       await expectSizeValidationError(
@@ -52,7 +52,7 @@ void main() {
     });
 
     test('package is under source control and no .gitignore exists', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       await d.git(appPath).create();
 
       await expectSizeValidationError(
@@ -65,7 +65,7 @@ void main() {
     });
 
     test('package is under source control and .gitignore exists', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       await d.git(appPath, [d.file('.gitignore', 'ignored')]).create();
 
       await expectSizeValidationError(

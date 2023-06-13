@@ -16,17 +16,18 @@ import 'package:pub/src/command/dependency_services.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/log.dart' as log;
+import 'package:pub/src/utils.dart';
 
 class _DependencyServicesCommandRunner extends CommandRunner<int>
     implements PubTopLevel {
   @override
-  String get directory => argResults['directory'];
+  String get directory => argResults.option('directory');
 
   @override
-  bool get captureStackChains => argResults['verbose'];
+  bool get captureStackChains => argResults.flag('verbose');
 
   @override
-  bool get trace => argResults['verbose'];
+  bool get trace => argResults.flag('verbose');
 
   ArgResults? _argResults;
 

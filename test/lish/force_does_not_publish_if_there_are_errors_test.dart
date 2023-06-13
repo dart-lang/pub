@@ -14,7 +14,7 @@ import '../test_pub.dart';
 void main() {
   test('--force does not publish if there are errors', () async {
     await servePackages();
-    await d.validPackage.create();
+    await d.validPackage().create();
     // It is an error to publish without a LICENSE file.
     File(d.path(p.join(appPath, 'LICENSE'))).deleteSync();
 

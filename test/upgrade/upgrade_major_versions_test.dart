@@ -277,5 +277,35 @@ void main() {
         d.packageConfigEntry(name: 'bar', version: '4.0.0'),
       ]).validate();
     });
+
+    test('should take pubspec_overrides.yaml into account', () async {
+      await servePackages()
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '2.0.0');
+      await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
+      await d.appDir(
+        dependencies: {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+        },
+      ).create();
+      await d.dir(appPath, [
+        d.pubspecOverrides({
+          'dependency_overrides': {
+            'bar': {'path': '../bar'}
+          }
+        })
+      ]).create();
+
+      await pubGet();
+
+      await pubUpgrade(
+        args: ['--major-versions'],
+        output: allOf([
+          contains('Changed 1 constraint in pubspec.yaml:'),
+          contains('foo: ^1.0.0 -> ^2.0.0'),
+        ]),
+      );
+    });
   });
 }

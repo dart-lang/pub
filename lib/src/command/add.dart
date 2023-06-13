@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:args/args.dart';
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -11,7 +13,6 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
-import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../git.dart';
 import '../io.dart';
@@ -19,6 +20,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../sdk.dart';
 import '../solver.dart';
 import '../source/git.dart';
 import '../source/hosted.dart';
@@ -49,6 +51,8 @@ with a default constraint derived from latest compatible version.
 
 Add to dev_dependencies by prefixing with "dev:".
 
+Make dependency overrides by prefixing with "override:".
+
 Add packages with specific constraints or other sources by giving a descriptor
 after a colon.
 
@@ -69,13 +73,17 @@ For example:
     `$topLevelProgram pub add 'foo:{"sdk":"flutter"}'`
   * Add a git dependency:
     `$topLevelProgram pub add 'foo:{"git":"https://github.com/foo/foo"}'`
+  * Add a dependency override:
+    `$topLevelProgram pub add 'override:foo:1.0.0'`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add \\
-      'foo:{"git":{"url":"../foo.git","ref":"branch","path":"subdir"}}'`''';
+      'foo:{"git":{"url":"../foo.git","ref":"<branch>","path":"<subdir>"}}'`''';
 
   @override
   String get argumentsDescription =>
-      '[options] [dev:]<package>[:descriptor] [[dev:]<package>[:descriptor] ...]';
+      '[options] [<section>:]<package>[:descriptor] '
+      '[<section>:]<package2>[:descriptor] ...]';
+
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
@@ -148,6 +156,7 @@ For example:
     );
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help:
           'Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).',
       hide: true,
@@ -178,10 +187,13 @@ Specify multiple sdk packages with descriptors.''');
     final updates =
         argResults.rest.map((p) => _parsePackage(p, argResults)).toList();
 
-    var updatedPubSpec = entrypoint.root.pubspec;
+    /// Compute a pubspec that will depend on all the given packages, but the
+    /// actual constraint will only be determined after a resolution decides the
+    /// best version.
+    var resolutionPubspec = entrypoint.root.pubspec;
     for (final update in updates) {
       /// Perform version resolution in-memory.
-      updatedPubSpec = await _addPackageToPubspec(updatedPubSpec, update);
+      resolutionPubspec = await _addPackageToPubspec(resolutionPubspec, update);
     }
 
     late SolveResult solveResult;
@@ -195,7 +207,7 @@ Specify multiple sdk packages with descriptors.''');
       solveResult = await resolveVersions(
         SolveType.upgrade,
         cache,
-        Package.inMemory(updatedPubSpec),
+        Package.inMemory(resolutionPubspec),
       );
     } on GitException {
       final name = updates.first.ref.name;
@@ -218,7 +230,7 @@ Specify multiple sdk packages with descriptors.''');
       /// Assert that [resultPackage] is within the original user's expectations.
       final constraint = update.constraint;
       if (constraint != null && !constraint.allows(resultPackage.version)) {
-        final dependencyOverrides = updatedPubSpec.dependencyOverrides;
+        final dependencyOverrides = resolutionPubspec.dependencyOverrides;
         if (dependencyOverrides.isNotEmpty) {
           dataError('"$name" resolved to "${resultPackage.version}" which '
               'does not satisfy constraint "$constraint". This could be '
@@ -226,50 +238,53 @@ Specify multiple sdk packages with descriptors.''');
         }
       }
     }
-    if (argResults.isDryRun) {
-      /// Even if it is a dry run, run `acquireDependencies` so that the user
-      /// gets a report on the other packages that might change version due
-      /// to this new dependency.
-      final newRoot = Package.inMemory(updatedPubSpec);
-
-      await Entrypoint.inMemory(
-        newRoot,
-        cache,
-        solveResult: solveResult,
-        lockFile: entrypoint.lockFile,
-      ).acquireDependencies(
-        SolveType.get,
-        dryRun: true,
-        precompile: argResults.shouldPrecompile,
-        analytics: analytics,
-      );
-    } else {
+    final newPubspecText = _updatePubspec(solveResult.packages, updates);
+    if (!argResults.isDryRun) {
       /// Update the `pubspec.yaml` before calling [acquireDependencies] to
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-      _updatePubspec(
-        solveResult.packages,
-        updates,
-      );
+      writeTextFile(entrypoint.pubspecPath, newPubspecText);
+    }
 
-      /// Create a new [Entrypoint] since we have to reprocess the updated
-      /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory, cache);
-      await updatedEntrypoint.acquireDependencies(
+    String? overridesFileContents;
+    final overridesPath =
+        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
+    try {
+      overridesFileContents = readTextFile(overridesPath);
+    } on IOException {
+      overridesFileContents = null;
+    }
+
+    /// Even if it is a dry run, run `acquireDependencies` so that the user
+    /// gets a report on the other packages that might change version due
+    /// to this new dependency.
+    await entrypoint
+        .withPubspec(
+          Pubspec.parse(
+            newPubspecText,
+            cache.sources,
+            location: Uri.parse(entrypoint.pubspecPath),
+            overridesFileContents: overridesFileContents,
+            overridesLocation: Uri.file(overridesPath),
+          ),
+        )
+        .acquireDependencies(
+          SolveType.get,
+          dryRun: argResults.isDryRun,
+          precompile: !argResults.isDryRun && argResults.shouldPrecompile,
+          analytics: argResults.isDryRun ? null : analytics,
+        );
+
+    if (!argResults.isDryRun &&
+        argResults.example &&
+        entrypoint.example != null) {
+      await entrypoint.example!.acquireDependencies(
         SolveType.get,
         precompile: argResults.shouldPrecompile,
+        summaryOnly: true,
         analytics: analytics,
       );
-
-      if (argResults.example && entrypoint.example != null) {
-        await entrypoint.example!.acquireDependencies(
-          SolveType.get,
-          precompile: argResults.shouldPrecompile,
-          summaryOnly: true,
-          analytics: analytics,
-        );
-      }
     }
 
     if (isOffline) {
@@ -287,12 +302,17 @@ Specify multiple sdk packages with descriptors.''');
     final name = package.ref.name;
     final dependencies = [...original.dependencies.values];
     var devDependencies = [...original.devDependencies.values];
+    var dependencyOverrides = [...original.dependencyOverrides.values];
+
     final dependencyNames = dependencies.map((dependency) => dependency.name);
     final devDependencyNames =
         devDependencies.map((devDependency) => devDependency.name);
     final range =
         package.ref.withConstraint(package.constraint ?? VersionConstraint.any);
-    if (package.isDev) {
+
+    if (package.isOverride) {
+      dependencyOverrides.add(range);
+    } else if (package.isDev) {
       if (devDependencyNames.contains(name)) {
         log.message('"$name" is already in "dev_dependencies". '
             'Will try to update the constraint.');
@@ -336,28 +356,66 @@ Specify multiple sdk packages with descriptors.''');
       sdkConstraints: original.sdkConstraints,
       dependencies: dependencies,
       devDependencies: devDependencies,
-      dependencyOverrides: original.dependencyOverrides.values,
+      dependencyOverrides: dependencyOverrides,
     );
   }
+
+  static final _argRegExp = RegExp(
+    r'^(?:(?<prefix>dev|override):)?'
+    r'(?<name>[a-zA-Z0-9_.]+)'
+    r'(?::(?<descriptor>.*))?$',
+  );
+
+  static final _lenientArgRegExp = RegExp(
+    r'^(?:(?<prefix>[^:]*):)?'
+    r'(?<name>[^:]*)'
+    r'(?::(?<descriptor>.*))?$',
+  );
 
   /// Split [arg] on ':' and interpret it with the flags in [argResult] either as
   /// an old-style or a new-style descriptor to produce a PackageRef].
   _ParseResult _parsePackage(String arg, ArgResults argResults) {
     var isDev = argResults['dev'] as bool;
-    if (arg.startsWith('dev:')) {
+    var isOverride = false;
+
+    final match = _argRegExp.firstMatch(arg);
+    if (match == null) {
+      final match2 = _lenientArgRegExp.firstMatch(arg);
+      if (match2 == null) {
+        usageException('Could not parse $arg');
+      } else {
+        if (match2.namedGroup('prefix') != null &&
+            match2.namedGroup('descriptor') != null) {
+          usageException(
+            'The only allowed prefixes are "dev:" and "override:"',
+          );
+        } else {
+          final packageName = match2.namedGroup('descriptor') == null
+              ? match2.namedGroup('prefix')
+              : match2.namedGroup('name');
+          usageException('Not a valid package name: "$packageName"');
+        }
+      }
+    } else if (match.namedGroup('prefix') == 'dev') {
       if (argResults.isDev) {
         usageException("Cannot combine 'dev:' with --dev");
       }
       isDev = true;
-      arg = arg.substring('dev:'.length);
+    } else if (match.namedGroup('prefix') == 'override') {
+      if (argResults.isDev) {
+        usageException("Cannot combine 'override:' with --dev");
+      }
+      isOverride = true;
     }
-    final nextColon = arg.indexOf(':');
-    final packageName = nextColon == -1 ? arg : arg.substring(0, nextColon);
+    final packageName = match.namedGroup('name')!;
     if (!packageNameRegExp.hasMatch(packageName)) {
       usageException('Not a valid package name: "$packageName"');
     }
-    final descriptor = nextColon == -1 ? null : arg.substring(nextColon + 1);
+    final descriptor = match.namedGroup('descriptor');
 
+    if (isOverride && descriptor == null) {
+      usageException('A dependency override needs an explicit descriptor.');
+    }
     final _PartialParseResult partial;
     if (argResults.hasOldStyleOptions) {
       partial = _parseDescriptorOldStyleArgs(
@@ -369,7 +427,12 @@ Specify multiple sdk packages with descriptors.''');
       partial = _parseDescriptorNewStyle(packageName, descriptor);
     }
 
-    return _ParseResult(partial.ref, partial.constraint, isDev: isDev);
+    return _ParseResult(
+      partial.ref,
+      partial.constraint,
+      isDev: isDev,
+      isOverride: isOverride,
+    );
   }
 
   /// Parse [descriptor] to return the corresponding [_ParseResult] using the
@@ -563,6 +626,9 @@ Specify multiple sdk packages with descriptors.''');
             {
               'dependencies': {
                 packageName: parsedDescriptor,
+              },
+              'environment': {
+                'sdk': sdk.version.toString(),
               }
             },
             cache.sources,
@@ -602,8 +668,8 @@ Specify multiple sdk packages with descriptors.''');
     );
   }
 
-  /// Writes the changes to the pubspec file.
-  void _updatePubspec(
+  /// Calculates the updates to the pubspec file.
+  String _updatePubspec(
     List<PackageId> resultPackages,
     List<_ParseResult> updates,
   ) {
@@ -612,7 +678,9 @@ Specify multiple sdk packages with descriptors.''');
     log.fine('Contents:\n$yamlEditor');
 
     for (final update in updates) {
-      final dependencyKey = update.isDev ? 'dev_dependencies' : 'dependencies';
+      final dependencyKey = update.isDev
+          ? 'dev_dependencies'
+          : (update.isOverride ? 'dependency_overrides' : 'dependencies');
       final constraint = update.constraint;
       final ref = update.ref;
       final name = ref.name;
@@ -627,7 +695,7 @@ Specify multiple sdk packages with descriptors.''');
       } else {
         pubspecInformation = {
           ref.source.name: ref.description.serializeForPubspec(
-            containingDir: entrypoint.root.dir,
+            containingDir: entrypoint.rootDir,
             languageVersion: entrypoint.root.pubspec.languageVersion,
           ),
           if (description is HostedDescription || constraint != null)
@@ -657,7 +725,7 @@ Specify multiple sdk packages with descriptors.''');
 
       /// Remove the package from dev_dependencies if we are adding it to
       /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
-      if (!update.isDev) {
+      if (!update.isDev && !update.isOverride) {
         final devDependenciesNode = yamlEditor
             .parseAt(['dev_dependencies'], orElse: () => YamlScalar.wrap(null));
 
@@ -674,8 +742,7 @@ Specify multiple sdk packages with descriptors.''');
       }
     }
 
-    /// Windows line endings are already handled by [yamlEditor]
-    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
+    return yamlEditor.toString();
   }
 }
 
@@ -689,25 +756,31 @@ class _ParseResult {
   final PackageRef ref;
   final VersionConstraint? constraint;
   final bool isDev;
-  _ParseResult(this.ref, this.constraint, {required this.isDev});
+  final bool isOverride;
+  _ParseResult(
+    this.ref,
+    this.constraint, {
+    required this.isDev,
+    required this.isOverride,
+  });
 }
 
 extension on ArgResults {
-  bool get isDev => this['dev'];
-  bool get isDryRun => this['dry-run'];
-  String? get gitUrl => this['git-url'];
-  String? get gitPath => this['git-path'];
-  String? get gitRef => this['git-ref'];
-  String? get hostedUrl => this['hosted-url'];
-  String? get path => this['path'];
-  String? get sdk => this['sdk'];
+  bool get isDev => flag('dev');
+  bool get isDryRun => flag('dry-run');
+  String? get gitUrl => this['git-url'] as String?;
+  String? get gitPath => this['git-path'] as String?;
+  String? get gitRef => this['git-ref'] as String?;
+  String? get hostedUrl => this['hosted-url'] as String?;
+  String? get path => this['path'] as String?;
+  String? get sdk => this['sdk'] as String?;
   bool get hasOldStyleOptions =>
       hasGitOptions ||
       path != null ||
       sdk != null ||
       hostedUrl != null ||
       isDev;
-  bool get shouldPrecompile => this['precompile'];
-  bool get example => this['example'];
+  bool get shouldPrecompile => flag('precompile');
+  bool get example => flag('example');
   bool get hasGitOptions => gitUrl != null || gitRef != null || gitPath != null;
 }

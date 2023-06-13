@@ -15,6 +15,7 @@ import 'io.dart';
 import 'language_version.dart';
 import 'package_config.dart';
 import 'package_name.dart';
+import 'pubspec.dart';
 import 'sdk.dart' show sdk;
 import 'system_cache.dart';
 import 'utils.dart';
@@ -26,7 +27,7 @@ class LockFile {
 
   /// The intersections of all SDK constraints for all locked packages, indexed
   /// by SDK identifier.
-  Map<String, VersionConstraint> sdkConstraints;
+  Map<String, SdkConstraint> sdkConstraints;
 
   /// Dependency names that appeared in the root package's `dependencies`
   /// section.
@@ -49,16 +50,16 @@ class LockFile {
   /// analysis server to provide better auto-completion.
   LockFile(
     Iterable<PackageId> ids, {
-    Map<String, VersionConstraint>? sdkConstraints,
+    Map<String, SdkConstraint>? sdkConstraints,
     Set<String>? mainDependencies,
     Set<String>? devDependencies,
     Set<String>? overriddenDependencies,
   }) : this._(
-          Map.fromIterable(
-            ids.where((id) => !id.isRoot),
-            key: (id) => id.name,
-          ),
-          sdkConstraints ?? {'dart': VersionConstraint.any},
+          {
+            for (final id in ids)
+              if (!id.isRoot) id.name: id
+          },
+          sdkConstraints ?? {'dart': SdkConstraint(VersionConstraint.any)},
           mainDependencies ?? const UnmodifiableSetView.empty(),
           devDependencies ?? const UnmodifiableSetView.empty(),
           overriddenDependencies ?? const UnmodifiableSetView.empty(),
@@ -74,7 +75,7 @@ class LockFile {
 
   LockFile.empty()
       : packages = const {},
-        sdkConstraints = {'dart': VersionConstraint.any},
+        sdkConstraints = {'dart': SdkConstraint(VersionConstraint.any)},
         mainDependencies = const UnmodifiableSetView.empty(),
         devDependencies = const UnmodifiableSetView.empty(),
         overriddenDependencies = const UnmodifiableSetView.empty();
@@ -114,14 +115,17 @@ class LockFile {
       'YAML mapping',
     );
 
-    final sdkConstraints = <String, VersionConstraint>{};
+    final sdkConstraints = <String, SdkConstraint>{};
     final sdkNode =
         _getEntry<YamlScalar?>(parsed, 'sdk', 'string', required: false);
     if (sdkNode != null) {
       // Lockfiles produced by pub versions from 1.14.0 through 1.18.0 included
       // a top-level "sdk" field which encoded the unified constraint on the
       // Dart SDK. They had no way of specifying constraints on other SDKs.
-      sdkConstraints['dart'] = _parseVersionConstraint(sdkNode);
+      sdkConstraints['dart'] = SdkConstraint.interpretDartSdkConstraint(
+        _parseVersionConstraint(sdkNode),
+        defaultUpperBoundConstraint: null,
+      );
     }
 
     final sdksField =
@@ -131,7 +135,19 @@ class LockFile {
       _parseEachEntry<String, YamlScalar>(
         sdksField,
         (name, constraint) {
-          sdkConstraints[name] = _parseVersionConstraint(constraint);
+          final originalConstraint = _parseVersionConstraint(constraint);
+          // Reinterpret the sdk constraints here, in case they were written by
+          // an old sdk that did not do reinterpretations.
+          // TODO(sigurdm): push the switching into `SdkConstraint`.
+          sdkConstraints[name] = switch (name) {
+            'dart' => SdkConstraint.interpretDartSdkConstraint(
+                originalConstraint,
+                defaultUpperBoundConstraint: null,
+              ),
+            'flutter' =>
+              SdkConstraint.interpretFlutterSdkConstraint(originalConstraint),
+            _ => SdkConstraint(originalConstraint),
+          };
         },
         'string',
         'string',
@@ -152,8 +168,9 @@ class LockFile {
         packageEntries,
         (name, spec) {
           // Parse the version.
-          final versionEntry = _getStringEntry(spec, 'version');
-          final version = Version.parse(versionEntry);
+          final versionEntry =
+              _getEntry<YamlScalar>(spec, 'version', 'version string');
+          final version = _parseVersion(versionEntry);
 
           // Parse the source.
           final sourceName = _getStringEntry(spec, 'source');
@@ -227,7 +244,7 @@ class LockFile {
       return fn();
     } on FormatException catch (e) {
       throw SourceSpanFormatException(
-        'Invalid $description: ${e.message}',
+        '$description: ${e.message}',
         span,
       );
     }
@@ -238,6 +255,14 @@ class LockFile {
       node,
       'version constraint',
       parse: VersionConstraint.parse,
+    );
+  }
+
+  static Version _parseVersion(YamlNode node) {
+    return _parseNode(
+      node,
+      'version',
+      parse: Version.parse,
     );
   }
 
@@ -259,19 +284,19 @@ class LockFile {
       final value = node.value;
       if (parse != null) {
         if (value is! String) {
-          _failAt('Expected a $typeDescription.', node);
+          _failAt('Expected a $typeDescription', node);
         }
         return _wrapFormatException(
-          'Expected a $typeDescription.',
+          'Expected a $typeDescription',
           node.span,
-          () => parse(node.value),
+          () => parse(value),
         );
       } else if (value is T) {
         return value;
       }
-      _failAt('Expected a $typeDescription.', node);
+      _failAt('Expected a $typeDescription', node);
     }
-    _failAt('Expected a $typeDescription.', node);
+    _failAt('Expected a $typeDescription', node);
   }
 
   static void _parseEachEntry<K, V>(
@@ -282,7 +307,7 @@ class LockFile {
   ) {
     map.nodes.forEach((key, value) {
       f(
-        _parseNode(key, keyTypeDescription),
+        _parseNode(key as YamlNode, keyTypeDescription),
         _parseNode(value, valueTypeDescription),
       );
     });
@@ -411,7 +436,7 @@ class LockFile {
     var data = {
       'sdks': mapMap(
         sdkConstraints,
-        value: (_, constraint) => constraint.toString(),
+        value: (_, constraint) => constraint.effectiveConstraint.toString(),
       ),
       'packages': packageMap
     };

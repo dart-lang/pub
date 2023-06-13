@@ -262,23 +262,6 @@ void main() {
       });
     });
 
-    test("Don't ignore packages/ before the package root", () async {
-      await d.dir(appPath, [
-        d.dir('packages', [
-          d.dir('app', [
-            d.appPubspec(),
-            d.dir('packages', [d.file('a.txt')]),
-          ]),
-        ]),
-      ]).create();
-
-      createEntrypoint(p.join(appPath, 'packages', 'app'));
-
-      expect(entrypoint!.root.listFiles(), {
-        p.join(root, 'pubspec.yaml'),
-      });
-    });
-
     group('with a submodule', () {
       setUp(() async {
         await d.git('submodule', [
@@ -312,17 +295,6 @@ void main() {
       await d.dir(appPath, [
         d.file('pubspec.lock'),
         d.dir('subdir', [d.file('pubspec.lock')])
-      ]).create();
-
-      expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
-    });
-
-    test('ignores packages directories', () async {
-      await d.dir(appPath, [
-        d.dir('packages', [d.file('file.txt', 'contents')]),
-        d.dir('subdir', [
-          d.dir('packages', [d.file('subfile.txt', 'subcontents')]),
-        ])
       ]).create();
 
       expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
@@ -366,7 +338,7 @@ void main() {
     });
 
     test('.pubignore', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       await d.dir(appPath, [
         d.file('.pubignore', '''
 /lib/ignored.dart
