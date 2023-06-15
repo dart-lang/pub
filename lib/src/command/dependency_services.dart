@@ -56,7 +56,7 @@ class DependencyServicesReportCommand extends PubCommand {
     final stdinString = await utf8.decodeStream(stdin);
     final input = json.decode(stdinString.isEmpty ? '{}' : stdinString)
         as Map<String, Object?>;
-    final extraConstraints = _parseDisallowed(input, cache);
+    final additionalConstraints = _parseDisallowed(input, cache);
     final targetPackageName = input['target'];
     if (targetPackageName is! String?) {
       throw FormatException('"target" should be a String.');
@@ -69,13 +69,13 @@ class DependencyServicesReportCommand extends PubCommand {
     final compatiblePackagesResult = await _tryResolve(
       compatiblePubspec,
       cache,
-      extraConstraints: extraConstraints,
+      additionalConstraints: additionalConstraints,
     );
 
     final breakingPackagesResult = await _tryResolve(
       breakingPubspec,
       cache,
-      extraConstraints: extraConstraints,
+      additionalConstraints: additionalConstraints,
     );
 
     final currentPackages = await _computeCurrentPackages(entrypoint, cache);
@@ -114,7 +114,7 @@ class DependencyServicesReportCommand extends PubCommand {
             ?.firstWhereOrNull((element) => element.name == package.name);
       }
       PackageId? smallestUpgrade;
-      if (extraConstraints.any(
+      if (additionalConstraints.any(
         (c) => c.range.toRef() == package.toRef() && !c.range.allows(package),
       )) {
         // Current version disallowed by restrictions.
@@ -127,7 +127,7 @@ class DependencyServicesReportCommand extends PubCommand {
           atLeastCurrentPubspec,
           cache,
           solveType: SolveType.downgrade,
-          extraConstraints: extraConstraints,
+          additionalConstraints: additionalConstraints,
         );
 
         smallestUpgrade = smallestUpgradeResult
@@ -145,7 +145,7 @@ class DependencyServicesReportCommand extends PubCommand {
           cache,
           currentPackages: currentPackages,
           upgradeType: upgradeType,
-          extraConstraints: extraConstraints,
+          additionalConstraints: additionalConstraints,
         );
       }
 
@@ -639,13 +639,13 @@ Future<List<PackageId>?> _tryResolve(
   Pubspec pubspec,
   SystemCache cache, {
   SolveType solveType = SolveType.upgrade,
-  Iterable<ConstraintAndCause>? extraConstraints,
+  Iterable<ConstraintAndCause>? additionalConstraints,
 }) async {
   final solveResult = await tryResolveVersions(
     solveType,
     cache,
     Package.inMemory(pubspec),
-    extraConstraints: extraConstraints,
+    additionalConstraints: additionalConstraints,
   );
 
   return solveResult?.packages;
@@ -702,7 +702,7 @@ Future<List<Object>> _computeUpgradeSet(
   SystemCache cache, {
   required Map<String, PackageId> currentPackages,
   required _UpgradeType upgradeType,
-  required List<ConstraintAndCause> extraConstraints,
+  required List<ConstraintAndCause> additionalConstraints,
 }) async {
   if (package == null) return [];
   final lockFile = entrypoint.lockFile;
@@ -730,7 +730,7 @@ Future<List<Object>> _computeUpgradeSet(
     cache,
     Package.inMemory(pubspec),
     lockFile: lockFile,
-    extraConstraints: extraConstraints,
+    additionalConstraints: additionalConstraints,
   );
 
   // TODO(sigurdm): improve error messages.
@@ -856,42 +856,6 @@ List<ConstraintAndCause> _parseDisallowed(
     }
   }
   return result;
-}
-
-/// Returns a pubspec with the same dependencies as [original] but with all
-/// version constraints replaced by `>=c` where `c`, is the member of `current`
-/// that has same name as the dependency.
-Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
-  List<PackageRange> fixBounds(
-    Map<String, PackageRange> constrained,
-  ) {
-    final result = <PackageRange>[];
-
-    for (final name in constrained.keys) {
-      final packageRange = constrained[name]!;
-      final currentVersion = current.firstWhereOrNull((id) => id.name == name);
-      if (currentVersion == null) {
-        result.add(packageRange);
-      } else {
-        result.add(
-          packageRange.toRef().withConstraint(
-                VersionRange(min: currentVersion.version, includeMin: true),
-              ),
-        );
-      }
-    }
-
-    return result;
-  }
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: fixBounds(original.dependencies),
-    devDependencies: fixBounds(original.devDependencies),
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
 }
 
 /// `true` iff any of the packages described by the [lockfile] uses

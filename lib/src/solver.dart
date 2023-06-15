@@ -30,7 +30,7 @@ export 'solver/type.dart';
 /// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
 ///
-/// [extraConstraints] can contain a list of extra constraints for this
+/// [additionalConstraints] can contain a list of extra constraints for this
 /// resolution.
 Future<SolveResult> resolveVersions(
   SolveType type,
@@ -39,7 +39,7 @@ Future<SolveResult> resolveVersions(
   LockFile? lockFile,
   Iterable<String> unlock = const [],
   Map<String, Version> sdkOverrides = const {},
-  Iterable<ConstraintAndCause>? extraConstraints,
+  Iterable<ConstraintAndCause>? additionalConstraints,
 }) {
   lockFile ??= LockFile.empty();
   final solver = VersionSolver(
@@ -50,8 +50,8 @@ Future<SolveResult> resolveVersions(
     unlock,
     sdkOverrides: sdkOverrides,
   );
-  if (extraConstraints != null) {
-    solver.addConstraints(extraConstraints);
+  if (additionalConstraints != null) {
+    solver.addConstraints(additionalConstraints);
   }
   return solver.solve();
 }
@@ -76,7 +76,7 @@ Future<SolveResult?> tryResolveVersions(
   Package root, {
   LockFile? lockFile,
   Iterable<String>? unlock,
-  Iterable<ConstraintAndCause>? extraConstraints,
+  Iterable<ConstraintAndCause>? additionalConstraints,
 }) async {
   try {
     return await resolveVersions(
@@ -85,7 +85,7 @@ Future<SolveResult?> tryResolveVersions(
       root,
       lockFile: lockFile,
       unlock: unlock ?? [],
-      extraConstraints: extraConstraints,
+      additionalConstraints: additionalConstraints,
     );
   } on SolveFailure {
     return null;

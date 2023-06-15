@@ -596,10 +596,17 @@ class VersionSolver {
 
 // An additional constraint to a version resolution.
 class ConstraintAndCause {
-  /// Stated in the **negative** like constraints in the pubspec, meaning that
-  /// to forbid a version you must do
+  /// Stated like constraints in the pubspec. (The constraint specifies those
+  /// versions that are allowed).
+  ///
+  /// Meaning that to forbid a version you must do
   /// `VersionConstraint.any.difference(version)`.
+  ///
+  /// Example:
+  /// `ConstraintAndCause(packageRef, VersionConstraint.parse('> 1.0.0'))`
+  /// To require `packageRef` be greater than `1.0.0`.
   final PackageRange range;
   final String? cause;
+
   ConstraintAndCause(this.range, this.cause);
 }
