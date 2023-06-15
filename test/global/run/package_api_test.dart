@@ -85,7 +85,7 @@ main() async {
 
     var packageConfigPath =
         p.join(d.sandbox, 'myapp/.dart_tool/package_config.json');
-    expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
+    expect(pub.stdout, emitsThrough(p.toUri(packageConfigPath).toString()));
 
     var myappResourcePath = p.join(d.sandbox, 'myapp/lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(myappResourcePath).toString()));

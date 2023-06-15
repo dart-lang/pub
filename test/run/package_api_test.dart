@@ -12,6 +12,7 @@ const _script = """
   import 'dart:isolate';
 
   main() async {
+    print(await Isolate.packageRoot);
     print(await Isolate.packageConfig);
     print(await Isolate.resolvePackageUri(
         Uri.parse('package:myapp/resource.txt')));
@@ -38,7 +39,7 @@ void main() {
 
     expect(
       pub.stdout,
-      emits(
+      emitsThrough(
         p
             .toUri(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
             .toString(),
