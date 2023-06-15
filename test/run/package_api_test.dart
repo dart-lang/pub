@@ -12,7 +12,6 @@ const _script = """
   import 'dart:isolate';
 
   main() async {
-    print(await Isolate.packageRoot);
     print(await Isolate.packageConfig);
     print(await Isolate.resolvePackageUri(
         Uri.parse('package:myapp/resource.txt')));
@@ -76,7 +75,6 @@ void main() {
 
     expect(pub.stdout, emitsThrough('Building package executable...'));
     expect(pub.stdout, emits('Built foo:script.'));
-    expect(pub.stdout, emits('null'));
     expect(
       pub.stdout,
       emits(
