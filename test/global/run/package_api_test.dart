@@ -22,7 +22,6 @@ void main() {
 import 'dart:isolate';
 
 main() async {
-  print(await Isolate.packageRoot);
   print(await Isolate.packageConfig);
   print(await Isolate.resolvePackageUri(
       Uri.parse('package:foo/resource.txt')));
@@ -37,8 +36,6 @@ main() async {
     await runPub(args: ['global', 'activate', 'foo']);
 
     var pub = await pubRun(global: true, args: ['foo:script']);
-
-    expect(pub.stdout, emitsThrough('null'));
 
     var packageConfigPath = p.join(
       d.sandbox,
@@ -72,7 +69,6 @@ main() async {
 import 'dart:isolate';
 
 main() async {
-  print(await Isolate.packageRoot);
   print(await Isolate.packageConfig);
   print(await Isolate.resolvePackageUri(
       Uri.parse('package:myapp/resource.txt')));
@@ -86,8 +82,6 @@ main() async {
     await runPub(args: ['global', 'activate', '-s', 'path', '.']);
 
     var pub = await pubRun(global: true, args: ['myapp:script']);
-
-    expect(pub.stdout, emitsThrough('null'));
 
     var packageConfigPath =
         p.join(d.sandbox, 'myapp/.dart_tool/package_config.json');
