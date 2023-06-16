@@ -92,6 +92,18 @@ class VersionSolver {
         _dependencyOverrides = _root.dependencyOverrides,
         _unlock = {...unlock};
 
+  /// Prime the solver with [constraints].
+  void addConstraints(Iterable<ConstraintAndCause> constraints) {
+    for (final constraint in constraints) {
+      _addIncompatibility(
+        Incompatibility(
+          [Term(constraint.range, false)],
+          PackageVersionForbiddenCause(reason: constraint.cause),
+        ),
+      );
+    }
+  }
+
   /// Finds a set of dependencies that match the root package's constraints, or
   /// throws an error if no such set is available.
   Future<SolveResult> solve() async {
@@ -580,4 +592,21 @@ class VersionSolver {
     // Indent for the previous selections.
     log.solver(prefixLines(message, prefix: '  ' * _solution.decisionLevel));
   }
+}
+
+// An additional constraint to a version resolution.
+class ConstraintAndCause {
+  /// Stated like constraints in the pubspec. (The constraint specifies those
+  /// versions that are allowed).
+  ///
+  /// Meaning that to forbid a version you must do
+  /// `VersionConstraint.any.difference(version)`.
+  ///
+  /// Example:
+  /// `ConstraintAndCause(packageRef, VersionConstraint.parse('> 1.0.0'))`
+  /// To require `packageRef` be greater than `1.0.0`.
+  final PackageRange range;
+  final String? cause;
+
+  ConstraintAndCause(this.range, this.cause);
 }

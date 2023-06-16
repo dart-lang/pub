@@ -46,7 +46,7 @@ extension on GoldenTestContext {
   /// Returns the stdout.
   Future<String> runDependencyServices(
     List<String> args, {
-    String? stdin,
+    String stdin = '',
   }) async {
     final buffer = StringBuffer();
     buffer.writeln('## Section ${args.join(' ')}');
@@ -64,16 +64,15 @@ extension on GoldenTestContext {
       },
       workingDirectory: p.join(d.sandbox, appPath),
     );
-    if (stdin != null) {
-      process.stdin.write(stdin);
-      await process.stdin.flush();
-      await process.stdin.close();
-    }
+    process.stdin.write(stdin);
+    await process.stdin.flush();
+    await process.stdin.close();
+
     final outLines = outputLines(process.stdout);
     final errLines = outputLines(process.stderr);
     final exitCode = await process.exitCode;
 
-    final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
+    final pipe = ' echo ${filterUnstableText(escapeShellArgument(stdin))} |';
     buffer.writeln(
       [
         '\$$pipe dependency_services ${args.map(escapeShellArgument).join(' ')}',
@@ -110,6 +109,33 @@ Future<void> _listReportApply(
   });
 
   await context.runDependencyServices(['apply'], stdin: input);
+  manifestAndLockfile(context);
+}
+
+Future<void> _reportWithForbidden(
+  GoldenTestContext context,
+  Map<String, List<String>> disallowedVersions, {
+  void Function(Map)? resultAssertions,
+  String? targetPackage,
+}) async {
+  manifestAndLockfile(context);
+  final input = json.encode({
+    'target': targetPackage,
+    'disallowed': [
+      for (final e in disallowedVersions.entries)
+        {
+          'name': e.key,
+          'url': globalServer.url,
+          'versions': e.value.map((d) => {'range': d}).toList()
+        }
+    ]
+  });
+  final report = await context.runDependencyServices(['report'], stdin: input);
+  if (resultAssertions != null) {
+    resultAssertions(json.decode(report) as Map);
+  }
+
+  // await context.runDependencyServices(['apply'], stdin: input);
   manifestAndLockfile(context);
 }
 
@@ -156,6 +182,39 @@ Future<void> main() async {
         expect(
           findChangeVersion(report, 'singleBreaking', 'transitive'),
           null,
+        );
+      },
+    );
+  });
+
+  testWithGolden('Ignoring version', (context) async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      })
+    ]).create();
+    await pubGet();
+
+    server.serve('foo', '1.0.1'); // should get this.
+    server.serve('foo', '1.0.2'); // ignored
+    server.serve('foo', '1.0.3', deps: {'transitive': '1.0.0'});
+    server.serve('transitive', '1.0.0'); // ignored
+    await _reportWithForbidden(
+      context,
+      {
+        'foo': ['1.0.2'],
+        'transitive': ['1.0.0'],
+      },
+      resultAssertions: (report) {
+        expect(
+          findChangeVersion(report, 'compatible', 'foo'),
+          '1.0.1',
         );
       },
     );
@@ -462,6 +521,110 @@ Future<void> main() async {
           findChangeVersion(report, 'multiBreaking', 'foo'),
           newRef,
         );
+      },
+    );
+  });
+
+  testWithGolden('Finds smallest possible upgrade', (context) async {
+    final server = await servePackages();
+    server.serve('foo', '1.1.1'); // This version will be disallowed.
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+    server.serve(
+      'foo',
+      '1.0.0',
+    ); // We don't want the downgrade to go below the current.
+
+    server.serve(
+      'foo',
+      '1.1.2',
+    ); // This will also be disallowed, a minimal update should not find this.
+    server.serve('foo', '1.1.3'); // We would like this to be the new version.
+    server.serve('foo', '1.1.4'); // This version would not be a minimal update.
+
+    await _reportWithForbidden(
+      context,
+      {
+        'foo': ['1.1.1', '1.1.2']
+      },
+      targetPackage: 'foo',
+      resultAssertions: (r) {
+        expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '1.1.3');
+      },
+    );
+  });
+
+  testWithGolden('Smallest possible upgrade can upgrade beyond breaking',
+      (context) async {
+    final server = await servePackages();
+    server.serve('foo', '1.1.1'); // This version will be disallowed.
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+
+    server.serve(
+      'foo',
+      '2.0.0',
+    ); // This will also be disallowed, a minimal update should not find this.
+    server.serve('foo', '2.0.1'); // We would like this to be the new version.
+    server.serve('foo', '2.0.2'); // This version would not be a minimal update.
+
+    await _reportWithForbidden(
+      context,
+      {
+        'foo': ['1.1.1', '2.0.0']
+      },
+      targetPackage: 'foo',
+      resultAssertions: (r) {
+        expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
+      },
+    );
+  });
+
+  testWithGolden(
+      'Smallest possible upgrade can upgrade other packages if needed',
+      (context) async {
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+    server.serve('bar', '2.2.0');
+
+    server.serve(
+      'foo',
+      '1.1.1',
+      deps: {'bar': '^1.0.0'},
+    ); // This version will be disallowed.
+
+    await d.appDir(dependencies: {'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
+    await pubGet();
+
+    server.serve(
+      'foo',
+      '2.0.0',
+      deps: {'bar': '^2.0.0'},
+    ); // This will also be disallowed, a minimal update should not find this.
+    server.serve(
+      'foo',
+      '2.0.1',
+      deps: {'bar': '^2.0.0'},
+    ); // We would like this to be the new version.
+    server.serve(
+      'foo',
+      '2.0.2',
+      deps: {'bar': '^2.0.0'},
+    ); // This version would not be a minimal update.
+
+    await _reportWithForbidden(
+      context,
+      {
+        'foo': ['1.1.1', '2.0.0'],
+        'bar': ['2.0.0']
+      },
+      targetPackage: 'foo',
+      resultAssertions: (r) {
+        expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
+        expect(findChangeVersion(r, 'smallestUpdate', 'bar'), '2.2.0');
       },
     );
   });

@@ -7,7 +7,7 @@ No such file pubspec.lock.
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section list
-$ dependency_services list
+$ echo '' | dependency_services list
 {
   "dependencies": [
     {
@@ -59,7 +59,7 @@ $ dependency_services list
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section report
-$ dependency_services report
+$ echo '' | dependency_services report
 {
   "dependencies": [
     {

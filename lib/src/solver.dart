@@ -29,6 +29,9 @@ export 'solver/type.dart';
 /// If [unlock] is empty [SolveType.get] interprets this as lock everything,
 /// while [SolveType.upgrade] and [SolveType.downgrade] interprets an empty
 /// [unlock] as unlock everything.
+///
+/// [additionalConstraints] can contain a list of extra constraints for this
+/// resolution.
 Future<SolveResult> resolveVersions(
   SolveType type,
   SystemCache cache,
@@ -36,16 +39,21 @@ Future<SolveResult> resolveVersions(
   LockFile? lockFile,
   Iterable<String> unlock = const [],
   Map<String, Version> sdkOverrides = const {},
+  Iterable<ConstraintAndCause>? additionalConstraints,
 }) {
   lockFile ??= LockFile.empty();
-  return VersionSolver(
+  final solver = VersionSolver(
     type,
     cache,
     root,
     lockFile,
     unlock,
     sdkOverrides: sdkOverrides,
-  ).solve();
+  );
+  if (additionalConstraints != null) {
+    solver.addConstraints(additionalConstraints);
+  }
+  return solver.solve();
 }
 
 /// Attempts to select the best concrete versions for all of the transitive
@@ -68,6 +76,7 @@ Future<SolveResult?> tryResolveVersions(
   Package root, {
   LockFile? lockFile,
   Iterable<String>? unlock,
+  Iterable<ConstraintAndCause>? additionalConstraints,
 }) async {
   try {
     return await resolveVersions(
@@ -76,6 +85,7 @@ Future<SolveResult?> tryResolveVersions(
       root,
       lockFile: lockFile,
       unlock: unlock ?? [],
+      additionalConstraints: additionalConstraints,
     );
   } on SolveFailure {
     return null;
