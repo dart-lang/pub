@@ -219,7 +219,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'foo': {'version': 'any', 'hosted': url}
+        'foo': {'hosted': url}
       },
     ).validate();
   });

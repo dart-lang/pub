@@ -211,7 +211,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     for (final dep in declaredHostedDependencies) {
       final resolvedPackage = resolvedPackages[dep.name]!;
       if (!toUpgrade.contains(dep.name)) {
-        // If we're not to upgrade this package, or it wasn't in the
+        // If we're not trying to upgrade this package, or it wasn't in the
         // resolution somehow, then we ignore it.
         continue;
       }
@@ -296,25 +296,16 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     Map<PackageRange, PackageRange> changes,
   ) {
     ArgumentError.checkNotNull(changes, 'changes');
-
     final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
     final deps = entrypoint.root.pubspec.dependencies.keys;
-    final devDeps = entrypoint.root.pubspec.devDependencies.keys;
 
     for (final change in changes.values) {
-      if (deps.contains(change.name)) {
-        yamlEditor.update(
-          ['dependencies', change.name],
-          // TODO(jonasfj): Fix support for third-party pub servers.
-          change.constraint.toString(),
-        );
-      } else if (devDeps.contains(change.name)) {
-        yamlEditor.update(
-          ['dev_dependencies', change.name],
-          // TODO: Fix support for third-party pub servers
-          change.constraint.toString(),
-        );
-      }
+      final section =
+          deps.contains(change.name) ? 'dependencies' : 'dev_dependencies';
+      yamlEditor.update(
+        [section, change.name],
+        pubspecDescription(change, cache, entrypoint),
+      );
     }
     return yamlEditor.toString();
   }

@@ -5,8 +5,11 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import 'entrypoint.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'source/hosted.dart';
+import 'system_cache.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
@@ -144,4 +147,36 @@ VersionConstraint stripUpperBound(VersionConstraint constraint) {
   /// If it gets here, [constraint] is the empty version constraint, so we
   /// just return an empty version constraint.
   return VersionConstraint.empty;
+}
+
+/// Returns a somewhat normalized version the description of a dependency with a
+/// version constraint (what comes after the version name in a dependencies
+/// section) as a json-style object.
+///
+/// Will use just the constraint for dependencies hosted at the default host.
+///
+/// Relative paths will be relative to [relativeEntrypoint].
+///
+/// The syntax used for hosted will depend on the language version of
+/// [relativeEntrypoint]
+Object? pubspecDescription(
+  PackageRange range,
+  SystemCache cache,
+  Entrypoint relativeEntrypoint,
+) {
+  final description = range.description;
+
+  final constraint = range.constraint;
+  if (description is HostedDescription &&
+      description.url == cache.hosted.defaultUrl) {
+    return constraint.toString();
+  } else {
+    return {
+      range.source.name: description.serializeForPubspec(
+        containingDir: relativeEntrypoint.rootDir,
+        languageVersion: relativeEntrypoint.root.pubspec.languageVersion,
+      ),
+      if (!constraint.isAny) 'version': constraint.toString()
+    };
+  }
 }
