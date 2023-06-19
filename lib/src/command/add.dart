@@ -20,6 +20,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
+import '../pubspec_utils.dart';
 import '../sdk.dart';
 import '../solver.dart';
 import '../source/git.dart';
@@ -685,23 +686,17 @@ Specify multiple sdk packages with descriptors.''');
       final ref = update.ref;
       final name = ref.name;
       final resultId = resultPackages.firstWhere((id) => id.name == name);
-      var description = ref.description;
-      final versionConstraintString =
-          constraint == null ? '^${resultId.version}' : constraint.toString();
-      late Object? pubspecInformation;
-      if (description is HostedDescription &&
-          description.url == cache.hosted.defaultUrl) {
-        pubspecInformation = versionConstraintString;
-      } else {
-        pubspecInformation = {
-          ref.source.name: ref.description.serializeForPubspec(
-            containingDir: entrypoint.rootDir,
-            languageVersion: entrypoint.root.pubspec.languageVersion,
-          ),
-          if (description is HostedDescription || constraint != null)
-            'version': versionConstraintString
-        };
-      }
+
+      Object? description = pubspecDescription(
+        ref.withConstraint(
+          constraint ??
+              (ref.source is HostedSource
+                  ? VersionConstraint.compatibleWith(resultId.version)
+                  : VersionConstraint.any),
+        ),
+        cache,
+        entrypoint,
+      );
 
       if (yamlEditor.parseAt(
             [dependencyKey],
@@ -713,14 +708,14 @@ Specify multiple sdk packages with descriptors.''');
         yamlEditor.update(
           [dependencyKey],
           wrapAsYamlNode(
-            {name: pubspecInformation},
+            {name: description},
             collectionStyle: CollectionStyle.BLOCK,
           ),
         );
       } else {
         final packagePath = [dependencyKey, name];
 
-        yamlEditor.update(packagePath, pubspecInformation);
+        yamlEditor.update(packagePath, description);
       }
 
       /// Remove the package from dev_dependencies if we are adding it to

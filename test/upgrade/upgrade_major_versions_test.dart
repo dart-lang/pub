@@ -307,5 +307,32 @@ void main() {
         ]),
       );
     });
+
+    test('works with an explicit "hosted" description:', () async {
+      await servePackages();
+      final alternativeServer = await startPackageServer();
+      alternativeServer.serve('foo', '1.0.0');
+      alternativeServer.serve('foo', '2.0.0');
+      await d.appDir(
+        dependencies: {
+          'foo': {'hosted': alternativeServer.url, 'version': '^1.0.0'},
+        },
+      ).create();
+
+      await pubGet();
+
+      await pubUpgrade(
+        args: ['--major-versions'],
+        output: allOf([
+          contains('Changed 1 constraint in pubspec.yaml:'),
+          contains('foo: ^1.0.0 -> ^2.0.0'),
+        ]),
+      );
+      await d.appDir(
+        dependencies: {
+          'foo': {'hosted': alternativeServer.url, 'version': '^2.0.0'},
+        },
+      ).validate();
+    });
   });
 }
