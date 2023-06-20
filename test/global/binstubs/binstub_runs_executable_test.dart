@@ -47,7 +47,9 @@ void main() {
         'executables': {'foo-script': 'script'},
       }),
       d.dir(
-          'bin', [d.file('script.dart', "main(args) => print('ok \$args');")],),
+        'bin',
+        [d.file('script.dart', "main(args) => print('ok \$args');")],
+      ),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);

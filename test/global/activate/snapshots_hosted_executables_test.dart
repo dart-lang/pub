@@ -19,7 +19,9 @@ void main() {
           d.file('goodbye.dart', "void main() => print('goodbye!');"),
           d.file('shell.sh', 'echo shell'),
           d.dir(
-              'subdir', [d.file('sub.dart', "void main() => print('sub!');")],),
+            'subdir',
+            [d.file('sub.dart', "void main() => print('sub!');")],
+          ),
         ]),
       ],
     );
