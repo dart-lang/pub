@@ -21,12 +21,12 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'executables': {'one': 'one_script', 'two': null}
+          'executables': {'one': 'one_script', 'two': null},
         }),
         d.dir('bin', [
           d.file('one_script.dart', "main() => print('ok');"),
-          d.file('two.dart', "main() => print('ok');")
-        ])
+          d.file('two.dart', "main() => print('ok');"),
+        ]),
       ]).create();
       await expectValidationDeprecated(executable);
     });
@@ -38,8 +38,8 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'executables': {'nope': 'not_there', 'nada': null}
-        })
+          'executables': {'nope': 'not_there', 'nada': null},
+        }),
       ]).create();
       await expectValidationDeprecated(executable, warnings: isNotEmpty);
     });
@@ -49,13 +49,13 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'executables': {'one': 'one_script', 'two': null}
+          'executables': {'one': 'one_script', 'two': null},
         }),
         d.dir('bin', [
           d.file('one_script.dart', "main() => print('ok');"),
-          d.file('two.dart', "main() => print('ok');")
+          d.file('two.dart', "main() => print('ok');"),
         ]),
-        d.file('.gitignore', 'bin')
+        d.file('.gitignore', 'bin'),
       ]).create();
       await expectValidationDeprecated(executable, warnings: isNotEmpty);
     });

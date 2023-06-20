@@ -12,7 +12,7 @@ void main() {
     ensureGit();
 
     final repo = d.git('foo.git', [
-      d.dir('subdir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])
+      d.dir('subdir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')]),
     ]);
 
     await repo.create();
@@ -27,9 +27,9 @@ void main() {
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.hashDir('foo', [
-          d.dir('subdir', [d.libDir('sub', '1.0.0')])
-        ])
-      ])
+          d.dir('subdir', [d.libDir('sub', '1.0.0')]),
+        ]),
+      ]),
     ]).validate();
     await d.appPackageConfigFile([
       d.packageConfigEntry(
@@ -41,8 +41,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'sub': {
-          'git': {'url': '../foo.git', 'path': 'subdir'}
-        }
+          'git': {'url': '../foo.git', 'path': 'subdir'},
+        },
       },
     ).validate();
   });
@@ -52,8 +52,8 @@ void main() {
 
     final repo = d.git('foo.git', [
       d.dir('sub', [
-        d.dir('dir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')])
-      ])
+        d.dir('dir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')]),
+      ]),
     ]);
     await repo.create();
 
@@ -68,10 +68,10 @@ void main() {
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.hashDir('foo', [
           d.dir('sub', [
-            d.dir('dir', [d.libDir('sub', '1.0.0')])
-          ])
-        ])
-      ])
+            d.dir('dir', [d.libDir('sub', '1.0.0')]),
+          ]),
+        ]),
+      ]),
     ]).validate();
 
     await d.appPackageConfigFile([
@@ -84,8 +84,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'sub': {
-          'git': {'url': '../foo.git', 'path': 'sub/dir'}
-        }
+          'git': {'url': '../foo.git', 'path': 'sub/dir'},
+        },
       },
     ).validate();
   });

@@ -398,15 +398,15 @@ packages:
               'version': '1.2.3',
               'source': 'hosted',
               'description': {'name': 'foo', 'url': 'https://foo.com'},
-              'dependency': 'transitive'
+              'dependency': 'transitive',
             },
             'bar': {
               'version': '3.2.1',
               'source': 'hosted',
               'description': {'name': 'bar', 'url': 'https://bar.com'},
-              'dependency': 'direct dev'
-            }
-          }
+              'dependency': 'direct dev',
+            },
+          },
         }),
       );
     });

@@ -12,12 +12,12 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'one': null, 'two': null}
+        'executables': {'one': null, 'two': null},
       }),
       d.dir('bin', [
         d.file('one.dart', "main() => print('ok');"),
-        d.file('two.dart', "main() => print('ok');")
-      ])
+        d.file('two.dart', "main() => print('ok');"),
+      ]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
@@ -27,8 +27,8 @@ void main() {
         'name': 'foo',
         'executables': {
           // Remove "one".
-          'two': null
-        }
+          'two': null,
+        },
       }),
     ]).create();
 
@@ -37,8 +37,8 @@ void main() {
     await d.dir(cachePath, [
       d.dir('bin', [
         d.nothing(binStubName('one')),
-        d.file(binStubName('two'), contains('two'))
-      ])
+        d.file(binStubName('two'), contains('two')),
+      ]),
     ]).validate();
   });
 }

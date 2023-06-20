@@ -12,9 +12,9 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       }),
-      d.dir('bin', [d.file('script.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('script.dart', "main() => print('ok');")]),
     ]).create();
 
     // Path packages are mutable, so no snapshot is created.
@@ -25,8 +25,11 @@ void main() {
 
     await d.dir(cachePath, [
       d.dir('bin', [
-        d.file(binStubName('foo-script'), contains('pub global run foo:script'))
-      ])
+        d.file(
+          binStubName('foo-script'),
+          contains('pub global run foo:script'),
+        ),
+      ]),
     ]).validate();
   });
 }

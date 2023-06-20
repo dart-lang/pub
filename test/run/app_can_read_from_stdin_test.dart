@@ -23,8 +23,8 @@ void main() {
             print(line1);
             print(line2);
           }
-        """)
-      ])
+        """),
+      ]),
     ]).create();
 
     await pubGet();
@@ -50,8 +50,8 @@ void main() {
             print("started");
             stdin.listen(stdout.add);
           }
-        """)
-      ])
+        """),
+      ]),
     ]).create();
 
     await pubGet();

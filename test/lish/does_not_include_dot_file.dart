@@ -22,7 +22,7 @@ td.DirectoryDescriptor get validPackageWithDotFiles => d.dir(appPath, [
       td.file('LICENSE', 'Eh, do what you want.'),
       td.file('README.md', "This package isn't real."),
       td.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      td.dir('lib', [td.file('test_pkg.dart', 'int i = 1;')])
+      td.dir('lib', [td.file('test_pkg.dart', 'int i = 1;')]),
     ]);
 
 void main() {
@@ -40,7 +40,7 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });

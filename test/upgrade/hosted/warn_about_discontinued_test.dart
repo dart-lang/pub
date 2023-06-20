@@ -55,7 +55,7 @@ dev_dependencies:
   foo: 1.2.3
 environment:
   sdk: '^3.1.2'
-''')
+'''),
     ]).create();
     await pubGet();
 

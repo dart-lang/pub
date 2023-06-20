@@ -24,7 +24,7 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {'git': '../foo.git'},
-        'bar': {'git': '../bar.git'}
+        'bar': {'git': '../bar.git'},
       },
     ).create();
 
@@ -38,7 +38,7 @@ void main() {
         ),
         d.gitPackageRevisionCacheDir('foo'),
         d.gitPackageRevisionCacheDir('bar'),
-      ])
+      ]),
     ]).validate();
 
     var originalBarSpec = packageSpec('bar');
@@ -58,7 +58,7 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.gitPackageRevisionCacheDir('foo', modifier: 2),
-      ])
+      ]),
     ]).validate();
 
     expect(packageSpec('bar'), originalBarSpec);

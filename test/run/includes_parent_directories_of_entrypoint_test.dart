@@ -26,9 +26,9 @@ void main() {
         d.file('a.dart', "var a = 'a';"),
         d.dir('a', [
           d.file('b.dart', "var b = 'b';"),
-          d.dir('b', [d.file('app.dart', _script)])
-        ])
-      ])
+          d.dir('b', [d.file('app.dart', _script)]),
+        ]),
+      ]),
     ]).create();
 
     await pubGet();

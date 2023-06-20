@@ -18,16 +18,16 @@ void main() {
       d.dir('packages', [
         d.dir('foo', [
           d.libDir('foo', 'foo 0.0.1'),
-          d.libPubspec('foo', '0.0.1', deps: {'bar': 'any'})
-        ])
+          d.libPubspec('foo', '0.0.1', deps: {'bar': 'any'}),
+        ]),
       ]),
       d.dir('bin/cache/pkg', [
         d.dir(
           'baz',
           [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
-        )
+        ),
       ]),
-      d.file('version', '1.2.3')
+      d.file('version', '1.2.3'),
     ]).create();
   });
 
@@ -42,8 +42,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'sdk': 'flutter'}
-        }
+          'foo': {'sdk': 'flutter'},
+        },
       }),
     ]).validate();
 
@@ -69,8 +69,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'sdk': 'flutter', 'version': '0.0.1'}
-        }
+          'foo': {'sdk': 'flutter', 'version': '0.0.1'},
+        },
       }),
     ]).validate();
     await d.appPackageConfigFile([
@@ -93,7 +93,7 @@ void main() {
       d.packageConfigEntry(
         name: 'baz',
         path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
-      )
+      ),
     ]).validate();
   });
 

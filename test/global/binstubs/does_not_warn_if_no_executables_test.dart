@@ -17,7 +17,7 @@ void main() {
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 

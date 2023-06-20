@@ -25,7 +25,7 @@ class CompiledDartdocValidator extends Validator {
           path.join(dir, 'index.html'),
           path.join(dir, 'styles.css'),
           path.join(dir, 'dart-logo-small.png'),
-          path.join(dir, 'client-live-nav.js')
+          path.join(dir, 'client-live-nav.js'),
         ];
 
         if (files.every(fileExists)) {

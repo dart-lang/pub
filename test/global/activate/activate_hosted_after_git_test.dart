@@ -15,13 +15,13 @@ void main() {
       'foo',
       '2.0.0',
       contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")]),
       ],
     );
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('git');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('git');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-sgit', '../foo.git']);
@@ -33,7 +33,7 @@ void main() {
           'Package foo is currently active from Git repository "..${separator}foo.git".',
         ),
         contains('* foo 2.0.0 (was 1.0.0 from git ..${separator}foo.git at'),
-        contains('Activated foo 2.0.0.')
+        contains('Activated foo 2.0.0.'),
       ]),
     );
 

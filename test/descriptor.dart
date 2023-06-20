@@ -40,7 +40,7 @@ DirectoryDescriptor validPackage({String version = '1.0.0'}) => dir(appPath, [
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# $version\nFirst version\n'),
-      dir('lib', [file('test_pkg.dart', 'int i = 1;')])
+      dir('lib', [file('test_pkg.dart', 'int i = 1;')]),
     ]);
 
 /// Returns a descriptor of a snapshot that can't be run by the current VM.
@@ -214,7 +214,7 @@ Descriptor hostedHashesCache(Iterable<Descriptor> contents, {int? port}) {
     dir(
       'hosted-hashes',
       [dir('localhost%58${port ?? globalServer.port}', contents)],
-    )
+    ),
   ]);
 }
 

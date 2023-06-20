@@ -44,7 +44,7 @@ void main() {
         // Bar should be requested because it's new, but not foo.
         'api/packages/bar',
         // Need to download it.
-        'packages/bar/versions/1.2.0.tar.gz'
+        'packages/bar/versions/1.2.0.tar.gz',
       ]),
     );
   });

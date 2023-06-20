@@ -110,7 +110,7 @@ dev_dependencies:
   foo: 1.2.3
 environment:
   sdk: '$defaultSdkConstraint'
-''')
+'''),
     ]).create();
     await pubGet();
 

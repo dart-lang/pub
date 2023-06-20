@@ -107,7 +107,7 @@ class Verbosity {
     Level.message: null,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
+    Level.fine: null,
   });
 
   /// Shows only errors.
@@ -117,7 +117,7 @@ class Verbosity {
     Level.message: null,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
+    Level.fine: null,
   });
 
   /// Shows only errors and warnings.
@@ -127,7 +127,7 @@ class Verbosity {
     Level.message: null,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
+    Level.fine: null,
   });
 
   /// The default verbosity which shows errors, warnings, and messages.
@@ -137,7 +137,7 @@ class Verbosity {
     Level.message: _logToStdout,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
+    Level.fine: null,
   });
 
   /// Shows errors, warnings, messages, and IO event logs.
@@ -147,7 +147,7 @@ class Verbosity {
     Level.message: _logToStdoutWithLabel,
     Level.io: _logToStderrWithLabel,
     Level.solver: null,
-    Level.fine: null
+    Level.fine: null,
   });
 
   /// Shows errors, warnings, messages, and version solver logs.
@@ -157,7 +157,7 @@ class Verbosity {
     Level.message: _logToStdout,
     Level.io: null,
     Level.solver: _logToStdout,
-    Level.fine: null
+    Level.fine: null,
   });
 
   /// Shows all logs.
@@ -167,7 +167,7 @@ class Verbosity {
     Level.message: _logToStdoutWithLabel,
     Level.io: _logToStderrWithLabel,
     Level.solver: _logToStderrWithLabel,
-    Level.fine: _logToStderrWithLabel
+    Level.fine: _logToStderrWithLabel,
   });
 
   /// Shows all logs.
@@ -177,7 +177,7 @@ class Verbosity {
     Level.message: _logToStdoutWithLabel,
     Level.io: _logToStderrWithLabel,
     Level.solver: _logToStderrWithLabel,
-    Level.fine: _logToStderrWithLabel
+    Level.fine: _logToStderrWithLabel,
   });
 
   const Verbosity._(this.name, this._loggers);

@@ -29,7 +29,7 @@ void main() {
         d.dir(
           'bin',
           [d.file('test.dart', 'main(List<String> args) => print("hello");')],
-        )
+        ),
       ],
     );
 
@@ -68,7 +68,7 @@ void main() {
       'test',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('test.dart', _script)])
+        d.dir('bin', [d.file('test.dart', _script)]),
       ],
     );
 
@@ -97,7 +97,7 @@ void main() {
       'test',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('test.dart', _script)])
+        d.dir('bin', [d.file('test.dart', _script)]),
       ],
     );
 
@@ -126,7 +126,7 @@ void main() {
       'test',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('test.dart', _script)])
+        d.dir('bin', [d.file('test.dart', _script)]),
       ],
     );
 

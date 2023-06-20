@@ -460,7 +460,7 @@ Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
       '_PUB_TEST_SDK_VERSION': testVersion,
       if (tokenEndpoint != null) '_PUB_TEST_TOKEN_ENDPOINT': tokenEndpoint,
       if (_globalServer?.port != null)
-        'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}'
+        'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}',
     };
 
 /// The path to the root of pub's sources in the pub repo.
@@ -522,7 +522,7 @@ Future<PubProcess> startPub({
       if (systemRoot != null) 'SYSTEMROOT': systemRoot,
       if (tmp != null) 'TMP': tmp,
     },
-    ...getPubTestEnvironment(tokenEndpoint)
+    ...getPubTestEnvironment(tokenEndpoint),
   };
   for (final e in (environment ?? {}).entries) {
     var value = e.value;
@@ -554,7 +554,7 @@ class PubProcess extends TestProcess {
     return StreamSplitter(
       StreamGroup.merge([
         _outputToLog(super.stdoutStream(), log.Level.message),
-        _outputToLog(super.stderrStream(), log.Level.error)
+        _outputToLog(super.stderrStream(), log.Level.error),
       ]),
     );
   }
@@ -614,7 +614,7 @@ class PubProcess extends TestProcess {
     log.Level.message,
     log.Level.io,
     log.Level.solver,
-    log.Level.fine
+    log.Level.fine,
   ].fold({}, (levels, level) {
     levels[level.name] = level;
     return levels;
@@ -694,7 +694,7 @@ Future<void> createLockFile(
     d.file(
       'pubspec.lock',
       lockFile.serialize(p.join(d.sandbox, package), cache),
-    )
+    ),
   ]).create();
 }
 
@@ -740,7 +740,7 @@ LockFile _createLockFile(
             sha256: null,
           ),
         ),
-      )
+      ),
   ];
 
   return LockFile(packages);
@@ -771,7 +771,7 @@ Map<String, Object> packageMap(
     'name': name,
     'version': version,
     'homepage': 'https://pub.dev',
-    'description': 'A package, I guess.'
+    'description': 'A package, I guess.',
   };
 
   if (dependencies != null) package['dependencies'] = dependencies;

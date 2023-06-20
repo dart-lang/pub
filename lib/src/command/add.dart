@@ -630,7 +630,7 @@ Specify multiple sdk packages with descriptors.''');
               },
               'environment': {
                 'sdk': sdk.version.toString(),
-              }
+              },
             },
             cache.sources,
             // Resolve relative paths relative to current, not where the pubspec.yaml is.

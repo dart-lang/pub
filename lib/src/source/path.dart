@@ -267,7 +267,7 @@ class ResolvedPathDescription extends ResolvedDescription {
         'path': PathSource.relativePathWithPosixSeparators(
           p.relative(description.path, from: containingDir),
         ),
-        'relative': true
+        'relative': true,
       };
     }
     return {'path': description.path, 'relative': p.relative('false')};

@@ -20,7 +20,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -35,7 +35,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git', 'version': '>=1.0.0'}
+        'foo': {'git': '../foo.git', 'version': '>=1.0.0'},
       },
     ).create();
 

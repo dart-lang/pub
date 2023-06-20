@@ -76,7 +76,7 @@ Future<void> main() async {
 
     await d.dir('local_package', [
       d.libDir('local_package'),
-      d.libPubspec('local_package', '0.0.1')
+      d.libPubspec('local_package', '0.0.1'),
     ]).create();
 
     await d.dir(appPath, [
@@ -89,7 +89,7 @@ Future<void> main() async {
           'retracted': '^1.0.0',
         },
         'dev_dependencies': {'builder': '^1.0.0'},
-      })
+      }),
     ]).create();
     await pubGet();
     builder
@@ -107,7 +107,7 @@ Future<void> main() async {
         deps: {
           'transitive': '^1.0.0',
           'transitive3': '^1.0.0',
-          'dev_trans': '^1.0.0'
+          'dev_trans': '^1.0.0',
         },
       )
       ..serve('builder', '3.0.0-alpha', deps: {'transitive': '^1.0.0'})
@@ -138,7 +138,7 @@ Future<void> main() async {
           'bar': '^1.0.0',
           'baz': '^1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
     builder.discontinue('foo');
@@ -157,7 +157,7 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
         },
-      })
+      }),
     ]).create();
 
     await pubGet();
@@ -175,7 +175,7 @@ Future<void> main() async {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
         },
-      })
+      }),
     ]).create();
 
     await servePackages()
@@ -217,12 +217,12 @@ Future<void> main() async {
         },
         'dependency_overrides': {
           'foo': {
-            'git': {'url': '../foo.git'}
+            'git': {'url': '../foo.git'},
           },
           'bar': {'path': '../bar'},
-          'baz': '2.0.0'
+          'baz': '2.0.0',
         },
-      })
+      }),
     ]).create();
 
     await pubGet();
@@ -250,7 +250,7 @@ Future<void> main() async {
           'foo': '1.0.0',
           'bar': '1.0.0',
         },
-      })
+      }),
     ]).create();
 
     await pubGet();
@@ -278,9 +278,9 @@ Future<void> main() async {
         'dependencies': {
           'foo': '1.0.0-dev.1',
           'bar': '^0.9.0',
-          'mop': '0.10.0-dev'
+          'mop': '0.10.0-dev',
         },
-      })
+      }),
     ]).create();
 
     await pubGet();
@@ -294,21 +294,21 @@ Future<void> main() async {
         'foo',
         '1.0.0',
         pubspec: {
-          'environment': {'sdk': '>=2.10.0 <3.0.0'}
+          'environment': {'sdk': '>=2.10.0 <3.0.0'},
         },
       )
       ..serve(
         'foo',
         '1.1.0',
         pubspec: {
-          'environment': {'sdk': '>=2.10.0 <3.0.0'}
+          'environment': {'sdk': '>=2.10.0 <3.0.0'},
         },
       )
       ..serve(
         'foo',
         '2.0.0',
         pubspec: {
-          'environment': {'sdk': '>=2.12.0 <3.0.0'}
+          'environment': {'sdk': '>=2.12.0 <3.0.0'},
         },
       );
 
@@ -341,13 +341,13 @@ Future<void> main() async {
             'sdk': 'flutter',
           },
         },
-      })
+      }),
     ]).create();
 
     await pubGet(
       environment: {
         'FLUTTER_ROOT': d.path('flutter-root'),
-        '_PUB_TEST_SDK_VERSION': '2.13.0'
+        '_PUB_TEST_SDK_VERSION': '2.13.0',
       },
     );
 

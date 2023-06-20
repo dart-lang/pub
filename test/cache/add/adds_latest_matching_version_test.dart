@@ -35,7 +35,7 @@ void main() {
     await d.hostedCache([
       d.nothing('foo-1.2.2'),
       d.nothing('foo-2.0.0-dev'),
-      d.nothing('foo-2.0.0')
+      d.nothing('foo-2.0.0'),
     ]).validate();
   });
 }

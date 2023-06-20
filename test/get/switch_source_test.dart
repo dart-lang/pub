@@ -19,7 +19,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': '../foo'}
+        'foo': {'path': '../foo'},
       },
     ).create();
 

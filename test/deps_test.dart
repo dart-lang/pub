@@ -38,11 +38,11 @@ void main() {
         'dependencies': {
           'normal': 'any',
           'overridden': '1.0.0',
-          'from_path': {'path': '../from_path'}
+          'from_path': {'path': '../from_path'},
         },
         'dev_dependencies': {'unittest': 'any'},
-        'dependency_overrides': {'overridden': '2.0.0', 'override_only': 'any'}
-      })
+        'dependency_overrides': {'overridden': '2.0.0', 'override_only': 'any'},
+      }),
     ]).create();
   });
 

@@ -105,15 +105,15 @@ class PackageServer {
                     'archive_sha256': version.sha256 ??
                         hexEncode(
                           (await sha256.bind(version.contents()).first).bytes,
-                        )
-                }
+                        ),
+                },
             ],
             if (package.isDiscontinued) 'isDiscontinued': true,
             if (package.discontinuedReplacementText != null)
               'replacedBy': package.discontinuedReplacementText,
           }),
           headers: {
-            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'
+            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json',
           },
         );
       },
@@ -140,7 +140,7 @@ class PackageServer {
           if (packageVersion.version == version) {
             final headers = packageVersion.headers ?? {};
             headers[HttpHeaders.contentTypeHeader] ??= [
-              'application/octet-stream'
+              'application/octet-stream',
             ];
 
             // This gate enables tests to validate the CRC32C parser by
@@ -247,7 +247,7 @@ class PackageServer {
     var pubspecFields = <String, dynamic>{
       'name': name,
       'version': version,
-      'environment': {'sdk': sdk ?? '^3.0.0'}
+      'environment': {'sdk': sdk ?? '^3.0.0'},
     };
     if (pubspec != null) pubspecFields.addAll(pubspec);
     if (deps != null) pubspecFields['dependencies'] = deps;

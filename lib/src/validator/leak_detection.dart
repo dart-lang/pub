@@ -85,7 +85,7 @@ class LeakDetectionValidator extends Validator {
           if (files.length > 10) '...',
           '',
           'Add git-ignore style patterns to `false_secrets` in `pubspec.yaml`',
-          'to ignore this. See $_falseSecretsDocumentationLink'
+          'to ignore this. See $_falseSecretsDocumentationLink',
         ].join('\n'),
       );
     } else if (leaks.isNotEmpty) {

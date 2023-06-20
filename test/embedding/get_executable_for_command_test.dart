@@ -61,7 +61,7 @@ Future<void> testGetExecutable(
 Future<void> main() async {
   test('Finds a direct dart-file without pub get', () async {
     await d.dir('foo', [
-      d.dir('bar', [d.file('bar.dart', 'main() {print(42);}')])
+      d.dir('bar', [d.file('bar.dart', 'main() {print(42);}')]),
     ]).create();
     final dir = d.path('foo');
 
@@ -86,7 +86,7 @@ Future<void> main() async {
 
   test('Looks for file when no pubspec.yaml', () async {
     await d.dir('foo', [
-      d.dir('bar', [d.file('bar.dart', 'main() {print(42);}')])
+      d.dir('bar', [d.file('bar.dart', 'main() {print(42);}')]),
     ]).create();
     final dir = d.path('foo');
 
@@ -143,11 +143,11 @@ Future<void> main() async {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^$_currentVersion'},
-        'dependencies': {'foo': '^1.0.0'}
+        'dependencies': {'foo': '^1.0.0'},
       }),
       d.dir('bin', [
         d.file('myapp.dart', 'main() {print(42);}'),
-      ])
+      ]),
     ]).create();
 
     await servePackages();
@@ -184,7 +184,7 @@ Future<void> main() async {
       }),
       d.dir('bin', [
         d.file('foo.dart', 'main() {'),
-      ])
+      ]),
     ]).create();
 
     await servePackages();
@@ -204,13 +204,13 @@ Future<void> main() async {
       'foo',
       '1.0.0',
       pubspec: {
-        'environment': {'sdk': '^$_currentVersion'}
+        'environment': {'sdk': '^$_currentVersion'},
       },
       contents: [
         d.dir('bin', [
           d.file('foo.dart', 'main() {print(42);}'),
-          d.file('tool.dart', 'main() {print(42);}')
-        ])
+          d.file('tool.dart', 'main() {print(42);}'),
+        ]),
       ],
     );
 
@@ -230,8 +230,8 @@ Future<void> main() async {
       }),
       d.dir('bin', [
         d.file('myapp.dart', 'main() {print(42);}'),
-        d.file('tool.dart', 'main() {print(42);}')
-      ])
+        d.file('tool.dart', 'main() {print(42);}'),
+      ]),
     ]).create();
     final dir = d.path(appPath);
 

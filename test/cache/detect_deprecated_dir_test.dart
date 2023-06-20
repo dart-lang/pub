@@ -11,7 +11,7 @@ void main() async {
   test('Detects and warns about old cache dir', skip: !Platform.isWindows,
       () async {
     await d.dir('APPDATA', [
-      d.dir('Pub', [d.dir('Cache')])
+      d.dir('Pub', [d.dir('Cache')]),
     ]).create();
     final server = await servePackages();
     server.serve('foo', '1.0.0');

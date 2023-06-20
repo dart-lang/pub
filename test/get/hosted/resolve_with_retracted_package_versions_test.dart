@@ -93,14 +93,14 @@ void main() {
     await populateCache(
       {
         'foo': ['1.0.0'],
-        'bar': ['1.0.0', '1.1.0']
+        'bar': ['1.0.0', '1.1.0'],
       },
       server,
     );
 
     await d.cacheDir({
       'foo': '1.0.0',
-      'bar': ['1.0.0', '1.1.0']
+      'bar': ['1.0.0', '1.1.0'],
     }).validate();
 
     final barVersionsCache =
@@ -148,8 +148,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': '<3.0.0'},
-        'dependency_overrides': {'foo': '2.0.0'}
-      })
+        'dependency_overrides': {'foo': '2.0.0'},
+      }),
     ]).create();
 
     server.retractPackageVersion('foo', '2.0.0');
@@ -182,8 +182,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': '<=3.0.0'},
-        'dependency_overrides': {'foo': '2.0.0'}
-      })
+        'dependency_overrides': {'foo': '2.0.0'},
+      }),
     ]).create();
 
     await pubUpgrade();

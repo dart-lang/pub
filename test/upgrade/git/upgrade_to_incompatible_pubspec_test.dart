@@ -19,7 +19,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -31,7 +31,7 @@ void main() {
           d.gitPackageRepoCacheDir('foo'),
         ]),
         d.gitPackageRevisionCacheDir('foo'),
-      ])
+      ]),
     ]).validate();
 
     var originalFooSpec = packageSpec('foo');

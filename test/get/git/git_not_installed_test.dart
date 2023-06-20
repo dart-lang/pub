@@ -24,7 +24,7 @@ echo "not git"
     );
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -61,7 +61,7 @@ if "%1"=="--version" (
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 

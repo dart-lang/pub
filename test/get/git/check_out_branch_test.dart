@@ -26,8 +26,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'ref': 'old'}
-        }
+          'git': {'url': '../foo.git', 'ref': 'old'},
+        },
       },
     ).create();
 
@@ -39,7 +39,7 @@ void main() {
           d.gitPackageRepoCacheDir('foo'),
         ]),
         d.gitPackageRevisionCacheDir('foo', modifier: 1),
-      ])
+      ]),
     ]).validate();
   });
 }

@@ -19,15 +19,15 @@ void main() {
           d.dir('bin', [
             d.file('foo.dart', r'''
 import 'package:bar/bar.dart';
-main(args) => print('bar $version');''')
-          ])
+main(args) => print('bar $version');'''),
+          ]),
         ],
       )
       ..serve(
         'bar',
         '1.0.0',
         contents: [
-          d.dir('lib', [d.file('bar.dart', 'final version = "1.0.0";')])
+          d.dir('lib', [d.file('bar.dart', 'final version = "1.0.0";')]),
         ],
       );
 
@@ -53,7 +53,7 @@ Activated foo 1.0.0.''',
       'bar',
       '2.0.0',
       contents: [
-        d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')])
+        d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')]),
       ],
     );
 

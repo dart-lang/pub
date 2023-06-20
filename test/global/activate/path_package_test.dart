@@ -13,7 +13,7 @@ void main() {
   test('activates a package at a local path', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     var path = canonicalize(p.join(d.sandbox, 'foo'));
@@ -31,7 +31,7 @@ void main() {
         'foo',
         '1.0.0',
         deps: {
-          'bar': {'path': '../bar'}
+          'bar': {'path': '../bar'},
         },
       ),
       d.dir('bin', [
@@ -39,13 +39,13 @@ void main() {
         import 'package:bar/bar.dart';
 
         main() => print(value);
-      """)
-      ])
+      """),
+      ]),
     ]).create();
 
     await d.dir('bar', [
       d.libPubspec('bar', '1.0.0'),
-      d.dir('lib', [d.file('bar.dart', "final value = 'ok';")])
+      d.dir('lib', [d.file('bar.dart', "final value = 'ok';")]),
     ]).create();
 
     var path = canonicalize(p.join(d.sandbox, 'foo'));
@@ -67,13 +67,13 @@ void main() {
       'bar',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('bar.dart', "main() => print('bar');")])
+        d.dir('bin', [d.file('bar.dart', "main() => print('bar');")]),
       ],
     );
 
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0', deps: {'bar': '^1.0.0'}),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(

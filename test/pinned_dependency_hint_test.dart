@@ -16,11 +16,11 @@ main() {
         d.dir(
           'flutter_foo',
           [
-            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'})
+            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'}),
           ],
-        )
+        ),
       ]),
-      d.file('version', '1.2.3')
+      d.file('version', '1.2.3'),
     ]).create();
     await servePackages()
       ..serve('bar', '1.0.0', deps: {'tool': '^2.0.0'})
@@ -30,7 +30,7 @@ main() {
     await d.appDir(
       dependencies: {
         'bar': 'any',
-        'flutter_foo': {'sdk': 'flutter'}
+        'flutter_foo': {'sdk': 'flutter'},
       },
     ).create();
     await pubGet(
@@ -48,11 +48,11 @@ main() {
         d.dir(
           'flutter_foo',
           [
-            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'})
+            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'}),
           ],
-        )
+        ),
       ]),
-      d.file('version', '1.2.3')
+      d.file('version', '1.2.3'),
     ]).create();
     await servePackages()
       ..serve('tool', '1.0.0', deps: {'bar': '^2.0.0'})
@@ -61,7 +61,7 @@ main() {
     await d.appDir(
       dependencies: {
         'bar': 'any',
-        'flutter_foo': {'sdk': 'flutter'}
+        'flutter_foo': {'sdk': 'flutter'},
       },
     ).create();
     await pubGet(

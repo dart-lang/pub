@@ -42,7 +42,7 @@ class PackageGraph {
             : Package(
                 result.pubspecs[id.name]!,
                 entrypoint.cache.getDirectory(id),
-              )
+              ),
     };
 
     return PackageGraph(entrypoint, packages);

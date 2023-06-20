@@ -23,8 +23,8 @@ void main() {
             d.dir(
               'subdir',
               [d.file('sub.dart', "void main() => print('sub!');")],
-            )
-          ])
+            ),
+          ]),
         ],
       );
 
@@ -42,8 +42,8 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
           d.file('goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
           d.nothing('shell.sh-$versionSuffix.snapshot'),
-          d.nothing('subdir')
-        ])
+          d.nothing('subdir'),
+        ]),
       ]).validate();
 
       var process = await pubRun(args: ['foo:hello']);
@@ -68,8 +68,8 @@ void main() {
               d.dir(
                 'subdir',
                 [d.file('sub.dart', "void main() => print('sub!');")],
-              )
-            ])
+              ),
+            ]),
           ],
         )
         ..serve('bar', '1.2.3', deps: {'foo': '1.2.3'});
@@ -88,8 +88,8 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
           d.file('goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
           d.nothing('shell.sh-$versionSuffix.snapshot'),
-          d.nothing('subdir')
-        ])
+          d.nothing('subdir'),
+        ]),
       ]).validate();
 
       var process = await pubRun(args: ['foo:hello']);
@@ -111,7 +111,7 @@ void main() {
             d.dir(
               'bin',
               [d.file('hello.dart', "void main() => print('hello!');")],
-            )
+            ),
           ],
         );
 
@@ -123,7 +123,7 @@ void main() {
         );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
         ]).validate();
 
         server.serve(
@@ -133,7 +133,7 @@ void main() {
             d.dir(
               'bin',
               [d.file('hello.dart', "void main() => print('hello 2!');")],
-            )
+            ),
           ],
         );
 
@@ -143,7 +143,7 @@ void main() {
         );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!')),
         ]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -158,7 +158,7 @@ void main() {
           'foo',
           '1.2.3',
           pubspec: {
-            'dependencies': {'bar': 'any'}
+            'dependencies': {'bar': 'any'},
           },
           contents: [
             d.dir('bin', [
@@ -166,15 +166,15 @@ void main() {
             import 'package:bar/bar.dart';
 
             void main() => print(message);
-          """)
-            ])
+          """),
+            ]),
           ],
         );
         server.serve(
           'bar',
           '1.2.3',
           contents: [
-            d.dir('lib', [d.file('bar.dart', "final message = 'hello!';")])
+            d.dir('lib', [d.file('bar.dart', "final message = 'hello!';")]),
           ],
         );
 
@@ -186,7 +186,7 @@ void main() {
         );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
         ]).validate();
 
         server.serve(
@@ -203,7 +203,7 @@ void main() {
         );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!')),
         ]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -219,12 +219,12 @@ void main() {
           d.dir(
             'bin',
             [d.file('hello.dart', "void main() => print('Hello!');")],
-          )
+          ),
         ]).create();
 
         await d.appDir(
           dependencies: {
-            'foo': {'git': '../foo.git'}
+            'foo': {'git': '../foo.git'},
           },
         ).create();
 
@@ -234,14 +234,14 @@ void main() {
         );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('Hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('Hello!')),
         ]).validate();
 
         await d.git('foo.git', [
           d.dir(
             'bin',
             [d.file('hello.dart', "void main() => print('Goodbye!');")],
-          )
+          ),
         ]).commit();
 
         await pubUpgrade(
@@ -250,7 +250,7 @@ void main() {
         );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('Goodbye!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('Goodbye!')),
         ]).validate();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -267,7 +267,7 @@ void main() {
             d.dir(
               'bin',
               [d.file('hello.dart', "void main() => print('hello!');")],
-            )
+            ),
           ],
         );
 
@@ -279,7 +279,7 @@ void main() {
           d.dir(
             'foo',
             [d.outOfDateSnapshot('hello.dart-$versionSuffix.snapshot')],
-          )
+          ),
         ]).create();
 
         var process = await pubRun(args: ['foo:hello']);
@@ -292,8 +292,8 @@ void main() {
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.dir('foo', [
-            d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
-          ])
+            d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
+          ]),
         ]).validate();
       });
     });

@@ -210,7 +210,7 @@ class PackageLister {
         Incompatibility(
           [Term(id.toRange(), true)],
           NoVersionsIncompatibilityCause(),
-        )
+        ),
       ];
     } on PackageNotFoundException {
       // We can only get here if the lockfile refers to a specific package
@@ -220,7 +220,7 @@ class PackageLister {
         Incompatibility(
           [Term(id.toRange(), true)],
           NoVersionsIncompatibilityCause(),
-        )
+        ),
       ];
     }
 
@@ -240,7 +240,7 @@ class PackageLister {
                 pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
                 sdk,
               ),
-            )
+            ),
           ];
         }
       }

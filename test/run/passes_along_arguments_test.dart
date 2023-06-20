@@ -17,7 +17,7 @@ void main() {
   test('passes arguments to the spawned script', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('args.dart', _script)])
+      d.dir('bin', [d.file('args.dart', _script)]),
     ]).create();
 
     await pubGet();

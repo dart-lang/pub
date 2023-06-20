@@ -11,7 +11,7 @@ void main() {
   test("doesn't snapshots the executables for a path package", () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('hello.dart', "void main() => print('hello!');")])
+      d.dir('bin', [d.file('hello.dart', "void main() => print('hello!');")]),
     ]).create();
 
     await runPub(
@@ -24,8 +24,8 @@ void main() {
         d.dir(
           'foo',
           [d.file('pubspec.lock', contains('1.0.0')), d.nothing('bin')],
-        )
-      ])
+        ),
+      ]),
     ]).validate();
   });
 }

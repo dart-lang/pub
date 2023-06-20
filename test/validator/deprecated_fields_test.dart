@@ -23,8 +23,8 @@ void main() {
   test('should warn if pubspec has a transformers section', () async {
     await d.dir(appPath, [
       d.pubspec({
-        'transformers': ['some_transformer']
-      })
+        'transformers': ['some_transformer'],
+      }),
     ]).create();
 
     await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);
@@ -33,8 +33,8 @@ void main() {
   test('should warn if pubspec has a web section', () async {
     await d.dir(appPath, [
       d.pubspec({
-        'web': {'compiler': 'dartdevc'}
-      })
+        'web': {'compiler': 'dartdevc'},
+      }),
     ]).create();
 
     await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);
@@ -42,7 +42,7 @@ void main() {
 
   test('should warn if pubspec has an author', () async {
     await d.dir(appPath, [
-      d.pubspec({'author': 'Ronald <ronald@example.com>'})
+      d.pubspec({'author': 'Ronald <ronald@example.com>'}),
     ]).create();
 
     await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);
@@ -51,8 +51,8 @@ void main() {
   test('should warn if pubspec has a list of authors', () async {
     await d.dir(appPath, [
       d.pubspec({
-        'authors': ['Ronald <ronald@example.com>', 'Joe <joe@example.com>']
-      })
+        'authors': ['Ronald <ronald@example.com>', 'Joe <joe@example.com>'],
+      }),
     ]).create();
 
     await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);

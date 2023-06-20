@@ -21,7 +21,7 @@ void main() {
   test('allows a ".dart" extension on the argument', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('script.dart', _script)])
+      d.dir('bin', [d.file('script.dart', _script)]),
     ]).create();
 
     await pubGet();

@@ -17,13 +17,13 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'script': null}
+        'executables': {'script': null},
       },
       contents: [
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 

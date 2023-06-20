@@ -25,10 +25,10 @@ void main() {
           d.pubspec({
             'name': 'app_example',
             'dependencies': {
-              'myapp': {'path': '..'}
-            }
-          })
-        ])
+              'myapp': {'path': '..'},
+            },
+          }),
+        ]),
       ]).create();
 
       await pubCommand(command, args: ['--no-example']);
@@ -65,10 +65,10 @@ Got dependencies in $dotExample.''',
           d.pubspec({
             'name': 'broken name',
             'dependencies': {
-              'myapp': {'path': '..'}
-            }
-          })
-        ])
+              'myapp': {'path': '..'},
+            },
+          }),
+        ]),
       ]).create();
       await pubGet(
         args: ['--example'],

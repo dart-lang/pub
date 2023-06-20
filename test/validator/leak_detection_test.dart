@@ -23,7 +23,7 @@ void main() {
           d.file('test_pkg.dart', '''
             void main() => print('nothing secret here');
           '''),
-        ])
+        ]),
       ]).create();
       await expectValidationDeprecated(leakDetection);
     });
@@ -41,7 +41,7 @@ void main() {
           d.file('test_pkg.dart', '''
             void main() => print('Revoked AWS key: AKIAVBOGPFGGW6HQOSMY');
           '''),
-        ])
+        ]),
       ]).create();
       await expectValidationDeprecated(leakDetection, errors: isEmpty);
     });
@@ -55,7 +55,7 @@ void main() {
           d.file('test_pkg.dart', '''
             void main() => print('Revoked AWS key: AKIAVBOGPFGGW6HQOSMY');
           '''),
-        ])
+        ]),
       ]).create();
       await expectValidationDeprecated(leakDetection, errors: isNotEmpty);
     });
@@ -80,7 +80,7 @@ void main() {
               'AIzaSyAazCCPl4tWkSuDt9XBWRTpHxroViYhSxg',
             ];
           '''),
-        ])
+        ]),
       ]).create();
       await expectValidationDeprecated(
         leakDetection,
@@ -115,7 +115,7 @@ void main() {
               'AIzaSyAazCCPl4tWkSuDt9XBWRTpHxroViYhSxg',
             ];
           '''),
-        ])
+        ]),
       ]).create();
       await expectValidationDeprecated(
         leakDetection,

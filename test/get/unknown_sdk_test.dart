@@ -12,8 +12,8 @@ void main() {
   test('pub get barks at unknown sdk', () async {
     await d.dir(appPath, [
       d.pubspec({
-        'environment': {'foo': '>=1.2.4 <2.0.0'}
-      })
+        'environment': {'foo': '>=1.2.4 <2.0.0'},
+      }),
     ]).create();
 
     await pubGet(

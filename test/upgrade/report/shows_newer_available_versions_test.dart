@@ -40,7 +40,7 @@ void main() {
         'no_newer': '1.0.0',
         'one_newer_unstable': '1.0.0',
         'one_newer_unstable2': '1.0.1-unstable.1',
-        'one_newer_stable': '1.0.0'
+        'one_newer_stable': '1.0.0',
       },
     ).create();
 

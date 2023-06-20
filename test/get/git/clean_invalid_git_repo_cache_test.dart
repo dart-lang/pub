@@ -34,7 +34,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -43,8 +43,8 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     _invalidateGitCache('foo');
@@ -63,8 +63,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'ref': 'old'}
-        }
+          'git': {'url': '../foo.git', 'ref': 'old'},
+        },
       },
     ).create();
 
@@ -73,8 +73,8 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     _invalidateGitCache('foo');
@@ -93,8 +93,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'ref': commit}
-        }
+          'git': {'url': '../foo.git', 'ref': commit},
+        },
       },
     ).create();
 
@@ -103,8 +103,8 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     _invalidateGitCache('foo');

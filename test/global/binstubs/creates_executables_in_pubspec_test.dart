@@ -14,14 +14,14 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'one': null, 'two-renamed': 'second'}
+        'executables': {'one': null, 'two-renamed': 'second'},
       },
       contents: [
         d.dir('bin', [
           d.file('one.dart', "main(args) => print('one');"),
           d.file('second.dart', "main(args) => print('two');"),
-          d.file('nope.dart', "main(args) => print('nope');")
-        ])
+          d.file('nope.dart', "main(args) => print('nope');"),
+        ]),
       ],
     );
 
@@ -35,8 +35,8 @@ void main() {
         d.file(binStubName('one'), contains('one')),
         d.file(binStubName('two-renamed'), contains('second')),
         d.nothing(binStubName('two')),
-        d.nothing(binStubName('nope'))
-      ])
+        d.nothing(binStubName('nope')),
+      ]),
     ]).validate();
   });
 }

@@ -22,9 +22,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
@@ -42,19 +42,19 @@ void main() {
           'foo',
           '0.0.1',
           deps: {
-            'bar': {'path': '../bar'}
+            'bar': {'path': '../bar'},
           },
-        )
+        ),
       ]),
-      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')])
+      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../relative/foo'}
+          'foo': {'path': '../relative/foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
@@ -74,19 +74,19 @@ void main() {
           'foo',
           '0.0.1',
           deps: {
-            'bar': {'path': '../bar'}
+            'bar': {'path': '../bar'},
           },
-        )
+        ),
       ]),
-      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')])
+      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../relative/foo'}
+          'foo': {'path': '../relative/foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet(
@@ -108,9 +108,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();

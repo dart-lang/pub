@@ -17,16 +17,16 @@ void main() {
 import "package:foo/foo.dart";
 
 main() => print(value);
-''')
-      ])
+'''),
+      ]),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();

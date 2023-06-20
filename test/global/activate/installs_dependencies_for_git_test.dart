@@ -15,14 +15,14 @@ void main() {
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0', deps: {'bar': 'any'}),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(
       args: ['global', 'activate', '-sgit', '../foo.git'],
       silent: allOf([
         contains('Downloading bar 1.0.0...'),
-        contains('Downloading baz 1.0.0...')
+        contains('Downloading baz 1.0.0...'),
       ]),
     );
   });

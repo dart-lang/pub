@@ -13,7 +13,7 @@ void main() {
   test('deactivates an active path package', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);

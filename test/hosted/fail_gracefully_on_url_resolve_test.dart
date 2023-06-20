@@ -15,10 +15,10 @@ void main() {
         d.appPubspec(
           dependencies: {
             'foo': {
-              'hosted': {'name': 'foo', 'url': 'https://invalid-url.foo'}
-            }
+              'hosted': {'name': 'foo', 'url': 'https://invalid-url.foo'},
+            },
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(

@@ -31,7 +31,7 @@ void main() {
       args: ['cache', 'add', 'foo', '--all'],
       silent: allOf([
         contains('Downloading foo 1.2.2...'),
-        contains('Downloading foo 2.0.0...')
+        contains('Downloading foo 2.0.0...'),
       ]),
       output: '''
 Already cached foo 1.2.1.
