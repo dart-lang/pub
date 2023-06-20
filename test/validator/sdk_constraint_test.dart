@@ -62,7 +62,10 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0-dev.1',
-          'environment': {'sdk': '>=2.0.0-dev.51.0 <2.0.0', 'fuchsia': '^1.2.3'},
+          'environment': {
+            'sdk': '>=2.0.0-dev.51.0 <2.0.0',
+            'fuchsia': '^1.2.3'
+          },
         }),
       ]).create();
       await expectValidationDeprecated(sdkConstraint);

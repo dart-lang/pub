@@ -21,7 +21,8 @@ void main() {
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir('global_packages/foo/bin', [d.file('script.dart.snapshot', 'junk')]),
+      d.dir(
+          'global_packages/foo/bin', [d.file('script.dart.snapshot', 'junk')]),
     ]).create();
 
     await runPub(

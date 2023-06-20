@@ -20,8 +20,9 @@ void main() {
         '1.0.0',
         deps: {
           'bar': {
-            'git':
-                p.toUri(p.absolute(d.sandbox, appPath, '../bar.git')).toString(),
+            'git': p
+                .toUri(p.absolute(d.sandbox, appPath, '../bar.git'))
+                .toString(),
           },
         },
       ),
