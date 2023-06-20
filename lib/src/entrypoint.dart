@@ -167,10 +167,14 @@ class Entrypoint {
   ///
   /// Throws a [DataError] if the `.dart_tool/package_config.json` file isn't
   /// up-to-date relative to the pubspec and the lockfile.
-  PackageGraph get packageGraph => _packageGraph ??= _createPackageGraph();
+  Future<PackageGraph> get packageGraph =>
+      _packageGraph ??= _createPackageGraph();
 
-  PackageGraph _createPackageGraph() {
-    ensureUpToDate(); // TODO, really?
+  Future<PackageGraph> _createPackageGraph() async {
+    // TODO(sigurdm): consider having [ensureUptoDate] and [AcquireDependencies]
+    // return the package-graph, such it by construction will always made from an
+    // up-to-date package-config.
+    await ensureUpToDate();
     var packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
@@ -184,7 +188,7 @@ class Entrypoint {
     return PackageGraph(this, packages);
   }
 
-  PackageGraph? _packageGraph;
+  Future<PackageGraph>? _packageGraph;
 
   /// Where the lock file and package configurations are to be found.
   ///
@@ -275,7 +279,8 @@ class Entrypoint {
     SolveResult? solveResult,
   }) : rootDir = _root.dir {
     if (solveResult != null) {
-      _packageGraph = PackageGraph.fromSolveResult(this, solveResult);
+      _packageGraph =
+          Future.value(PackageGraph.fromSolveResult(this, solveResult));
     }
   }
 
@@ -421,7 +426,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
-      _packageGraph = PackageGraph.fromSolveResult(this, result);
+      _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
 
       await writePackageConfigFile();
 
@@ -429,7 +434,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         if (precompile) {
           await precompileExecutables();
         } else {
-          _deleteExecutableSnapshots(changed: result.changedPackages);
+          await _deleteExecutableSnapshots(changed: result.changedPackages);
         }
       } catch (error, stackTrace) {
         // Just log exceptions here. Since the method is just about acquiring
@@ -446,7 +451,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   ///
   /// Except globally activated packages they should precompile executables from
   /// the package itself if they are immutable.
-  List<Executable> get _builtExecutables {
+  Future<List<Executable>> get _builtExecutables async {
     if (isGlobal) {
       if (isCached) {
         return root.executablePaths
@@ -456,8 +461,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return <Executable>[];
       }
     }
+    final graph = await packageGraph;
     final r = root.immediateDependencies.keys.expand((packageName) {
-      final package = packageGraph.packages[packageName]!;
+      final package = graph.packages[packageName]!;
       return package.executablePaths
           .map((path) => Executable(packageName, path));
     }).toList();
@@ -466,7 +472,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
   /// Precompiles all [_builtExecutables].
   Future<void> precompileExecutables() async {
-    final executables = _builtExecutables;
+    final executables = await _builtExecutables;
 
     if (executables.isEmpty) return;
 
@@ -524,7 +530,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     final package = executable.package;
 
     await dart.precompile(
-      executablePath: resolveExecutable(executable),
+      executablePath: await resolveExecutable(executable),
       outputPath: pathOfExecutable(executable),
       incrementalDillPath: incrementalDillPathOfExecutable(executable),
       packageConfigPath: packageConfigPath,
@@ -572,9 +578,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   }
 
   /// The absolute path of [executable] resolved relative to [this].
-  String resolveExecutable(Executable executable) {
+  Future<String> resolveExecutable(Executable executable) async {
     return p.join(
-      packageGraph.packages[executable.package]!.dir,
+      (await packageGraph).packages[executable.package]!.dir,
       executable.relativePath,
     );
   }
@@ -583,7 +589,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   ///
   /// If [changed] is passed, only dependencies whose contents might be changed
   /// if one of the given packages changes will have their executables deleted.
-  void _deleteExecutableSnapshots({Iterable<String>? changed}) {
+  Future<void> _deleteExecutableSnapshots({Iterable<String>? changed}) async {
     if (!dirExists(_snapshotPath)) return;
 
     // If we don't know what changed, we can't safely re-use any snapshots.
@@ -603,15 +609,15 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       deleteEntry(_snapshotPath);
       return;
     }
+    final graph = await packageGraph;
 
     // Clean out any outdated snapshots.
     for (var entry in listDir(_snapshotPath)) {
       if (!dirExists(entry)) continue;
-
       var package = p.basename(entry);
-      if (!packageGraph.packages.containsKey(package) ||
-          packageGraph.isPackageMutable(package) ||
-          packageGraph
+      if (!graph.packages.containsKey(package) ||
+          graph.isPackageMutable(package) ||
+          graph
               .transitiveDependencies(package)
               .any((dep) => changedDeps.contains(dep.name))) {
         deleteEntry(entry);
