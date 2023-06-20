@@ -17,9 +17,7 @@ Got dependencies in ./example.
 ## Section 1
 $ pub upgrade --major-versions --directory example
 Resolving dependencies in example...
-  bar 2.0.0
 > foo 2.0.0 (was 1.0.0)
-  myapp 0.0.0 from path .
 Changed 1 dependency in example!
 
 Changed 1 constraint in pubspec.yaml:

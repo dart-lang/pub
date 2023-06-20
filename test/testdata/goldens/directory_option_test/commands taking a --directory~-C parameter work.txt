@@ -78,7 +78,6 @@ $ pub get bar -C 'myapp/broken_dir'
 ## Section 8
 $ pub downgrade -C myapp
 Resolving dependencies in myapp...
-  foo 1.0.0
 No dependencies changed in myapp.
 Resolving dependencies in myapp/example...
 Got dependencies in myapp/example.
@@ -88,7 +87,6 @@ Got dependencies in myapp/example.
 ## Section 9
 $ pub upgrade bar -C myapp
 Resolving dependencies in myapp...
-  foo 1.0.0
 No dependencies changed in myapp.
 Resolving dependencies in myapp/example...
 Got dependencies in myapp/example.

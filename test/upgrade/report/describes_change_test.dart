@@ -101,7 +101,6 @@ void main() {
         contains(
           '* description_changed 1.0.0 from path ..${separator}description_changed_2 (was 1.0.0 from path ..${separator}description_changed_1)',
         ),
-        contains('  unchanged 1.0.0'),
         contains(
           '* source_changed 2.0.0 from path ..${separator}source_changed (was 1.0.0)',
         ),

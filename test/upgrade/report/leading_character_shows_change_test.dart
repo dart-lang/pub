@@ -79,7 +79,6 @@ Resolving dependencies\.\.\..*
 < downgraded .*
 ! overridden .*
 \* source_changed .*
-  unchanged .*
 > upgraded .*
 These packages are no longer being depended on:
 - removed .*

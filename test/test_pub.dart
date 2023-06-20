@@ -104,7 +104,9 @@ Try `dart pub outdated` for more information.$)'''),
   );
   static final downgrade = RunCommand(
     'downgrade',
-    RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'),
+    RegExp(r'''(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
+\d+ packages? (has|have) newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.$)'''),
   );
   static final remove = RunCommand(
     'remove',
