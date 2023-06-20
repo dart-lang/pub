@@ -64,7 +64,7 @@ void main() {
           'version': '1.0.0-dev.1',
           'environment': {
             'sdk': '>=2.0.0-dev.51.0 <2.0.0',
-            'fuchsia': '^1.2.3'
+            'fuchsia': '^1.2.3',
           },
         }),
       ]).create();

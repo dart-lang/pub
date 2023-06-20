@@ -26,7 +26,7 @@ void main() {
     await d.dir(cachePath, [
       d.dir('bin', [
         d.file(
-            binStubName('foo-script'), contains('pub global run foo:script')),
+            binStubName('foo-script'), contains('pub global run foo:script'),),
       ]),
     ]).validate();
   });
