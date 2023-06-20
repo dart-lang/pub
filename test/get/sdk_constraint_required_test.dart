@@ -40,7 +40,7 @@ void main() {
       d.rawPubspec(
         {
           'name': 'myapp',
-          'environment': {'sdk': '>=2.9.0 <4.0.0'}
+          'environment': {'sdk': '>=2.9.0 <4.0.0'},
         },
       ),
     ]).create();

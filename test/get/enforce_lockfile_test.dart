@@ -57,10 +57,10 @@ Try running `dart pub get` to create `pubspec.lock`.
           '0.0.0',
           deps: {
             'bar': '1.0.0',
-            'myapp': {'path': '../'}
+            'myapp': {'path': '../'},
           },
-        )
-      ])
+        ),
+      ]),
     ]).create();
     await pubGet(args: ['--example']);
 

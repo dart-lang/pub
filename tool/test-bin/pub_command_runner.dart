@@ -68,7 +68,7 @@ class RunCommand extends Command<int> {
       [
         if (packageConfig != null) '--packages=$packageConfig',
         executable.executable,
-        ...argResults!.rest.skip(1)
+        ...argResults!.rest.skip(1),
       ],
       mode: ProcessStartMode.inheritStdio,
     );
@@ -171,7 +171,7 @@ class _LoggingAnalytics extends AnalyticsMock {
       'variableName': variableName,
       'time': time,
       'category': category,
-      'label': label
+      'label': label,
     });
   }
 

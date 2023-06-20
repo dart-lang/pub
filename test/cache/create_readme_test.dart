@@ -18,7 +18,7 @@ void main() async {
     await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await pubGet();
     await d.dir(cachePath, [
-      d.file('README.md', contains('https://dart.dev/go/pub-cache'))
+      d.file('README.md', contains('https://dart.dev/go/pub-cache')),
     ]).validate();
     File(pathInCache('README.md')).deleteSync();
     // No new download, so 'README.md' doesn't get updated.
@@ -32,7 +32,7 @@ void main() async {
     await d.appDir(dependencies: {'foo': '1.0.0'}).create();
     await pubGet();
     await d.dir(cachePath, [
-      d.file('README.md', contains('https://dart.dev/go/pub-cache'))
+      d.file('README.md', contains('https://dart.dev/go/pub-cache')),
     ]).validate();
   });
 
@@ -53,13 +53,13 @@ void main() async {
           d.dir(
             'bin',
             [d.outOfDateSnapshot('foo.dart-3.1.2+3.snapshot')],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).create();
     await runPub(args: ['global', 'run', 'foo'], output: contains('Hello'));
     await d.dir(cachePath, [
-      d.file('README.md', contains('https://dart.dev/go/pub-cache'))
+      d.file('README.md', contains('https://dart.dev/go/pub-cache')),
     ]).validate();
   });
 }

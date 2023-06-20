@@ -25,7 +25,7 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.notFound(
         jsonEncode({
-          'error': {'message': 'Your package was too boring.'}
+          'error': {'message': 'Your package was too boring.'},
         }),
       );
     });

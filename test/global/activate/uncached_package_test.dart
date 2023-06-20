@@ -14,21 +14,21 @@ void main() {
         'foo',
         '1.0.0',
         contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi");')])
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi");')]),
         ],
       )
       ..serve(
         'foo',
         '1.2.3',
         contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi 1.2.3");')])
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi 1.2.3");')]),
         ],
       )
       ..serve(
         'foo',
         '2.0.0-wildly.unstable',
         contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi unstable");')])
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi unstable");')]),
         ],
       );
 
@@ -45,8 +45,8 @@ void main() {
     // Should be in global package cache.
     await d.dir(cachePath, [
       d.dir('global_packages', [
-        d.dir('foo', [d.file('pubspec.lock', contains('1.2.3'))])
-      ])
+        d.dir('foo', [d.file('pubspec.lock', contains('1.2.3'))]),
+      ]),
     ]).validate();
   });
 }

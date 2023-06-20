@@ -44,7 +44,7 @@ void main() {
       // The lockfile should be unmodified.
       d.file('pubspec.lock', contains('1.0.0')),
       // The ".dart_tool" directory should not have been regenerated.
-      d.nothing('.dart_tool')
+      d.nothing('.dart_tool'),
     ]).validate();
   });
 
@@ -84,7 +84,7 @@ void main() {
       // The lockfile should not be modified.
       d.file('pubspec.lock', contains('1.0.0')),
       // The ".dart_tool" directory should not have been regenerated.
-      d.nothing('.dart_tool')
+      d.nothing('.dart_tool'),
     ]).validate();
 
     // Try without --dry-run
@@ -102,7 +102,7 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(dependencies: {'foo': '^2.0.0'}),
       d.file('pubspec.lock', contains('2.0.0')),
-      d.dir('.dart_tool')
+      d.dir('.dart_tool'),
     ]).validate();
   });
 }

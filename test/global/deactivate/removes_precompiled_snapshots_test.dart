@@ -20,7 +20,7 @@ void main() {
     );
 
     await d.dir(cachePath, [
-      d.dir('global_packages', [d.nothing('foo')])
+      d.dir('global_packages', [d.nothing('foo')]),
     ]).validate();
   });
 }

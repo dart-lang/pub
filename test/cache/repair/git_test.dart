@@ -21,7 +21,7 @@ void main() {
 
       await d.appDir(
         dependencies: {
-          'foo': {'git': '../foo.git'}
+          'foo': {'git': '../foo.git'},
         },
       ).create();
       await pubGet();
@@ -59,7 +59,7 @@ void main() {
       var fooLibs = fooDirs.map((dir) {
         var fooDirName = path.basename(dir);
         return d.dir(fooDirName, [
-          d.dir('lib', [d.file('foo.dart', 'main() => "foo";')])
+          d.dir('lib', [d.file('foo.dart', 'main() => "foo";')]),
         ]);
       }).toList();
 
@@ -92,7 +92,7 @@ void main() {
       );
 
       await d.dir(cachePath, [
-        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir)))),
       ]).validate();
     });
 
@@ -122,7 +122,7 @@ void main() {
       );
 
       await d.dir(cachePath, [
-        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir)))),
       ]).validate();
     });
   });
@@ -131,20 +131,20 @@ void main() {
     setUp(() async {
       // Create two cached revisions of foo.
       await d.git('foo.git', [
-        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.0')])
+        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.0')]),
       ]).create();
 
       await d.appDir(
         dependencies: {
           'sub': {
-            'git': {'url': '../foo.git', 'path': 'subdir'}
-          }
+            'git': {'url': '../foo.git', 'path': 'subdir'},
+          },
         },
       ).create();
       await pubGet();
 
       await d.git('foo.git', [
-        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.1')])
+        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.1')]),
       ]).commit();
 
       await pubUpgrade();
@@ -176,8 +176,8 @@ void main() {
         var fooDirName = path.basename(dir);
         return d.dir(fooDirName, [
           d.dir('subdir', [
-            d.dir('lib', [d.file('sub.dart', 'main() => "sub";')])
-          ])
+            d.dir('lib', [d.file('sub.dart', 'main() => "sub";')]),
+          ]),
         ]);
       }).toList();
 
@@ -211,7 +211,7 @@ void main() {
       );
 
       await d.dir(cachePath, [
-        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir)))),
       ]).validate();
     });
   });

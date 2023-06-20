@@ -28,7 +28,7 @@ class GitignoreValidator extends Validator {
             'ls-files',
             '--cached',
             '--exclude-standard',
-            '--recurse-submodules'
+            '--recurse-submodules',
           ],
           workingDir: entrypoint.rootDir,
         );

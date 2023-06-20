@@ -16,7 +16,7 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")]),
       ],
     );
 
@@ -27,9 +27,9 @@ void main() {
         d.dir('foo', [
           d.dir('bin', [
             d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1'),
-          ])
-        ])
-      ])
+          ]),
+        ]),
+      ]),
     ]).create();
 
     deleteEntry(
@@ -54,9 +54,9 @@ void main() {
           d.dir(
             'bin',
             [d.file('script.dart-$versionSuffix.snapshot', contains('ok'))],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).validate();
   });
 }

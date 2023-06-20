@@ -68,7 +68,7 @@ void main() {
             'foo': '^1.0.0',
             'bar': '^0.1.0',
             'baz': '^1.0.0',
-          }
+          },
         }),
       ]).create();
 
@@ -91,7 +91,7 @@ void main() {
             'foo': '^2.0.0', // bumped
             'bar': '^0.2.0', // bumped
             'baz': '^1.0.0',
-          }
+          },
         }),
       ]).validate();
 
@@ -163,10 +163,10 @@ void main() {
         // The pubspec file should be modified.
         d.pubspec({
           'name': 'myapp',
-          'dependencies': {'foo': '^3.0.0'}
+          'dependencies': {'foo': '^3.0.0'},
         }),
         // The lockfile should be modified.
-        d.file('pubspec.lock', contains('3.0.0'))
+        d.file('pubspec.lock', contains('3.0.0')),
       ]).validate();
 
       await d.appPackageConfigFile([
@@ -193,7 +193,7 @@ void main() {
             'foo': '1.0.0',
             'bar': '1.0.0',
           },
-        })
+        }),
       ]).create();
 
       await pubGet();
@@ -220,7 +220,7 @@ void main() {
             'foo': '1.0.0',
             'bar': '1.0.0',
           },
-        })
+        }),
       ]).validate();
 
       await d.appPackageConfigFile([
@@ -239,7 +239,7 @@ void main() {
           'foo',
           '2.0.0',
           pubspec: {
-            'dependencies': {'bar': '1.0.0'}
+            'dependencies': {'bar': '1.0.0'},
           },
         )
         ..serve('bar', '1.0.0')
@@ -292,9 +292,9 @@ void main() {
       await d.dir(appPath, [
         d.pubspecOverrides({
           'dependency_overrides': {
-            'bar': {'path': '../bar'}
-          }
-        })
+            'bar': {'path': '../bar'},
+          },
+        }),
       ]).create();
 
       await pubGet();

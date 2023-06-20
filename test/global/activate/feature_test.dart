@@ -17,13 +17,13 @@ void main() {
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -47,13 +47,13 @@ Downloading'''),
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -78,13 +78,13 @@ Downloading'''),
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -108,13 +108,13 @@ Downloading'''),
           'features': {
             'stuff': {
               'default': false,
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -139,13 +139,13 @@ Downloading'''),
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -159,7 +159,7 @@ Downloading'''),
         '--features',
         'things',
         '--omit-features',
-        'stuff'
+        'stuff',
       ],
       output: contains('''
 Resolving dependencies...

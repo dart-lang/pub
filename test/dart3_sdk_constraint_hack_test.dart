@@ -13,7 +13,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.11.0 <3.0.0'}
+        'environment': {'sdk': '>=2.11.0 <3.0.0'},
       }),
     ]).create();
 
@@ -29,7 +29,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.1.0'}
+        'environment': {'sdk': '>=2.12.0 <3.1.0'},
       }),
     ]).create();
 
@@ -45,7 +45,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.11.0 <2.999.0'}
+        'environment': {'sdk': '>=2.11.0 <2.999.0'},
       }),
     ]).create();
 
@@ -62,7 +62,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.11.0 <3.0.0-0.0'}
+        'environment': {'sdk': '>=2.11.0 <3.0.0-0.0'},
       }),
     ]).create();
 
@@ -79,7 +79,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.0.0'}
+        'environment': {'sdk': '>=2.12.0 <3.0.0'},
       }),
     ]).create();
 
@@ -92,7 +92,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.0.0-0'}
+        'environment': {'sdk': '>=2.12.0 <3.0.0-0'},
       }),
     ]).create();
 
@@ -105,7 +105,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=3.0.0-dev <3.0.0'}
+        'environment': {'sdk': '>=3.0.0-dev <3.0.0'},
       }),
     ]).create();
 
@@ -123,7 +123,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.0.0'}
+        'environment': {'sdk': '>=2.12.0 <3.0.0'},
       }),
     ]).create();
 
@@ -140,7 +140,7 @@ void main() {
     await d.appDir(
       dependencies: {'foo': 'any'},
       pubspec: {
-        'environment': {'sdk': '^2.12.0'}
+        'environment': {'sdk': '^2.12.0'},
       },
     ).create();
     final server = await servePackages();
@@ -150,7 +150,7 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'environment': {'sdk': '>=2.10.0 <3.0.0'}
+        'environment': {'sdk': '>=2.10.0 <3.0.0'},
       },
     );
     await pubGet(
@@ -165,7 +165,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.19.1 <3.0.0'}
+        'environment': {'sdk': '>=2.19.1 <3.0.0'},
       }),
     ]).create();
 

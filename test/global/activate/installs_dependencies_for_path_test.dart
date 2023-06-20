@@ -15,7 +15,7 @@ void main() {
 
     await d.dir('foo', [
       d.libPubspec('foo', '0.0.0', deps: {'bar': 'any'}),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);
@@ -31,9 +31,9 @@ void main() {
           contains('bar'),
           contains('1.0.0'),
           contains('baz'),
-          contains('2.0.0')
+          contains('2.0.0'),
         ]),
-      )
+      ),
     ]).validate();
   });
 }

@@ -17,8 +17,8 @@ void main() {
       await d.appDir(
         dependencies: {
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url}
-          }
+            'hosted': {'name': 'foo', 'url': globalServer.url},
+          },
         },
       ).create();
 
@@ -43,8 +43,8 @@ void main() {
       await d.appDir(
         dependencies: {
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url}
-          }
+            'hosted': {'name': 'foo', 'url': globalServer.url},
+          },
         },
       ).create();
 

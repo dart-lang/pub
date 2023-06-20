@@ -45,7 +45,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'fo_o1.a': {'path': '../foo'}
+        'fo_o1.a': {'path': '../foo'},
       },
     ).validate();
   });
@@ -105,7 +105,7 @@ void main() {
 
           environment:
             sdk: $defaultSdkConstraint
-        ''')
+        '''),
       ]).create();
 
       await pubAdd(args: ['foo:1.2.3']);
@@ -119,8 +119,8 @@ void main() {
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '1.2.3'},
-          'dev_dependencies': null
-        })
+          'dev_dependencies': null,
+        }),
       ]).validate();
     });
 
@@ -157,7 +157,7 @@ void main() {
 name: myapp
 environment:
   "sdk": "$defaultSdkConstraint"
-''')
+'''),
       ]).create();
 
       await pubAdd(args: ['foo:1.2.3']);
@@ -186,7 +186,7 @@ environment:
         d.file(
           'pubspec.yaml',
           '{"name":"myapp", "environment": {"sdk": "$defaultSdkConstraint"}}',
-        )
+        ),
       ]).create();
 
       await pubAdd(args: ['foo:1.2.3']);
@@ -275,7 +275,7 @@ dev_dependencies:
   foo: 1.2.2
 environment:
   sdk: '$defaultSdkConstraint'
-''')
+'''),
       ]).create();
 
       await pubAdd(
@@ -293,8 +293,8 @@ environment:
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dependencies': {'foo': '1.2.3'}
-        })
+          'dependencies': {'foo': '1.2.3'},
+        }),
       ]).validate();
     });
 
@@ -308,8 +308,8 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dependencies': {},
-            'dependency_overrides': {'foo': '1.2.2'}
-          })
+            'dependency_overrides': {'foo': '1.2.2'},
+          }),
         ]).create();
 
         await pubAdd(args: ['foo']);
@@ -322,8 +322,8 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dependencies': {'foo': '^1.2.2'},
-            'dependency_overrides': {'foo': '1.2.2'}
-          })
+            'dependency_overrides': {'foo': '1.2.2'},
+          }),
         ]).validate();
       });
 
@@ -341,9 +341,9 @@ environment:
             'name': 'myapp',
             'dependencies': {},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
-          })
+              'foo': {'git': '../foo.git'},
+            },
+          }),
         ]).create();
 
         await pubAdd(args: ['foo:1.2.3']);
@@ -353,9 +353,9 @@ environment:
             'name': 'myapp',
             'dependencies': {'foo': '1.2.3'},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
-          })
+              'foo': {'git': '../foo.git'},
+            },
+          }),
         ]).validate();
       });
 
@@ -372,9 +372,9 @@ environment:
             'name': 'myapp',
             'dependencies': {},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
-          })
+              'foo': {'path': '../foo'},
+            },
+          }),
         ]).create();
 
         await pubAdd(args: ['foo:1.2.2']);
@@ -384,9 +384,9 @@ environment:
             'name': 'myapp',
             'dependencies': {'foo': '1.2.2'},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
-          })
+              'foo': {'path': '../foo'},
+            },
+          }),
         ]).validate();
       });
 
@@ -395,7 +395,7 @@ environment:
         server.serve('foo', '1.2.3');
 
         await d.dir(appPath, [
-          d.pubspec({'name': 'myapp', 'dependencies': {}})
+          d.pubspec({'name': 'myapp', 'dependencies': {}}),
         ]).create();
 
         await pubAdd(
@@ -422,8 +422,8 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dependencies': {},
-            'dependency_overrides': {'foo': '1.2.2'}
-          })
+            'dependency_overrides': {'foo': '1.2.2'},
+          }),
         ]).create();
 
         await pubAdd(
@@ -438,7 +438,7 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dependencies': {},
-            'dependency_overrides': {'foo': '1.2.2'}
+            'dependency_overrides': {'foo': '1.2.2'},
           }),
           d.nothing('.dart_tool/package_config.json'),
           d.nothing('pubspec.lock'),
@@ -460,9 +460,9 @@ environment:
             'name': 'myapp',
             'dependencies': {},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
-          })
+              'foo': {'git': '../foo.git'},
+            },
+          }),
         ]).create();
 
         await pubAdd(
@@ -478,8 +478,8 @@ environment:
             'name': 'myapp',
             'dependencies': {},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
+              'foo': {'git': '../foo.git'},
+            },
           }),
           d.nothing('.dart_tool/package_config.json'),
           d.nothing('pubspec.lock'),
@@ -501,9 +501,9 @@ environment:
             'name': 'myapp',
             'dependencies': {},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
-          })
+              'foo': {'path': '../foo'},
+            },
+          }),
         ]).create();
 
         await pubAdd(
@@ -519,8 +519,8 @@ environment:
             'name': 'myapp',
             'dependencies': {},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
+              'foo': {'path': '../foo'},
+            },
           }),
           d.nothing('.dart_tool/package_config.json'),
           d.nothing('pubspec.lock'),
@@ -548,7 +548,7 @@ environment:
       server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
-        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
       ]).create();
 
       await pubAdd(args: ['--dev', 'foo:1.2.3']);
@@ -560,8 +560,8 @@ environment:
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dev_dependencies': {'foo': '1.2.3'}
-        })
+          'dev_dependencies': {'foo': '1.2.3'},
+        }),
       ]).validate();
     });
 
@@ -569,7 +569,7 @@ environment:
       await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
 
       await d.dir(appPath, [
-        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
       ]).create();
 
       await pubAdd(
@@ -587,7 +587,7 @@ environment:
       server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
-        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
       ]).create();
 
       await pubAdd(args: ['dev:foo:1.2.3']);
@@ -599,8 +599,8 @@ environment:
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dev_dependencies': {'foo': '1.2.3'}
-        })
+          'dev_dependencies': {'foo': '1.2.3'},
+        }),
       ]).validate();
     });
 
@@ -608,7 +608,7 @@ environment:
       await d.dir('foo', [d.libPubspec('foo', '1.2.3')]).create();
 
       await d.dir(appPath, [
-        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
       ]).create();
 
       await pubAdd(
@@ -624,7 +624,7 @@ environment:
       server.serve('bar', '1.2.3');
 
       await d.dir(appPath, [
-        d.pubspec({'name': 'myapp', 'dev_dependencies': {}})
+        d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
       ]).create();
 
       await pubAdd(args: ['dev:foo:1.2.3', 'bar:1.2.3']);
@@ -639,7 +639,7 @@ environment:
           'name': 'myapp',
           'dependencies': {'bar': '1.2.3'},
           'dev_dependencies': {'foo': '1.2.3'},
-        })
+        }),
       ]).validate();
     });
 
@@ -652,8 +652,8 @@ environment:
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '1.2.2'}
-          })
+            'dev_dependencies': {'foo': '1.2.2'},
+          }),
         ]).create();
 
         await pubAdd(
@@ -666,8 +666,8 @@ environment:
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '^1.2.3'}
-          })
+            'dev_dependencies': {'foo': '^1.2.3'},
+          }),
         ]).validate();
       });
 
@@ -679,8 +679,8 @@ environment:
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '1.2.2'}
-          })
+            'dev_dependencies': {'foo': '1.2.2'},
+          }),
         ]).create();
 
         await pubAdd(
@@ -693,8 +693,8 @@ environment:
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '1.2.3'}
-          })
+            'dev_dependencies': {'foo': '1.2.3'},
+          }),
         ]).validate();
       });
 
@@ -706,8 +706,8 @@ environment:
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '1.2.2'}
-          })
+            'dev_dependencies': {'foo': '1.2.2'},
+          }),
         ]).create();
 
         await pubAdd(
@@ -720,8 +720,8 @@ environment:
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dev_dependencies': {'foo': '>=1.2.2'}
-          })
+            'dev_dependencies': {'foo': '>=1.2.2'},
+          }),
         ]).validate();
       });
     });
@@ -736,8 +736,8 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dev_dependencies': {},
-            'dependency_overrides': {'foo': '1.2.2'}
-          })
+            'dependency_overrides': {'foo': '1.2.2'},
+          }),
         ]).create();
 
         await pubAdd(args: ['foo', '--dev']);
@@ -750,8 +750,8 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dev_dependencies': {'foo': '^1.2.2'},
-            'dependency_overrides': {'foo': '1.2.2'}
-          })
+            'dependency_overrides': {'foo': '1.2.2'},
+          }),
         ]).validate();
       });
 
@@ -768,9 +768,9 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
-          })
+              'foo': {'git': '../foo.git'},
+            },
+          }),
         ]).create();
 
         await pubAdd(args: ['foo:1.2.3', '--dev']);
@@ -780,9 +780,9 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {'foo': '1.2.3'},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
-          })
+              'foo': {'git': '../foo.git'},
+            },
+          }),
         ]).validate();
       });
 
@@ -799,9 +799,9 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
-          })
+              'foo': {'path': '../foo'},
+            },
+          }),
         ]).create();
 
         await pubAdd(args: ['foo:1.2.2', '--dev']);
@@ -811,9 +811,9 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {'foo': '1.2.2'},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
-          })
+              'foo': {'path': '../foo'},
+            },
+          }),
         ]).validate();
       });
 
@@ -826,8 +826,8 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dev_dependencies': {},
-            'dependency_overrides': {'foo': '1.2.2'}
-          })
+            'dependency_overrides': {'foo': '1.2.2'},
+          }),
         ]).create();
 
         await pubAdd(
@@ -842,7 +842,7 @@ environment:
           d.pubspec({
             'name': 'myapp',
             'dev_dependencies': {},
-            'dependency_overrides': {'foo': '1.2.2'}
+            'dependency_overrides': {'foo': '1.2.2'},
           }),
           d.nothing('.dart_tool/package_config.json'),
           d.nothing('pubspec.lock'),
@@ -864,9 +864,9 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
-          })
+              'foo': {'git': '../foo.git'},
+            },
+          }),
         ]).create();
 
         await pubAdd(
@@ -882,8 +882,8 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {},
             'dependency_overrides': {
-              'foo': {'git': '../foo.git'}
-            }
+              'foo': {'git': '../foo.git'},
+            },
           }),
           d.nothing('.dart_tool/package_config.json'),
           d.nothing('pubspec.lock'),
@@ -906,9 +906,9 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
-          })
+              'foo': {'path': '../foo'},
+            },
+          }),
         ]).create();
 
         await pubAdd(
@@ -924,8 +924,8 @@ environment:
             'name': 'myapp',
             'dev_dependencies': {},
             'dependency_overrides': {
-              'foo': {'path': '../foo'}
-            }
+              'foo': {'path': '../foo'},
+            },
           }),
           d.nothing('.dart_tool/package_config.json'),
           d.nothing('pubspec.lock'),
@@ -945,8 +945,8 @@ environment:
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '1.2.2'},
-          'dev_dependencies': {}
-        })
+          'dev_dependencies': {},
+        }),
       ]).create();
 
       await pubAdd(
@@ -961,7 +961,7 @@ environment:
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '1.2.2'},
-          'dev_dependencies': {}
+          'dev_dependencies': {},
         }),
         d.nothing('.dart_tool/package_config.json'),
         d.nothing('pubspec.lock'),
@@ -1023,7 +1023,7 @@ environment:
         contains('# comment A'),
         contains('# comment B'),
         contains('# comment C'),
-        contains('# comment D')
+        contains('# comment D'),
       ]),
     );
   });
@@ -1063,7 +1063,7 @@ environment:
 dependency_overrides:
   bar: 2.0.0
 '''),
-      )
+      ),
     ]).validate();
 
     // Can override with a descriptor:
@@ -1078,7 +1078,7 @@ dependency_overrides:
   foo:
     path: ../local_foo
 '''),
-      )
+      ),
     ]).validate();
   });
 
@@ -1094,9 +1094,9 @@ dependency_overrides:
     await d.dir(appPath, [
       d.pubspecOverrides({
         'dependency_overrides': {
-          'bar': {'path': '../bar'}
-        }
-      })
+          'bar': {'path': '../bar'},
+        },
+      }),
     ]).create();
 
     await pubGet();

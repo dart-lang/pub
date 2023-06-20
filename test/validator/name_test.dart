@@ -25,8 +25,8 @@ void main() {
         d.libPubspec('test_pkg', '1.0.0'),
         d.dir('lib', [
           d.file('test_pkg.dart', 'int i = 1;'),
-          d.file('test_pkg.g.dart', 'int j = 2;')
-        ])
+          d.file('test_pkg.g.dart', 'int j = 2;'),
+        ]),
       ]).create();
       await expectValidationDeprecated(name);
     });
@@ -34,7 +34,7 @@ void main() {
     test('has a name that starts with an underscore', () async {
       await d.dir(appPath, [
         d.libPubspec('_test_pkg', '1.0.0'),
-        d.dir('lib', [d.file('_test_pkg.dart', 'int i = 1;')])
+        d.dir('lib', [d.file('_test_pkg.dart', 'int i = 1;')]),
       ]).create();
       await expectValidationDeprecated(name);
     });
@@ -51,7 +51,7 @@ void main() {
     test('has a single library named differently than the package', () async {
       deleteEntry(path.join(d.sandbox, appPath, 'lib', 'test_pkg.dart'));
       await d.dir(appPath, [
-        d.dir('lib', [d.file('best_pkg.dart', 'int i = 0;')])
+        d.dir('lib', [d.file('best_pkg.dart', 'int i = 0;')]),
       ]).create();
       await expectValidationDeprecated(name, warnings: isNotEmpty);
     });

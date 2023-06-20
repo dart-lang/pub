@@ -13,8 +13,8 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'missing': 'not_here', 'nope': null}
-      })
+        'executables': {'missing': 'not_here', 'nope': null},
+      }),
     ]).create();
 
     var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);

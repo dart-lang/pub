@@ -15,10 +15,10 @@ void main() {
         d.appPubspec(
           dependencies: {
             'foo': {
-              'hosted': {'name': 'foo', 'url': 'not@url-com'}
-            }
+              'hosted': {'name': 'foo', 'url': 'not@url-com'},
+            },
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(
@@ -35,10 +35,10 @@ void main() {
         d.appPubspec(
           dependencies: {
             'foo': {
-              'hosted': {'name': 'foo', 'url': 'http://example.foo/?key=value'}
-            }
+              'hosted': {'name': 'foo', 'url': 'http://example.foo/?key=value'},
+            },
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(
@@ -56,10 +56,10 @@ void main() {
         d.appPubspec(
           dependencies: {
             'foo': {
-              'hosted': {'name': 'foo', 'url': 'http://example.foo/#hash'}
-            }
+              'hosted': {'name': 'foo', 'url': 'http://example.foo/#hash'},
+            },
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(
@@ -77,10 +77,10 @@ void main() {
         d.appPubspec(
           dependencies: {
             'foo': {
-              'hosted': {'name': 'foo', 'url': 'http://user:pwd@example.foo/'}
-            }
+              'hosted': {'name': 'foo', 'url': 'http://user:pwd@example.foo/'},
+            },
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(
@@ -98,10 +98,10 @@ void main() {
         d.appPubspec(
           dependencies: {
             'foo': {
-              'hosted': {'name': 'foo', 'url': 'http://user@example.foo/'}
-            }
+              'hosted': {'name': 'foo', 'url': 'http://user@example.foo/'},
+            },
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(

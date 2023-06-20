@@ -126,9 +126,9 @@ Future<void> _reportWithForbidden(
         {
           'name': e.key,
           'url': globalServer.url,
-          'versions': e.value.map((d) => {'range': d}).toList()
-        }
-    ]
+          'versions': e.value.map((d) => {'range': d}).toList(),
+        },
+    ],
   });
   final report = await context.runDependencyServices(['report'], stdin: input);
   if (resultAssertions != null) {
@@ -167,7 +167,7 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
     server.dontAllowDownloads();
@@ -197,7 +197,7 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
 
@@ -238,7 +238,7 @@ Future<void> main() async {
             'git': {'url': '../bar.git'},
           },
         },
-      })
+      }),
     ]).create();
 
     server.dontAllowDownloads();
@@ -268,7 +268,7 @@ Future<void> main() async {
           'bar': '^1.0.0',
           'boo': '^1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
     server.serve('foo', '1.2.4');
@@ -307,7 +307,7 @@ Future<void> main() async {
           'bar': '^1.0.0',
           'boo': '^1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
     final lockFile = File(path(p.join(appPath, 'pubspec.lock')));
@@ -342,7 +342,7 @@ Future<void> main() async {
           'foo': '^1.0.0',
           'bar': '^1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
     final lockFile = File(path(p.join(appPath, 'pubspec.lock')));
@@ -382,7 +382,7 @@ Future<void> main() async {
         'dependencies': {
           'foo': '^1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
     server.dontAllowDownloads();
@@ -419,7 +419,7 @@ Future<void> main() async {
           // Pinned version. See that the widened constraint is correct.
           'baz': '1.0.0',
         },
-      })
+      }),
     ]).create();
     await pubGet();
     server
@@ -440,7 +440,7 @@ Future<void> main() async {
           '3.0.1',
           constraint: VersionConstraint.parse('^3.0.0'),
         ),
-        _PackageVersion('bar', '2.0.0')
+        _PackageVersion('bar', '2.0.0'),
       ],
       reportAssertions: (report) {
         expect(
@@ -463,7 +463,7 @@ Future<void> main() async {
     await d.appDir(
       dependencies: {
         'foo': '^1.0.0',
-        'bar': {'path': '../bar'}
+        'bar': {'path': '../bar'},
       },
     ).create();
     await pubGet();
@@ -494,13 +494,13 @@ Future<void> main() async {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git'}
+          'git': {'url': '../foo.git'},
         },
         'bar': {
           // A git dependency with a version constraint.
           'git': {'url': '../bar.git'},
           'version': '^1.0.0',
-        }
+        },
       },
     ).create();
     await pubGet();
@@ -546,7 +546,7 @@ Future<void> main() async {
     await _reportWithForbidden(
       context,
       {
-        'foo': ['1.1.1', '1.1.2']
+        'foo': ['1.1.1', '1.1.2'],
       },
       targetPackage: 'foo',
       resultAssertions: (r) {
@@ -573,7 +573,7 @@ Future<void> main() async {
     await _reportWithForbidden(
       context,
       {
-        'foo': ['1.1.1', '2.0.0']
+        'foo': ['1.1.1', '2.0.0'],
       },
       targetPackage: 'foo',
       resultAssertions: (r) {
@@ -619,7 +619,7 @@ Future<void> main() async {
       context,
       {
         'foo': ['1.1.1', '2.0.0'],
-        'bar': ['2.0.0']
+        'bar': ['2.0.0'],
       },
       targetPackage: 'foo',
       resultAssertions: (r) {
@@ -645,7 +645,7 @@ class _PackageVersion {
   Map<String, Object?> toJson() => {
         'name': name,
         'version': version,
-        if (constraint != null) 'constraint': constraint.toString()
+        if (constraint != null) 'constraint': constraint.toString(),
       };
 }
 

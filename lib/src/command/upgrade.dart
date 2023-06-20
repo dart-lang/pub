@@ -152,7 +152,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
     final directDeps = [
       ...entrypoint.root.pubspec.dependencies.keys,
-      ...entrypoint.root.pubspec.devDependencies.keys
+      ...entrypoint.root.pubspec.devDependencies.keys,
     ];
     final toUpgrade = argResults.rest.isEmpty ? directDeps : argResults.rest;
 

@@ -36,7 +36,7 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });

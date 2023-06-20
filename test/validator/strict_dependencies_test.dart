@@ -258,7 +258,7 @@ linter:
       await expectValidationDeprecated(
         strictDeps,
         errors: [
-          matches('does not have silly_monkey in the `dependencies` section')
+          matches('does not have silly_monkey in the `dependencies` section'),
         ],
       );
     });
@@ -271,7 +271,7 @@ linter:
       await expectValidationDeprecated(
         strictDeps,
         errors: [
-          matches('does not have silly_monkey in the `dependencies` section')
+          matches('does not have silly_monkey in the `dependencies` section'),
         ],
       );
     });
@@ -324,7 +324,7 @@ linter:
             warnings: [
               matches(
                 'does not have silly_monkey in the `dependencies` or `dev_dependencies` section',
-              )
+              ),
             ],
           );
         });

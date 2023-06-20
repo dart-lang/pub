@@ -75,7 +75,7 @@ Future<void> expectValidationError(
   await expectValidation(
     error: allOf([
       contains(text),
-      contains('Package validation found the following error:')
+      contains('Package validation found the following error:'),
     ]),
     exitCode: DATA,
     environment: environment,

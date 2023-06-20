@@ -42,14 +42,14 @@ void main() {
           'bar',
           '1.2.3',
           headers: {
-            'x-goog-hash': ['']
+            'x-goog-hash': [''],
           },
         )
         ..serve(
           'baz',
           '1.2.3',
           headers: {
-            'x-goog-hash': ['md5=loremipsum']
+            'x-goog-hash': ['md5=loremipsum'],
           },
         );
     });
@@ -109,8 +109,8 @@ void main() {
       dependencies: {
         'foo': {
           'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-        }
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'},
+        },
       },
     ).create();
 
@@ -130,7 +130,7 @@ void main() {
       'foo',
       '1.2.3',
       headers: {
-        'x-goog-hash': PackageServer.composeChecksumHeader(crc32c: 3381945770)
+        'x-goog-hash': PackageServer.composeChecksumHeader(crc32c: 3381945770),
       },
     );
 
@@ -138,8 +138,8 @@ void main() {
       dependencies: {
         'foo': {
           'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-        }
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'},
+        },
       },
     ).create();
 
@@ -165,21 +165,21 @@ void main() {
           'foo',
           '1.2.3',
           headers: {
-            'x-goog-hash': ['crc32c=,md5=']
+            'x-goog-hash': ['crc32c=,md5='],
           },
         )
         ..serve(
           'bar',
           '1.2.3',
           headers: {
-            'x-goog-hash': ['crc32c=loremipsum,md5=loremipsum']
+            'x-goog-hash': ['crc32c=loremipsum,md5=loremipsum'],
           },
         )
         ..serve(
           'baz',
           '1.2.3',
           headers: {
-            'x-goog-hash': ['crc32c=MTIzNDU=,md5=NTQzMjE=']
+            'x-goog-hash': ['crc32c=MTIzNDU=,md5=NTQzMjE='],
           },
         );
     });
@@ -189,8 +189,8 @@ void main() {
         dependencies: {
           'foo': {
             'version': '1.2.3',
-            'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-          }
+            'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'},
+          },
         },
       ).create();
 
@@ -211,8 +211,8 @@ void main() {
         dependencies: {
           'bar': {
             'version': '1.2.3',
-            'hosted': {'name': 'bar', 'url': 'http://localhost:${server.port}'}
-          }
+            'hosted': {'name': 'bar', 'url': 'http://localhost:${server.port}'},
+          },
         },
       ).create();
 
@@ -233,8 +233,8 @@ void main() {
         dependencies: {
           'baz': {
             'version': '1.2.3',
-            'hosted': {'name': 'baz', 'url': 'http://localhost:${server.port}'}
-          }
+            'hosted': {'name': 'baz', 'url': 'http://localhost:${server.port}'},
+          },
         },
       ).create();
 
@@ -306,8 +306,8 @@ void main() {
           'name': 'myapp',
           'dependencies': {'foo': 'any'},
           'dev_dependencies': {'baz': 'any'},
-          'dependency_overrides': {'zip': 'any'}
-        })
+          'dependency_overrides': {'zip': 'any'},
+        }),
       ]).create();
 
       await pubGet();
@@ -347,8 +347,8 @@ void main() {
           'name': 'myapp',
           'dependencies': {'foo': 'any'},
           'dev_dependencies': {'baz': 'any'},
-          'dependency_overrides': {'foo': 'any', 'baz': 'any'}
-        })
+          'dependency_overrides': {'foo': 'any', 'baz': 'any'},
+        }),
       ]).create();
 
       await pubGet();
@@ -381,7 +381,7 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('blah', [d.file('myduplicatefile'), d.file('myduplicatefile')])
+        d.dir('blah', [d.file('myduplicatefile'), d.file('myduplicatefile')]),
       ],
     );
     await d.appDir(dependencies: {'foo': 'any'}).create();

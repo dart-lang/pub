@@ -36,7 +36,7 @@ Future<void> setup({
       'version': '1.0.0',
       'environment': {
         'sdk': '^3.0.0',
-        if (flutterConstraint != null) 'flutter': flutterConstraint
+        if (flutterConstraint != null) 'flutter': flutterConstraint,
       },
     }),
   ]).create();

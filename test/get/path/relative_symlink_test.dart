@@ -23,9 +23,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
@@ -45,7 +45,7 @@ void main() {
     await d.dir('moved', [
       d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', path: '../foo'),
-      ])
+      ]),
     ]).validate();
   });
 }

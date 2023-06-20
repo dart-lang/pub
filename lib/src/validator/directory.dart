@@ -16,7 +16,7 @@ class DirectoryValidator extends Validator {
     'docs',
     'examples',
     'tests',
-    'tools'
+    'tools',
   ];
 
   static String docRef = 'See https://dart.dev/tools/pub/package-layout.';

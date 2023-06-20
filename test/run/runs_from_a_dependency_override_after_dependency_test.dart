@@ -16,12 +16,12 @@ void main() {
       '1.0.0',
       pubspec: {'name': 'foo', 'version': '1.0.0'},
       contents: [
-        d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
+        d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")]),
       ],
     );
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {'foo': null})
+      d.appPubspec(dependencies: {'foo': null}),
     ]).create();
 
     await pubGet(args: ['--precompile']);
@@ -32,16 +32,16 @@ void main() {
 
     await d.dir('foo', [
       d.libPubspec('foo', '2.0.0'),
-      d.dir('bin', [d.file('bar.dart', "main() => print('different');")])
+      d.dir('bin', [d.file('bar.dart', "main() => print('different');")]),
     ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
+          'foo': {'path': '../foo'},
+        },
+      }),
     ]).create();
 
     await pubGet();

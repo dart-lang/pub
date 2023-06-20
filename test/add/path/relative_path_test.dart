@@ -25,7 +25,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': '../foo'}
+        'foo': {'path': '../foo'},
       },
     ).validate();
   });
@@ -44,9 +44,9 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dev_dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
+          'foo': {'path': '../foo'},
+        },
+      }),
     ]).validate();
   });
 
@@ -68,7 +68,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': '../foo'}
+        'foo': {'path': '../foo'},
       },
     ).validate();
   });
@@ -103,7 +103,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': '../foo', 'version': '0.0.1'}
+        'foo': {'path': '../foo', 'version': '0.0.1'},
       },
     ).validate();
   });
@@ -145,8 +145,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {},
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).create();
 
     await pubAdd(args: ['foo', '--path', '../foo']);
@@ -159,10 +159,10 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).validate();
   });
 

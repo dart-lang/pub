@@ -38,7 +38,7 @@ void main() {
       // The lockfile should be unmodified.
       d.file('pubspec.lock', contains('2.0.0')),
       // The "packages" directory should not have been regenerated.
-      d.nothing('packages')
+      d.nothing('packages'),
     ]).validate();
   });
 }

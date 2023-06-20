@@ -16,7 +16,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'flutter': '>=0.5.0 <1.0.0'}
+        'environment': {'flutter': '>=0.5.0 <1.0.0'},
       }),
     ]).create();
 

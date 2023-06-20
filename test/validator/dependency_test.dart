@@ -28,7 +28,7 @@ d.DirectoryDescriptor package({
     d.file('LICENSE', 'Eh, do what you want.'),
     d.file('README.md', "This package isn't real."),
     d.file('CHANGELOG.md', '# $version\nFirst version\n'),
-    d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')])
+    d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
   ]);
 }
 
@@ -66,7 +66,7 @@ Future<void> expectValidationError(
   await expectValidation(
     error: allOf([
       contains(text),
-      contains('Package validation found the following error:')
+      contains('Package validation found the following error:'),
     ]),
     exitCode: DATA,
     environment: environment,
@@ -108,8 +108,8 @@ void main() {
       await package(
         deps: {
           'foo': {
-            'git': {'url': '../foo', 'path': 'subdir'}
-          }
+            'git': {'url': '../foo', 'path': 'subdir'},
+          },
         },
       ).create();
 
@@ -128,7 +128,7 @@ void main() {
       await flutterPackage('flutter').create();
       await package(
         deps: {
-          'flutter': {'sdk': 'flutter'}
+          'flutter': {'sdk': 'flutter'},
         },
       ).create();
 
@@ -163,7 +163,7 @@ void main() {
         await fuschiaPackage('foo', sdk: '^3.0.0').create();
         await package(
           deps: {
-            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
+            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'},
           },
         ).create();
 
@@ -231,7 +231,7 @@ void main() {
           ]).create();
           await setUpDependency({
             'path': path.join(d.sandbox, 'foo'),
-            'version': '>=1.0.0 <2.0.0'
+            'version': '>=1.0.0 <2.0.0',
           });
           await expectValidationError(
             '  foo: ">=1.0.0 <2.0.0"',
@@ -280,11 +280,11 @@ void main() {
                   'foo': {
                     'version': '0.1.2',
                     'source': 'hosted',
-                    'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                  }
-                }
+                    'description': {'name': 'foo', 'url': 'https://pub.dev'},
+                  },
+                },
               }),
-            )
+            ),
           ]).create();
 
           await expectValidationWarning('  foo: ^0.1.2');
@@ -300,7 +300,7 @@ void main() {
           'test_pkg',
           '1.0.0',
           deps: {'foo': '^1.2.3-dev'},
-        )
+        ),
       ]).create();
 
       await expectValidationWarning(
@@ -312,7 +312,7 @@ void main() {
         'constraint based on the version', () async {
       (await servePackages()).serve('foo', '1.2.3');
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '1.2.3'})
+        d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '1.2.3'}),
       ]).create();
 
       await expectValidationWarning('  foo: ^1.2.3');
@@ -328,7 +328,7 @@ void main() {
           d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '<3.0.0'}),
           d.file(
             'pubspec.lock',
-          )
+          ),
         ]).create();
 
         await expectValidationWarning('  foo: ">=1.2.3 <3.0.0"');
@@ -345,11 +345,11 @@ void main() {
                 'foo': {
                   'version': '1.2.3',
                   'source': 'hosted',
-                  'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                }
-              }
+                  'description': {'name': 'foo', 'url': 'https://pub.dev'},
+                },
+              },
             }),
-          )
+          ),
         ]).create();
 
         await expectValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
@@ -369,11 +369,11 @@ void main() {
                 'foo': {
                   'version': '1.2.3',
                   'source': 'hosted',
-                  'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                }
-              }
+                  'description': {'name': 'foo', 'url': 'https://pub.dev'},
+                },
+              },
             }),
-          )
+          ),
         ]).create();
 
         await expectValidationWarning('  foo: ^1.2.3');
@@ -385,7 +385,7 @@ void main() {
           () async {
         (await servePackages()).serve('foo', '1.2.3');
         await d.dir(appPath, [
-          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>=1.2.3'})
+          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>=1.2.3'}),
         ]).create();
 
         await expectValidationWarning('  foo: ^1.2.3');
@@ -394,7 +394,7 @@ void main() {
       test('and it should preserve the lower-bound operator', () async {
         (await servePackages()).serve('foo', '1.2.4');
         await d.dir(appPath, [
-          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>1.2.3'})
+          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>1.2.3'}),
         ]).create();
 
         await expectValidationWarning('  foo: ">1.2.3 <2.0.0"');

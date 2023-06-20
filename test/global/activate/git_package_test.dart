@@ -14,7 +14,7 @@ void main() {
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(
@@ -40,7 +40,7 @@ void main() {
         'sub',
         [
           d.libPubspec('foo', '1.0.0'),
-          d.dir('bin', [d.file('sub.dart', "main() => print('1');")])
+          d.dir('bin', [d.file('sub.dart', "main() => print('1');")]),
         ],
       ),
     ]).create();
@@ -49,7 +49,7 @@ void main() {
         'sub',
         [
           d.libPubspec('sub', '2.0.0'),
-          d.dir('bin', [d.file('sub.dart', "main() => print('2');")])
+          d.dir('bin', [d.file('sub.dart', "main() => print('2');")]),
         ],
       ),
     ]).commit();
@@ -58,7 +58,7 @@ void main() {
         'sub',
         [
           d.libPubspec('sub', '3.0.0'),
-          d.dir('bin', [d.file('sub.dart', "main() => print('3');")])
+          d.dir('bin', [d.file('sub.dart', "main() => print('3');")]),
         ],
       ),
     ]).commit();

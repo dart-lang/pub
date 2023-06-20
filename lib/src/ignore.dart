@@ -267,7 +267,7 @@ class Ignore {
     // Do a depth first tree-search starting at [beneath].
     // toVisit is a stack containing all items that are waiting to be processed.
     final toVisit = [
-      [beneath]
+      [beneath],
     ];
     while (toVisit.isNotEmpty) {
       final topOfStack = toVisit.last;

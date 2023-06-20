@@ -14,13 +14,13 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'one': null, 'two': null}
+        'executables': {'one': null, 'two': null},
       },
       contents: [
         d.dir('bin', [
           d.file('one.dart', "main(args) => print('one');"),
-          d.file('two.dart', "main(args) => print('two');")
-        ])
+          d.file('two.dart', "main(args) => print('two');"),
+        ]),
       ],
     );
 
@@ -31,7 +31,7 @@ void main() {
       d.dir(
         'bin',
         [d.nothing(binStubName('one')), d.nothing(binStubName('two'))],
-      )
+      ),
     ]).validate();
   });
 }

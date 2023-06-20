@@ -36,9 +36,9 @@ void main() {
           d.dir(
             'bar-1.2.4',
             [d.libPubspec('bar', '1.2.4'), d.file('broken.txt')],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).create();
 
     // Repair them.
@@ -63,7 +63,7 @@ void main() {
     await d.hostedCache([
       d.dir('bar-1.2.4', [d.nothing('broken.txt')]),
       d.dir('foo-1.2.3', [d.nothing('broken.txt')]),
-      d.dir('foo-1.2.5', [d.nothing('broken.txt')])
+      d.dir('foo-1.2.5', [d.nothing('broken.txt')]),
     ]).validate();
   });
 
@@ -75,8 +75,8 @@ void main() {
           d.dir('bar-1.2.4', [d.file('broken.txt')]),
           d.dir('foo-1.2.3', [d.file('broken.txt')]),
           d.dir('foo-1.2.5', [d.file('broken.txt')]),
-        ])
-      ])
+        ]),
+      ]),
     ]).create();
 
     await runPub(
@@ -112,8 +112,8 @@ void main() {
           d.dir('bar-1.2.4', [d.file('pubspec.yaml', '{')]),
           d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')]),
           d.dir('foo-1.2.5', [d.file('pubspec.yaml', '{')]),
-        ])
-      ])
+        ]),
+      ]),
     ]).create();
 
     await runPub(

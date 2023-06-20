@@ -28,7 +28,7 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });
@@ -45,7 +45,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': globalServer.url, 'token': 'access-token'},
-      ]
+      ],
     }).create();
     var pub = await startPublish(globalServer);
 
@@ -56,7 +56,7 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });
@@ -73,7 +73,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': '${globalServer.url}/sub/folder', 'env': 'TOKEN'},
-      ]
+      ],
     }).create();
     var pub = await startPublish(
       globalServer,
@@ -89,7 +89,7 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });
@@ -116,7 +116,7 @@ void main() {
       'add',
       '--',
       '../empty',
-      'empty'
+      'empty',
     ]);
     await repo.commit();
 
@@ -134,7 +134,7 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });

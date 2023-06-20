@@ -21,8 +21,8 @@ void main() {
         'dev_dependencies': {
           'foo': {'path': '../foo'},
           'bar': {'path': '../bar'},
-        }
-      })
+        },
+      }),
     ]).create();
 
     await pubGet();
@@ -40,9 +40,9 @@ void main() {
         'foo',
         '0.0.1',
         deps: {
-          'bar': {'path': '../bar'}
+          'bar': {'path': '../bar'},
         },
-      )
+      ),
     ]).create();
 
     await d
@@ -52,9 +52,9 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dev_dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
+          'foo': {'path': '../foo'},
+        },
+      }),
     ]).create();
 
     await pubGet();
@@ -72,9 +72,9 @@ void main() {
         'name': 'foo',
         'version': '0.0.1',
         'dev_dependencies': {
-          'bar': {'path': '../bar'}
-        }
-      })
+          'bar': {'path': '../bar'},
+        },
+      }),
     ]).create();
 
     await d
@@ -83,9 +83,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();

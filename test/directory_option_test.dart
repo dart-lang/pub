@@ -24,7 +24,7 @@ Future<void> main() async {
       (request) {
         return shelf.Response.ok(
           jsonEncode({
-            'success': {'message': 'Good job!'}
+            'success': {'message': 'Good job!'},
           }),
           headers: {'content-type': 'application/json'},
         );
@@ -36,23 +36,23 @@ Future<void> main() async {
       dir('bin', [
         file('app.dart', '''
 main() => print('Hi');
-''')
+'''),
       ]),
       dir('example', [
         pubspec({
           'name': 'example',
           'dependencies': {
-            'test_pkg': {'path': '../'}
-          }
-        })
+            'test_pkg': {'path': '../'},
+          },
+        }),
       ]),
       dir('example2', [
         pubspec({
           'name': 'example',
           'dependencies': {
-            'myapp': {'path': '../'} // Wrong name of dependency
-          }
-        })
+            'myapp': {'path': '../'}, // Wrong name of dependency
+          },
+        }),
       ]),
     ]).create();
 

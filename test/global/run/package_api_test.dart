@@ -28,8 +28,8 @@ main() async {
   print(await Isolate.resolvePackageUri(
       Uri.parse('package:bar/resource.txt')));
 }
-""")
-          ])
+"""),
+          ]),
         ],
       );
 
@@ -61,7 +61,7 @@ main() async {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
       ),
       d.dir('bin', [
@@ -75,8 +75,8 @@ main() async {
   print(await Isolate.resolvePackageUri(
       Uri.parse('package:foo/resource.txt')));
 }
-""")
-      ])
+"""),
+      ]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-s', 'path', '.']);

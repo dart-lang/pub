@@ -16,7 +16,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': server.url, 'token': 'access-token'},
-      ]
+      ],
     }).create();
     var pub = await startPublish(server, overrideDefaultHostedServer: false);
     await confirmPublish(pub);
@@ -31,7 +31,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': server.url, 'token': 'access-token'},
-      ]
+      ],
     }).validate();
   });
 }

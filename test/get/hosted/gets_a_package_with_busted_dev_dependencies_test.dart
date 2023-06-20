@@ -18,8 +18,8 @@ void main() {
       '1.2.3',
       pubspec: {
         'dev_dependencies': {
-          'busted': {'not a real source': null}
-        }
+          'busted': {'not a real source': null},
+        },
       },
     );
 

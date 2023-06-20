@@ -11,7 +11,7 @@ import '../../test_pub.dart';
 void main() {
   test('handles a corrupted global lockfile', () async {
     await d.dir(cachePath, [
-      d.dir('global_packages/foo', [d.file('pubspec.lock', 'junk')])
+      d.dir('global_packages/foo', [d.file('pubspec.lock', 'junk')]),
     ]).create();
 
     await runPub(

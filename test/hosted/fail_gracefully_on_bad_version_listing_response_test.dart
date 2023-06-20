@@ -26,7 +26,7 @@ void main() {
           return Response(
             200,
             body: jsonEncode({
-              'notTheRight': {'response': 'type'}
+              'notTheRight': {'response': 'type'},
             }),
           );
         }),
@@ -39,7 +39,7 @@ void main() {
           contains(
             'Got badly formatted response trying to find package foo at http://localhost:',
           ),
-          contains('), version solving failed.')
+          contains('), version solving failed.'),
         ]),
         exitCode: exit_codes.DATA,
       );
@@ -53,7 +53,7 @@ void main() {
       return Response(
         200,
         body: jsonEncode({
-          'notTheRight': {'response': 'type'}
+          'notTheRight': {'response': 'type'},
         }),
       );
     });
@@ -69,7 +69,7 @@ void main() {
       return Response(
         403,
         body: jsonEncode({
-          'notTheRight': {'response': 'type'}
+          'notTheRight': {'response': 'type'},
         }),
       );
     });
@@ -85,7 +85,7 @@ void main() {
       return Response(
         401,
         body: jsonEncode({
-          'notTheRight': {'response': 'type'}
+          'notTheRight': {'response': 'type'},
         }),
       );
     });
@@ -104,7 +104,7 @@ void main() {
           'www-authenticate': 'Bearer realm="pub", message="<message>"',
         },
         body: jsonEncode({
-          'notTheRight': {'response': 'type'}
+          'notTheRight': {'response': 'type'},
         }),
       );
     });
@@ -123,7 +123,7 @@ void main() {
           'www-authenticate': 'Bearer realm="pub", message="<message>"',
         },
         body: jsonEncode({
-          'notTheRight': {'response': 'type'}
+          'notTheRight': {'response': 'type'},
         }),
       );
     });

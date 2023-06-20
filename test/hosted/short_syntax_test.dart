@@ -18,7 +18,7 @@ void main() {
       'foo',
       '1.2.3',
       pubspec: {
-        'environment': {'sdk': '^2.12.0'}
+        'environment': {'sdk': '^2.12.0'},
       },
     );
   });
@@ -49,7 +49,7 @@ void main() {
         'description': {
           'name': 'foo',
           'url': globalServer.url,
-          'sha256': matches(RegExp(r'[0-9a-f]{64}'))
+          'sha256': matches(RegExp(r'[0-9a-f]{64}')),
         },
         'version': '1.2.3',
       });
@@ -71,7 +71,7 @@ void main() {
           'app',
           '1.0.0',
           deps: {
-            'foo': {'hosted': 'foo', 'version': '^1.2.3'}
+            'foo': {'hosted': 'foo', 'version': '^1.2.3'},
           },
           sdk: '^2.14.0',
         ),

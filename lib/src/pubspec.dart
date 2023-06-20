@@ -171,7 +171,7 @@ class Pubspec extends PubspecBase {
         defaultUpperBoundConstraint: _includeDefaultSdkConstraint
             ? _defaultUpperBoundSdkConstraint
             : null,
-      )
+      ),
     };
 
     if (yaml is YamlMap) {

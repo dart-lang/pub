@@ -20,7 +20,7 @@ void main() {
   test('running pub cache list on empty cache', () async {
     // Set up a cache.
     await d.dir(cachePath, [
-      d.dir('hosted', [d.dir('pub.dev', [])])
+      d.dir('hosted', [d.dir('pub.dev', [])]),
     ]).create();
 
     await runPub(args: ['cache', 'list'], outputJson: {'packages': {}});
@@ -32,9 +32,9 @@ void main() {
       d.dir('hosted', [
         d.dir('pub.dev', [
           d.dir('foo-1.2.3', [d.libPubspec('foo', '1.2.3'), d.libDir('foo')]),
-          d.dir('bar-2.0.0', [d.libPubspec('bar', '2.0.0'), d.libDir('bar')])
-        ])
-      ])
+          d.dir('bar-2.0.0', [d.libPubspec('bar', '2.0.0'), d.libDir('bar')]),
+        ]),
+      ]),
     ]).create();
 
     await runPub(
@@ -42,12 +42,12 @@ void main() {
       outputJson: {
         'packages': {
           'bar': {
-            '2.0.0': {'location': hostedDir('bar-2.0.0')}
+            '2.0.0': {'location': hostedDir('bar-2.0.0')},
           },
           'foo': {
-            '1.2.3': {'location': hostedDir('foo-1.2.3')}
-          }
-        }
+            '1.2.3': {'location': hostedDir('foo-1.2.3')},
+          },
+        },
       },
     );
   });
@@ -62,13 +62,13 @@ void main() {
               'foo',
               '1.2.3',
               deps: {
-                'bar': {'bad': 'bar'}
+                'bar': {'bad': 'bar'},
               },
             ),
-            d.libDir('foo')
-          ])
-        ])
-      ])
+            d.libDir('foo'),
+          ]),
+        ]),
+      ]),
     ]).create();
 
     await runPub(
@@ -76,9 +76,9 @@ void main() {
       outputJson: {
         'packages': {
           'foo': {
-            '1.2.3': {'location': hostedDir('foo-1.2.3')}
-          }
-        }
+            '1.2.3': {'location': hostedDir('foo-1.2.3')},
+          },
+        },
       },
     );
   });

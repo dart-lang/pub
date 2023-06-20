@@ -21,7 +21,7 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', _script)])
+        d.dir('bin', [d.file('script.dart', _script)]),
       ],
     );
 

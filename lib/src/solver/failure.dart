@@ -48,7 +48,7 @@ class SolveFailure implements ApplicationException {
   @override
   String toString() => [
         _Writer(incompatibility).write(),
-        if (suggestions != null) suggestions
+        if (suggestions != null) suggestions,
       ].join('\n');
 }
 

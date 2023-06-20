@@ -24,7 +24,7 @@ void main() {
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
         d.file('subfile1.txt', 'subcontents'),
-        d.file('subfile2.txt', 'subcontents')
+        d.file('subfile2.txt', 'subcontents'),
       ]),
       d.dir(Uri.encodeComponent('\\/%+-='), [
         d.file(Uri.encodeComponent('\\/%+-=')),
@@ -64,7 +64,7 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
     createDirectorySymlink(
@@ -94,7 +94,7 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
 
@@ -120,7 +120,7 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
     Link(p.join(d.sandbox, appPath, 'subdir', 'symlink'))
@@ -148,7 +148,7 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
     Link(p.join(d.sandbox, appPath, 'subdir', 'symlink1'))
@@ -197,8 +197,8 @@ void main() {
         d.file('file2.txt', 'contents'),
         d.dir('subdir', [
           d.file('subfile1.txt', 'subcontents'),
-          d.file('subfile2.txt', 'subcontents')
-        ])
+          d.file('subfile2.txt', 'subcontents'),
+        ]),
       ]).create();
 
       expect(entrypoint!.root.listFiles(), {
@@ -206,7 +206,7 @@ void main() {
         p.join(root, 'file1.txt'),
         p.join(root, 'file2.txt'),
         p.join(root, 'subdir', 'subfile1.txt'),
-        p.join(root, 'subdir', 'subfile2.txt')
+        p.join(root, 'subdir', 'subfile2.txt'),
       });
     });
 
@@ -217,14 +217,14 @@ void main() {
         d.file('file2.text', 'contents'),
         d.dir('subdir', [
           d.file('subfile1.txt', 'subcontents'),
-          d.file('subfile2.text', 'subcontents')
-        ])
+          d.file('subfile2.text', 'subcontents'),
+        ]),
       ]).create();
 
       expect(entrypoint!.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
-        p.join(root, 'subdir', 'subfile2.text')
+        p.join(root, 'subdir', 'subfile2.text'),
       });
     });
 
@@ -247,9 +247,9 @@ void main() {
             d.dir('subdir', [
               d.file('subfile1.txt', 'subcontents'),
               d.file('subfile2.text', 'subcontents'),
-            ])
+            ]),
           ]),
-        ])
+        ]),
       ]).create();
 
       createEntrypoint(p.join(appPath, 'rep', 'sub'));
@@ -258,7 +258,7 @@ void main() {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
         p.join(root, 'file4.gak'),
-        p.join(root, 'subdir', 'subfile2.text')
+        p.join(root, 'subdir', 'subfile2.text'),
       });
     });
 
@@ -266,7 +266,7 @@ void main() {
       setUp(() async {
         await d.git('submodule', [
           d.file('.gitignore', '*.txt'),
-          d.file('file2.text', 'contents')
+          d.file('file2.text', 'contents'),
         ]).create();
 
         await repo.runGit([
@@ -275,7 +275,7 @@ void main() {
           'protocol.file.allow=always',
           'submodule',
           'add',
-          '../submodule'
+          '../submodule',
         ]);
 
         await d.file('$appPath/submodule/file1.txt', 'contents').create();
@@ -294,7 +294,7 @@ void main() {
     test('ignores pubspec.lock files', () async {
       await d.dir(appPath, [
         d.file('pubspec.lock'),
-        d.dir('subdir', [d.file('pubspec.lock')])
+        d.dir('subdir', [d.file('pubspec.lock')]),
       ]).create();
 
       expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
@@ -304,12 +304,12 @@ void main() {
       await d.dir(appPath, [
         d.dir('pubspec.lock', [
           d.file('file.txt', 'contents'),
-        ])
+        ]),
       ]).create();
 
       expect(entrypoint!.root.listFiles(), {
         p.join(root, 'pubspec.yaml'),
-        p.join(root, 'pubspec.lock', 'file.txt')
+        p.join(root, 'pubspec.lock', 'file.txt'),
       });
     });
 
@@ -324,15 +324,15 @@ void main() {
             d.dir('subsubdir', [
               d.file('subsubfile1.txt', 'subsubcontents'),
               d.file('subsubfile2.txt', 'subsubcontents'),
-            ])
-          ])
+            ]),
+          ]),
         ]).create();
 
         expect(entrypoint!.root.listFiles(beneath: 'subdir'), {
           p.join(root, 'subdir', 'subfile1.txt'),
           p.join(root, 'subdir', 'subfile2.txt'),
           p.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
-          p.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt')
+          p.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt'),
         });
       });
     });

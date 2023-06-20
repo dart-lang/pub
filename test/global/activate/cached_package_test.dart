@@ -14,7 +14,7 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
       ],
     );
 
@@ -33,8 +33,8 @@ void main() {
     // Should be in global package cache.
     await d.dir(cachePath, [
       d.dir('global_packages', [
-        d.dir('foo', [d.file('pubspec.lock', contains('1.0.0'))])
-      ])
+        d.dir('foo', [d.file('pubspec.lock', contains('1.0.0'))]),
+      ]),
     ]).validate();
   });
 }

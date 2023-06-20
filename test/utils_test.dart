@@ -43,7 +43,7 @@ void main() {
       expect(
         yamlToString({
           'a': {'b': 1, 'c': 2},
-          'd': 3
+          'd': 3,
         }),
         equals('''
 a:

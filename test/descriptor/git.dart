@@ -25,7 +25,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
         '',
       ],
       ['add', '.'],
-      ['commit', '-m', 'initial commit', '--allow-empty']
+      ['commit', '-m', 'initial commit', '--allow-empty'],
     ]);
   }
 
@@ -37,7 +37,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['add', '.'],
-      ['commit', '-m', 'update']
+      ['commit', '-m', 'update'],
     ]);
   }
 

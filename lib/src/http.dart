@@ -308,7 +308,7 @@ extension Throwing on http.BaseResponse {
     HttpStatus.movedTemporarily,
     HttpStatus.seeOther,
     HttpStatus.temporaryRedirect,
-    HttpStatus.permanentRedirect
+    HttpStatus.permanentRedirect,
   ];
 
   /// Throws [PubHttpResponseException], calls [fail], or does nothing depending

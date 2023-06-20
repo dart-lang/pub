@@ -151,7 +151,7 @@ The latest published version is 2.0.2.
         'test_pkg',
         '0.0.1',
         pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'}
+          'environment': {'sdk': '>=2.12.0<3.0.0'},
         },
       );
 
@@ -167,7 +167,7 @@ The latest published version is 2.0.2.
         'test_pkg',
         '0.0.1',
         pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'}
+          'environment': {'sdk': '>=2.12.0<3.0.0'},
         },
       );
 
@@ -183,14 +183,14 @@ The latest published version is 2.0.2.
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '2.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         );
 
@@ -220,14 +220,14 @@ Your version 1.0.0 is earlier than that.'''
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '0.0.2-dev',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         );
 
@@ -244,7 +244,7 @@ Your version 1.0.0 is earlier than that.'''
         'test_pkg',
         '0.0.1',
         pubspec: {
-          'environment': {'sdk': '>=2.9.0<3.0.0'}
+          'environment': {'sdk': '>=2.9.0<3.0.0'},
         },
       );
 
@@ -268,14 +268,14 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '2.0.0',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         );
 
@@ -302,14 +302,14 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '0.0.2-dev',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         );
 
@@ -334,7 +334,7 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
         'test_pkg',
         '0.0.2-dev',
         pubspec: {
-          'environment': {'sdk': '>=2.9.0<3.0.0'}
+          'environment': {'sdk': '>=2.9.0<3.0.0'},
         },
       );
       await expectValidationDeprecated(

@@ -23,13 +23,13 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).validate();
   });
@@ -53,13 +53,13 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).validate();
   });
@@ -97,13 +97,13 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git', 'version': '1.0.0'}
+        'foo': {'git': '../foo.git', 'version': '1.0.0'},
       },
     ).validate();
   });
@@ -186,8 +186,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {},
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).create();
 
     await pubAdd(args: ['foo', '--git-url', '../foo.git']);
@@ -200,10 +200,10 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'git': '../foo.git'}
+          'foo': {'git': '../foo.git'},
         },
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).validate();
   });
 
@@ -221,7 +221,7 @@ void main() {
 
   test('Can add a package with a git descriptor and relative path', () async {
     await d.git('foo.git', [
-      d.dir('subdir', [d.libPubspec('foo', '1.2.3')])
+      d.dir('subdir', [d.libPubspec('foo', '1.2.3')]),
     ]).create();
     await d.appDir(dependencies: {}).create();
     await pubAdd(
@@ -237,8 +237,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'path': 'subdir'}
-        }
+          'git': {'url': '../foo.git', 'path': 'subdir'},
+        },
       },
     ).validate();
   });
@@ -271,7 +271,7 @@ void main() {
           'foo': {'git': '../foo.git'},
           'bar': {'git': '../bar.git'},
         },
-      })
+      }),
     ]).validate();
   });
 }

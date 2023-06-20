@@ -21,8 +21,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git'}
-        }
+          'git': {'url': '../foo.git'},
+        },
       },
     ).create();
 

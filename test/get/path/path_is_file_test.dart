@@ -20,9 +20,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': dummyPath}
+          'foo': {'path': dummyPath},
         },
-      )
+      ),
     ]).create();
 
     await pubGet(

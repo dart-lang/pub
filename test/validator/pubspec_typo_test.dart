@@ -34,8 +34,8 @@ void main() {
           'environment': {},
           'executables': '',
           'publish_to': '',
-          'flutter': {}
-        })
+          'flutter': {},
+        }),
       ]).create();
 
       await expectValidationDeprecated(pubspecTypo);
@@ -48,8 +48,8 @@ void main() {
           'version': '1.0.0',
           'email': 'my@email.com',
           'maintainer': 'Garett Tok',
-          'assets': '../relative/path'
-        })
+          'assets': '../relative/path',
+        }),
       ]).create();
 
       await expectValidationDeprecated(pubspecTypo);
@@ -64,7 +64,7 @@ void main() {
         d.pubspec({
           'name': 'myapp',
           'dependecies': {},
-        })
+        }),
       ]).create();
 
       await expectValidationDeprecated(pubspecTypo, warnings: isNotEmpty);
@@ -78,8 +78,8 @@ void main() {
           'avthor': 'Garett Tok',
           'descripton': 'This is a package',
           'homepagd': 'https://pub.dev/packages/myapp',
-          'documentat1on': 'here'
-        })
+          'documentat1on': 'here',
+        }),
       ]).create();
 
       await expectValidationDeprecated(

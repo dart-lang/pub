@@ -21,10 +21,10 @@ void main() {
         deps: {
           'bar': {
             'git':
-                p.toUri(p.absolute(d.sandbox, appPath, '../bar.git')).toString()
-          }
+                p.toUri(p.absolute(d.sandbox, appPath, '../bar.git')).toString(),
+          },
         },
-      )
+      ),
     ]).create();
 
     await d.git(
@@ -36,8 +36,8 @@ void main() {
       dependencies: {
         'foo': {
           'git':
-              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
-        }
+              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString(),
+        },
       },
     ).create();
 
@@ -50,8 +50,8 @@ void main() {
           [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')],
         ),
         d.gitPackageRevisionCacheDir('foo'),
-        d.gitPackageRevisionCacheDir('bar')
-      ])
+        d.gitPackageRevisionCacheDir('bar'),
+      ]),
     ]).validate();
 
     expect(packageSpec('foo'), isNotNull);
@@ -67,9 +67,9 @@ void main() {
         'foo',
         '1.0.0',
         deps: {
-          'bar': {'git': '../bar.git'}
+          'bar': {'git': '../bar.git'},
         },
-      )
+      ),
     ]).create();
 
     await d.git(
@@ -81,8 +81,8 @@ void main() {
       dependencies: {
         'foo': {
           'git':
-              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
-        }
+              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString(),
+        },
       },
     ).create();
 
@@ -104,9 +104,9 @@ void main() {
         'foo',
         '1.0.0',
         deps: {
-          'bar': {'path': '../bar'}
+          'bar': {'path': '../bar'},
         },
-      )
+      ),
     ]).create();
 
     await d
@@ -116,8 +116,8 @@ void main() {
       dependencies: {
         'foo': {
           'git':
-              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString()
-        }
+              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString(),
+        },
       },
     ).create();
 

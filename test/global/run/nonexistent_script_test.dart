@@ -15,7 +15,7 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'dev_dependencies': {'bar': '1.0.0'}
+        'dev_dependencies': {'bar': '1.0.0'},
       },
     );
 

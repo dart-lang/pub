@@ -792,7 +792,7 @@ Future<List<Object>> _computeUpgradeSet(
           'previous': _source(
             currentPackages[oldPackageName]!,
             containingDir: entrypoint.root.dir,
-          )
+          ),
         },
   ];
 }

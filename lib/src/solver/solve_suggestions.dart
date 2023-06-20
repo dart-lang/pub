@@ -110,7 +110,7 @@ String packageAddDescription(Entrypoint entrypoint, PackageId id) {
   } else {
     descriptor = json.encode({
       'version': VersionConstraint.compatibleWith(id.version).toString(),
-      id.source.name: d
+      id.source.name: d,
     });
   }
 
@@ -152,7 +152,7 @@ class _ResolutionContext {
       entrypoint.root.pubspec,
       sdkOverrides: {
         'dart': bestRelease.dartVersion,
-        'flutter': bestRelease.flutterVersion
+        'flutter': bestRelease.flutterVersion,
       },
     );
     if (result == null) {

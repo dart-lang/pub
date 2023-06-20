@@ -17,7 +17,7 @@ void main() {
   test('Dev-dependency names have to be valid package names', () async {
     await appDir(
       pubspec: {
-        'dev_dependencies': {'abc def': '1.0.0'}
+        'dev_dependencies': {'abc def': '1.0.0'},
       },
     ).create();
     await pubGet(error: contains('Not a valid package name.'), exitCode: DATA);

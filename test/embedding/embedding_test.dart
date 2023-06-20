@@ -106,7 +106,7 @@ Future<void> main() async {
       'flutter_gen',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('flutter_gen.dart', 'main() {print("hi");}')])
+        d.dir('bin', [d.file('flutter_gen.dart', 'main() {print("hi");}')]),
       ],
     );
 
@@ -136,7 +136,7 @@ main() {
   print('Hi');
   exit(123);
 }
-''')
+'''),
       ]),
     ]).create();
     await ctx.runEmbedding(
@@ -198,17 +198,17 @@ main() {
     await d.dir('dep', [
       d.pubspec({
         'name': 'dep',
-        'environment': {'sdk': '^3.0.0'}
-      })
+        'environment': {'sdk': '^3.0.0'},
+      }),
     ]).create();
     final app = d.dir(appPath, [
       d.appPubspec(
         dependencies: {
           'foo': '1.0.0',
           // The path dependency should not go to analytics.
-          'dep': {'path': '../dep'}
+          'dep': {'path': '../dep'},
         },
-      )
+      ),
     ]);
     await app.create();
 
@@ -235,7 +235,7 @@ main() {
           'value': 1,
           'cd1': 'direct',
           'ni': '1',
-        }
+        },
       },
       {
         'hitType': 'event',
@@ -246,7 +246,7 @@ main() {
           'value': 1,
           'cd1': 'transitive',
           'ni': '1',
-        }
+        },
       },
       {
         'hitType': 'timing',
@@ -254,8 +254,8 @@ main() {
           'variableName': 'resolution',
           'time': isA<int>(),
           'category': 'pub-get',
-          'label': null
-        }
+          'label': null,
+        },
       },
     });
     // Don't write the logs to file on a normal run.
@@ -299,11 +299,11 @@ main() {
       d.pubspec({
         'name': 'myapp',
         'environment': {'sdk': '^2.18.0'},
-        'dependencies': {'foo': '^1.0.0'}
+        'dependencies': {'foo': '^1.0.0'},
       }),
       d.dir('bin', [
         d.file('myapp.dart', 'main() {print(42);}'),
-      ])
+      ]),
     ]).create();
 
     final server = await servePackages();
@@ -311,7 +311,7 @@ main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'environment': {'sdk': '^2.18.0'}
+        'environment': {'sdk': '^2.18.0'},
       },
     );
 
@@ -324,7 +324,7 @@ main() {
       'foo',
       '1.0.1',
       pubspec: {
-        'environment': {'sdk': '^2.18.0'}
+        'environment': {'sdk': '^2.18.0'},
       },
     );
 
@@ -368,11 +368,11 @@ main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependencies': {'foo': '^1.0.0'}
+        'dependencies': {'foo': '^1.0.0'},
       }),
       d.dir('bin', [
         d.file('myapp.dart', 'main() {print(42);}'),
-      ])
+      ]),
     ]).create();
 
     final server = await servePackages();
@@ -399,11 +399,11 @@ main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependencies': {'foo': '^1.0.0'}
+        'dependencies': {'foo': '^1.0.0'},
       }),
       d.dir('bin', [
         d.file('myapp.dart', 'main() {print(42);}'),
-      ])
+      ]),
     ]).create();
 
     final server = await servePackages();

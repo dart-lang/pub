@@ -17,13 +17,13 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       },
       contents: [
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 
@@ -44,9 +44,9 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       }),
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);

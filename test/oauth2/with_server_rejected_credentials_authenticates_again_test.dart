@@ -25,11 +25,11 @@ void main() {
       return shelf.Response(
         401,
         body: jsonEncode({
-          'error': {'message': 'your token sucks'}
+          'error': {'message': 'your token sucks'},
         }),
         headers: {
           'www-authenticate': 'Bearer error="invalid_token",'
-              ' error_description="your token sucks"'
+              ' error_description="your token sucks"',
         },
       );
     });
