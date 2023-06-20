@@ -93,11 +93,13 @@ class DepsCommand extends PubCommand {
       final visited = <String>[];
       final toVisit = [entrypoint.root.name];
       final packagesJson = <dynamic>[];
+      final graph = await entrypoint.packageGraph;
       while (toVisit.isNotEmpty) {
         final current = toVisit.removeLast();
         if (visited.contains(current)) continue;
         visited.add(current);
-        final currentPackage = entrypoint.packageGraph.packages[current]!;
+        final currentPackage =
+            (await entrypoint.packageGraph).packages[current]!;
         final next = (current == entrypoint.root.name
                 ? entrypoint.root.immediateDependencies
                 : currentPackage.dependencies)
@@ -126,7 +128,7 @@ class DepsCommand extends PubCommand {
         for (final package in [
           entrypoint.root,
           ...entrypoint.root.immediateDependencies.keys
-              .map((name) => entrypoint.packageGraph.packages[name]),
+              .map((name) => graph.packages[name]),
         ])
           ...package!.executableNames.map(
             (name) => package == entrypoint.root
@@ -151,7 +153,7 @@ class DepsCommand extends PubCommand {
       );
     } else {
       if (argResults.flag('executables')) {
-        _outputExecutables(buffer);
+        await _outputExecutables(buffer);
       } else {
         for (var sdk in sdks.values) {
           if (!sdk.isAvailable) continue;
@@ -162,13 +164,13 @@ class DepsCommand extends PubCommand {
 
         switch (argResults['style']) {
           case 'compact':
-            _outputCompact(buffer);
+            await _outputCompact(buffer);
             break;
           case 'list':
-            _outputList(buffer);
+            await _outputList(buffer);
             break;
           case 'tree':
-            _outputTree(buffer);
+            await _outputTree(buffer);
             break;
         }
       }
@@ -183,40 +185,44 @@ class DepsCommand extends PubCommand {
   /// For each dependency listed, *that* package's immediate dependencies are
   /// shown. Unlike [_outputList], this prints all of these dependencies on one
   /// line.
-  void _outputCompact(
+  Future<void> _outputCompact(
     StringBuffer buffer,
-  ) {
+  ) async {
     var root = entrypoint.root;
-    _outputCompactPackages('dependencies', root.dependencies.keys, buffer);
+    await _outputCompactPackages(
+      'dependencies',
+      root.dependencies.keys,
+      buffer,
+    );
     if (_includeDev) {
-      _outputCompactPackages(
+      await _outputCompactPackages(
         'dev dependencies',
         root.devDependencies.keys,
         buffer,
       );
     }
-    _outputCompactPackages(
+    await _outputCompactPackages(
       'dependency overrides',
       root.dependencyOverrides.keys,
       buffer,
     );
 
-    var transitive = _getTransitiveDependencies();
-    _outputCompactPackages('transitive dependencies', transitive, buffer);
+    var transitive = await _getTransitiveDependencies();
+    await _outputCompactPackages('transitive dependencies', transitive, buffer);
   }
 
   /// Outputs one section of packages in the compact output.
-  void _outputCompactPackages(
+  Future<void> _outputCompactPackages(
     String section,
     Iterable<String> names,
     StringBuffer buffer,
-  ) {
+  ) async {
     if (names.isEmpty) return;
 
     buffer.writeln();
     buffer.writeln('$section:');
     for (var name in ordered(names)) {
-      var package = _getPackage(name);
+      var package = await _getPackage(name);
 
       buffer.write('- ${_labelPackage(package)}');
       if (package.dependencies.isEmpty) {
@@ -234,37 +240,45 @@ class DepsCommand extends PubCommand {
   ///
   /// For each dependency listed, *that* package's immediate dependencies are
   /// shown.
-  void _outputList(StringBuffer buffer) {
+  Future<void> _outputList(StringBuffer buffer) async {
     var root = entrypoint.root;
-    _outputListSection('dependencies', root.dependencies.keys, buffer);
+    await _outputListSection('dependencies', root.dependencies.keys, buffer);
     if (_includeDev) {
-      _outputListSection('dev dependencies', root.devDependencies.keys, buffer);
+      await _outputListSection(
+        'dev dependencies',
+        root.devDependencies.keys,
+        buffer,
+      );
     }
-    _outputListSection(
+    await _outputListSection(
       'dependency overrides',
       root.dependencyOverrides.keys,
       buffer,
     );
 
-    var transitive = _getTransitiveDependencies();
+    var transitive = await _getTransitiveDependencies();
     if (transitive.isEmpty) return;
 
-    _outputListSection('transitive dependencies', ordered(transitive), buffer);
+    await _outputListSection(
+      'transitive dependencies',
+      ordered(transitive),
+      buffer,
+    );
   }
 
   /// Outputs one section of packages in the list output.
-  void _outputListSection(
+  Future<void> _outputListSection(
     String name,
     Iterable<String> deps,
     StringBuffer buffer,
-  ) {
+  ) async {
     if (deps.isEmpty) return;
 
     buffer.writeln();
     buffer.writeln('$name:');
 
     for (var name in deps) {
-      var package = _getPackage(name);
+      var package = await _getPackage(name);
       buffer.writeln('- ${_labelPackage(package)}');
 
       for (var dep in package.dependencies.values) {
@@ -279,9 +293,9 @@ class DepsCommand extends PubCommand {
   /// dependency), later ones are not traversed. This is done in breadth-first
   /// fashion so that a package will always be expanded at the shallowest
   /// depth that it appears at.
-  void _outputTree(
+  Future<void> _outputTree(
     StringBuffer buffer,
-  ) {
+  ) async {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
@@ -296,7 +310,7 @@ class DepsCommand extends PubCommand {
       immediateDependencies.removeAll(entrypoint.root.devDependencies.keys);
     }
     for (var name in immediateDependencies) {
-      toWalk.add(Pair(_getPackage(name), packageTree));
+      toWalk.add(Pair(await _getPackage(name), packageTree));
     }
 
     // Do a breadth-first walk to the dependency graph.
@@ -317,7 +331,7 @@ class DepsCommand extends PubCommand {
       map[_labelPackage(package)] = childMap;
 
       for (var dep in package.dependencies.values) {
-        toWalk.add(Pair(_getPackage(dep.name), childMap));
+        toWalk.add(Pair(await _getPackage(dep.name), childMap));
       }
     }
 
@@ -328,8 +342,8 @@ class DepsCommand extends PubCommand {
       '${log.bold(package.name)} ${package.version}';
 
   /// Gets the names of the non-immediate dependencies of the root package.
-  Set<String> _getTransitiveDependencies() {
-    var transitive = _getAllDependencies();
+  Future<Set<String>> _getTransitiveDependencies() async {
+    var transitive = await _getAllDependencies();
     var root = entrypoint.root;
     transitive.remove(root.name);
     transitive.removeAll(root.dependencies.keys);
@@ -340,13 +354,16 @@ class DepsCommand extends PubCommand {
     return transitive;
   }
 
-  Set<String> _getAllDependencies() {
-    if (_includeDev) return entrypoint.packageGraph.packages.keys.toSet();
+  Future<Set<String>> _getAllDependencies() async {
+    final graph = await entrypoint.packageGraph;
+    if (_includeDev) {
+      return graph.packages.keys.toSet();
+    }
 
     var nonDevDependencies = entrypoint.root.dependencies.keys.toList()
       ..addAll(entrypoint.root.dependencyOverrides.keys);
     return nonDevDependencies
-        .expand((name) => entrypoint.packageGraph.transitiveDependencies(name))
+        .expand(graph.transitiveDependencies)
         .map((package) => package.name)
         .toSet();
   }
@@ -357,22 +374,23 @@ class DepsCommand extends PubCommand {
   /// It's very unlikely that the lockfile won't be up-to-date with the pubspec,
   /// but it's possible, since [Entrypoint.assertUpToDate]'s modification time
   /// check can return a false negative. This fails gracefully if that happens.
-  Package _getPackage(String name) {
-    var package = entrypoint.packageGraph.packages[name];
+  Future<Package> _getPackage(String name) async {
+    var package = (await entrypoint.packageGraph).packages[name];
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
         'was generated, please run "$topLevelProgram pub get" again.');
   }
 
   /// Outputs all executables reachable from [entrypoint].
-  void _outputExecutables(StringBuffer buffer) {
+  Future<void> _outputExecutables(StringBuffer buffer) async {
+    final graph = await entrypoint.packageGraph;
     var packages = [
       entrypoint.root,
       ...(_includeDev
               ? entrypoint.root.immediateDependencies
               : entrypoint.root.dependencies)
           .keys
-          .map((name) => entrypoint.packageGraph.packages[name]!),
+          .map((name) => graph.packages[name]!),
     ];
 
     for (var package in packages) {

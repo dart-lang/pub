@@ -57,7 +57,7 @@ Future<int> runExecutable(
   // entrypoint itself.
   if (entrypoint.root.name != executable.package &&
       !entrypoint.root.immediateDependencies.containsKey(package)) {
-    if (entrypoint.packageGraph.packages.containsKey(package)) {
+    if ((await entrypoint.packageGraph).packages.containsKey(package)) {
       dataError('Package "$package" is not an immediate dependency.\n'
           'Cannot run executables in transitive dependencies.');
     } else {
@@ -76,7 +76,7 @@ Future<int> runExecutable(
   // later invocation.
   var useSnapshot = vmArgs.isEmpty;
 
-  var executablePath = entrypoint.resolveExecutable(executable);
+  var executablePath = await entrypoint.resolveExecutable(executable);
   if (!fileExists(executablePath)) {
     var message =
         'Could not find ${log.bold(p.normalize(executable.relativePath))}';
@@ -93,7 +93,7 @@ Future<int> runExecutable(
     await entrypoint.ensureUpToDate();
 
     if (!fileExists(snapshotPath) ||
-        entrypoint.packageGraph.isPackageMutable(package)) {
+        (await entrypoint.packageGraph).isPackageMutable(package)) {
       await recompile(executable);
     }
     executablePath = snapshotPath;
@@ -349,7 +349,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
 
-  final path = entrypoint.resolveExecutable(executable);
+  final path = await entrypoint.resolveExecutable(executable);
   if (!fileExists(path)) {
     throw CommandResolutionFailedException._(
       'Could not find `bin${p.separator}$command.dart` in package `$package`.',
@@ -366,7 +366,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   } else {
     final snapshotPath = entrypoint.pathOfExecutable(executable);
     if (!fileExists(snapshotPath) ||
-        entrypoint.packageGraph.isPackageMutable(package)) {
+        (await entrypoint.packageGraph).isPackageMutable(package)) {
       try {
         await errorsOnlyUnlessTerminal(
           () => entrypoint.precompileExecutable(
