@@ -17,7 +17,7 @@ void main() {
         'name': 'myappx',
         'version': '1.0.0',
         'dependencies': {'foo': 'any'},
-      })
+      }),
     ]).create();
 
     await pubGet();
@@ -28,7 +28,7 @@ void main() {
         'name': 'myapp',
         'version': '1.0.1',
         'dependencies': {'foo': 'any'},
-      })
+      }),
     ]).create();
     await pubUpgrade();
   });

@@ -529,7 +529,7 @@ class VersionSolver {
         ..._dependencyOverrides.keys,
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
-        if (_dependencyOverrides.containsKey(package.name)) _root.name
+        if (_dependencyOverrides.containsKey(package.name)) _root.name,
       };
 
       return PackageLister(

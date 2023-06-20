@@ -44,7 +44,7 @@ ${Platform.resolvedExecutable} %*
         environment: {
           'PATH': [
             p.join(d.sandbox, 'bin'),
-            p.dirname(Platform.resolvedExecutable)
+            p.dirname(Platform.resolvedExecutable),
           ].join(';'),
           ...getPubTestEnvironment(),
         },

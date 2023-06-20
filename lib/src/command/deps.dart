@@ -120,7 +120,7 @@ class DepsCommand extends PubCommand {
           'version': currentPackage.version.toString(),
           'kind': kind,
           'source': source,
-          'dependencies': next
+          'dependencies': next,
         });
         toVisit.addAll(next);
       }
@@ -128,13 +128,13 @@ class DepsCommand extends PubCommand {
         for (final package in [
           entrypoint.root,
           ...entrypoint.root.immediateDependencies.keys
-              .map((name) => graph.packages[name])
+              .map((name) => graph.packages[name]),
         ])
           ...package!.executableNames.map(
             (name) => package == entrypoint.root
                 ? ':$name'
                 : (package.name == name ? name : '${package.name}:$name'),
-          )
+          ),
       ];
 
       buffer.writeln(
@@ -145,9 +145,9 @@ class DepsCommand extends PubCommand {
             'sdks': [
               for (var sdk in sdks.values)
                 if (sdk.version != null)
-                  {'name': sdk.name, 'version': sdk.version.toString()}
+                  {'name': sdk.name, 'version': sdk.version.toString()},
             ],
-            'executables': executables
+            'executables': executables,
           },
         ),
       );
@@ -390,7 +390,7 @@ class DepsCommand extends PubCommand {
               ? entrypoint.root.immediateDependencies
               : entrypoint.root.dependencies)
           .keys
-          .map((name) => graph.packages[name]!)
+          .map((name) => graph.packages[name]!),
     ];
 
     for (var package in packages) {

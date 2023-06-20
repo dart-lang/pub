@@ -19,14 +19,14 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")]),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.hostedCache([
-      d.dir('foo-1.0.0', [d.libPubspec('foo', '1.0.0', sdk: '0.5.6')])
+      d.dir('foo-1.0.0', [d.libPubspec('foo', '1.0.0', sdk: '0.5.6')]),
     ]).create();
 
     // Make the snapshot out-of-date, too, so that we load the pubspec with the
@@ -36,9 +36,9 @@ void main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot')])
-        ])
-      ])
+          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot')]),
+        ]),
+      ]),
     ]).create();
 
     await runPub(
@@ -55,7 +55,7 @@ void main() {
       '1.0.0',
       sdk: '^3.0.1',
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")]),
       ],
     );
 
@@ -69,7 +69,7 @@ void main() {
     await runPub(
       environment: {
         // Not compatible with [defaultSdkConstraint].
-        '_PUB_TEST_SDK_VERSION': '3.0.0'
+        '_PUB_TEST_SDK_VERSION': '3.0.0',
       },
       args: ['global', 'run', 'foo:script'],
       error: contains("foo 1.0.0 doesn't support Dart 3.0.0."),
@@ -90,7 +90,7 @@ void main() {
           d.dir(
             'bin',
             [d.file('script.dart', "main(args) => print('123-OK');")],
-          )
+          ),
         ],
       )
       ..serve(
@@ -134,7 +134,7 @@ try:
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('123-OK');")],
-        )
+        ),
       ],
     );
 

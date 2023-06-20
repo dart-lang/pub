@@ -29,7 +29,7 @@ void main() {
 
       await d.dir(appPath, [
         d.appPubspec(dependencies: {'foo': '1.2.3'}),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);
@@ -78,7 +78,7 @@ void main() {
 
       await d.dir(appPath, [
         d.appPubspec(dependencies: {'foo': '1.2.3'}),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       var oldFile = d.dir(appPath, [
@@ -124,7 +124,7 @@ void main() {
     test('package_config.json file is not created if pub fails', () async {
       await d.dir(appPath, [
         d.appPubspec(dependencies: {'foo': '1.2.3'}),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(
@@ -172,9 +172,9 @@ void main() {
           },
           'dependency_overrides': {
             'baz': {'path': '../local_baz'},
-          }
+          },
         }),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);
@@ -223,7 +223,7 @@ void main() {
             'sdk': '>=3.1.0 <=3.2.2+2', // tests runs with '3.1.2+3'
           },
         }),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);
@@ -265,7 +265,7 @@ void main() {
             'foo': '^1.2.3',
           },
         }),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);

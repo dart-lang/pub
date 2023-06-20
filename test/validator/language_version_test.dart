@@ -26,7 +26,7 @@ Future<void> setup({
     d.dir('lib', [
       if (libraryLanguageVersion != null)
         d.file('library.dart', '// @dart = $libraryLanguageVersion\n'),
-    ])
+    ]),
   ]).create();
 }
 

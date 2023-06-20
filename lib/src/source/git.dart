@@ -294,7 +294,7 @@ class GitSource extends CachedSource {
           ref.name,
           pubspec.version,
           GitResolvedDescription(description, revision),
-        )
+        ),
       ];
     });
   }

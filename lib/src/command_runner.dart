@@ -117,7 +117,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
         'normal': 'Show errors, warnings, and user messages.',
         'io': 'Also show IO operations.',
         'solver': 'Show steps during version resolution.',
-        'all': 'Show all output including internal tracing messages.'
+        'all': 'Show all output including internal tracing messages.',
       },
     );
     argParser.addFlag(

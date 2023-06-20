@@ -85,7 +85,7 @@ void main() {
       output: allOf([
         contains(
           'Installed $archivePath in cache as foo 1.0.0 from ${server.url}.',
-        )
+        ),
       ]),
     );
     await d.cacheDir({'foo': '1.0.0'}).validate();
@@ -130,7 +130,7 @@ void main() {
           allOf([contains('Installed $archivePath in cache as foo 1.0.0.')]),
     );
     await hostedCache([
-      dir('foo-1.0.0', [file('new-file.txt'), nothing('old-file.txt')])
+      dir('foo-1.0.0', [file('new-file.txt'), nothing('old-file.txt')]),
     ]).validate();
   });
 

@@ -26,8 +26,8 @@ void main() {
       test('a pubspec with a "name" key', () async {
         await d.dir(appPath, [
           d.pubspec({
-            'dependencies': {'foo': null}
-          })
+            'dependencies': {'foo': null},
+          }),
         ]).create();
 
         await pubCommand(
@@ -43,7 +43,7 @@ void main() {
       // directory.
       await d.dir(appPath, [
         d.pubspec({'name': 'myapp_name'}),
-        d.libDir('myapp_name')
+        d.libDir('myapp_name'),
       ]).create();
 
       await pubCommand(command);
@@ -63,29 +63,29 @@ void main() {
           d.pubspec({
             'name': 'foo',
             'dependencies': {
-              'baz': {'path': '../baz1'}
-            }
-          })
+              'baz': {'path': '../baz1'},
+            },
+          }),
         ]),
         d.dir('bar', [
           d.pubspec({
             'name': 'bar',
             'dependencies': {
-              'baz': {'path': '../baz2'}
-            }
-          })
+              'baz': {'path': '../baz2'},
+            },
+          }),
         ]),
         d.dir('baz1', [d.libPubspec('baz', '0.0.0')]),
-        d.dir('baz2', [d.libPubspec('baz', '0.0.0')])
+        d.dir('baz2', [d.libPubspec('baz', '0.0.0')]),
       ]).create();
 
       await d.dir(appPath, [
         d.appPubspec(
           dependencies: {
             'foo': {'path': '../deps/foo'},
-            'bar': {'path': '../deps/bar'}
+            'bar': {'path': '../deps/bar'},
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(
@@ -98,9 +98,9 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec(
           dependencies: {
-            'myapp': {'path': '.'}
+            'myapp': {'path': '.'},
           },
-        )
+        ),
       ]).create();
 
       await pubCommand(
@@ -115,9 +115,9 @@ void main() {
         d.pubspec({
           'name': 'myapp',
           'dev_dependencies': {
-            'myapp': {'path': '.'}
-          }
-        })
+            'myapp': {'path': '.'},
+          },
+        }),
       ]).create();
 
       await pubCommand(

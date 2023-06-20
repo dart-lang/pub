@@ -15,7 +15,7 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('example', [d.file('script.dart', "main(args) => print('ok');")])
+        d.dir('example', [d.file('script.dart', "main(args) => print('ok');")]),
       ],
     );
 

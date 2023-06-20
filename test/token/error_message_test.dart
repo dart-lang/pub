@@ -35,7 +35,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': globalServer.url, 'token': 'access-token'},
-      ]
+      ],
     }).create();
   });
 

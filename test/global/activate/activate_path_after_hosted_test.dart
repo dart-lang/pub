@@ -16,13 +16,13 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")]),
       ],
     );
 
     await d.dir('foo', [
       d.libPubspec('foo', '2.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('path');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('path');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', 'foo']);
@@ -32,7 +32,7 @@ void main() {
       args: ['global', 'activate', '-spath', '../foo'],
       output: allOf([
         contains('Package foo is currently active at version 1.0.0.'),
-        contains('Activated foo 2.0.0 at path "$path".')
+        contains('Activated foo 2.0.0 at path "$path".'),
       ]),
     );
 

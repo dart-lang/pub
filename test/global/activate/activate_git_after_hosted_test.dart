@@ -17,13 +17,13 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")]),
       ],
     );
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('git');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('git');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', 'foo']);

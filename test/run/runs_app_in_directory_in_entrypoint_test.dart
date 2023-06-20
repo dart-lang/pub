@@ -14,8 +14,8 @@ void main() {
       d.appPubspec(),
       d.dir('tool', [
         d.file('app.dart', "main() => print('tool');"),
-        d.dir('sub', [d.file('app.dart', "main() => print('sub');")])
-      ])
+        d.dir('sub', [d.file('app.dart', "main() => print('sub');")]),
+      ]),
     ]).create();
 
     await pubGet();

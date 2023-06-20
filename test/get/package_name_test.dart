@@ -11,7 +11,7 @@ import '../test_pub.dart';
 void main() {
   test('pub get fails with a non-identifier name', () async {
     await d.dir(appPath, [
-      d.pubspec({'name': 'invalid package name', 'version': '1.0.0'})
+      d.pubspec({'name': 'invalid package name', 'version': '1.0.0'}),
     ]).create();
 
     await pubGet(
@@ -31,7 +31,7 @@ void main() {
 
   test('pub get fails with a reserved word name', () async {
     await d.dir(appPath, [
-      d.pubspec({'name': 'return', 'version': '1.0.0'})
+      d.pubspec({'name': 'return', 'version': '1.0.0'}),
     ]).create();
 
     await pubGet(
@@ -52,7 +52,7 @@ void main() {
   test('pub get allows a name with dotted identifiers', () async {
     await d.dir(appPath, [
       d.pubspec({'name': 'foo.bar.baz', 'version': '1.0.0'}),
-      d.libDir('foo.bar.baz', 'foo.bar.baz 1.0.0')
+      d.libDir('foo.bar.baz', 'foo.bar.baz 1.0.0'),
     ]).create();
 
     await pubGet();
@@ -60,7 +60,7 @@ void main() {
     await d.dir(appPath, [
       d.packageConfigFile(
         [d.packageConfigEntry(name: 'foo.bar.baz', path: '.')],
-      )
+      ),
     ]).validate();
   });
 }

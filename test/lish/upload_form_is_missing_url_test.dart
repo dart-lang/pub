@@ -20,7 +20,7 @@ void main() {
     await confirmPublish(pub);
 
     var body = {
-      'fields': {'field1': 'value1', 'field2': 'value2'}
+      'fields': {'field1': 'value1', 'field2': 'value2'},
     };
 
     handleUploadForm(globalServer, body: body);

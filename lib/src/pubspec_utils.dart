@@ -176,7 +176,7 @@ Object? pubspecDescription(
         containingDir: relativeEntrypoint.rootDir,
         languageVersion: relativeEntrypoint.root.pubspec.languageVersion,
       ),
-      if (!constraint.isAny) 'version': constraint.toString()
+      if (!constraint.isAny) 'version': constraint.toString(),
     };
   }
 }

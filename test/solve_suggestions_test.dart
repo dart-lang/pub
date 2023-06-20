@@ -18,7 +18,7 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'environment': {'flutter': '>=3.3.0', 'sdk': '^2.17.0'}
+        'environment': {'flutter': '>=3.3.0', 'sdk': '^2.17.0'},
       },
     );
     server.handle(
@@ -26,7 +26,7 @@ void main() {
       (request) => Response.ok(releasesMockResponse),
     );
     await d.dir(appPath, [
-      d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0')
+      d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0'),
     ]).create();
     await pubGet(
       error: contains('* Try using the Flutter SDK version: 3.3.2.'),
@@ -45,7 +45,7 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'environment': {'sdk': '>=2.18.0 <2.18.1'}
+        'environment': {'sdk': '>=2.18.0 <2.18.1'},
       },
     );
     server.handle(
@@ -53,7 +53,7 @@ void main() {
       (request) => Response.ok(releasesMockResponse),
     );
     await d.dir(appPath, [
-      d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0')
+      d.libPubspec('myApp', '1.0.0', deps: {'foo': 'any'}, sdk: '^2.17.0'),
     ]).create();
     await pubGet(
       error: contains('* Try using the Dart SDK version: 2.18.0'),
@@ -78,7 +78,7 @@ void main() {
         '1.0.0',
         deps: {'foo': '^1.0.0'},
         devDeps: {'bar': '^1.0.0'},
-      )
+      ),
     ]).create();
     await pubGet(
       error: allOf(
@@ -103,7 +103,7 @@ void main() {
         'myApp',
         '1.0.0',
         deps: {'foo': '>1.0.0 <=0.0.0'},
-      )
+      ),
     ]).create();
     await pubGet(
       error: allOf(
@@ -129,7 +129,7 @@ void main() {
         '1.0.0',
         deps: {'foo': '1.0.0'},
         devDeps: {'bar': '1.0.0'},
-      )
+      ),
     ]).create();
     await pubGet(
       error: contains(
@@ -166,7 +166,7 @@ void main() {
           'foo2': '1.0.0',
           'bar2': '1.0.0',
         },
-      )
+      ),
     ]).create();
     await pubGet(
       error: contains(
@@ -182,7 +182,7 @@ void main() {
       'foo',
       '1.0.0',
       deps: {
-        'bar': {'version': '2.0.0', 'hosted': server2.url}
+        'bar': {'version': '2.0.0', 'hosted': server2.url},
       },
     );
 
@@ -197,7 +197,7 @@ void main() {
           'foo': '^1.0.0',
           'bar': {'version': '^1.0.0', 'hosted': server2.url},
         },
-      )
+      ),
     ]).create();
     await pubGet(
       error: contains(
@@ -216,7 +216,7 @@ void main() {
           'foo': '^1.0.0',
           'bar': {'version': '^2.0.0', 'hosted': server2.url},
         },
-      )
+      ),
     ]).validate();
   });
 }

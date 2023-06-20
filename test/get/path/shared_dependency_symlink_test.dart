@@ -22,9 +22,9 @@ void main() {
         'foo',
         '0.0.1',
         deps: {
-          'shared': {'path': '../shared'}
+          'shared': {'path': '../shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir('bar', [
@@ -33,9 +33,9 @@ void main() {
         'bar',
         '0.0.1',
         deps: {
-          'shared': {'path': '../link/shared'}
+          'shared': {'path': '../link/shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir(appPath, [
@@ -44,7 +44,7 @@ void main() {
           'bar': {'path': '../bar'},
           'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir('link').create();

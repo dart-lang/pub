@@ -14,7 +14,7 @@ void main() {
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+      d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
     ]).create();
 
     await runPub(

@@ -32,7 +32,7 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
     final channel = {
       'beta': Channel.beta,
       'stable': Channel.stable,
-      'dev': Channel.dev
+      'dev': Channel.dev,
     }[release['channel']];
     if (channel == null) throw FormatException('Release with bad channel');
     final dartVersion = release['dart_sdk_version'];

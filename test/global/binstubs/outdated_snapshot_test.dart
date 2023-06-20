@@ -18,13 +18,13 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       },
       contents: [
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 
@@ -36,9 +36,9 @@ void main() {
           d.dir(
             'bin',
             [d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1')],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).create();
 
     deleteEntry(

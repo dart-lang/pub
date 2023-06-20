@@ -16,9 +16,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': path.join(d.sandbox, 'foo')}
+          'foo': {'path': path.join(d.sandbox, 'foo')},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();

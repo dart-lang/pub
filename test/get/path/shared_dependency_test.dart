@@ -20,9 +20,9 @@ void main() {
         'foo',
         '0.0.1',
         deps: {
-          'shared': {'path': '../shared'}
+          'shared': {'path': '../shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir('bar', [
@@ -31,18 +31,18 @@ void main() {
         'bar',
         '0.0.1',
         deps: {
-          'shared': {'path': '../shared'}
+          'shared': {'path': '../shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
           'foo': {'path': '../foo'},
-          'bar': {'path': '../bar'}
+          'bar': {'path': '../bar'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
@@ -66,9 +66,9 @@ void main() {
         'foo',
         '0.0.1',
         deps: {
-          'shared': {'path': '../shared'}
+          'shared': {'path': '../shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir('bar', [
@@ -77,18 +77,18 @@ void main() {
         'bar',
         '0.0.1',
         deps: {
-          'shared': {'path': '../././shared'}
+          'shared': {'path': '../././shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
           'foo': {'path': '../foo'},
-          'bar': {'path': '../bar'}
+          'bar': {'path': '../bar'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();

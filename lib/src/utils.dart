@@ -60,7 +60,7 @@ const reservedWords = [
   'var',
   'void',
   'while',
-  'with'
+  'with',
 ];
 
 /// An cryptographically secure instance of [math.Random].
@@ -376,7 +376,7 @@ List<String> split1(String toSplit, String pattern) {
   if (index == -1) return [toSplit];
   return [
     toSplit.substring(0, index),
-    toSplit.substring(index + pattern.length)
+    toSplit.substring(index + pattern.length),
   ];
 }
 

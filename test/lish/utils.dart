@@ -18,7 +18,7 @@ void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
 
     body ??= {
       'url': Uri.parse(server.url).resolve('/upload').toString(),
-      'fields': {'field1': 'value1', 'field2': 'value2'}
+      'fields': {'field1': 'value1', 'field2': 'value2'},
     };
 
     return shelf.Response.ok(

@@ -18,7 +18,7 @@ void main() {
         'foo',
         '1.3.0',
         contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
         ],
       );
 

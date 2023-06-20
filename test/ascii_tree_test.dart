@@ -96,8 +96,8 @@ void main() {
         'join_test.dart': <String, Map>{},
         'normalize_test.dart': <String, Map>{},
         'relative_test.dart': <String, Map>{},
-        'split_test.dart': <String, Map>{}
-      }
+        'split_test.dart': <String, Map>{},
+      },
     };
 
     ctx.expectNextSection(tree.fromMap(map));

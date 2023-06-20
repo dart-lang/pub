@@ -517,7 +517,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           executable,
           additionalSources: additionalSources,
           nativeAssets: nativeAssets,
-        )
+        ),
       ]);
     });
   }

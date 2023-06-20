@@ -17,8 +17,8 @@ void main() {
         d.file('hello.dart', "void main() => print('hello!');"),
         d.file('goodbye.dart', "void main() => print('goodbye!');"),
         d.file('shell.sh', 'echo shell'),
-        d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")])
-      ])
+        d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")]),
+      ]),
     ]).create();
 
     await runPub(
@@ -39,10 +39,10 @@ void main() {
               contains('goodbye!'),
             ),
             d.nothing('shell.sh-$versionSuffix.snapshot'),
-            d.nothing('subdir')
-          ])
-        ])
-      ])
+            d.nothing('subdir'),
+          ]),
+        ]),
+      ]),
     ]).validate();
   });
 }

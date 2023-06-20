@@ -20,23 +20,23 @@ void main() {
         d.dir('packages', [
           d.dir('foo', [
             d.libDir('foo', 'foo 0.0.1'),
-            d.libPubspec('foo', '0.0.1', deps: {'bar': 'any'})
-          ])
+            d.libPubspec('foo', '0.0.1', deps: {'bar': 'any'}),
+          ]),
         ]),
         d.dir('bin/cache/pkg', [
           d.dir(
             'baz',
             [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
-          )
+          ),
         ]),
-        d.file('version', '1.2.3')
+        d.file('version', '1.2.3'),
       ]).create();
     });
 
     test("gets an SDK dependency's dependencies", () async {
       await d.appDir(
         dependencies: {
-          'foo': {'sdk': 'flutter'}
+          'foo': {'sdk': 'flutter'},
         },
       ).create();
       await pubCommand(
@@ -55,7 +55,7 @@ void main() {
     test('gets an SDK dependency from bin/cache/pkg', () async {
       await d.appDir(
         dependencies: {
-          'baz': {'sdk': 'flutter'}
+          'baz': {'sdk': 'flutter'},
         },
       ).create();
       await pubCommand(
@@ -74,7 +74,7 @@ void main() {
     test('unlocks an SDK dependency when the version changes', () async {
       await d.appDir(
         dependencies: {
-          'foo': {'sdk': 'flutter'}
+          'foo': {'sdk': 'flutter'},
         },
       ).create();
       await pubCommand(
@@ -121,7 +121,7 @@ void main() {
       test("the version constraint doesn't match", () async {
         await d.appDir(
           dependencies: {
-            'foo': {'sdk': 'flutter', 'version': '^1.0.0'}
+            'foo': {'sdk': 'flutter', 'version': '^1.0.0'},
           },
         ).create();
         await pubCommand(
@@ -135,7 +135,7 @@ Because myapp depends on foo ^1.0.0 from sdk which doesn't match any versions, v
       test('the SDK is unknown', () async {
         await d.appDir(
           dependencies: {
-            'foo': {'sdk': 'unknown'}
+            'foo': {'sdk': 'unknown'},
           },
         ).create();
         await pubCommand(
@@ -149,7 +149,7 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
       test('the SDK is unavailable', () async {
         await d.appDir(
           dependencies: {
-            'foo': {'sdk': 'flutter'}
+            'foo': {'sdk': 'flutter'},
           },
         ).create();
         await pubCommand(
@@ -168,7 +168,7 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
       test("the SDK doesn't contain the package", () async {
         await d.appDir(
           dependencies: {
-            'bar': {'sdk': 'flutter'}
+            'bar': {'sdk': 'flutter'},
           },
         ).create();
         await pubCommand(
@@ -186,7 +186,7 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
       test("the Dart SDK doesn't contain the package", () async {
         await d.appDir(
           dependencies: {
-            'bar': {'sdk': 'dart'}
+            'bar': {'sdk': 'dart'},
           },
         ).create();
         await pubCommand(
@@ -206,7 +206,7 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
 
       await d.appDir(
         dependencies: {
-          'foo': {'sdk': 'fuchsia'}
+          'foo': {'sdk': 'fuchsia'},
         },
       ).create();
       await pubCommand(

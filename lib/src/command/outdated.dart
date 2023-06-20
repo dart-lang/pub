@@ -277,7 +277,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     for (final id in [
       ...currentPackages,
       ...upgradablePackages,
-      ...resolvablePackages
+      ...resolvablePackages,
     ]) {
       if (!visited.add(id.name)) continue;
       rows.add(await analyzeDependency(id.toRef()));
@@ -448,8 +448,8 @@ Future<void> _outputJson(
               'resolvable': markedRows[packageDetails]![2].toJson(),
               'latest': markedRows[packageDetails]![3].toJson(),
             },
-          )
-        ]
+          ),
+        ],
       },
     ),
   );
@@ -506,7 +506,7 @@ Future<void> _outputHuman(
         if (directRows.isEmpty)
           _format('\ndirect dependencies: ${mode.allGood}', log.bold)
         else
-          _format('\ndirect dependencies:', log.bold)
+          _format('\ndirect dependencies:', log.bold),
       ],
       ...directRows,
     ],
@@ -515,7 +515,7 @@ Future<void> _outputHuman(
         if (devRows.isEmpty)
           _format('\ndev_dependencies: ${mode.allGood}', log.bold)
         else
-          _format('\ndev_dependencies:', log.bold)
+          _format('\ndev_dependencies:', log.bold),
       ],
       ...devRows,
     ],
@@ -697,7 +697,7 @@ Showing outdated packages$directoryDescription.
         packageDetails.current,
         packageDetails.upgradable,
         packageDetails.resolvable,
-        packageDetails.latest
+        packageDetails.latest,
       ]) {
         String Function(String)? color;
         String? prefix;

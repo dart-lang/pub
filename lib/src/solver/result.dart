@@ -156,7 +156,7 @@ class SolveResult {
       final dependencyKind = const {
         DependencyType.dev: 'dev',
         DependencyType.direct: 'direct',
-        DependencyType.none: 'transitive'
+        DependencyType.none: 'transitive',
       }[_root.pubspec.dependencyType(package.name)]!;
       analytics.sendEvent(
         'pub-get',

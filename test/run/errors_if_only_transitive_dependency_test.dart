@@ -12,7 +12,7 @@ void main() {
   test('Errors if the script is in a non-immediate dependency.', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")])
+      d.dir('bin', [d.file('bar.dart', "main() => print('foobar');")]),
     ]).create();
 
     await d.dir('bar', [
@@ -20,17 +20,17 @@ void main() {
         'bar',
         '1.0.0',
         deps: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'bar': {'path': '../bar'}
+          'bar': {'path': '../bar'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();

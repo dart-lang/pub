@@ -21,7 +21,7 @@ void main() {
 
     var body = {
       'url': 12,
-      'fields': {'field1': 'value1', 'field2': 'value2'}
+      'fields': {'field1': 'value1', 'field2': 'value2'},
     };
 
     handleUploadForm(globalServer, body: body);

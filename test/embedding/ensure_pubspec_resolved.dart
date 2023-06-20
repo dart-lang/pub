@@ -31,7 +31,7 @@ void testEnsurePubspecResolved() {
       await d.dir(appPath, [
         d.appPubspec(),
         d.dir('web', []),
-        d.dir('bin', [d.file('script.dart', "main() => print('hello!');")])
+        d.dir('bin', [d.file('script.dart', "main() => print('hello!');")]),
       ]).create();
 
       await pubGet();
@@ -41,14 +41,14 @@ void testEnsurePubspecResolved() {
         'does not require a pub get if a `flutter_gen` package is injected into package_config.json',
         () async {
       await d.dir('bar', [
-        d.pubspec({'name': 'bar'})
+        d.pubspec({'name': 'bar'}),
       ]).create();
       await d.dir(appPath, [
         d.appPubspec(
           dependencies: {
-            'bar': {'path': '../bar'}
+            'bar': {'path': '../bar'},
           },
-        )
+        ),
       ]).create();
 
       await pubGet();
@@ -90,9 +90,9 @@ void testEnsurePubspecResolved() {
         await d.dir(appPath, [
           d.appPubspec(
             dependencies: {
-              'foo': {'path': '../foo'}
+              'foo': {'path': '../foo'},
             },
-          )
+          ),
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -104,7 +104,7 @@ void testEnsurePubspecResolved() {
 
       test('the lockfile has a dependency from the wrong source', () async {
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
 
         await pubGet();
@@ -120,7 +120,7 @@ void testEnsurePubspecResolved() {
 
       test('the lockfile has a dependency from an unknown source', () async {
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
 
         await pubGet();
@@ -133,11 +133,11 @@ void testEnsurePubspecResolved() {
                 'foo': {
                   'description': 'foo',
                   'version': '1.0.0',
-                  'source': 'sdk'
-                }
-              }
+                  'source': 'sdk',
+                },
+              },
             }),
-          )
+          ),
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -154,9 +154,9 @@ void testEnsurePubspecResolved() {
         await d.dir(appPath, [
           d.appPubspec(
             dependencies: {
-              'foo': {'path': '../bar'}
+              'foo': {'path': '../bar'},
             },
-          )
+          ),
         ]).create();
 
         await pubGet();
@@ -172,13 +172,13 @@ void testEnsurePubspecResolved() {
 
       test('the pubspec has an incompatible version of a dependency', () async {
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
 
         await pubGet();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '2.0.0'})
+          d.appPubspec(dependencies: {'foo': '2.0.0'}),
         ]).create();
 
         // Ensure that the pubspec looks newer than the lockfile.
@@ -192,7 +192,7 @@ void testEnsurePubspecResolved() {
           'the lockfile is pointing to an unavailable package with a newer '
           'pubspec', () async {
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
 
         await pubGet();
@@ -212,9 +212,9 @@ void testEnsurePubspecResolved() {
         await d.dir(appPath, [
           d.appPubspec(
             dependencies: {
-              'foo': {'path': '../bar'}
+              'foo': {'path': '../bar'},
             },
-          )
+          ),
         ]).create();
 
         await pubGet();
@@ -247,7 +247,7 @@ void testEnsurePubspecResolved() {
           'foo',
           '1.0.0',
           pubspec: {
-            'environment': {'sdk': '>=3.0.0 <3.1.0'}
+            'environment': {'sdk': '>=3.0.0 <3.1.0'},
           },
         );
 
@@ -265,7 +265,7 @@ void testEnsurePubspecResolved() {
           'foo',
           '1.0.1',
           pubspec: {
-            'environment': {'sdk': '^3.0.0'}
+            'environment': {'sdk': '^3.0.0'},
           },
         );
 
@@ -285,15 +285,15 @@ void testEnsurePubspecResolved() {
           pubspec: {
             'environment': {
               'flutter': '>=1.0.0 <2.0.0',
-              'sdk': defaultSdkConstraint
-            }
+              'sdk': defaultSdkConstraint,
+            },
           },
         );
 
         await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '^3.0.0'})
+          d.appPubspec(dependencies: {'foo': '^3.0.0'}),
         ]).create();
 
         await pubGet(
@@ -308,8 +308,8 @@ void testEnsurePubspecResolved() {
           pubspec: {
             'environment': {
               'flutter': '>=0.1.0 <2.0.0',
-              'sdk': defaultSdkConstraint
-            }
+              'sdk': defaultSdkConstraint,
+            },
           },
         );
 
@@ -322,22 +322,22 @@ void testEnsurePubspecResolved() {
       test("a path dependency's dependency doesn't match the lockfile",
           () async {
         await d.dir('bar', [
-          d.libPubspec('bar', '1.0.0', deps: {'foo': '1.0.0'})
+          d.libPubspec('bar', '1.0.0', deps: {'foo': '1.0.0'}),
         ]).create();
 
         await d.dir(appPath, [
           d.appPubspec(
             dependencies: {
-              'bar': {'path': '../bar'}
+              'bar': {'path': '../bar'},
             },
-          )
+          ),
         ]).create();
 
         await pubGet();
 
         // Update bar's pubspec without touching the app's.
         await d.dir('bar', [
-          d.libPubspec('bar', '1.0.0', deps: {'foo': '2.0.0'})
+          d.libPubspec('bar', '1.0.0', deps: {'foo': '2.0.0'}),
         ]).create();
 
         await _implicitPubGet('../bar/pubspec.yaml has changed '
@@ -360,9 +360,9 @@ void testEnsurePubspecResolved() {
         await d.dir(appPath, [
           d.appPubspec(
             dependencies: {
-              'bar': {'path': '../bar'}
+              'bar': {'path': '../bar'},
             },
-          )
+          ),
         ]).create();
 
         await pubGet();
@@ -388,7 +388,7 @@ void testEnsurePubspecResolved() {
           'the pubspec is older than the lockfile which is older than the '
           'package-config, even if the contents are wrong', () async {
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
         // Ensure we get a new mtime (mtime is only reported with 1s precision)
         await _touch('pubspec.yaml');
@@ -402,7 +402,7 @@ void testEnsurePubspecResolved() {
       test("the pubspec is newer than the lockfile, but they're up-to-date",
           () async {
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
 
         await pubGet();
@@ -415,15 +415,15 @@ void testEnsurePubspecResolved() {
       // Regression test for #1416
       test('a path dependency has a dependency on the root package', () async {
         await d.dir('foo', [
-          d.libPubspec('foo', '1.0.0', deps: {'myapp': 'any'})
+          d.libPubspec('foo', '1.0.0', deps: {'myapp': 'any'}),
         ]).create();
 
         await d.dir(appPath, [
           d.appPubspec(
             dependencies: {
-              'foo': {'path': '../foo'}
+              'foo': {'path': '../foo'},
             },
-          )
+          ),
         ]).create();
 
         await pubGet();
@@ -437,7 +437,7 @@ void testEnsurePubspecResolved() {
           "the lockfile is newer than package_config.json, but it's up-to-date",
           () async {
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '1.0.0'})
+          d.appPubspec(dependencies: {'foo': '1.0.0'}),
         ]).create();
 
         await pubGet();
@@ -452,15 +452,15 @@ void testEnsurePubspecResolved() {
           'bar',
           '1.0.0',
           pubspec: {
-            'environment': {'sdk': '0.0.0-fake'}
+            'environment': {'sdk': '0.0.0-fake'},
           },
         );
 
         await d.dir(appPath, [
           d.pubspec({
             'name': 'myapp',
-            'dependency_overrides': {'bar': '1.0.0'}
-          })
+            'dependency_overrides': {'bar': '1.0.0'},
+          }),
         ]).create();
 
         await pubGet();
@@ -480,15 +480,15 @@ void testEnsurePubspecResolved() {
           pubspec: {
             'environment': {
               'flutter': '>=1.0.0 <2.0.0',
-              'sdk': defaultSdkConstraint
-            }
+              'sdk': defaultSdkConstraint,
+            },
           },
         );
 
         await d.dir('flutter', [d.file('version', '1.2.3')]).create();
 
         await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '3.0.0'})
+          d.appPubspec(dependencies: {'foo': '3.0.0'}),
         ]).create();
 
         await pubGet(

@@ -27,10 +27,10 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
       ),
-      d.dir('bin', [d.file('script.dart', _script)])
+      d.dir('bin', [d.file('script.dart', _script)]),
     ]).create();
 
     await pubGet();
@@ -61,12 +61,12 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', _script)])
+        d.dir('bin', [d.file('script.dart', _script)]),
       ],
     );
 
     await d.dir(appPath, [
-      d.appPubspec(dependencies: {'foo': 'any'})
+      d.appPubspec(dependencies: {'foo': 'any'}),
     ]).create();
 
     await pubGet();

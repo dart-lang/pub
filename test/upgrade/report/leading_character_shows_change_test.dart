@@ -22,17 +22,17 @@ void main() {
 
     await d.dir('description_changed_1', [
       d.libDir('description_changed'),
-      d.libPubspec('description_changed', '1.0.0')
+      d.libPubspec('description_changed', '1.0.0'),
     ]).create();
 
     await d.dir('description_changed_2', [
       d.libDir('description_changed'),
-      d.libPubspec('description_changed', '1.0.0')
+      d.libPubspec('description_changed', '1.0.0'),
     ]).create();
 
     await d.dir('source_changed', [
       d.libDir('source_changed'),
-      d.libPubspec('source_changed', '1.0.0')
+      d.libPubspec('source_changed', '1.0.0'),
     ]).create();
 
     // Create the first lockfile.
@@ -45,10 +45,10 @@ void main() {
           'removed': 'any',
           'source_changed': 'any',
           'unchanged': 'any',
-          'upgraded': '1.0.0'
+          'upgraded': '1.0.0',
         },
-        'dependency_overrides': {'overridden': 'any'}
-      })
+        'dependency_overrides': {'overridden': 'any'},
+      }),
     ]).create();
 
     await pubGet();
@@ -63,10 +63,10 @@ void main() {
           'downgraded': '1.0.0',
           'source_changed': {'path': '../source_changed'},
           'unchanged': 'any',
-          'upgraded': '2.0.0'
+          'upgraded': '2.0.0',
         },
-        'dependency_overrides': {'overridden': 'any'}
-      })
+        'dependency_overrides': {'overridden': 'any'},
+      }),
     ]).create();
 
     // Upgrade everything.

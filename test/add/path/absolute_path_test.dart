@@ -26,7 +26,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': absolutePath}
+        'foo': {'path': absolutePath},
       },
     ).validate();
   });
@@ -42,7 +42,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': absolutePath, 'version': '0.0.1'}
+        'foo': {'path': absolutePath, 'version': '0.0.1'},
       },
     ).validate();
   });
@@ -132,8 +132,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {},
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).create();
 
     final absolutePath = path.join(d.sandbox, 'foo');
@@ -147,10 +147,10 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'path': absolutePath}
+          'foo': {'path': absolutePath},
         },
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).validate();
   });
 }

@@ -16,13 +16,13 @@ void main() {
       'foo',
       '2.0.0',
       contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")]),
       ],
     );
 
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('path');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('path');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);

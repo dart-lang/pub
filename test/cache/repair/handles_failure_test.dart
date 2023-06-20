@@ -30,9 +30,9 @@ void main() {
           d.dir(
             'foo-1.2.5',
             [d.libPubspec('foo', '1.2.5'), d.file('broken.txt')],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).create();
 
     // Repair them.

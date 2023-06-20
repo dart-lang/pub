@@ -26,8 +26,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'ref': commit}
-        }
+          'git': {'url': '../foo.git', 'ref': commit},
+        },
       },
     ).create();
 
@@ -39,7 +39,7 @@ void main() {
           d.gitPackageRepoCacheDir('foo'),
         ]),
         d.gitPackageRevisionCacheDir('foo', modifier: 1),
-      ])
+      ]),
     ]).validate();
 
     expect(packageSpec('foo')['rootUri'], contains(commit));

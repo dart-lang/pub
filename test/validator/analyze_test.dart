@@ -17,7 +17,7 @@ void main() {
       d.file('LICENSE', 'Eh, do what you want.'),
       d.file('README.md', "This package isn't real."),
       d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')])
+      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
     ]).create();
     await expectValidation();
   });
@@ -50,7 +50,7 @@ void main() {
 linter:
   rules:
     - secure_pubspec_urls
-''')
+'''),
     ]).create();
 
     await expectValidation();
@@ -76,7 +76,7 @@ linter:
 analyzer:
   errors:
     secure_pubspec_urls: warning
-''')
+'''),
     ]).create();
 
     await expectValidation(
@@ -104,8 +104,8 @@ analyzer:
 void main() {
   final a = 10; // Unused.
 }
-''')
-      ])
+'''),
+      ]),
     ]).create();
 
     await expectValidation();
@@ -124,8 +124,8 @@ void main() {
         d.file('test_pkg.dart', '''
 void main() {
 // Missing }
-''')
-      ])
+'''),
+      ]),
     ]).create();
 
     await expectValidation(
@@ -134,7 +134,7 @@ void main() {
         contains('Analyzing lib, bin, pubspec.yaml...'),
         contains('error -'),
         contains("Expected to find '}'."),
-        contains('Package has 1 warning.')
+        contains('Package has 1 warning.'),
       ]),
       exitCode: DATA,
       extraArgs: ['--directory', appPath],
@@ -154,7 +154,7 @@ void main() {
 void main() {
   final a = 10; // Unused.
 }
-''')
+'''),
       ]),
     ]).create();
 
@@ -164,7 +164,7 @@ void main() {
         contains('Analyzing lib, test, pubspec.yaml...'),
         contains('warning -'),
         contains("The value of the local variable 'a' isn't used"),
-        contains('Package has 1 warning.')
+        contains('Package has 1 warning.'),
       ]),
       exitCode: DATA,
     );

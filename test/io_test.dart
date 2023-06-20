@@ -81,7 +81,7 @@ void main() {
               path.join(temp, 'file2.txt'),
               path.join(temp, '.file3.txt'),
               path.join(temp, '.subdir'),
-              path.join(temp, '.subdir', 'file3.txt')
+              path.join(temp, '.subdir', 'file3.txt'),
             ]),
           );
         }),
@@ -103,7 +103,7 @@ void main() {
             unorderedEquals([
               path.join(dir, 'file1.txt'),
               path.join(dir, 'file2.txt'),
-              path.join(dir, 'file3.txt')
+              path.join(dir, 'file3.txt'),
             ]),
           );
         }),
@@ -321,7 +321,7 @@ void main() {
                   'H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7maViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
                   'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZyYvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
                   '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qob+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
-                  'AAAAAAAAAAAAgM9dALkoaRMAKAAA')
+                  'AAAAAAAAAAAAgM9dALkoaRMAKAAA'),
             ],
           ),
           tempDir,
@@ -346,7 +346,7 @@ void main() {
                     'H4sICBKyeF4AA215YXBwLnRhcgDt0sEKgjAAh/GdewrxAWpzbkJvs0pEaDVmHiR699Q6BBJ00Dr0'
                     '/Y5jsD98850LYSMWJXuFkUJaITNTmEyPR09Caaut0lIXSkils1yKxCy76KFtLi4miWjqqo0H//Ze'
                     'iLV3saviuQ3f2PUlfkwf2l0Tyv26c/44/xtDYJsP6a0trJn2z1765/3/UMbYvr+cf8rUn/e/pifn'
-                    'y3Sbjh8hvf16DwAAAAAAAAAAAAAAAIDPre4CU/3q/CcAAA==')
+                    'y3Sbjh8hvf16DwAAAAAAAAAAAAAAAIDPre4CU/3q/CcAAA=='),
               ],
             ),
             tempDir,
@@ -362,7 +362,7 @@ void main() {
           () async => await extractTarGz(
             Stream.fromIterable(
               [
-                [10, 20, 30] // Not a good gz stream.
+                [10, 20, 30], // Not a good gz stream.
               ],
             ),
             tempDir,

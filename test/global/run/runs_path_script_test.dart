@@ -11,7 +11,7 @@ void main() {
   test('runs a script in a path package', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);

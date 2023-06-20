@@ -21,7 +21,7 @@ void main() {
         '../foo',
         '-x',
         'anything',
-        '--no-executables'
+        '--no-executables',
       ],
       error: contains('Cannot pass both --no-executables and --executable.'),
       exitCode: exit_codes.USAGE,

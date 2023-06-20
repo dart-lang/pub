@@ -14,14 +14,14 @@ void main() {
         'foo',
         '1.1.0',
         pubspec: {
-          'environment': {'sdk': defaultSdkConstraint}
+          'environment': {'sdk': defaultSdkConstraint},
         },
       )
       ..serve(
         'foo',
         '1.2.0',
         pubspec: {
-          'environment': {'sdk': '^3.1.3'}
+          'environment': {'sdk': '^3.1.3'},
         },
       );
 
@@ -31,8 +31,8 @@ void main() {
     // dummy SDK version 3.1.2+3.
     await d.dir(cachePath, [
       d.dir('global_packages', [
-        d.dir('foo', [d.file('pubspec.lock', contains('1.1.0'))])
-      ])
+        d.dir('foo', [d.file('pubspec.lock', contains('1.1.0'))]),
+      ]),
     ]).validate();
   });
 }

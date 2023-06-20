@@ -32,7 +32,7 @@ void main() {
       await populateCache(
         {
           'foo': ['1.2.2', '1.2.3'],
-          'bar': ['1.2.3']
+          'bar': ['1.2.3'],
         },
         server,
       );
@@ -59,7 +59,7 @@ void main() {
       final server = await servePackages();
       await populateCache(
         {
-          'foo': ['1.2.3-alpha.1']
+          'foo': ['1.2.3-alpha.1'],
         },
         server,
       );
@@ -105,7 +105,7 @@ void main() {
       final server = await servePackages();
       await populateCache(
         {
-          'foo': ['1.2.2', '1.2.3']
+          'foo': ['1.2.2', '1.2.3'],
         },
         server,
       );
@@ -153,7 +153,7 @@ Because myapp depends on foo >2.0.0 which doesn't match any versions, version so
 
       await populateCache(
         {
-          'foo': ['1.2.2', '1.2.3']
+          'foo': ['1.2.2', '1.2.3'],
         },
         server,
       );
@@ -176,7 +176,7 @@ Because myapp depends on foo >2.0.0 which doesn't match any versions, version so
 
       await populateCache(
         {
-          'foo': ['1.2.2', '1.2.3']
+          'foo': ['1.2.2', '1.2.3'],
         },
         server,
       );
@@ -202,7 +202,7 @@ Because myapp depends on foo >2.0.0 which doesn't match any versions, version so
 
       await populateCache(
         {
-          'foo': ['1.2.2', '1.2.3']
+          'foo': ['1.2.2', '1.2.3'],
         },
         server,
       );
@@ -210,7 +210,7 @@ Because myapp depends on foo >2.0.0 which doesn't match any versions, version so
       server.serveErrors();
 
       await d.hostedCache([
-        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')])
+        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')]),
       ]).create();
 
       await d.appDir(dependencies: {'foo': 'any'}).create();

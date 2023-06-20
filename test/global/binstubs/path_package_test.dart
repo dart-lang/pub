@@ -12,9 +12,9 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'foo': null}
+        'executables': {'foo': null},
       }),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(
@@ -26,7 +26,7 @@ void main() {
       d.dir(
         'bin',
         [d.file(binStubName('foo'), contains('pub global run foo:foo'))],
-      )
+      ),
     ]).validate();
   });
 }
