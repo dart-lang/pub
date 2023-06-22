@@ -205,10 +205,8 @@ $contentHashesDocumentationUrl
           log.message('Changed $numChanged dependencies$suffix!');
         }
       }
-      if (_type == SolveType.upgrade) {
-        await reportDiscontinued();
-        reportOutdated();
-      }
+      await reportDiscontinued();
+      reportOutdated();
     }
   }
 
@@ -407,12 +405,11 @@ $contentHashesDocumentationUrl
       }
     }
 
-    if (_type == SolveType.get &&
-        !(alwaysShow ||
-            changed ||
-            addedOrRemoved ||
-            message != null ||
-            isOverridden)) {
+    if (!(alwaysShow ||
+        changed ||
+        addedOrRemoved ||
+        message != null ||
+        isOverridden)) {
       return changed || addedOrRemoved;
     }
 

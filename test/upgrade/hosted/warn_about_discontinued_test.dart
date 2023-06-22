@@ -23,7 +23,6 @@ void main() {
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued)
-  transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
 ''',
@@ -34,9 +33,8 @@ Resolving dependencies...
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0
-  No dependencies changed.
-  1 package is discontinued.
+No dependencies changed.
+1 package is discontinued.
 ''',
     );
   });
@@ -68,7 +66,6 @@ environment:
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued)
-    transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
 ''',
@@ -79,7 +76,6 @@ Resolving dependencies...
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
 ''',

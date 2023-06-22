@@ -40,6 +40,7 @@ void main() {
 Resolving dependencies...
   foo 1.2.3 (discontinued)
 Got dependencies!
+1 package is discontinued.
 ''',
     );
     expect(fileExists(fooVersionsCache), isTrue);
@@ -55,7 +56,8 @@ Got dependencies!
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     final c2 = json.decode(readTextFile(fooVersionsCache));
     // Make a bad cached value to test that responses are actually from cache.
@@ -72,7 +74,8 @@ Got dependencies!''',
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     // Test that --offline won't try to access the server for retrieving the
     // status.
@@ -82,7 +85,8 @@ Got dependencies!''',
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     deleteEntry(fooVersionsCache);
     deleteEntry(transitiveVersionsCache);
@@ -130,6 +134,7 @@ environment:
 Resolving dependencies...
   foo 1.2.3 (discontinued)
 Got dependencies!
+1 package is discontinued.
 ''',
     );
     expect(fileExists(fooVersionsCache), isTrue);
@@ -143,7 +148,8 @@ Got dependencies!
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     final c2 = json.decode(readTextFile(fooVersionsCache));
     // Make a bad cached value to test that responses are actually from cache.
@@ -160,7 +166,8 @@ Got dependencies!''',
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     // Test that --offline won't try to access the server for retrieving the
     // status.
@@ -170,7 +177,8 @@ Got dependencies!''',
       output: '''
 Resolving dependencies...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     deleteEntry(fooVersionsCache);
     await pubGet(

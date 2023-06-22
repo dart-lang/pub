@@ -4,6 +4,8 @@ $ tool/test-bin/pub_command_runner.dart pub --no-color get
 Resolving dependencies...
 + foo 1.0.0 (2.0.0 available)
 Changed 1 dependency!
+1 package has newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -11,4 +13,6 @@ $ tool/test-bin/pub_command_runner.dart pub --color get
 Resolving dependencies...
   [1mfoo[0m 1.0.0 [36m(2.0.0 available)[39m
 Got dependencies!
+1 package has newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.
 
