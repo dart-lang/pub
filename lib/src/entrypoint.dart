@@ -403,8 +403,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       quiet: summaryOnly,
     );
 
-    final hasChanges = await report.show();
-    await report.summarize();
+    final hasChanges = await report.show(summary: true);
     if (enforceLockfile && hasChanges) {
       dataError('''
 Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.

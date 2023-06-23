@@ -270,7 +270,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           dryRun: false,
           quiet: false,
           enforceLockfile: false,
-        ).show();
+        ).show(summary: false);
       }
 
       final tempDir = cache.createTempDir();
