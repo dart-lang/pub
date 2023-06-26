@@ -407,8 +407,9 @@ $contentHashesDocumentationUrl
     final oldDependencyType = dependencyType(_previousLockFile, name);
     final newDependencyType = dependencyType(_newLockFile, name);
 
-    var dependencyTypeChanged =
-        oldId != null && oldDependencyType != newDependencyType;
+    var dependencyTypeChanged = oldId != null &&
+        newId != null &&
+        oldDependencyType != newDependencyType;
 
     if (!(alwaysShow ||
         changed ||

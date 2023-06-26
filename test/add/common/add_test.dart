@@ -269,7 +269,7 @@ environment:
       await d.dir(appPath, [
         d.file('pubspec.yaml', '''
 name: myapp
-dependencies: 
+dependencies:
 
 dev_dependencies:
   foo: 1.2.2
@@ -284,7 +284,7 @@ environment:
           contains('"foo" was found in dev_dependencies. Removing "foo" and '
               'adding it to dependencies instead.'),
           contains(
-            '> foo 1.2.3 (was 1.2.2) (from transitive dependency to direct dependency)',
+            '> foo 1.2.3 (was 1.2.2) (from dev dependency to direct dependency)',
           ),
         ),
       );
@@ -325,7 +325,7 @@ environment:
           contains('"foo" was found in dev_dependencies. Removing "foo" and '
               'adding it to dependencies instead.'),
           contains(
-            ' foo 1.2.3 (from transitive dependency to direct dependency)',
+            ' foo 1.2.3 (from dev dependency to direct dependency)',
           ),
           contains('Changed 1 dependency!'),
         ),
