@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
@@ -18,6 +19,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
+import '../sdk.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
 import '../utils.dart';
@@ -66,6 +68,13 @@ class UpgradeCommand extends PubCommand {
     argParser.addFlag('packages-dir', hide: true);
 
     argParser.addFlag(
+      'tighten',
+      help:
+          'Updates lower bounds in pubspec.yaml to match the resolved version.',
+      negatable: false,
+    );
+
+    argParser.addFlag(
       'major-versions',
       help: 'Upgrades packages to their latest resolvable versions, '
           'and updates pubspec.yaml.',
@@ -91,6 +100,8 @@ class UpgradeCommand extends PubCommand {
   bool get _shouldShowSpinner => terminalOutputForStdout;
 
   bool get _dryRun => argResults.flag('dry-run');
+
+  bool get _tighten => argResults.flag('tighten');
 
   bool get _precompile => argResults.flag('precompile');
 
@@ -122,6 +133,22 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       await _runUpgradeMajorVersions();
     } else {
       await _runUpgrade(entrypoint);
+      if (_tighten) {
+        final changes = <PackageRange, PackageRange>{};
+        tighten(
+          entrypoint.root.pubspec,
+          entrypoint.lockFile.packages.values.toList(),
+          changes,
+        );
+        if (!_dryRun) {
+          final newPubspecText = _updatePubspec(changes);
+
+          if (changes.isNotEmpty) {
+            writeTextFile(entrypoint.pubspecPath, newPubspecText);
+          }
+        }
+        _outputChangeSummary(changes);
+      }
     }
     if (argResults.flag('example') && entrypoint.example != null) {
       // Reload the entrypoint to ensure we pick up potential changes that has
@@ -140,7 +167,59 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       summaryOnly: onlySummary,
       analytics: analytics,
     );
+
     _showOfflineWarning();
+  }
+
+  /// Updates [changes] to contain changes that updates constraints in [pubspec]
+  /// to have their lower bound match the version in [packages].
+  ///
+  /// If packages to update where given on the commandline, only those are
+  /// tightened. Otherwise all packages are tightened.
+  ///
+  /// If dependency has already been updated in [changes], the update will apply
+  /// on top of that change.
+  void tighten(
+    Pubspec pubspec,
+    List<PackageId> packages,
+    Map<PackageRange, PackageRange> changes,
+  ) {
+    if (argResults.flag('example') && entrypoint.example != null) {
+      log.warning(
+        'Running `upgrade --tighten` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
+      );
+    }
+    final toTighten = argResults.rest.isEmpty
+        ? [
+            ...pubspec.dependencies.values,
+            ...pubspec.devDependencies.values,
+          ]
+        : [
+            for (final name in argResults.rest)
+              pubspec.dependencies[name] ?? pubspec.devDependencies[name],
+          ].whereNotNull();
+    for (final range in toTighten) {
+      final constraint = (changes[range] ?? range).constraint;
+      final resolvedVersion =
+          packages.firstWhere((p) => p.name == range.name).version;
+      if (range.source is HostedSource && constraint.isAny) {
+        changes[range] = range
+            .toRef()
+            .withConstraint(VersionConstraint.compatibleWith(resolvedVersion));
+      } else if (constraint is VersionRange) {
+        final min = constraint.min;
+        if (min != null && min < resolvedVersion) {
+          changes[range] = range.toRef().withConstraint(
+                VersionRange(
+                  min: resolvedVersion,
+                  max: constraint.max,
+                  includeMin: true,
+                  includeMax: constraint.includeMax,
+                ).asCompatibleWithIfPossible(),
+              );
+        }
+      }
+    }
   }
 
   /// Return names of packages to be upgraded, and throws [UsageException] if
@@ -233,7 +312,20 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
             ),
           );
     }
-    final newPubspecText = _updatePubspec(changes);
+    var newPubspecText = _updatePubspec(changes);
+    if (_tighten) {
+      // Do another solve with the updated constraints to obtain the correct
+      // versions to tighten to. This should be fast (everything is cached, and
+      // no backtracking needed) so we don't show a spinner.
+
+      final solveResult = await resolveVersions(
+        SolveType.upgrade,
+        cache,
+        Package.inMemory(_updatedPubspec(newPubspecText, entrypoint)),
+      );
+      tighten(entrypoint.root.pubspec, solveResult.packages, changes);
+      newPubspecText = _updatePubspec(changes);
+    }
 
     // When doing '--majorVersions' for specific packages we try to update other
     // packages as little as possible to make a focused change (SolveType.get).
@@ -249,25 +341,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       }
     }
 
-    String? overridesFileContents;
-    final overridesPath =
-        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
-    try {
-      overridesFileContents = readTextFile(overridesPath);
-    } on IOException {
-      overridesFileContents = null;
-    }
-
     await entrypoint
-        .withPubspec(
-          Pubspec.parse(
-            newPubspecText,
-            cache.sources,
-            location: Uri.parse(entrypoint.pubspecPath),
-            overridesFileContents: overridesFileContents,
-            overridesLocation: Uri.file(overridesPath),
-          ),
-        )
+        .withPubspec(_updatedPubspec(newPubspecText, entrypoint))
         .acquireDependencies(
           solveType,
           dryRun: _dryRun,
@@ -291,6 +366,24 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     _showOfflineWarning();
   }
 
+  Pubspec _updatedPubspec(String contents, Entrypoint entrypoint) {
+    String? overridesFileContents;
+    final overridesPath =
+        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
+    try {
+      overridesFileContents = readTextFile(overridesPath);
+    } on IOException {
+      overridesFileContents = null;
+    }
+    return Pubspec.parse(
+      contents,
+      cache.sources,
+      location: Uri.parse(entrypoint.pubspecPath),
+      overridesFileContents: overridesFileContents,
+      overridesLocation: Uri.file(overridesPath),
+    );
+  }
+
   /// Updates `pubspec.yaml` with given [changes].
   String _updatePubspec(
     Map<PackageRange, PackageRange> changes,
@@ -311,9 +404,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 
   /// Outputs a summary of changes made to `pubspec.yaml`.
-  void _outputChangeSummary(
-    Map<PackageRange, PackageRange> changes,
-  ) {
+  void _outputChangeSummary(Map<PackageRange, PackageRange> changes) {
     ArgumentError.checkNotNull(changes, 'changes');
 
     if (changes.isEmpty) {
