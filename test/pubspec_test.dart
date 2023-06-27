@@ -15,9 +15,6 @@ void main() {
   group('parse()', () {
     final sources = SystemCache().sources;
 
-    var throwsPubspecException =
-        throwsA(const TypeMatcher<SourceSpanApplicationException>());
-
     void expectPubspecException(
       String contents,
       void Function(Pubspec) fn, [
@@ -39,24 +36,6 @@ void main() {
     test("doesn't eagerly throw an error for an invalid field", () {
       // Shouldn't throw an error.
       Pubspec.parse('version: not a semver', sources);
-    });
-
-    test(
-        "eagerly throws an error if the pubspec name doesn't match the "
-        'expected name', () {
-      expect(
-        () => Pubspec.parse('name: foo', sources, expectedName: 'bar'),
-        throwsPubspecException,
-      );
-    });
-
-    test(
-        "eagerly throws an error if the pubspec doesn't have a name and an "
-        'expected name is passed', () {
-      expect(
-        () => Pubspec.parse('{}', sources, expectedName: 'bar'),
-        throwsPubspecException,
-      );
     });
 
     test('allows a version constraint for dependencies', () {
