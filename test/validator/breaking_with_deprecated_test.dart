@@ -26,7 +26,7 @@ void main() {
             'support.dart',
             "@Deprecated('Stop using this please') class B {}",
           ),
-        ])
+        ]),
       ]),
     ]).create();
     // No earlier versions, so not a breaking release.

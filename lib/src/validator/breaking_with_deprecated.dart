@@ -92,8 +92,10 @@ class RemoveDeprecatedOnBreakingReleaseValidator extends Validator {
           case Annotation(name: SimpleIdentifier(name: 'Deprecated'))) {
         warnings.add(
           SourceFile.fromString(readTextFile(file), url: file)
-              .span(commentOrAnnotation.offset,
-                  commentOrAnnotation.offset + commentOrAnnotation.length)
+              .span(
+                commentOrAnnotation.offset,
+                commentOrAnnotation.offset + commentOrAnnotation.length,
+              )
               .message(
                 'You are about to publish a breaking release. Consider removing this deprecated declaration.',
               ),
