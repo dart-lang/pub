@@ -79,8 +79,7 @@ enum TypeFlag {
 ///
 /// A tar header stores meta-information about the matching tar entry, such as
 /// its name.
-@sealed
-abstract class TarHeader {
+sealed class TarHeader {
   /// Type of header entry. In the V7 TAR format, this field was known as the
   /// link flag.
   TypeFlag get typeFlag;
@@ -125,7 +124,11 @@ abstract class TarHeader {
   int get devMinor;
 
   /// The TAR format of the header.
-  TarFormat get format;
+  ///
+  /// When this library is sure it knows the format of the tar entry, this will
+  /// be a [TarFormat] enum value. In other cases, a [MaybeTarFormat] could
+  /// represent multiple possible formats.
+  MaybeTarFormat get format;
 
   /// Checks if this header indicates that the file will have content.
   bool get hasContent {
@@ -226,11 +229,14 @@ class HeaderImpl extends TarHeader {
   int devMinor;
 
   @override
-  TarFormat format;
+  MaybeTarFormat format;
 
   @override
   TypeFlag get typeFlag {
-    return internalTypeFlag == TypeFlag.regA ? TypeFlag.reg : internalTypeFlag;
+    return switch (internalTypeFlag) {
+      TypeFlag.regA => TypeFlag.reg, // normalize
+      final other => other,
+    };
   }
 
   /// This constructor is meant to help us deal with header-only headers (i.e.
@@ -281,7 +287,7 @@ class HeaderImpl extends TarHeader {
       throw TarException.header('Indicates an invalid size of $size');
     }
 
-    if (format.isValid() && format != TarFormat.v7) {
+    if (format.valid && format != TarFormat.v7) {
       // If it's a valid header that is not of the v7 format, it will have the
       // USTAR fields
       header
@@ -370,7 +376,7 @@ class HeaderImpl extends TarHeader {
 /// Checks that [rawHeader] represents a valid tar header based on the
 /// checksum, and then attempts to guess the specific format based
 /// on magic values. If the checksum fails, then an error is thrown.
-TarFormat _getFormat(Uint8List rawHeader) {
+MaybeTarFormat _getFormat(Uint8List rawHeader) {
   final checksum = rawHeader.readOctal(checksumOffset, checksumLength);
 
   // Modern TAR archives use the unsigned checksum, but we check the signed

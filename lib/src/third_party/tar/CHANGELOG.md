@@ -1,3 +1,7 @@
+## 1.0.0
+
+- __Breaking__ Add class modifiers where applicable.
+
 ## 0.5.6
 
 - Allow cancelling a `TarEntry.contents` subscription before reading more files.
