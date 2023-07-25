@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Fix an incompatibility with Dart 3.1.
+
 ## 1.0.0
 
 - __Breaking__ Add class modifiers where applicable.
