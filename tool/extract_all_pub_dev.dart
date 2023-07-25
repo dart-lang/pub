@@ -19,7 +19,7 @@ import 'package:pub/src/log.dart' as log;
 const statusFilename = 'extract_all_pub_status.json';
 
 Future<List<String>> allPackageNames() async {
-  var nextUrl = Uri.https('pub.dev', 'api/packages?compact=1');
+  var nextUrl = Uri.https('pub.dev', 'api/packages', {'compact': '1'});
   final request = http.Request('GET', nextUrl);
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
