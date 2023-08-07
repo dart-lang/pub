@@ -241,7 +241,7 @@ Stream<List<int>> zeroes(int length) async* {
 }
 
 /// An optimized reader reading 512-byte blocks from an input stream.
-class BlockReader {
+final class BlockReader {
   final Stream<List<int>> _input;
   StreamSubscription<List<int>>? _subscription;
   bool _isClosed = false;
@@ -300,8 +300,13 @@ class BlockReader {
       _outgoing = null;
       _pause();
 
+      // Scheduling this in a microtask becuase the stream controller is
+      // synchronous.
       scheduleMicrotask(() {
-        outgoing.close();
+        // We don't need to await this since the stream controller is not used
+        // afterwards, if there's a paused listener we don't really care about
+        // that.
+        unawaited(outgoing.close());
       });
       return true;
     } else if (outgoing.isPaused || outgoing.isClosed) {
@@ -395,8 +400,14 @@ class BlockReader {
     }
 
     _isClosed = true;
-    _subscription?.cancel();
-    outgoing.close();
+
+    // Can be unawated because this is an onDone callback of the subscription,
+    // the subscription is already complete and we're just cleaning up.
+    unawaited(_subscription?.cancel());
+
+    // Can be unawated because we're fully done here, we won't do anything else
+    // with the outgoing controller.
+    unawaited(outgoing.close());
   }
 
   void _subscribeOrResume() {

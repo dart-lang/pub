@@ -10,7 +10,7 @@ import 'utils.dart';
 /// [SparseEntry]s can represent either data or holes, and we can easily
 /// convert between the two if we know the size of the file, all the sparse
 /// data and all the sparse entries combined must give the full size.
-class SparseEntry {
+final class SparseEntry {
   final int offset;
   final int length;
 

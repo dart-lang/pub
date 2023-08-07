@@ -19,8 +19,7 @@ import 'utils.dart';
 /// It is designed to read from a stream and to spit out substreams for
 /// individual file contents in order to minimize the amount of memory needed
 /// to read each archive where possible.
-@sealed
-class TarReader implements StreamIterator<TarEntry> {
+final class TarReader implements StreamIterator<TarEntry> {
   final BlockReader _reader;
   final PaxHeaders _paxHeaders = PaxHeaders();
   final int _maxSpecialFileSize;
@@ -246,7 +245,8 @@ class TarReader implements StreamIterator<TarEntry> {
   /// This methods prevents:
   ///  * concurrent calls to [moveNext]
   ///  * a call to [moveNext] while a stream is active:
-  ///    * if [contents] has never been listened to, we drain the stream
+  ///    * if [TarEntry.contents] has never been listened to, or if it has a
+  ///      cancelled subscription, we drain the stream.
   ///    * otherwise, throws a [StateError]
   Future<void> _prepareToReadHeaders() async {
     if (_isDone) {
@@ -676,7 +676,7 @@ class TarReader implements StreamIterator<TarEntry> {
 }
 
 @internal
-class PaxHeaders extends UnmodifiableMapBase<String, String> {
+final class PaxHeaders extends UnmodifiableMapBase<String, String> {
   final Map<String, String> _globalHeaders = {};
   Map<String, String> _localHeaders = {};
 
@@ -872,7 +872,7 @@ enum _EntryStreamState {
 ///
 /// Draining this stream will set the [TarReader._currentStream] field back to
 /// null. There can only be one content stream at the time.
-class _CurrentEntryStream extends Stream<List<int>> {
+final class _CurrentEntryStream extends Stream<List<int>> {
   _EntryStreamState state = _EntryStreamState.preListen;
 
   final TarReader _reader;
@@ -1007,6 +1007,6 @@ class _CurrentEntryStream extends Stream<List<int>> {
       _listener.addError(
           TarException('Unexpected end of tar file'), StackTrace.current);
     }
-    _listener.close();
+    unawaited(_listener.close());
   }
 }

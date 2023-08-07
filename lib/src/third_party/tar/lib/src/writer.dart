@@ -9,7 +9,8 @@ import 'format.dart';
 import 'header.dart';
 import 'utils.dart';
 
-class _WritingTransformer extends StreamTransformerBase<TarEntry, List<int>> {
+final class _WritingTransformer
+    extends StreamTransformerBase<TarEntry, List<int>> {
   final OutputFormat format;
 
   const _WritingTransformer(this.format);
@@ -19,7 +20,10 @@ class _WritingTransformer extends StreamTransformerBase<TarEntry, List<int>> {
     // sync because the controller proxies another stream
     final controller = StreamController<List<int>>(sync: true);
     controller.onListen = () {
-      stream.pipe(tarWritingSink(controller, format: format));
+      // Can be unawaited since it's the only thing done in onListen and since
+      // pipe is a terminal operation managing the remaining lifecycle of this
+      // stream controller.
+      unawaited(stream.pipe(tarWritingSink(controller, format: format)));
     };
 
     return controller.stream;
@@ -152,7 +156,7 @@ enum OutputFormat {
   gnuLongName,
 }
 
-class _WritingSink implements StreamSink<TarEntry> {
+final class _WritingSink implements StreamSink<TarEntry> {
   final StreamSink<List<int>> _output;
   final _SynchronousTarSink _synchronousWriter;
   bool _closed = false;
@@ -247,7 +251,7 @@ Uint8List _paddingBytes(int size) {
   return Uint8List(padding);
 }
 
-class _SynchronousTarConverter
+final class _SynchronousTarConverter
     extends Converter<SynchronousTarEntry, List<int>> {
   final OutputFormat format;
 
@@ -269,7 +273,7 @@ class _SynchronousTarConverter
   }
 }
 
-class _SynchronousTarSink implements Sink<SynchronousTarEntry> {
+final class _SynchronousTarSink implements Sink<SynchronousTarEntry> {
   final OutputFormat _format;
   final Sink<List<int>> _output;
 

@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:meta/meta.dart';
-
 import 'header.dart';
 
 /// An entry in a tar file.
@@ -9,8 +7,7 @@ import 'header.dart';
 /// Usually, tar entries are read from a stream, and they're bound to the stream
 /// from which they've been read. This means that they can only be read once,
 /// and that only one [TarEntry] is active at a time.
-@sealed
-class TarEntry {
+final class TarEntry {
   /// The parsed [TarHeader] of this tar entry.
   final TarHeader header;
 
@@ -58,7 +55,7 @@ class TarEntry {
 }
 
 /// A tar entry stored in memory.
-class SynchronousTarEntry extends TarEntry {
+final class SynchronousTarEntry extends TarEntry {
   /// The contents of this tar entry as a byte array.
   final List<int> data;
 
