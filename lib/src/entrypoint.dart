@@ -87,7 +87,6 @@ class Entrypoint {
   ///
   /// For a global package, this is the activated package.
   Package get root => _root ??= Package.load(
-        null,
         rootDir,
         cache.sources,
         withPubspecOverrides: true,
@@ -178,7 +177,6 @@ class Entrypoint {
     var packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
-          packageEntry.name,
           packageEntry.resolvedRootDir(packageConfigPath),
           cache.sources,
         ),

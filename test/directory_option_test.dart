@@ -50,7 +50,7 @@ main() => print('Hi');
         pubspec({
           'name': 'example',
           'dependencies': {
-            'myapp': {'path': '../'}, // Wrong name of dependency
+            'test_pkg': {'path': '../'},
           },
         }),
       ]),

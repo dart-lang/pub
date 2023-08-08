@@ -28,8 +28,9 @@ void main() {
     ]).create();
 
     await pubGet(
-      error: contains('"name" field doesn\'t match expected name '
-          '"weirdname".'),
+      error: contains(
+        'Expected to find package "weirdname", found package "foo".',
+      ),
       exitCode: exit_codes.DATA,
     );
   });

@@ -207,15 +207,11 @@ class Pubspec extends PubspecBase {
 
   /// Loads the pubspec for a package located in [packageDir].
   ///
-  /// If [expectedName] is passed and the pubspec doesn't have a matching name
-  /// field, this will throw a [SourceSpanApplicationException].
-  ///
   /// If [allowOverridesFile] is `true` [pubspecOverridesFilename] is loaded and
   /// is allowed to override dependency_overrides from `pubspec.yaml`.
   factory Pubspec.load(
     String packageDir,
     SourceRegistry sources, {
-    String? expectedName,
     bool allowOverridesFile = false,
   }) {
     var pubspecPath = path.join(packageDir, pubspecYamlFilename);
@@ -237,7 +233,6 @@ class Pubspec extends PubspecBase {
     return Pubspec.parse(
       readTextFile(pubspecPath),
       sources,
-      expectedName: expectedName,
       location: path.toUri(pubspecPath),
       overridesFileContents: overridesFileContents,
       overridesLocation: path.toUri(overridesPath),
@@ -278,15 +273,11 @@ class Pubspec extends PubspecBase {
   /// Returns a Pubspec object for an already-parsed map representing its
   /// contents.
   ///
-  /// If [expectedName] is passed and the pubspec doesn't have a matching name
-  /// field, this will throw a [PubspecError].
-  ///
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(
     Map fields,
     this._sources, {
     YamlMap? overridesFields,
-    String? expectedName,
     Uri? location,
   })  : _overridesFileFields = overridesFields,
         _includeDefaultSdkConstraint = true,
@@ -297,18 +288,7 @@ class Pubspec extends PubspecBase {
           fields is YamlMap
               ? fields
               : YamlMap.wrap(fields, sourceUrl: location),
-        ) {
-    // If [expectedName] is passed, ensure that the actual 'name' field exists
-    // and matches the expectation.
-    if (expectedName == null) return;
-    if (name == expectedName) return;
-
-    throw SourceSpanApplicationException(
-      '"name" field doesn\'t match expected name '
-      '"$expectedName".',
-      this.fields.nodes['name']!.span,
-    );
-  }
+        );
 
   /// Parses the pubspec stored at [location] whose text is [contents].
   ///
@@ -317,7 +297,6 @@ class Pubspec extends PubspecBase {
   factory Pubspec.parse(
     String contents,
     SourceRegistry sources, {
-    String? expectedName,
     Uri? location,
     String? overridesFileContents,
     Uri? overridesLocation,
@@ -339,7 +318,6 @@ class Pubspec extends PubspecBase {
       pubspecMap,
       sources,
       overridesFields: overridesFileMap,
-      expectedName: expectedName,
       location: location,
     );
   }

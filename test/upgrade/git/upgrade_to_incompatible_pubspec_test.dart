@@ -42,7 +42,7 @@ void main() {
     ).commit();
 
     await pubUpgrade(
-      error: contains('"name" field doesn\'t match expected name "foo".'),
+      error: contains('Expected to find package "foo", found package "zoo".'),
       exitCode: exit_codes.DATA,
     );
 
