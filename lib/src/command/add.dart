@@ -522,25 +522,22 @@ Specify multiple sdk packages with descriptors.''');
       if (gitUrl == null) {
         usageException('The `--git-url` is required for git dependencies.');
       }
-      Uri parsed;
-      try {
-        parsed = Uri.parse(gitUrl);
-      } on FormatException catch (e) {
-        usageException('The --git-url must be a valid url: ${e.message}.');
-      }
 
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.
-
-      ref = PackageRef(
-        packageName,
-        GitDescription(
-          url: parsed.toString(),
-          containingDir: p.current,
-          ref: argResults.gitRef,
-          path: argResults.gitPath,
-        ),
-      );
+      try {
+        ref = PackageRef(
+          packageName,
+          GitDescription(
+            url: gitUrl.toString(),
+            containingDir: p.current,
+            ref: argResults.gitRef,
+            path: argResults.gitPath,
+          ),
+        );
+      } on FormatException catch (e) {
+        usageException('The --git-url must be a valid url: ${e.message}.');
+      }
     } else if (path != null) {
       ref = PackageRef(
         packageName,
