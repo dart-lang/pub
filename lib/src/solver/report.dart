@@ -63,12 +63,16 @@ class SolveReport {
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
   ///
+  /// If [summary] is `true` a count of changes and number of
+  /// discontinued/retracted packages will be shown at the end of the report.
+  ///
   /// Returns `true` if there was any change of dependencies relative to the old
   /// lockfile.
-  Future<bool> show() async {
-    final hasChanges = await _reportChanges();
+  Future<bool> show({required bool summary}) async {
+    final changes = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
-    return hasChanges;
+    if (summary) await summarize(changes);
+    return changes != 0;
   }
 
   void _checkContentHashesMatchOldLockfile() {
@@ -139,23 +143,11 @@ $contentHashesDocumentationUrl
   /// If [type] is `SolveType.UPGRADE` it also shows the number of packages that
   /// are not at the latest available version and the number of outdated
   /// packages.
-  Future<void> summarize() async {
+  Future<void> summarize(int changes) async {
     // Count how many dependencies actually changed.
     var dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
     dependencies.remove(_rootPubspec.name);
-
-    var numChanged = dependencies.where((name) {
-      var oldId = _previousLockFile.packages[name];
-      var newId = _newLockFile.packages[name];
-
-      // Added or removed dependencies count.
-      if (oldId == null) return true;
-      if (newId == null) return true;
-
-      // The dependency existed before, so see if it was modified.
-      return oldId != newId;
-    }).length;
 
     var suffix = '';
     final dir = _location;
@@ -169,7 +161,7 @@ $contentHashesDocumentationUrl
       if (_dryRun) {
         log.message('Would get dependencies$suffix.');
       } else if (_enforceLockfile) {
-        if (numChanged == 0) {
+        if (changes == 0) {
           log.message('Got dependencies$suffix.');
         }
       } else {
@@ -177,32 +169,32 @@ $contentHashesDocumentationUrl
       }
     } else {
       if (_dryRun) {
-        if (numChanged == 0) {
+        if (changes == 0) {
           log.message('No dependencies would change$suffix.');
-        } else if (numChanged == 1) {
-          log.message('Would change $numChanged dependency$suffix.');
+        } else if (changes == 1) {
+          log.message('Would change $changes dependency$suffix.');
         } else {
-          log.message('Would change $numChanged dependencies$suffix.');
+          log.message('Would change $changes dependencies$suffix.');
         }
       } else if (_enforceLockfile) {
-        if (numChanged == 0) {
+        if (changes == 0) {
           log.message('Got dependencies$suffix!');
-        } else if (numChanged == 1) {
-          log.message('Would change $numChanged dependency$suffix.');
+        } else if (changes == 1) {
+          log.message('Would change $changes dependency$suffix.');
         } else {
-          log.message('Would change $numChanged dependencies$suffix.');
+          log.message('Would change $changes dependencies$suffix.');
         }
       } else {
-        if (numChanged == 0) {
+        if (changes == 0) {
           if (_type == SolveType.get) {
             log.message('Got dependencies$suffix!');
           } else {
             log.message('No dependencies changed$suffix.');
           }
-        } else if (numChanged == 1) {
-          log.message('Changed $numChanged dependency$suffix!');
+        } else if (changes == 1) {
+          log.message('Changed $changes dependency$suffix!');
         } else {
-          log.message('Changed $numChanged dependencies$suffix!');
+          log.message('Changed $changes dependencies$suffix!');
         }
       }
       await reportDiscontinued();
@@ -213,16 +205,16 @@ $contentHashesDocumentationUrl
   /// Displays a report of all of the previous and current dependencies and
   /// how they have changed.
   ///
-  /// Returns true if anything changed.
-  Future<bool> _reportChanges() async {
+  /// Returns the number of changes.
+  Future<int> _reportChanges() async {
     final output = StringBuffer();
     // Show the new set of dependencies ordered by name.
     var names = _newLockFile.packages.keys.toList();
     names.remove(_rootPubspec.name);
     names.sort();
-    var hasChanges = false;
+    var changes = 0;
     for (final name in names) {
-      hasChanges |= await _reportPackage(name, output);
+      changes += await _reportPackage(name, output) ? 1 : 0;
     }
     // Show any removed ones.
     var removed = _previousLockFile.packages.keys.toSet();
@@ -232,12 +224,12 @@ $contentHashesDocumentationUrl
       output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
         await _reportPackage(name, output, alwaysShow: true);
+        changes += 1;
       }
-      hasChanges = true;
     }
 
     message(output.toString());
-    return hasChanges;
+    return changes;
   }
 
   /// Displays a single-line message, number of discontinued packages
@@ -289,6 +281,13 @@ $contentHashesDocumentationUrl
           'dependency constraints.\nTry `$topLevelProgram pub outdated` for more information.');
     }
   }
+
+  static DependencyType dependencyType(LockFile lockFile, String name) =>
+      lockFile.mainDependencies.contains(name)
+          ? DependencyType.direct
+          : lockFile.devDependencies.contains(name)
+              ? DependencyType.dev
+              : DependencyType.none;
 
   /// Reports the results of the upgrade on the package named [name].
   ///
@@ -405,9 +404,17 @@ $contentHashesDocumentationUrl
       }
     }
 
+    final oldDependencyType = dependencyType(_previousLockFile, name);
+    final newDependencyType = dependencyType(_newLockFile, name);
+
+    var dependencyTypeChanged = oldId != null &&
+        newId != null &&
+        oldDependencyType != newDependencyType;
+
     if (!(alwaysShow ||
         changed ||
         addedOrRemoved ||
+        dependencyTypeChanged ||
         message != null ||
         isOverridden)) {
       return changed || addedOrRemoved;
@@ -425,6 +432,18 @@ $contentHashesDocumentationUrl
       output.write(')');
     }
 
+    if (dependencyTypeChanged) {
+      if (dependencyTypeChanged) {
+        output.write(' (from ');
+
+        _writeDependencyType(oldDependencyType, output);
+        output.write(' dependency to ');
+
+        _writeDependencyType(newDependencyType, output);
+        output.write(' dependency)');
+      }
+    }
+
     // Highlight overridden packages.
     if (isOverridden) {
       final location = _location;
@@ -438,7 +457,7 @@ $contentHashesDocumentationUrl
     if (message != null) output.write(' ${log.cyan(message)}');
 
     output.writeln();
-    return changed || addedOrRemoved;
+    return changed || addedOrRemoved || dependencyTypeChanged;
   }
 
   /// Writes a terse description of [id] (not including its name) to the output.
@@ -449,6 +468,18 @@ $contentHashesDocumentationUrl
       var description = id.description.format();
       output.write(' from ${id.source} $description');
     }
+  }
+
+  void _writeDependencyType(DependencyType t, StringBuffer output) {
+    output.write(
+      log.bold(
+        switch (t) {
+          DependencyType.direct => 'direct',
+          DependencyType.dev => 'dev',
+          DependencyType.none => 'transitive',
+        },
+      ),
+    );
   }
 
   void warning(String message) {

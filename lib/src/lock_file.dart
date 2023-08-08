@@ -223,9 +223,9 @@ class LockFile {
     return LockFile._(
       packages,
       sdkConstraints,
-      const UnmodifiableSetView.empty(),
-      const UnmodifiableSetView.empty(),
-      const UnmodifiableSetView.empty(),
+      mainDependencies,
+      devDependencies,
+      overriddenDependencies,
     );
   }
 

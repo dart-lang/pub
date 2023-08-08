@@ -189,7 +189,8 @@ class GlobalPackages {
     final tempDir = cache.createTempDir();
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    LockFile([id]).writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
+    LockFile([id], mainDependencies: {id.name})
+        .writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
     tryDeleteEntry(_packageDir(name));
     tryRenameDir(tempDir, _packageDir(name));
@@ -270,7 +271,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           dryRun: false,
           quiet: false,
           enforceLockfile: false,
-        ).show();
+        ).show(summary: false);
       }
 
       final tempDir = cache.createTempDir();

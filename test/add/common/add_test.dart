@@ -269,7 +269,7 @@ environment:
       await d.dir(appPath, [
         d.file('pubspec.yaml', '''
 name: myapp
-dependencies: 
+dependencies:
 
 dev_dependencies:
   foo: 1.2.2
@@ -277,12 +277,58 @@ environment:
   sdk: '$defaultSdkConstraint'
 '''),
       ]).create();
+      await pubGet();
+      await pubAdd(
+        args: ['foo:1.2.3'],
+        output: allOf(
+          contains('"foo" was found in dev_dependencies. Removing "foo" and '
+              'adding it to dependencies instead.'),
+          contains(
+            '> foo 1.2.3 (was 1.2.2) (from dev dependency to direct dependency)',
+          ),
+        ),
+      );
+
+      await d.cacheDir({'foo': '1.2.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3'),
+      ]).validate();
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '1.2.3'},
+        }),
+      ]).validate();
+    });
+
+    test('changing from a dev to non-dev_dependency is considered a change',
+        () async {
+      (await servePackages()).serve('foo', '1.2.3');
+
+      await d.dir(appPath, [
+        d.file('pubspec.yaml', '''
+name: myapp
+dependencies:
+
+dev_dependencies:
+  foo: 1.2.3
+environment:
+  sdk: '$defaultSdkConstraint'
+'''),
+      ]).create();
+      await pubGet();
 
       await pubAdd(
         args: ['foo:1.2.3'],
-        output:
-            contains('"foo" was found in dev_dependencies. Removing "foo" and '
-                'adding it to dependencies instead.'),
+        output: allOf(
+          contains('"foo" was found in dev_dependencies. Removing "foo" and '
+              'adding it to dependencies instead.'),
+          contains(
+            ' foo 1.2.3 (from dev dependency to direct dependency)',
+          ),
+          contains('Changed 1 dependency!'),
+        ),
       );
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
