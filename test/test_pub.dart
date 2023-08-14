@@ -549,10 +549,10 @@ Future<PubProcess> startPub({
 /// makes [stdout] and [stderr] work as though pub weren't running in verbose
 /// mode.
 class PubProcess extends TestProcess {
-  late final StreamSplitter<Pair<log.Level, String>> _logSplitter =
+  late final StreamSplitter<(log.Level level, String message)> _logSplitter =
       createLogSplitter();
 
-  StreamSplitter<Pair<log.Level, String>> createLogSplitter() {
+  StreamSplitter<(log.Level, String)> createLogSplitter() {
     return StreamSplitter(
       StreamGroup.merge([
         _outputToLog(super.stdoutStream(), log.Level.message),
@@ -622,46 +622,49 @@ class PubProcess extends TestProcess {
     return levels;
   });
 
-  Stream<Pair<log.Level, String>> _outputToLog(
+  Stream<(log.Level, String message)> _outputToLog(
     Stream<String> stream,
     log.Level defaultLevel,
   ) {
     late log.Level lastLevel;
     return stream.map((line) {
       var match = _logLineRegExp.firstMatch(line);
-      if (match == null) return Pair<log.Level, String>(defaultLevel, line);
+      if (match == null) return (defaultLevel, line);
 
       var level = _logLevels[match[1]] ?? lastLevel;
       lastLevel = level;
-      return Pair<log.Level, String>(level, match[2]!);
+      return (level, match[2]!);
     });
   }
 
   @override
   Stream<String> stdoutStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.message) return [];
-      return [entry.last];
+      final (level, message) = entry;
+      if (level != log.Level.message) return [];
+      return [message];
     });
   }
 
   @override
   Stream<String> stderrStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.error && entry.first != log.Level.warning) {
+      final (level, message) = entry;
+      if (level != log.Level.error && level != log.Level.warning) {
         return [];
       }
-      return [entry.last];
+      return [message];
     });
   }
 
   /// A stream of log messages that are silent by default.
   Stream<String> silentStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first == log.Level.message) return [];
-      if (entry.first == log.Level.error) return [];
-      if (entry.first == log.Level.warning) return [];
-      return [entry.last];
+      final (level, message) = entry;
+      if (level == log.Level.message) return [];
+      if (level == log.Level.error) return [];
+      if (level == log.Level.warning) return [];
+      return [message];
     });
   }
 }
@@ -913,29 +916,6 @@ Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
   );
   await validator.validate();
   return validator;
-}
-
-/// A matcher that matches a Pair.
-Matcher pairOf(firstMatcher, lastMatcher) =>
-    _PairMatcher(wrapMatcher(firstMatcher), wrapMatcher(lastMatcher));
-
-class _PairMatcher extends Matcher {
-  final Matcher _firstMatcher;
-  final Matcher _lastMatcher;
-
-  _PairMatcher(this._firstMatcher, this._lastMatcher);
-
-  @override
-  bool matches(item, Map matchState) {
-    if (item is! Pair) return false;
-    return _firstMatcher.matches(item.first, matchState) &&
-        _lastMatcher.matches(item.last, matchState);
-  }
-
-  @override
-  Description describe(Description description) {
-    return description.addAll('(', ', ', ')', [_firstMatcher, _lastMatcher]);
-  }
 }
 
 /// Returns a matcher that asserts that a string contains [times] distinct

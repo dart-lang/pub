@@ -299,7 +299,7 @@ class DepsCommand extends PubCommand {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
-    var toWalk = Queue<Pair<Package, Map<String, Map>>>();
+    var toWalk = Queue<(Package, Map<String, Map>)>();
     var visited = <String>{entrypoint.root.name};
 
     // Start with the root dependencies.
@@ -310,14 +310,13 @@ class DepsCommand extends PubCommand {
       immediateDependencies.removeAll(entrypoint.root.devDependencies.keys);
     }
     for (var name in immediateDependencies) {
-      toWalk.add(Pair(await _getPackage(name), packageTree));
+      toWalk.add((await _getPackage(name), packageTree));
     }
 
     // Do a breadth-first walk to the dependency graph.
     while (toWalk.isNotEmpty) {
       var pair = toWalk.removeFirst();
-      var package = pair.first;
-      var map = pair.last;
+      var (package, map) = pair;
 
       if (visited.contains(package.name)) {
         map[log.gray('${package.name}...')] = <String, Map>{};
@@ -331,7 +330,7 @@ class DepsCommand extends PubCommand {
       map[_labelPackage(package)] = childMap;
 
       for (var dep in package.dependencies.values) {
-        toWalk.add(Pair(await _getPackage(dep.name), childMap));
+        toWalk.add((await _getPackage(dep.name), childMap));
       }
     }
 

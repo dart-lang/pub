@@ -530,7 +530,8 @@ try:
   ///
   /// Returns a pair of two lists of strings. The first indicates which packages
   /// were successfully re-activated; the second indicates which failed.
-  Future<Pair<List<String>, List<String>>> repairActivatedPackages() async {
+  Future<(List<String> successes, List<String> failures)>
+      repairActivatedPackages() async {
     var executables = <String, List<String>>{};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
@@ -619,7 +620,7 @@ try:
       log.error(message.toString());
     }
 
-    return Pair(successes, failures);
+    return (successes, failures);
   }
 
   /// Rewrites all binstubs that refer to [executable] of [entrypoint].

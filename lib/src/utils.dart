@@ -78,26 +78,6 @@ final int? _lineLength = () {
   }
 }();
 
-/// A pair of values.
-class Pair<E, F> {
-  E first;
-  F last;
-
-  Pair(this.first, this.last);
-
-  @override
-  String toString() => '($first, $last)';
-
-  @override
-  bool operator ==(other) {
-    if (other is! Pair) return false;
-    return other.first == first && other.last == last;
-  }
-
-  @override
-  int get hashCode => first.hashCode ^ last.hashCode;
-}
-
 /// Runs [callback] in an error zone and pipes any unhandled error to the
 /// returned [Future].
 ///

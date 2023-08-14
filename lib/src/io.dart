@@ -725,10 +725,12 @@ Future flushThenExit(int status) {
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
 /// will succeed when [EventSink] is closed or fail with any errors that occur
 /// while writing.
-Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
+(EventSink<T> consumerSink, Future done) _consumerToSink<T>(
+  StreamConsumer<T> consumer,
+) {
   var controller = StreamController<T>(sync: true);
   var done = controller.stream.pipe(consumer);
-  return Pair(controller.sink, done);
+  return (controller.sink, done);
 }
 
 /// Spawns and runs the process located at [executable], passing in [args].
@@ -909,9 +911,9 @@ class PubProcess {
   PubProcess(Process process) : _process = process {
     var errorGroup = ErrorGroup();
 
-    var pair = _consumerToSink(process.stdin);
-    _stdin = pair.first;
-    _stdinClosed = errorGroup.registerFuture(pair.last);
+    var (consumerSink, done) = _consumerToSink(process.stdin);
+    _stdin = consumerSink;
+    _stdinClosed = errorGroup.registerFuture(done);
 
     _stdout = ByteStream(errorGroup.registerStream(process.stdout));
     _stderr = ByteStream(errorGroup.registerStream(process.stderr));

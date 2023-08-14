@@ -540,9 +540,9 @@ class HostedSource extends CachedSource {
   /// [_versionListingCachePath].
   ///
   /// Invariant: Entries in this cache are the parsed version of the exact same
-  ///  information cached on disk. I.e. if the entry is present in this cache,
+  /// information cached on disk. I.e. if the entry is present in this cache,
   /// there will not be a newer version on disk.
-  final Map<PackageRef, Pair<DateTime, List<_VersionInfo>>> _responseCache = {};
+  final Map<PackageRef, (DateTime, List<_VersionInfo>)> _responseCache = {};
 
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
@@ -556,11 +556,13 @@ class HostedSource extends CachedSource {
     SystemCache cache, {
     Duration? maxAge,
   }) async {
-    if (_responseCache.containsKey(ref)) {
-      final cacheAge = DateTime.now().difference(_responseCache[ref]!.first);
+    final cachedInfo = _responseCache[ref];
+    if (cachedInfo != null) {
+      final (cacheTimestamp, versionInfo) = cachedInfo;
+      final cacheAge = DateTime.now().difference(cacheTimestamp);
       if (maxAge == null || maxAge > cacheAge) {
         // The cached value is not too old.
-        return _responseCache[ref]!.last;
+        return versionInfo;
       }
     }
     final cachePath = _versionListingCachePath(ref, cache);
@@ -589,7 +591,7 @@ class HostedSource extends CachedSource {
               Uri.file(cachePath),
               cache,
             );
-            _responseCache[ref] = Pair(parsedTimestamp, res);
+            _responseCache[ref] = (parsedTimestamp, res);
             return res;
           }
         } on io.IOException {
