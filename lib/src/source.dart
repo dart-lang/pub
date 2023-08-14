@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
@@ -78,7 +79,7 @@ abstract class Source {
   /// Throws a [FormatException] if the description is not valid.
   PackageRef parseRef(
     String name,
-    description, {
+    Object? description, {
     String? containingDir,
     required LanguageVersion languageVersion,
   });
@@ -96,7 +97,7 @@ abstract class Source {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   });
 
@@ -183,10 +184,12 @@ abstract class Description {
   String format();
 
   @override
-  bool operator ==(other) =>
+  @mustBeOverridden
+  bool operator ==(Object other) =>
       throw UnimplementedError('Subclasses must override');
 
   @override
+  @mustBeOverridden
   int get hashCode => throw UnimplementedError('Subclasses must override');
 }
 
@@ -214,10 +217,12 @@ abstract class ResolvedDescription {
   String format() => description.format();
 
   @override
-  bool operator ==(other) =>
+  @mustBeOverridden
+  bool operator ==(Object other) =>
       throw UnimplementedError('Subclasses must override');
 
   @override
+  @mustBeOverridden
   int get hashCode => throw UnimplementedError('Subclasses must override');
 }
 

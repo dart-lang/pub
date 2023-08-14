@@ -44,7 +44,7 @@ void main() {
       ]).create();
 
       await expectValidationHint(
-        contains('Non-dev dependencies are overridden in pubspec.yaml.'),
+        'Non-dev dependencies are overridden in pubspec.yaml.',
       );
     });
     test('it has a pubspec_overrides.yaml', () async {

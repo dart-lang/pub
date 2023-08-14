@@ -49,7 +49,7 @@ class PackageRef {
       PackageRange(this, constraint);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is PackageRef &&
       name == other.name &&
       description == other.description;
@@ -95,7 +95,7 @@ class PackageId {
   int get hashCode => Object.hash(name, version, description);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is PackageId &&
       name == other.name &&
       version == other.version &&
@@ -208,7 +208,7 @@ class PackageRange {
   int get hashCode => Object.hash(_ref, constraint);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is PackageRange &&
       _ref == other._ref &&
       other.constraint == constraint;

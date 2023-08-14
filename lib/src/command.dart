@@ -354,7 +354,7 @@ abstract class PubTopLevel {
   log.Verbosity get verbosity;
   bool get trace;
 
-  static addColorFlag(ArgParser argParser) {
+  static void addColorFlag(ArgParser argParser) {
     argParser.addFlag(
       'color',
       help: 'Use colors in terminal output.\n'

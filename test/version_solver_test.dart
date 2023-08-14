@@ -1956,8 +1956,8 @@ void downgrade() {
 /// If [downgrade] is `true`, this runs "pub downgrade" instead of "pub get".
 Future expectResolves({
   Map? result,
-  error,
-  output,
+  Object? error,
+  Object? output,
   int? tries,
   Map<String, String>? environment,
   bool downgrade = false,

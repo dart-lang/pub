@@ -51,7 +51,7 @@ Matcher isUnminifiedDart2JSOutput =
     contains('// The code supports the following hooks');
 
 /// Converts [value] into a YAML string.
-String yaml(value) => jsonEncode(value);
+String yaml(Object? value) => jsonEncode(value);
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.
@@ -913,29 +913,6 @@ Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
   );
   await validator.validate();
   return validator;
-}
-
-/// A matcher that matches a Pair.
-Matcher pairOf(firstMatcher, lastMatcher) =>
-    _PairMatcher(wrapMatcher(firstMatcher), wrapMatcher(lastMatcher));
-
-class _PairMatcher extends Matcher {
-  final Matcher _firstMatcher;
-  final Matcher _lastMatcher;
-
-  _PairMatcher(this._firstMatcher, this._lastMatcher);
-
-  @override
-  bool matches(item, Map matchState) {
-    if (item is! Pair) return false;
-    return _firstMatcher.matches(item.first, matchState) &&
-        _lastMatcher.matches(item.last, matchState);
-  }
-
-  @override
-  Description describe(Description description) {
-    return description.addAll('(', ', ', ')', [_firstMatcher, _lastMatcher]);
-  }
 }
 
 /// Returns a matcher that asserts that a string contains [times] distinct

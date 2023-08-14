@@ -12,7 +12,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 Future<void> expectValidation(
-  error,
+  Matcher error,
   int exitCode, {
   Map<String, String> environment = const {},
   String? workingDirectory,

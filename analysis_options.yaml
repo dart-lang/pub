@@ -14,6 +14,7 @@ analyzer:
 
 linter:
   rules:
+    - always_declare_return_types
     - avoid_catching_errors
     - avoid_print
     - avoid_private_typedef_functions
@@ -26,6 +27,7 @@ linter:
     - missing_whitespace_between_adjacent_strings
     - no_adjacent_strings_in_list
     - no_runtimeType_toString
+    - omit_local_variable_types
     - only_throw_errors
     - package_api_docs
     - prefer_asserts_in_initializer_lists
@@ -36,6 +38,7 @@ linter:
     - sort_pub_dependencies
     - test_types_in_equals
     - throw_in_finally
+    - type_annotate_public_apis
     - unawaited_futures
     - unnecessary_lambdas
     - unnecessary_null_aware_assignments

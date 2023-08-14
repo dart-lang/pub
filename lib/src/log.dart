@@ -204,7 +204,7 @@ class _Entry {
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
-void error(String message, [error, StackTrace? trace]) {
+void error(String message, [Object? error, StackTrace? trace]) {
   if (error != null) {
     message = message.isEmpty ? '$error' : '$message: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
@@ -490,15 +490,13 @@ void unmuteProgress() {
 /// that supports that.
 ///
 /// Use this to highlight the most important piece of a long chunk of text.
-String bold(text) => '$_bold$text$_none';
+String bold(String text) => '$_bold$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to make it gray when on a platform
 /// that supports that.
 ///
 /// Use this for text that's less important than the text around it.
-String gray(text) {
-  return '$_gray$text$_none';
-}
+String gray(String text) => '$_gray$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to color it cyan when on a platform
 /// that supports that.
@@ -626,7 +624,7 @@ class _JsonLogger {
   }
 
   /// Encodes [message] to JSON and prints it if JSON output is enabled.
-  void message(message) {
+  void message(Map<String, String> message) {
     if (!enabled) return;
 
     stdout.writeln(jsonEncode(message));

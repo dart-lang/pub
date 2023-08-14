@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   test('Gives hint when solve failure concerns a pinned flutter package',
       () async {
     await d.dir('flutter', [

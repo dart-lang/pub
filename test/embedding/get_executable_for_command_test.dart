@@ -18,9 +18,9 @@ Future<void> testGetExecutable(
   String command,
   String root, {
   bool allowSnapshot = true,
-  executable,
-  packageConfig,
-  errorMessage,
+  Object? executable,
+  String? packageConfig,
+  Object? errorMessage,
   CommandResolutionIssue? issue,
 }) async {
   final cachePath = getPubTestEnvironment()['PUB_CACHE'];
@@ -152,7 +152,7 @@ Future<void> main() async {
 
     await servePackages();
     // The solver uses word-wrapping in its error message, so we use \s to
-    // accomodate.
+    // accommodate.
     await testGetExecutable(
       'bar/m.dart',
       d.path(appPath),
@@ -189,7 +189,7 @@ Future<void> main() async {
 
     await servePackages();
     // The solver uses word-wrapping in its error message, so we use \s to
-    // accomodate.
+    // accommodate.
     await testGetExecutable(
       ':foo',
       d.path(appPath),

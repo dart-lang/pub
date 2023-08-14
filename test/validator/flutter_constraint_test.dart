@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-Future<void> expectValidation(error, int exitCode) async {
+Future<void> expectValidation(Matcher error, int exitCode) async {
   await runPub(
     error: error,
     args: ['publish', '--dry-run'],

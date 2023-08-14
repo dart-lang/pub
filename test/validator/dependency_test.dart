@@ -15,7 +15,7 @@ import '../test_pub.dart';
 
 d.DirectoryDescriptor package({
   String version = '1.0.0',
-  Map? deps,
+  Map<String, Object?>? deps,
   String? sdk,
 }) {
   return d.dir(appPath, [
@@ -33,7 +33,7 @@ d.DirectoryDescriptor package({
 }
 
 Future<void> expectValidation({
-  error,
+  Object? error,
   int exitCode = 0,
   Map<String, String> environment = const {},
 }) async {
@@ -47,7 +47,7 @@ Future<void> expectValidation({
 }
 
 Future<void> expectValidationWarning(
-  error, {
+  Object? error, {
   int count = 1,
   Map<String, String> environment = const {},
 }) async {
@@ -74,7 +74,7 @@ Future<void> expectValidationError(
 }
 
 Future<void> setUpDependency(
-  dep, {
+  Map<String, String> dep, {
   String? sdk,
   List<String> hostedVersions = const [],
 }) async {
@@ -160,7 +160,7 @@ void main() {
     test(
       'depends on a package from Fuchsia with an appropriate Dart SDK constraint',
       () async {
-        await fuschiaPackage('foo', sdk: '^3.0.0').create();
+        await fuchsiaPackage('foo', sdk: '^3.0.0').create();
         await package(
           deps: {
             'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'},
@@ -403,7 +403,7 @@ void main() {
   });
 }
 
-d.Descriptor fuschiaPackage(
+d.Descriptor fuchsiaPackage(
   String name, {
   Map<String, String> deps = const {},
   String? sdk,

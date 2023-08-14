@@ -59,7 +59,7 @@ class PathSource extends Source {
   @override
   PackageRef parseRef(
     String name,
-    description, {
+    Object? description, {
     String? containingDir,
     LanguageVersion? languageVersion,
   }) {
@@ -90,7 +90,7 @@ class PathSource extends Source {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     if (description is! Map) {

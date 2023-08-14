@@ -159,7 +159,7 @@ VersionConstraint stripUpperBound(VersionConstraint constraint) {
 ///
 /// The syntax used for hosted will depend on the language version of
 /// [relativeEntrypoint]
-Object? pubspecDescription(
+Object pubspecDescription(
   PackageRange range,
   SystemCache cache,
   Entrypoint relativeEntrypoint,

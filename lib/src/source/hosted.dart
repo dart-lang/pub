@@ -225,7 +225,7 @@ class HostedSource extends CachedSource {
   @override
   PackageRef parseRef(
     String name,
-    description, {
+    Object? description, {
     String? containingDir,
     required LanguageVersion languageVersion,
   }) {
@@ -239,7 +239,7 @@ class HostedSource extends CachedSource {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     // Old pub versions only wrote `description: <pkg>` into the lock file.

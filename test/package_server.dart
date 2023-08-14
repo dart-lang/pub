@@ -312,7 +312,7 @@ class PackageServer {
     int? crc32c,
     String? md5 = '5f4dcc3b5aa765d61d8327deb882cf99',
   }) {
-    List<String> header = [];
+    final header = <String>[];
 
     if (crc32c != null) {
       final bytes = Uint8List(4)..buffer.asByteData().setUint32(0, crc32c);

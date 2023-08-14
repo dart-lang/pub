@@ -89,7 +89,7 @@ class Pair<E, F> {
   String toString() => '($first, $last)';
 
   @override
-  bool operator ==(other) {
+  bool operator ==(Object other) {
     if (other is! Pair) return false;
     return other.first == first && other.last == last;
   }
@@ -489,7 +489,7 @@ final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 
 /// Converts [data], which is a parsed YAML object, to a pretty-printed string,
 /// using indentation for maps.
-String yamlToString(data) {
+String yamlToString(Object? data) {
   var buffer = StringBuffer();
 
   void stringify(bool isMapValue, String indent, data) {
@@ -640,7 +640,7 @@ final _exceptionPrefix = RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
 ///
 /// Many exceptions include the exception class name at the beginning of their
 /// [toString], so we remove that if it exists.
-String getErrorMessage(error) =>
+String getErrorMessage(Object error) =>
     error.toString().replaceFirst(_exceptionPrefix, '');
 
 /// Returns whether [version1] and [version2] are the same, ignoring the
