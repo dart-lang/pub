@@ -29,39 +29,76 @@ final identifierRegExp = RegExp(r'[a-zA-Z_]\w*');
 final onlyIdentifierRegExp = RegExp('^${identifierRegExp.pattern}\$');
 
 /// Dart reserved words, from the Dart spec.
-const reservedWords = [
+const reservedWords = <String>{
+  'abstract',
+  'as',
   'assert',
+  // 'async', // Reserved, but allowed because package:async already exists.
+  'await',
+  // 'base', // Reserved, but allowed because package:base already exists.
   'break',
   'case',
   'catch',
   'class',
   'const',
   'continue',
+  'covariant',
   'default',
+  'deferred',
   'do',
+  // 'dynamic', // Reserved, but allowed because package:dynamic already exists.
   'else',
+  'enum',
+  'export',
   'extends',
+  // 'extension', // Reserved, but allowed because package:extension already exists.
+  'external',
+  // 'factory', // Reserved, but allowed because package:factory already exists.
   'false',
   'final',
   'finally',
   'for',
+  // 'get', // Reserved, but allowed because package:get already exists.
+  'hide',
   'if',
+  'implements',
+  'import',
   'in',
+  'inline',
+  'interface',
   'is',
+  'late',
+  'library',
+  'mixin',
   'new',
   'null',
+  'of',
+  'on',
+  'operator',
+  'part',
+  'required',
+  'rethrow',
   'return',
+  'sealed',
+  'set',
+  // 'show', // Reserved, but allowed because package:show already exists.
+  // 'static', // Reserved, but allowed because package:static already exists.
   'super',
   'switch',
+  // 'sync', // Reserved, but allowed because package:sync already exists.
   'this',
   'throw',
   'true',
   'try',
+  'type',
+  // 'typedef', // Reserved, but allowed because package:typedef already exists.
   'var',
   'void',
+  // 'when', // Reserved, but allowed because package:when already exists.
   'while',
   'with',
-];
+  'yield',
+};
 
 /// An cryptographically secure instance of [math.Random].
 final random = math.Random.secure();

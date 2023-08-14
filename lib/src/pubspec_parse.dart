@@ -55,7 +55,7 @@ abstract class PubspecBase {
         '"name" field must be a valid Dart identifier.',
         fields.nodes['name']?.span,
       );
-    } else if (reservedWords.contains(name)) {
+    } else if (reservedWords.contains(name.toLowerCase())) {
       throw SourceSpanApplicationException(
         '"name" field may not be a Dart reserved word.',
         fields.nodes['name']?.span,
