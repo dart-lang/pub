@@ -24,8 +24,7 @@ class StrictDependenciesValidator extends Validator {
   /// `package:` URLs are ignored.
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
     final packagePath = p.normalize(p.absolute(entrypoint.rootDir));
-    final AnalysisContextManager analysisContextManager =
-        AnalysisContextManager(packagePath);
+    final analysisContextManager = AnalysisContextManager(packagePath);
 
     for (var file in files) {
       List<UriBasedDirective> directives;

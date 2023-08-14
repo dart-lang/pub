@@ -115,7 +115,7 @@ class PackageIntegrityException extends PubHttpException {
 /// Returns whether [error] is a user-facing error object.
 ///
 /// This includes both [ApplicationException] and any dart:io errors.
-bool isUserFacingException(error) {
+bool isUserFacingException(Object error) {
   return error is ApplicationException ||
       error is AnalyzerErrorGroup ||
       error is IsolateSpawnException ||
@@ -148,7 +148,7 @@ class SourceSpanApplicationException extends SourceSpanFormatException
   }) : super(message, span);
 
   @override
-  String toString({color}) {
+  String toString({Object? color}) {
     return [
       if (explanation != null) explanation,
       span == null

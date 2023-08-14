@@ -86,7 +86,7 @@ class GitSource extends CachedSource {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     if (description is! Map) {
@@ -357,7 +357,7 @@ class GitSource extends CachedSource {
     SystemCache cache,
   ) async {
     return await _pool.withResource(() async {
-      bool didUpdate = false;
+      var didUpdate = false;
       final ref = id.toRef();
       final description = ref.description;
       if (description is! GitDescription) {

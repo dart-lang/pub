@@ -47,7 +47,7 @@ class UploaderCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    String packageName = '<packageName>';
+    var packageName = '<packageName>';
     try {
       packageName = entrypoint.root.name;
     } on Exception catch (_) {

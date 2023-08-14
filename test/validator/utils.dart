@@ -13,9 +13,9 @@ import '../test_pub.dart';
 // Prefer using expectValidation.
 Future<void> expectValidationDeprecated(
   ValidatorCreator fn, {
-  hints,
-  warnings,
-  errors,
+  Object? hints,
+  Object? warnings,
+  Object? errors,
   int? size,
 }) async {
   final validator = await validatePackage(fn, size);
@@ -25,7 +25,7 @@ Future<void> expectValidationDeprecated(
 }
 
 Future<void> expectValidation({
-  error,
+  Object? error,
   int exitCode = 0,
   Map<String, String> environment = const {},
   List<String>? extraArgs,
@@ -42,28 +42,32 @@ Future<void> expectValidation({
 }
 
 Future<void> expectValidationWarning(
-  error, {
+  String error, {
   int count = 1,
   Map<String, String> environment = const {},
 }) async {
-  if (error is String) error = contains(error);
   final s = count == 1 ? '' : 's';
   await expectValidation(
-    error: allOf([error, contains('Package has $count warning$s')]),
+    error: allOf([
+      contains(error),
+      contains('Package has $count warning$s'),
+    ]),
     exitCode: DATA,
     environment: environment,
   );
 }
 
 Future<void> expectValidationHint(
-  hint, {
+  String hint, {
   int count = 1,
   Map<String, String> environment = const {},
 }) async {
-  if (hint is String) hint = contains(hint);
   final s = count == 1 ? '' : 's';
   await expectValidation(
-    error: allOf([hint, contains('and $count hint$s')]),
+    error: allOf([
+      contains(hint),
+      contains('and $count hint$s'),
+    ]),
     environment: environment,
   );
 }

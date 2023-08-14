@@ -58,7 +58,7 @@ class RootSource extends Source {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     throw UnsupportedError('Trying to parse a root package description.');
@@ -67,7 +67,7 @@ class RootSource extends Source {
   @override
   PackageRef parseRef(
     String name,
-    description, {
+    Object? description, {
     String? containingDir,
     required LanguageVersion languageVersion,
   }) {

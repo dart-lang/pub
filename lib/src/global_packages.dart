@@ -214,7 +214,7 @@ class GlobalPackages {
     bool silent = false,
   }) async {
     final name = dep.name;
-    LockFile? originalLockFile = _describeActive(name, cache);
+    final originalLockFile = _describeActive(name, cache);
 
     // Create a dummy package with just [dep] so we can do resolution on it.
     var root = Package.inMemory(
@@ -251,7 +251,7 @@ class GlobalPackages {
     final sameVersions =
         originalLockFile != null && originalLockFile.samePackageIds(lockFile);
 
-    final PackageId id = lockFile.packages[name]!;
+    final id = lockFile.packages[name]!;
     if (sameVersions) {
       log.message('''
 The package $name is already activated at newest available version.
@@ -331,7 +331,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           '"${description.path}".');
     } else {
       log.message('Package ${log.bold(name)} is currently active at version '
-          '${log.bold(id.version)}.');
+          '${log.bold(id.version.toString())}.');
     }
     return lockFile;
   }
@@ -724,10 +724,10 @@ try:
       for (var command in ordered(collided.keys)) {
         if (overwriteBinStubs) {
           log.warning('Replaced ${log.bold(command)} previously installed from '
-              '${log.bold(collided[command])}.');
+              '${log.bold(collided[command].toString())}.');
         } else {
           log.warning('Executable ${log.bold(command)} was already installed '
-              'from ${log.bold(collided[command])}.');
+              'from ${log.bold(collided[command].toString())}.');
         }
       }
 

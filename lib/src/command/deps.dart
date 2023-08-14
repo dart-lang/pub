@@ -282,7 +282,9 @@ class DepsCommand extends PubCommand {
       buffer.writeln('- ${_labelPackage(package)}');
 
       for (var dep in package.dependencies.values) {
-        buffer.writeln('  - ${log.bold(dep.name)} ${log.gray(dep.constraint)}');
+        buffer.writeln(
+          '  - ${log.bold(dep.name)} ${log.gray(dep.constraint.toString())}',
+        );
       }
     }
   }

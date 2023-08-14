@@ -33,12 +33,12 @@ class CachePreloadCommand extends PubCommand {
       usageException('No package to preload given.');
     }
 
-    for (String packagePath in argResults.rest) {
+    for (final packagePath in argResults.rest) {
       if (!fileExists(packagePath)) {
         fail('Could not find file $packagePath.');
       }
     }
-    for (String archivePath in argResults.rest) {
+    for (final archivePath in argResults.rest) {
       final id = await cache.hosted.preloadPackage(archivePath, cache);
       final url = (id.description.description as HostedDescription).url;
 

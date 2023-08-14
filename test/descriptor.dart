@@ -102,8 +102,8 @@ Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
 FileDescriptor libPubspec(
   String name,
   String version, {
-  Map? deps,
-  Map? devDeps,
+  Map<String, Object?>? deps,
+  Map<String, Object?>? devDeps,
   String? sdk,
   Map<String, Object?>? extras,
 }) {
