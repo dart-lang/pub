@@ -60,23 +60,22 @@ class CacheRepairCommand extends PubCommand {
       log.message(buffer.toString());
     }
 
-    var globalRepairResults = await globals.repairActivatedPackages();
-    if (globalRepairResults.first.isNotEmpty) {
-      var packages = pluralize('package', globalRepairResults.first.length);
+    var (repairSuccesses, repairFailures) =
+        await globals.repairActivatedPackages();
+    if (repairSuccesses.isNotEmpty) {
+      var packages = pluralize('package', repairSuccesses.length);
       log.message(
-        'Reactivated ${log.green(globalRepairResults.first.length.toString())} $packages.',
+        'Reactivated ${log.green(repairSuccesses.length.toString())} $packages.',
       );
     }
 
-    if (globalRepairResults.last.isNotEmpty) {
-      var packages = pluralize('package', globalRepairResults.last.length);
+    if (repairFailures.isNotEmpty) {
+      var packages = pluralize('package', repairFailures.length);
       log.message(
-        'Failed to reactivate ${log.red(globalRepairResults.last.length.toString())} $packages:',
+        'Failed to reactivate ${log.red(repairFailures.length.toString())} $packages:',
       );
       log.message(
-        globalRepairResults.last
-            .map((name) => '- ${log.bold(name)}')
-            .join('\n'),
+        repairFailures.map((name) => '- ${log.bold(name)}').join('\n'),
       );
     }
 
@@ -84,7 +83,7 @@ class CacheRepairCommand extends PubCommand {
       log.message('No packages in cache, so nothing to repair.');
     }
 
-    if (failures.isNotEmpty || globalRepairResults.last.isNotEmpty) {
+    if (failures.isNotEmpty || repairFailures.isNotEmpty) {
       overrideExitCode(exit_codes.UNAVAILABLE);
     }
   }

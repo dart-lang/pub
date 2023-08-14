@@ -74,7 +74,7 @@ class _Writer {
   /// incompatibility, and why its terms are incompatible. The number is
   /// optional and indicates the explicit number that should be associated with
   /// the line so it can be referred to later on.
-  final _lines = <Pair<String, int?>>[];
+  final _lines = <(String, int?)>[];
 
   // A map from incompatibilities to the line numbers that were written for
   // those incompatibilities.
@@ -130,9 +130,8 @@ class _Writer {
         _lineNumbers.isEmpty ? 0 : '(${_lineNumbers.values.last}) '.length;
 
     var lastWasEmpty = false;
-    for (var line in _lines) {
-      var message = line.first;
-      if (message.isEmpty) {
+    for (var (lineMessage, lineNumber) in _lines) {
+      if (lineMessage.isEmpty) {
         if (!lastWasEmpty) buffer.writeln();
         lastWasEmpty = true;
         continue;
@@ -140,14 +139,13 @@ class _Writer {
         lastWasEmpty = false;
       }
 
-      var number = line.last;
-      if (number != null) {
-        message = '($number)'.padRight(padding) + message;
+      if (lineNumber != null) {
+        lineMessage = '($lineNumber)'.padRight(padding) + lineMessage;
       } else {
-        message = ' ' * padding + message;
+        lineMessage = ' ' * padding + lineMessage;
       }
 
-      buffer.writeln(wordWrap(message, prefix: ' ' * (padding + 2)));
+      buffer.writeln(wordWrap(lineMessage, prefix: ' ' * (padding + 2)));
     }
 
     // Iterate through all hints, these are intended to be actionable, such as:
@@ -183,9 +181,9 @@ class _Writer {
     if (numbered) {
       var number = _lineNumbers.length + 1;
       _lineNumbers[incompatibility] = number;
-      _lines.add(Pair(message, number));
+      _lines.add((message, number));
     } else {
-      _lines.add(Pair(message, null));
+      _lines.add((message, null));
     }
   }
 
@@ -260,7 +258,7 @@ class _Writer {
           );
         } else {
           _visit(conflictClause.conflict, {}, conclusion: true);
-          _lines.add(Pair('', null));
+          _lines.add(('', null));
 
           _visit(conflictClause.other, detailsForCause);
           _write(

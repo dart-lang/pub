@@ -5,7 +5,6 @@
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/solver/reformat_ranges.dart';
 import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
@@ -25,7 +24,7 @@ void main() {
         ),
       ),
       equals(
-        Pair(
+        (
           Version.parse('1.2.4-0'),
           false,
         ),
@@ -47,7 +46,7 @@ void main() {
         ),
       ),
       equals(
-        Pair(
+        (
           Version.parse('1.2.4-3'),
           true,
         ),

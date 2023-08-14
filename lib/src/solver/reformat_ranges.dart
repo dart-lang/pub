@@ -47,20 +47,21 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
   var range = term.package.constraint as VersionRange;
 
   var min = _reformatMin(versions, range);
-  var tuple = reformatMax(versions, range);
-  var max = tuple?.first;
-  var includeMax = tuple?.last;
+  var maxInfo = reformatMax(versions, range);
 
-  if (min == null && max == null) return term;
+  if (min == null && maxInfo == null) return term;
+
+  var (max, includeMax) = maxInfo ?? (range.max, range.includeMax);
+
   return Term(
     term.package
         .toRef()
         .withConstraint(
           VersionRange(
             min: min ?? range.min,
-            max: max ?? range.max,
+            max: max,
             includeMin: range.includeMin,
-            includeMax: includeMax ?? range.includeMax,
+            includeMax: includeMax,
             alwaysIncludeMaxPreRelease: true,
           ),
         )
@@ -90,7 +91,10 @@ Version? _reformatMin(List<PackageId> versions, VersionRange range) {
 /// Returns the new maximum version to use for [range] and whether that maximum
 /// is inclusive, or `null` if it doesn't need to be reformatted.
 @visibleForTesting
-Pair<Version, bool>? reformatMax(List<PackageId> versions, VersionRange range) {
+(Version maxVersion, bool inclusive)? reformatMax(
+  List<PackageId> versions,
+  VersionRange range,
+) {
   // This corresponds to the logic in the constructor of [VersionRange] with
   // `alwaysIncludeMaxPreRelease = false` for discovering when a max-bound
   // should not include prereleases.
@@ -109,8 +113,8 @@ Pair<Version, bool>? reformatMax(List<PackageId> versions, VersionRange range) {
   var previous = index == 0 ? null : versions[index - 1].version;
 
   return previous != null && equalsIgnoringPreRelease(previous, max)
-      ? Pair(previous, true)
-      : Pair(max.firstPreRelease, false);
+      ? (previous, true)
+      : (max.firstPreRelease, false);
 }
 
 /// Returns the first index in [ids] (which is sorted by version) whose version

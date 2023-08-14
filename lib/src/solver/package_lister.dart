@@ -342,20 +342,21 @@ class PackageLister {
 
     if (allowsSdk(await _describeSafe(versions[index]))) return null;
 
-    var bounds = await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
+    var (boundsFirstIndex, boundsLastIndex) =
+        await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
     var incompatibleVersions = VersionRange(
-      min: bounds.first == 0 ? null : versions[bounds.first].version,
+      min: boundsFirstIndex == 0 ? null : versions[boundsFirstIndex].version,
       includeMin: true,
-      max: bounds.last == versions.length - 1
+      max: boundsLastIndex == versions.length - 1
           ? null
-          : versions[bounds.last + 1].version,
+          : versions[boundsLastIndex + 1].version,
       alwaysIncludeMaxPreRelease: true,
     );
     _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
     var sdkConstraint = await foldAsync<VersionConstraint, PackageId>(
-        slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,
-        (previous, version) async {
+        slice(versions, boundsFirstIndex, boundsLastIndex + 1),
+        VersionConstraint.empty, (previous, version) async {
       var pubspec = await _describeSafe(version);
       return previous.union(
         pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint ??
@@ -373,7 +374,7 @@ class PackageLister {
   /// versions whose pubspecs match [match].
   ///
   /// Assumes [match] returns true for the pubspec whose version is at [index].
-  Future<Pair<int, int>> _findBounds(
+  Future<(int firstIndex, int lastIndex)> _findBounds(
     int start,
     bool Function(Pubspec) match,
   ) async {
@@ -391,7 +392,7 @@ class PackageLister {
       last++;
     }
 
-    return Pair(first + 1, last - 1);
+    return (first + 1, last - 1);
   }
 
   /// Returns a map where each key is a package name and each value is the upper
