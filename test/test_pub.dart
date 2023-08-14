@@ -7,6 +7,8 @@
 /// Unlike typical unit tests, most pub tests are integration tests that stage
 /// some stuff on the file system, run pub, and then validate the results. This
 /// library provides an API to build tests like that.
+library;
+
 import 'dart:convert';
 import 'dart:core';
 import 'dart:io' hide BytesBuilder;
@@ -598,16 +600,11 @@ class PubProcess extends TestProcess {
 
   /// This is protected.
   PubProcess(
-    Process process,
-    String description, {
-    Encoding encoding = utf8,
-    bool forwardStdio = false,
-  }) : super(
-          process,
-          description,
-          encoding: encoding,
-          forwardStdio: forwardStdio,
-        );
+    super.process,
+    super.description, {
+    super.encoding,
+    super.forwardStdio,
+  });
 
   final _logLineRegExp = RegExp(r'^([A-Z ]{4})[:|] (.*)$');
   final Map<String, log.Level> _logLevels = [

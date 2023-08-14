@@ -114,8 +114,7 @@ class UnknownDescription extends Description {
 }
 
 class ResolvedUnknownDescription extends ResolvedDescription {
-  ResolvedUnknownDescription(UnknownDescription description)
-      : super(description);
+  ResolvedUnknownDescription(UnknownDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

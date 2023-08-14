@@ -17,7 +17,7 @@ import '../descriptor.dart';
 class YamlDescriptor extends FileDescriptor {
   final String _contents;
 
-  YamlDescriptor(String name, this._contents) : super.protected(name);
+  YamlDescriptor(super.name, this._contents) : super.protected();
 
   @override
   Future<String> read() async => _contents;
