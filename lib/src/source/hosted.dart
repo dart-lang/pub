@@ -225,7 +225,7 @@ class HostedSource extends CachedSource {
   @override
   PackageRef parseRef(
     String name,
-    description, {
+    Object? description, {
     String? containingDir,
     required LanguageVersion languageVersion,
   }) {
@@ -239,7 +239,7 @@ class HostedSource extends CachedSource {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     // Old pub versions only wrote `description: <pkg>` into the lock file.
@@ -1449,9 +1449,9 @@ class ResolvedHostedDescription extends ResolvedDescription {
   final Uint8List? sha256;
 
   ResolvedHostedDescription(
-    HostedDescription description, {
+    HostedDescription super.description, {
     required this.sha256,
-  }) : super(description);
+  });
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

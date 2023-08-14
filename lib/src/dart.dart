@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A library for compiling Dart code and manipulating analyzer parse trees.
+library;
+
 import 'dart:async';
 import 'dart:io';
 

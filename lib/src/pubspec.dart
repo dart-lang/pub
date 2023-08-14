@@ -225,7 +225,7 @@ class Pubspec extends PubspecBase {
         pubspecPath,
       );
     }
-    String? overridesFileContents =
+    final overridesFileContents =
         allowOverridesFile && fileExists(overridesPath)
             ? readTextFile(overridesPath)
             : null;
@@ -613,7 +613,7 @@ class SdkConstraint {
     VersionConstraint originalConstraint, {
     required VersionConstraint? defaultUpperBoundConstraint,
   }) {
-    VersionConstraint constraint = originalConstraint;
+    var constraint = originalConstraint;
     if (defaultUpperBoundConstraint != null &&
         constraint is VersionRange &&
         constraint.max == null &&
@@ -676,7 +676,7 @@ class SdkConstraint {
   }
 
   @override
-  operator ==(other) =>
+  bool operator ==(Object other) =>
       other is SdkConstraint &&
       other.effectiveConstraint == effectiveConstraint &&
       other.originalConstraint == originalConstraint;

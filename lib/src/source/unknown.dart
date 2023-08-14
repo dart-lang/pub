@@ -27,7 +27,8 @@ class UnknownSource extends Source {
 
   /// Two unknown sources are the same if their names are the same.
   @override
-  bool operator ==(other) => other is UnknownSource && other.name == name;
+  bool operator ==(Object other) =>
+      other is UnknownSource && other.name == name;
 
   @override
   int get hashCode => name.hashCode;
@@ -104,7 +105,7 @@ class UnknownDescription extends Description {
   }
 
   @override
-  operator ==(Object other) =>
+  bool operator ==(Object other) =>
       other is UnknownDescription &&
       source.name == other.source.name &&
       json.encode(description) == json.encode(other.description);
@@ -114,8 +115,7 @@ class UnknownDescription extends Description {
 }
 
 class ResolvedUnknownDescription extends ResolvedDescription {
-  ResolvedUnknownDescription(UnknownDescription description)
-      : super(description);
+  ResolvedUnknownDescription(UnknownDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
@@ -125,7 +125,7 @@ class ResolvedUnknownDescription extends ResolvedDescription {
   }
 
   @override
-  operator ==(Object other) =>
+  bool operator ==(Object other) =>
       other is ResolvedUnknownDescription && description == other.description;
 
   @override

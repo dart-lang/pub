@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A trivial embedding of the pub command. Used from tests.
+library;
+
 import 'dart:convert';
 import 'dart:io';
 

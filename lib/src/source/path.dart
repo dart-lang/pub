@@ -59,7 +59,7 @@ class PathSource extends Source {
   @override
   PackageRef parseRef(
     String name,
-    description, {
+    Object? description, {
     String? containingDir,
     LanguageVersion? languageVersion,
   }) {
@@ -90,7 +90,7 @@ class PathSource extends Source {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     if (description is! Map) {
@@ -258,7 +258,7 @@ class ResolvedPathDescription extends ResolvedDescription {
   @override
   PathDescription get description => super.description as PathDescription;
 
-  ResolvedPathDescription(PathDescription description) : super(description);
+  ResolvedPathDescription(PathDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

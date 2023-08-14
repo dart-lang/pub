@@ -209,7 +209,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
 
     if (depsRev == actualRev) return;
     log.warning("${log.yellow('Warning:')} the revision of pub in DEPS is "
-        '${log.bold(depsRev)},\n'
+        '${log.bold(depsRev.toString())},\n'
         'but ${log.bold(actualRev)} is checked out in '
         '${p.relative(pubRoot)}.\n\n');
   }

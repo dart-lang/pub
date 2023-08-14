@@ -28,7 +28,7 @@ class SdkSource extends Source {
   @override
   PackageRef parseRef(
     String name,
-    description, {
+    Object? description, {
     String? containingDir,
     LanguageVersion? languageVersion,
   }) {
@@ -43,7 +43,7 @@ class SdkSource extends Source {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     if (description is! String) {
@@ -169,7 +169,7 @@ class ResolvedSdkDescription extends ResolvedDescription {
   @override
   SdkDescription get description => super.description as SdkDescription;
 
-  ResolvedSdkDescription(SdkDescription description) : super(description);
+  ResolvedSdkDescription(SdkDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

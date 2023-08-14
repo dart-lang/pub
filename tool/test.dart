@@ -8,8 +8,10 @@
 /// invocation requires the dart compiler to load all the sources. This script
 /// will create a `pub.XXX.dart.snapshot.dart2` which the tests can utilize.
 /// After creating the snapshot this script will forward arguments to
-/// `pub run test`, and ensure that the snapshot is deleted after tests have been
-/// run.
+/// `pub run test`, and ensure that the snapshot is deleted after tests have
+/// been run.
+library;
+
 import 'dart:io';
 import 'package:path/path.dart' as path;
 

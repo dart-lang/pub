@@ -100,6 +100,6 @@ class FlutterRelease {
     required this.channel,
   });
   @override
-  toString() =>
+  String toString() =>
       'FlutterRelease(flutter=$flutterVersion, dart=$dartVersion, channel=$channel)';
 }

@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Generic utility functions. Stuff that should possibly be in core.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -29,39 +31,76 @@ final identifierRegExp = RegExp(r'[a-zA-Z_]\w*');
 final onlyIdentifierRegExp = RegExp('^${identifierRegExp.pattern}\$');
 
 /// Dart reserved words, from the Dart spec.
-const reservedWords = [
+const reservedWords = <String>{
+  'abstract',
+  'as',
   'assert',
+  // 'async', // Reserved, but allowed because package:async already exists.
+  'await',
+  // 'base', // Reserved, but allowed because package:base already exists.
   'break',
   'case',
   'catch',
   'class',
   'const',
   'continue',
+  'covariant',
   'default',
+  'deferred',
   'do',
+  // 'dynamic', // Reserved, but allowed because package:dynamic already exists.
   'else',
+  'enum',
+  'export',
   'extends',
+  // 'extension', // Reserved, but allowed because package:extension already exists.
+  'external',
+  // 'factory', // Reserved, but allowed because package:factory already exists.
   'false',
   'final',
   'finally',
   'for',
+  // 'get', // Reserved, but allowed because package:get already exists.
+  'hide',
   'if',
+  'implements',
+  'import',
   'in',
+  'inline',
+  'interface',
   'is',
+  'late',
+  'library',
+  'mixin',
   'new',
   'null',
+  'of',
+  'on',
+  'operator',
+  'part',
+  'required',
+  'rethrow',
   'return',
+  'sealed',
+  'set',
+  // 'show', // Reserved, but allowed because package:show already exists.
+  // 'static', // Reserved, but allowed because package:static already exists.
   'super',
   'switch',
+  // 'sync', // Reserved, but allowed because package:sync already exists.
   'this',
   'throw',
   'true',
   'try',
+  'type',
+  // 'typedef', // Reserved, but allowed because package:typedef already exists.
   'var',
   'void',
+  // 'when', // Reserved, but allowed because package:when already exists.
   'while',
   'with',
-];
+  'yield',
+};
 
 /// An cryptographically secure instance of [math.Random].
 final random = math.Random.secure();
@@ -469,7 +508,7 @@ final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 
 /// Converts [data], which is a parsed YAML object, to a pretty-printed string,
 /// using indentation for maps.
-String yamlToString(data) {
+String yamlToString(Object? data) {
   var buffer = StringBuffer();
 
   void stringify(bool isMapValue, String indent, data) {
@@ -620,7 +659,7 @@ final _exceptionPrefix = RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
 ///
 /// Many exceptions include the exception class name at the beginning of their
 /// [toString], so we remove that if it exists.
-String getErrorMessage(error) =>
+String getErrorMessage(Object error) =>
     error.toString().replaceFirst(_exceptionPrefix, '');
 
 /// Returns whether [version1] and [version2] are the same, ignoring the

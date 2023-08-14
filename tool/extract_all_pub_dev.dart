@@ -5,6 +5,7 @@
 /// This is a manual test that can be run to test the .tar.gz decoding.
 /// It will save progress in [statusFileName] such that it doesn't have to be
 /// finished in a single run.
+library;
 
 import 'dart:async';
 import 'dart:convert';

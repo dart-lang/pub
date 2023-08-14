@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Message logging.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -60,36 +62,36 @@ final _bold = getAnsi('\u001b[1m');
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
 ///
-/// By default, [error] and [warning] messages are printed to sterr. [message]
-/// messages are printed to stdout, and others are ignored.
-class Level {
+/// By default, [error] and [warning] messages are printed to stderr.
+/// [message] messages are printed to stdout, and others are ignored.
+enum Level {
   /// An error occurred and an operation could not be completed.
   ///
   /// Usually shown to the user on stderr.
-  static const error = Level._('ERR ');
+  error('ERR '),
 
   /// Something unexpected happened, but the program was able to continue,
   /// though possibly in a degraded fashion.
-  static const warning = Level._('WARN');
+  warning('WARN'),
 
   /// A message intended specifically to be shown to the user.
-  static const message = Level._('MSG ');
+  message('MSG '),
 
   /// Some interaction with the external world occurred, such as a network
   /// operation, process spawning, or file IO.
-  static const io = Level._('IO  ');
+  io('IO  '),
 
   /// Incremental output during pub's version constraint solver.
-  static const solver = Level._('SLVR');
+  solver('SLVR'),
 
   /// Fine-grained and verbose additional information.
   ///
   /// Used to provide program state context for other logs (such as what pub
   /// was doing when an IO operation occurred) or just more detail for an
   /// operation.
-  static const fine = Level._('FINE');
+  fine('FINE');
 
-  const Level._(this.name);
+  const Level(this.name);
 
   final String name;
 
@@ -99,69 +101,79 @@ class Level {
 
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.
-class Verbosity {
+enum Verbosity {
   /// Silence all logging.
-  static const none = Verbosity._('none', {
+  none('none', {
     Level.error: null,
     Level.warning: null,
     Level.message: null,
     Level.io: null,
     Level.solver: null,
     Level.fine: null,
-  });
+  }),
 
   /// Shows only errors.
-  static const error = Verbosity._('error', {
+  error('error', {
     Level.error: _logToStderr,
     Level.warning: null,
     Level.message: null,
     Level.io: null,
     Level.solver: null,
     Level.fine: null,
-  });
+  }),
 
   /// Shows only errors and warnings.
-  static const warning = Verbosity._('warning', {
+  warning('warning', {
     Level.error: _logToStderr,
     Level.warning: _logToStderr,
     Level.message: null,
     Level.io: null,
     Level.solver: null,
     Level.fine: null,
-  });
+  }),
 
   /// The default verbosity which shows errors, warnings, and messages.
-  static const normal = Verbosity._('normal', {
+  normal('normal', {
     Level.error: _logToStderr,
     Level.warning: _logToStderr,
     Level.message: _logToStdout,
     Level.io: null,
     Level.solver: null,
     Level.fine: null,
-  });
+  }),
 
   /// Shows errors, warnings, messages, and IO event logs.
-  static const io = Verbosity._('io', {
+  io('io', {
     Level.error: _logToStderrWithLabel,
     Level.warning: _logToStderrWithLabel,
     Level.message: _logToStdoutWithLabel,
     Level.io: _logToStderrWithLabel,
     Level.solver: null,
     Level.fine: null,
-  });
+  }),
 
   /// Shows errors, warnings, messages, and version solver logs.
-  static const solver = Verbosity._('solver', {
+  solver('solver', {
     Level.error: _logToStderr,
     Level.warning: _logToStderr,
     Level.message: _logToStdout,
     Level.io: null,
     Level.solver: _logToStdout,
     Level.fine: null,
-  });
+  }),
 
   /// Shows all logs.
-  static const all = Verbosity._('all', {
+  all('all', {
+    Level.error: _logToStderrWithLabel,
+    Level.warning: _logToStderrWithLabel,
+    Level.message: _logToStdoutWithLabel,
+    Level.io: _logToStderrWithLabel,
+    Level.solver: _logToStderrWithLabel,
+    Level.fine: _logToStderrWithLabel,
+  }),
+
+  /// Shows all logs.
+  testing('testing', {
     Level.error: _logToStderrWithLabel,
     Level.warning: _logToStderrWithLabel,
     Level.message: _logToStdoutWithLabel,
@@ -170,17 +182,7 @@ class Verbosity {
     Level.fine: _logToStderrWithLabel,
   });
 
-  /// Shows all logs.
-  static const testing = Verbosity._('testing', {
-    Level.error: _logToStderrWithLabel,
-    Level.warning: _logToStderrWithLabel,
-    Level.message: _logToStdoutWithLabel,
-    Level.io: _logToStderrWithLabel,
-    Level.solver: _logToStderrWithLabel,
-    Level.fine: _logToStderrWithLabel,
-  });
-
-  const Verbosity._(this.name, this._loggers);
+  const Verbosity(this.name, this._loggers);
 
   final String name;
   final Map<Level, void Function(_Entry entry)?> _loggers;
@@ -204,7 +206,7 @@ class _Entry {
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
-void error(String message, [error, StackTrace? trace]) {
+void error(String message, [Object? error, StackTrace? trace]) {
   if (error != null) {
     message = message.isEmpty ? '$error' : '$message: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
@@ -409,7 +411,7 @@ Platform: ${Platform.operatingSystem}
 
 /// Filter out normal pub output when not attached to a terminal
 ///
-/// Unless the user has overriden the verbosity,
+/// Unless the user has overridden the verbosity,
 ///
 /// This is useful to not pollute stdout when the output is piped somewhere.
 Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
@@ -490,15 +492,13 @@ void unmuteProgress() {
 /// that supports that.
 ///
 /// Use this to highlight the most important piece of a long chunk of text.
-String bold(text) => '$_bold$text$_none';
+String bold(String text) => '$_bold$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to make it gray when on a platform
 /// that supports that.
 ///
 /// Use this for text that's less important than the text around it.
-String gray(text) {
-  return '$_gray$text$_none';
-}
+String gray(String text) => '$_gray$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to color it cyan when on a platform
 /// that supports that.
@@ -626,7 +626,7 @@ class _JsonLogger {
   }
 
   /// Encodes [message] to JSON and prints it if JSON output is enabled.
-  void message(message) {
+  void message(Map<String, String> message) {
     if (!enabled) return;
 
     stdout.writeln(jsonEncode(message));

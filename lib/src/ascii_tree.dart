@@ -4,6 +4,8 @@
 
 /// A simple library for rendering tree-like structures in Unicode symbols with
 /// a fallback to ASCII.
+library;
+
 import 'dart:io';
 
 import 'package:path/path.dart' as path;

@@ -86,7 +86,7 @@ class GitSource extends CachedSource {
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     if (description is! Map) {
@@ -357,7 +357,7 @@ class GitSource extends CachedSource {
     SystemCache cache,
   ) async {
     return await _pool.withResource(() async {
-      bool didUpdate = false;
+      var didUpdate = false;
       final ref = id.toRef();
       final description = ref.description;
       if (description is! GitDescription) {
@@ -812,8 +812,8 @@ class GitResolvedDescription extends ResolvedDescription {
   GitDescription get description => super.description as GitDescription;
 
   final String resolvedRef;
-  GitResolvedDescription(GitDescription description, this.resolvedRef)
-      : super(description);
+
+  GitResolvedDescription(GitDescription super.description, this.resolvedRef);
 
   @override
   String format() {

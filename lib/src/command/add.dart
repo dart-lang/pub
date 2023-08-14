@@ -684,7 +684,7 @@ Specify multiple sdk packages with descriptors.''');
       final name = ref.name;
       final resultId = resultPackages.firstWhere((id) => id.name == name);
 
-      Object? description = pubspecDescription(
+      final description = pubspecDescription(
         ref.withConstraint(
           constraint ??
               (ref.source is HostedSource

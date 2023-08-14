@@ -30,7 +30,7 @@ class ApplicationException implements Exception {
 /// A subclass of [ApplicationException] that occurs when running a subprocess
 /// has failed.
 class RunProcessException extends ApplicationException {
-  RunProcessException(String message) : super(message);
+  RunProcessException(super.message);
 }
 
 /// An exception class for exceptions that are intended to be seen by the user
@@ -56,9 +56,8 @@ class WrappedException extends ApplicationException {
   /// The stack chain for [innerError] if it exists.
   final Chain? innerChain;
 
-  WrappedException(String message, this.innerError, [StackTrace? innerTrace])
-      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace),
-        super(message);
+  WrappedException(super.message, this.innerError, [StackTrace? innerTrace])
+      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace);
 }
 
 /// A class for exceptions that shouldn't be printed at the top level.
@@ -74,14 +73,14 @@ class SilentException extends WrappedException {
 ///
 /// This corresponds to the `data` exit code.
 class DataException extends ApplicationException {
-  DataException(String message) : super(message);
+  DataException(super.message);
 }
 
 /// An exception indicating that the users configuration is invalid.
 ///
 /// This corresponds to the `config` exit code;
 class ConfigException extends ApplicationException {
-  ConfigException(String message) : super(message);
+  ConfigException(super.message);
 }
 
 /// An class for exceptions where a package could not be found in a [Source].
@@ -108,14 +107,13 @@ class PackageNotFoundException extends WrappedException {
 
 /// A class for exceptions where a package's checksum could not be validated.
 class PackageIntegrityException extends PubHttpException {
-  PackageIntegrityException(String message)
-      : super(message, isIntermittent: true);
+  PackageIntegrityException(super.message) : super(isIntermittent: true);
 }
 
 /// Returns whether [error] is a user-facing error object.
 ///
 /// This includes both [ApplicationException] and any dart:io errors.
-bool isUserFacingException(error) {
+bool isUserFacingException(Object error) {
   return error is ApplicationException ||
       error is AnalyzerErrorGroup ||
       error is IsolateSpawnException ||
@@ -141,14 +139,14 @@ class SourceSpanApplicationException extends SourceSpanFormatException
   final String? hint;
 
   SourceSpanApplicationException(
-    String message,
-    SourceSpan? span, {
+    super.message,
+    super.span, {
     this.hint,
     this.explanation,
-  }) : super(message, span);
+  });
 
   @override
-  String toString({color}) {
+  String toString({Object? color}) {
     return [
       if (explanation != null) explanation,
       span == null

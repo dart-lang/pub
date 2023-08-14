@@ -2,8 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// This implements support for dependency-bot style automated upgrades.
+/// Implements support for dependency-bot style automated upgrades.
 /// It is still work in progress - do not rely on the current output.
+library;
+
 import 'dart:convert';
 import 'dart:io';
 

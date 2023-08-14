@@ -10,8 +10,7 @@ import 'package:test_descriptor/test_descriptor.dart';
 
 /// Describes a Git repository and its contents.
 class GitRepoDescriptor extends DirectoryDescriptor {
-  GitRepoDescriptor(String name, List<Descriptor> contents)
-      : super(name, contents);
+  GitRepoDescriptor(super.name, List<Descriptor> super.contents);
 
   /// Creates the Git repository and commits the contents.
   @override
