@@ -1447,9 +1447,9 @@ class ResolvedHostedDescription extends ResolvedDescription {
   final Uint8List? sha256;
 
   ResolvedHostedDescription(
-    HostedDescription description, {
+    HostedDescription super.description, {
     required this.sha256,
-  }) : super(description);
+  });
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

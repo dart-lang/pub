@@ -25,6 +25,8 @@
 /// [Ignore.listFiles].
 ///
 /// [1]: https://git-scm.com/docs/gitignore
+library;
+
 import 'package:meta/meta.dart';
 
 /// A set of ignore rules representing a single ignore file.

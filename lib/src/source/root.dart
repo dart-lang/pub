@@ -76,7 +76,7 @@ class RootSource extends Source {
 }
 
 class ResolvedRootDescription extends ResolvedDescription {
-  ResolvedRootDescription(RootDescription description) : super(description);
+  ResolvedRootDescription(RootDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

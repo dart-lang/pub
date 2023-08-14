@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Generic utility functions. Stuff that should possibly be in core.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

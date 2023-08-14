@@ -258,7 +258,7 @@ class ResolvedPathDescription extends ResolvedDescription {
   @override
   PathDescription get description => super.description as PathDescription;
 
-  ResolvedPathDescription(PathDescription description) : super(description);
+  ResolvedPathDescription(PathDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

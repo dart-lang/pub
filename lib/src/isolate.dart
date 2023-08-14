@@ -3,11 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A library for utility functions for dealing with isolates.
+library;
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
-/// Like [Isolate.spanwUri], except that this only returns once the Isolate has
+/// Like [Isolate.spawnUri], except that this only returns once the Isolate has
 /// exited.
 ///
 /// If the isolate produces an unhandled exception, it's printed to stderr and

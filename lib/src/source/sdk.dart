@@ -169,7 +169,7 @@ class ResolvedSdkDescription extends ResolvedDescription {
   @override
   SdkDescription get description => super.description as SdkDescription;
 
-  ResolvedSdkDescription(SdkDescription description) : super(description);
+  ResolvedSdkDescription(SdkDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

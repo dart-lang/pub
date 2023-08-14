@@ -14,9 +14,9 @@ import 'package:test_descriptor/test_descriptor.dart';
 class TarFileDescriptor extends FileDescriptor {
   final List<Descriptor> contents;
 
-  TarFileDescriptor(String name, Iterable<Descriptor> contents)
+  TarFileDescriptor(super.name, Iterable<Descriptor> contents)
       : contents = contents.toList(),
-        super.protected(name);
+        super.protected();
 
   /// Creates the files and directories within this tar file, then archives
   /// them, compresses them, and saves the result to [parentDir].
