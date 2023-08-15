@@ -38,7 +38,7 @@ void main() {
       });
     });
 
-    test('adds itself to the .packages file', () async {
+    test('adds itself to the .dart_tool/package_config.json file', () async {
       // The package should use the name in the pubspec, not the name of the
       // directory.
       await d.dir(appPath, [

@@ -356,8 +356,6 @@ class LockFile {
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this lockfile.
   ///
-  /// This file will replace the `.packages` file.
-  ///
   /// If [entrypoint] is passed, an accompanying [entrypointSdkConstraint]
   /// should be given, these identify the current package in which this file is
   /// written. Passing `null` as [entrypointSdkConstraint] is correct if the

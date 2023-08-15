@@ -29,10 +29,9 @@ class PackageConfigFileDescriptor extends Descriptor {
     );
   }
 
-  /// Describes a `.packages` file with the given dependencies.
-  ///
-  /// [dependencies] maps package names to strings describing where the packages
-  /// are located on disk.
+  /// Describes a `.dart_tools/package_config.json` file
+  /// with the given list of package configurations and
+  /// generated with specified version.
   PackageConfigFileDescriptor(this._packages, this._generatorVersion)
       : super('.dart_tool/package_config.json');
 

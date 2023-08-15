@@ -194,13 +194,6 @@ class Entrypoint {
   /// store these in the global cache.
   String? get _configRoot => isCached ? globalDir : rootDir;
 
-  /// The path to the entrypoint's ".packages" file.
-  ///
-  /// This file is being slowly deprecated in favor of
-  /// `.dart_tool/package_config.json`. Pub will still create it, but will
-  /// not require it or make use of it within pub.
-  String get packagesFile => p.normalize(p.join(_configRoot!, '.packages'));
-
   /// The path to the entrypoint's ".dart_tool/package_config.json" file
   /// relative to the current working directory .
   late String packageConfigPath = p.relative(
@@ -295,7 +288,7 @@ class Entrypoint {
 
   Entrypoint? _example;
 
-  /// Writes .packages and .dart_tool/package_config.json
+  /// Writes the .dart_tool/package_config.json file
   Future<void> writePackageConfigFile() async {
     final entrypointName = isGlobal ? null : root.name;
     ensureDir(p.dirname(packageConfigPath));
@@ -664,8 +657,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// Whether `.dart_tool/package_config.json` file exists and if it's
   /// up-to-date relative to the lockfile and the pubspec.
   ///
-  /// A `.packages` file is not required. But if it exists it is checked for
-  /// consistency with the pubspec.lock.
+  /// A `.dart_tool/package_config.json` file is not required.
+  /// But if it exists it is checked for consistency with the `pubspec.lock`.
   bool _isUpToDate({bool checkForSdkUpdate = false}) {
     if (isCached) return true;
     final pubspecStat = tryStatFile(pubspecPath);
