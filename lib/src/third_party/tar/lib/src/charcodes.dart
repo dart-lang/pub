@@ -1,4 +1,6 @@
 @internal
+library;
+
 import 'package:meta/meta.dart';
 
 /// "Line feed" control character.

@@ -8,6 +8,8 @@
 // in `pub run`. Now signals only work as expected when sent to the process
 // group. And this seems hard to emulate in a test.
 @TestOn('!windows')
+library;
+
 import 'dart:io';
 
 import 'package:test/test.dart';

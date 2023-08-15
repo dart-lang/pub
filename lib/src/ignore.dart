@@ -27,8 +27,6 @@
 /// [1]: https://git-scm.com/docs/gitignore
 library;
 
-import 'package:meta/meta.dart';
-
 /// A set of ignore rules representing a single ignore file.
 ///
 /// An [Ignore] instance holds [`.gitignore` rules][1] relative to a given path.
@@ -48,8 +46,7 @@ import 'package:meta/meta.dart';
 /// ```
 ///
 /// [1]: https://git-scm.com/docs/gitignore
-@sealed
-class Ignore {
+final class Ignore {
   final List<_IgnoreRule> _rules;
 
   /// Create an [Ignore] instance with a set of [`.gitignore` compatible][1]

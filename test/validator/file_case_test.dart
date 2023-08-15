@@ -7,6 +7,7 @@
   'windows': Skip('Windows file system is case-insensitive'),
   'mac-os': Skip('MacOS file system is case-insensitive'),
 })
+library;
 
 import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
