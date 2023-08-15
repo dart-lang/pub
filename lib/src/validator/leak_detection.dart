@@ -23,8 +23,7 @@ const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
 
 /// A validator that validates attempts to find secrets that are about to be
 /// accidentally leaked.
-@sealed
-class LeakDetectionValidator extends Validator {
+final class LeakDetectionValidator extends Validator {
   @override
   Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
@@ -105,8 +104,7 @@ class LeakDetectionValidator extends Validator {
 }
 
 /// Instance of a match against a [LeakPattern].
-@sealed
-class LeakMatch {
+final class LeakMatch {
   final LeakPattern pattern;
   final SourceSpan span;
 
@@ -119,8 +117,7 @@ class LeakMatch {
 
 /// Definition of a pattern for detecting accidentally leaked secrets.
 @visibleForTesting
-@sealed
-class LeakPattern {
+final class LeakPattern {
   /// Human readable name for the kind of secret this pattern matches.
   final String kind;
 

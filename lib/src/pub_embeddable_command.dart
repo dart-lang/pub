@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:meta/meta.dart';
 import 'package:usage/usage.dart';
 
 import 'command.dart' show PubCommand, PubTopLevel;
@@ -27,8 +26,7 @@ import 'log.dart';
 import 'utils.dart';
 
 /// The information needed for the embedded pub command to send analytics.
-@sealed
-class PubAnalytics {
+final class PubAnalytics {
   /// Name of the custom dimension of the dependency kind.
   final String dependencyKindCustomDimensionName;
 

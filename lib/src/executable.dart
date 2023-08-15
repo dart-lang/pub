@@ -7,7 +7,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
-import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
@@ -208,8 +207,7 @@ Future<int> _runDartProgram(
 }
 
 /// The result of a `getExecutableForCommand` command resolution.
-@sealed
-class DartExecutableWithPackageConfig {
+final class DartExecutableWithPackageConfig {
   /// Can be a .dart file or a incremental snapshot.
   final String executable;
 
@@ -414,8 +412,7 @@ enum CommandResolutionIssue {
 }
 
 /// Indicates that a command string did not resolve to an executable.
-@sealed
-class CommandResolutionFailedException implements Exception {
+final class CommandResolutionFailedException implements Exception {
   final String message;
   final CommandResolutionIssue issue;
   CommandResolutionFailedException._(this.message, this.issue);
