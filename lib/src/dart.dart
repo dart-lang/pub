@@ -156,6 +156,16 @@ Future<void> precompile({
     );
     final result = await client.compile();
 
+    // Sanity check. We've had reports of the compilation failing to provide a
+    // result, perhaps due to low-memory conditions.
+    // This should make this slightly easier to recognize in error reports.
+    if (!fileExists(temporaryIncrementalDill)) {
+      log.error(
+        'Compilation did not produce any result. Expected file at `$temporaryIncrementalDill`',
+        result.dillOutput,
+      );
+    }
+
     final highlightedName = log.bold(name);
     if (result.errorCount == 0) {
       log.message('Built $highlightedName.');
