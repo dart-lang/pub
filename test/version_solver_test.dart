@@ -1304,7 +1304,7 @@ void sdkConstraint() {
         Because myapp depends on foo any which requires the Flutter SDK, version
           solving failed.
 
-        Flutter users should run `flutter pub` instead of `dart pub`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });
