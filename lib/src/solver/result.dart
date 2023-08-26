@@ -215,7 +215,7 @@ class SolveResult {
       category: 'pub-get',
     );
     log.fine(
-      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds',
+      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} milliseconds',
     );
   }
 

@@ -5,7 +5,7 @@
 // These tests only work on case-sensitive file systems (ie. only on linux).
 @OnPlatform({
   'windows': Skip('Windows file system is case-insensitive'),
-  'mac-os': Skip('MacOS file system is case-insensitive'),
+  'mac-os': Skip('macOS file system is case-insensitive'),
 })
 library;
 

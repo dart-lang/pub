@@ -89,7 +89,7 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addFlag(
       'show-all',
-      help: 'Include dependencies that are already fullfilling --mode.',
+      help: 'Include dependencies that are already fulfilling --mode.',
     );
 
     // Preserve for backwards compatibility.
@@ -876,7 +876,7 @@ class _MarkedVersionDetails {
   final String? _prefix;
   final String? _suffix;
 
-  /// This should be true if the mode creating this consideres the version as
+  /// This should be true if the mode creating this considers the version as
   /// "good".
   ///
   /// By default only packages with a current version that is not as desired

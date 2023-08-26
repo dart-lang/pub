@@ -602,7 +602,7 @@ dependencies:
       });
 
       test(
-          'default upper constraint for the SDK applies only if compatibile '
+          'default upper constraint for the SDK applies only if compatible '
           'with the lower bound', () {
         var pubspec = Pubspec.parse(
           '''
@@ -686,11 +686,11 @@ environment:
 
       test("throws if the sdk isn't a valid version constraint", () {
         expectPubspecException(
-          'environment: {sdk: "oopies"}',
+          'environment: {sdk: "oopsies"}',
           (pubspec) => pubspec.sdkConstraints,
         );
         expectPubspecException(
-          'environment: {sdk: 1.2.3, flutter: "oopies"}',
+          'environment: {sdk: 1.2.3, flutter: "oopsies"}',
           (pubspec) => pubspec.sdkConstraints,
         );
       });
