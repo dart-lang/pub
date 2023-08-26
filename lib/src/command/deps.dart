@@ -71,7 +71,7 @@ class DepsCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    // Explicitly run this in the directory in case 
+    // Explicitly run this in the directory in case
     // we don't access `entrypoint.packageGraph`.
     await entrypoint.ensureUpToDate();
     final buffer = StringBuffer();
