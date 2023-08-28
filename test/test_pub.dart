@@ -1080,7 +1080,7 @@ Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
 }
 
 /// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
-/// entry of a gzip stream, giving us the same stream and thius stable testing
+/// entry of a gzip stream, giving us the same stream and this stable testing
 /// on all platforms.
 ///
 /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information

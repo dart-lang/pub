@@ -19,8 +19,8 @@ import 'package:usage/usage.dart';
 
 final Analytics loggingAnalytics = _LoggingAnalytics();
 
-// A command for explicitly throwing an exception, to test the handling of
-// unexpected eceptions.
+/// A command for explicitly throwing an exception, to test the handling of
+/// unexpected exceptions.
 class ThrowingCommand extends PubCommand {
   @override
   String get name => 'fail';
@@ -36,7 +36,7 @@ class ThrowingCommand extends PubCommand {
   }
 }
 
-// A command for testing the ensurePubspecResolved functionality
+/// A command for testing the [ensurePubspecResolved] functionality.
 class EnsurePubspecResolvedCommand extends PubCommand {
   @override
   String get name => 'ensure-pubspec-resolved';

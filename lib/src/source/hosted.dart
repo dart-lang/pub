@@ -944,8 +944,9 @@ class HostedSource extends CachedSource {
           url = _directoryToUrl(directory);
         } on FormatException {
           log.error('Unable to detect hosted url from directory: $directory');
-          // If _directoryToUrl can't intepret a directory name, we just silently
-          // ignore it and hope it's because it comes from a newer version of pub.
+          // If _directoryToUrl can't interpret a directory name,
+          // we just silently ignore it and hope it's because it
+          // comes from a newer version of pub.
           //
           // This is most likely because someone manually modified PUB_CACHE.
           return <RepairResult>[];

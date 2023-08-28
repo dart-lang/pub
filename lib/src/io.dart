@@ -346,7 +346,7 @@ List<String> listDir(
   bool includeDirs = true,
   Iterable<String> allowed = const <String>[],
 }) {
-  var allowlistFilter = createFileFilter(allowed);
+  var allowListFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
   // files. As such, it leans more heavily towards optimization as opposed to
@@ -376,9 +376,9 @@ List<String> listDir(
         // If the basename is in [allowed], don't count its "/." as making the
         // file hidden.
 
-        if (allowlistFilter.any(pathInDir.contains)) {
+        if (allowListFilter.any(pathInDir.contains)) {
           final allowedBasename =
-              allowlistFilter.firstWhere(pathInDir.contains);
+              allowListFilter.firstWhere(pathInDir.contains);
           pathInDir =
               pathInDir.substring(0, pathInDir.length - allowedBasename.length);
         }
