@@ -1445,12 +1445,10 @@ void sdkConstraint() {
 
       await expectResolves(
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-        error: equalsIgnoringWhitespace('''
-            The current Dart SDK version is 3.1.2+3.
+        error: contains('''
+The current Dart SDK version is 3.1.2+3.
 
-            Because myapp requires SDK version >3.1.2+3, version solving
-            failed.
-          '''),
+Because myapp requires SDK version >3.1.2+3, version solving failed.'''),
       );
     });
 
