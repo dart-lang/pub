@@ -105,6 +105,12 @@ class UpgradeCommand extends PubCommand {
 
   bool get _precompile => argResults.flag('precompile');
 
+  /// List of package names to upgrade, if empty then upgrade all packages.
+  ///
+  /// This allows the user to specify list of names that they want the
+  /// upgrade command to affect.
+  List<String> get _packagesToUpgrade => argResults.rest;
+
   bool get _upgradeNullSafety =>
       argResults.flag('nullsafety') || argResults.flag('null-safety');
 
@@ -161,7 +167,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
     await e.acquireDependencies(
       SolveType.upgrade,
-      unlock: argResults.rest,
+      unlock: _packagesToUpgrade,
       dryRun: _dryRun,
       precompile: _precompile,
       summaryOnly: onlySummary,
@@ -189,13 +195,13 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         'Running `upgrade --tighten` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
       );
     }
-    final toTighten = argResults.rest.isEmpty
+    final toTighten = _packagesToUpgrade.isEmpty
         ? [
             ...pubspec.dependencies.values,
             ...pubspec.devDependencies.values,
           ]
         : [
-            for (final name in argResults.rest)
+            for (final name in _packagesToUpgrade)
               pubspec.dependencies[name] ?? pubspec.devDependencies[name],
           ].whereNotNull();
     for (final range in toTighten) {
@@ -233,7 +239,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       ...entrypoint.root.pubspec.dependencies.keys,
       ...entrypoint.root.pubspec.devDependencies.keys,
     ];
-    final toUpgrade = argResults.rest.isEmpty ? directDeps : argResults.rest;
+    final toUpgrade =
+        _packagesToUpgrade.isEmpty ? directDeps : _packagesToUpgrade;
 
     // Check that all package names in upgradeOnly are direct-dependencies
     final notInDeps = toUpgrade.where((n) => !directDeps.contains(n));
@@ -333,7 +340,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // But without a specific package we want to get as many non-major updates
     // as possible (SolveType.upgrade).
     final solveType =
-        argResults.rest.isEmpty ? SolveType.upgrade : SolveType.get;
+        _packagesToUpgrade.isEmpty ? SolveType.upgrade : SolveType.get;
 
     if (!_dryRun) {
       if (changes.isNotEmpty) {
