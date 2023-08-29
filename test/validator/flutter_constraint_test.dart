@@ -31,7 +31,7 @@ Future<void> setup({
     d.pubspec({
       'name': 'test_pkg',
       'description':
-          'A just long enough decription to fit the requirement of 60 characters',
+          'A just long enough description to fit the requirement of 60 characters',
       'homepage': 'https://example.com/',
       'version': '1.0.0',
       'environment': {

@@ -132,7 +132,7 @@ Future<int> runExecutable(
 }
 
 /// Runs the dart program (can be a snapshot) at [path] with [args] and hooks
-/// its stdout, stderr, and sdtin to this process's.
+/// its stdout, stderr, and stdin to this process's.
 ///
 /// [packageConfig] is the path to the ".dart_tool/package_config.json" file.
 ///
@@ -140,7 +140,7 @@ Future<int> runExecutable(
 ///
 /// Passes [vmArgs] to the vm.
 ///
-/// Returns the programs's exit code.
+/// Returns the program's exit code.
 ///
 /// Tries to run the program as an isolate if no special [vmArgs] are given
 /// otherwise starts new vm in a subprocess. If [alwaysUseSubprocess] is `true`

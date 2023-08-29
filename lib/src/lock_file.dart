@@ -496,8 +496,8 @@ ${yamlToString(data)}
 
 /// Returns `true` if the [text] looks like it uses windows line endings.
 ///
-/// The heuristic used is to count all `\n` in the text and if stricly more than
-/// half of them are preceded by `\r` we report `true`.
+/// The heuristic used is to count all `\n` in the text and if strictly more
+/// than half of them are preceded by `\r` we report `true`.
 @visibleForTesting
 bool detectWindowsLineEndings(String text) {
   var index = -1;

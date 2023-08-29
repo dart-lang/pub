@@ -202,8 +202,8 @@ class Package {
   /// For each directory a .pubignore takes precedence over a .gitignore.
   ///
   /// Note that the returned paths will be always be below [dir], and will
-  /// always start with [dir] (thus alway be relative to current working
-  /// directory or absolute id [dir] is absolute.
+  /// always start with [dir] (thus always be relative to the current working
+  /// directory) or absolute id [dir] is absolute.
   ///
   /// To convert them to paths relative to the package root, use [p.relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
@@ -275,16 +275,16 @@ class Package {
                     '$ignoreFile had invalid pattern $pattern. ${exception.message}',
                   );
                 },
-                // Ignore case on MacOs and Windows, because `git clone` and
+                // Ignore case on macOS and Windows, because `git clone` and
                 // `git init` will set `core.ignoreCase = true` in the local
                 // local `.git/config` file for the repository.
                 //
-                // So on Windows and MacOS most users will have case-insensitive
+                // So on Windows and macOS most users will have case-insensitive
                 // behavior with `.gitignore`, hence, it seems reasonable to do
                 // the same when we interpret `.gitignore` and `.pubignore`.
                 //
                 // There are cases where a user may have case-sensitive behavior
-                // with `.gitignore` on Windows and MacOS:
+                // with `.gitignore` on Windows and macOS:
                 //
                 //  (A) The user has manually overwritten the repository
                 //      configuration setting `core.ignoreCase = false`.
@@ -303,7 +303,7 @@ class Package {
                 //      > if appropriate when the repository is created.
                 //
                 // In either case, it seems likely that users on Windows and
-                // MacOS will prefer case-insensitive matching. We specifically
+                // macOS will prefer case-insensitive matching. We specifically
                 // know that some tooling will generate `.PDB` files instead of
                 // `.pdb`, see: [#3003][2]
                 //

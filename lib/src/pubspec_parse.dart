@@ -182,7 +182,7 @@ abstract class PubspecBase {
   /// that will be placed on the user's PATH. The value is the name of the
   /// .dart script (without extension) in the package's `bin` directory that
   /// should be run for that command. Both key and value must be "simple"
-  /// strings: alphanumerics, underscores and hypens only. If a value is
+  /// strings: alphanumerics, underscores and hyphens only. If a value is
   /// omitted, it is inferred to use the same name as the key.
   Map<String, String> get executables {
     if (_executables != null) return _executables!;

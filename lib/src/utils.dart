@@ -469,7 +469,7 @@ bool get canUseAnsiCodes {
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
 
 /// Gets a emoji special character as unicode, or the [alternative] if unicode
-/// charactors are not supported by stdout.
+/// characters are not supported by stdout.
 String emoji(String unicode, String alternative) =>
     canUseUnicode ? unicode : alternative;
 

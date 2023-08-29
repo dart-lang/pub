@@ -867,7 +867,7 @@ fi
 
       // Write this as the system encoding since the system is going to
       // execute it and it might contain non-ASCII characters in the
-      // pathnames.
+      // path names.
       writeTextFile(tmpPath, binstub, encoding: const SystemEncoding());
 
       if (Platform.isLinux || Platform.isMacOS) {

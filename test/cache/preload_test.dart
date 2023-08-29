@@ -64,7 +64,7 @@ void main() {
   });
 
   test(
-      'installs package according to PUB_HOSTED_URL even on non-offical server',
+      'installs package according to PUB_HOSTED_URL even on non-official server',
       () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
