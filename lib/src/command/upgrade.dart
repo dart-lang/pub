@@ -140,11 +140,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     } else {
       await _runUpgrade(entrypoint);
       if (_tighten) {
-        final changes = <PackageRange, PackageRange>{};
-        tighten(
+        final changes = tighten(
           entrypoint.root.pubspec,
           entrypoint.lockFile.packages.values.toList(),
-          changes,
         );
         if (!_dryRun) {
           final newPubspecText = _updatePubspec(changes);
@@ -177,19 +175,22 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     _showOfflineWarning();
   }
 
-  /// Updates [changes] to contain changes that updates constraints in [pubspec]
-  /// to have their lower bound match the version in [packages].
+  /// Returns a list of changes to constraints in [pubspec] updated them to
+  ///  have their lower bound match the version in [packages].
   ///
-  /// If packages to update where given on the commandline, only those are
+  /// The return value is a mapping from the original package range to the updated.
+  ///
+  /// If packages to update where given in [_packagesToUpgrade], only those are
   /// tightened. Otherwise all packages are tightened.
   ///
-  /// If dependency has already been updated in [changes], the update will apply
-  /// on top of that change.
-  void tighten(
+  /// If a dependency has already been updated in [existingChanges], the update
+  /// will apply on top of that change (eg. preserving the new upper bound).
+  Map<PackageRange, PackageRange> tighten(
     Pubspec pubspec,
-    List<PackageId> packages,
-    Map<PackageRange, PackageRange> changes,
-  ) {
+    List<PackageId> packages, {
+    Map<PackageRange, PackageRange> existingChanges = const {},
+  }) {
+    final result = {...existingChanges};
     if (argResults.flag('example') && entrypoint.example != null) {
       log.warning(
         'Running `upgrade --tighten` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
@@ -205,17 +206,17 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
               pubspec.dependencies[name] ?? pubspec.devDependencies[name],
           ].whereNotNull();
     for (final range in toTighten) {
-      final constraint = (changes[range] ?? range).constraint;
+      final constraint = (result[range] ?? range).constraint;
       final resolvedVersion =
           packages.firstWhere((p) => p.name == range.name).version;
       if (range.source is HostedSource && constraint.isAny) {
-        changes[range] = range
+        result[range] = range
             .toRef()
             .withConstraint(VersionConstraint.compatibleWith(resolvedVersion));
       } else if (constraint is VersionRange) {
         final min = constraint.min;
         if (min != null && min < resolvedVersion) {
-          changes[range] = range.toRef().withConstraint(
+          result[range] = range.toRef().withConstraint(
                 VersionRange(
                   min: resolvedVersion,
                   max: constraint.max,
@@ -226,6 +227,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         }
       }
     }
+    return result;
   }
 
   /// Return names of packages to be upgraded, and throws [UsageException] if
@@ -289,7 +291,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
     // Changes to be made to `pubspec.yaml`.
     // Mapping from original to changed value.
-    final changes = <PackageRange, PackageRange>{};
+    var changes = <PackageRange, PackageRange>{};
     final declaredHostedDependencies = [
       ...entrypoint.root.pubspec.dependencies.values,
       ...entrypoint.root.pubspec.devDependencies.values,
@@ -330,7 +332,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         Package.inMemory(_updatedPubspec(newPubspecText, entrypoint)),
       );
-      tighten(entrypoint.root.pubspec, solveResult.packages, changes);
+      changes = tighten(
+        entrypoint.root.pubspec,
+        solveResult.packages,
+        existingChanges: changes,
+      );
       newPubspecText = _updatePubspec(changes);
     }
 
