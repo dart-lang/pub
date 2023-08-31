@@ -184,7 +184,7 @@ Credentials? loadCredentials() {
 
     return credentials;
   } catch (e) {
-    log.error('Warning: could not load the saved OAuth2 credentials: $e\n'
+    log.error('Warning: could not load the saved OAuth2 credentials.\n'
         'Obtaining new credentials...');
     return null; // null means re-authorize.
   }
