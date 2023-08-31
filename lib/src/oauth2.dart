@@ -184,6 +184,8 @@ Credentials? loadCredentials() {
 
     return credentials;
   } catch (e) {
+    // Don't print the error message itself here. I might be leaking data about
+    // credentials.
     log.error('Warning: could not load the saved OAuth2 credentials.\n'
         'Obtaining new credentials...');
     return null; // null means re-authorize.
