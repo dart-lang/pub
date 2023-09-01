@@ -396,6 +396,7 @@ class HostedSource extends CachedSource {
       var pubspec = Pubspec.fromMap(
         pubspecData,
         cache.sources,
+        expectedName: ref.name,
         location: location,
       );
       final archiveSha256 = map['archive_sha256'];
@@ -956,7 +957,7 @@ class HostedSource extends CachedSource {
         var packages = <Package>[];
         for (var entry in listDir(serverDir)) {
           try {
-            packages.add(Package.load(entry, cache.sources));
+            packages.add(Package.load(null, entry, cache.sources));
           } catch (error, stackTrace) {
             log.error('Failed to load package', error, stackTrace);
             final id = _idForBasename(
@@ -1063,7 +1064,7 @@ class HostedSource extends CachedSource {
         .where(_looksLikePackageDir)
         .map((entry) {
           try {
-            return Package.load(entry, cache.sources);
+            return Package.load(null, entry, cache.sources);
           } catch (error, stackTrace) {
             log.fine('Failed to load package from $entry:\n'
                 '$error\n'

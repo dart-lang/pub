@@ -29,7 +29,7 @@ abstract class CachedSource extends Source {
   Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async {
     var packageDir = getDirectoryInCache(id, cache);
     if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
-      return Pubspec.load(packageDir, cache.sources);
+      return Pubspec.load(packageDir, cache.sources, expectedName: id.name);
     }
 
     return await describeUncached(id, cache);
