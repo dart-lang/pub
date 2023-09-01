@@ -96,7 +96,7 @@ class AnalyzerErrorGroup implements Exception {
 ///
 /// If the compilation succeeds it is saved to a kernel file at [outputPath].
 ///
-/// If compilation fails, the output is cached at "[outputOPath].incremental".
+/// If compilation fails, the output is cached at "[outputPath].incremental".
 ///
 /// Whichever of "[outputPath].incremental" and [outputPath] already exists is
 /// used to initialize the compiler run. To avoid the potential for
