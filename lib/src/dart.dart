@@ -96,10 +96,13 @@ class AnalyzerErrorGroup implements Exception {
 ///
 /// If the compilation succeeds it is saved to a kernel file at [outputPath].
 ///
-/// If compilation fails, the output is cached at [incrementalDillOutputPath].
+/// If compilation fails, the output is cached at "[outputOPath].incremental".
 ///
-/// Whichever of [incrementalDillOutputPath] and [outputPath] already exists is
-/// used to initialize the compiler run.
+/// Whichever of "[outputOPath].incremental" and [outputPath] already exists is
+/// used to initialize the compiler run. To avoid the potential for
+/// race-conditions, it is first copied to a temporary location, and atomically
+/// moved to either [outputPath] or "[outputOPath].incremental" depending on the
+/// result of compilation.
 ///
 /// The [packageConfigPath] should point at the package config file to be used
 /// for `package:` uri resolution.
@@ -114,31 +117,29 @@ class AnalyzerErrorGroup implements Exception {
 /// assets map.
 Future<void> precompile({
   required String executablePath,
-  required String incrementalDillPath,
   required String name,
   required String outputPath,
   required String packageConfigPath,
   List<String> additionalSources = const [],
   String? nativeAssets,
 }) async {
-  ensureDir(p.dirname(outputPath));
-  ensureDir(p.dirname(incrementalDillPath));
-
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
   String? tempDir;
   FrontendServerClient? client;
   try {
-    tempDir = createTempDir(p.dirname(incrementalDillPath), 'tmp');
+    ensureDir(p.dirname(outputPath));
+    final incrementalDillPath = '$outputPath.incremental';
+    tempDir = createTempDir(p.dirname(outputPath), 'tmp');
     // To avoid potential races we copy the incremental data to a temporary file
     // for just this compilation.
     final temporaryIncrementalDill =
         p.join(tempDir, '${p.basename(incrementalDillPath)}.temp');
     try {
-      if (fileExists(incrementalDillPath)) {
-        copyFile(incrementalDillPath, temporaryIncrementalDill);
-      } else if (fileExists(outputPath)) {
+      if (fileExists(outputPath)) {
         copyFile(outputPath, temporaryIncrementalDill);
+      } else if (fileExists(incrementalDillPath)) {
+        copyFile(incrementalDillPath, temporaryIncrementalDill);
       }
     } on FileSystemException {
       // Not able to copy existing file, compilation will start from scratch.
@@ -172,11 +173,14 @@ Future<void> precompile({
       // By using rename we ensure atomicity. An external observer will either
       // see the old or the new snapshot.
       renameFile(temporaryIncrementalDill, outputPath);
+      // Any old incremental data is deleted in case we started from a file on
+      // [incrementalDillPath].
+      deleteEntry(incrementalDillPath);
     } else {
       // By using rename we ensure atomicity. An external observer will either
       // see the old or the new snapshot.
       renameFile(temporaryIncrementalDill, incrementalDillPath);
-      // If compilation failed we don't want to leave an incorrect snapshot.
+      // If compilation failed, don't leave an incorrect snapshot.
       tryDeleteEntry(outputPath);
 
       throw ApplicationException(
