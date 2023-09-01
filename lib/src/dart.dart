@@ -101,7 +101,7 @@ class AnalyzerErrorGroup implements Exception {
 /// Whichever of "[outputPath].incremental" and [outputPath] already exists is
 /// used to initialize the compiler run. To avoid the potential for
 /// race-conditions, it is first copied to a temporary location, and atomically
-/// moved to either [outputPath] or "[outputOPath].incremental" depending on the
+/// moved to either [outputPath] or "[outputPath].incremental" depending on the
 /// result of compilation.
 ///
 /// The [packageConfigPath] should point at the package config file to be used
