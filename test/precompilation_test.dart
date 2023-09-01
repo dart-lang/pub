@@ -78,8 +78,14 @@ void main() {
       File(incrementalDillPath()).existsSync(),
     ).isFalse();
     check(File(outputPath()).existsSync()).isTrue();
+
+    // Do a second compilation to compare the compile times, it should be much
+    // faster because it can reuse the compiled data in the dill file.
     final second = await timeCompilation(path('app/main.dart'));
     check(first).isGreaterThan(second * 2);
+
+    // Now create an error to test that the output is placed at a different
+    // location.
     await dir('app', [
       brokenMain,
       foo,
@@ -90,14 +96,15 @@ void main() {
     check(File(incrementalDillPath()).existsSync()).isTrue();
     check(File(outputPath()).existsSync()).isFalse();
     check(first).isGreaterThan(afterErrors * 2);
+
+    // Fix the error, and check that we still use the cached output to improve
+    // compile times.
     await dir('app', [
       workingMain,
     ]).create();
     final afterFix = await timeCompilation(path('app/main.dart'));
-    check(
-      because: 'Should not leave a stray directory.',
-      Directory('${outputPath()}.incremental').existsSync(),
-    ).isFalse();
+    // The output from the failed compilation should now be gone.
+    check(File('${outputPath()}.incremental').existsSync()).isFalse();
     check(File(outputPath()).existsSync()).isTrue();
     check(first).isGreaterThan(afterFix * 2);
   });
