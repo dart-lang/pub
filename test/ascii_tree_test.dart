@@ -61,9 +61,11 @@ void main() {
         file('path.dart', bytes(100)),
       ]),
     ]).create();
-    var files =
-        Package.load(path(appPath), (name) => throw UnimplementedError())
-            .listFiles();
+    var files = Package.load(
+      null,
+      path(appPath),
+      (name) => throw UnimplementedError(),
+    ).listFiles();
     ctx.expectNextSection(
       tree.fromFiles(files, baseDir: path(appPath), showFileSizes: true),
     );

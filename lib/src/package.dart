@@ -116,13 +116,14 @@ class Package {
 
   /// Loads the package whose root directory is [packageDir].
   ///
-  /// [expectedName] is the expected name of that package (e.g. the name given
-  /// in the dependency), or `null` if the package being loaded is the
-  /// entrypoint package.
+  /// [name] is the expected name of that package (e.g. the name given in the
+  /// dependency), or `null` if the package being loaded is the entrypoint
+  /// package.
   ///
   /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
   /// `true`.
   factory Package.load(
+    String? name,
     String dir,
     SourceRegistry sources, {
     bool withPubspecOverrides = false,
@@ -130,6 +131,7 @@ class Package {
     final pubspec = Pubspec.load(
       dir,
       sources,
+      expectedName: name,
       allowOverridesFile: withPubspecOverrides,
     );
     return Package._(dir, pubspec);
