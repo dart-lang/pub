@@ -98,7 +98,7 @@ class AnalyzerErrorGroup implements Exception {
 ///
 /// If compilation fails, the output is cached at "[outputOPath].incremental".
 ///
-/// Whichever of "[outputOPath].incremental" and [outputPath] already exists is
+/// Whichever of "[outputPath].incremental" and [outputPath] already exists is
 /// used to initialize the compiler run. To avoid the potential for
 /// race-conditions, it is first copied to a temporary location, and atomically
 /// moved to either [outputPath] or "[outputOPath].incremental" depending on the
