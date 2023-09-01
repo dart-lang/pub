@@ -194,7 +194,6 @@ $PUB_CACHE/global_packages/
     │   └── mono_repo.dart-3.0.0-55.0.dev.snapshot
     ├── .dart_tool/
     │   └── package_config.json
-    ├── incremental
     └── pubspec.lock
 ```
 
@@ -212,9 +211,6 @@ The `bin/` folder contains precompiled snapshots - these are compilations of
 activated package is used by several sdk-versions (TODO: This does have some
 limitations, and we should probably rethink this). A re-activation of the
 package will delete all the existing snapshots.
-
-The `incremental` is used while compiling them. (TODO: We should probably remove
-this after successful compilation https://github.com/dart-lang/pub/issues/3896).
 
 For packages activated with `--source=path` the lockfile is special-cased to just point
 to the activated path, and `.dart_tool/package_config.json`, snapshots are

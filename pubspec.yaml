@@ -9,6 +9,7 @@ dependencies:
   analyzer: ^5.1.0
   args: ^2.4.0
   async: ^2.6.1
+  checks: ^0.2.2
   cli_util: ^0.4.0
   collection: ^1.15.0
   convert: ^3.0.2
