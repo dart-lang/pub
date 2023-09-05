@@ -9,8 +9,8 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
+import 'package:pub/src/oauth2.dart';
 import 'package:pub/src/package_config.dart';
-import 'package:pub/src/third_party/oauth2/lib/oauth2.dart' as oauth2;
 import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor/git.dart';
@@ -275,7 +275,7 @@ String _credentialsFileContent(
   String? refreshToken,
   DateTime? expiration,
 }) =>
-    oauth2.Credentials(
+    Credentials(
       accessToken,
       refreshToken: refreshToken,
       tokenEndpoint: Uri.parse(server.url).resolve('/token'),
