@@ -148,7 +148,7 @@ String canonicalize(String pathString) {
 
     // Pop directories off `newPath` if the component links upwards in the
     // directory hierarchy.
-    while (relativeComponents.first == '..') {
+    while (relativeComponents.firstOrNull == '..') {
       newPath = path.dirname(newPath);
       relativeComponents.removeFirst();
     }
