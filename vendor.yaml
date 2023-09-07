@@ -1,6 +1,0 @@
-import_rewrites:
-  tar: tar
-vendored_dependencies:
-  tar:
-    package: tar
-    version: 1.0.1
