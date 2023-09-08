@@ -17,9 +17,9 @@ import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pool/pool.dart';
-// ignore: prefer_relative_imports
-import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:stack_trace/stack_trace.dart';
+// ignore: prefer_relative_imports
+import 'package:tar/tar.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
@@ -148,7 +148,7 @@ String canonicalize(String pathString) {
 
     // Pop directories off `newPath` if the component links upwards in the
     // directory hierarchy.
-    while (relativeComponents.first == '..') {
+    while (relativeComponents.firstOrNull == '..') {
       newPath = path.dirname(newPath);
       relativeComponents.removeFirst();
     }
@@ -346,7 +346,7 @@ List<String> listDir(
   bool includeDirs = true,
   Iterable<String> allowed = const <String>[],
 }) {
-  var allowlistFilter = createFileFilter(allowed);
+  var allowListFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
   // files. As such, it leans more heavily towards optimization as opposed to
@@ -376,9 +376,9 @@ List<String> listDir(
         // If the basename is in [allowed], don't count its "/." as making the
         // file hidden.
 
-        if (allowlistFilter.any(pathInDir.contains)) {
+        if (allowListFilter.any(pathInDir.contains)) {
           final allowedBasename =
-              allowlistFilter.firstWhere(pathInDir.contains);
+              allowListFilter.firstWhere(pathInDir.contains);
           pathInDir =
               pathInDir.substring(0, pathInDir.length - allowedBasename.length);
         }

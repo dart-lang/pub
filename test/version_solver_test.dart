@@ -1445,12 +1445,10 @@ void sdkConstraint() {
 
       await expectResolves(
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-        error: equalsIgnoringWhitespace('''
-            The current Dart SDK version is 3.1.2+3.
+        error: contains('''
+The current Dart SDK version is 3.1.2+3.
 
-            Because myapp requires SDK version >3.1.2+3, version solving
-            failed.
-          '''),
+Because myapp requires SDK version >3.1.2+3, version solving failed.'''),
       );
     });
 
@@ -1711,7 +1709,7 @@ void override() {
     await expectResolves(result: {'a': '2.0.0', 'b': '1.0.0', 'c': '1.0.0'});
   });
 
-  test('backtracks on overidden package for its constraints', () async {
+  test('backtracks on overridden package for its constraints', () async {
     await servePackages()
       ..serve('a', '1.0.0', deps: {'shared': 'any'})
       ..serve('a', '2.0.0', deps: {'shared': '1.0.0'})

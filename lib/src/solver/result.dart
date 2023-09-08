@@ -4,9 +4,7 @@
 
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:yaml/yaml.dart';
 
-import '../exceptions.dart';
 import '../http.dart';
 import '../io.dart';
 import '../lock_file.dart';
@@ -78,7 +76,6 @@ class SolveResult {
         return id;
       }),
     );
-    await _validatePubspecNames(cache);
 
     // Invariant: the content-hashes in PUB_CACHE matches those provided by the
     // server.
@@ -108,39 +105,6 @@ class SolveResult {
       devDependencies: MapKeySet(_root.devDependencies),
       overriddenDependencies: MapKeySet(_root.dependencyOverrides),
     );
-  }
-
-  /// Validate that all dependencies in [packages] refer to a package that has the
-  /// expected name.
-  ///
-  /// Throws an ApplicationException if there is a mismatch.
-  Future<void> _validatePubspecNames(
-    SystemCache cache,
-  ) async {
-    for (final id in packages) {
-      final pubspec = pubspecs[id.name]!;
-      final validatedNames = <String>{};
-      for (final dependency in [
-        ...pubspec.dependencies.keys,
-        if (id.isRoot) ...pubspec.devDependencies.keys,
-      ]) {
-        if (!validatedNames.add(dependency)) continue;
-        final dependencyPubspec = pubspecs[dependency]!;
-
-        if (dependencyPubspec.name != dependency) {
-          // Find the span for the reference.
-          final key = pubspec.dependencies.containsKey(dependency)
-              ? 'dependencies'
-              : 'dev_dependencies';
-          final dependencyNode = (pubspec.fields.nodes[key] as YamlMap)
-              .nodes[dependency] as YamlNode;
-          throw SourceSpanApplicationException(
-            'Expected to find package "${log.bold(dependency)}", found package "${log.bold(dependencyPubspec.name)}".',
-            dependencyNode.span,
-          );
-        }
-      }
-    }
   }
 
   final LockFile _previousLockFile;
@@ -215,7 +179,7 @@ class SolveResult {
       category: 'pub-get',
     );
     log.fine(
-      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds',
+      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} milliseconds',
     );
   }
 

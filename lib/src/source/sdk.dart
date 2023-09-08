@@ -89,8 +89,11 @@ class SdkSource extends Source {
   ///
   /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
-  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) =>
-      Pubspec.load(_verifiedPackagePath(ref), cache.sources);
+  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) => Pubspec.load(
+        _verifiedPackagePath(ref),
+        cache.sources,
+        expectedName: ref.name,
+      );
 
   /// Returns the path for the given [ref].
   ///

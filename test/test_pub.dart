@@ -29,10 +29,10 @@ import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
-import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:tar/tar.dart';
 import 'package:test/test.dart' hide fail;
 import 'package:test/test.dart' as test show fail;
 import 'package:test_process/test_process.dart';
@@ -1080,7 +1080,7 @@ Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
 }
 
 /// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
-/// entry of a gzip stream, giving us the same stream and thius stable testing
+/// entry of a gzip stream, giving us the same stream and this stable testing
 /// on all platforms.
 ///
 /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information

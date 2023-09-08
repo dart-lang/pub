@@ -168,7 +168,7 @@ class PathSource extends Source {
       throw ArgumentError('Wrong source');
     }
     var dir = _validatePath(ref.name, description);
-    return Pubspec.load(dir, cache.sources);
+    return Pubspec.load(dir, cache.sources, expectedName: ref.name);
   }
 
   @override

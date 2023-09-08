@@ -9,7 +9,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
-import 'package:pub/src/third_party/tar/lib/tar.dart';
+import 'package:tar/tar.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -144,6 +144,25 @@ void main() {
           expect(
             canonicalize(path.join(temp, 'dir')),
             equals(path.join(temp, 'linked-dir')),
+          );
+        }),
+        completes,
+      );
+    });
+
+    test('resolves a symlink to parent', () {
+      expect(
+        _withCanonicalTempDir((temp) {
+          _createDir(path.join(temp, 'linked-dir'));
+          _createDir(path.join(temp, 'linked-dir', 'a'));
+          _createDir(path.join(temp, 'linked-dir', 'b'));
+          createSymlink(
+            path.join(temp, 'linked-dir'),
+            path.join(temp, 'linked-dir', 'a', 'symlink'),
+          );
+          expect(
+            canonicalize(path.join(temp, 'linked-dir', 'a', 'symlink', 'b')),
+            equals(path.join(temp, 'linked-dir', 'b')),
           );
         }),
         completes,

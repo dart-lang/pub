@@ -112,13 +112,17 @@ Consider setting the `PUB_CACHE` variable manually.
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
   Package load(PackageId id) {
-    return Package.load(getDirectory(id), sources);
+    return Package.load(id.name, getDirectory(id), sources);
   }
 
   Package loadCached(PackageId id) {
     final source = id.description.description.source;
     if (source is CachedSource) {
-      return Package.load(source.getDirectoryInCache(id, this), sources);
+      return Package.load(
+        id.name,
+        source.getDirectoryInCache(id, this),
+        sources,
+      );
     } else {
       throw ArgumentError('Call only on Cached ids.');
     }

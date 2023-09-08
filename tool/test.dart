@@ -30,16 +30,16 @@ Future<void> main(List<String> args) async {
   });
   final pubSnapshotFilename =
       path.absolute(path.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
-  final pubSnapshotIncrementalFilename = '$pubSnapshotFilename.incremental';
   try {
-    stderr.writeln('Building snapshot');
+    final stopwatch = Stopwatch()..start();
+    stderr.write('Building snapshot...');
     await precompile(
       executablePath: path.join('bin', 'pub.dart'),
       outputPath: pubSnapshotFilename,
-      incrementalDillPath: pubSnapshotIncrementalFilename,
       name: 'bin/pub.dart',
       packageConfigPath: path.join('.dart_tool', 'package_config.json'),
     );
+    stderr.writeln(' (${stopwatch.elapsed.inMilliseconds}ms)');
     testProcess = await Process.start(
       Platform.resolvedExecutable,
       ['run', 'test', ...args],
@@ -51,11 +51,6 @@ Future<void> main(List<String> args) async {
     stderr.writeln('Failed building snapshot: $e');
     exitCode = 1;
   } finally {
-    try {
-      await File(pubSnapshotFilename).delete();
-      await sub.cancel();
-    } on Exception {
-      // snapshot didn't exist.
-    }
+    await sub.cancel();
   }
 }

@@ -17,8 +17,8 @@ import '../system_cache.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
 
-/// Looks through the root-[incompability] of a solve-failure and tries to see if
-/// the conflict could resolved by any of the following suggestions:
+/// Looks through the root-[incompatibility] of a solve-failure and tries to see
+/// if the conflict could resolved by any of the following suggestions:
 /// * An update of the current SDK.
 /// * Any single change to a package constraint.
 /// * Removing the bounds on all constraints, changing less than 5 dependencies.
@@ -144,7 +144,7 @@ class _ResolutionContext {
     final constraint = cause.constraint;
     if (constraint == null) return null;
 
-    /// Find the most relevant Flutter release fullfilling the constraint.
+    // Find the most relevant Flutter release fulfilling the constraint.
     final bestRelease =
         await inferBestFlutterRelease({cause.sdk.identifier: constraint});
     if (bestRelease == null) return null;

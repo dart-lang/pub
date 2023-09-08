@@ -55,7 +55,7 @@ final class Ignore {
   /// Each value in [patterns] will be interpreted as one or more lines from
   /// a `.gitignore` file, in compliance with the [`.gitignore` manual page][1].
   ///
-  /// The keys of 'pattern' are the directories to intpret the rules relative
+  /// The keys of 'pattern' are the directories to interpret the rules relative
   /// to. The root should be the empty string, and sub-directories are separated
   /// by '/' (but no final '/').
   ///

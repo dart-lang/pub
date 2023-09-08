@@ -87,6 +87,7 @@ class Entrypoint {
   ///
   /// For a global package, this is the activated package.
   Package get root => _root ??= Package.load(
+        null,
         rootDir,
         cache.sources,
         withPubspecOverrides: true,
@@ -177,6 +178,7 @@ class Entrypoint {
     var packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
+          packageEntry.name,
           packageEntry.resolvedRootDir(packageConfigPath),
           cache.sources,
         ),
@@ -219,10 +221,6 @@ class Entrypoint {
 
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(cachePath, 'bin');
-
-  /// The path to the directory containing previous dill files for incremental
-  /// builds.
-  String get _incrementalDillsPath => p.join(cachePath, 'incremental');
 
   Entrypoint._(
     this.rootDir,
@@ -522,7 +520,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     await dart.precompile(
       executablePath: await resolveExecutable(executable),
       outputPath: pathOfExecutable(executable),
-      incrementalDillPath: incrementalDillPathOfExecutable(executable),
       packageConfigPath: packageConfigPath,
       name: '$package:${p.basenameWithoutExtension(executable.relativePath)}',
       additionalSources: additionalSources,
@@ -550,20 +547,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
             _snapshotPath,
             executable.package,
             '${p.basename(executable.relativePath)}-$versionSuffix.snapshot',
-          );
-  }
-
-  String incrementalDillPathOfExecutable(Executable executable) {
-    assert(p.isRelative(executable.relativePath));
-    return isGlobal
-        ? p.join(
-            _incrementalDillsPath,
-            '${p.basename(executable.relativePath)}.incremental.dill',
-          )
-        : p.join(
-            _incrementalDillsPath,
-            executable.package,
-            '${p.basename(executable.relativePath)}.incremental.dill',
           );
   }
 
