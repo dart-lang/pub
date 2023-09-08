@@ -150,6 +150,25 @@ void main() {
       );
     });
 
+    test('resolves a symlink to parent', () {
+      expect(
+        _withCanonicalTempDir((temp) {
+          _createDir(path.join(temp, 'linked-dir'));
+          _createDir(path.join(temp, 'linked-dir', 'a'));
+          _createDir(path.join(temp, 'linked-dir', 'b'));
+          createSymlink(
+            path.join(temp, 'linked-dir'),
+            path.join(temp, 'linked-dir', 'a', 'symlink'),
+          );
+          expect(
+            canonicalize(path.join(temp, 'linked-dir', 'a', 'symlink', 'b')),
+            equals(path.join(temp, 'linked-dir', 'b')),
+          );
+        }),
+        completes,
+      );
+    });
+
     test('resolves a relative symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
