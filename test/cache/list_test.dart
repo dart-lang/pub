@@ -23,7 +23,15 @@ void main() {
       d.dir('hosted', [d.dir('pub.dev', [])]),
     ]).create();
 
-    await runPub(args: ['cache', 'list'], outputJson: {'packages': {}});
+    await runPub(
+      args: [
+        'cache',
+        'list',
+      ],
+      outputJson: {
+        'packages': <String, Object>{},
+      },
+    );
   });
 
   test('running pub cache list', () async {

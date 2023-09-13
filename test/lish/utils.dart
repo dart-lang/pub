@@ -34,7 +34,7 @@ void handleUpload(PackageServer server) {
     // that the request body is correctly formatted. See issue 6952.
     return request
         .read()
-        .drain()
+        .drain<void>()
         .then((_) => server.url)
         .then((url) => shelf.Response.found(Uri.parse(url).resolve('/create')));
   });

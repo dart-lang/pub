@@ -166,7 +166,7 @@ class DependencyServicesReportCommand extends PubCommand {
           _UpgradeType.compatible,
         ),
         'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
-            ? []
+            ? <Object>[]
             : await computeUpgradeSet(
                 singleBreakingVersion,
                 _UpgradeType.singleBreaking,
@@ -176,7 +176,7 @@ class DependencyServicesReportCommand extends PubCommand {
                 multiBreakingVersion,
                 _UpgradeType.multiBreaking,
               )
-            : [],
+            : <Object>[],
         if (smallestUpgrade != null)
           'smallestUpdate': await computeUpgradeSet(
             smallestUpgrade,
@@ -503,7 +503,7 @@ class DependencyServicesApplyCommand extends PubCommand {
       },
     );
     // Dummy message.
-    log.message(json.encode({'dependencies': []}));
+    log.message(json.encode({'dependencies': <Object>[]}));
   }
 }
 

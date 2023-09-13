@@ -47,7 +47,8 @@ Future<void> main() async {
     for (final packageName in json['packages'] as Iterable? ?? []) {
       alreadyDonePackages.add(packageName as String);
     }
-    for (final failure in (json['failures'] ?? []) as Iterable) {
+    for (final failure
+        in (json['failures'] ?? <Map<String, dynamic>>[]) as Iterable) {
       failures.add(failure as Map<String, dynamic>);
     }
   }

@@ -631,9 +631,11 @@ Future<void> main() async {
 }
 
 dynamic findChangeVersion(dynamic json, String updateType, String name) {
-  final dep = json['dependencies'].firstWhere((p) => p['name'] == 'foo');
+  final dep =
+      json['dependencies'].firstWhere((dynamic p) => p['name'] == 'foo');
   if (dep == null) return null;
-  return dep[updateType].firstWhere((p) => p['name'] == name)['version'];
+  return dep[updateType]
+      .firstWhere((dynamic p) => p['name'] == name)['version'];
 }
 
 class _PackageVersion {

@@ -313,7 +313,7 @@ class _ErrorGroupStream<T> extends Stream<T> {
     if (_isDone) return;
     _subscription.cancel();
     // Call these asynchronously to work around issue 7913.
-    Future.value().then((_) {
+    Future<void>.value().then((_) {
       _controller.addError(e, stackTrace);
       _controller.close();
     });

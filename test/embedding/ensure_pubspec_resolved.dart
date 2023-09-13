@@ -559,7 +559,7 @@ Future<void> _noImplicitPubGet({
 Future _touch(String path) async {
   // Delay a bit to make sure the modification times are noticeably different.
   // 1s seems to be the finest granularity that dart:io reports.
-  await Future.delayed(Duration(seconds: 1));
+  await Future<void>.delayed(Duration(seconds: 1));
 
   path = p.join(d.sandbox, 'myapp', path);
   touch(path);

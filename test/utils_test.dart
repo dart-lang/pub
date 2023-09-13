@@ -75,7 +75,7 @@ no: 1
     });
 
     test('handles non-string map keys', () {
-      var map = {};
+      var map = <Object?, Object?>{};
       map[null] = 'null';
       map[123] = 'num';
       map[true] = 'bool';
@@ -92,7 +92,7 @@ true: bool'''),
     test('handles empty maps', () {
       expect(yamlToString({}), equals('{}'));
       expect(
-        yamlToString({'a': {}, 'b': {}}),
+        yamlToString({'a': <Object, Object>{}, 'b': <Object, Object>{}}),
         equals('''
 a: {}
 b: {}'''),
@@ -188,7 +188,7 @@ b: {}'''),
     expect(() => hexEncode([256, 0, 1]), throwsA(isA<FormatException>()));
   });
   test('hexDecode', () {
-    expect(hexDecode(''), []);
+    expect(hexDecode(''), <int>[]);
     expect(hexDecode('ff0001f0abcdef'), [255, 0, 1, 240, 171, 205, 239]);
     expect(hexDecode('FF0001F0ABCDEF'), [255, 0, 1, 240, 171, 205, 239]);
     expect(() => hexDecode('F'), throwsA(isA<FormatException>()));

@@ -20,7 +20,7 @@ void main() {
     handleUploadForm(globalServer);
 
     globalServer.expect('POST', '/upload', (request) async {
-      await request.read().drain();
+      await request.read().drain<void>();
       return shelf.Response(200);
     });
 

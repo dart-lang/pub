@@ -79,7 +79,7 @@ String packageConfigFilePath =
 Map<String, dynamic> packageSpec(String packageName) => json
     .decode(File(d.path(packageConfigFilePath)).readAsStringSync())['packages']
     .firstWhere(
-      (e) => e['name'] == packageName,
+      (dynamic e) => e['name'] == packageName,
       orElse: () => null,
     ) as Map<String, dynamic>;
 
@@ -796,7 +796,7 @@ String binStubName(String name) => Platform.isWindows ? '$name.bat' : name;
 void _validateOutput(
   List<String> failures,
   String pipe,
-  expected,
+  Object? expected,
   String actual,
 ) {
   if (expected == null) return;
@@ -884,7 +884,7 @@ void _validateOutputJson(
   // Remove dart2js's timing logs, which would otherwise cause tests to fail
   // flakily when compilation takes a long time.
   actual['log']?.removeWhere(
-    (entry) =>
+    (dynamic entry) =>
         entry['level'] == 'Fine' &&
         (entry['message'] as String).startsWith('Not yet complete after'),
   );
