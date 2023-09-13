@@ -277,14 +277,17 @@ the \$PUB_HOSTED_URL environment variable.''',
       '${tree.fromFiles(files, baseDir: entrypoint.rootDir, showFileSizes: true)}',
     );
 
-    var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
+    var packageBytes =
+        await createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
+    log.message(
+      '\nTotal compressed archive size: ${_readableFileSize(packageBytes.length)}.\n',
+    );
 
     // Validate the package.
     var isValid = skipValidation
         ? true
         : await _validate(
-            packageBytesFuture.then((bytes) => bytes.length),
+            packageBytes.length,
             files,
           );
     if (!isValid) {
@@ -294,7 +297,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       log.message('The server may enforce additional checks.');
       return;
     } else {
-      await _publish(await packageBytesFuture);
+      await _publish(packageBytes);
     }
   }
 
@@ -307,7 +310,7 @@ the \$PUB_HOSTED_URL environment variable.''',
 
   /// Validates the package. Completes to false if the upload should not
   /// proceed.
-  Future<bool> _validate(Future<int> packageSize, List<String> files) async {
+  Future<bool> _validate(int packageSize, List<String> files) async {
     final hints = <String>[];
     final warnings = <String>[];
     final errors = <String>[];
@@ -366,5 +369,17 @@ the \$PUB_HOSTED_URL environment variable.''',
       return false;
     }
     return true;
+  }
+}
+
+String _readableFileSize(int size) {
+  if (size >= 1 << 30) {
+    return '${size ~/ (1 << 30)} GB';
+  } else if (size >= 1 << 20) {
+    return '${size ~/ (1 << 20)} MB';
+  } else if (size >= 1 << 10) {
+    return '${size ~/ (1 << 10)} KB';
+  } else {
+    return '<1 KB';
   }
 }
