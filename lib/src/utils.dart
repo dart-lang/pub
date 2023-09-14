@@ -767,3 +767,13 @@ extension RetrieveFlags on ArgResults {
   String option(String name) => this[name] as String;
   String? optionWithoutDefault(String name) => this[name] as String?;
 }
+
+/// Limits the range of characters and length.
+///
+/// Useful for displaying externally provided strings.
+///
+/// Only allowd printable ASCII, map anything else to whitespace, take at-most
+/// 1024 characters.
+String sanitizeForTerminal(String input) => String.fromCharCodes(
+      input.runes.map((r) => 32 <= r && r <= 127 ? r : 32).take(1024),
+    );

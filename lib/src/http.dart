@@ -211,6 +211,40 @@ void handleJsonError(http.BaseResponse response) {
   fail(log.red(error['message'] as String));
 }
 
+/// Handles an unsuccessful XML-formatted response from google cloud storage.
+///
+/// Assumes messages are of the form in
+/// https://cloud.google.com/storage/docs/xml-api/reference-status.
+///
+/// This is a poor person's XML parsing with regexps, but this should be
+/// sufficient for the specified messages.
+void handleGCSError(http.BaseResponse response) {
+  if (response is http.Response) {
+    final responseBody = response.body;
+    if (responseBody.contains('<?xml')) {
+      String? getTagText(String tag) {
+        final result = RegExp('<$tag>(.*)</$tag>').firstMatch(responseBody)?[1];
+        if (result == null) return null;
+        return sanitizeForTerminal(result);
+      }
+
+      final code = getTagText('Code');
+      final message = getTagText('Message');
+      // `Details` are not specified in the doc above, but have been observed in actual responses.
+      final details = getTagText('Details');
+      if (code != null) {
+        log.error('Server error code: $code');
+      }
+      if (message != null) {
+        log.error('Server message: $message');
+      }
+      if (details != null) {
+        log.error('Server details: $details');
+      }
+    }
+  }
+}
+
 /// Parses a response body, assuming it's JSON-formatted.
 ///
 /// Throws a user-friendly error if the response body is invalid JSON, or if

@@ -11,6 +11,7 @@ import 'package:http_parser/http_parser.dart';
 import '../http.dart';
 import '../log.dart' as log;
 import '../system_cache.dart';
+import '../utils.dart';
 import 'credential.dart';
 
 /// This client authenticates requests by injecting `Authentication` header to
@@ -83,11 +84,7 @@ class _AuthenticatedClient extends http.BaseClient {
       }
     }
     if (serverMessage != null) {
-      // Only allow printable ASCII, map anything else to whitespace, take
-      // at-most 1024 characters.
-      serverMessage = String.fromCharCodes(
-        serverMessage.runes.map((r) => 32 <= r && r <= 127 ? r : 32).take(1024),
-      );
+      serverMessage = sanitizeForTerminal(serverMessage);
     }
     throw AuthenticationException(response.statusCode, serverMessage);
   }
