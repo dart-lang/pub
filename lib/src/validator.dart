@@ -128,7 +128,7 @@ abstract class Validator {
   /// upload to the server.
   static Future<void> runAll(
     Entrypoint entrypoint,
-    Future<int> packageSize,
+    int packageSize,
     Uri serverUrl,
     List<String> files, {
     required List<String> hints,
@@ -163,7 +163,7 @@ abstract class Validator {
 
     final context = ValidationContext(
       entrypoint,
-      await packageSize,
+      packageSize,
       serverUrl,
       files,
     );

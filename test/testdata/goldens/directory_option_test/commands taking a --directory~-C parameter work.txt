@@ -118,6 +118,8 @@ Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 ├── lib
 │   └── test_pkg.dart (<1 KB)
 └── pubspec.yaml (<1 KB)
+
+Total compressed archive size: <1 KB.
 Validating package...
 The server may enforce additional checks.
 [STDERR] 

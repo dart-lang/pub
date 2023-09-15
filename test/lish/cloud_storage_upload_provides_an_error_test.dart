@@ -22,14 +22,30 @@ void main() {
     globalServer.expect('POST', '/upload', (request) {
       return request.read().drain().then((_) {
         return shelf.Response.notFound(
-          '<Error><Message>Your request sucked.</Message></Error>',
+          // Actual example of an error code we get from GCS
+          "<?xml version='1.0' encoding='UTF-8'?><Error><Code>EntityTooLarge</Code><Message>Your proposed upload is larger than the maximum object size specified in your Policy Document.</Message><Details>Content-length exceeds upper bound on range</Details></Error>",
           headers: {'content-type': 'application/xml'},
         );
       });
     });
 
-    // TODO(nweiz): This should use the server's error message once the client
-    // can parse the XML.
+    expect(
+      pub.stderr,
+      emits(
+        'Server error code: EntityTooLarge',
+      ),
+    );
+    expect(
+      pub.stderr,
+      emits(
+        'Server message: Your proposed upload is larger than the maximum object size specified in your Policy Document.',
+      ),
+    );
+    expect(
+      pub.stderr,
+      emits('Server details: Content-length exceeds upper bound on range'),
+    );
+
     expect(pub.stderr, emits('Failed to upload the package.'));
     await pub.shouldExit(1);
   });
