@@ -171,7 +171,6 @@ final class LeakPattern {
   ///  * Captured group have a entropy higher than [_entropyThresholds] requires
   ///    for the given _group identifier_, and,
   Iterable<LeakMatch> findPossibleLeaks(String file, String content) sync* {
-    final source = SourceFile.fromString(content, url: file);
     for (final m in _pattern.allMatches(content)) {
       if (_allowed.any((s) => m.group(0)!.contains(s))) {
         continue;
@@ -180,7 +179,7 @@ final class LeakPattern {
           .any((entry) => _entropy(m.group(entry.key)!) < entry.value)) {
         continue;
       }
-
+      final source = SourceFile.fromString(content, url: file);
       yield LeakMatch(
         this,
         source.span(m.start, m.start + m.group(0)!.length),
