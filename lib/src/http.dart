@@ -229,6 +229,7 @@ void handleGCSError(http.BaseResponse response) {
       }
 
       final code = getTagText('Code');
+      // TODO(sigurdm): we could hard-code nice error messages for known codes.
       final message = getTagText('Message');
       // `Details` are not specified in the doc above, but have been observed in actual responses.
       final details = getTagText('Details');
