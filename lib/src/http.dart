@@ -214,7 +214,7 @@ void handleJsonError(http.BaseResponse response) {
 /// Handles an unsuccessful XML-formatted response from google cloud storage.
 ///
 /// Assumes messages are of the form in
-/// https://cloud.google.com/storage/docs/xml-api/reference-status.
+/// https://cloud.google.com/storage/docs/xml-api/reference-status
 ///
 /// This is a poor person's XML parsing with regexps, but this should be
 /// sufficient for the specified messages.
