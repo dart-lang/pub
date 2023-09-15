@@ -1337,7 +1337,7 @@ void sdkConstraint() {
         error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub` instead of `dart pub`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });
