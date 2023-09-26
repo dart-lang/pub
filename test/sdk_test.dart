@@ -158,8 +158,7 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
               Because myapp depends on foo from sdk which doesn't exist (the
                 Flutter SDK is not available), version solving failed.
 
-              Flutter users should run `flutter pub get` instead of `dart pub
-                get`.
+              Flutter users should use `flutter pub` instead of `dart pub`.
             """),
           exitCode: exit_codes.UNAVAILABLE,
         );

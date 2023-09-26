@@ -69,7 +69,7 @@ class FlutterSdk extends Sdk {
 
   @override
   String get installMessage =>
-      'Flutter users should run `flutter pub get` instead of `dart pub get`.';
+      'Flutter users should use `flutter pub` instead of `dart pub`.';
 
   @override
   Version? get version {

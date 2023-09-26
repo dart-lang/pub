@@ -1283,7 +1283,7 @@ void sdkConstraint() {
         error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `dart pub get`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });
@@ -1304,7 +1304,7 @@ void sdkConstraint() {
         Because myapp depends on foo any which requires the Flutter SDK, version
           solving failed.
 
-        Flutter users should run `flutter pub get` instead of `dart pub get`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });
@@ -1337,7 +1337,7 @@ void sdkConstraint() {
         error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `dart pub get`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });

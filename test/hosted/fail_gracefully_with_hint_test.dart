@@ -33,7 +33,7 @@ void main() {
           'name': 'foo',
           'version': '1.2.3',
           'environment': {
-            'flutter': 'any', // generates hint -> flutter pub get
+            'flutter': 'any', // generates hint -> flutter pub
           },
         }),
       ]),
@@ -55,7 +55,7 @@ void main() {
       exitCode: exit_codes.UNAVAILABLE,
       error: allOf(
         contains('Try again without --offline!'),
-        contains('flutter pub get'), // hint that
+        contains('flutter pub'), // hint that
       ),
     );
 
