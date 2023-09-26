@@ -308,7 +308,7 @@ class HostedSource extends CachedSource {
   /// this throws a descriptive FormatException.
   HostedDescription _parseDescription(
     String packageName,
-    description,
+    Object? description,
     LanguageVersion languageVersion,
   ) {
     if (description == null) {

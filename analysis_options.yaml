@@ -11,6 +11,7 @@ analyzer:
 
   language:
     strict-casts: true
+    strict-inference: true
 
 linter:
   rules:

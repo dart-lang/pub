@@ -124,7 +124,7 @@ Future<T> withClient<T>(Future<T> Function(http.Client) fn) {
       // Be sure to save the credentials even when an error happens.
       _saveCredentials(client.credentials);
     });
-  }).catchError((error) {
+  }).catchError((Object error) {
     if (error is _ExpirationException) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
@@ -139,7 +139,7 @@ Future<T> withClient<T>(Future<T> Function(http.Client) fn) {
       return withClient(fn);
     } else {
       // ignore: only_throw_errors
-      throw error as Object;
+      throw error;
     }
   });
 }
@@ -970,7 +970,7 @@ class Credentials {
   ///
   /// Throws a [FormatException] if the JSON is incorrectly formatted.
   factory Credentials.fromJson(String json) {
-    void validate(bool condition, message) {
+    void validate(bool condition, String message) {
       if (condition) return;
       throw FormatException('Failed to load credentials: $message.\n\n$json');
     }

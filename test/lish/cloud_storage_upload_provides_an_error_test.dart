@@ -20,7 +20,7 @@ void main() {
     handleUploadForm(globalServer);
 
     globalServer.expect('POST', '/upload', (request) {
-      return request.read().drain().then((_) {
+      return request.read().drain<void>().then((_) {
         return shelf.Response.notFound(
           // Actual example of an error code we get from GCS
           "<?xml version='1.0' encoding='UTF-8'?><Error><Code>EntityTooLarge</Code><Message>Your proposed upload is larger than the maximum object size specified in your Policy Document.</Message><Details>Content-length exceeds upper bound on range</Details></Error>",

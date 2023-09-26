@@ -420,7 +420,7 @@ class LockFile {
   /// serialized as absolute.
   String serialize(String? packageDir, SystemCache cache) {
     // Convert the dependencies to a simple object.
-    var packageMap = {};
+    var packageMap = <String, Object?>{};
     for (final id in packages.values) {
       packageMap[id.name] = {
         'version': id.version.toString(),
@@ -432,7 +432,7 @@ class LockFile {
     }
 
     var data = {
-      'sdks': mapMap(
+      'sdks': mapMap<String, SdkConstraint, String, String>(
         sdkConstraints,
         value: (_, constraint) => constraint.effectiveConstraint.toString(),
       ),

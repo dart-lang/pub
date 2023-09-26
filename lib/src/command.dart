@@ -147,7 +147,7 @@ abstract class PubCommand extends Command<int> {
   @override
   String get invocation {
     PubCommand? command = this;
-    var names = [];
+    var names = <String?>[];
     do {
       names.add(command?.name);
       command = command?.parent as PubCommand?;

@@ -511,7 +511,7 @@ final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 String yamlToString(Object? data) {
   var buffer = StringBuffer();
 
-  void stringify(bool isMapValue, String indent, data) {
+  void stringify(bool isMapValue, String indent, Object? data) {
     // TODO(nweiz): Serialize using the YAML library once it supports
     // serialization.
 
@@ -757,7 +757,7 @@ Future<T> retry<T>(
     final rf = randomizationFactor * (random.nextDouble() * 2 - 1) + 1;
     final exp = math.min(attempt, 31); // prevent overflows.
     final delay = delayFactor * math.pow(2.0, exp) * rf;
-    await Future.delayed(delay < maxDelay ? delay : maxDelay);
+    await Future<void>.delayed(delay < maxDelay ? delay : maxDelay);
   }
 }
 

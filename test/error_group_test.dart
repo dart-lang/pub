@@ -33,9 +33,13 @@ void main() {
       expect(errorGroup.done, throwsFormatException);
       errorGroup.signalError(FormatException());
 
-      expect(() => errorGroup.registerFuture(Future.value()), throwsStateError);
       expect(
-        () => errorGroup.registerStream(StreamController(sync: true).stream),
+        () => errorGroup.registerFuture(Future<void>.value()),
+        throwsStateError,
+      );
+      expect(
+        () => errorGroup
+            .registerStream(StreamController<void>(sync: true).stream),
         throwsStateError,
       );
     });
@@ -63,12 +67,14 @@ void main() {
       completer.complete('value');
 
       expect(
-        completer.future.then((_) => errorGroup.registerFuture(Future.value())),
+        completer.future
+            .then((_) => errorGroup.registerFuture(Future<void>.value())),
         throwsStateError,
       );
       expect(
         completer.future.then(
-          (_) => errorGroup.registerStream(StreamController(sync: true).stream),
+          (_) => errorGroup
+              .registerStream(StreamController<void>(sync: true).stream),
         ),
         throwsStateError,
       );
@@ -401,7 +407,7 @@ void main() {
     test(
         "shouldn't throw a top-level exception if a stream receives an error "
         'after the other listened stream completes', () {
-      var signal = Completer();
+      var signal = Completer<void>();
       expect(
         stream1.toList().whenComplete(signal.complete),
         completion(equals(['value1', 'value2'])),
@@ -423,7 +429,7 @@ void main() {
     test(
         "shouldn't throw a top-level exception if an error is signaled after "
         'one listened stream completes', () {
-      var signal = Completer();
+      var signal = Completer<void>();
       expect(
         stream1.toList().whenComplete(signal.complete),
         completion(equals(['value1', 'value2'])),
@@ -505,7 +511,7 @@ void main() {
     test(
         "shouldn't throw a top-level exception if the future receives an "
         'error after the listened stream completes', () {
-      var signal = Completer();
+      var signal = Completer<void>();
       expect(
         stream.toList().whenComplete(signal.complete),
         completion(equals(['value1', 'value2'])),
