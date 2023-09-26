@@ -15,8 +15,9 @@ import 'package:source_span/source_span.dart';
 import '../ignore.dart';
 import '../validator.dart';
 
-/// [Utf8Codec] which allows malformed strings.
-const _utf8AllowMalformed = Utf8Codec(allowMalformed: true);
+/// All recognized secrets fit in ASCII (first seven bits). So for speed we
+/// decode as ASCII.
+const _asciiAllowInvalid = AsciiCodec(allowInvalid: true);
 
 /// Link to the documentation for the `false_secrets` key in `pubspec.yaml`.
 const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
@@ -24,6 +25,9 @@ const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
 /// A validator that validates attempts to find secrets that are about to be
 /// accidentally leaked.
 final class LeakDetectionValidator extends Validator {
+  // Creating a [SourceFile] is expensive, so we only do it on demand.
+  final sourceFileCache = <String, SourceFile>{};
+
   @override
   Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
@@ -48,7 +52,7 @@ final class LeakDetectionValidator extends Validator {
           // On Windows, we can't open some files without normalizing them
           final file = File(p.normalize(p.absolute(f)));
           text = await pool.withResource(
-            () async => await file.readAsString(encoding: _utf8AllowMalformed),
+            () async => await file.readAsString(encoding: _asciiAllowInvalid),
           );
         } on IOException {
           // Pass, ignore files we can't read, let something else error later!
@@ -56,7 +60,7 @@ final class LeakDetectionValidator extends Validator {
         }
 
         return leakPatterns
-            .map((p) => p.findPossibleLeaks(relPath, text))
+            .map((p) => p.findPossibleLeaks(relPath, text, sourceFileCache))
             .expand((i) => i);
       }),
     ).then((lists) => lists.expand((i) => i).toList());
@@ -70,11 +74,8 @@ final class LeakDetectionValidator extends Validator {
     if (leaks.length > 3) {
       errors.addAll(leaks.take(2).map((leak) => leak.toString()));
 
-      final files = leaks
-          .map((leak) => leak.span.sourceUrl!.toFilePath(windows: false))
-          .toSet()
-          .toList(growable: false)
-        ..sort();
+      final files =
+          leaks.map((leak) => leak.url).toSet().toList(growable: false)..sort();
       final s = files.length > 1 ? 's' : '';
 
       errors.add(
@@ -105,14 +106,33 @@ final class LeakDetectionValidator extends Validator {
 
 /// Instance of a match against a [LeakPattern].
 final class LeakMatch {
-  final LeakPattern pattern;
-  final SourceSpan span;
+  final Map<String, SourceFile> sourceFileCache;
 
-  LeakMatch(this.pattern, this.span);
+  final LeakPattern pattern;
+
+  final String content;
+  final String url;
+  final int start;
+  final int end;
+
+  SourceSpan span() {
+    final sourceFile =
+        sourceFileCache[url] ??= SourceFile.fromString(content, url: url);
+    return sourceFile.span(start, end);
+  }
+
+  LeakMatch(
+    this.pattern, {
+    required this.url,
+    required this.content,
+    required this.start,
+    required this.end,
+    required this.sourceFileCache,
+  });
 
   @override
   String toString() =>
-      span.message('Potential leak of ${pattern.kind} detected.');
+      span().message('Potential leak of ${pattern.kind} detected.');
 }
 
 /// Definition of a pattern for detecting accidentally leaked secrets.
@@ -170,7 +190,11 @@ final class LeakPattern {
   ///  * no pattern in [_allowed] is matched,
   ///  * Captured group have a entropy higher than [_entropyThresholds] requires
   ///    for the given _group identifier_, and,
-  Iterable<LeakMatch> findPossibleLeaks(String file, String content) sync* {
+  Iterable<LeakMatch> findPossibleLeaks(
+    String file,
+    String content,
+    Map<String, SourceFile> sourceFileCache,
+  ) sync* {
     for (final m in _pattern.allMatches(content)) {
       if (_allowed.any((s) => m.group(0)!.contains(s))) {
         continue;
@@ -179,10 +203,13 @@ final class LeakPattern {
           .any((entry) => _entropy(m.group(entry.key)!) < entry.value)) {
         continue;
       }
-      final source = SourceFile.fromString(content, url: file);
       yield LeakMatch(
         this,
-        source.span(m.start, m.start + m.group(0)!.length),
+        url: file,
+        content: content,
+        start: m.start,
+        end: m.start + m.group(0)!.length,
+        sourceFileCache: sourceFileCache,
       );
     }
   }
