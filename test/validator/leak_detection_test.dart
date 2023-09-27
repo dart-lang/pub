@@ -132,22 +132,18 @@ void main() {
       group('for "${pattern.kind}"', () {
         for (var i = 0; i < pattern.testsWithLeaks.length; i++) {
           test('finds leak in testWithLeaks[$i]', () {
-            final leaks = pattern.findPossibleLeaks(
-              'source.dart',
-              pattern.testsWithLeaks[i],
-              {},
-            ).toList(growable: false);
+            final leaks = pattern
+                .findPossibleLeaks('source.dart', pattern.testsWithLeaks[i])
+                .toList(growable: false);
             expect(leaks, hasLength(equals(1)));
           });
         }
 
         for (var i = 0; i < pattern.testsWithNoLeaks.length; i++) {
           test('finds no leak in testsWithNoLeaks[$i]', () {
-            final leaks = pattern.findPossibleLeaks(
-              'source.dart',
-              pattern.testsWithNoLeaks[i],
-              {},
-            ).toList(growable: false);
+            final leaks = pattern
+                .findPossibleLeaks('source.dart', pattern.testsWithNoLeaks[i])
+                .toList(growable: false);
             expect(leaks, isEmpty);
           });
         }

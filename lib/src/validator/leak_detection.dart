@@ -25,9 +25,6 @@ const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
 /// A validator that validates attempts to find secrets that are about to be
 /// accidentally leaked.
 final class LeakDetectionValidator extends Validator {
-  // Creating a [SourceFile] is expensive, so we only do it on demand.
-  final sourceFileCache = <String, SourceFile>{};
-
   @override
   Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
@@ -60,7 +57,7 @@ final class LeakDetectionValidator extends Validator {
         }
 
         return leakPatterns
-            .map((p) => p.findPossibleLeaks(relPath, text, sourceFileCache))
+            .map((p) => p.findPossibleLeaks(relPath, text))
             .expand((i) => i);
       }),
     ).then((lists) => lists.expand((i) => i).toList());
@@ -72,7 +69,7 @@ final class LeakDetectionValidator extends Validator {
     // samples leaks that very concretely demonstrates the strings we're
     // worried about leaking.
     if (leaks.length > 3) {
-      errors.addAll(leaks.take(2).map((leak) => leak.toString()));
+      errors.addAll(leaks.take(2).map((leak) => leak.describe()));
 
       final files =
           leaks.map((leak) => leak.url).toSet().toList(growable: false)..sort();
@@ -93,9 +90,9 @@ final class LeakDetectionValidator extends Validator {
       // about how ignore them in the last warning.
       final lastLeak = leaks.removeLast();
       errors.addAll([
-        ...leaks.take(2).map((leak) => leak.toString()),
+        ...leaks.take(2).map((leak) => leak.describe()),
         [
-          lastLeak.toString(),
+          lastLeak.describe(),
           'Add a git-ignore style pattern to `false_secrets` in `pubspec.yaml`',
           'to ignore this. See $_falseSecretsDocumentationLink',
         ].join('\n'),
@@ -106,8 +103,6 @@ final class LeakDetectionValidator extends Validator {
 
 /// Instance of a match against a [LeakPattern].
 final class LeakMatch {
-  final Map<String, SourceFile> sourceFileCache;
-
   final LeakPattern pattern;
 
   final String content;
@@ -115,24 +110,24 @@ final class LeakMatch {
   final int start;
   final int end;
 
-  SourceSpan span() {
-    final sourceFile =
-        sourceFileCache[url] ??= SourceFile.fromString(content, url: url);
-    return sourceFile.span(start, end);
-  }
-
   LeakMatch(
     this.pattern, {
     required this.url,
     required this.content,
     required this.start,
     required this.end,
-    required this.sourceFileCache,
   });
 
-  @override
-  String toString() =>
-      span().message('Potential leak of ${pattern.kind} detected.');
+  String describe() {
+    if (content.length > 10000) {
+      // Large files are probably binary files. Don't show line numbers.
+      return 'Potential leak of ${pattern.kind} in `$url` at offset $start:$end.\n\n'
+          '```\n${content.substring(start, end)}\n```\n';
+    }
+    return SourceFile.fromString(content, url: url)
+        .span(start, end)
+        .message('Potential leak of ${pattern.kind} detected.');
+  }
 }
 
 /// Definition of a pattern for detecting accidentally leaked secrets.
@@ -190,11 +185,7 @@ final class LeakPattern {
   ///  * no pattern in [_allowed] is matched,
   ///  * Captured group have a entropy higher than [_entropyThresholds] requires
   ///    for the given _group identifier_, and,
-  Iterable<LeakMatch> findPossibleLeaks(
-    String file,
-    String content,
-    Map<String, SourceFile> sourceFileCache,
-  ) sync* {
+  Iterable<LeakMatch> findPossibleLeaks(String file, String content) sync* {
     for (final m in _pattern.allMatches(content)) {
       if (_allowed.any((s) => m.group(0)!.contains(s))) {
         continue;
@@ -203,13 +194,13 @@ final class LeakPattern {
           .any((entry) => _entropy(m.group(entry.key)!) < entry.value)) {
         continue;
       }
+
       yield LeakMatch(
         this,
         url: file,
         content: content,
         start: m.start,
         end: m.start + m.group(0)!.length,
-        sourceFileCache: sourceFileCache,
       );
     }
   }
