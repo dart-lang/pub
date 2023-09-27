@@ -15,8 +15,9 @@ import 'package:source_span/source_span.dart';
 import '../ignore.dart';
 import '../validator.dart';
 
-/// [Utf8Codec] which allows malformed strings.
-const _utf8AllowMalformed = Utf8Codec(allowMalformed: true);
+/// All recognized secrets fit in ASCII (first seven bits). So for speed we
+/// decode as ASCII.
+const _asciiAllowInvalid = AsciiCodec(allowInvalid: true);
 
 /// Link to the documentation for the `false_secrets` key in `pubspec.yaml`.
 const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
@@ -48,7 +49,7 @@ final class LeakDetectionValidator extends Validator {
           // On Windows, we can't open some files without normalizing them
           final file = File(p.normalize(p.absolute(f)));
           text = await pool.withResource(
-            () async => await file.readAsString(encoding: _utf8AllowMalformed),
+            () async => await file.readAsString(encoding: _asciiAllowInvalid),
           );
         } on IOException {
           // Pass, ignore files we can't read, let something else error later!
@@ -68,13 +69,10 @@ final class LeakDetectionValidator extends Validator {
     // samples leaks that very concretely demonstrates the strings we're
     // worried about leaking.
     if (leaks.length > 3) {
-      errors.addAll(leaks.take(2).map((leak) => leak.toString()));
+      errors.addAll(leaks.take(2).map((leak) => leak.describe()));
 
-      final files = leaks
-          .map((leak) => leak.span.sourceUrl!.toFilePath(windows: false))
-          .toSet()
-          .toList(growable: false)
-        ..sort();
+      final files =
+          leaks.map((leak) => leak.url).toSet().toList(growable: false)..sort();
       final s = files.length > 1 ? 's' : '';
 
       errors.add(
@@ -92,9 +90,9 @@ final class LeakDetectionValidator extends Validator {
       // about how ignore them in the last warning.
       final lastLeak = leaks.removeLast();
       errors.addAll([
-        ...leaks.take(2).map((leak) => leak.toString()),
+        ...leaks.take(2).map((leak) => leak.describe()),
         [
-          lastLeak.toString(),
+          lastLeak.describe(),
           'Add a git-ignore style pattern to `false_secrets` in `pubspec.yaml`',
           'to ignore this. See $_falseSecretsDocumentationLink',
         ].join('\n'),
@@ -106,13 +104,30 @@ final class LeakDetectionValidator extends Validator {
 /// Instance of a match against a [LeakPattern].
 final class LeakMatch {
   final LeakPattern pattern;
-  final SourceSpan span;
 
-  LeakMatch(this.pattern, this.span);
+  final String content;
+  final String url;
+  final int start;
+  final int end;
 
-  @override
-  String toString() =>
-      span.message('Potential leak of ${pattern.kind} detected.');
+  LeakMatch(
+    this.pattern, {
+    required this.url,
+    required this.content,
+    required this.start,
+    required this.end,
+  });
+
+  String describe() {
+    if (content.length > 10000) {
+      // Large files are probably binary files. Don't show line numbers.
+      return 'Potential leak of ${pattern.kind} in `$url` at offset $start:$end.\n\n'
+          '```\n${content.substring(start, end)}\n```\n';
+    }
+    return SourceFile.fromString(content, url: url)
+        .span(start, end)
+        .message('Potential leak of ${pattern.kind} detected.');
+  }
 }
 
 /// Definition of a pattern for detecting accidentally leaked secrets.
@@ -171,7 +186,6 @@ final class LeakPattern {
   ///  * Captured group have a entropy higher than [_entropyThresholds] requires
   ///    for the given _group identifier_, and,
   Iterable<LeakMatch> findPossibleLeaks(String file, String content) sync* {
-    final source = SourceFile.fromString(content, url: file);
     for (final m in _pattern.allMatches(content)) {
       if (_allowed.any((s) => m.group(0)!.contains(s))) {
         continue;
@@ -183,7 +197,10 @@ final class LeakPattern {
 
       yield LeakMatch(
         this,
-        source.span(m.start, m.start + m.group(0)!.length),
+        url: file,
+        content: content,
+        start: m.start,
+        end: m.start + m.group(0)!.length,
       );
     }
   }
