@@ -4,8 +4,6 @@ environment:
   sdk: ^3.0.0
 
 dependencies:
-  # Note: Pub's test infrastructure assumes that any dependencies used in tests
-  # will be hosted dependencies.
   analyzer: ^6.2.0
   args: ^2.4.0
   async: ^2.6.1
