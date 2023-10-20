@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:usage/usage.dart';
+import 'package:unified_analytics/unified_analytics.dart';
 
 import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
@@ -27,17 +27,11 @@ import 'utils.dart';
 
 /// The information needed for the embedded pub command to send analytics.
 final class PubAnalytics {
-  /// Name of the custom dimension of the dependency kind.
-  final String dependencyKindCustomDimensionName;
-
   final Analytics? Function() _analyticsGetter;
 
   Analytics? get analytics => _analyticsGetter();
 
-  PubAnalytics(
-    this._analyticsGetter, {
-    required this.dependencyKindCustomDimensionName,
-  });
+  PubAnalytics(this._analyticsGetter);
 }
 
 /// Exposes the `pub` commands as a command to be embedded in another command

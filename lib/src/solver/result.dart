@@ -4,6 +4,7 @@
 
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:unified_analytics/unified_analytics.dart';
 
 import '../http.dart';
 import '../io.dart';
@@ -158,29 +159,17 @@ class SolveResult {
         DependencyType.direct: 'direct',
         DependencyType.none: 'transitive',
       }[_root.pubspec.dependencyType(package.name)]!;
-      analytics.sendEvent(
-        'pub-get',
-        package.name,
-        label: package.version.canonicalizedVersion,
-        value: 1,
-        parameters: {
-          'ni': '1', // We consider a pub-get a non-interactive event.
-          pubAnalytics.dependencyKindCustomDimensionName: dependencyKind,
-        },
+      analytics.send(
+        Event.pubGet(
+          packageName: package.name,
+          version: package.version.canonicalizedVersion,
+          dependencyType: dependencyKind,
+        ),
       );
       log.fine(
         'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind',
       );
     }
-
-    analytics.sendTiming(
-      'resolution',
-      resolutionTime.inMilliseconds,
-      category: 'pub-get',
-    );
-    log.fine(
-      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} milliseconds',
-    );
   }
 
   @override
