@@ -17,7 +17,6 @@ Available subcommands:
   cache   Work with the system cache.
   deps   Print package dependencies.
   downgrade   Downgrade the current package's dependencies to oldest versions.
-  fail   Throws an exception
   get   Get the current package's dependencies.
   global   Work with global packages.
   login   Log into pub.dev.
