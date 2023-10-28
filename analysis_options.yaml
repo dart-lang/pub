@@ -24,6 +24,8 @@ linter:
     - avoid_unused_constructor_parameters
     - avoid_void_async
     - cancel_subscriptions
+    - conditional_uri_does_not_exist
+    - combinators_ordering
     - dangling_library_doc_comments
     - directives_ordering
     - library_annotations
@@ -45,8 +47,8 @@ linter:
     - unawaited_futures
     - unnecessary_lambdas
     - unnecessary_library_directive
-    - unnecessary_null_aware_assignments
     - unnecessary_parenthesis
     - unnecessary_statements
+    - unreachable_from_main
     - use_enums
-    - use_super_parameters
+    - use_is_even_rather_than_modulo

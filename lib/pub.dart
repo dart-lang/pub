@@ -11,10 +11,10 @@ import 'src/system_cache.dart';
 
 export 'src/executable.dart'
     show
-        getExecutableForCommand,
         CommandResolutionFailedException,
         CommandResolutionIssue,
-        DartExecutableWithPackageConfig;
+        DartExecutableWithPackageConfig,
+        getExecutableForCommand;
 export 'src/pub_embeddable_command.dart' show PubAnalytics;
 
 /// Returns a [Command] for pub functionality that can be used by an embedding
