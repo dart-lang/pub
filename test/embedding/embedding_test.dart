@@ -2,10 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart' show EnvironmentKeys;
@@ -87,7 +85,7 @@ extension on GoldenTestContext {
 Future<void> main() async {
   setUpAll(() async {
     final tempDir = Directory.systemTemp.createTempSync();
-    snapshot = path.join(tempDir.path, 'command_runner.dart.snapshot');
+    snapshot = p.join(tempDir.path, 'command_runner.dart.snapshot');
     final r = Process.runSync(
       Platform.resolvedExecutable,
       ['--snapshot=$snapshot', _commandRunner],
@@ -189,77 +187,6 @@ main() {
         File(logFile).readAsStringSync(),
       ),
     );
-  });
-
-  test('analytics', () async {
-    await servePackages()
-      ..serve('foo', '1.0.0', deps: {'bar': 'any'})
-      ..serve('bar', '1.0.0');
-    await d.dir('dep', [
-      d.pubspec({
-        'name': 'dep',
-        'environment': {'sdk': '^3.0.0'},
-      }),
-    ]).create();
-    final app = d.dir(appPath, [
-      d.appPubspec(
-        dependencies: {
-          'foo': '1.0.0',
-          // The path dependency should not go to analytics.
-          'dep': {'path': '../dep'},
-        },
-      ),
-    ]);
-    await app.create();
-
-    final buffer = StringBuffer();
-
-    await runEmbeddingToBuffer(
-      ['pub', 'get'],
-      buffer,
-      workingDirectory: app.io.path,
-      environment: {...getPubTestEnvironment(), '_PUB_LOG_ANALYTICS': 'true'},
-    );
-    final analytics = buffer
-        .toString()
-        .split('\n')
-        .where((line) => line.startsWith('[E] [analytics]: '))
-        .map((line) => json.decode(line.substring('[E] [analytics]: '.length)));
-    expect(analytics, {
-      {
-        'hitType': 'event',
-        'message': {
-          'category': 'pub-get',
-          'action': 'foo',
-          'label': '1.0.0',
-          'value': 1,
-          'cd1': 'direct',
-          'ni': '1',
-        },
-      },
-      {
-        'hitType': 'event',
-        'message': {
-          'category': 'pub-get',
-          'action': 'bar',
-          'label': '1.0.0',
-          'value': 1,
-          'cd1': 'transitive',
-          'ni': '1',
-        },
-      },
-      {
-        'hitType': 'timing',
-        'message': {
-          'variableName': 'resolution',
-          'time': isA<int>(),
-          'category': 'pub-get',
-          'label': null,
-        },
-      },
-    });
-    // Don't write the logs to file on a normal run.
-    expect(File(logFile).existsSync(), isFalse);
   });
 
   test('`embedding --verbose pub` is verbose', () async {
