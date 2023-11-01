@@ -25,7 +25,7 @@ jobs:
         sdk: [dev]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - uses: dart-lang/setup-dart@8a4b97ea2017cc079571daec46542f76189836b1
+      - uses: dart-lang/setup-dart@b64355ae6ca0b5d484f0106a033dd1388965d06d
         with:
           sdk: ${{ matrix.sdk }}
       - id: install
@@ -53,7 +53,7 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - uses: dart-lang/setup-dart@8a4b97ea2017cc079571daec46542f76189836b1
+      - uses: dart-lang/setup-dart@b64355ae6ca0b5d484f0106a033dd1388965d06d
         with:
           sdk: ${{ matrix.sdk }}
       - name: Install dependencies
