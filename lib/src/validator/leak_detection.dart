@@ -240,7 +240,7 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
     // Unique identifiers are documented here:
     // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-unique-ids
     //
-    // Maximum length of a access key is specified as 128 here:
+    // Maximum length of an access key is specified as 128 here:
     // https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html#API_AccessKey_Contents
     pattern:
         r'[^A-Z0-9]((?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{12,128})[^A-Z0-9]',

@@ -31,7 +31,7 @@ void main() {
     await pub.shouldExit(1);
   });
 
-  test('with a invalid environment token fails with error', () async {
+  test('with an invalid environment token fails with error', () async {
     await servePackages();
     await d.validPackage().create();
     await d.tokensFile({
