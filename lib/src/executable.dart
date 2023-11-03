@@ -208,7 +208,7 @@ Future<int> _runDartProgram(
 
 /// The result of a `getExecutableForCommand` command resolution.
 final class DartExecutableWithPackageConfig {
-  /// Can be a .dart file or a incremental snapshot.
+  /// Can be a .dart file or an incremental snapshot.
   final String executable;
 
   /// The package_config.json to run [executable] with. Or <null> if the VM
