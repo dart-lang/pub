@@ -8,6 +8,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": true,
+      "isRetracted": true,
       "current": {
         "version": "1.2.3"
       },
@@ -29,15 +30,16 @@ $ pub outdated --no-color
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.2.3      *1.2.3      -       (discontinued)  
+foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
+    Version 1.2.3 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -46,15 +48,16 @@ $ pub outdated --no-color --no-transitive
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.2.3      *1.2.3      -       (discontinued)  
+foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
+    Version 1.2.3 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -63,12 +66,12 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-bar           1.0.0    1.0.0       1.0.0       1.0.0   
-baz           1.0.0    1.0.0       1.0.0       1.0.0   (discontinued)  
-foo           *1.2.3   *1.2.3      *1.2.3      -       (discontinued)  
+bar           1.0.0               1.0.0               1.0.0               1.0.0   
+baz           1.0.0               1.0.0               1.0.0               1.0.0   (discontinued)  
+foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
@@ -76,6 +79,7 @@ baz
     Package baz has been discontinued, replaced by newbaz. See https://dart.dev/go/package-discontinue
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
+    Version 1.2.3 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -84,15 +88,16 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.2.3      *1.2.3      -       (discontinued)  
+foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
+    Version 1.2.3 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -101,15 +106,16 @@ $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.2.3      *1.2.3      -       (discontinued)  
+foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
+    Version 1.2.3 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -118,15 +124,16 @@ $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.2.3      *1.2.3      -       (discontinued)  
+foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
+    Version 1.2.3 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -138,6 +145,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": true,
+      "isRetracted": true,
       "current": {
         "version": "1.2.3"
       },

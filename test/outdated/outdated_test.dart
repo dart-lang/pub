@@ -171,6 +171,52 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
+  testWithGolden('show retracted', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+    builder.retractPackageVersion('foo', '1.0.0');
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('show discontinued and retracted', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('bar', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+    builder.discontinue('foo');
+    builder.retractPackageVersion('foo', '1.0.0');
+    builder.discontinue('bar');
+    builder.retractPackageVersion('bar', '1.0.0');
+    builder.serve('foo', '1.2.0', deps: {'transitive': '^1.0.0'});
+    await pubGet();
+    await ctx.runOutdatedTests();
+  });
+
   testWithGolden('circular dependency on root', (ctx) async {
     final server = await servePackages();
     server.serve('foo', '1.2.3', deps: {'app': '^1.0.0'});
@@ -280,6 +326,36 @@ Future<void> main() async {
 
     await pubGet();
 
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('overridden dependencies with retraction- no resolution ',
+      (ctx) async {
+    ensureGit();
+    final builder = await servePackages()
+      ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
+      ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
+      ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
+      ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'});
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'version': '1.0.1',
+        'dependencies': {
+          'foo': 'any',
+          'bar': 'any',
+        },
+        'dependency_overrides': {
+          'foo': '1.0.0',
+          'bar': '1.0.0',
+        },
+      }),
+    ]).create();
+
+    await pubGet();
+
+    builder.retractPackageVersion('bar', '1.0.0');
     await ctx.runOutdatedTests();
   });
 

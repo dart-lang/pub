@@ -8,6 +8,7 @@ $ pub outdated --json
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
+      "isRetracted": false,
       "current": {
         "version": "1.0.1",
         "overridden": true
@@ -28,6 +29,7 @@ $ pub outdated --json
       "package": "baz",
       "kind": "direct",
       "isDiscontinued": false,
+      "isRetracted": false,
       "current": {
         "version": "2.0.0",
         "overridden": true
@@ -48,6 +50,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
+      "isRetracted": false,
       "current": {
         "version": "1.0.1",
         "overridden": true
@@ -174,6 +177,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
+      "isRetracted": false,
       "current": {
         "version": "1.0.1",
         "overridden": true
@@ -194,6 +198,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "baz",
       "kind": "direct",
       "isDiscontinued": false,
+      "isRetracted": false,
       "current": {
         "version": "2.0.0",
         "overridden": true
@@ -214,6 +219,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
+      "isRetracted": false,
       "current": {
         "version": "1.0.1",
         "overridden": true

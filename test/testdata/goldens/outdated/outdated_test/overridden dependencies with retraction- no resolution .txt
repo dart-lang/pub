@@ -8,7 +8,7 @@ $ pub outdated --json
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": false,
+      "isRetracted": true,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -56,13 +56,16 @@ $ pub outdated --no-color
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current              Upgradable           Resolvable           Latest  
+Package Name  Current                          Upgradable                       Resolvable                       Latest  
 
 direct dependencies:
-bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
-foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+bar           *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  2.0.0   
+foo           *1.0.0 (overridden)              *1.0.0 (overridden)              *1.0.0 (overridden)              2.0.0   
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+bar
+    Version 1.0.0 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -71,13 +74,16 @@ $ pub outdated --no-color --no-transitive
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current              Upgradable           Resolvable           Latest  
+Package Name  Current                          Upgradable                       Resolvable                       Latest  
 
 direct dependencies:
-bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
-foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+bar           *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  2.0.0   
+foo           *1.0.0 (overridden)              *1.0.0 (overridden)              *1.0.0 (overridden)              2.0.0   
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+bar
+    Version 1.0.0 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -86,13 +92,16 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current              Upgradable           Resolvable           Latest  
+Package Name  Current                          Upgradable                       Resolvable                       Latest  
 
 direct dependencies:
-bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
-foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+bar           *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  2.0.0   
+foo           *1.0.0 (overridden)              *1.0.0 (overridden)              *1.0.0 (overridden)              2.0.0   
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+bar
+    Version 1.0.0 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -101,13 +110,16 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current              Upgradable           Resolvable           Latest  
+Package Name  Current                          Upgradable                       Resolvable                       Latest  
 
 direct dependencies:
-bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
-foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+bar           *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  2.0.0   
+foo           *1.0.0 (overridden)              *1.0.0 (overridden)              *1.0.0 (overridden)              2.0.0   
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+bar
+    Version 1.0.0 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -116,13 +128,16 @@ $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current              Upgradable           Resolvable           Latest  
+Package Name  Current                          Upgradable                       Resolvable                       Latest  
 
 direct dependencies:
-bar           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
-foo           *1.0.0 (overridden)  *1.0.0 (overridden)  *1.0.0 (overridden)  2.0.0   
+bar           *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  *1.0.0 (overridden) (retracted)  2.0.0   
+foo           *1.0.0 (overridden)              *1.0.0 (overridden)              *1.0.0 (overridden)              2.0.0   
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
+
+bar
+    Version 1.0.0 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -131,12 +146,15 @@ $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current              Upgradable  Resolvable  Latest  
+Package Name  Current                          Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           *1.0.0 (overridden)  -           -           2.0.0   
-foo           *1.0.0 (overridden)  -           -           2.0.0   
+bar           *1.0.0 (overridden) (retracted)  -           -           2.0.0   
+foo           *1.0.0 (overridden)              -           -           2.0.0   
 No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
+
+bar
+    Version 1.0.0 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -148,7 +166,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": false,
+      "isRetracted": true,
       "current": {
         "version": "1.0.0",
         "overridden": true
