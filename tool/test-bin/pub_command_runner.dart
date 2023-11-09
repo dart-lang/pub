@@ -5,7 +5,6 @@
 /// A trivial embedding of the pub command. Used from tests.
 library;
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -15,9 +14,6 @@ import 'package:pub/src/command.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/utils.dart';
-import 'package:usage/usage.dart';
-
-final Analytics loggingAnalytics = _LoggingAnalytics();
 
 /// A command for explicitly throwing an exception, to test the handling of
 /// unexpected exceptions.
@@ -84,15 +80,8 @@ class Runner extends CommandRunner<int> {
   late ArgResults _results;
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
-    final analytics = Platform.environment['_PUB_LOG_ANALYTICS'] == 'true'
-        ? PubAnalytics(
-            () => loggingAnalytics,
-            dependencyKindCustomDimensionName: 'cd1',
-          )
-        : null;
     addCommand(
       pubCommand(
-        analytics: analytics,
         isVerbose: () => _results.flag('verbose'),
       )
         ..addSubcommand(ThrowingCommand())
@@ -124,62 +113,4 @@ class Runner extends CommandRunner<int> {
 
 Future<void> main(List<String> arguments) async {
   exitCode = await Runner().run(arguments);
-}
-
-class _LoggingAnalytics extends AnalyticsMock {
-  _LoggingAnalytics() {
-    onSend.listen((event) {
-      stderr.writeln('[analytics]${json.encode(event)}');
-    });
-  }
-
-  @override
-  bool get firstRun => false;
-
-  @override
-  Future sendScreenView(String viewName, {Map<String, String>? parameters}) {
-    parameters ??= <String, String>{};
-    parameters['viewName'] = viewName;
-    return _log('screenView', parameters);
-  }
-
-  @override
-  Future sendEvent(
-    String category,
-    String action, {
-    String? label,
-    int? value,
-    Map<String, String>? parameters,
-  }) {
-    parameters ??= <String, String>{};
-    return _log(
-      'event',
-      {'category': category, 'action': action, 'label': label, 'value': value}
-        ..addAll(parameters),
-    );
-  }
-
-  @override
-  Future sendSocial(String network, String action, String target) =>
-      _log('social', {'network': network, 'action': action, 'target': target});
-
-  @override
-  Future sendTiming(
-    String variableName,
-    int time, {
-    String? category,
-    String? label,
-  }) {
-    return _log('timing', {
-      'variableName': variableName,
-      'time': time,
-      'category': category,
-      'label': label,
-    });
-  }
-
-  Future<void> _log(String hitType, Map message) async {
-    final encoded = json.encode({'hitType': hitType, 'message': message});
-    stderr.writeln('[analytics]: $encoded');
-  }
 }
