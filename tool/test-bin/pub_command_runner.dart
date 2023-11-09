@@ -22,10 +22,7 @@ class ThrowingCommand extends PubCommand {
   String get name => 'fail';
 
   @override
-  String get description => 'Throws an exception';
-
-  @override
-  bool get hidden => true;
+  String get description => 'Throws an exception.';
 
   @override
   Future<int> runProtected() async {
