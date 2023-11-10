@@ -650,7 +650,7 @@ Future<void> _outputHuman(
           : '.';
       log.message(
         '    Package ${package.name} has been discontinued$replacedByText '
-        'See https://dart.dev/go/discontinue.',
+        'See https://dart.dev/go/package-discontinue.',
       );
     }
   }
