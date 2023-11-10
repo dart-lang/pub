@@ -8,6 +8,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -648,7 +649,8 @@ Future<void> _outputHuman(
           ? ', replaced by ${package.discontinuedReplacedBy}.'
           : '.';
       log.message(
-        '    Package ${package.name} has been discontinued$replacedByText',
+        '    Package ${package.name} has been discontinued$replacedByText '
+        'See https://dart.dev/go/discontinue.',
       );
     }
   }
@@ -717,10 +719,6 @@ Showing outdated packages$directoryDescription.
           final isLatest = versionDetails == packageDetails.latest;
           if (isLatest) {
             color = versionDetails == previous ? color = log.gray : null;
-            if (packageDetails.isDiscontinued &&
-                identical(versionDetails, packageDetails.latest)) {
-              suffix = ' (discontinued)';
-            }
           } else {
             color = log.red;
           }
@@ -735,6 +733,21 @@ Showing outdated packages$directoryDescription.
           ),
         );
         previous = versionDetails;
+      }
+      if (packageDetails.isDiscontinued == true) {
+        cols.add(
+          _MarkedVersionDetails(
+            // Dummy _VersionDetails instance with the purpose of adding the
+            // 'discontinued' information as the last column in the output.
+            _VersionDetails(
+              Pubspec(packageDetails.name, version: Version.none),
+              packageDetails.current!._id,
+              false,
+            ),
+            asDesired: true,
+            suffix: '(discontinued)',
+          ),
+        );
       }
       rows.add(cols);
     }
@@ -769,6 +782,8 @@ class _VersionDetails {
       suffix = ' (git)';
     } else if (_id.source is PathSource) {
       suffix = ' (path)';
+    } else if (version == Version.none) {
+      return suffix;
     }
     return '$version$suffix';
   }

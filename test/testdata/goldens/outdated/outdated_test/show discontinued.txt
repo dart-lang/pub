@@ -31,19 +31,19 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest                
+Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           1.0.0    1.0.0       1.0.0       1.0.0                 
-baz           1.0.0    1.0.0       1.0.0       1.0.0 (discontinued)  
-foo           1.2.3    1.2.3       1.2.3       1.2.3 (discontinued)  
+bar           1.0.0    1.0.0       1.0.0       1.0.0   
+baz           1.0.0    1.0.0       1.0.0       1.0.0   (discontinued)  
+foo           1.2.3    1.2.3       1.2.3       1.2.3   (discontinued)  
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 baz
-    Package baz has been discontinued, replaced by newbaz.
+    Package baz has been discontinued, replaced by newbaz. See https://dart.dev/go/discontinue.
 foo
-    Package foo has been discontinued.
+    Package foo has been discontinued. See https://dart.dev/go/discontinue.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
