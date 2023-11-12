@@ -358,7 +358,7 @@ void main() {
       )['packages'];
       expect(
         packages,
-        containsPair('foo', containsPair('dependency', 'direct main')),
+        containsPair('foo', containsPair('dependency', 'direct overridden')),
       );
       expect(
         packages,
@@ -366,7 +366,7 @@ void main() {
       );
       expect(
         packages,
-        containsPair('baz', containsPair('dependency', 'direct dev')),
+        containsPair('baz', containsPair('dependency', 'direct overridden')),
       );
       expect(
         packages,

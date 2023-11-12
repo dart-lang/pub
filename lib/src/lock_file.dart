@@ -469,14 +469,13 @@ ${yamlToString(data)}
 
   /// Returns the dependency classification for [package].
   String _dependencyType(String package) {
-    if (mainDependencies.contains(package)) return _directMain;
-    if (devDependencies.contains(package)) return _directDev;
-
     // If a package appears in `dependency_overrides` and another dependency
-    // section, the main section it appears in takes precedence.
+    // section, the overridden section it appears in takes precedence.
     if (overriddenDependencies.contains(package)) {
       return _directOverridden;
     }
+    if (mainDependencies.contains(package)) return _directMain;
+    if (devDependencies.contains(package)) return _directDev;
     return _transitive;
   }
 
