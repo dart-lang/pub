@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:math';
+
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -44,6 +46,10 @@ class SolveReport {
   ///
   /// Version list will not contain any retracted package versions.
   final Map<String, List<Version>> _availableVersions;
+
+  static const githubAdvisoriesPrefixUrl = 'https://github.com/advisories/';
+  static const maxAdvisoryFootnotesPerLine = 5;
+  final advisoriesMap = <int, String>{};
 
   SolveReport(
     this._type,
@@ -198,6 +204,7 @@ $contentHashesDocumentationUrl
         }
       }
       await reportDiscontinued();
+      reportAdvisories();
       reportOutdated();
     }
   }
@@ -282,12 +289,42 @@ $contentHashesDocumentationUrl
     }
   }
 
+  void reportAdvisories() {
+    if (advisoriesMap.isNotEmpty) {
+      message('Dependencies are affected by security advisories:');
+      for (var footnote = 0; footnote < advisoriesMap.length; footnote++) {
+        message(
+          '  [^$footnote]: $githubAdvisoriesPrefixUrl${advisoriesMap[footnote]}',
+        );
+      }
+    }
+  }
+
   static DependencyType dependencyType(LockFile lockFile, String name) =>
       lockFile.mainDependencies.contains(name)
           ? DependencyType.direct
           : lockFile.devDependencies.contains(name)
               ? DependencyType.dev
               : DependencyType.none;
+
+  String _constructAdvisoriesMessage(List<int> footnoteNumbers) {
+    if (footnoteNumbers.isNotEmpty) {
+      final advisoryString =
+          footnoteNumbers.length == 1 ? 'advisory' : 'advisories';
+      final buffer = StringBuffer('affected by $advisoryString: ');
+      buffer.write('[^${footnoteNumbers.first}]');
+      final end = min(maxAdvisoryFootnotesPerLine, footnoteNumbers.length);
+      for (final footnote in footnoteNumbers.getRange(1, end)) {
+        buffer.write(', [^$footnote]');
+      }
+
+      if (end < footnoteNumbers.length) {
+        buffer.write(', ... ');
+      }
+      return buffer.toString();
+    }
+    return '';
+  }
 
   /// Reports the results of the upgrade on the package named [name].
   ///
@@ -375,32 +412,57 @@ $contentHashesDocumentationUrl
         maxAge: Duration(days: 3),
       );
 
+      var messagePrefix = '(';
+      var hasAdvisory = false;
+      if (status.advisoriesUpdated != null) {
+        final advisories = await id.source.getAdvisoriesForPackageVersion(
+          id,
+          _cache,
+          Duration(days: 3),
+        );
+        hasAdvisory = advisories != null && advisories.isNotEmpty;
+        if (hasAdvisory) {
+          final advisoryFootnotes = <int>[];
+          for (final adv in advisories) {
+            advisoryFootnotes.add(advisoriesMap.length);
+            advisoriesMap[advisoriesMap.length] = adv.id;
+          }
+
+          messagePrefix =
+              '(${_constructAdvisoriesMessage(advisoryFootnotes)}, ';
+        }
+      }
+
       if (status.isRetracted) {
         if (newerStable) {
           message =
-              '(retracted, ${maxAll(versions, Version.prioritize)} available)';
+              '${messagePrefix}retracted, ${maxAll(versions, Version.prioritize)} available)';
         } else if (newId.version.isPreRelease && newerUnstable) {
-          message = '(retracted, ${maxAll(versions)} available)';
+          message = '${messagePrefix}retracted, ${maxAll(versions)} available)';
         } else {
-          message = '(retracted)';
+          message = '${messagePrefix}retracted)';
         }
       } else if (status.isDiscontinued &&
           [DependencyType.direct, DependencyType.dev]
               .contains(_rootPubspec.dependencyType(name))) {
         if (status.discontinuedReplacedBy == null) {
-          message = '(discontinued)';
+          message = '${messagePrefix}discontinued)';
         } else {
           message =
-              '(discontinued replaced by ${status.discontinuedReplacedBy})';
+              '${messagePrefix}discontinued replaced by ${status.discontinuedReplacedBy})';
         }
       } else if (newerStable) {
         // If there are newer stable versions, only show those.
-        message = '(${maxAll(versions, Version.prioritize)} available)';
+        message =
+            '$messagePrefix${maxAll(versions, Version.prioritize)} available)';
       } else if (
           // Only show newer prereleases for versions where a prerelease is
           // already chosen.
           newId.version.isPreRelease && newerUnstable) {
-        message = '(${maxAll(versions)} available)';
+        message = '$messagePrefix${maxAll(versions)} available)';
+      } else if (hasAdvisory) {
+        message =
+            messagePrefix.replaceRange(messagePrefix.length - 2, null, ')');
       }
     }
 

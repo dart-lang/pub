@@ -12,6 +12,7 @@ import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source/git.dart';
+import 'source/hosted.dart';
 import 'system_cache.dart';
 
 /// A source from which to get packages.
@@ -119,6 +120,22 @@ abstract class Source {
     Duration? maxAge,
     SystemCache cache,
   );
+
+  Future<List<Advisory>?>? getAdvisoriesForPackage(
+    PackageId id,
+    SystemCache cache,
+    Duration? maxAge,
+  ) {
+    return null;
+  }
+
+  Future<List<Advisory>?>? getAdvisoriesForPackageVersion(
+    PackageId id,
+    SystemCache cache,
+    Duration? maxAge,
+  ) {
+    return null;
+  }
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
@@ -234,9 +251,15 @@ class PackageStatus {
   final String? discontinuedReplacedBy;
   final bool isDiscontinued;
   final bool isRetracted;
+
+  /// The latest point in time at which a security advisory that affects this
+  /// package has been synchronized into pub, `null` if this package is not
+  /// affected by a security advisory.
+  final DateTime? advisoriesUpdated;
   PackageStatus({
     this.isDiscontinued = false,
     this.discontinuedReplacedBy,
     this.isRetracted = false,
+    this.advisoriesUpdated,
   });
 }
