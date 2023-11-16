@@ -537,6 +537,62 @@ class HostedSource extends CachedSource {
     return result;
   }
 
+  Future<_PackageAdvisories> _fetchAdvisories(
+    _RefAndCache refAndCache,
+  ) async {
+    final ref = refAndCache.ref;
+    final description = ref.description;
+    final cache = refAndCache.cache;
+
+    if (description is! HostedDescription) {
+      throw ArgumentError('Wrong source');
+    }
+
+    final packageName = description.packageName;
+    final hostedUrl = description.url;
+
+    final url = _listAdvisoriesUrl(ref);
+    log.io('Get security advisories from $url.');
+
+    final String bodyText;
+    final Map<String, dynamic> body;
+    final _PackageAdvisories result;
+    try {
+      bodyText = await withAuthenticatedClient(cache, Uri.parse(hostedUrl),
+          (client) async {
+        return await retryForHttp(
+            'fetching advisories for "$packageName" from "$url"', () async {
+          final request = http.Request('GET', url);
+          request.attachPubApiHeaders();
+          request.attachMetadataHeaders();
+          final response = await client.fetch(request);
+          return response.body;
+        });
+      });
+      final decoded = jsonDecode(bodyText);
+      if (decoded is! Map<String, dynamic>) {
+        throw FormatException('security advisories must be a mapping');
+      }
+      body = decoded;
+
+      result = _PackageAdvisories(
+        body['advisories'] as List,
+        body['advisoriesUpdated'] == null
+            ? null
+            : DateTime.parse(body['advisoriesUpdated'] as String),
+      );
+    } on Exception catch (error, stackTrace) {
+      _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
+    }
+
+    // Cache the response on disk.
+    // Don't cache overly big responses.
+    if (bodyText.length < 500 * 1024) {
+      await _cacheAdvisoriesResponse(body, ref, cache);
+    }
+    return result;
+  }
+
   /// An in-memory cache to store the cached version listing loaded from
   /// [_versionListingCachePath].
   ///
@@ -608,6 +664,29 @@ class HostedSource extends CachedSource {
       }
     }
     return null;
+  }
+
+  Future<void> _cacheAdvisoriesResponse(
+    Map<String, dynamic> body,
+    PackageRef ref,
+    SystemCache cache,
+  ) async {
+    final path = _advisoriesCachePath(ref, cache);
+    try {
+      ensureDir(p.dirname(path));
+
+      await writeTextFileAsync(
+        path,
+        jsonEncode(
+          <String, dynamic>{
+            ...body,
+          },
+        ),
+      );
+    } on io.IOException catch (e) {
+      // Not being able to write this cache is not fatal. Just move on...
+      log.fine('Failed writing cache file. $e');
+    }
   }
 
   /// Saves the (decoded) response from package-listing of [ref].
@@ -690,8 +769,8 @@ class HostedSource extends CachedSource {
     return versionListing.firstWhereOrNull((l) => l.version == version);
   }
 
-  // The path where the response from the package-listing api is cached.
-  String _versionListingCachePath(PackageRef ref, SystemCache cache) {
+  // The path to .cache directory inside the pub cache
+  String _cacheDirPath(PackageRef ref, SystemCache cache) {
     final description = ref.description;
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
@@ -703,11 +782,26 @@ class HostedSource extends CachedSource {
       cache.rootDirForSource(this),
       dir,
       _versionListingDirectory,
-      '${ref.name}-versions.json',
     );
   }
 
   static const _versionListingDirectory = '.cache';
+
+  // The path where the response from the package-listing api is cached.
+  String _versionListingCachePath(PackageRef ref, SystemCache cache) {
+    return p.join(
+      _cacheDirPath(ref, cache),
+      '${ref.name}-versions.json',
+    );
+  }
+
+  // The path where the response from the advisories api is cached.
+  String _advisoriesCachePath(PackageRef ref, SystemCache cache) {
+    return p.join(
+      _cacheDirPath(ref, cache),
+      '${ref.name}-advisories.json',
+    );
+  }
 
   /// Downloads a list of all versions of a package that are available from the
   /// site.
@@ -768,15 +862,29 @@ class HostedSource extends CachedSource {
         .toList();
   }
 
-  /// Parses [description] into its server and package name components, then
-  /// converts that to a Uri for listing versions of the given package.
-  Uri _listVersionsUrl(PackageRef ref) {
+  /// Parses [ref] into its hosted description and package name components.
+  (HostedDescription, String) _parseRef(PackageRef ref) {
     final description = ref.description;
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
     }
     final package = Uri.encodeComponent(ref.name);
+    return (description, package);
+  }
+
+  /// Parses [ref] and computes the api url for listing versions of the given
+  /// package.
+  Uri _listVersionsUrl(PackageRef ref) {
+    final (description, package) = _parseRef(ref);
     return Uri.parse(description.url).resolve('api/packages/$package');
+  }
+
+  /// Parses [ref] and computes the api url for getting security advisories for
+  /// a given package.
+  Uri _listAdvisoriesUrl(PackageRef ref) {
+    final (description, package) = _parseRef(ref);
+    return Uri.parse(description.url)
+        .resolve('api/packages/$package/advisories');
   }
 
   /// Retrieves the pubspec for a specific version of a package that is
@@ -1502,6 +1610,15 @@ class _VersionInfo {
     this.status,
     this.archiveSha256,
   );
+}
+
+/// Information about advisories affecting a package retrieved from
+/// /api/packages/$package/advisories
+class _PackageAdvisories {
+  final DateTime? advisoriesUpdated;
+  final List advisories;
+
+  _PackageAdvisories(this.advisories, this.advisoriesUpdated);
 }
 
 /// Given a URL, returns a "normalized" string to be used as a directory name
