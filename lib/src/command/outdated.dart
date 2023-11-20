@@ -235,14 +235,16 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         latestIsOverridden = true;
       }
 
-      final packageStatus = await current?.source.status(
+      final currentStatus = await current?.source.status(
         current.toRef(),
         current.version,
         cache,
       );
       final discontinued =
-          packageStatus == null ? false : packageStatus.isDiscontinued;
-      final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
+          currentStatus == null ? false : currentStatus.isDiscontinued;
+      final discontinuedReplacedBy = currentStatus?.discontinuedReplacedBy;
+      final isCurrentRetracted =
+          currentStatus == null ? false : currentStatus.isRetracted;
 
       final currentVersionDetails = await _describeVersion(
         current,
@@ -275,6 +277,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         kind: _kind(name, entrypoint, nonDevDependencies),
         isDiscontinued: discontinued,
         discontinuedReplacedBy: discontinuedReplacedBy,
+        isCurrentRetracted: isCurrentRetracted,
         isLatest: isLatest,
       );
     }
@@ -454,6 +457,7 @@ Future<void> _outputJson(
               'package': packageDetails.name,
               'kind': kindString(packageDetails.kind),
               'isDiscontinued': packageDetails.isDiscontinued,
+              'isCurrentRetracted': packageDetails.isCurrentRetracted,
               'current': markedRows[packageDetails]![0].toJson(),
               'upgradable': markedRows[packageDetails]![1].toJson(),
               'resolvable': markedRows[packageDetails]![2].toJson(),
@@ -640,17 +644,28 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
-  if (rows.any((package) => package.isDiscontinued)) {
+  if (rows
+      .any((package) => package.isDiscontinued || package.isCurrentRetracted)) {
     log.message('\n');
-    for (var package in rows.where((package) => package.isDiscontinued)) {
+    for (var package in rows.where(
+      (package) => package.isDiscontinued || package.isCurrentRetracted,
+    )) {
       log.message(log.bold(package.name));
-      final replacedByText = package.discontinuedReplacedBy != null
-          ? ', replaced by ${package.discontinuedReplacedBy}.'
-          : '.';
-      log.message(
-        '    Package ${package.name} has been discontinued$replacedByText '
-        'See https://dart.dev/go/package-discontinue',
-      );
+      if (package.isDiscontinued) {
+        final replacedByText = package.discontinuedReplacedBy != null
+            ? ', replaced by ${package.discontinuedReplacedBy}.'
+            : '.';
+        log.message(
+          '    Package ${package.name} has been discontinued$replacedByText '
+          'See https://dart.dev/go/package-discontinue',
+        );
+      }
+      if (package.isCurrentRetracted) {
+        log.message(
+          '    Version ${package.current!._id.version} is retracted. '
+          'See https://dart.dev/go/package-retraction',
+        );
+      }
     }
   }
 }
@@ -716,10 +731,16 @@ Showing outdated packages$directoryDescription.
         String? suffix;
         if (versionDetails != null) {
           final isLatest = versionDetails == packageDetails.latest;
+          final isCurrent = versionDetails == packageDetails.current;
           if (isLatest) {
             color = versionDetails == previous ? color = log.gray : null;
           } else {
             color = log.red;
+            if (isCurrent) {
+              if (packageDetails.isCurrentRetracted) {
+                suffix = ' (retracted)';
+              }
+            }
           }
           prefix = isLatest ? '' : '*';
         }
@@ -804,6 +825,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final _DependencyKind kind;
   final bool isDiscontinued;
   final String? discontinuedReplacedBy;
+  final bool isCurrentRetracted;
   final bool isLatest;
 
   _PackageDetails({
@@ -815,6 +837,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     required this.kind,
     required this.isDiscontinued,
     required this.discontinuedReplacedBy,
+    required this.isCurrentRetracted,
     required this.isLatest,
   });
 
@@ -835,6 +858,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
       'latest': latest?.toJson(),
       'isDiscontinued': isDiscontinued,
       'discontinuedReplacedBy': discontinuedReplacedBy,
+      'isRetracted': isCurrentRetracted,
     };
   }
 }
