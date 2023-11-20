@@ -8,7 +8,6 @@ import 'dart:math';
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as path;
-import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -650,7 +649,7 @@ Future<void> _outputHuman(
           : '.';
       log.message(
         '    Package ${package.name} has been discontinued$replacedByText '
-        'See https://dart.dev/go/package-discontinue.',
+        'See https://dart.dev/go/package-discontinue',
       );
     }
   }
@@ -660,7 +659,7 @@ abstract class _Mode {
   /// Analyzes the [_PackageDetails] according to a --mode and outputs a
   /// corresponding list of the versions
   /// [current, upgradable, resolvable, latest].
-  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
+  Future<List<List<_Details>>> markVersionDetails(
     List<_PackageDetails> packageDetails,
   );
 
@@ -699,12 +698,12 @@ Showing outdated packages$directoryDescription.
   String get allSafe => 'all dependencies are up-to-date.';
 
   @override
-  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
+  Future<List<List<_Details>>> markVersionDetails(
     List<_PackageDetails> packages,
   ) async {
-    final rows = <List<_MarkedVersionDetails>>[];
+    final rows = <List<_Details>>[];
     for (final packageDetails in packages) {
-      final cols = <_MarkedVersionDetails>[];
+      final cols = <_Details>[];
       _VersionDetails? previous;
       for (final versionDetails in [
         packageDetails.current,
@@ -735,19 +734,7 @@ Showing outdated packages$directoryDescription.
         previous = versionDetails;
       }
       if (packageDetails.isDiscontinued == true) {
-        cols.add(
-          _MarkedVersionDetails(
-            // Dummy _VersionDetails instance with the purpose of adding the
-            // 'discontinued' information as the last column in the output.
-            _VersionDetails(
-              Pubspec(packageDetails.name, version: Version.none),
-              packageDetails.current!._id,
-              false,
-            ),
-            asDesired: true,
-            suffix: '(discontinued)',
-          ),
-        );
+        cols.add(_SimpleDetails('(discontinued)'));
       }
       rows.add(cols);
     }
@@ -782,8 +769,6 @@ class _VersionDetails {
       suffix = ' (git)';
     } else if (_id.source is PathSource) {
       suffix = ' (path)';
-    } else if (version == Version.none) {
-      return suffix;
     }
     return '$version$suffix';
   }
@@ -894,7 +879,24 @@ _FormattedString _format(
   return _FormattedString(value, format: format, prefix: prefix);
 }
 
-class _MarkedVersionDetails {
+abstract class _Details {
+  _FormattedString toHuman();
+  Object? toJson();
+}
+
+class _SimpleDetails implements _Details {
+  final String details;
+
+  _SimpleDetails(this.details);
+
+  @override
+  _FormattedString toHuman() => _FormattedString(details);
+
+  @override
+  Object? toJson() => null;
+}
+
+class _MarkedVersionDetails implements _Details {
   final MapEntry<String, Object>? _jsonExplanation;
   final _VersionDetails? _versionDetails;
   final String Function(String)? _format;
@@ -912,6 +914,7 @@ class _MarkedVersionDetails {
         _suffix = suffix,
         _jsonExplanation = jsonExplanation;
 
+  @override
   _FormattedString toHuman() => _FormattedString(
         _versionDetails?.describe ?? '-',
         format: _format,
@@ -919,6 +922,7 @@ class _MarkedVersionDetails {
         suffix: _suffix,
       );
 
+  @override
   Object? toJson() {
     if (_versionDetails == null) return null;
 
