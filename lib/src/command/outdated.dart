@@ -244,27 +244,38 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           packageStatus == null ? false : packageStatus.isDiscontinued;
       final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
 
+      final currentVersionDetails = await _describeVersion(
+        current,
+        entrypoint.root.pubspec.dependencyOverrides.containsKey(name),
+      );
+
+      final upgradableVersionDetails = await _describeVersion(
+        upgradable,
+        upgradablePubspec.dependencyOverrides.containsKey(name),
+      );
+
+      final resolvableVersionDetails = await _describeVersion(
+        resolvable,
+        resolvablePubspec.dependencyOverrides.containsKey(name),
+      );
+
+      final latestVersionDetails = await _describeVersion(
+        latest,
+        latestIsOverridden,
+      );
+
+      final isLatest = currentVersionDetails == latestVersionDetails;
+
       return _PackageDetails(
-        name,
-        await _describeVersion(
-          current,
-          entrypoint.root.pubspec.dependencyOverrides.containsKey(name),
-        ),
-        await _describeVersion(
-          upgradable,
-          upgradablePubspec.dependencyOverrides.containsKey(name),
-        ),
-        await _describeVersion(
-          resolvable,
-          resolvablePubspec.dependencyOverrides.containsKey(name),
-        ),
-        await _describeVersion(
-          latest,
-          latestIsOverridden,
-        ),
-        _kind(name, entrypoint, nonDevDependencies),
-        discontinued,
-        discontinuedReplacedBy,
+        name: name,
+        current: currentVersionDetails,
+        upgradable: upgradableVersionDetails,
+        resolvable: resolvableVersionDetails,
+        latest: latestVersionDetails,
+        kind: _kind(name, entrypoint, nonDevDependencies),
+        isDiscontinued: discontinued,
+        discontinuedReplacedBy: discontinuedReplacedBy,
+        isLatest: isLatest,
       );
     }
 
@@ -416,7 +427,7 @@ Future<void> _outputJson(
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
   if (!showAll) {
-    rows.removeWhere((row) => markedRows[row]![0].asDesired);
+    rows.removeWhere((row) => row.isLatest);
   }
   if (!includeDevDependencies) {
     rows.removeWhere(
@@ -480,7 +491,7 @@ Future<void> _outputHuman(
       ];
 
   if (!showAll) {
-    rows.removeWhere((row) => markedRows[row]![0].asDesired);
+    rows.removeWhere((row) => row.isLatest);
   }
   if (rows.isEmpty) {
     log.message(mode.foundNoBadText);
@@ -702,12 +713,10 @@ Showing outdated packages$directoryDescription.
         String Function(String)? color;
         String? prefix;
         String? suffix;
-        var asDesired = false;
         if (versionDetails != null) {
           final isLatest = versionDetails == packageDetails.latest;
           if (isLatest) {
             color = versionDetails == previous ? color = log.gray : null;
-            asDesired = true;
             if (packageDetails.isDiscontinued &&
                 identical(versionDetails, packageDetails.latest)) {
               suffix = ' (discontinued)';
@@ -720,7 +729,6 @@ Showing outdated packages$directoryDescription.
         cols.add(
           _MarkedVersionDetails(
             versionDetails,
-            asDesired: asDesired,
             format: color,
             prefix: prefix,
             suffix: suffix,
@@ -796,17 +804,19 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final _DependencyKind kind;
   final bool isDiscontinued;
   final String? discontinuedReplacedBy;
+  final bool isLatest;
 
-  _PackageDetails(
-    this.name,
-    this.current,
-    this.upgradable,
-    this.resolvable,
-    this.latest,
-    this.kind,
-    this.isDiscontinued,
-    this.discontinuedReplacedBy,
-  );
+  _PackageDetails({
+    required this.name,
+    required this.current,
+    required this.upgradable,
+    required this.resolvable,
+    required this.latest,
+    required this.kind,
+    required this.isDiscontinued,
+    required this.discontinuedReplacedBy,
+    required this.isLatest,
+  });
 
   @override
   int compareTo(_PackageDetails other) {
@@ -876,16 +886,8 @@ class _MarkedVersionDetails {
   final String? _prefix;
   final String? _suffix;
 
-  /// This should be true if the mode creating this considers the version as
-  /// "good".
-  ///
-  /// By default only packages with a current version that is not as desired
-  /// will be shown in the report.
-  final bool asDesired;
-
   _MarkedVersionDetails(
     this._versionDetails, {
-    required this.asDesired,
     String Function(String)? format,
     String? prefix = '',
     String? suffix = '',
