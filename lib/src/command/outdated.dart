@@ -648,7 +648,8 @@ Future<void> _outputHuman(
           ? ', replaced by ${package.discontinuedReplacedBy}.'
           : '.';
       log.message(
-        '    Package ${package.name} has been discontinued$replacedByText',
+        '    Package ${package.name} has been discontinued$replacedByText '
+        'See https://dart.dev/go/package-discontinue',
       );
     }
   }
@@ -658,7 +659,7 @@ abstract class _Mode {
   /// Analyzes the [_PackageDetails] according to a --mode and outputs a
   /// corresponding list of the versions
   /// [current, upgradable, resolvable, latest].
-  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
+  Future<List<List<_Details>>> markVersionDetails(
     List<_PackageDetails> packageDetails,
   );
 
@@ -697,12 +698,12 @@ Showing outdated packages$directoryDescription.
   String get allSafe => 'all dependencies are up-to-date.';
 
   @override
-  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
+  Future<List<List<_Details>>> markVersionDetails(
     List<_PackageDetails> packages,
   ) async {
-    final rows = <List<_MarkedVersionDetails>>[];
+    final rows = <List<_Details>>[];
     for (final packageDetails in packages) {
-      final cols = <_MarkedVersionDetails>[];
+      final cols = <_Details>[];
       _VersionDetails? previous;
       for (final versionDetails in [
         packageDetails.current,
@@ -717,10 +718,6 @@ Showing outdated packages$directoryDescription.
           final isLatest = versionDetails == packageDetails.latest;
           if (isLatest) {
             color = versionDetails == previous ? color = log.gray : null;
-            if (packageDetails.isDiscontinued &&
-                identical(versionDetails, packageDetails.latest)) {
-              suffix = ' (discontinued)';
-            }
           } else {
             color = log.red;
           }
@@ -735,6 +732,9 @@ Showing outdated packages$directoryDescription.
           ),
         );
         previous = versionDetails;
+      }
+      if (packageDetails.isDiscontinued == true) {
+        cols.add(_SimpleDetails('(discontinued)'));
       }
       rows.add(cols);
     }
@@ -879,7 +879,24 @@ _FormattedString _format(
   return _FormattedString(value, format: format, prefix: prefix);
 }
 
-class _MarkedVersionDetails {
+abstract class _Details {
+  _FormattedString toHuman();
+  Object? toJson();
+}
+
+class _SimpleDetails implements _Details {
+  final String details;
+
+  _SimpleDetails(this.details);
+
+  @override
+  _FormattedString toHuman() => _FormattedString(details);
+
+  @override
+  Object? toJson() => null;
+}
+
+class _MarkedVersionDetails implements _Details {
   final MapEntry<String, Object>? _jsonExplanation;
   final _VersionDetails? _versionDetails;
   final String Function(String)? _format;
@@ -897,6 +914,7 @@ class _MarkedVersionDetails {
         _suffix = suffix,
         _jsonExplanation = jsonExplanation;
 
+  @override
   _FormattedString toHuman() => _FormattedString(
         _versionDetails?.describe ?? '-',
         format: _format,
@@ -904,6 +922,7 @@ class _MarkedVersionDetails {
         suffix: _suffix,
       );
 
+  @override
   Object? toJson() {
     if (_versionDetails == null) return null;
 
