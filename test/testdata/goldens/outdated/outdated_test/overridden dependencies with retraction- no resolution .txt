@@ -8,7 +8,7 @@ $ pub outdated --json
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": true,
+      "isCurrentRetracted": true,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -29,7 +29,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": false,
+      "isCurrentRetracted": false,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -166,7 +166,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": true,
+      "isCurrentRetracted": true,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -187,7 +187,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": false,
+      "isCurrentRetracted": false,
       "current": {
         "version": "1.0.0",
         "overridden": true

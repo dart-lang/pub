@@ -235,16 +235,16 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         latestIsOverridden = true;
       }
 
-      final packageStatus = await current?.source.status(
+      final currentStatus = await current?.source.status(
         current.toRef(),
         current.version,
         cache,
       );
       final discontinued =
-          packageStatus == null ? false : packageStatus.isDiscontinued;
-      final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
-      final retracted =
-          packageStatus == null ? false : packageStatus.isRetracted;
+          currentStatus == null ? false : currentStatus.isDiscontinued;
+      final discontinuedReplacedBy = currentStatus?.discontinuedReplacedBy;
+      final isCurrentRetracted =
+          currentStatus == null ? false : currentStatus.isRetracted;
 
       final currentVersionDetails = await _describeVersion(
         current,
@@ -277,7 +277,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         kind: _kind(name, entrypoint, nonDevDependencies),
         isDiscontinued: discontinued,
         discontinuedReplacedBy: discontinuedReplacedBy,
-        isRetracted: retracted,
+        isCurrentRetracted: isCurrentRetracted,
         isLatest: isLatest,
       );
     }
@@ -457,7 +457,7 @@ Future<void> _outputJson(
               'package': packageDetails.name,
               'kind': kindString(packageDetails.kind),
               'isDiscontinued': packageDetails.isDiscontinued,
-              'isRetracted': packageDetails.isRetracted,
+              'isCurrentRetracted': packageDetails.isCurrentRetracted,
               'current': markedRows[packageDetails]![0].toJson(),
               'upgradable': markedRows[packageDetails]![1].toJson(),
               'resolvable': markedRows[packageDetails]![2].toJson(),
@@ -644,10 +644,11 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
-  if (rows.any((package) => package.isDiscontinued || package.isRetracted)) {
+  if (rows
+      .any((package) => package.isDiscontinued || package.isCurrentRetracted)) {
     log.message('\n');
-    for (var package in rows
-        .where((package) => package.isDiscontinued || package.isRetracted)) {
+    for (var package in rows.where(
+        (package) => package.isDiscontinued || package.isCurrentRetracted)) {
       log.message(log.bold(package.name));
       if (package.isDiscontinued) {
         final replacedByText = package.discontinuedReplacedBy != null
@@ -658,7 +659,7 @@ Future<void> _outputHuman(
           'See https://dart.dev/go/package-discontinue',
         );
       }
-      if (package.isRetracted) {
+      if (package.isCurrentRetracted) {
         log.message(
           '    Version ${package.current!._id.version} is retracted. '
           'See https://dart.dev/go/package-retraction',
@@ -735,7 +736,7 @@ Showing outdated packages$directoryDescription.
           } else {
             color = log.red;
             if (isCurrent) {
-              if (packageDetails.isRetracted) {
+              if (packageDetails.isCurrentRetracted) {
                 suffix = ' (retracted)';
               }
             }
@@ -823,7 +824,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final _DependencyKind kind;
   final bool isDiscontinued;
   final String? discontinuedReplacedBy;
-  final bool isRetracted;
+  final bool isCurrentRetracted;
   final bool isLatest;
 
   _PackageDetails({
@@ -835,7 +836,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     required this.kind,
     required this.isDiscontinued,
     required this.discontinuedReplacedBy,
-    required this.isRetracted,
+    required this.isCurrentRetracted,
     required this.isLatest,
   });
 
@@ -856,7 +857,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
       'latest': latest?.toJson(),
       'isDiscontinued': isDiscontinued,
       'discontinuedReplacedBy': discontinuedReplacedBy,
-      'isRetracted': isRetracted,
+      'isRetracted': isCurrentRetracted,
     };
   }
 }

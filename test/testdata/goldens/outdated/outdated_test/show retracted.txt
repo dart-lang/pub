@@ -8,7 +8,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": true,
+      "isCurrentRetracted": true,
       "current": {
         "version": "1.0.0"
       },
@@ -143,7 +143,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "isRetracted": true,
+      "isCurrentRetracted": true,
       "current": {
         "version": "1.0.0"
       },
