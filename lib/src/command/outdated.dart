@@ -648,7 +648,8 @@ Future<void> _outputHuman(
       .any((package) => package.isDiscontinued || package.isCurrentRetracted)) {
     log.message('\n');
     for (var package in rows.where(
-        (package) => package.isDiscontinued || package.isCurrentRetracted)) {
+      (package) => package.isDiscontinued || package.isCurrentRetracted,
+    )) {
       log.message(log.bold(package.name));
       if (package.isDiscontinued) {
         final replacedByText = package.discontinuedReplacedBy != null
