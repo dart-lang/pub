@@ -191,6 +191,27 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
+  testWithGolden("don't show retracted", (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+    builder.retractPackageVersion('foo', '1.0.0');
+    builder.serve('foo', '1.2.0');
+    await pubUpgrade();
+    await ctx.runOutdatedTests();
+  });
+
   testWithGolden('show discontinued and retracted', (ctx) async {
     final builder = await servePackages();
     builder
