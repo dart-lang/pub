@@ -37,7 +37,7 @@ You are already using the newest resolvable versions listed in the 'Resolvable' 
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
-    Package foo has been discontinued. See https://dart.dev/go/package-discontinue.
+    Package foo has been discontinued. See https://dart.dev/go/package-discontinue
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -54,7 +54,7 @@ You are already using the newest resolvable versions listed in the 'Resolvable' 
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
-    Package foo has been discontinued. See https://dart.dev/go/package-discontinue.
+    Package foo has been discontinued. See https://dart.dev/go/package-discontinue
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -73,9 +73,9 @@ You are already using the newest resolvable versions listed in the 'Resolvable' 
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 baz
-    Package baz has been discontinued, replaced by newbaz. See https://dart.dev/go/package-discontinue.
+    Package baz has been discontinued, replaced by newbaz. See https://dart.dev/go/package-discontinue
 foo
-    Package foo has been discontinued. See https://dart.dev/go/package-discontinue.
+    Package foo has been discontinued. See https://dart.dev/go/package-discontinue
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -92,7 +92,7 @@ You are already using the newest resolvable versions listed in the 'Resolvable' 
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
-    Package foo has been discontinued. See https://dart.dev/go/package-discontinue.
+    Package foo has been discontinued. See https://dart.dev/go/package-discontinue
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -109,7 +109,7 @@ You are already using the newest resolvable versions listed in the 'Resolvable' 
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
-    Package foo has been discontinued. See https://dart.dev/go/package-discontinue.
+    Package foo has been discontinued. See https://dart.dev/go/package-discontinue
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -126,7 +126,7 @@ You are already using the newest resolvable versions listed in the 'Resolvable' 
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
 foo
-    Package foo has been discontinued. See https://dart.dev/go/package-discontinue.
+    Package foo has been discontinued. See https://dart.dev/go/package-discontinue
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
