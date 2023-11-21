@@ -107,6 +107,10 @@ Consider one of:
 }
 
 extension on Version {
-  Version withoutBuild() =>
-      Version(major, minor, patch, pre: preRelease.join('.'));
+  Version withoutBuild() => Version(
+        major,
+        minor,
+        patch,
+        pre: preRelease.isEmpty ? null : preRelease.join('.'),
+      );
 }
