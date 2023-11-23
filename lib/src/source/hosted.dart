@@ -389,6 +389,9 @@ class HostedSource extends CachedSource {
       throw FormatException('versions must be a list');
     }
     return versions.map((map) {
+      if (map is! Map) {
+        throw FormatException('versions list element must be a map');
+      }
       final pubspecData = map['pubspec'];
       if (pubspecData is! Map) {
         throw FormatException('pubspec must be a map');
@@ -492,7 +495,7 @@ class HostedSource extends CachedSource {
 
     // Cache the response on disk.
     // Don't cache overly big responses.
-    if (bodyText.length < 500 * 1024) {
+    if (bodyText.length < 1000 * 1024) {
       await _cacheVersionListingResponse(body, ref, cache);
     }
     return result;
