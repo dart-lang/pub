@@ -143,6 +143,16 @@ The latest published version is 2.0.2.
     await expectValidation();
   });
 
+  test('Releasing a build-release causes no hint', () async {
+    final server = await servePackages();
+    server.serve(
+      'test_pkg',
+      '1.0.0',
+    );
+    await d.validPackage(version: '1.0.0+0').create();
+    await expectValidation();
+  });
+
   group('should consider a package valid if it', () {
     test('is opting in to null-safety with previous null-safe version',
         () async {
