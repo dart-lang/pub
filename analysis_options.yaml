@@ -20,7 +20,6 @@ linter:
     - avoid_print
     - avoid_private_typedef_functions
     - avoid_redundant_argument_values
-    - avoid_returning_null_for_future
     - avoid_unused_constructor_parameters
     - avoid_void_async
     - cancel_subscriptions
