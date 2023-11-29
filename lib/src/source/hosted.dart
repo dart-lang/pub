@@ -419,15 +419,15 @@ class HostedSource extends CachedSource {
       if (retracted is! bool) {
         throw FormatException('retracted must be a bool');
       }
+      DateTime? advisoriesDate;
       final advisoriesUpdated = body['advisoriesUpdated'];
-      if (advisoriesUpdated != null && advisoriesUpdated is! String) {
-        throw FormatException('advisoriesUpdated must be a String');
+      if (advisoriesUpdated != null) {
+        if (advisoriesUpdated is! String) {
+          throw FormatException('advisoriesUpdated must be a String');
+        }
+        advisoriesDate = DateTime.parse(advisoriesUpdated);
       }
 
-      DateTime? advisoriesDate;
-      if (advisoriesUpdated != null) {
-        advisoriesDate = DateTime.parse(advisoriesUpdated as String);
-      }
       final status = PackageStatus(
         isDiscontinued: isDiscontinued,
         discontinuedReplacedBy: replacedBy,
@@ -560,7 +560,7 @@ class HostedSource extends CachedSource {
     final hostedUrl = description.url;
 
     final url = _listAdvisoriesUrl(ref);
-    log.io('Get security advisories from $url.');
+    log.io('Fetching security advisories from $url.');
 
     final String bodyText;
     final Map<String, dynamic> body;
@@ -582,9 +582,13 @@ class HostedSource extends CachedSource {
         throw FormatException('security advisories must be a mapping');
       }
       body = decoded;
-      result = _parseAdvisories(decoded, ref.name);
+      result = _extractAdvisoryDetailsForPackage(decoded, ref.name);
     } on FormatException catch (error, stackTrace) {
-      _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
+      log.warning(
+          'Failed to fetch advisories for $packageName from $hostedUrl.\n'
+          '$error\n'
+          '${Chain.forTrace(stackTrace)}');
+      return null;
     }
 
     // Cache the response on disk.
@@ -595,10 +599,14 @@ class HostedSource extends CachedSource {
     return result;
   }
 
-  List<Advisory>? _parseAdvisories(Map body, String packageName) {
-    final advisoryIds = <String>[];
-    final advisoriesResult = <Advisory>[];
-    final affectedVersions = <String, List<String>>{};
+  /// Extracts relevant details from [body] about advisories affecting the
+  /// package named [packageName]. The details are used when generating output
+  /// for runs such as `dart pub upgrade`.
+  List<Advisory>? _extractAdvisoryDetailsForPackage(
+    Map body,
+    String packageName,
+  ) {
+    final advisoriesList = <Advisory>[];
 
     final advisories = body['advisories'];
     if (advisories is! List) {
@@ -619,7 +627,6 @@ class HostedSource extends CachedSource {
       if (id is! String) {
         throw FormatException('id must be a String');
       }
-      advisoryIds.add(id);
 
       final affectedPackages = advisory['affected'];
       if (affectedPackages is! List) {
@@ -653,22 +660,22 @@ class HostedSource extends CachedSource {
           'Advisory $id does not contain $packageName among its affected packages.',
         );
       }
-
+      var affectedVersions = <String>[];
       final versions = affectedPkg['versions'];
       if (versions is! List) {
         throw FormatException('package versions must be a list');
       }
 
-      if (versions.any((element) => element is! String)) {
-        throw FormatException('package version elements must be a string');
+      for (final v in versions) {
+        if (v is! String) {
+          throw FormatException('package version elements must be a string');
+        }
+        affectedVersions.add(v);
       }
-
-      advisoriesResult
-          .add(Advisory(id, [...versions.map((e) => e.toString())]));
-      affectedVersions[id] = [...versions.map((e) => e.toString())];
+      advisoriesList.add(Advisory(id, affectedVersions));
     }
 
-    return advisoriesResult;
+    return advisoriesList;
   }
 
   Future<List<Advisory>?> _getAdvisories(
@@ -687,6 +694,7 @@ class HostedSource extends CachedSource {
 
       if (stat.type == io.FileSystemEntityType.file) {
         if (advisoriesUpdated.isAfter(stat.modified)) {
+          tryDeleteEntry(advisoriesCachePath);
           return null;
         }
 
@@ -708,13 +716,14 @@ class HostedSource extends CachedSource {
             // too old
             tryDeleteEntry(advisoriesCachePath);
           } else {
-            return _parseAdvisories(doc, id.toRef().name);
+            return _extractAdvisoryDetailsForPackage(doc, id.toRef().name);
           }
         } on io.IOException {
           // Could not read the file. Delete if it exists.
           tryDeleteEntry(advisoriesCachePath);
-        } on FormatException {
+        } on FormatException catch (e) {
           tryDeleteEntry(advisoriesCachePath);
+          log.fine('Failed to read cached advisores: $e');
         }
       }
       return null;
@@ -1012,8 +1021,10 @@ class HostedSource extends CachedSource {
     if (advisories == null) return null;
 
     return advisories
-        .where((advisory) =>
-            advisory.affectedVersions.contains(id.version.canonicalizedVersion))
+        .where(
+          (advisory) => advisory.affectedVersions
+              .contains(id.version.canonicalizedVersion),
+        )
         .toList();
   }
 
@@ -1767,16 +1778,8 @@ class _VersionInfo {
   );
 }
 
-/// Information about advisories affecting a package retrieved from
-/// /api/packages/$package/advisories
-class PackageAdvisories {
-  final Map<String, List<String>> affectedVersions;
-
-  PackageAdvisories(
-    this.affectedVersions,
-  );
-}
-
+/// Information about a security advisory affecting a package. The information
+/// is retrieved from /api/packages/$package/advisories
 class Advisory {
   String id;
   List<String> affectedVersions;

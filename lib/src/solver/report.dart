@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:math';
-
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -49,7 +47,7 @@ class SolveReport {
 
   static const githubAdvisoriesPrefixUrl = 'https://github.com/advisories/';
   static const maxAdvisoryFootnotesPerLine = 5;
-  final advisoriesMap = <int, String>{};
+  final advisoriesIds = <String>[];
 
   SolveReport(
     this._type,
@@ -290,11 +288,11 @@ $contentHashesDocumentationUrl
   }
 
   void reportAdvisories() {
-    if (advisoriesMap.isNotEmpty) {
+    if (advisoriesIds.isNotEmpty) {
       message('Dependencies are affected by security advisories:');
-      for (var footnote = 0; footnote < advisoriesMap.length; footnote++) {
+      for (var footnote = 0; footnote < advisoriesIds.length; footnote++) {
         message(
-          '  [^$footnote]: $githubAdvisoriesPrefixUrl${advisoriesMap[footnote]}',
+          '  [^$footnote]: $githubAdvisoriesPrefixUrl${advisoriesIds[footnote]}',
         );
       }
     }
@@ -307,23 +305,24 @@ $contentHashesDocumentationUrl
               ? DependencyType.dev
               : DependencyType.none;
 
-  String _constructAdvisoriesMessage(List<int> footnoteNumbers) {
-    if (footnoteNumbers.isNotEmpty) {
-      final advisoryString =
-          footnoteNumbers.length == 1 ? 'advisory' : 'advisories';
+  String? _constructAdvisoriesMessage(
+    List<int> footnotes,
+    bool advisoriesTruncated,
+  ) {
+    if (footnotes.isNotEmpty) {
+      final advisoryString = footnotes.length == 1 ? 'advisory' : 'advisories';
       final buffer = StringBuffer('affected by $advisoryString: ');
-      buffer.write('[^${footnoteNumbers.first}]');
-      final end = min(maxAdvisoryFootnotesPerLine, footnoteNumbers.length);
-      for (final footnote in footnoteNumbers.getRange(1, end)) {
+      buffer.write('[^${footnotes.first}]');
+      for (final footnote in footnotes.getRange(1, footnotes.length)) {
         buffer.write(', [^$footnote]');
       }
 
-      if (end < footnoteNumbers.length) {
-        buffer.write(', ... ');
+      if (advisoriesTruncated) {
+        buffer.write(', ...');
       }
       return buffer.toString();
     }
-    return '';
+    return null;
   }
 
   /// Reports the results of the upgrade on the package named [name].
@@ -412,58 +411,71 @@ $contentHashesDocumentationUrl
         maxAge: Duration(days: 3),
       );
 
-      var messagePrefix = '(';
-      var hasAdvisory = false;
-      if (status.advisoriesUpdated != null) {
-        final advisories = await id.source.getAdvisoriesForPackageVersion(
-          id,
-          _cache,
-          Duration(days: 3),
-        );
-        hasAdvisory = advisories != null && advisories.isNotEmpty;
-        if (hasAdvisory) {
-          final advisoryFootnotes = <int>[];
-          for (final adv in advisories) {
-            advisoryFootnotes.add(advisoriesMap.length);
-            advisoriesMap[advisoriesMap.length] = adv.id;
-          }
+      final notes = <String>[];
 
-          messagePrefix =
-              '(${_constructAdvisoriesMessage(advisoryFootnotes)}, ';
+      final advisories = await id.source.getAdvisoriesForPackageVersion(
+        id,
+        _cache,
+        Duration(days: 3),
+      );
+
+      if (advisories != null && advisories.isNotEmpty) {
+        final advisoryFootnotes = <int>[];
+        for (final adv in advisories.take(maxAdvisoryFootnotesPerLine)) {
+          advisoryFootnotes.add(advisoriesIds.length);
+          advisoriesIds.add(adv.id);
+        }
+
+        final advisoriesMessage = _constructAdvisoriesMessage(
+          advisoryFootnotes,
+          advisories.length > maxAdvisoryFootnotesPerLine,
+        );
+
+        if (advisoriesMessage != null) {
+          notes.add(advisoriesMessage);
         }
       }
-
       if (status.isRetracted) {
         if (newerStable) {
-          message =
-              '${messagePrefix}retracted, ${maxAll(versions, Version.prioritize)} available)';
+          notes.add(
+            'retracted, ${maxAll(versions, Version.prioritize)} available',
+          );
         } else if (newId.version.isPreRelease && newerUnstable) {
-          message = '${messagePrefix}retracted, ${maxAll(versions)} available)';
+          notes.add(
+            'retracted, ${maxAll(versions)} available',
+          );
         } else {
-          message = '${messagePrefix}retracted)';
+          notes.add(
+            'retracted',
+          );
         }
       } else if (status.isDiscontinued &&
           [DependencyType.direct, DependencyType.dev]
               .contains(_rootPubspec.dependencyType(name))) {
         if (status.discontinuedReplacedBy == null) {
-          message = '${messagePrefix}discontinued)';
+          notes.add(
+            'discontinued',
+          );
         } else {
-          message =
-              '${messagePrefix}discontinued replaced by ${status.discontinuedReplacedBy})';
+          notes.add(
+            'discontinued replaced by ${status.discontinuedReplacedBy}',
+          );
         }
       } else if (newerStable) {
         // If there are newer stable versions, only show those.
-        message =
-            '$messagePrefix${maxAll(versions, Version.prioritize)} available)';
+        notes.add(
+          '${maxAll(versions, Version.prioritize)} available',
+        );
       } else if (
           // Only show newer prereleases for versions where a prerelease is
           // already chosen.
           newId.version.isPreRelease && newerUnstable) {
-        message = '$messagePrefix${maxAll(versions)} available)';
-      } else if (hasAdvisory) {
-        message =
-            messagePrefix.replaceRange(messagePrefix.length - 2, null, ')');
+        notes.add(
+          '${maxAll(versions)} available',
+        );
       }
+
+      message = notes.isEmpty ? null : '(${notes.join(', ')})';
     }
 
     final oldDependencyType = dependencyType(_previousLockFile, name);
