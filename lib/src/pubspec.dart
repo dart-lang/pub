@@ -362,10 +362,9 @@ class Pubspec extends PubspecBase {
     }
   }
 
-  /// Returns a list of most errors in this pubspec.
-  ///
-  /// This will return at most one error for each field.
-  List<SourceSpanApplicationException> get allErrors {
+  List<SourceSpanApplicationException> _collectErrorsFor(
+    List<dynamic Function()> toCheck,
+  ) {
     var errors = <SourceSpanApplicationException>[];
     void collectError(void Function() fn) {
       try {
@@ -375,17 +374,38 @@ class Pubspec extends PubspecBase {
       }
     }
 
-    collectError(() => name);
-    collectError(() => version);
-    collectError(() => dependencies);
-    collectError(() => devDependencies);
-    collectError(() => publishTo);
-    collectError(() => executables);
-    collectError(() => falseSecrets);
-    collectError(() => sdkConstraints);
-    collectError(() => ignoredAdvisories);
+    for (final fn in toCheck) {
+      collectError(fn);
+    }
     return errors;
   }
+
+  /// Returns a list of errors relevant to consuming this pubspec as a dependency
+  ///
+  /// This will return at most one error for each field.
+  List<SourceSpanApplicationException> get dependencyErrors =>
+      _collectErrorsFor([
+        () => name,
+        () => version,
+        () => dependencies,
+        () => executables,
+        () => ignoredAdvisories,
+      ]);
+
+  /// Returns a list of most errors in this pubspec.
+  ///
+  /// This will return at most one error for each field.
+  List<SourceSpanApplicationException> get allErrors => _collectErrorsFor([
+        () => name,
+        () => version,
+        () => dependencies,
+        () => devDependencies,
+        () => publishTo,
+        () => executables,
+        () => falseSecrets,
+        () => sdkConstraints,
+        () => ignoredAdvisories,
+      ]);
 
   /// Returns the type of dependency from this package onto [name].
   DependencyType dependencyType(String? name) {
