@@ -1539,7 +1539,7 @@ See $contentHashesDocumentationUrl.
       final Pubspec pubspec;
       try {
         pubspec = Pubspec.load(tempDir, cache.sources);
-        final errors = pubspec.allErrors;
+        final errors = pubspec.dependencyErrors;
         if (errors.isNotEmpty) {
           throw errors.first;
         }
