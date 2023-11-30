@@ -178,33 +178,35 @@ abstract class PubspecBase {
   /// ignored when trying to detect possible leaks of secrets during
   /// package publication.
   List<String> get falseSecrets {
-    if (_falseSecrets == null) {
-      final falseSecrets = <String>[];
-
-      // Throws a [PubspecException]
-      void falseSecretsError(SourceSpan span) => _error(
-            '"false_secrets" field must be a list of git-ignore style patterns',
-            span,
-          );
-
-      final falseSecretsNode = fields.nodes['false_secrets'];
-      if (falseSecretsNode != null) {
-        if (falseSecretsNode is YamlList) {
-          for (final node in falseSecretsNode.nodes) {
-            final value = node.value;
-            if (value is! String) {
-              falseSecretsError(node.span);
-            }
-            falseSecrets.add(value as String);
-          }
-        } else {
-          falseSecretsError(falseSecretsNode.span);
-        }
-      }
-
-      _falseSecrets = List.unmodifiable(falseSecrets);
+    var falseSecrets = _falseSecrets;
+    if (falseSecrets != null) {
+      return falseSecrets;
     }
-    return _falseSecrets!;
+    falseSecrets = <String>[];
+
+    // Throws a [PubspecException]
+    Never falseSecretsError(SourceSpan span) => _error(
+          '"false_secrets" field must be a list of git-ignore style patterns',
+          span,
+        );
+
+    final falseSecretsNode = fields.nodes['false_secrets'];
+    if (falseSecretsNode == null) {
+      return _falseSecrets = List.unmodifiable(falseSecrets);
+    }
+    if (falseSecretsNode is! YamlList) {
+      falseSecretsError(falseSecretsNode.span);
+    }
+
+    for (final node in falseSecretsNode.nodes) {
+      final value = node.value;
+      if (value is! String) {
+        falseSecretsError(node.span);
+      }
+      falseSecrets.add(value);
+    }
+
+    return _falseSecrets = List.unmodifiable(falseSecrets);
   }
 
   List<String>? _falseSecrets;
