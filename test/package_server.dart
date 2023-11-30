@@ -70,6 +70,9 @@ class PackageServer {
   }
 
   static final _versionInfoPattern = RegExp(r'/api/packages/([a-zA-Z_0-9]*)');
+  static final _advisoriesPattern =
+      RegExp(r'/api/packages/([a-zA-Z_0-9]*)/advisories');
+
   static final _downloadPattern =
       RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
 
@@ -109,8 +112,51 @@ class PackageServer {
                 },
             ],
             if (package.isDiscontinued) 'isDiscontinued': true,
+            if (package.advisoriesUpdated != null)
+              'advisoriesUpdated': package.advisoriesUpdated!.toIso8601String(),
             if (package.discontinuedReplacementText != null)
               'replacedBy': package.discontinuedReplacementText,
+          }),
+          headers: {
+            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json',
+          },
+        );
+      },
+    );
+
+    server.handle(
+      _advisoriesPattern,
+      (shelf.Request request) async {
+        final parts = request.url.pathSegments;
+        assert(parts[0] == 'api');
+        assert(parts[1] == 'packages');
+        final name = parts[2];
+        assert(parts[3] == 'advisories');
+
+        final package = server._packages[name];
+        if (package == null) {
+          return shelf.Response.notFound('No package named $name');
+        }
+
+        return shelf.Response.ok(
+          jsonEncode({
+            'advisoriesUpdated': defaultAdvisoriesUpdated.toIso8601String(),
+            'advisories': [
+              for (final advisory in package.advisories)
+                {
+                  'id': advisory.id,
+                  'summary': 'Example',
+                  'details': 'This is a dummy example.',
+                  'modified': defaultAdvisoriesUpdated.toIso8601String(),
+                  'published': defaultAdvisoriesUpdated.toIso8601String(),
+                  'affected': [
+                    {
+                      'package': {'name': name, 'ecosystem': 'Pub'},
+                      'versions': [...advisory.affectedPackageVersions],
+                    },
+                  ],
+                },
+            ],
           }),
           headers: {
             HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json',
@@ -274,6 +320,28 @@ class PackageServer {
       ..discontinuedReplacementText = replacementText;
   }
 
+  static final defaultAdvisoriesUpdated =
+      DateTime.fromMicrosecondsSinceEpoch(0);
+
+  /// Add a security advisory which affects [affectedVersions] versions of
+  /// package [name].
+  void affectVersionsByAdvisory({
+    required String name,
+    required String advisoryId,
+    required List<String> affectedVersions,
+    DateTime? advisoriesUpdated,
+  }) {
+    _packages[name]!.advisoriesUpdated =
+        advisoriesUpdated ?? defaultAdvisoriesUpdated;
+    _packages[name]!.advisories.add(
+          _ServedAdvisory(
+            advisoryId,
+            name,
+            affectedVersions,
+          ),
+        );
+  }
+
   /// Clears all existing packages from this builder.
   void clearPackages() {
     _packages.clear();
@@ -331,6 +399,8 @@ class _ServedPackage {
   final versions = <String, _ServedPackageVersion>{};
   bool isDiscontinued = false;
   String? discontinuedReplacementText;
+  DateTime? advisoriesUpdated;
+  final advisories = <_ServedAdvisory>[];
 }
 
 /// A package that's intended to be served.
@@ -349,6 +419,18 @@ class _ServedPackageVersion {
   Future<int> computeArchiveCrc32c() async {
     return await Crc32c.computeByConsumingStream(contents());
   }
+}
+
+class _ServedAdvisory {
+  String id;
+  String affectedPackage;
+  List<String> affectedPackageVersions;
+
+  _ServedAdvisory(
+    this.id,
+    this.affectedPackage,
+    this.affectedPackageVersions,
+  );
 }
 
 class _PatternAndHandler {

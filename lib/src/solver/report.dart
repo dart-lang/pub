@@ -45,6 +45,10 @@ class SolveReport {
   /// Version list will not contain any retracted package versions.
   final Map<String, List<Version>> _availableVersions;
 
+  static const githubAdvisoriesPrefixUrl = 'https://github.com/advisories/';
+  static const maxAdvisoryFootnotesPerLine = 5;
+  final advisoriesIds = <String>[];
+
   SolveReport(
     this._type,
     this._location,
@@ -198,6 +202,7 @@ $contentHashesDocumentationUrl
         }
       }
       await reportDiscontinued();
+      reportAdvisories();
       reportOutdated();
     }
   }
@@ -282,12 +287,43 @@ $contentHashesDocumentationUrl
     }
   }
 
+  void reportAdvisories() {
+    if (advisoriesIds.isNotEmpty) {
+      message('Dependencies are affected by security advisories:');
+      for (var footnote = 0; footnote < advisoriesIds.length; footnote++) {
+        message(
+          '  [^$footnote]: $githubAdvisoriesPrefixUrl${advisoriesIds[footnote]}',
+        );
+      }
+    }
+  }
+
   static DependencyType dependencyType(LockFile lockFile, String name) =>
       lockFile.mainDependencies.contains(name)
           ? DependencyType.direct
           : lockFile.devDependencies.contains(name)
               ? DependencyType.dev
               : DependencyType.none;
+
+  String? _constructAdvisoriesMessage(
+    List<int> footnotes,
+    bool advisoriesTruncated,
+  ) {
+    if (footnotes.isNotEmpty) {
+      final advisoryString = footnotes.length == 1 ? 'advisory' : 'advisories';
+      final buffer = StringBuffer('affected by $advisoryString: ');
+      buffer.write('[^${footnotes.first}]');
+      for (final footnote in footnotes.getRange(1, footnotes.length)) {
+        buffer.write(', [^$footnote]');
+      }
+
+      if (advisoriesTruncated) {
+        buffer.write(', ...');
+      }
+      return buffer.toString();
+    }
+    return null;
+  }
 
   /// Reports the results of the upgrade on the package named [name].
   ///
@@ -375,33 +411,71 @@ $contentHashesDocumentationUrl
         maxAge: Duration(days: 3),
       );
 
+      final notes = <String>[];
+
+      final advisories = await id.source.getAdvisoriesForPackageVersion(
+        id,
+        _cache,
+        Duration(days: 3),
+      );
+
+      if (advisories != null && advisories.isNotEmpty) {
+        final advisoryFootnotes = <int>[];
+        for (final adv in advisories.take(maxAdvisoryFootnotesPerLine)) {
+          advisoryFootnotes.add(advisoriesIds.length);
+          advisoriesIds.add(adv.id);
+        }
+
+        final advisoriesMessage = _constructAdvisoriesMessage(
+          advisoryFootnotes,
+          advisories.length > maxAdvisoryFootnotesPerLine,
+        );
+
+        if (advisoriesMessage != null) {
+          notes.add(advisoriesMessage);
+        }
+      }
       if (status.isRetracted) {
         if (newerStable) {
-          message =
-              '(retracted, ${maxAll(versions, Version.prioritize)} available)';
+          notes.add(
+            'retracted, ${maxAll(versions, Version.prioritize)} available',
+          );
         } else if (newId.version.isPreRelease && newerUnstable) {
-          message = '(retracted, ${maxAll(versions)} available)';
+          notes.add(
+            'retracted, ${maxAll(versions)} available',
+          );
         } else {
-          message = '(retracted)';
+          notes.add(
+            'retracted',
+          );
         }
       } else if (status.isDiscontinued &&
           [DependencyType.direct, DependencyType.dev]
               .contains(_rootPubspec.dependencyType(name))) {
         if (status.discontinuedReplacedBy == null) {
-          message = '(discontinued)';
+          notes.add(
+            'discontinued',
+          );
         } else {
-          message =
-              '(discontinued replaced by ${status.discontinuedReplacedBy})';
+          notes.add(
+            'discontinued replaced by ${status.discontinuedReplacedBy}',
+          );
         }
       } else if (newerStable) {
         // If there are newer stable versions, only show those.
-        message = '(${maxAll(versions, Version.prioritize)} available)';
+        notes.add(
+          '${maxAll(versions, Version.prioritize)} available',
+        );
       } else if (
           // Only show newer prereleases for versions where a prerelease is
           // already chosen.
           newId.version.isPreRelease && newerUnstable) {
-        message = '(${maxAll(versions)} available)';
+        notes.add(
+          '${maxAll(versions)} available',
+        );
       }
+
+      message = notes.isEmpty ? null : '(${notes.join(', ')})';
     }
 
     final oldDependencyType = dependencyType(_previousLockFile, name);
