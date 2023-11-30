@@ -138,6 +138,40 @@ abstract class PubspecBase {
   bool _parsedPublishTo = false;
   String? _publishTo;
 
+  /// The list of advisory IDs to be ignored when reporting security advisories
+  /// affecting dependencies.
+  List<String> get ignoredAdvisories {
+    var advisoryIDs = _ignoredAdvisories;
+    if (advisoryIDs != null) {
+      return advisoryIDs;
+    }
+    advisoryIDs = <String>[];
+
+    Never ignoredAdvisoriesError(SourceSpan span) => _error(
+          '"ignored_advisories" field must be a list of advisory IDs',
+          span,
+        );
+
+    final ignoredAdvisoriesNode = fields.nodes['ignored_advisories'];
+    if (ignoredAdvisoriesNode == null) {
+      return _ignoredAdvisories = List.unmodifiable(advisoryIDs);
+    }
+    if (ignoredAdvisoriesNode is! YamlList) {
+      ignoredAdvisoriesError(ignoredAdvisoriesNode.span);
+    }
+    for (final node in ignoredAdvisoriesNode.nodes) {
+      final value = node.value;
+      if (value is! String) {
+        ignoredAdvisoriesError(node.span);
+      }
+      advisoryIDs.add(value);
+    }
+
+    return _ignoredAdvisories = List.unmodifiable(advisoryIDs);
+  }
+
+  List<String>? _ignoredAdvisories;
+
   /// The list of patterns covering _false-positive secrets_ in the package.
   ///
   /// This is a list of git-ignore style patterns for files that should be

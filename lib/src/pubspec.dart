@@ -383,6 +383,7 @@ class Pubspec extends PubspecBase {
     collectError(() => executables);
     collectError(() => falseSecrets);
     collectError(() => sdkConstraints);
+    collectError(() => ignoredAdvisories);
     return errors;
   }
 

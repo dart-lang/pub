@@ -413,7 +413,7 @@ $contentHashesDocumentationUrl
 
       final notes = <String>[];
 
-      final advisories = await id.source.getAdvisoriesForPackageVersion(
+      var advisories = await id.source.getAdvisoriesForPackageVersion(
         id,
         _cache,
         Duration(days: 3),
@@ -421,6 +421,9 @@ $contentHashesDocumentationUrl
 
       if (advisories != null && advisories.isNotEmpty) {
         final advisoryFootnotes = <int>[];
+        advisories = advisories
+            .where((adv) => !_rootPubspec.ignoredAdvisories.contains(adv.id))
+            .toList();
         for (final adv in advisories.take(maxAdvisoryFootnotesPerLine)) {
           advisoryFootnotes.add(advisoriesIds.length);
           advisoriesIds.add(adv.id);
