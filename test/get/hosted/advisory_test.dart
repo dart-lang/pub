@@ -115,14 +115,16 @@ Future<void> main() async {
       ..serve('baz', '1.0.0');
 
     await d.dir(appPath, [
-      d.pubspec({
-        'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
+      d.pubspec(
+        {
+          'name': 'app',
+          'dependencies': {
+            'foo': '^1.0.0',
+            'baz': '^1.0.0',
+          },
+          'ignored_advisories': ['123'],
         },
-        'ignored_advisories': ['123']
-      }),
+      ),
     ]).create();
     server.affectVersionsByAdvisory(
       name: 'foo',
