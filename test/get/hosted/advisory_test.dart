@@ -83,6 +83,59 @@ Future<void> main() async {
     await ctx.run(['get']);
   });
 
+  testWithGolden('show max 5 advisories', (ctx) async {
+    final server = await servePackages();
+    server
+      ..serve('foo', '1.2.3')
+      ..serve('baz', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'baz': '^1.0.0',
+        },
+      }),
+    ]).create();
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '000',
+      affectedVersions: ['1.2.3'],
+    );
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '111',
+      affectedVersions: ['1.2.3'],
+    );
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '222',
+      affectedVersions: ['1.2.3'],
+    );
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '333',
+      affectedVersions: ['1.2.3'],
+    );
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '444',
+      affectedVersions: ['1.2.3'],
+    );
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '555',
+      affectedVersions: ['1.2.3'],
+    );
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '666',
+      affectedVersions: ['1.2.3'],
+    );
+    await ctx.run(['get']);
+  });
+
   testWithGolden('show advisory - newer version available', (ctx) async {
     final server = await servePackages();
     server
