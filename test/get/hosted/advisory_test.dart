@@ -106,4 +106,36 @@ Future<void> main() async {
     );
     await ctx.run(['get']);
   });
+
+  testWithGolden('do not show ignored advisories', (ctx) async {
+    final server = await servePackages();
+    server
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '2.0.0')
+      ..serve('baz', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec(
+        {
+          'name': 'app',
+          'dependencies': {
+            'foo': '^1.0.0',
+            'baz': '^1.0.0',
+          },
+          'ignored_advisories': ['123'],
+        },
+      ),
+    ]).create();
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '123',
+      affectedVersions: ['1.2.3'],
+    );
+    server.affectVersionsByAdvisory(
+      name: 'foo',
+      advisoryId: '456',
+      affectedVersions: ['1.2.3'],
+    );
+    await ctx.run(['get']);
+  });
 }
