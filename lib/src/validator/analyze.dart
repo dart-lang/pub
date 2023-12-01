@@ -15,7 +15,7 @@ import '../validator.dart';
 /// Runs `dart analyze` and gives a warning if it returns non-zero.
 class AnalyzeValidator extends Validator {
   // Only analyze dart code in the following sub-folders.
-  static const List<String> _dirsToAnalyze = ['bin', 'lib'];
+  static const List<String> _dirsToAnalyze = ['lib', 'bin'];
 
   @override
   Future<void> validate() async {
