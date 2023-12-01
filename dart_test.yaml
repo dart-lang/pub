@@ -1,6 +1,5 @@
 presets:
-  travis:
-    # Travis is sloooow.
+  ci:
     timeout: 3x
 
     # Pub has a huge number of small suites, which means test is frequently
