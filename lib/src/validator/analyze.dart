@@ -14,15 +14,17 @@ import '../validator.dart';
 
 /// Runs `dart analyze` and gives a warning if it returns non-zero.
 class AnalyzeValidator extends Validator {
-  /// Only analyze dart code in the following sub-folders.
+  // Only analyze dart code in the following sub-folders.
+  static const List<String> _dirsToAnalyze = ['lib', 'bin'];
+
   @override
   Future<void> validate() async {
-    final dirsToAnalyze = ['lib', 'test', 'bin']
+    final dirs = _dirsToAnalyze
         .map((dir) => p.join(entrypoint.rootDir, dir))
         .where(dirExists);
     final result = await runProcess(
       Platform.resolvedExecutable,
-      ['analyze', ...dirsToAnalyze, p.join(entrypoint.rootDir, 'pubspec.yaml')],
+      ['analyze', ...dirs, p.join(entrypoint.rootDir, 'pubspec.yaml')],
     );
     if (result.exitCode != 0) {
       final limitedOutput = limitLength(result.stdout.join('\n'), 1000);

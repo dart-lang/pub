@@ -141,32 +141,4 @@ void main() {
       workingDirectory: d.sandbox,
     );
   });
-
-  test('should warn if package contains warnings in test folder', () async {
-    await d.dir(appPath, [
-      d.validPubspec(),
-      d.file('LICENSE', 'Eh, do what you want.'),
-      d.file('README.md', "This package isn't real."),
-      d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
-      d.dir('test', [
-        d.file('test_pkg.dart', '''
-void main() {
-  final a = 10; // Unused.
-}
-'''),
-      ]),
-    ]).create();
-
-    await expectValidation(
-      error: allOf([
-        contains('`dart analyze` found the following issue(s):'),
-        contains('Analyzing lib, test, pubspec.yaml...'),
-        contains('warning -'),
-        contains("The value of the local variable 'a' isn't used"),
-        contains('Package has 1 warning.'),
-      ]),
-      exitCode: DATA,
-    );
-  });
 }

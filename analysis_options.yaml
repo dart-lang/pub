@@ -23,7 +23,6 @@ linter:
     - avoid_unused_constructor_parameters
     - avoid_void_async
     - cancel_subscriptions
-    - dangling_library_doc_comments
     - directives_ordering
     - library_annotations
     - missing_whitespace_between_adjacent_strings
@@ -44,8 +43,6 @@ linter:
     - unawaited_futures
     - unnecessary_lambdas
     - unnecessary_library_directive
-    - unnecessary_null_aware_assignments
     - unnecessary_parenthesis
     - unnecessary_statements
     - use_enums
-    - use_super_parameters

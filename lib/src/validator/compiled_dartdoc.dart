@@ -9,8 +9,7 @@ import 'package:path/path.dart' as path;
 import '../io.dart';
 import '../validator.dart';
 
-/// Validates that a package doesn't contain compiled Dartdoc
-/// output.
+/// Validates that a package doesn't contain compiled Dartdoc output.
 class CompiledDartdocValidator extends Validator {
   @override
   Future validate() {
