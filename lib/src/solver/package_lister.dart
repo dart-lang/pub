@@ -131,7 +131,7 @@ class PackageLister {
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
-    if (_locked != null && constraint.allows(_locked!.version)) return 1;
+    if (_locked != null && constraint.allows(_locked.version)) return 1;
     try {
       return (await _versions)
           .where((id) => constraint.allows(id.version))
@@ -226,7 +226,7 @@ class PackageLister {
 
     if (_cachedVersions == null &&
         _locked != null &&
-        id.version == _locked!.version) {
+        id.version == _locked.version) {
       if (_listedLockedVersion) return const [];
 
       var depender = id.toRange();

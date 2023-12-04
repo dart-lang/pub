@@ -40,13 +40,13 @@ class _AuthenticatedClient extends http.BaseClient {
     // request.
     //
     // This check ensures that this client will only authenticate requests sent
-    // to given serverBaseUrl. Otherwise credential leaks might ocurr when
+    // to given serverBaseUrl. Otherwise credential leaks might occur when
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
     if (_credential != null &&
-        _credential!.canAuthenticate(request.url.toString())) {
+        _credential.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
-          await _credential!.getAuthorizationHeaderValue();
+          await _credential.getAuthorizationHeaderValue();
     }
 
     final response = await _inner.send(request);
