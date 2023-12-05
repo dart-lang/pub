@@ -69,14 +69,11 @@ class SolveReport {
   ///
   /// If [summary] is `true` a count of changes and number of
   /// discontinued/retracted packages will be shown at the end of the report.
-  ///
-  /// Returns `true` if there was any change of dependencies relative to the old
-  /// lockfile.
-  Future<bool> show({required bool summary}) async {
+
+  Future<void> show({required bool summary}) async {
     final changes = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
     if (summary) await summarize(changes);
-    return changes != 0;
   }
 
   void _checkContentHashesMatchOldLockfile() {
@@ -494,7 +491,7 @@ $contentHashesDocumentationUrl
         dependencyTypeChanged ||
         message != null ||
         isOverridden)) {
-      return changed || addedOrRemoved;
+      return changed || addedOrRemoved || dependencyTypeChanged;
     }
 
     output.write(icon);
