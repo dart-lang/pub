@@ -131,7 +131,7 @@ void main() {
     await expectValidation(
       error: allOf([
         contains('`dart analyze` found the following issue(s):'),
-        contains('Analyzing lib, bin, pubspec.yaml...'),
+        contains('Analyzing bin, lib, pubspec.yaml...'),
         contains('error -'),
         contains("Expected to find '}'."),
         contains('Package has 1 warning.'),
