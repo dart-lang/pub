@@ -95,7 +95,6 @@ To remove a dependency override of a package prefix the package name with
           SolveType.get,
           precompile: !isDryRun && argResults.flag('precompile'),
           dryRun: isDryRun,
-          analytics: isDryRun ? null : analytics,
         );
 
     var example = entrypoint.example;
@@ -104,7 +103,6 @@ To remove a dependency override of a package prefix the package name with
         SolveType.get,
         precompile: argResults.flag('precompile'),
         summaryOnly: true,
-        analytics: analytics,
       );
     }
   }

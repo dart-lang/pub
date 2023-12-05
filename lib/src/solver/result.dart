@@ -4,18 +4,13 @@
 
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:unified_analytics/unified_analytics.dart';
 
 import '../http.dart';
-import '../io.dart';
 import '../lock_file.dart';
-import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
-import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
 import '../source/cached.dart';
-import '../source/hosted.dart';
 import '../system_cache.dart';
 
 /// The result of a successful version resolution.
@@ -135,42 +130,6 @@ class SolveResult {
     this.attemptedSolutions,
     this.resolutionTime,
   );
-
-  /// Send analytics about the package resolution.
-  void sendAnalytics(PubAnalytics pubAnalytics) {
-    ArgumentError.checkNotNull(pubAnalytics);
-    final analytics = pubAnalytics.analytics;
-    if (analytics == null) return;
-
-    final dependenciesForAnalytics = <PackageId>[];
-    for (final package in packages) {
-      // Only send analytics for packages from pub.dev.
-      if (HostedSource.isFromPubDev(package) ||
-          (package.source is HostedSource && runningFromTest)) {
-        dependenciesForAnalytics.add(package);
-      }
-    }
-    // Randomize the dependencies, such that even if some analytics events don't
-    // get sent, the results will still be representative.
-    shuffle(dependenciesForAnalytics);
-    for (final package in dependenciesForAnalytics) {
-      final dependencyKind = const {
-        DependencyType.dev: 'dev',
-        DependencyType.direct: 'direct',
-        DependencyType.none: 'transitive',
-      }[_root.pubspec.dependencyType(package.name)]!;
-      analytics.send(
-        Event.pubGet(
-          packageName: package.name,
-          version: package.version.canonicalizedVersion,
-          dependencyType: dependencyKind,
-        ),
-      );
-      log.fine(
-        'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind',
-      );
-    }
-  }
 
   @override
   String toString() => 'Took $attemptedSolutions tries to resolve to\n'

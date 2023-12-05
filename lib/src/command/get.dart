@@ -78,7 +78,6 @@ class GetCommand extends PubCommand {
       SolveType.get,
       dryRun: argResults.flag('dry-run'),
       precompile: argResults.flag('precompile'),
-      analytics: analytics,
       enforceLockfile: argResults.flag('enforce-lockfile'),
     );
 
@@ -88,7 +87,6 @@ class GetCommand extends PubCommand {
         SolveType.get,
         dryRun: argResults.flag('dry-run'),
         precompile: argResults.flag('precompile'),
-        analytics: analytics,
         summaryOnly: true,
         enforceLockfile: argResults.flag('enforce-lockfile'),
       );

@@ -16,7 +16,6 @@ import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
-import 'pub_embeddable_command.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -241,8 +240,6 @@ final class DartExecutableWithPackageConfig {
 /// * Otherwise if the current package resolution is outdated do an implicit
 ///   `pub get`, if that fails, throw a [CommandResolutionFailedException].
 ///
-///   This pub get will send analytics events to [analytics] if provided.
-///
 /// * Otherwise let  `<current>` be the name of the package at [root], and
 ///   interpret [descriptor] as `[<package>][:<command>]`.
 ///
@@ -281,7 +278,6 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   bool allowSnapshot = true,
   String? root,
   String? pubCacheDir,
-  PubAnalytics? analytics,
   List<String> additionalSources = const [],
   String? nativeAssets,
 }) async {

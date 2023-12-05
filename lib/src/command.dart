@@ -142,8 +142,6 @@ abstract class PubCommand extends Command<int> {
   PubTopLevel get _pubTopLevel =>
       _pubEmbeddableCommand ?? runner as PubTopLevel;
 
-  PubAnalytics? get analytics => _pubEmbeddableCommand?.analytics;
-
   @override
   String get invocation {
     PubCommand? command = this;

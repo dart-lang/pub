@@ -173,7 +173,6 @@ class GlobalActivateCommand extends PubCommand {
           path,
           executables,
           overwriteBinStubs: overwrite,
-          analytics: analytics,
         );
     }
 

@@ -69,7 +69,6 @@ class DowngradeCommand extends PubCommand {
       SolveType.downgrade,
       unlock: argResults.rest,
       dryRun: dryRun,
-      analytics: analytics,
     );
     var example = entrypoint.example;
     if (argResults.flag('example') && example != null) {
@@ -78,7 +77,6 @@ class DowngradeCommand extends PubCommand {
         unlock: argResults.rest,
         dryRun: dryRun,
         summaryOnly: true,
-        analytics: analytics,
       );
     }
 

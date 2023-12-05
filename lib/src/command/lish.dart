@@ -258,7 +258,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     }
 
     if (!skipValidation) {
-      await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+      await entrypoint.acquireDependencies(SolveType.get);
     } else {
       log.warning(
         'Running with `skip-validation`. No client-side validation is done.',
