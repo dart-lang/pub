@@ -1028,7 +1028,6 @@ See https://dart.dev/go/sdk-constraint
   ///  * for each package
   ///    * same version number
   ///    * same resolved description (same content-hash, git hash, path)
-  ///    * same dependency-type (dependency, dev-dependency)
   bool _lockfilesMatch(LockFile previousLockFile, LockFile newLockFile) {
     if (previousLockFile.packages.length != newLockFile.packages.length) {
       return false;
