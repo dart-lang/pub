@@ -119,6 +119,8 @@ void main() {
       d.file('LICENSE', 'Eh, do what you want.'),
       d.file('README.md', "This package isn't real."),
       d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+      d.file('build.dart', 'void main(){}'),
+      d.file('link.dart', 'void main(){}'),
       d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
       d.dir('bin', [
         d.file('test_pkg.dart', '''
@@ -131,7 +133,7 @@ void main() {
     await expectValidation(
       error: allOf([
         contains('`dart analyze` found the following issue(s):'),
-        contains('Analyzing lib, bin, pubspec.yaml...'),
+        contains('Analyzing bin, lib, build.dart, link.dart, pubspec.yaml...'),
         contains('error -'),
         contains("Expected to find '}'."),
         contains('Package has 1 warning.'),
