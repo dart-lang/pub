@@ -245,30 +245,16 @@ class PackageLister {
         }
       }
 
-      if (id.isRoot) {
-        var incompatibilities = <Incompatibility>[];
+      final entries = [
+        ...pubspec.dependencies.values
+            .where((range) => !_overriddenPackages.contains(range.name)),
+        if (id.isRoot)
+          ...pubspec.devDependencies.values
+              .where((range) => !_overriddenPackages.contains(range.name)),
+        if (id.isRoot) ...pubspec.dependencyOverrides.values,
+      ];
 
-        for (var range in pubspec.dependencies.values) {
-          if (_overriddenPackages.contains(range.name)) continue;
-          incompatibilities.add(_dependency(depender, range));
-        }
-
-        for (var range in pubspec.devDependencies.values) {
-          if (_overriddenPackages.contains(range.name)) continue;
-          incompatibilities.add(_dependency(depender, range));
-        }
-
-        for (var range in pubspec.dependencyOverrides.values) {
-          incompatibilities.add(_dependency(depender, range));
-        }
-
-        return incompatibilities;
-      } else {
-        return pubspec.dependencies.values
-            .where((range) => !_overriddenPackages.contains(range.name))
-            .map((range) => _dependency(depender, range))
-            .toList();
-      }
+      return entries.map((range) => _dependency(depender, range)).toList();
     }
 
     var versions = await _versions;
