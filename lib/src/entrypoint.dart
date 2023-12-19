@@ -392,8 +392,8 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       quiet: summaryOnly,
     );
 
-    final hasChanges = await report.show(summary: true);
-    if (enforceLockfile && hasChanges) {
+    await report.show(summary: true);
+    if (enforceLockfile && !_lockfilesMatch(lockFile, newLockFile)) {
       dataError('''
 Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.
 
@@ -1021,4 +1021,23 @@ See https://dart.dev/go/sdk-constraint
   /// results.
   bool get _summaryOnlyEnvironment =>
       (Platform.environment['PUB_SUMMARY_ONLY'] ?? '0') != '0';
+
+  /// Returns true if the packages in [newLockFile] and [previousLockFile] are
+  /// all the same, meaning:
+  ///  * same set of package-names
+  ///  * for each package
+  ///    * same version number
+  ///    * same resolved description (same content-hash, git hash, path)
+  bool _lockfilesMatch(LockFile previousLockFile, LockFile newLockFile) {
+    if (previousLockFile.packages.length != newLockFile.packages.length) {
+      return false;
+    }
+    for (final package in newLockFile.packages.values) {
+      final oldPackage = previousLockFile.packages[package.name];
+      if (oldPackage == null) return false; // Package added to resolution.
+      if (oldPackage.version != package.version) return false;
+      if (oldPackage.description != package.description) return false;
+    }
+    return true;
+  }
 }
