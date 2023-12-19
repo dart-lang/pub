@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:unified_analytics/unified_analytics.dart';
-
 import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
 import 'command/add.dart';
@@ -25,15 +23,6 @@ import 'log.dart' as log;
 import 'log.dart';
 import 'utils.dart';
 
-/// The information needed for the embedded pub command to send analytics.
-final class PubAnalytics {
-  final Analytics? Function() _analyticsGetter;
-
-  Analytics? get analytics => _analyticsGetter();
-
-  PubAnalytics(this._analyticsGetter);
-}
-
 /// Exposes the `pub` commands as a command to be embedded in another command
 /// runner such as `dart pub`.
 class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
@@ -51,12 +40,9 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get directory => argResults.option('directory');
 
-  @override
-  final PubAnalytics? analytics;
-
   final bool Function() isVerbose;
 
-  PubEmbeddableCommand(this.analytics, this.isVerbose) : super() {
+  PubEmbeddableCommand(this.isVerbose) : super() {
     // This flag was never honored in the embedding but since it was accepted we
     // leave it as a hidden flag to avoid breaking clients that pass it.
     argParser.addFlag('trace', hide: true);

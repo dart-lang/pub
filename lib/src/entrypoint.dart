@@ -27,7 +27,6 @@ import 'package_config.dart' show PackageConfig;
 import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
-import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -309,9 +308,6 @@ class Entrypoint {
   /// The iterable [unlock] specifies the list of packages whose versions can be
   /// changed even if they are locked in the pubspec.lock file.
   ///
-  /// [analytics] holds the information needed for the embedded pub command to
-  /// send analytics.
-  ///
   /// Shows a report of the changes made relative to the previous lockfile. If
   /// this is an upgrade or downgrade, all transitive dependencies are shown in
   /// the report. Otherwise, only dependencies that were changed are shown. If
@@ -333,7 +329,6 @@ class Entrypoint {
     Iterable<String>? unlock,
     bool dryRun = false,
     bool precompile = false,
-    required PubAnalytics? analytics,
     bool summaryOnly = false,
     bool enforceLockfile = false,
   }) async {
@@ -408,10 +403,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     _lockFile = newLockFile;
 
     if (!dryRun) {
-      if (analytics != null) {
-        result.sendAnalytics(analytics);
-      }
-
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
       _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
@@ -612,7 +603,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// output if no terminal is attached.
   Future<void> ensureUpToDate({
     bool checkForSdkUpdate = false,
-    PubAnalytics? analytics,
     bool summaryOnly = true,
     bool onlyOutputWhenTerminal = true,
   }) async {
@@ -621,14 +611,12 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         await log.errorsOnlyUnlessTerminal(() async {
           await acquireDependencies(
             SolveType.get,
-            analytics: analytics,
             summaryOnly: summaryOnly,
           );
         });
       } else {
         await acquireDependencies(
           SolveType.get,
-          analytics: analytics,
           summaryOnly: summaryOnly,
         );
       }

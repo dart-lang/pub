@@ -169,7 +169,6 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       dryRun: _dryRun,
       precompile: _precompile,
       summaryOnly: onlySummary,
-      analytics: analytics,
     );
 
     _showOfflineWarning();
@@ -360,7 +359,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
           solveType,
           dryRun: _dryRun,
           precompile: !_dryRun && _precompile,
-          analytics: _dryRun ? null : analytics, // No analytics for dry-run
         );
 
     _outputChangeSummary(changes);

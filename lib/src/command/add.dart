@@ -274,7 +274,6 @@ Specify multiple sdk packages with descriptors.''');
           SolveType.get,
           dryRun: argResults.isDryRun,
           precompile: !argResults.isDryRun && argResults.shouldPrecompile,
-          analytics: argResults.isDryRun ? null : analytics,
         );
 
     if (!argResults.isDryRun &&
@@ -284,7 +283,6 @@ Specify multiple sdk packages with descriptors.''');
         SolveType.get,
         precompile: argResults.shouldPrecompile,
         summaryOnly: true,
-        analytics: analytics,
       );
     }
 

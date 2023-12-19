@@ -17,7 +17,6 @@ import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
-import 'pub_embeddable_command.dart';
 import 'pubspec.dart';
 import 'sdk.dart';
 import 'sdk/dart.dart';
@@ -165,15 +164,11 @@ class GlobalPackages {
     String path,
     List<String>? executables, {
     required bool overwriteBinStubs,
-    required PubAnalytics? analytics,
   }) async {
     var entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
-    await entrypoint.acquireDependencies(
-      SolveType.get,
-      analytics: analytics,
-    );
+    await entrypoint.acquireDependencies(SolveType.get);
     var name = entrypoint.root.name;
     _describeActive(name, cache);
 
@@ -586,7 +581,6 @@ try:
               entrypoint.rootDir,
               packageExecutables,
               overwriteBinStubs: true,
-              analytics: null,
             );
           }
           successes.add(id.name);
