@@ -40,6 +40,11 @@ class _PubHttpClient extends http.BaseClient {
 
   http.Client _inner;
 
+  /// We manually keep track of whether the client was closed,
+  /// indicating that no more networking should be done. (And thus we don't need
+  /// to retry failed requests).
+  bool _wasClosed = false;
+
   _PubHttpClient([http.Client? inner]) : _inner = inner ?? http.Client();
 
   @override
@@ -118,7 +123,10 @@ class _PubHttpClient extends http.BaseClient {
   }
 
   @override
-  void close() => _inner.close();
+  void close() {
+    _wasClosed = true;
+    _inner.close();
+  }
 }
 
 /// The [_PubHttpClient] wrapped by [globalHttpClient].
@@ -325,10 +333,11 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
   return await retry(
     () async => await _httpPool.withResource(() async => await fn()),
     retryIf: (e) async =>
-        (e is PubHttpException && e.isIntermittent) ||
-        e is TimeoutException ||
-        e is http.ClientException ||
-        isHttpIOException(e),
+        !_pubClient._wasClosed &&
+        ((e is PubHttpException && e.isIntermittent) ||
+            e is TimeoutException ||
+            e is http.ClientException ||
+            isHttpIOException(e)),
     onRetry: (exception, attemptNumber) async =>
         log.io('Attempt #$attemptNumber for $operation'),
     maxAttempts: math.max(
