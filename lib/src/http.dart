@@ -49,11 +49,22 @@ class _PubHttpClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (_wasClosed) {
+      throw StateError('Attempting to send request on closed client');
+    }
     _requestStopwatches[request] = Stopwatch()..start();
     request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
     _logRequest(request);
-
-    final streamedResponse = await _inner.send(request);
+    final http.StreamedResponse streamedResponse;
+    try {
+      streamedResponse = await _inner.send(request);
+    } on http.ClientException {
+      if (_wasClosed) {
+        // Avoid retrying in this case.
+        throw _ClientClosedException();
+      }
+      rethrow;
+    }
 
     _logResponse(streamedResponse);
 
@@ -333,11 +344,10 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
   return await retry(
     () async => await _httpPool.withResource(() async => await fn()),
     retryIf: (e) async =>
-        !_pubClient._wasClosed &&
-        ((e is PubHttpException && e.isIntermittent) ||
-            e is TimeoutException ||
-            e is http.ClientException ||
-            isHttpIOException(e)),
+        (e is PubHttpException && e.isIntermittent) ||
+        e is TimeoutException ||
+        e is http.ClientException ||
+        isHttpIOException(e),
     onRetry: (exception, attemptNumber) async =>
         log.io('Attempt #$attemptNumber for $operation'),
     maxAttempts: math.max(
@@ -426,3 +436,8 @@ extension RequestSending on http.Client {
     return streamedResponse;
   }
 }
+
+/// Thrown by [_PubHttpClient.send] if the client was closed while the request
+/// was being processed. Notably it doesn't implement [http.ClientException],
+/// and thus does not trigger a retry by [retryForHttp].
+class _ClientClosedException implements Exception {}
