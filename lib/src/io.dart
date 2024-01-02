@@ -397,6 +397,33 @@ List<String> listDir(
 /// points to a directory.
 bool dirExists(String dir) => Directory(dir).existsSync();
 
+/// Copy all contents of [sourceDir] into [destDir].
+///
+/// Returns null if the copy succeeds. Returns a String containing an error
+/// message if the copy fails.
+///
+/// Symlinks are skipped.
+String? dirCopy(Directory sourceDir, Directory destDir) {
+  /// Create destination directory. Fail if it exists.
+  if (destDir.existsSync()) {
+    return "Destination directory '$destDir' already exists!";
+  }
+  destDir.createSync(recursive: true);
+
+  /// Iterate over all files in the source, and copy them.
+  sourceDir.listSync().forEach((entity) {
+    final p = path.join(destDir.path, path.basename(entity.path));
+    if (entity is File) {
+      log.io("Copying '${entity.path}' to '$p'");
+      entity.copySync(p);
+    } else if (entity is Directory) {
+      dirCopy(entity, Directory(p));
+    }
+  });
+
+  return null;
+}
+
 /// Tries to resiliently perform [operation].
 ///
 /// Some file system operations can intermittently fail on Windows because

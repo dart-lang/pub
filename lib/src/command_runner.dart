@@ -14,6 +14,7 @@ import 'command/add.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
+import 'command/download.dart';
 import 'command/get.dart';
 import 'command/global.dart';
 import 'command/lish.dart';
@@ -141,6 +142,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(CacheCommand());
     addCommand(DepsCommand());
     addCommand(DowngradeCommand());
+    addCommand(DownloadCommand());
     addCommand(GlobalCommand());
     addCommand(GetCommand());
     addCommand(LishCommand());
