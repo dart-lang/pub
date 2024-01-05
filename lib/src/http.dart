@@ -440,4 +440,7 @@ extension RequestSending on http.Client {
 /// Thrown by [_PubHttpClient.send] if the client was closed while the request
 /// was being processed. Notably it doesn't implement [http.ClientException],
 /// and thus does not trigger a retry by [retryForHttp].
-class _ClientClosedException implements Exception {}
+class _ClientClosedException implements Exception {
+  @override
+  String toString() => 'Request was made after http client was closed';
+}
