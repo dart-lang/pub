@@ -40,15 +40,31 @@ class _PubHttpClient extends http.BaseClient {
 
   http.Client _inner;
 
+  /// We manually keep track of whether the client was closed,
+  /// indicating that no more networking should be done. (And thus we don't need
+  /// to retry failed requests).
+  bool _wasClosed = false;
+
   _PubHttpClient([http.Client? inner]) : _inner = inner ?? http.Client();
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (_wasClosed) {
+      throw StateError('Attempting to send request on closed client');
+    }
     _requestStopwatches[request] = Stopwatch()..start();
     request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
     _logRequest(request);
-
-    final streamedResponse = await _inner.send(request);
+    final http.StreamedResponse streamedResponse;
+    try {
+      streamedResponse = await _inner.send(request);
+    } on http.ClientException {
+      if (_wasClosed) {
+        // Avoid retrying in this case.
+        throw _ClientClosedException();
+      }
+      rethrow;
+    }
 
     _logResponse(streamedResponse);
 
@@ -118,7 +134,10 @@ class _PubHttpClient extends http.BaseClient {
   }
 
   @override
-  void close() => _inner.close();
+  void close() {
+    _wasClosed = true;
+    _inner.close();
+  }
 }
 
 /// The [_PubHttpClient] wrapped by [globalHttpClient].
@@ -416,4 +435,12 @@ extension RequestSending on http.Client {
     }
     return streamedResponse;
   }
+}
+
+/// Thrown by [_PubHttpClient.send] if the client was closed while the request
+/// was being processed. Notably it doesn't implement [http.ClientException],
+/// and thus does not trigger a retry by [retryForHttp].
+class _ClientClosedException implements Exception {
+  @override
+  String toString() => 'Request was made after http client was closed';
 }
