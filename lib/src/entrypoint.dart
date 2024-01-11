@@ -679,30 +679,32 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       if (!_isLockFileUpToDate()) {
         return false;
       }
-      if (_arePackagesAvailable()) {
-        touchedLockFile = true;
-        touch(lockFilePath);
-      } else {
+      if (!_arePackagesAvailable()) {
         var filePath = pubspecChanged ? pubspecPath : pubspecOverridesPath;
         log.fine('The $filePath file has changed since the $lockFilePath '
             'file was generated, please run "$topLevelProgram pub get" again.');
         return false;
       }
     }
+    if (pubspecChanged || pubspecOverridesChanged) {
+      // Ensure the timestamps are in the right order.
+      touchedLockFile = true;
+      touch(lockFilePath);
+    }
 
-    if (packageConfigStat.modified.isBefore(lockFileModified) ||
-        hasPathDependencies) {
+    final lockFileChanged =
+        packageConfigStat.modified.isBefore(lockFileModified);
+    if (lockFileChanged || hasPathDependencies) {
       // If `package_config.json` is older than `pubspec.lock` or we have
       // path dependencies, then we check that `package_config.json` is a
       // correct configuration on the local machine. This aims to:
       //  * Mitigate issues when copying a folder from one machine to another.
       //  * Force `pub get` if a path dependency has changed language version.
       if (!_isPackageConfigUpToDate()) return false;
+    }
+    if (lockFileChanged || touchedLockFile) {
+      // Ensure the timestamps are in the right order.
       touch(packageConfigPath);
-    } else {
-      if (touchedLockFile) {
-        touch(packageConfigPath);
-      }
     }
 
     for (final match in _sdkConstraint.allMatches(lockFileText)) {
