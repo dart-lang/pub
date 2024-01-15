@@ -17,6 +17,7 @@ import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/token.dart';
+import 'command/unpack.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'log.dart' as log;
@@ -77,6 +78,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(OutdatedCommand());
     addSubcommand(RemoveCommand());
     addSubcommand(RunCommand(deprecated: true, alwaysUseSubprocess: true));
+    addSubcommand(UnpackCommand());
     addSubcommand(UpgradeCommand());
     addSubcommand(UploaderCommand());
     addSubcommand(LoginCommand());

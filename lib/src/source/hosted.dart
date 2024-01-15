@@ -1353,6 +1353,13 @@ class HostedSource extends CachedSource {
         .toList();
   }
 
+  Future<void> downloadInto(
+    PackageId id,
+    String destPath,
+    SystemCache cache,
+  ) =>
+      _download(id, destPath, cache);
+
   /// Downloads package [package] at [version] from the archive_url and unpacks
   /// it into [destPath].
   ///
