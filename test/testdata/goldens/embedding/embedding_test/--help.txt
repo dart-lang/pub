@@ -26,6 +26,7 @@ Available subcommands:
   publish   Publish the current package to pub.dev.
   remove   Removes dependencies from `pubspec.yaml`.
   token   Manage authentication tokens for hosted pub repositories.
+  unpack   Downloads a package and unpacks it in place.
   upgrade   Upgrade the current package's dependencies to latest versions.
 
 Run "pub_command_runner help" to see global options.
