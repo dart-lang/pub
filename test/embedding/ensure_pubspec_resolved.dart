@@ -290,7 +290,7 @@ void testEnsurePubspecResolved() {
           },
         );
 
-        await d.dir('flutter', [d.file('version', '1.2.3')]).create();
+        await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
 
         await d.dir(appPath, [
           d.appPubspec(dependencies: {'foo': '^3.0.0'}),
@@ -300,7 +300,7 @@ void testEnsurePubspecResolved() {
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
         );
 
-        await d.dir('flutter', [d.file('version', '0.9.0')]).create();
+        await d.dir('flutter', [d.flutterVersion('0.9.0')]).create();
 
         server.serve(
           'foo',
@@ -485,7 +485,7 @@ void testEnsurePubspecResolved() {
           },
         );
 
-        await d.dir('flutter', [d.file('version', '1.2.3')]).create();
+        await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
 
         await d.dir(appPath, [
           d.appPubspec(dependencies: {'foo': '3.0.0'}),
@@ -495,7 +495,7 @@ void testEnsurePubspecResolved() {
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
         );
 
-        await d.dir('flutter', [d.file('version', '2.4.6')]).create();
+        await d.dir('flutter', [d.flutterVersion('2.4.6')]).create();
 
         // Run pub manually here because otherwise we don't have access to
         // d.sandbox.

@@ -364,3 +364,12 @@ PackageConfigEntry packageConfigEntry({
         languageVersion != null ? LanguageVersion.parse(languageVersion) : null,
   );
 }
+
+Descriptor flutterVersion(String version) {
+  return dir('bin', [
+    dir(
+      'cache',
+      [file('flutter.version.json', '{"flutterVersion":"$version"}')],
+    ),
+  ]);
+}

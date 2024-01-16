@@ -20,7 +20,7 @@ void main() {
           ],
         ),
       ]),
-      d.file('version', '1.2.3'),
+      d.flutterVersion('1.2.3'),
     ]).create();
     await servePackages()
       ..serve('bar', '1.0.0', deps: {'tool': '^2.0.0'})
@@ -52,7 +52,7 @@ void main() {
           ],
         ),
       ]),
-      d.file('version', '1.2.3'),
+      d.flutterVersion('1.2.3'),
     ]).create();
     await servePackages()
       ..serve('tool', '1.0.0', deps: {'bar': '^2.0.0'})

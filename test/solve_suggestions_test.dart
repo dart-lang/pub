@@ -12,7 +12,7 @@ import 'test_pub.dart';
 
 void main() {
   test('suggests an upgrade to the flutter sdk', () async {
-    await d.dir('flutter', [d.file('version', '1.2.3')]).create();
+    await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
     final server = await servePackages();
     server.serve(
       'foo',

@@ -29,7 +29,7 @@ void main() {
             [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
           ),
         ]),
-        d.file('version', '1.2.3'),
+        d.flutterVersion('1.2.3'),
       ]).create();
     });
 
@@ -109,7 +109,9 @@ void main() {
         "doesn't fail if the Flutter SDK's version file doesn't exist when "
         'nothing depends on Flutter', () async {
       await d.appDir().create();
-      deleteEntry(p.join(d.sandbox, 'flutter', 'version'));
+      deleteEntry(
+        p.join(d.sandbox, 'flutter', 'bin', 'cache', 'flutterVersion'),
+      );
       await pubCommand(
         command,
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},

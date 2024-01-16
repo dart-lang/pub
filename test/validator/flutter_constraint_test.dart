@@ -24,7 +24,7 @@ late d.DirectoryDescriptor fakeFlutterRoot;
 Future<void> setup({
   String? flutterConstraint,
 }) async {
-  fakeFlutterRoot = d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);
+  fakeFlutterRoot = d.dir('fake_flutter_root', [d.flutterVersion('1.23.0')]);
   await fakeFlutterRoot.create();
   await d.validPackage().create();
   await d.dir(appPath, [
