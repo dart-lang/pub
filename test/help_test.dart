@@ -12,38 +12,41 @@ import 'golden_file.dart';
 /// Result will be an iterable of lists, illustrated as follows:
 /// ```
 /// [
-///   [pub]
-///   [pub, get]
+///   [pub, --help]
+///   [pub, get, --help]
 ///   ...
 /// ]
 /// ```
-Iterable<List<String>> _extractCommands(
-  List<String> parents,
-  Iterable<Command> cmds,
-) sync* {
-  if (parents.isNotEmpty) {
-    yield parents;
+Iterable<List<String>> _extractCommands() sync* {
+  // dedup aliases.
+  Set visitedCommands = <Command>{};
+  final stack = [PubCommandRunner().commands.values.toList()];
+  final parents = <String>[];
+  while (true) {
+    final commands = stack.last;
+    if (commands.isEmpty) {
+      stack.removeLast();
+      yield ['pub', ...parents, '--help'];
+      if (parents.isEmpty) break;
+      parents.removeLast();
+    } else {
+      final command = commands.removeLast();
+      if (!visitedCommands.add(command)) continue;
+      if (command.hidden) continue;
+      stack.add(command.subcommands.values.toList());
+      parents.add(command.name);
+    }
   }
-  // Track that we don't add more than once, we don't want to test aliases
-  final names = <String>{};
-  yield* cmds
-      .where((sub) => !sub.hidden && names.add(sub.name))
-      .map(
-        (sub) => _extractCommands(
-          [...parents, sub.name],
-          sub.subcommands.values,
-        ),
-      )
-      .expand((cmds) => cmds);
 }
 
 /// Tests for `pub ... --help`.
 Future<void> main() async {
-  final cmds = _extractCommands([], PubCommandRunner().commands.values);
+  final cmds = _extractCommands();
+  print(cmds.toList());
   for (final c in cmds) {
-    testWithGolden('pub ${c.join(' ')} --help', (ctx) async {
+    testWithGolden(c.join(' '), (ctx) async {
       await ctx.run(
-        [...c, '--help'],
+        c.skip(1).toList(),
         environment: {
           // Use more columns to avoid unintended line breaking.
           '_PUB_TEST_TERMINAL_COLUMNS': '200',
