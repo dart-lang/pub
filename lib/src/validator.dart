@@ -219,7 +219,7 @@ abstract class Validator {
     return files
         .where(
           recursive
-              ? (file) => p.canonicalize(file).startsWith(base)
+              ? (file) => p.canonicalize(file).startsWith('base${p.separator}')
               : (file) => p.canonicalize(p.dirname(file)) == base,
         )
         .toList();

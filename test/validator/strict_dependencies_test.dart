@@ -55,6 +55,25 @@ void main() {
       await expectValidationDeprecated(strictDeps);
     });
 
+// Regression test of https://github.com/dart-lang/pub/issues/4115 .
+    test('imports a dev_dependency in bindings_generator/', () async {
+      await d.dir(appPath, [
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          devDeps: {'silly_monkey': '^1.2.3'},
+          sdk: '>=1.8.0 <2.0.0',
+        ),
+        d.dir('bindings_generator', [
+          d.file('library.dart', r'''
+            export 'package:silly_monkey/silly_monkey.dart';
+          '''),
+        ]),
+      ]).create();
+
+      await expectValidationDeprecated(strictDeps);
+    });
+
     test('declares an "import" as a dependency in bin/', () async {
       await d.dir(appPath, [
         d.libPubspec(
