@@ -435,7 +435,6 @@ Future<void> main() async {
       );
 
     await d.dir('flutter-root', [
-      d.file('version', '1.2.3'),
       d.dir('packages', [
         d.dir('flutter', [
           d.libPubspec('flutter', '1.0.0', sdk: '>=2.12.0 <3.0.0'),
@@ -444,6 +443,7 @@ Future<void> main() async {
           d.libPubspec('flutter_test', '1.0.0', sdk: '>=2.10.0 <3.0.0'),
         ]),
       ]),
+      d.flutterVersion('1.2.3'),
     ]).create();
 
     await d.dir(appPath, [

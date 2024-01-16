@@ -27,7 +27,7 @@ void main() {
           [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
         ),
       ]),
-      d.file('version', '1.2.3'),
+      d.flutterVersion('1.2.3'),
     ]).create();
   });
 

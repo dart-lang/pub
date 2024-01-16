@@ -2,12 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
+import '../log.dart';
 import '../sdk.dart';
 
 class FlutterSdk extends Sdk {
@@ -54,15 +56,34 @@ class FlutterSdk extends Sdk {
     return null;
   }();
   static final Version? _version = () {
-    if (_rootDirectory == null) return null;
+    final rootDirectory = _rootDirectory;
+    if (rootDirectory == null) return null;
+    if (!dirExists(rootDirectory)) {
+      // $FLUTTER_ROOT has been set, but doesn't exist.
+      return null;
+    }
+    final flutterVersionPath =
+        p.join(_rootDirectory!, 'bin', 'cache', 'flutter.version.json');
 
     try {
-      return Version.parse(
-        readTextFile(p.join(_rootDirectory!, 'version')).trim(),
+      final versionJson = jsonDecode(
+        readTextFile(flutterVersionPath),
       );
-    } on IOException {
-      return null; // I guess the file doesn't exist
-    } on FormatException {
+      if (versionJson is! Map) {
+        return null;
+      }
+      final flutterVersion = versionJson['flutterVersion'];
+      if (flutterVersion is! String) {
+        throw FormatException('flutter-version is not a string');
+      }
+      return Version.parse(flutterVersion);
+    } on IOException catch (e) {
+      warning(
+        'Could not open flutter version file at `$flutterVersionPath`: $e\n',
+      );
+      return null;
+    } on FormatException catch (e) {
+      fine('Bad flutter version file at `$flutterVersionPath` $e');
       return null; // I guess the file has the wrong format
     }
   }();

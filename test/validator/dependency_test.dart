@@ -124,7 +124,7 @@ void main() {
     });
 
     test('depends on Flutter from an SDK source', () async {
-      await d.dir('flutter', [d.file('version', '1.2.3')]).create();
+      await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
       await flutterPackage('flutter').create();
       await package(
         deps: {
@@ -140,9 +140,8 @@ void main() {
     test(
       'depends on a package from Flutter with an appropriate Dart SDK constraint',
       () async {
-        await d.dir('flutter', [d.file('version', '1.2.3')]).create();
+        await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
         await flutterPackage('foo').create();
-        await d.dir('flutter', [d.file('version', '1.2.3')]).create();
         await package(
           deps: {
             'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'},

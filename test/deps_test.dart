@@ -271,7 +271,7 @@ void main() {
     test('with the Flutter SDK, if applicable', () async {
       await pubGet();
 
-      await d.dir('flutter', [d.file('version', '4.3.2+1')]).create();
+      await d.dir('flutter', [d.flutterVersion('4.3.2+1')]).create();
       await runPub(
         args: ['deps'],
         output: contains('Flutter SDK 4.3.2+1'),

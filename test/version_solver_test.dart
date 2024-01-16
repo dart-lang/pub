@@ -1363,7 +1363,7 @@ void sdkConstraint() {
 
   group('with a Flutter SDK', () {
     setUp(() {
-      return d.dir('flutter', [d.file('version', '1.2.3')]).create();
+      return d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
     });
 
     test('succeeds with a matching constraint', () async {
@@ -2032,7 +2032,7 @@ void regressions() {
           [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
         ),
       ]),
-      d.file('version', '1.2.3'),
+      d.flutterVersion('1.2.3'),
     ]).create();
     await servePackages()
       ..serve(
