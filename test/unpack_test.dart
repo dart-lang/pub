@@ -21,15 +21,16 @@ void main() {
     await runPub(
       args: ['unpack', 'foo:1:2:3'],
       error: contains(
-        'Use a single `:` to divide between package name and version.',
+        'Error on line 1, column 1 of descriptor: Invalid version constraint: Could not parse version "1:2:3". Unknown text at "1:2:3".',
       ),
-      exitCode: USAGE,
+      exitCode: DATA,
     );
 
     await runPub(
       args: ['unpack', 'foo:1.0'],
-      error: 'Bad version string: Could not parse "1.0".',
-      exitCode: 1,
+      error:
+          'Error on line 1, column 1 of descriptor: A dependency specification must be a string or a mapping.',
+      exitCode: DATA,
     );
 
     await runPub(
@@ -45,6 +46,8 @@ void main() {
   test('Chooses right version to unpack', () async {
     await d.dir(appPath).create();
     final server = await servePackages();
+    server.serve('foo', '0.1.1');
+    server.serve('foo', '0.1.0');
     server.serve(
       'foo',
       '1.2.3',
@@ -88,7 +91,7 @@ Resolving dependencies in .${s}foo-1.2.3...
     );
 
     await runPub(
-      args: ['unpack', 'foo:1.2.3-pre', '--destination=../'],
+      args: ['unpack', 'foo:1.2.3-pre', '--output=../'],
       output: allOf(
         contains('''
 Downloading foo 1.2.3-pre to `..${s}foo-1.2.3-pre`...
@@ -102,12 +105,21 @@ Resolving dependencies in ..${s}foo-1.2.3-pre...
       File(p.join(d.sandbox, 'foo-1.2.3-pre', 'pubspec.yaml')).existsSync(),
       isTrue,
     );
+
+    await runPub(
+      args: ['unpack', 'foo:^0.1.0'],
+      output: contains('Downloading foo 0.1.1 to `.${s}foo-0.1.1`...'),
+    );
   });
 
   test('unpack from third party package repository', () async {
     await d.dir(appPath).create();
     final server = await startPackageServer();
+    server.serve('foo', '1.0.0');
     server.serve('foo', '1.2.3');
-    await runPub(args: ['unpack', 'foo', '--repository=${server.url}']);
+    await runPub(
+      args: ['unpack', 'foo:{"hosted":"${server.url}", "version":"1.0.0"}'],
+      output: contains('Downloading foo 1.0.0 to `.${s}foo-1.0.0`...'),
+    );
   });
 }
