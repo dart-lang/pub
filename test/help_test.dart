@@ -42,7 +42,6 @@ Iterable<List<String>> _extractCommands() sync* {
 /// Tests for `pub ... --help`.
 Future<void> main() async {
   final cmds = _extractCommands();
-  print(cmds.toList());
   for (final c in cmds) {
     testWithGolden(c.join(' '), (ctx) async {
       await ctx.run(
