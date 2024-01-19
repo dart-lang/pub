@@ -102,14 +102,14 @@ class LishCommand extends PubCommand {
     argParser.addOption(
       'to-archive',
       help: 'Create a .tar.gz archive instead of publishing to server',
-      valueHelp: '[path/to/archive.tar.gz]',
+      valueHelp: '[archive.tar.gz]',
       hide: true,
     );
     argParser.addOption(
       'from-archive',
       help:
-          'Publish from a .tar.gz archive instead of current folder. Will not do client-side validations.',
-      valueHelp: '[path/to/archive.tar.gz]',
+          'Publish from a .tar.gz archive instead of current folder. Implies `--skip-validation`.',
+      valueHelp: '[archive.tar.gz]',
       hide: true,
     );
 
@@ -283,12 +283,8 @@ the \$PUB_HOSTED_URL environment variable.''',
       usageException('Cannot use both --to-archive and --dry-run.');
     }
 
-    if (_fromArchive != null && force) {
-      usageException('Cannot use both --from-archive and --force.');
-    }
-
     if (_toArchive != null && force) {
-      usageException('Cannot use both --to-archive and -force.');
+      usageException('Cannot use both --to-archive and --force.');
     }
 
     if (_fromArchive == null && entrypoint.root.pubspec.isPrivate) {
