@@ -442,15 +442,15 @@ the \$PUB_HOSTED_URL environment variable.''',
     final publication = await (_fromArchive == null
         ? _publicationFromEntrypoint()
         : _publicationFromArchive(_fromArchive));
-    if (_toArchive == null) {
-      if (dryRun) {
-        final warningsCountMessage = publication.warningsCountMessage;
-        if (warningsCountMessage != null) {
-          dataError(warningsCountMessage);
-        }
-        log.warning('Package has 0 warnings.');
-        return;
+    if (dryRun) {
+      final warningsCountMessage = publication.warningsCountMessage;
+      if (warningsCountMessage != null) {
+        dataError(warningsCountMessage);
       }
+      log.warning('Package has 0 warnings.');
+      return;
+    }
+    if (_toArchive == null) {
       final host = computeHost(publication.pubspec);
       await _confirmUpload(publication, host);
       await _publish(publication.packageBytes, host);
@@ -492,6 +492,7 @@ class _Publication {
   Uint8List packageBytes;
   String? warningsCountMessage;
   Pubspec pubspec;
+
   _Publication({
     required this.packageBytes,
     required this.warningsCountMessage,
