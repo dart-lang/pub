@@ -14,6 +14,7 @@ import '../authentication/client.dart';
 import '../command.dart';
 import '../command_runner.dart';
 import '../exceptions.dart' show DataException;
+import '../exit_codes.dart';
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
@@ -324,16 +325,16 @@ the \$PUB_HOSTED_URL environment variable.''',
       '\nTotal compressed archive size: ${_readableFileSize(packageBytes.length)}.\n',
     );
 
-    final warningsCountMessage =
+    final validationResult =
         skipValidation ? null : await _validate(packageBytes, files, host);
 
     if (dryRun) {
       log.message('The server may enforce additional checks.');
     }
-    // Validate the package.
     return _Publication(
       packageBytes: packageBytes,
-      warningsCountMessage: warningsCountMessage,
+      warningsCount: validationResult?.warningsCount ?? 0,
+      hintsCount: validationResult?.hintsCount ?? 0,
       pubspec: package.pubspec,
     );
   }
@@ -367,7 +368,8 @@ the \$PUB_HOSTED_URL environment variable.''',
     log.message('Publishing ${pubspec.name} ${pubspec.version} to $host.');
     return _Publication(
       packageBytes: packageBytes,
-      warningsCountMessage: null,
+      warningsCount: 0,
+      hintsCount: 0,
       pubspec: pubspec,
     );
   }
@@ -378,7 +380,7 @@ the \$PUB_HOSTED_URL environment variable.''',
   /// proceed.
   ///
   /// Returns a summary of warnings and hints if there are any, otherwise `null`.
-  Future<String?> _validate(
+  Future<({int warningsCount, int hintsCount})> _validate(
     Uint8List packageBytes,
     List<String> files,
     Uri host,
@@ -407,14 +409,7 @@ the \$PUB_HOSTED_URL environment variable.''',
           'https://dart.dev/tools/pub/cmd/pub-lish.\n');
     }
 
-    if (hints.isEmpty && warnings.isEmpty) return null;
-    final hintText = hints.isEmpty
-        ? ''
-        : ' and ${hints.length} ${pluralize('hint', hints.length)}';
-    return log.bold(
-      log.red('\nPackage has ${warnings.length} '
-          '${pluralize('warning', warnings.length)}$hintText.'),
-    );
+    return (warningsCount: warnings.length, hintsCount: hints.length);
   }
 
   /// Asks the user for confirmation of uploading [package].
@@ -428,7 +423,7 @@ the \$PUB_HOSTED_URL environment variable.''',
 
     var message =
         'Do you want to publish ${package.pubspec.name} ${package.pubspec.version} to $host';
-    if (package.warningsCountMessage != null) {
+    if (package.hintsCount != 0 || package.warningsCount != 0) {
       message = '${package.warningsCountMessage}. $message';
     }
     if (!await confirm('\n$message')) {
@@ -443,11 +438,10 @@ the \$PUB_HOSTED_URL environment variable.''',
         ? _publicationFromEntrypoint()
         : _publicationFromArchive(_fromArchive));
     if (dryRun) {
-      final warningsCountMessage = publication.warningsCountMessage;
-      if (warningsCountMessage != null) {
-        dataError(warningsCountMessage);
+      log.warning(publication.warningsCountMessage);
+      if (publication.warningsCount != 0) {
+        overrideExitCode(DATA);
       }
-      log.warning('Package has 0 warnings.');
       return;
     }
     if (_toArchive == null) {
@@ -490,12 +484,23 @@ String _readableFileSize(int size) {
 
 class _Publication {
   Uint8List packageBytes;
-  String? warningsCountMessage;
+  int warningsCount;
+  int hintsCount;
+
   Pubspec pubspec;
+
+  String get warningsCountMessage {
+    final hintText = hintsCount == 0
+        ? ''
+        : ' and $hintsCount ${pluralize('hint', hintsCount)}';
+    return '\nPackage has $warningsCount '
+        '${pluralize('warning', warningsCount)}$hintText.';
+  }
 
   _Publication({
     required this.packageBytes,
-    required this.warningsCountMessage,
+    required this.warningsCount,
+    required this.hintsCount,
     required this.pubspec,
   });
 }
