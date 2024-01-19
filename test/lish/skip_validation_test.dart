@@ -35,6 +35,8 @@ void main() {
     await servePackages();
     var pub = await startPublish(globalServer, args: ['--skip-validation']);
 
+    await confirmPublish(pub);
+
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
