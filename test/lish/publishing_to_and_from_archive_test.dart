@@ -21,7 +21,9 @@ void main() {
     await d.credentialsFile(server, 'access-token').create();
     await runPub(
       args: ['lish', '--to-archive', p.join('..', 'archive.tar.gz')],
-      output: contains('Wrote package archive at ../archive.tar.gz'),
+      output: contains(
+        'Wrote package archive at ${p.join('..', 'archive.tar.gz')}',
+      ),
     );
     expect(File(d.path('archive.tar.gz')).existsSync(), isTrue);
 
