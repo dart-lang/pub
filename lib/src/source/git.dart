@@ -345,7 +345,7 @@ class GitSource extends CachedSource {
   /// The Git cache directory is a little idiosyncratic. At the top level, it
   /// contains a directory for each commit of each repository, named `<package
   /// name>-<commit hash>`. These are the canonical package directories that are
-  /// linked to from the `packages/` directory.
+  /// linked to from the `.dart_tool/package_config.json` file.
   ///
   /// In addition, the Git system cache contains a subdirectory named `cache/`
   /// which contains a directory for each separate repository URL, named
@@ -379,7 +379,11 @@ class GitSource extends CachedSource {
       final path = description.path;
       await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
         if (!entryExists(revisionCachePath)) {
-          await _clone(_repoCachePath(description, cache), revisionCachePath);
+          await _cloneViaTemp(
+            _repoCachePath(description, cache),
+            revisionCachePath,
+            cache,
+          );
           await _checkOut(revisionCachePath, resolvedRef);
           _writePackageList(revisionCachePath, [path]);
           didUpdate = true;
@@ -539,7 +543,7 @@ class GitSource extends CachedSource {
     var path = _repoCachePath(description, cache);
     assert(!_updatedRepos.contains(path));
     try {
-      await _clone(description.url, path, mirror: true);
+      await _cloneViaTemp(description.url, path, cache, mirror: true);
     } catch (_) {
       await _deleteGitRepoIfInvalid(path);
       rethrow;
@@ -665,6 +669,30 @@ class GitSource extends CachedSource {
     var args = ['clone', if (mirror) '--mirror', from, to];
 
     await git.run(args);
+  }
+
+  /// Like [_clone], but clones to a temporary directory (inside the [cache]) and
+  /// moves
+  Future<void> _cloneViaTemp(
+    String from,
+    String to,
+    SystemCache cache, {
+    bool mirror = false,
+  }) async {
+    final tempDir = cache.createTempDir();
+    try {
+      await _clone(from, tempDir, mirror: mirror);
+    } catch (_) {
+      deleteEntry(tempDir);
+      rethrow;
+    }
+    // Now that the clone has succeeded, move it to the real location in the
+    // cache.
+    //
+    // If this fails with a "directory not empty" exception we assume that
+    // another pub process has installed the same package version while we
+    // cloned.
+    tryRenameDir(tempDir, to);
   }
 
   /// Checks out the reference [ref] in [repoPath].
