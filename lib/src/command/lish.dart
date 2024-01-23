@@ -279,10 +279,6 @@ the \$PUB_HOSTED_URL environment variable.''',
       usageException('Cannot use both --from-archive and --dry-run.');
     }
 
-    if (_toArchive != null && dryRun) {
-      usageException('Cannot use both --to-archive and --dry-run.');
-    }
-
     if (_toArchive != null && force) {
       usageException('Cannot use both --to-archive and --force.');
     }
@@ -445,7 +441,11 @@ the \$PUB_HOSTED_URL environment variable.''',
       await _confirmUpload(publication, host);
       await _publish(publication.packageBytes, host);
     } else {
-      _writeUploadToArchive(publication, _toArchive);
+      if (dryRun) {
+        log.message('Would have written to $_toArchive.');
+      } else {
+        _writeUploadToArchive(publication, _toArchive);
+      }
     }
   }
 
