@@ -691,7 +691,7 @@ class GitSource extends CachedSource {
     //
     // If this fails with a "directory not empty" exception we assume that
     // another pub process has installed the same package version while we
-    // cloned.
+    // cloned. In that case [tryRenameDir] will delete the folder for us.
     tryRenameDir(tempDir, to);
   }
 
