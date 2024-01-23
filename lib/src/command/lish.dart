@@ -325,8 +325,8 @@ the \$PUB_HOSTED_URL environment variable.''',
     }
     return _Publication(
       packageBytes: packageBytes,
-      warningsCount: validationResult?.warningsCount ?? 0,
-      hintsCount: validationResult?.hintsCount ?? 0,
+      warningCount: validationResult?.warningsCount ?? 0,
+      hintCount: validationResult?.hintsCount ?? 0,
       pubspec: package.pubspec,
     );
   }
@@ -360,8 +360,8 @@ the \$PUB_HOSTED_URL environment variable.''',
     log.message('Publishing ${pubspec.name} ${pubspec.version} to $host.');
     return _Publication(
       packageBytes: packageBytes,
-      warningsCount: 0,
-      hintsCount: 0,
+      warningCount: 0,
+      hintCount: 0,
       pubspec: pubspec,
     );
   }
@@ -415,7 +415,7 @@ the \$PUB_HOSTED_URL environment variable.''',
 
     var message =
         'Do you want to publish ${package.pubspec.name} ${package.pubspec.version} to $host';
-    if (package.hintsCount != 0 || package.warningsCount != 0) {
+    if (package.hintCount != 0 || package.warningCount != 0) {
       message = '${package.warningsCountMessage}. $message';
     }
     if (!await confirm('\n$message')) {
@@ -431,7 +431,7 @@ the \$PUB_HOSTED_URL environment variable.''',
         : _publicationFromArchive(_fromArchive));
     if (dryRun) {
       log.warning(publication.warningsCountMessage);
-      if (publication.warningsCount != 0) {
+      if (publication.warningCount != 0) {
         overrideExitCode(DATA);
       }
       return;
@@ -480,23 +480,22 @@ String _readableFileSize(int size) {
 
 class _Publication {
   Uint8List packageBytes;
-  int warningsCount;
-  int hintsCount;
+  int warningCount;
+  int hintCount;
 
   Pubspec pubspec;
 
   String get warningsCountMessage {
-    final hintText = hintsCount == 0
-        ? ''
-        : ' and $hintsCount ${pluralize('hint', hintsCount)}';
-    return '\nPackage has $warningsCount '
-        '${pluralize('warning', warningsCount)}$hintText.';
+    final hintText =
+        hintCount == 0 ? '' : ' and $hintCount ${pluralize('hint', hintCount)}';
+    return '\nPackage has $warningCount '
+        '${pluralize('warning', warningCount)}$hintText.';
   }
 
   _Publication({
     required this.packageBytes,
-    required this.warningsCount,
-    required this.hintsCount,
+    required this.warningCount,
+    required this.hintCount,
     required this.pubspec,
   });
 }
