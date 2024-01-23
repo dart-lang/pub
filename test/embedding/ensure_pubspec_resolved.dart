@@ -433,6 +433,34 @@ void testEnsurePubspecResolved() {
         await _noImplicitPubGet();
       });
 
+      test('has a path dependency, and nothing changed', () async {
+        await d.dir('foo', [
+          d.libPubspec(
+            'foo',
+            '1.0.0',
+          ),
+        ]).create();
+
+        await d.dir(appPath, [
+          d.appPubspec(
+            dependencies: {
+              'foo': {'path': '../foo'},
+            },
+          ),
+        ]).create();
+
+        await pubGet();
+        // package_config.json should not be touched as nothing changed.
+        final packageConfig = File(
+          p.join(d.sandbox, appPath, '.dart_tool', 'package_config.json'),
+        );
+        final beforeStamp = packageConfig.statSync().modified;
+
+        await _noImplicitPubGet();
+
+        expect(packageConfig.statSync().modified, beforeStamp);
+      });
+
       test(
           "the lockfile is newer than package_config.json, but it's up-to-date",
           () async {
