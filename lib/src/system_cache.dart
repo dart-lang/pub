@@ -4,7 +4,6 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -206,7 +205,7 @@ Consider setting the `PUB_CACHE` variable manually.
         return null;
       }),
     ))
-        .whereNotNull()
+        .nonNulls
         .toList();
 
     return versions;
