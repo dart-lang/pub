@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -444,7 +443,7 @@ class GitSource extends CachedSource {
             }
           });
         })
-        .whereNotNull()
+        .nonNulls
         .toList();
 
     // Note that there may be multiple packages with the same name and version

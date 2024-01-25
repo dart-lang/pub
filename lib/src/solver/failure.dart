@@ -110,7 +110,7 @@ class _Writer {
     // installed, if an SDK is incompatible with a dependency.
     final notices = _root.externalIncompatibilities
         .map((c) => c.cause.notice)
-        .whereNotNull()
+        .nonNulls
         .toSet() // Avoid duplicates
         .sortedBy((n) => n); // sort for consistency
     for (final n in notices) {
@@ -156,7 +156,7 @@ class _Writer {
     // understand how to fix the issue.
     _root.externalIncompatibilities
         .map((c) => c.cause.hint)
-        .whereNotNull()
+        .nonNulls
         .toSet() // avoid duplicates
         .sortedBy((hint) => hint) // sort hints for consistent ordering.
         .forEach((hint) {

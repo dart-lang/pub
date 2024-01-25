@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
@@ -203,7 +202,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         : [
             for (final name in _packagesToUpgrade)
               pubspec.dependencies[name] ?? pubspec.devDependencies[name],
-          ].whereNotNull();
+          ].nonNulls;
     for (final range in toTighten) {
       final constraint = (result[range] ?? range).constraint;
       final resolvedVersion =

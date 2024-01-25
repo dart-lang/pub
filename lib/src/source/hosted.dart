@@ -8,8 +8,7 @@ import 'dart:io' as io;
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:collection/collection.dart'
-    show IterableExtension, IterableNullableExtension, maxBy;
+import 'package:collection/collection.dart' show IterableExtension, maxBy;
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
@@ -1349,7 +1348,7 @@ class HostedSource extends CachedSource {
             return null;
           }
         })
-        .whereNotNull()
+        .nonNulls
         .toList();
   }
 
