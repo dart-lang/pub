@@ -51,7 +51,7 @@ class LishCommand extends PubCommand {
 
     // Otherwise, use the one specified in the pubspec.
     final publishTo = pubspec.publishTo;
-    if (publishTo != null) {
+    if (publishTo != null && publishTo != 'none') {
       try {
         return validateAndNormalizeHostedUrl(publishTo);
       } on FormatException catch (e) {
@@ -282,12 +282,6 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (_toArchive != null && force) {
       usageException('Cannot use both --to-archive and --force.');
     }
-
-    if (_fromArchive == null && entrypoint.root.pubspec.isPrivate) {
-      dataError('A private package cannot be published.\n'
-          'You can enable this by changing the "publish_to" field in your '
-          'pubspec.');
-    }
   }
 
   Future<_Publication> _publicationFromEntrypoint() async {
@@ -438,7 +432,13 @@ the \$PUB_HOSTED_URL environment variable.''',
     }
     if (_toArchive == null) {
       final host = computeHost(publication.pubspec);
+      if (publication.pubspec.isPrivate) {
+        dataError('A private package cannot be published.\n'
+            'You can enable this by changing the "publish_to" field in your '
+            'pubspec.');
+      }
       await _confirmUpload(publication, host);
+
       await _publish(publication.packageBytes, host);
     } else {
       if (dryRun) {

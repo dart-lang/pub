@@ -37,8 +37,12 @@ FileDescriptor validPubspec({Map<String, Object?>? extras}) =>
     libPubspec('test_pkg', '1.0.0', sdk: '>=3.1.2 <=3.2.0', extras: extras);
 
 /// Describes a package that passes all validation.
-DirectoryDescriptor validPackage({String version = '1.0.0'}) => dir(appPath, [
-      validPubspec(extras: {'version': version}),
+DirectoryDescriptor validPackage({
+  String version = '1.0.0',
+  Map<String, Object?>? pubspecExtras,
+}) =>
+    dir(appPath, [
+      validPubspec(extras: {'version': version, ...?pubspecExtras}),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
       file('CHANGELOG.md', '# $version\nFirst version\n'),
