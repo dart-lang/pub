@@ -32,7 +32,7 @@ A _hosted-url_ is **not allowed** to contain:
 
 
 ## Custom Package Repository in `pubspec.yaml`
-A package be published to a custom _package repository_ by overwriting the
+A package can be published to a custom _package repository_ by overwriting the
 `publish_to` key in `pubspec.yaml`, illustrated as follows:
 ```yaml
 name: mypkg
@@ -64,7 +64,7 @@ header which specifies the version of the API being used. This allows future
 versions of the API to change responses.
 
 Clients are strongly encouraged to specify an `Accept` header. But for
-compatibility will probably want to assume API version `2`,
+compatibility we will probably want to assume API version `2`,
 if no `Accept` header is specified.
 
 
@@ -96,7 +96,7 @@ on servers and network performance.
 
 
 ## Rejecting Requests
-The `dart pub` client will in many cases to display error messages when given a
+The `dart pub` client will in many cases display error messages when given a
 response as follows:
 
 ```http
@@ -111,7 +111,7 @@ Content-Type: application/vnd.pub.v2+json
 ```
 
 The `<message>` is intended to be a brief human-readable explanation of what
-when wrong and why the request failed. The `<code>` is a text string intended to
+went wrong and why the request failed. The `<code>` is a text string intended to
 allow clients to handle special cases without using regular expressions to
 parse the `<message>`.
 
@@ -435,4 +435,3 @@ Servers should still support this end-point for compatibility with older `pub` c
 
 **Important:** The server MAY redirect the client to a different URL, clients
 MUST support redirects.
-
