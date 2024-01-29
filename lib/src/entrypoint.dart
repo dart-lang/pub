@@ -23,7 +23,6 @@ import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
-import 'package_config.dart' show PackageConfig;
 import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
@@ -287,18 +286,69 @@ class Entrypoint {
 
   /// Writes the .dart_tool/package_config.json file
   Future<void> writePackageConfigFile() async {
-    final entrypointName = isGlobal ? null : root.name;
     ensureDir(p.dirname(packageConfigPath));
     writeTextFile(
       packageConfigPath,
-      await lockFile.packageConfigFile(
+      await _packageConfigFile(
         cache,
-        entrypoint: entrypointName,
         entrypointSdkConstraint:
             root.pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
-        relativeFrom: isGlobal ? null : rootDir,
       ),
     );
+  }
+
+  /// Returns the contents of the `.dart_tool/package_config` file generated
+  /// from this entrypoint based on [lockFile].
+  ///
+  /// If [isGlobal] no entry will be created for [root].
+  Future<String> _packageConfigFile(
+    SystemCache cache, {
+    VersionConstraint? entrypointSdkConstraint,
+  }) async {
+    final entries = <PackageConfigEntry>[];
+    for (final name in ordered(lockFile.packages.keys)) {
+      final id = lockFile.packages[name]!;
+      final rootPath =
+          cache.getDirectory(id, relativeFrom: isGlobal ? null : rootDir);
+      Uri rootUri;
+      if (p.isRelative(rootPath)) {
+        // Relative paths are relative to the root project, we want them
+        // relative to the `.dart_tool/package_config.json` file.
+        rootUri = p.toUri(p.join('..', rootPath));
+      } else {
+        rootUri = p.toUri(rootPath);
+      }
+      final pubspec = await cache.describe(id);
+      entries.add(
+        PackageConfigEntry(
+          name: name,
+          rootUri: rootUri,
+          packageUri: p.toUri('lib/'),
+          languageVersion: pubspec.languageVersion,
+        ),
+      );
+    }
+
+    if (!isGlobal) {
+      entries.add(
+        PackageConfigEntry(
+          name: root.name,
+          rootUri: p.toUri('../'),
+          packageUri: p.toUri('lib/'),
+          languageVersion: root.pubspec.languageVersion,
+        ),
+      );
+    }
+
+    final packageConfig = PackageConfig(
+      configVersion: 2,
+      packages: entries,
+      generated: DateTime.now(),
+      generator: 'pub',
+      generatorVersion: sdk.version,
+    );
+
+    return '${JsonEncoder.withIndent('  ').convert(packageConfig.toJson())}\n';
   }
 
   /// Gets all dependencies of the [root] package.
