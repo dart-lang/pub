@@ -30,7 +30,7 @@ For example:
 
   $topLevelProgram pub unpack foo
 
-Downloads and extracts the lastest stable package:foo from pub.dev in a
+Downloads and extracts the latest stable package:foo from pub.dev in a
 directory `foo-<version>`.
 
   $topLevelProgram pub unpack foo:1.2.3-pre --no-resolve
