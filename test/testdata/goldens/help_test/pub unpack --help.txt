@@ -11,10 +11,10 @@ For example:
 Downloads and extracts the lastest stable package:foo from pub.dev in a
 directory `foo-<version>`.
 
-  dart pub unpack foo:1.2.3-pre
+  dart pub unpack foo:1.2.3-pre --no-resolve
 
 Downloads and extracts package:foo version 1.2.3-pre in a directory
-`foo-1.2.3-pre`.
+`foo-1.2.3-pre` without running running implicit `pub get`.
 
   dart pub unpack foo --output=archives
 
@@ -27,13 +27,11 @@ Downloads and extracts latest stable version of package:foo from my_repo.org
 in a directory `foo-<version>`.
 
 
-Will resolve dependencies in the folder unless `--no-resolve` is passed.
-
-
 Usage: pub unpack package-name[:constraint]
--h, --help      Print this usage information.
--o, --output    Download and extract the package in this dir
-                (defaults to ".")
+-h, --help          Print this usage information.
+-f, --[no-]force    overwrites an existing folder if it exists
+-o, --output        Download and extract the package in this dir
+                    (defaults to ".")
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-unpack for detailed documentation.

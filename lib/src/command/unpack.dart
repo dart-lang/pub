@@ -65,6 +65,11 @@ in a directory `foo-<version>`.
       defaultsTo: true,
       hide: log.verbosity != log.Verbosity.all,
     );
+    argParser.addFlag(
+      'force',
+      abbr: 'f',
+      help: 'overwrites an existing folder if it exists',
+    );
     argParser.addOption(
       'output',
       abbr: 'o',
@@ -114,7 +119,13 @@ in a directory `foo-<version>`.
     final outputArg = argResults['output'] as String;
     final destinationDir = p.join(outputArg, '$name-${id.version}');
     if (entryExists(destinationDir)) {
-      fail('Target directory `$destinationDir` already exists.');
+      if (argResults.flag('force')) {
+        deleteEntry(destinationDir);
+      } else {
+        fail(
+          'Target directory `$destinationDir` already exists. Use --force to overwrite',
+        );
+      }
     }
     await log.progress(
       'Downloading $name ${id.version} to `$destinationDir`',

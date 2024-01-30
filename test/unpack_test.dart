@@ -38,9 +38,11 @@ void main() {
     );
     await runPub(
       args: ['unpack', 'foo'],
-      error: 'Target directory `.${s}foo-1.2.3` already exists.',
+      error:
+          'Target directory `.${s}foo-1.2.3` already exists. Use --force to overwrite',
       exitCode: 1,
     );
+    await runPub(args: ['unpack', 'foo', '--force']);
   });
 
   test('Chooses right version to unpack', () async {
