@@ -18,7 +18,6 @@ import '../solver/type.dart';
 import '../source/hosted.dart';
 import '../utils.dart';
 
-/// Handles the `deps` pub command.
 class UnpackCommand extends PubCommand {
   @override
   String get name => 'unpack';
@@ -100,17 +99,15 @@ Will resolve dependencies in the folder unless `--no-resolve` is passed.
       match.namedGroup('descriptor'),
     );
 
-    if (parseResult.ref.description is! HostedDescription) {
+    if (parseResult.description is! HostedDescription) {
       fail('Can only fetch hosted packages.');
     }
-    final versions = await parseResult.ref.source
-        .doGetVersions(parseResult.ref, null, cache);
+    final versions = await parseResult.source
+        .doGetVersions(parseResult.toRef(), null, cache);
     final constraint = parseResult.constraint;
-    if (constraint != null) {
-      versions.removeWhere((id) => !constraint.allows(id.version));
-    }
+    versions.removeWhere((id) => !constraint.allows(id.version));
     if (versions.isEmpty) {
-      fail('No matching versions of ${parseResult.ref.name}.');
+      fail('No matching versions of ${parseResult.name}.');
     }
     versions.sort((id1, id2) => id1.version.compareTo(id2.version));
 
@@ -144,77 +141,44 @@ Will resolve dependencies in the folder unless `--no-resolve` is passed.
     }
   }
 
-  // TODO(sigurdm): Refactor this to share with `add`.
-  _ParseResult _parseDescriptor(
+  PackageRange _parseDescriptor(
     String packageName,
     String? descriptor,
   ) {
-    /// We want to allow for [constraint] to take on a `null` value here to
-    /// preserve the fact that the user did not specify a constraint.
-    VersionConstraint? constraint;
-
-    /// The package to be added.
-    PackageRef? ref;
-
-    if (descriptor != null) {
-      try {
-        // An unquoted version constraint is not always valid yaml.
-        // But we want to allow it here anyways.
-        constraint = VersionConstraint.parse(descriptor);
-      } on FormatException {
-        final parsedDescriptor = loadYaml(descriptor);
-        // Use the pubspec parsing mechanism for parsing the descriptor.
-        final Pubspec dummyPubspec;
-        try {
-          dummyPubspec = Pubspec.fromMap(
-            {
-              'dependencies': {
-                packageName: parsedDescriptor,
-              },
-              'environment': {
-                'sdk': sdk.version.toString(),
-              },
-            },
-            cache.sources,
-            // Resolve relative paths relative to current, not where the pubspec.yaml is.
-            location: p.toUri(p.join(p.current, 'descriptor')),
-          );
-        } on FormatException catch (e) {
-          usageException('Failed parsing package specification: ${e.message}');
-        }
-        final range = dummyPubspec.dependencies[packageName]!;
-        if (parsedDescriptor is String) {
-          // Ref will be constructed by the default behavior below.
-          ref = null;
-        } else {
-          ref = range.toRef();
-        }
-        final hasExplicitConstraint = parsedDescriptor is String ||
-            (parsedDescriptor is Map &&
-                parsedDescriptor.containsKey('version'));
-        // If the descriptor has an explicit constraint, use that. Otherwise we
-        // infer it.
-        if (hasExplicitConstraint) {
-          constraint = range.constraint;
-        }
-      }
+    late final defaultDescription =
+        HostedDescription(packageName, cache.hosted.defaultUrl);
+    if (descriptor == null) {
+      return PackageRange(
+        PackageRef(packageName, defaultDescription),
+        VersionConstraint.any,
+      );
     }
-    return _ParseResult(
-      ref ??
-          PackageRef(
-            packageName,
-            HostedDescription(
-              packageName,
-              cache.hosted.defaultUrl,
-            ),
-          ),
-      constraint,
-    );
+    try {
+      // An unquoted version constraint is not always valid yaml.
+      // But we want to allow it here anyways.
+      final constraint = VersionConstraint.parse(descriptor);
+      return PackageRange(
+        PackageRef(packageName, defaultDescription),
+        constraint,
+      );
+    } on FormatException {
+      final parsedDescriptor = loadYaml(descriptor);
+      // Use the pubspec parsing mechanism for parsing the descriptor.
+      final Pubspec dummyPubspec;
+      try {
+        dummyPubspec = Pubspec.fromMap(
+          {
+            'dependencies': {packageName: parsedDescriptor},
+            'environment': {'sdk': sdk.version.toString()},
+          },
+          cache.sources,
+          // Resolve relative paths relative to current, not where the pubspec.yaml is.
+          location: p.toUri(p.join(p.current, 'descriptor')),
+        );
+      } on FormatException catch (e) {
+        usageException('Failed parsing package specification: ${e.message}');
+      }
+      return dummyPubspec.dependencies[packageName]!;
+    }
   }
-}
-
-class _ParseResult {
-  final PackageRef ref;
-  final VersionConstraint? constraint;
-  _ParseResult(this.ref, this.constraint);
 }
