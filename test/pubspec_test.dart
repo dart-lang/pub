@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:pub/src/exceptions.dart';
@@ -309,6 +310,42 @@ dependencies:
       expectPubspecException(
         'version: not version',
         (pubspec) => pubspec.version,
+      );
+    });
+
+    test('throws if workspace is not a list', () {
+      runZoned(
+        () {
+          expectPubspecException(
+            'workspace: \'a string\'',
+            (pubspec) => pubspec.workspace,
+          );
+        },
+        zoneValues: {#enableWorkspaces: true},
+      );
+    });
+
+    test('throws if workspace is a list of not-strings', () {
+      runZoned(
+        () {
+          expectPubspecException(
+            'workspace: [\'a string\', 24]',
+            (pubspec) => pubspec.workspace,
+          );
+        },
+        zoneValues: {#enableWorkspaces: true},
+      );
+    });
+
+    test('throws if resolution is not a reasonable string', () {
+      runZoned(
+        () {
+          expectPubspecException(
+            'resolution: "sometimes"',
+            (pubspec) => pubspec.resolution,
+          );
+        },
+        zoneValues: {#enableWorkspaces: true},
       );
     });
 

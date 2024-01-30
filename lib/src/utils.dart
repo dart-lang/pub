@@ -21,6 +21,11 @@ import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
 
+// TODO(https://github.com/dart-lang/pub/issues/4127) remove when workspace
+// feature is done.
+bool get enableWorkspaces =>
+    Zone.current[#enableWorkspaces] == true || runningFromTest;
+
 /// A regular expression matching a Dart identifier.
 ///
 /// This also matches a package name, since they must be Dart identifiers.

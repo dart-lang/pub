@@ -15,6 +15,7 @@ import 'package_name.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
 import 'system_cache.dart';
+import 'utils.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
 
@@ -63,6 +64,41 @@ class Pubspec extends PubspecBase {
   /// This can be null if the pubspec was created in-memory or if its location
   /// is unknown.
   Uri? get _location => fields.span.sourceUrl;
+
+  /// Directories of packages that should resolve together with this package.
+  late List<String> workspace = () {
+    if (!enableWorkspaces) return <String>[];
+    final result = <String>[];
+    final r = fields.nodes['workspace'];
+    if (r == null || r.value == null) return <String>[];
+    if (r is! YamlList) {
+      _error('"workspace" must be a list of strings', r.span);
+    }
+    for (final t in r.nodes) {
+      final value = t.value;
+      if (value is! String) {
+        _error('"workspace" must be a list of strings', t.span);
+      }
+      result.add(value);
+    }
+    return result;
+  }();
+
+  /// The resolution mode.
+  late Resolution resolution = () {
+    if (!enableWorkspaces) return Resolution.none;
+    final r = fields.nodes['resolution'];
+    return switch (r?.value) {
+      null => Resolution.none,
+      'local' => Resolution.local,
+      'workspace' => Resolution.workspace,
+      'external' => Resolution.external,
+      _ => _error(
+          '"resolution" must be one of `workspace`, `local`, `external`',
+          r!.span,
+        )
+    };
+  }();
 
   /// The additional packages this package depends on.
   Map<String, PackageRange> get dependencies =>
@@ -253,6 +289,7 @@ class Pubspec extends PubspecBase {
     Map? fields,
     SourceRegistry? sources,
     Map<String, SdkConstraint>? sdkConstraints,
+    this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
   })  : _dependencies = dependencies == null
             ? null
@@ -726,4 +763,11 @@ class SdkConstraint {
 
   @override
   int get hashCode => Object.hash(effectiveConstraint, originalConstraint);
+}
+
+enum Resolution {
+  external,
+  workspace,
+  local,
+  none,
 }

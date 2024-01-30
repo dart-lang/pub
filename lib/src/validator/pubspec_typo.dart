@@ -72,4 +72,6 @@ const _validPubspecKeys = [
   'funding',
   'topics',
   'ignored_advisories',
+  'workspace',
+  'resolution',
 ];
