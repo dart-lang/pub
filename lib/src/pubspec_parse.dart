@@ -140,12 +140,12 @@ abstract class PubspecBase {
 
   /// The list of advisory IDs to be ignored when reporting security advisories
   /// affecting dependencies.
-  List<String> get ignoredAdvisories {
+  Set<String> get ignoredAdvisories {
     var advisoryIDs = _ignoredAdvisories;
     if (advisoryIDs != null) {
       return advisoryIDs;
     }
-    advisoryIDs = <String>[];
+    advisoryIDs = <String>{};
 
     Never ignoredAdvisoriesError(SourceSpan span) => _error(
           '"ignored_advisories" field must be a list of advisory IDs',
@@ -154,7 +154,7 @@ abstract class PubspecBase {
 
     final ignoredAdvisoriesNode = fields.nodes['ignored_advisories'];
     if (ignoredAdvisoriesNode == null) {
-      return _ignoredAdvisories = List.unmodifiable(advisoryIDs);
+      return _ignoredAdvisories = Set.unmodifiable(advisoryIDs);
     }
     if (ignoredAdvisoriesNode is! YamlList) {
       ignoredAdvisoriesError(ignoredAdvisoriesNode.span);
@@ -167,10 +167,10 @@ abstract class PubspecBase {
       advisoryIDs.add(value);
     }
 
-    return _ignoredAdvisories = List.unmodifiable(advisoryIDs);
+    return _ignoredAdvisories = Set.unmodifiable(advisoryIDs);
   }
 
-  List<String>? _ignoredAdvisories;
+  Set<String>? _ignoredAdvisories;
 
   /// The list of patterns covering _false-positive secrets_ in the package.
   ///

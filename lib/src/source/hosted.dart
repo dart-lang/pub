@@ -630,6 +630,19 @@ class HostedSource extends CachedSource {
         throw FormatException('id must be a String');
       }
 
+      var aliasIDs = <String>[];
+      final aliases = advisory['aliases'];
+      if (aliases is! List) {
+        throw FormatException('aliases must be a list');
+      }
+
+      for (final id in aliases) {
+        if (id is! String) {
+          throw FormatException('alias IDs must be a string');
+        }
+        aliasIDs.add(id);
+      }
+
       final affectedPackages = advisory['affected'];
       if (affectedPackages is! List) {
         throw FormatException('affectedPackages must be a list');
@@ -674,7 +687,8 @@ class HostedSource extends CachedSource {
         }
         affectedVersions.add(v);
       }
-      advisoriesList.add(Advisory(id, affectedVersions));
+
+      advisoriesList.add(Advisory(id, affectedVersions, aliasIDs));
     }
 
     return advisoriesList;
@@ -1785,7 +1799,8 @@ class _VersionInfo {
 class Advisory {
   String id;
   List<String> affectedVersions;
-  Advisory(this.id, this.affectedVersions);
+  List<String> aliases;
+  Advisory(this.id, this.affectedVersions, this.aliases);
 }
 
 /// Given a URL, returns a "normalized" string to be used as a directory name

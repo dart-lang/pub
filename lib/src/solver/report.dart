@@ -419,7 +419,12 @@ $contentHashesDocumentationUrl
       if (advisories != null && advisories.isNotEmpty) {
         final advisoryFootnotes = <int>[];
         final reportedAdvisories = advisories
-            .where((adv) => !_rootPubspec.ignoredAdvisories.contains(adv.id))
+            .where(
+              (adv) => _rootPubspec.ignoredAdvisories.intersection({
+                ...adv.aliases,
+                adv.id,
+              }).isEmpty,
+            )
             .take(maxAdvisoryFootnotesPerLine);
         for (final adv in reportedAdvisories) {
           advisoryFootnotes.add(advisoriesIds.length);
