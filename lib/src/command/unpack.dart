@@ -33,10 +33,10 @@ For example:
 Downloads and extracts the lastest stable package:foo from pub.dev in a
 directory `foo-<version>`.
 
-  $topLevelProgram pub unpack foo:1.2.3-pre
+  $topLevelProgram pub unpack foo:1.2.3-pre --no-resolve
 
 Downloads and extracts package:foo version 1.2.3-pre in a directory
-`foo-1.2.3-pre`.
+`foo-1.2.3-pre` without running running implicit `pub get`.
 
   $topLevelProgram pub unpack foo --output=archives
 
@@ -47,9 +47,6 @@ Downloads and extracts latest stable version of package:foo in a directory
 
 Downloads and extracts latest stable version of package:foo from my_repo.org
 in a directory `foo-<version>`.
-
-
-Will resolve dependencies in the folder unless `--no-resolve` is passed.
 ''';
 
   @override
