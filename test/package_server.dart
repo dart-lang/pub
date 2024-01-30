@@ -146,6 +146,7 @@ class PackageServer {
                 {
                   'id': advisory.id,
                   'summary': 'Example',
+                  'aliases': [...advisory.aliases],
                   'details': 'This is a dummy example.',
                   'modified': defaultAdvisoriesUpdated.toIso8601String(),
                   'published': defaultAdvisoriesUpdated.toIso8601String(),
@@ -330,6 +331,7 @@ class PackageServer {
     required String advisoryId,
     required List<String> affectedVersions,
     DateTime? advisoriesUpdated,
+    List<String> aliases = const <String>[],
   }) {
     _packages[name]!.advisoriesUpdated =
         advisoriesUpdated ?? defaultAdvisoriesUpdated;
@@ -338,6 +340,7 @@ class PackageServer {
             advisoryId,
             name,
             affectedVersions,
+            aliases,
           ),
         );
   }
@@ -425,11 +428,13 @@ class _ServedAdvisory {
   String id;
   String affectedPackage;
   List<String> affectedPackageVersions;
+  List<String> aliases;
 
   _ServedAdvisory(
     this.id,
     this.affectedPackage,
     this.affectedPackageVersions,
+    this.aliases,
   );
 }
 
