@@ -9,7 +9,9 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
     show EnvironmentNotFoundException, applicationConfigHome;
 import 'package:http/http.dart' show ByteStream;
@@ -205,7 +207,7 @@ Future<String> readTextFileAsync(String file) {
 }
 
 /// Reads the contents of the binary file [file].
-List<int> readBinaryFile(String file) {
+Uint8List readBinaryFile(String file) {
   log.io('Reading binary file $file.');
   var contents = File(file).readAsBytesSync();
   log.io('Read ${contents.length} bytes from $file.');
@@ -237,6 +239,12 @@ void writeTextFile(
 
   deleteIfLink(file);
   File(file).writeAsStringSync(contents, encoding: encoding);
+}
+
+/// Reads the contents of the binary file [file].
+void writeBinaryFile(String file, Uint8List data) {
+  log.io('Writing ${data.length} bytes to file $file.');
+  File(file).writeAsBytesSync(data);
 }
 
 /// Creates [file] and writes [contents] to it.
@@ -666,9 +674,9 @@ final String dartRepoRoot = (() {
 /// should just be a fragment like, "Are you sure you want to proceed". The
 /// default for an empty response, or any response not starting with `y` or `Y`
 /// is false.
-Future<bool> confirm(String message) {
-  log.fine('Showing confirm message: $message');
-  return stdinPrompt('$message (y/N)?').then(RegExp(r'^[yY]').hasMatch);
+Future<bool> confirm(String message) async {
+  final reply = await stdinPrompt('$message (y/N)?');
+  return RegExp(r'^[yY]').hasMatch(reply);
 }
 
 /// Writes [prompt] and reads a line from stdin.
@@ -1000,8 +1008,32 @@ Future<HttpServer> bindServer(String host, int port) async {
   return server;
 }
 
+/// Extracts a single file from a `.tar.gz` [stream].
+///
+/// [filename] should be the relative path inside the archive (with unix
+/// separators '/').
+///
+/// Throws a `FormatException` if that file did not exist.
+Future<Uint8List> extractFileFromTarGz(
+  Stream<List<int>> stream,
+  String filename,
+) async {
+  final reader = TarReader(stream.transform(gzip.decoder));
+  filename = path.posix.normalize(filename);
+  while (await reader.moveNext()) {
+    final entry = reader.current;
+    if (path.posix.normalize(entry.name) != filename) continue;
+    if (!(entry.type == TypeFlag.reg || entry.type == TypeFlag.regA)) {
+      // Can only read regular files.
+      throw FormatException('$filename is not a file');
+    }
+    return await collectBytes(entry.contents);
+  }
+  throw FormatException('Could not find $filename in archive');
+}
+
 /// Extracts a `.tar.gz` file from [stream] to [destination].
-Future extractTarGz(Stream<List<int>> stream, String destination) async {
+Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
 
   destination = path.absolute(destination);

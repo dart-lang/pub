@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -12,11 +14,12 @@ import '../authentication/client.dart';
 import '../command.dart';
 import '../command_runner.dart';
 import '../exceptions.dart' show DataException;
-import '../exit_codes.dart' as exit_codes;
+import '../exit_codes.dart';
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../pubspec.dart';
 import '../solver/type.dart';
 import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
@@ -36,7 +39,7 @@ class LishCommand extends PubCommand {
   bool get takesArguments => false;
 
   /// The URL of the server to which to upload the package.
-  late final Uri host = () {
+  Uri computeHost(Pubspec pubspec) {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
@@ -47,8 +50,8 @@ class LishCommand extends PubCommand {
     }
 
     // Otherwise, use the one specified in the pubspec.
-    final publishTo = entrypoint.root.pubspec.publishTo;
-    if (publishTo != null) {
+    final publishTo = pubspec.publishTo;
+    if (publishTo != null && publishTo != 'none') {
       try {
         return validateAndNormalizeHostedUrl(publishTo);
       } on FormatException catch (e) {
@@ -58,7 +61,7 @@ class LishCommand extends PubCommand {
 
     // Use the default server if nothing else is specified
     return Uri.parse(cache.hosted.defaultUrl);
-  }();
+  }
 
   /// Whether the publish is just a preview.
   bool get dryRun => argResults.flag('dry-run');
@@ -67,6 +70,10 @@ class LishCommand extends PubCommand {
   bool get force => argResults.flag('force');
 
   bool get skipValidation => argResults.flag('skip-validation');
+
+  late final String? _fromArchive =
+      argResults.optionWithoutDefault('from-archive');
+  late final String? _toArchive = argResults.optionWithoutDefault('to-archive');
 
   LishCommand() {
     argParser.addFlag(
@@ -92,6 +99,19 @@ class LishCommand extends PubCommand {
       help: 'The package server to which to upload this package.',
       hide: true,
     );
+    argParser.addOption(
+      'to-archive',
+      help: 'Create a .tar.gz archive instead of publishing to server',
+      valueHelp: '[archive.tar.gz]',
+      hide: true,
+    );
+    argParser.addOption(
+      'from-archive',
+      help:
+          'Publish from a .tar.gz archive instead of current folder. Implies `--skip-validation`.',
+      valueHelp: '[archive.tar.gz]',
+      hide: true,
+    );
 
     argParser.addOption(
       'directory',
@@ -104,6 +124,7 @@ class LishCommand extends PubCommand {
   Future<void> _publishUsingClient(
     List<int> packageBytes,
     http.Client client,
+    Uri host,
   ) async {
     Uri? cloudStorageUrl;
 
@@ -189,7 +210,7 @@ class LishCommand extends PubCommand {
     }
   }
 
-  Future<void> _publish(List<int> packageBytes) async {
+  Future<void> _publish(List<int> packageBytes, Uri host) async {
     try {
       final officialPubServers = {
         'https://pub.dev',
@@ -217,12 +238,12 @@ class LishCommand extends PubCommand {
         // This allows us to use `dart pub token add` to inject a token for use
         // with the official servers.
         await oauth2.withClient((client) {
-          return _publishUsingClient(packageBytes, client);
+          return _publishUsingClient(packageBytes, client, host);
         });
       } else {
         // For third party servers using bearer authentication client
         await withAuthenticatedClient(cache, host, (client) {
-          return _publishUsingClient(packageBytes, client);
+          return _publishUsingClient(packageBytes, client, host);
         });
       }
     } on PubHttpResponseException catch (error) {
@@ -235,8 +256,7 @@ class LishCommand extends PubCommand {
     }
   }
 
-  @override
-  Future runProtected() async {
+  Future<void> _validateArgs() async {
     if (argResults.wasParsed('server')) {
       await log.errorsOnlyUnlessTerminal(() {
         log.message(
@@ -251,18 +271,26 @@ the \$PUB_HOSTED_URL environment variable.''',
       usageException('Cannot use both --force and --dry-run.');
     }
 
-    if (entrypoint.root.pubspec.isPrivate) {
-      dataError('A private package cannot be published.\n'
-          'You can enable this by changing the "publish_to" field in your '
-          'pubspec.');
+    if (_fromArchive != null && _toArchive != null) {
+      usageException('Cannot use both --from-archive and --to-archive.');
     }
 
-    if (!skipValidation) {
-      await entrypoint.acquireDependencies(SolveType.get);
-    } else {
+    if (_fromArchive != null && dryRun) {
+      usageException('Cannot use both --from-archive and --dry-run.');
+    }
+
+    if (_toArchive != null && force) {
+      usageException('Cannot use both --to-archive and --force.');
+    }
+  }
+
+  Future<_Publication> _publicationFromEntrypoint() async {
+    if (skipValidation) {
       log.warning(
         'Running with `skip-validation`. No client-side validation is done.',
       );
+    } else {
+      await entrypoint.acquireDependencies(SolveType.get);
     }
 
     var files = entrypoint.root.listFiles();
@@ -270,45 +298,79 @@ the \$PUB_HOSTED_URL environment variable.''',
 
     // Show the package contents so the user can verify they look OK.
     var package = entrypoint.root;
+    final host = computeHost(package.pubspec);
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
       '${tree.fromFiles(files, baseDir: entrypoint.rootDir, showFileSizes: true)}',
     );
 
-    var packageBytes =
+    final packageBytes =
         await createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
+
     log.message(
       '\nTotal compressed archive size: ${_readableFileSize(packageBytes.length)}.\n',
     );
 
-    // Validate the package.
-    var isValid = skipValidation
-        ? true
-        : await _validate(
-            packageBytes.length,
-            files,
-          );
-    if (!isValid) {
-      overrideExitCode(exit_codes.DATA);
-      return;
-    } else if (dryRun) {
+    final validationResult =
+        skipValidation ? null : await _validate(packageBytes, files, host);
+
+    if (dryRun) {
       log.message('The server may enforce additional checks.');
-      return;
-    } else {
-      await _publish(packageBytes);
     }
+    return _Publication(
+      packageBytes: packageBytes,
+      warningCount: validationResult?.warningsCount ?? 0,
+      hintCount: validationResult?.hintsCount ?? 0,
+      pubspec: package.pubspec,
+    );
   }
 
-  /// Returns the value associated with [key] in [map]. Throws a user-friendly
-  /// error if [map] doesn't contain [key].
-  dynamic _expectField(Map map, String key, http.Response response) {
-    if (map.containsKey(key)) return map[key];
-    invalidServerResponse(response);
+  Future<_Publication> _publicationFromArchive(String archive) async {
+    final Uint8List packageBytes;
+    try {
+      log.message('Publishing from archive: $_fromArchive');
+
+      packageBytes = readBinaryFile(archive);
+    } on FileSystemException catch (e) {
+      dataError(
+        'Failed reading archive file: $e)',
+      );
+    }
+    final Pubspec pubspec;
+    try {
+      pubspec = Pubspec.parse(
+        utf8.decode(
+          await extractFileFromTarGz(
+            Stream.fromIterable([packageBytes]),
+            'pubspec.yaml',
+          ),
+        ),
+        cache.sources,
+      );
+    } on FormatException catch (e) {
+      dataError('Failed to read pubspec.yaml from archive: ${e.message}');
+    }
+    final host = computeHost(pubspec);
+    log.message('Publishing ${pubspec.name} ${pubspec.version} to $host.');
+    return _Publication(
+      packageBytes: packageBytes,
+      warningCount: 0,
+      hintCount: 0,
+      pubspec: pubspec,
+    );
   }
 
-  /// Validates the package. Completes to false if the upload should not
+  /// Validates the package.
+  ///
+  /// Throws if there are errors and the upload should not
   /// proceed.
-  Future<bool> _validate(int packageSize, List<String> files) async {
+  ///
+  /// Returns a summary of warnings and hints if there are any, otherwise `null`.
+  Future<({int warningsCount, int hintsCount})> _validate(
+    Uint8List packageBytes,
+    List<String> files,
+    Uri host,
+  ) async {
     final hints = <String>[];
     final warnings = <String>[];
     final errors = <String>[];
@@ -317,7 +379,7 @@ the \$PUB_HOSTED_URL environment variable.''',
       'Validating package',
       () async => await Validator.runAll(
         entrypoint,
-        packageSize,
+        packageBytes.length,
         host,
         files,
         hints: hints,
@@ -327,46 +389,80 @@ the \$PUB_HOSTED_URL environment variable.''',
     );
 
     if (errors.isNotEmpty) {
-      log.error('Sorry, your package is missing '
+      dataError('Sorry, your package is missing '
           "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
           "and can't be published yet.\nFor more information, see: "
           'https://dart.dev/tools/pub/cmd/pub-lish.\n');
-      return false;
     }
 
-    if (force) return true;
+    return (warningsCount: warnings.length, hintsCount: hints.length);
+  }
 
-    String formatWarningCount() {
-      final hintText = hints.isEmpty
-          ? ''
-          : ' and ${hints.length} ${pluralize('hint', hints.length)}';
-      return '\nPackage has ${warnings.length} '
-          '${pluralize('warning', warnings.length)}$hintText.';
-    }
-
-    if (dryRun) {
-      log.warning(formatWarningCount());
-      return warnings.isEmpty;
-    }
-
+  /// Asks the user for confirmation of uploading [package].
+  ///
+  /// Skips asking if [force].
+  /// Throws if user didn't confirm.
+  Future<void> _confirmUpload(_Publication package, Uri host) async {
+    if (force) return;
     log.message('\nPublishing is forever; packages cannot be unpublished.'
-        '\nPolicy details are available at https://pub.dev/policy');
+        '\nPolicy details are available at https://pub.dev/policy\n');
 
-    final package = entrypoint.root;
     var message =
-        'Do you want to publish ${package.name} ${package.version} to $host';
-
-    if (warnings.isNotEmpty || hints.isNotEmpty) {
-      final warning = formatWarningCount();
-      message = '${log.bold(log.red(warning))}. $message';
+        'Do you want to publish ${package.pubspec.name} ${package.pubspec.version} to $host';
+    if (package.hintCount != 0 || package.warningCount != 0) {
+      message = '${package.warningsCountMessage}. $message';
     }
-
-    var confirmed = await confirm('\n$message');
-    if (!confirmed) {
-      log.error('Package upload canceled.');
-      return false;
+    if (!await confirm('\n$message')) {
+      dataError('Package upload canceled.');
     }
-    return true;
+  }
+
+  @override
+  Future runProtected() async {
+    await _validateArgs();
+    final publication = await (_fromArchive == null
+        ? _publicationFromEntrypoint()
+        : _publicationFromArchive(_fromArchive));
+    if (dryRun) {
+      log.warning(publication.warningsCountMessage);
+      if (publication.warningCount != 0) {
+        overrideExitCode(DATA);
+      }
+      return;
+    }
+    if (_toArchive == null) {
+      final host = computeHost(publication.pubspec);
+      if (publication.pubspec.isPrivate) {
+        dataError('A private package cannot be published.\n'
+            'You can enable this by changing the "publish_to" field in your '
+            'pubspec.');
+      }
+      await _confirmUpload(publication, host);
+
+      await _publish(publication.packageBytes, host);
+    } else {
+      if (dryRun) {
+        log.message('Would have written to $_toArchive.');
+      } else {
+        _writeUploadToArchive(publication, _toArchive);
+      }
+    }
+  }
+
+  void _writeUploadToArchive(_Publication publication, String archive) {
+    try {
+      writeBinaryFile(archive, publication.packageBytes);
+    } on FileSystemException catch (e) {
+      dataError('Failed writing archive: $e');
+    }
+    log.message('Wrote package archive at $_toArchive');
+  }
+
+  /// Returns the value associated with [key] in [map]. Throws a user-friendly
+  /// error if [map] doesn't contain [key].
+  dynamic _expectField(Map map, String key, http.Response response) {
+    if (map.containsKey(key)) return map[key];
+    invalidServerResponse(response);
   }
 }
 
@@ -380,4 +476,26 @@ String _readableFileSize(int size) {
   } else {
     return '<1 KB';
   }
+}
+
+class _Publication {
+  Uint8List packageBytes;
+  int warningCount;
+  int hintCount;
+
+  Pubspec pubspec;
+
+  String get warningsCountMessage {
+    final hintText =
+        hintCount == 0 ? '' : ' and $hintCount ${pluralize('hint', hintCount)}';
+    return '\nPackage has $warningCount '
+        '${pluralize('warning', warningCount)}$hintText.';
+  }
+
+  _Publication({
+    required this.packageBytes,
+    required this.warningCount,
+    required this.hintCount,
+    required this.pubspec,
+  });
 }

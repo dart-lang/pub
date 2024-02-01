@@ -402,6 +402,7 @@ Future<PubProcess> startPublish(
   bool overrideDefaultHostedServer = true,
   Map<String, String>? environment,
   String path = '',
+  String? workingDirectory,
 }) async {
   var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
@@ -415,6 +416,7 @@ Future<PubProcess> startPublish(
         'PUB_HOSTED_URL': server.url + path,
       if (environment != null) ...environment,
     },
+    workingDirectory: workingDirectory,
   );
 }
 

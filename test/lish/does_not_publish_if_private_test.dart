@@ -10,13 +10,11 @@ import '../test_pub.dart';
 
 void main() {
   test('does not publish if the package is private', () async {
-    var pkg = packageMap('test_pkg', '1.0.0');
-    pkg['publish_to'] = 'none';
-    await d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.validPackage(pubspecExtras: {'publish_to': 'none'}).create();
 
     await runPub(
       args: ['lish'],
-      error: startsWith('A private package cannot be published.'),
+      error: contains('A private package cannot be published.'),
       exitCode: exit_codes.DATA,
     );
   });
