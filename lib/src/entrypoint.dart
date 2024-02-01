@@ -599,10 +599,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     );
   }
 
-  /// Deletes outdated cached executable snapshots.
-  ///
-  /// If [changed] is passed, only dependencies whose contents might be changed
-  /// if one of the given packages changes will have their executables deleted.
+  /// Deletes outdated cached executable snapshots for all packages that have a
+  /// transitive dependency on a package in [changed].
   Future<void> _deleteExecutableSnapshots({
     required Iterable<String> changed,
   }) async {
