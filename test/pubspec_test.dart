@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:pub/src/exceptions.dart';
@@ -313,39 +312,98 @@ dependencies:
       );
     });
 
+    test('parses workspace', () {
+      expect(
+        Pubspec.parse(
+          '''
+environment:
+  sdk: ^3.7.0
+workspace: ['a', 'b', 'c']
+''',
+          sources,
+        ).workspace,
+        ['a', 'b', 'c'],
+      );
+    });
+
+    test('parses resolution', () {
+      expect(
+        Pubspec.parse(
+          '''
+environment:
+  sdk: ^3.7.0
+resolution: workspace
+''',
+          sources,
+        ).resolution,
+        Resolution.workspace,
+      );
+    });
+
+    test('errors on workspace for earlier language versions', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^1.2.3
+workspace: ['a', 'b', 'c']
+''',
+        (p) => p.workspace,
+      );
+      // but no error if you don't look at it.
+      expect(
+        Pubspec.parse(
+          '''
+name: foo
+environment:
+  sdk: ^1.2.3
+resolution: workspace
+''',
+          sources,
+        ).name,
+        'foo',
+      );
+    });
+
+    test('errors on resolution for earlier language versions', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^1.2.3
+resolution: local
+''',
+        (p) => p.resolution,
+      );
+    });
+
     test('throws if workspace is not a list', () {
-      runZoned(
-        () {
-          expectPubspecException(
-            'workspace: \'a string\'',
-            (pubspec) => pubspec.workspace,
-          );
-        },
-        zoneValues: {#enableWorkspaces: true},
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.7.0
+workspace: 'a string'
+''',
+        (pubspec) => pubspec.workspace,
       );
     });
 
     test('throws if workspace is a list of not-strings', () {
-      runZoned(
-        () {
-          expectPubspecException(
-            'workspace: [\'a string\', 24]',
-            (pubspec) => pubspec.workspace,
-          );
-        },
-        zoneValues: {#enableWorkspaces: true},
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.7.0
+workspace: ['a string', 24]
+''',
+        (pubspec) => pubspec.workspace,
       );
     });
 
     test('throws if resolution is not a reasonable string', () {
-      runZoned(
-        () {
-          expectPubspecException(
-            'resolution: "sometimes"',
-            (pubspec) => pubspec.resolution,
-          );
-        },
-        zoneValues: {#enableWorkspaces: true},
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.7.0
+resolution: "sometimes"''',
+        (pubspec) => pubspec.resolution,
       );
     });
 

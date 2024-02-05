@@ -15,7 +15,6 @@ import 'package_name.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
 import 'system_cache.dart';
-import 'utils.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
 
@@ -67,10 +66,16 @@ class Pubspec extends PubspecBase {
 
   /// Directories of packages that should resolve together with this package.
   late List<String> workspace = () {
-    if (!enableWorkspaces) return <String>[];
     final result = <String>[];
     final r = fields.nodes['workspace'];
+    if (r != null && !languageVersion.supportsWorkspaces) {
+      _error(
+        '`workspace` and `resolution` requires at least language version ${LanguageVersion.firstVersionWithWorkspaces}',
+        r.span,
+      );
+    }
     if (r == null || r.value == null) return <String>[];
+
     if (r is! YamlList) {
       _error('"workspace" must be a list of strings', r.span);
     }
@@ -86,8 +91,13 @@ class Pubspec extends PubspecBase {
 
   /// The resolution mode.
   late Resolution resolution = () {
-    if (!enableWorkspaces) return Resolution.none;
     final r = fields.nodes['resolution'];
+    if (r != null && !languageVersion.supportsWorkspaces) {
+      _error(
+        '`workspace` and `resolution` requires at least language version ${LanguageVersion.firstVersionWithWorkspaces}',
+        r.span,
+      );
+    }
     return switch (r?.value) {
       null => Resolution.none,
       'local' => Resolution.local,
