@@ -12,6 +12,7 @@ import 'entrypoint.dart';
 import 'log.dart' as log;
 import 'sdk.dart';
 import 'validator/analyze.dart';
+import 'validator/breaking_with_deprecated.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
@@ -159,6 +160,7 @@ abstract class Validator {
       PubspecTypoValidator(),
       LeakDetectionValidator(),
       SizeValidator(),
+      RemoveDeprecatedOnBreakingReleaseValidator(),
     ];
 
     final context = ValidationContext(
