@@ -21,6 +21,7 @@ import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/git.dart';
+import '../source/hosted.dart';
 import '../source/path.dart';
 import '../source/sdk.dart' show SdkSource;
 import '../system_cache.dart';
@@ -240,6 +241,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         current.version,
         cache,
       );
+
+      final id = current ?? upgradable ?? resolvable ?? latest;
+      final packageAdvisories = await id?.source
+          .getAdvisoriesForPackage(id, cache, Duration(days: 3));
+
       final discontinued =
           currentStatus == null ? false : currentStatus.isDiscontinued;
       final discontinuedReplacedBy = currentStatus?.discontinuedReplacedBy;
@@ -279,6 +285,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         discontinuedReplacedBy: discontinuedReplacedBy,
         isCurrentRetracted: isCurrentRetracted,
         isLatest: isLatest,
+        advisories: packageAdvisories,
       );
     }
 
@@ -644,12 +651,15 @@ Future<void> _outputHuman(
           'To update these dependencies, ${mode.upgradeConstrained}.');
     }
   }
-  if (rows
-      .any((package) => package.isDiscontinued || package.isCurrentRetracted)) {
+
+  bool displayExtraInfo(_PackageDetails package) =>
+      package.isDiscontinued ||
+      package.isCurrentRetracted ||
+      (package.advisories != null && package.advisories!.isNotEmpty);
+
+  if (rows.any(displayExtraInfo)) {
     log.message('\n');
-    for (var package in rows.where(
-      (package) => package.isDiscontinued || package.isCurrentRetracted,
-    )) {
+    for (var package in rows.where(displayExtraInfo)) {
       log.message(log.bold(package.name));
       if (package.isDiscontinued) {
         final replacedByText = package.discontinuedReplacedBy != null
@@ -665,6 +675,35 @@ Future<void> _outputHuman(
           '    Version ${package.current!._id.version} is retracted. '
           'See https://dart.dev/go/package-retraction',
         );
+      }
+      if (package.advisories != null && package.advisories!.isNotEmpty) {
+        final advisoriesText = package.advisories!.length > 1
+            ? 'security advisories'
+            : 'a security advisory';
+        log.message(
+          '    Package ${package.name} is affected by $advisoriesText. '
+          'See https://dart.dev//go/pub-security-advisories',
+        );
+        log.message('\n');
+        var displayedVersions = <String>{};
+        for (final advisory in package.advisories!) {
+          for (final versionDetails in [
+            package.current,
+            package.upgradable,
+            package.resolvable,
+            package.latest,
+          ]) {
+            final version =
+                versionDetails?._pubspec.version.canonicalizedVersion;
+            if (version != null &&
+                advisory.affectedVersions.contains(version)) {
+              displayedVersions.add(version);
+            }
+          }
+          log.message('    - "${advisory.summary}"');
+          log.message('      Affects: ${displayedVersions.join(', ')}');
+          log.message('      ${advisoriesDisplayUrl(advisory.id)}');
+        }
       }
     }
   }
@@ -740,6 +779,19 @@ Showing outdated packages$directoryDescription.
               if (packageDetails.isCurrentRetracted) {
                 suffix = ' (retracted)';
               }
+            }
+          }
+          final advisories = packageDetails.advisories;
+          if (advisories != null) {
+            final hasAdvisory = advisories
+                .where(
+                  (advisory) => advisory.affectedVersions.contains(
+                    versionDetails._pubspec.version.canonicalizedVersion,
+                  ),
+                )
+                .isNotEmpty;
+            if (hasAdvisory) {
+              suffix = '${suffix ?? ''} (advisory)';
             }
           }
           prefix = isLatest ? '' : '*';
@@ -827,6 +879,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final String? discontinuedReplacedBy;
   final bool isCurrentRetracted;
   final bool isLatest;
+  final List<Advisory>? advisories;
 
   _PackageDetails({
     required this.name,
@@ -839,6 +892,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     required this.discontinuedReplacedBy,
     required this.isCurrentRetracted,
     required this.isLatest,
+    required this.advisories,
   });
 
   @override

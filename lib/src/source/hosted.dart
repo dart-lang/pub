@@ -630,6 +630,11 @@ class HostedSource extends CachedSource {
         throw FormatException('id must be a String');
       }
 
+      final summary = advisory['summary'];
+      if (summary is! String) {
+        throw FormatException('summary must be a String');
+      }
+
       var aliasIDs = <String>[];
       final aliases = advisory['aliases'];
       if (aliases is! List) {
@@ -688,7 +693,7 @@ class HostedSource extends CachedSource {
         affectedVersions.add(v);
       }
 
-      advisoriesList.add(Advisory(id, affectedVersions, aliasIDs));
+      advisoriesList.add(Advisory(id, affectedVersions, aliasIDs, summary));
     }
 
     return advisoriesList;
@@ -1800,8 +1805,13 @@ class Advisory {
   String id;
   List<String> affectedVersions;
   List<String> aliases;
-  Advisory(this.id, this.affectedVersions, this.aliases);
+  String summary;
+  Advisory(this.id, this.affectedVersions, this.aliases, this.summary);
 }
+
+// TODO(https://github.com/dart-lang/pub-dev/issues/7471) Use `pub_display_url`
+// once this issue is resolved.
+String advisoriesDisplayUrl(String id) => 'https://github.com/advisories/$id';
 
 /// Given a URL, returns a "normalized" string to be used as a directory name
 /// for packages downloaded from the server at that URL.
