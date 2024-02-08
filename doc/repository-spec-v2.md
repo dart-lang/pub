@@ -229,6 +229,7 @@ server, this could work in many different ways.
   "name": "<package>",
   "isDiscontinued": true || false, /* optional field, false if omitted */
   "replacedBy": "<package>", /* optional field, if isDiscontinued == true */
+  "advisoriesUpdated": "<date-time>", /* optional field, timestamp of the last time the contents of the advisories API changed for this package */
   "latest": {
     "version": "<version>",
     "retracted": true || false, /* optional field, false if omitted */
@@ -279,6 +280,10 @@ an `archive_url = 'https://pub.example.com/path/...'` then the request for
 This would however, not be the case if the same server returned
 `archive_url = 'https://pub.example.com/blob/...'`.
 
+The `advisoriesUpdated` property is optional, if specified the client may assume
+that the advisories end-point is supported by the server. If present this must
+be a timestamp of when the result from the advisories end-point for this package
+changed.
 
 ## Publishing Packages
 
@@ -392,6 +397,36 @@ similar blob storage service. Both the
 `<multipart-upload-url>` and `<finalize-upload-url>` are allowed to contain
 query-string parameters, and both of these URLs need only be temporary.
 
+
+## List security advisories for a package
+
+**GET** `<hosted-url>/api/packages/<package>/advisories`
+
+**Headers:**
+* `Accept: application/vnd.pub.v2+json`
+
+**Response**
+* `Content-Type: application/vnd.pub.v2+json`
+
+```js
+{
+  "advisories" : [
+    {
+      /* Security advisory in OSV format, see https://ossf.github.io/osv-schema/ */
+    },
+    /* additional security advisories */
+  ],
+  "advisoriesUpdated" : "<date-time>"
+}
+```
+
+The  `advisories` property is a list of security advisories in [OSV
+format](https://ossf.github.io/osv-schema/). The list is empty, if
+no security advisory affects this package.
+
+The `advisoriesUpdated` property is the most recent timestamp of when the result
+from this end-point for this package changed. This can be used for caching
+purposes.
 
 ------------
 
