@@ -49,4 +49,20 @@ void main() {
       'The folder `extensions/devtools` should contain both a',
     );
   });
+
+  test('warns if config.yaml is ignored', () async {
+    await d.validPackage().create();
+    await d.dir(appPath, [
+      d.file('.gitignore', 'extension/devtools/config.yaml'),
+      d.dir('extension', [
+        d.dir('devtools', [
+          d.file('config.yaml'),
+          d.dir('build', [d.file('some_file')]),
+        ]),
+      ]),
+    ]).create();
+    await expectValidationWarning(
+      'The folder `extensions/devtools` should contain both a',
+    );
+  });
 }
