@@ -287,7 +287,6 @@ class PackageConfigEntry {
 
   @override
   String toString() {
-    // TODO: implement toString
     return JsonEncoder.withIndent('  ').convert(toJson());
   }
 
