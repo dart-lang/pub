@@ -235,7 +235,7 @@ class DependencyServicesListCommand extends PubCommand {
 extension on PackageId {
   String versionOrHash() {
     final description = this.description;
-    if (description is GitResolvedDescription) {
+    if (description is ResolvedGitDescription) {
       return description.resolvedRef;
     } else {
       return version.toString();

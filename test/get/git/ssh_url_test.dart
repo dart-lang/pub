@@ -39,7 +39,7 @@ void main() {
         'path': 'abc/',
       },
     );
-    final resolvedDescription = GitResolvedDescription(
+    final resolvedDescription = ResolvedGitDescription(
       description,
       '7d48f902b0326fc2ce0615c20f1aab6c811fe55b',
     );
