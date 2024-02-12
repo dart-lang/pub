@@ -32,7 +32,7 @@ void main() {
       ]),
     ]).create();
     await expectValidationWarning(
-      'The folder `extensions/devtools` should contain both a',
+      'The folder `extension/devtools` should contain both a',
     );
   });
 
@@ -46,7 +46,7 @@ void main() {
       ]),
     ]).create();
     await expectValidationWarning(
-      'The folder `extensions/devtools` should contain both a',
+      'The folder `extension/devtools` should contain both a',
     );
   });
 
@@ -62,7 +62,7 @@ void main() {
       ]),
     ]).create();
     await expectValidationWarning(
-      'The folder `extensions/devtools` should contain both a',
+      'The folder `extension/devtools` should contain both a',
     );
   });
 }

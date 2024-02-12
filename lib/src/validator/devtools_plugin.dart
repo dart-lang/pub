@@ -36,9 +36,9 @@ class DevtoolsPluginValidator extends Validator {
         warnings.add('''
 It looks like you are making a devtools extension!
 
-The folder `extensions/devtools` should contain both a
+The folder `extension/devtools` should contain both a
 * `config.yaml` file and a
-* non-empty `build` director'
+* non-empty `build` directory'
 ''');
       }
     }
