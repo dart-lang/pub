@@ -113,7 +113,7 @@ class GitSource extends CachedSource {
     return PackageId(
       name,
       version,
-      GitResolvedDescription(
+      ResolvedGitDescription(
         GitDescription(
           url: url,
           ref: ref,
@@ -229,7 +229,7 @@ class GitSource extends CachedSource {
       await _ensureRepoCache(description, cache);
       var path = _repoCachePath(description, cache);
       var revision = await _firstRevision(path, description.ref);
-      final resolvedDescription = GitResolvedDescription(description, revision);
+      final resolvedDescription = ResolvedGitDescription(description, revision);
 
       return Pubspec.parse(
         await _showFileAtRevision(resolvedDescription, 'pubspec.yaml', cache),
@@ -243,7 +243,7 @@ class GitSource extends CachedSource {
   /// Assumes that revision is present in the cache already (can be done with
   /// [_ensureRevision]).
   Future<String> _showFileAtRevision(
-    GitResolvedDescription resolvedDescription,
+    ResolvedGitDescription resolvedDescription,
     String pathInProject,
     SystemCache cache,
   ) async {
@@ -292,7 +292,7 @@ class GitSource extends CachedSource {
         PackageId(
           ref.name,
           pubspec.version,
-          GitResolvedDescription(description, revision),
+          ResolvedGitDescription(description, revision),
         ),
       ];
     });
@@ -303,7 +303,7 @@ class GitSource extends CachedSource {
   @override
   Future<Pubspec> describeUncached(PackageId id, SystemCache cache) {
     final description = id.description;
-    if (description is! GitResolvedDescription) {
+    if (description is! ResolvedGitDescription) {
       throw StateError('Called with wrong ref');
     }
     return _pool.withResource(
@@ -330,7 +330,7 @@ class GitSource extends CachedSource {
 
     return Pubspec.parse(
       await _showFileAtRevision(
-        GitResolvedDescription(description, revision),
+        ResolvedGitDescription(description, revision),
         'pubspec.yaml',
         cache,
       ),
@@ -370,7 +370,7 @@ class GitSource extends CachedSource {
 
       ensureDir(p.join(cache.rootDirForSource(this), 'cache'));
       final resolvedRef =
-          (id.description as GitResolvedDescription).resolvedRef;
+          (id.description as ResolvedGitDescription).resolvedRef;
 
       didUpdate |= await _ensureRevision(description, resolvedRef, cache);
 
@@ -702,7 +702,7 @@ class GitSource extends CachedSource {
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
         cache.rootDirForSource(this),
-        '${_repoName(id.description.description as GitDescription)}-${(id.description as GitResolvedDescription).resolvedRef}',
+        '${_repoName(id.description.description as GitDescription)}-${(id.description as ResolvedGitDescription).resolvedRef}',
       );
 
   /// Returns the path to the canonical clone of the repository referred to by
@@ -835,13 +835,13 @@ class GitDescription extends Description {
   }
 }
 
-class GitResolvedDescription extends ResolvedDescription {
+class ResolvedGitDescription extends ResolvedDescription {
   @override
   GitDescription get description => super.description as GitDescription;
 
   final String resolvedRef;
 
-  GitResolvedDescription(GitDescription super.description, this.resolvedRef);
+  ResolvedGitDescription(GitDescription super.description, this.resolvedRef);
 
   @override
   String format() {
@@ -869,7 +869,7 @@ class GitResolvedDescription extends ResolvedDescription {
 
   @override
   bool operator ==(Object other) {
-    return other is GitResolvedDescription &&
+    return other is ResolvedGitDescription &&
         other.description == description &&
         other.resolvedRef == resolvedRef;
   }
