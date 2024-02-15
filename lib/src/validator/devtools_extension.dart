@@ -10,7 +10,7 @@ import '../validator.dart';
 
 //   If the `extension/devtools/` directory exists
 //  verify the directory contains a file `config.yaml` and a non-empty `build/` directory
-class DevtoolsPluginValidator extends Validator {
+class DevtoolsExtensionValidator extends Validator {
   static String docRef = 'See https://dart.dev/tools/pub/package-layout.';
 
   @override

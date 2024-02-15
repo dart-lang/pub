@@ -160,7 +160,7 @@ abstract class Validator {
       PubspecTypoValidator(),
       LeakDetectionValidator(),
       SizeValidator(),
-      DevtoolsPluginValidator(),
+      DevtoolsExtensionValidator(),
     ];
 
     final context = ValidationContext(
