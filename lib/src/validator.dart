@@ -17,7 +17,7 @@ import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
 import 'validator/dependency_override.dart';
 import 'validator/deprecated_fields.dart';
-import 'validator/devtools_plugin.dart';
+import 'validator/devtools_extension.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
 import 'validator/file_case.dart';
