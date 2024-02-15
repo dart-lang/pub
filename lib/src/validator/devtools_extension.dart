@@ -11,7 +11,7 @@ import '../validator.dart';
 //   If the `extension/devtools/` directory exists
 //  verify the directory contains a file `config.yaml` and a non-empty `build/` directory
 class DevtoolsExtensionValidator extends Validator {
-  static String docRef = 'See https://dart.dev/tools/pub/package-layout.';
+  static String docUrl = 'https://docs.flutter.dev/tools/devtools/extensions';
 
   @override
   Future<void> validate() async {
@@ -39,6 +39,8 @@ It looks like you are making a devtools extension!
 The folder `extension/devtools` should contain both a
 * `config.yaml` file and a
 * non-empty `build` directory'
+
+See $docUrl.
 ''');
       }
     }
