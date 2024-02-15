@@ -17,7 +17,8 @@ import 'pubspec.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
-/// A named, versioned, unit of code and resource reuse.
+/// A Package is a [Pubspec] and a directory where it belongs that can be used
+/// for version solving or as a node in a package graph.
 class Package {
   /// Compares [a] and [b] orders them by name then version number.
   ///
@@ -31,24 +32,8 @@ class Package {
     return a.version.compareTo(b.version);
   }
 
-  final String? _dir;
-
   /// The path to the directory containing the package.
-  ///
-  /// It is an error to access this on an in-memory package.
-  String get dir {
-    if (isInMemory) {
-      throw UnsupportedError(
-        'Package directory cannot be used for an in-memory package',
-      );
-    }
-
-    return _dir!;
-  }
-
-  /// An in-memory package can be created for doing a resolution without having
-  /// a package on disk. Paths should not be resolved for these.
-  bool get isInMemory => _dir == null;
+  final String dir;
 
   /// The name of the package.
   String get name => pubspec.name;
@@ -99,7 +84,7 @@ class Package {
   late final bool inGitRepo = computeInGitRepoCache();
 
   bool computeInGitRepoCache() {
-    if (isInMemory || !git.isInstalled) {
+    if (!git.isInstalled) {
       return false;
     } else {
       // If the entire package directory is ignored, don't consider it part of a
@@ -134,21 +119,14 @@ class Package {
       expectedName: name,
       allowOverridesFile: withPubspecOverrides,
     );
-    return Package._(dir, pubspec);
+    return Package(pubspec, dir);
   }
 
-  Package._(
-    this._dir,
-    this.pubspec,
-  );
-
-  /// Constructs a package with the given pubspec.
+  /// Creates a package with [pubspec] associated with [dir].
   ///
-  /// The package will have no directory associated with it.
-  Package.inMemory(this.pubspec) : _dir = null;
-
-  /// Creates a package with [pubspec] located at [dir].
-  Package(this.pubspec, String this._dir);
+  /// For temporary resolution attempts `pubspec` does not have to correspond
+  /// to the one at disk.
+  Package(this.pubspec, this.dir);
 
   /// Given a relative path within this package, returns its absolute path.
   ///
@@ -164,20 +142,12 @@ class Package {
     String? part6,
     String? part7,
   ]) {
-    if (isInMemory) {
-      throw StateError("Package $name is in-memory and doesn't have paths "
-          'on disk.');
-    }
     return p.join(dir, part1, part2, part3, part4, part5, part6, part7);
   }
 
   /// Given an absolute path within this package (such as that returned by
   /// [path] or [listFiles]), returns it relative to the package root.
   String relative(String path) {
-    if (isInMemory) {
-      throw StateError("Package $name is in-memory and doesn't have paths "
-          'on disk.');
-    }
     return p.relative(path, from: dir);
   }
 
@@ -209,9 +179,6 @@ class Package {
   ///
   /// To convert them to paths relative to the package root, use [p.relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
-    // An in-memory package has no files.
-    if (isInMemory) return [];
-
     var packageDir = dir;
     var root = git.repoRoot(packageDir) ?? packageDir;
     beneath = p

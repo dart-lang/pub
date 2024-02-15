@@ -212,12 +212,13 @@ class GlobalPackages {
     final originalLockFile = _describeActive(name, cache);
 
     // Create a dummy package with just [dep] so we can do resolution on it.
-    var root = Package.inMemory(
+    var root = Package(
       Pubspec(
         'pub global activate',
         dependencies: [dep],
         sources: cache.sources,
       ),
+      _packageDir(name),
     );
 
     // Resolve it and download its dependencies.

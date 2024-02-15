@@ -278,7 +278,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         return await resolveVersions(
           SolveType.upgrade,
           cache,
-          Package.inMemory(resolvablePubspec),
+          Package(resolvablePubspec, entrypoint.rootDir),
         );
       },
       condition: _shouldShowSpinner,
@@ -328,7 +328,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       final solveResult = await resolveVersions(
         SolveType.upgrade,
         cache,
-        Package.inMemory(_updatedPubspec(newPubspecText, entrypoint)),
+        Package(
+          _updatedPubspec(newPubspecText, entrypoint),
+          entrypoint.rootDir,
+        ),
       );
       changes = tighten(
         entrypoint.root.pubspec,
