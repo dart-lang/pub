@@ -263,8 +263,10 @@ class GitSource extends CachedSource {
     try {
       // TODO(sigurdm): We should have a `git.run` alternative that gives back
       // a stream of stdout instead of the lines.
-      lines = await git
-          .run(['show', '$revision:$pathInCache'], workingDir: repoPath);
+      lines = await git.run(
+        ['--git-dir=$repoPath', 'show', '$revision:$pathInCache'],
+        workingDir: repoPath,
+      );
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pathInCache" in '
           '${GitDescription.prettyUri(description.url)} $revision.');
@@ -562,7 +564,7 @@ class GitSource extends CachedSource {
   ) async {
     var path = _repoCachePath(description, cache);
     if (_updatedRepos.contains(path)) return false;
-    await git.run(['fetch'], workingDir: path);
+    await git.run(['--git-dir=$path', 'fetch'], workingDir: path);
     _updatedRepos.add(path);
     return true;
   }
@@ -579,7 +581,7 @@ class GitSource extends CachedSource {
     var isValid = true;
     try {
       final result = await git.run(
-        ['rev-parse', '--is-inside-git-dir'],
+        ['--git-dir=$dirPath', 'rev-parse', '--is-inside-git-dir'],
         workingDir: dirPath,
       );
       if (result.join('\n') != 'true') {
@@ -634,8 +636,10 @@ class GitSource extends CachedSource {
   Future<String> _firstRevision(String path, String reference) async {
     final List<String> lines;
     try {
-      lines = await git
-          .run(['rev-list', '--max-count=1', reference], workingDir: path);
+      lines = await git.run(
+        ['--git-dir=$path', 'rev-list', '--max-count=1', reference],
+        workingDir: path,
+      );
     } on git.GitException catch (e) {
       throw PackageNotFoundException(
         "Could not find git ref '$reference' (${e.stderr})",
@@ -661,11 +665,18 @@ class GitSource extends CachedSource {
     String from,
     String to, {
     bool mirror = false,
+    bool fromBareRepo = false,
   }) async {
     // Git on Windows does not seem to automatically create the destination
     // directory.
     ensureDir(to);
-    var args = ['clone', if (mirror) '--mirror', from, to];
+    var args = [
+      'clone',
+      if (mirror) '--mirror',
+      from,
+      to,
+      if (fromBareRepo) '--git-dir=$from',
+    ];
 
     await git.run(args);
   }
