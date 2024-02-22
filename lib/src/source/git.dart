@@ -264,7 +264,7 @@ class GitSource extends CachedSource {
       // TODO(sigurdm): We should have a `git.run` alternative that gives back
       // a stream of stdout instead of the lines.
       lines = await git.run(
-        ['--git-dir=$repoPath', 'show', '$revision:$pathInCache'],
+        [_gitDirArg(repoPath), 'show', '$revision:$pathInCache'],
         workingDir: repoPath,
       );
     } on git.GitException catch (_) {
@@ -564,7 +564,7 @@ class GitSource extends CachedSource {
   ) async {
     var path = _repoCachePath(description, cache);
     if (_updatedRepos.contains(path)) return false;
-    await git.run(['--git-dir=$path', 'fetch'], workingDir: path);
+    await git.run([_gitDirArg(path), 'fetch'], workingDir: path);
     _updatedRepos.add(path);
     return true;
   }
@@ -581,7 +581,7 @@ class GitSource extends CachedSource {
     var isValid = true;
     try {
       final result = await git.run(
-        ['--git-dir=$dirPath', 'rev-parse', '--is-inside-git-dir'],
+        [_gitDirArg(dirPath), 'rev-parse', '--is-inside-git-dir'],
         workingDir: dirPath,
       );
       if (result.join('\n') != 'true') {
@@ -637,7 +637,7 @@ class GitSource extends CachedSource {
     final List<String> lines;
     try {
       lines = await git.run(
-        ['--git-dir=$path', 'rev-list', '--max-count=1', reference],
+        [_gitDirArg(path), 'rev-list', '--max-count=1', reference],
         workingDir: path,
       );
     } on git.GitException catch (e) {
@@ -665,18 +665,11 @@ class GitSource extends CachedSource {
     String from,
     String to, {
     bool mirror = false,
-    bool fromBareRepo = false,
   }) async {
     // Git on Windows does not seem to automatically create the destination
     // directory.
     ensureDir(to);
-    var args = [
-      'clone',
-      if (mirror) '--mirror',
-      from,
-      to,
-      if (fromBareRepo) '--git-dir=$from',
-    ];
+    var args = ['clone', if (mirror) '--mirror', from, to];
 
     await git.run(args);
   }
@@ -893,4 +886,10 @@ class _ValidatedUrl {
   final String url;
   final bool wasRelative;
   _ValidatedUrl(this.url, this.wasRelative);
+}
+
+String _gitDirArg(String path) {
+  final forwardSlashPath =
+      Platform.isWindows ? p.posix.joinAll(p.split(path)) : path;
+  return '--git-dir=$forwardSlashPath';
 }
