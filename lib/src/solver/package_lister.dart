@@ -15,6 +15,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
+import '../source/error.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
@@ -253,7 +254,11 @@ class PackageLister {
               .where((range) => !_overriddenPackages.contains(range.name)),
         if (id.isRoot) ...pubspec.dependencyOverrides.values,
       ];
-
+      for (final PackageRange(description: description) in entries) {
+        if (description is ErrorDescription) {
+          throw description.exception;
+        }
+      }
       return entries.map((range) => _dependency(depender, range)).toList();
     }
 
@@ -274,12 +279,16 @@ class PackageLister {
 
     // Don't recompute dependencies that have already been emitted.
     var dependencies = Map<String, PackageRange>.from(pubspec.dependencies);
-    for (var package in dependencies.keys.toList()) {
+    for (final MapEntry(key: package, value: range)
+        in Map<String, PackageRange>.from(dependencies).entries) {
       if (_overriddenPackages.contains(package)) {
         dependencies.remove(package);
         continue;
       }
-
+      final description = range.description;
+      if (description is ErrorDescription) {
+        throw description.exception;
+      }
       var constraint = _alreadyListedDependencies[package];
       if (constraint != null && constraint.allows(id.version)) {
         dependencies.remove(package);

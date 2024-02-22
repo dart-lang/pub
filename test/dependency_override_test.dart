@@ -133,4 +133,23 @@ void main() {
       );
     });
   });
+
+  test('can override package with faulty description', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      deps: {
+        'bar': {'path': '../abc'},
+      },
+    );
+    server.serve('bar', '1.0.0');
+    await d.appDir(
+      dependencies: {'foo': '^1.0.0'},
+      pubspec: {
+        'dependency_overrides': {'bar': '1.0.0'},
+      },
+    ).create();
+    await pubGet();
+  });
 }

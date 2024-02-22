@@ -5,7 +5,9 @@
 import 'dart:io';
 
 import 'package:pub/src/exceptions.dart';
+import 'package:pub/src/package_name.dart';
 import 'package:pub/src/pubspec.dart';
+import 'package:pub/src/source/error.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -246,7 +248,7 @@ dependencies:
       name: foo
       url: '::'
 ''',
-        (pubspec) => pubspec.dependencies,
+        (pubspec) => errorsOf(pubspec.dependencies),
       );
     });
 
@@ -428,7 +430,7 @@ name: pkg
 dependencies:
   from_path: {path: non_local_path}
 ''',
-          (pubspec) => pubspec.dependencies,
+          (pubspec) => errorsOf(pubspec.dependencies),
           'Invalid description in the "pkg" pubspec on the "from_path" '
               'dependency: "non_local_path" is a relative path, but this isn\'t a '
               'local pubspec.');
@@ -603,7 +605,7 @@ dependencies:
     hosted:
       url: https://example.org/pub/
 ''',
-              (pubspec) => pubspec.dependencies,
+              (pubspec) => errorsOf(pubspec.dependencies),
               "The 'name' key must have a string value without a minimum Dart "
                   'SDK constraint of 2.15.');
         });
@@ -618,7 +620,7 @@ dependencies:
   foo:
     hosted: http://pub.example.org
 ''',
-              (pubspec) => pubspec.dependencies,
+              (pubspec) => errorsOf(pubspec.dependencies),
               'Using `hosted: <url>` is only supported with a minimum SDK constraint of 2.15.',
             );
           },
@@ -636,7 +638,7 @@ dependencies:
       url: git://github.com/dart-lang/foo
       path: 12
 ''',
-          (pubspec) => pubspec.dependencies,
+          (pubspec) => errorsOf(pubspec.dependencies),
         );
       });
 
@@ -649,7 +651,7 @@ dependencies:
       url: git://github.com/dart-lang/foo
       path: git://github.com/dart-lang/foo/bar
 ''',
-          (pubspec) => pubspec.dependencies,
+          (pubspec) => errorsOf(pubspec.dependencies),
         );
 
         expectPubspecException(
@@ -660,7 +662,7 @@ dependencies:
       url: git://github.com/dart-lang/foo
       path: /foo
 ''',
-          (pubspec) => pubspec.dependencies,
+          (pubspec) => errorsOf(pubspec.dependencies),
         );
       });
 
@@ -673,7 +675,7 @@ dependencies:
       url: git://github.com/dart-lang/foo
       path: foo/../../bar
 ''',
-          (pubspec) => pubspec.dependencies,
+          (pubspec) => errorsOf(pubspec.dependencies),
         );
       });
     });
@@ -1005,7 +1007,7 @@ dependency_overrides:
       name: foo
       url: '::'
 ''',
-          (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
+          (pubspecOverrides) => errorsOf(pubspecOverrides.dependencyOverrides),
           'Error on line 4, column 7 of ${Platform.pathSeparator}pubspec_overrides.yaml',
         );
       });
@@ -1029,4 +1031,12 @@ name: 'foo'
       });
     });
   });
+}
+
+void errorsOf(Map<String, PackageRange> m) {
+  for (final PackageRange(description: description) in m.values) {
+    if (description is ErrorDescription) {
+      throw description.exception;
+    }
+  }
 }

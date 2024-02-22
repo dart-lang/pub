@@ -14,6 +14,7 @@ import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
+import 'source/error.dart';
 import 'system_cache.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
@@ -442,17 +443,28 @@ class Pubspec extends PubspecBase {
   /// Returns a list of most errors in this pubspec.
   ///
   /// This will return at most one error for each field.
-  List<SourceSpanApplicationException> get allErrors => _collectErrorsFor([
-        () => name,
-        () => version,
-        () => dependencies,
-        () => devDependencies,
-        () => publishTo,
-        () => executables,
-        () => falseSecrets,
-        () => sdkConstraints,
-        () => ignoredAdvisories,
-      ]);
+  List<SourceSpanApplicationException> get allErrors {
+    void errorsOf(Map<String, PackageRange> m) {
+      for (final PackageRange(description: description) in m.values) {
+        if (description is ErrorDescription) {
+          throw description.exception;
+        }
+      }
+    }
+
+    return _collectErrorsFor([
+      () => name,
+      () => version,
+      () => errorsOf(dependencies),
+      () => errorsOf(devDependencies),
+      () => errorsOf(dependencyOverrides),
+      () => publishTo,
+      () => executables,
+      () => falseSecrets,
+      () => sdkConstraints,
+      () => ignoredAdvisories,
+    ]);
+  }
 
   /// Returns the type of dependency from this package onto [name].
   DependencyType dependencyType(String? name) {
@@ -562,28 +574,34 @@ Map<String, PackageRange> _parseDependencies(
           specNode.span,
         );
       }
+      String? pubspecDir;
+      if (location != null && _isFileUri(location)) {
+        pubspecDir = path.dirname(path.fromUri(location));
+      }
+      PackageRef ref;
+      try {
+        // Let the source validate the description.
+        ref = sources(sourceName).parseRef(
+          name,
+          descriptionNode?.value,
+          containingDir: pubspecDir,
+          languageVersion: languageVersion,
+        );
+      } on FormatException catch (e) {
+        // If we already have a pub exception with a span, re-use that
+        if (e is SourceSpanApplicationException) rethrow;
+        final typeName = _fileTypeName(fileType);
 
-      // Let the source validate the description.
-      var ref = _wrapFormatException(
-        'description',
-        descriptionNode?.span,
-        () {
-          String? pubspecDir;
-          if (location != null && _isFileUri(location)) {
-            pubspecDir = path.dirname(path.fromUri(location));
-          }
-
-          return sources(sourceName).parseRef(
-            name,
-            descriptionNode?.value,
-            containingDir: pubspecDir,
-            languageVersion: languageVersion,
-          );
-        },
-        packageName,
-        fileType,
-        targetPackage: name,
-      );
+        final msg =
+            'Invalid description in the "$packageName" $typeName on the "$name" '
+            'dependency: ${e.message}';
+        ref = PackageRef(
+          name,
+          ErrorDescription(
+            SourceSpanApplicationException(msg, descriptionNode?.span),
+          ),
+        );
+      }
 
       dependencies[name] = ref.withConstraint(versionConstraint);
     },

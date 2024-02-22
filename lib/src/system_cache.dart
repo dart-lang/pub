@@ -17,6 +17,7 @@ import 'package_name.dart';
 import 'pubspec.dart';
 import 'source.dart';
 import 'source/cached.dart';
+import 'source/error.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
@@ -185,6 +186,10 @@ Consider setting the `PUB_CACHE` variable manually.
     Duration? maxAge,
     Version? allowedRetractedVersion,
   }) async {
+    final description = ref.description;
+    if (description is ErrorDescription) {
+      throw description.exception;
+    }
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
