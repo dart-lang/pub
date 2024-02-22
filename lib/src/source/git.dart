@@ -890,6 +890,6 @@ class _ValidatedUrl {
 
 String _gitDirArg(String path) {
   final forwardSlashPath =
-      Platform.isWindows ? p.posix.joinAll(p.split(path)) : path;
+      Platform.isWindows ? path.replaceAll('\\', '/') : path;
   return '--git-dir=$forwardSlashPath';
 }
