@@ -4,11 +4,14 @@
 
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml/yaml.dart';
 
 import '../io.dart';
 import '../sdk.dart';
+import 'sdk_package_config.dart';
 
 /// The Dart SDK.
 ///
@@ -22,6 +25,11 @@ class DartSdk extends Sdk {
   String? get installMessage => null;
 
   static final String _rootDirectory = () {
+    // If DART_ROOT is specified, then this always points to the Dart SDK
+    if (Platform.environment.containsKey('DART_ROOT')) {
+      return Platform.environment['DART_ROOT']!;
+    }
+
     if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');
 
     // The Dart executable is in "/path/to/sdk/bin/dart", so two levels up is
@@ -29,6 +37,21 @@ class DartSdk extends Sdk {
     var aboveExecutable = p.dirname(p.dirname(Platform.resolvedExecutable));
     assert(fileExists(p.join(aboveExecutable, 'version')));
     return aboveExecutable;
+  }();
+
+  /// The loaded `sdk_packages.yaml` file if present.
+  static final SdkPackageConfig? _sdkPackages = () {
+    var path = p.join(_rootDirectory, 'sdk_packages.yaml');
+    if (!fileExists(path)) return null;
+    var config = SdkPackageConfig.fromMap(
+      loadYaml(readTextFile(path)) as Map<Object?, Object?>,
+    );
+    if (config.sdk != 'dart') {
+      throw ArgumentError(
+          'Expected a configuration for the `dart` sdk but got one for '
+          '`${config.sdk}`.');
+    }
+    return config;
   }();
 
   @override
@@ -50,5 +73,17 @@ class DartSdk extends Sdk {
   String get rootDirectory => _rootDirectory;
 
   @override
-  String? packagePath(String name) => null;
+  String? packagePath(String name) {
+    if (!isAvailable) return null;
+    var sdkPackages = _sdkPackages;
+    if (sdkPackages == null) return null;
+
+    var package =
+        sdkPackages.packages.firstWhereOrNull((pkg) => pkg.name == name);
+    if (package == null) return null;
+    var packagePath = p.joinAll([_rootDirectory, ...p.url.split(package.path)]);
+    if (dirExists(packagePath)) return packagePath;
+
+    return null;
+  }
 }

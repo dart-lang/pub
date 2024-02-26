@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/oauth2.dart';
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/sdk/sdk_package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor/git.dart';
@@ -340,13 +341,6 @@ PackageConfigEntry packageConfigEntry({
   String? languageVersion,
   PackageServer? server,
 }) {
-  if (version != null && path != null) {
-    throw ArgumentError.value(
-      path,
-      'path',
-      'Only one of "version" and "path" can be provided',
-    );
-  }
   if (version == null && path == null) {
     throw ArgumentError.value(
       version,
@@ -355,7 +349,7 @@ PackageConfigEntry packageConfigEntry({
     );
   }
   Uri rootUri;
-  if (version != null) {
+  if (path == null && version != null) {
     rootUri = p.toUri((server ?? globalServer).pathInCache(name, version));
   } else {
     rootUri = p.toUri(p.join('..', path));
@@ -376,4 +370,9 @@ Descriptor flutterVersion(String version) {
       [file('flutter.version.json', '{"flutterVersion":"$version"}')],
     ),
   ]);
+}
+
+/// Describes a file named `sdk_packages.yaml` at the root of the current SDK.
+FileDescriptor sdkPackagesConfig(SdkPackageConfig sdkPackageConfig) {
+  return YamlDescriptor('sdk_packages.yaml', yaml(sdkPackageConfig.toMap()));
 }
