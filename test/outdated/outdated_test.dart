@@ -380,6 +380,164 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
+  testWithGolden('show advisory - current', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedVersions: ['1.0.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('show advisory - current also retracted', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.retractPackageVersion('foo', '1.0.0');
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedVersions: ['1.0.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('show advisory - latest', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedVersions: ['1.2.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('show advisory - latest also discontinued', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.discontinue('foo');
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedVersions: ['1.2.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('show advisory - all versions', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedVersions: ['1.0.0', '1.2.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('show advisory - several advisories', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedVersions: ['1.0.0', '1.2.0'],
+    );
+
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'VXYZ-1234-5678-9101',
+      affectedVersions: ['1.0.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
   testWithGolden(
       'latest version reported while locked on a prerelease can be a prerelease',
       (ctx) async {
