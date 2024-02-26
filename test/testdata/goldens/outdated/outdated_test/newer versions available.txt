@@ -9,6 +9,7 @@ $ pub outdated --json
       "kind": "dev",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -27,6 +28,7 @@ $ pub outdated --json
       "kind": "transitive",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0"
       },
@@ -43,6 +45,7 @@ $ pub outdated --json
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -61,6 +64,7 @@ $ pub outdated --json
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": true,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.1"
       },
@@ -79,6 +83,7 @@ $ pub outdated --json
       "kind": "transitive",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -97,6 +102,7 @@ $ pub outdated --json
       "kind": "transitive",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -111,6 +117,7 @@ $ pub outdated --json
       "kind": "transitive",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -283,6 +290,7 @@ $ pub outdated --json --no-dev-dependencies
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -301,6 +309,7 @@ $ pub outdated --json --no-dev-dependencies
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": true,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.1"
       },
@@ -319,6 +328,7 @@ $ pub outdated --json --no-dev-dependencies
       "kind": "transitive",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },

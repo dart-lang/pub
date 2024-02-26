@@ -275,6 +275,18 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       final isLatest = currentVersionDetails == latestVersionDetails;
 
+      var isCurrentAffectedByAdvisory = false;
+
+      if (currentVersionDetails != null) {
+        for (final advisory in packageAdvisories) {
+          if (advisory.affectedVersions.contains(
+            currentVersionDetails._pubspec.version.canonicalizedVersion,
+          )) {
+            isCurrentAffectedByAdvisory = true;
+          }
+        }
+      }
+
       return _PackageDetails(
         name: name,
         current: currentVersionDetails,
@@ -287,6 +299,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         isCurrentRetracted: isCurrentRetracted,
         isLatest: isLatest,
         advisories: packageAdvisories,
+        isCurrentAffectedBySecurityAdvisory: isCurrentAffectedByAdvisory,
       );
     }
 
@@ -466,6 +479,8 @@ Future<void> _outputJson(
               'kind': kindString(packageDetails.kind),
               'isDiscontinued': packageDetails.isDiscontinued,
               'isCurrentRetracted': packageDetails.isCurrentRetracted,
+              'isCurrentAffectedByAdvisory':
+                  packageDetails.isCurrentAffectedBySecurityAdvisory,
               'current': markedRows[packageDetails]![0].toJson(),
               'upgradable': markedRows[packageDetails]![1].toJson(),
               'resolvable': markedRows[packageDetails]![2].toJson(),
@@ -879,6 +894,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final bool isCurrentRetracted;
   final bool isLatest;
   final List<Advisory> advisories;
+  final bool isCurrentAffectedBySecurityAdvisory;
 
   _PackageDetails({
     required this.name,
@@ -892,6 +908,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     required this.isCurrentRetracted,
     required this.isLatest,
     required this.advisories,
+    required this.isCurrentAffectedBySecurityAdvisory,
   });
 
   @override
