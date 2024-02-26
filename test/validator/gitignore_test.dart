@@ -61,7 +61,7 @@ void main() {
 
     await expectValidation(contains('Package has 0 warnings.'), 0);
   });
-  
+
   test('should not fail on space character', () async {
     await d.git('myapp', [
       ...d.validPackage().contents,
