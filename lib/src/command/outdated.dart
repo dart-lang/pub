@@ -901,19 +901,6 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     }
     return name.compareTo(other.name);
   }
-
-  Map<String, Object?> toJson() {
-    return {
-      'package': name,
-      'current': current?.toJson(),
-      'upgradable': upgradable?.toJson(),
-      'resolvable': resolvable?.toJson(),
-      'latest': latest?.toJson(),
-      'isDiscontinued': isDiscontinued,
-      'discontinuedReplacedBy': discontinuedReplacedBy,
-      'isRetracted': isCurrentRetracted,
-    };
-  }
 }
 
 _DependencyKind _kind(
