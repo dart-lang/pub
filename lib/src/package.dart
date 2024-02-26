@@ -124,7 +124,7 @@ class Package {
 
   /// Creates a package with [pubspec] associated with [dir].
   ///
-  /// For temporary resolution attempts `pubspec` does not have to correspond
+  /// For temporary resolution attempts [pubspec] does not have to correspond
   /// to the one at disk.
   Package(this.pubspec, this.dir);
 
