@@ -9,7 +9,7 @@ $ pub outdated --json
       "kind": "direct",
       "isDiscontinued": true,
       "isCurrentRetracted": false,
-      "isCurrentAffectedByAdvisories": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0"
       },
@@ -175,7 +175,7 @@ $ pub outdated --json --no-dev-dependencies
       "kind": "direct",
       "isDiscontinued": true,
       "isCurrentRetracted": false,
-      "isCurrentAffectedByAdvisories": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0"
       },
