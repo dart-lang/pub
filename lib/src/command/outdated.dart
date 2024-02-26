@@ -244,7 +244,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       final id = current ?? upgradable ?? resolvable ?? latest;
       final packageAdvisories = await id?.source
-          .getAdvisoriesForPackage(id, cache, Duration(days: 3));
+              .getAdvisoriesForPackage(id, cache, Duration(days: 3)) ??
+          [];
 
       final discontinued =
           currentStatus == null ? false : currentStatus.isDiscontinued;
@@ -655,7 +656,7 @@ Future<void> _outputHuman(
   bool displayExtraInfo(_PackageDetails package) =>
       package.isDiscontinued ||
       package.isCurrentRetracted ||
-      (package.advisories != null && package.advisories!.isNotEmpty);
+      (package.advisories.isNotEmpty);
 
   if (rows.any(displayExtraInfo)) {
     log.message('\n');
@@ -676,8 +677,8 @@ Future<void> _outputHuman(
           'See https://dart.dev/go/package-retraction',
         );
       }
-      if (package.advisories != null && package.advisories!.isNotEmpty) {
-        final advisoriesText = package.advisories!.length > 1
+      if (package.advisories.isNotEmpty) {
+        final advisoriesText = package.advisories.length > 1
             ? 'security advisories'
             : 'a security advisory';
         log.message(
@@ -686,7 +687,7 @@ Future<void> _outputHuman(
         );
         log.message('\n');
         var displayedVersions = <String>{};
-        for (final advisory in package.advisories!) {
+        for (final advisory in package.advisories) {
           for (final versionDetails in [
             package.current,
             package.upgradable,
@@ -782,17 +783,15 @@ Showing outdated packages$directoryDescription.
             }
           }
           final advisories = packageDetails.advisories;
-          if (advisories != null) {
-            final hasAdvisory = advisories
-                .where(
-                  (advisory) => advisory.affectedVersions.contains(
-                    versionDetails._pubspec.version.canonicalizedVersion,
-                  ),
-                )
-                .isNotEmpty;
-            if (hasAdvisory) {
-              suffix = '${suffix ?? ''} (advisory)';
-            }
+          final hasAdvisory = advisories
+              .where(
+                (advisory) => advisory.affectedVersions.contains(
+                  versionDetails._pubspec.version.canonicalizedVersion,
+                ),
+              )
+              .isNotEmpty;
+          if (hasAdvisory) {
+            suffix = '${suffix ?? ''} (advisory)';
           }
           prefix = isLatest ? '' : '*';
         }
@@ -879,7 +878,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final String? discontinuedReplacedBy;
   final bool isCurrentRetracted;
   final bool isLatest;
-  final List<Advisory>? advisories;
+  final List<Advisory> advisories;
 
   _PackageDetails({
     required this.name,
