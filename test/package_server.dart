@@ -77,8 +77,9 @@ class PackageServer {
       RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
 
   static Future<PackageServer> start() async {
-    final server =
-        PackageServer._(await shelf_io.IOServer.bind('localhost', 0));
+    final server = PackageServer._(
+      await shelf_io.IOServer.bind(InternetAddress.loopbackIPv4, 0),
+    );
     server.handle(
       _versionInfoPattern,
       (shelf.Request request) async {
