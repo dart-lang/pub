@@ -25,8 +25,8 @@ class GitignoreValidator extends Validator {
       try {
         checkedIntoGit = git.runSync(
           [
-            'ls-files',
             '-c core.quotePath=false',
+            'ls-files',
             '--cached',
             '--exclude-standard',
             '--recurse-submodules',
