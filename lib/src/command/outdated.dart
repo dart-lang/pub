@@ -146,7 +146,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       'Resolving',
       () async {
         final upgradablePackagesResult = await _tryResolve(
-          upgradablePubspec,
+          Package(upgradablePubspec, entrypoint.rootDir),
           cache,
           lockFile: entrypoint.lockFile,
         );
@@ -154,7 +154,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         upgradablePackages = upgradablePackagesResult ?? [];
 
         final resolvablePackagesResult = await _tryResolve(
-          resolvablePubspec,
+          Package(resolvablePubspec, entrypoint.rootDir),
           cache,
           lockFile: entrypoint.lockFile,
         );
@@ -415,14 +415,14 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
 /// resolution was found.
 Future<List<PackageId>?> _tryResolve(
-  Pubspec pubspec,
+  Package package,
   SystemCache cache, {
   LockFile? lockFile,
 }) async {
   final solveResult = await tryResolveVersions(
     SolveType.upgrade,
     cache,
-    Package.inMemory(pubspec),
+    package,
     lockFile: lockFile,
   );
 

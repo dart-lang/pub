@@ -208,7 +208,7 @@ Specify multiple sdk packages with descriptors.''');
       solveResult = await resolveVersions(
         SolveType.upgrade,
         cache,
-        Package.inMemory(resolutionPubspec),
+        Package(resolutionPubspec, entrypoint.rootDir),
       );
     } on GitException {
       final name = updates.first.ref.name;

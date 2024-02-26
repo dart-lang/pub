@@ -69,13 +69,13 @@ class DependencyServicesReportCommand extends PubCommand {
     final breakingPubspec = stripVersionBounds(compatiblePubspec);
 
     final compatiblePackagesResult = await _tryResolve(
-      compatiblePubspec,
+      Package(compatiblePubspec, entrypoint.rootDir),
       cache,
       additionalConstraints: additionalConstraints,
     );
 
     final breakingPackagesResult = await _tryResolve(
-      breakingPubspec,
+      Package(breakingPubspec, entrypoint.rootDir),
       cache,
       additionalConstraints: additionalConstraints,
     );
@@ -110,8 +110,10 @@ class DependencyServicesReportCommand extends PubCommand {
         dependencySet[package.name] = package
             .toRef()
             .withConstraint(stripUpperBound(package.toRange().constraint));
-        final singleBreakingPackagesResult =
-            await _tryResolve(singleBreakingPubspec, cache);
+        final singleBreakingPackagesResult = await _tryResolve(
+          Package(singleBreakingPubspec, entrypoint.rootDir),
+          cache,
+        );
         singleBreakingVersion = singleBreakingPackagesResult
             ?.firstWhereOrNull((element) => element.name == package.name);
       }
@@ -126,7 +128,7 @@ class DependencyServicesReportCommand extends PubCommand {
         );
 
         final smallestUpgradeResult = await _tryResolve(
-          atLeastCurrentPubspec,
+          Package(atLeastCurrentPubspec, entrypoint.rootDir),
           cache,
           solveType: SolveType.downgrade,
           additionalConstraints: additionalConstraints,
@@ -214,7 +216,8 @@ class DependencyServicesListCommand extends PubCommand {
 
     final currentPackages = fileExists(entrypoint.lockFilePath)
         ? entrypoint.lockFile.packages.values.toList()
-        : (await _tryResolve(pubspec, cache) ?? <PackageId>[]);
+        : (await _tryResolve(Package(pubspec, entrypoint.rootDir), cache) ??
+            <PackageId>[]);
 
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
@@ -418,12 +421,13 @@ class DependencyServicesApplyCommand extends PubCommand {
         final solveResult = await resolveVersions(
           SolveType.get,
           cache,
-          Package.inMemory(
+          Package(
             Pubspec.parse(
               updatedPubspec,
               cache.sources,
               location: toUri(entrypoint.pubspecPath),
             ),
+            entrypoint.rootDir,
           ),
           lockFile: updatedLockfile,
         );
@@ -635,10 +639,10 @@ bool _lockFileHasContentHashes(dynamic lockfile) {
   return false;
 }
 
-/// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
+/// Try to solve [package] return [PackageId]s in the resolution or `null` if no
 /// resolution was found.
 Future<List<PackageId>?> _tryResolve(
-  Pubspec pubspec,
+  Package package,
   SystemCache cache, {
   SolveType solveType = SolveType.upgrade,
   Iterable<ConstraintAndCause>? additionalConstraints,
@@ -646,7 +650,7 @@ Future<List<PackageId>?> _tryResolve(
   final solveResult = await tryResolveVersions(
     solveType,
     cache,
-    Package.inMemory(pubspec),
+    package,
     additionalConstraints: additionalConstraints,
   );
 
@@ -686,7 +690,7 @@ Future<Map<String, PackageId>> _computeCurrentPackages(
   if (fileExists(entrypoint.lockFilePath)) {
     currentPackages = Map<String, PackageId>.from(entrypoint.lockFile.packages);
   } else {
-    final resolution = await _tryResolve(entrypoint.root.pubspec, cache) ??
+    final resolution = await _tryResolve(entrypoint.root, cache) ??
         (throw DataException('Failed to resolve pubspec'));
     currentPackages = Map<String, PackageId>.fromIterable(
       resolution,
@@ -730,7 +734,7 @@ Future<List<Object>> _computeUpgradeSet(
         ? SolveType.downgrade
         : SolveType.get,
     cache,
-    Package.inMemory(pubspec),
+    Package(pubspec, entrypoint.rootDir),
     lockFile: lockFile,
     additionalConstraints: additionalConstraints,
   );

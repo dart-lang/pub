@@ -27,6 +27,9 @@ class PackageLister {
   /// The package that is being listed.
   final PackageRef _ref;
 
+  /// Only used when _ref is root.
+  final Pubspec? _rootPubspec;
+
   /// The version of this package in the lockfile.
   ///
   /// This is `null` if this package isn't locked or if the current version
@@ -110,7 +113,8 @@ class PackageLister {
     this._allowedRetractedVersion, {
     bool downgrade = false,
     this.sdkOverrides = const {},
-  }) : _isDowngrade = downgrade;
+  })  : _isDowngrade = downgrade,
+        _rootPubspec = null;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(
@@ -127,7 +131,8 @@ class PackageLister {
             Set.unmodifiable(package.dependencyOverrides.keys),
         _isDowngrade = false,
         _allowedRetractedVersion = null,
-        sdkOverrides = sdkOverrides ?? {};
+        sdkOverrides = sdkOverrides ?? {},
+        _rootPubspec = package.pubspec;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -195,33 +200,36 @@ class PackageLister {
   /// previous call to [incompatibilitiesFor].
   Future<List<Incompatibility>> incompatibilitiesFor(PackageId id) async {
     if (_knownInvalidVersions.allows(id.version)) return const [];
-
     Pubspec pubspec;
-    try {
-      pubspec = await withDependencyType(
-        _dependencyType,
-        () => _systemCache.describe(id),
-      );
-    } on SourceSpanApplicationException catch (error) {
-      // The lockfile for the pubspec couldn't be parsed,
-      log.fine('Failed to parse pubspec for $id:\n$error');
-      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
-      return [
-        Incompatibility(
-          [Term(id.toRange(), true)],
-          NoVersionsIncompatibilityCause(),
-        ),
-      ];
-    } on PackageNotFoundException {
-      // We can only get here if the lockfile refers to a specific package
-      // version that doesn't exist (probably because it was yanked).
-      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
-      return [
-        Incompatibility(
-          [Term(id.toRange(), true)],
-          NoVersionsIncompatibilityCause(),
-        ),
-      ];
+    if (id.isRoot) {
+      pubspec = _rootPubspec!;
+    } else {
+      try {
+        pubspec = await withDependencyType(
+          _dependencyType,
+          () => _systemCache.describe(id),
+        );
+      } on SourceSpanApplicationException catch (error) {
+        // The lockfile for the pubspec couldn't be parsed,
+        log.fine('Failed to parse pubspec for $id:\n$error');
+        _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+        return [
+          Incompatibility(
+            [Term(id.toRange(), true)],
+            NoVersionsIncompatibilityCause(),
+          ),
+        ];
+      } on PackageNotFoundException {
+        // We can only get here if the lockfile refers to a specific package
+        // version that doesn't exist (probably because it was yanked).
+        _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+        return [
+          Incompatibility(
+            [Term(id.toRange(), true)],
+            NoVersionsIncompatibilityCause(),
+          ),
+        ];
+      }
     }
 
     if (_cachedVersions == null &&
