@@ -15,10 +15,10 @@ import '../system_cache.dart';
 ///
 /// There is no explicit way to depend on a root package.
 ///
-/// A root package is the only package for whom dev_dependencies are taken into
+/// A root package is the only package for which dev_dependencies are taken into
 /// account.
 ///
-/// A root package is the only package for whom dependency_overrides are taken
+/// A root package is the only package for which dependency_overrides are taken
 /// into account.
 class RootSource extends Source {
   static final RootSource instance = RootSource._();
