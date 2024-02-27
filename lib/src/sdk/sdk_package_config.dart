@@ -35,7 +35,7 @@ class SdkPackage {
   /// The name of the package.
   final String name;
 
-  /// The path to the root of this package from the root of the SDK.
+  /// The path to the root of this package relative to the root of the SDK.
   final String path;
 
   SdkPackage(this.name, this.path);
