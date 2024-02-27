@@ -63,7 +63,7 @@ class _PubHttpClient extends http.BaseClient {
       final ipv4Address = resolutions
           .firstWhereOrNull((a) => a.type == InternetAddressType.IPv4);
       if (ipv4Address != null) {
-        request = OverrideUrlRequest(
+        request = _OverrideUrlRequest(
           request.url.replace(host: ipv4Address.host),
           request,
         );
@@ -461,13 +461,13 @@ class _ClientClosedException implements Exception {
   String toString() => 'Request was made after http client was closed';
 }
 
-class OverrideUrlRequest implements http.BaseRequest {
+class _OverrideUrlRequest implements http.BaseRequest {
   @override
   final Uri url;
 
   final http.BaseRequest wrapped;
 
-  OverrideUrlRequest(this.url, this.wrapped);
+  _OverrideUrlRequest(this.url, this.wrapped);
 
   @override
   int? get contentLength => wrapped.contentLength;
