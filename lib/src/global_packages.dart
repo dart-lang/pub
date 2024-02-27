@@ -219,6 +219,7 @@ class GlobalPackages {
         sources: cache.sources,
       ),
       _packageDir(name),
+      [],
     );
 
     // Resolve it and download its dependencies.

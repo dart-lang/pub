@@ -262,6 +262,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 
   Future<void> _runUpgradeMajorVersions() async {
+    // TODO(https://github.com/dart-lang/pub/issues/4127) Implement support for workspaces.
     final toUpgrade = _directDependenciesToUpgrade();
 
     final resolvablePubspec = stripVersionBounds(
@@ -278,7 +279,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         return await resolveVersions(
           SolveType.upgrade,
           cache,
-          Package(resolvablePubspec, entrypoint.rootDir),
+          Package(
+            resolvablePubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
         );
       },
       condition: _shouldShowSpinner,
@@ -331,6 +336,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         Package(
           _updatedPubspec(newPubspecText, entrypoint),
           entrypoint.rootDir,
+          entrypoint.root.workspaceChildren,
         ),
       );
       changes = tighten(

@@ -15,6 +15,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
+import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
@@ -28,7 +29,7 @@ class PackageLister {
   final PackageRef _ref;
 
   /// Only used when _ref is root.
-  final Pubspec? _rootPubspec;
+  final Package? _rootPackage;
 
   /// The version of this package in the lockfile.
   ///
@@ -84,13 +85,23 @@ class PackageLister {
 
   /// All versions of the package, sorted by [Version.compareTo].
   Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
-        var cachedVersions = (await withDependencyType(
-          _dependencyType,
-          () => _systemCache.getVersions(
-            _ref,
-            allowedRetractedVersion: _allowedRetractedVersion,
-          ),
-        ))
+        var cachedVersions = _ref.isRoot
+            ? [
+                PackageId(
+                  _ref.name,
+                  _rootPackage!.pubspec.version,
+                  ResolvedRootDescription(
+                    _ref.description as RootDescription,
+                  ),
+                ),
+              ]
+            : (await withDependencyType(
+                _dependencyType,
+                () => _systemCache.getVersions(
+                  _ref,
+                  allowedRetractedVersion: _allowedRetractedVersion,
+                ),
+              ))
           ..sort((id1, id2) => id1.version.compareTo(id2.version));
         _cachedVersions = cachedVersions;
         return cachedVersions;
@@ -114,7 +125,7 @@ class PackageLister {
     bool downgrade = false,
     this.sdkOverrides = const {},
   })  : _isDowngrade = downgrade,
-        _rootPubspec = null;
+        _rootPackage = null;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(
@@ -132,7 +143,7 @@ class PackageLister {
         _isDowngrade = false,
         _allowedRetractedVersion = null,
         sdkOverrides = sdkOverrides ?? {},
-        _rootPubspec = package.pubspec;
+        _rootPackage = package;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -202,7 +213,7 @@ class PackageLister {
     if (_knownInvalidVersions.allows(id.version)) return const [];
     Pubspec pubspec;
     if (id.isRoot) {
-      pubspec = _rootPubspec!;
+      pubspec = _rootPackage!.pubspec;
     } else {
       try {
         pubspec = await withDependencyType(
@@ -259,9 +270,15 @@ class PackageLister {
         if (id.isRoot)
           ...pubspec.devDependencies.values
               .where((range) => !_overriddenPackages.contains(range.name)),
+        if (id.isRoot)
+          ..._rootPackage!.workspaceChildren.map((p) {
+            return PackageRange(
+              PackageRef(p.name, RootDescription(p.dir)),
+              VersionConstraint.any,
+            );
+          }),
         if (id.isRoot) ...pubspec.dependencyOverrides.values,
       ];
-
       return entries.map((range) => _dependency(depender, range)).toList();
     }
 

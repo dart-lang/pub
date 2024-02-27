@@ -69,13 +69,21 @@ class DependencyServicesReportCommand extends PubCommand {
     final breakingPubspec = stripVersionBounds(compatiblePubspec);
 
     final compatiblePackagesResult = await _tryResolve(
-      Package(compatiblePubspec, entrypoint.rootDir),
+      Package(
+        compatiblePubspec,
+        entrypoint.rootDir,
+        entrypoint.root.workspaceChildren,
+      ),
       cache,
       additionalConstraints: additionalConstraints,
     );
 
     final breakingPackagesResult = await _tryResolve(
-      Package(breakingPubspec, entrypoint.rootDir),
+      Package(
+        breakingPubspec,
+        entrypoint.rootDir,
+        entrypoint.root.workspaceChildren,
+      ),
       cache,
       additionalConstraints: additionalConstraints,
     );
@@ -101,6 +109,7 @@ class DependencyServicesReportCommand extends PubCommand {
         sdkConstraints: compatiblePubspec.sdkConstraints,
         dependencies: compatiblePubspec.dependencies.values,
         devDependencies: compatiblePubspec.devDependencies.values,
+        workspace: compatiblePubspec.workspace,
       );
       final dependencySet =
           _dependencySetOfPackage(singleBreakingPubspec, package);
@@ -111,7 +120,11 @@ class DependencyServicesReportCommand extends PubCommand {
             .toRef()
             .withConstraint(stripUpperBound(package.toRange().constraint));
         final singleBreakingPackagesResult = await _tryResolve(
-          Package(singleBreakingPubspec, entrypoint.rootDir),
+          Package(
+            singleBreakingPubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
           cache,
         );
         singleBreakingVersion = singleBreakingPackagesResult
@@ -128,7 +141,11 @@ class DependencyServicesReportCommand extends PubCommand {
         );
 
         final smallestUpgradeResult = await _tryResolve(
-          Package(atLeastCurrentPubspec, entrypoint.rootDir),
+          Package(
+            atLeastCurrentPubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
           cache,
           solveType: SolveType.downgrade,
           additionalConstraints: additionalConstraints,
@@ -216,7 +233,14 @@ class DependencyServicesListCommand extends PubCommand {
 
     final currentPackages = fileExists(entrypoint.lockFilePath)
         ? entrypoint.lockFile.packages.values.toList()
-        : (await _tryResolve(Package(pubspec, entrypoint.rootDir), cache) ??
+        : (await _tryResolve(
+              Package(
+                pubspec,
+                entrypoint.rootDir,
+                entrypoint.root.workspaceChildren,
+              ),
+              cache,
+            ) ??
             <PackageId>[]);
 
     final dependencies = <Object>[];
@@ -428,6 +452,7 @@ class DependencyServicesApplyCommand extends PubCommand {
               location: toUri(entrypoint.pubspecPath),
             ),
             entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
           ),
           lockFile: updatedLockfile,
         );
@@ -720,6 +745,7 @@ Future<List<Object>> _computeUpgradeSet(
           dependencies: rootPubspec.dependencies.values,
           devDependencies: rootPubspec.devDependencies.values,
           sdkConstraints: rootPubspec.sdkConstraints,
+          workspace: rootPubspec.workspace,
         );
 
   final dependencySet = _dependencySetOfPackage(pubspec, package);
@@ -734,7 +760,7 @@ Future<List<Object>> _computeUpgradeSet(
         ? SolveType.downgrade
         : SolveType.get,
     cache,
-    Package(pubspec, entrypoint.rootDir),
+    Package(pubspec, entrypoint.rootDir, entrypoint.root.workspaceChildren),
     lockFile: lockFile,
     additionalConstraints: additionalConstraints,
   );

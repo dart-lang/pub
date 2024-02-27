@@ -208,7 +208,11 @@ Specify multiple sdk packages with descriptors.''');
       solveResult = await resolveVersions(
         SolveType.upgrade,
         cache,
-        Package(resolutionPubspec, entrypoint.rootDir),
+        Package(
+          resolutionPubspec,
+          entrypoint.rootDir,
+          entrypoint.root.workspaceChildren,
+        ),
       );
     } on GitException {
       final name = updates.first.ref.name;
@@ -356,6 +360,7 @@ Specify multiple sdk packages with descriptors.''');
       dependencies: dependencies,
       devDependencies: devDependencies,
       dependencyOverrides: dependencyOverrides,
+      workspace: original.workspace,
     );
   }
 
