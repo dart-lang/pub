@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
@@ -52,8 +53,23 @@ class _PubHttpClient extends http.BaseClient {
     if (_wasClosed) {
       throw StateError('Attempting to send request on closed client');
     }
-    _requestStopwatches[request] = Stopwatch()..start();
     request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
+    if (request.url.host == 'localhost') {
+      // We always prefer using ipv4 over ipv6 for 'localhost'.
+      //
+      // This prevents conflicts where the same port is occupied by the same
+      // port on localhost.
+      final resolutions = await InternetAddress.lookup('localhost');
+      final ipv4Address = resolutions
+          .firstWhereOrNull((a) => a.type == InternetAddressType.IPv4);
+      if (ipv4Address != null) {
+        request = OverrideUrlRequest(
+          request.url.replace(host: ipv4Address.host),
+          request,
+        );
+      }
+    }
+    _requestStopwatches[request] = Stopwatch()..start();
     _logRequest(request);
     final http.StreamedResponse streamedResponse;
     try {
@@ -443,4 +459,53 @@ extension RequestSending on http.Client {
 class _ClientClosedException implements Exception {
   @override
   String toString() => 'Request was made after http client was closed';
+}
+
+class OverrideUrlRequest implements http.BaseRequest {
+  @override
+  final Uri url;
+
+  final http.BaseRequest wrapped;
+
+  OverrideUrlRequest(this.url, this.wrapped);
+
+  @override
+  int? get contentLength => wrapped.contentLength;
+
+  @override
+  Map<String, String> get headers => wrapped.headers;
+
+  @override
+  bool get persistentConnection => wrapped.persistentConnection;
+
+  @override
+  bool get followRedirects => wrapped.followRedirects;
+  @override
+  set followRedirects(bool value) => wrapped.followRedirects = value;
+
+  @override
+  int get maxRedirects => wrapped.maxRedirects;
+
+  @override
+  set maxRedirects(int value) => wrapped.maxRedirects = value;
+
+  @override
+  String get method => wrapped.method;
+
+  @override
+  set contentLength(int? value) => wrapped.contentLength = value;
+
+  @override
+  http.ByteStream finalize() => wrapped.finalize();
+
+  @override
+  bool get finalized => wrapped.finalized;
+
+  @override
+  Future<http.StreamedResponse> send() {
+    throw UnimplementedError();
+  }
+
+  @override
+  set persistentConnection(bool value) => wrapped.persistentConnection = value;
 }
