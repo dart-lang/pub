@@ -243,7 +243,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       );
 
       final id = current ?? upgradable ?? resolvable ?? latest;
-      final packageAdvisories = await id?.source
+      var packageAdvisories = await id?.source
               .getAdvisoriesForPackage(id, cache, Duration(days: 3)) ??
           [];
 
@@ -276,8 +276,16 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       final isLatest = currentVersionDetails == latestVersionDetails;
 
       var isCurrentAffectedByAdvisory = false;
-
       if (currentVersionDetails != null) {
+        // Filter out advisories added to `ignored_advisores` in the root pubspec.
+        packageAdvisories = packageAdvisories
+            .where(
+              (adv) => entrypoint.root.pubspec.ignoredAdvisories.intersection({
+                ...adv.aliases,
+                adv.id,
+              }).isEmpty,
+            )
+            .toList();
         for (final advisory in packageAdvisories) {
           if (advisory.affectedVersions.contains(
             currentVersionDetails._pubspec.version.canonicalizedVersion,
@@ -893,6 +901,9 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final String? discontinuedReplacedBy;
   final bool isCurrentRetracted;
   final bool isLatest;
+
+  /// List of advisories affecting this package which are not present in the
+  /// `ignored_advisories` list in the pubspec.
   final List<Advisory> advisories;
   final bool isCurrentAffectedBySecurityAdvisory;
 

@@ -380,6 +380,59 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
+  testWithGolden('do not report ignored advisories', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+        'ignored_advisories': ['ABCD-1234-5678-9101'],
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedVersions: ['1.0.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
+  testWithGolden('do not report ignored advisories - alias', (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+        'ignored_advisories': ['1234-ABCD-EFGH-IJKL'],
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.affectVersionsByAdvisory(
+      packageName: 'foo',
+      advisoryId: 'ABCD-1234-5678-9101',
+      aliases: ['1234-ABCD-EFGH-IJKL'],
+      affectedVersions: ['1.0.0'],
+    );
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
   testWithGolden('show advisory - current', (ctx) async {
     final builder = await servePackages();
     builder
