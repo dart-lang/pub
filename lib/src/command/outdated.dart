@@ -701,8 +701,8 @@ Future<void> _outputHuman(
           'See https://dart.dev//go/pub-security-advisories',
         );
         log.message('\n');
-        var displayedVersions = <String>{};
         for (final advisory in package.advisories) {
+          final displayedVersions = <String>{};
           for (final versionDetails in [
             package.current,
             package.upgradable,

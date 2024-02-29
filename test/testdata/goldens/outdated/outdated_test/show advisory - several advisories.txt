@@ -48,7 +48,7 @@ foo
       Affects: 1.0.0, 1.2.0
       https://github.com/advisories/ABCD-1234-5678-9101
     - "Example"
-      Affects: 1.0.0, 1.2.0
+      Affects: 1.0.0
       https://github.com/advisories/VXYZ-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -73,7 +73,7 @@ foo
       Affects: 1.0.0, 1.2.0
       https://github.com/advisories/ABCD-1234-5678-9101
     - "Example"
-      Affects: 1.0.0, 1.2.0
+      Affects: 1.0.0
       https://github.com/advisories/VXYZ-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -98,7 +98,7 @@ foo
       Affects: 1.0.0, 1.2.0
       https://github.com/advisories/ABCD-1234-5678-9101
     - "Example"
-      Affects: 1.0.0, 1.2.0
+      Affects: 1.0.0
       https://github.com/advisories/VXYZ-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -123,7 +123,7 @@ foo
       Affects: 1.0.0, 1.2.0
       https://github.com/advisories/ABCD-1234-5678-9101
     - "Example"
-      Affects: 1.0.0, 1.2.0
+      Affects: 1.0.0
       https://github.com/advisories/VXYZ-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -148,7 +148,7 @@ foo
       Affects: 1.0.0, 1.2.0
       https://github.com/advisories/ABCD-1234-5678-9101
     - "Example"
-      Affects: 1.0.0, 1.2.0
+      Affects: 1.0.0
       https://github.com/advisories/VXYZ-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -173,7 +173,7 @@ foo
       Affects: 1.0.0, 1.2.0
       https://github.com/advisories/ABCD-1234-5678-9101
     - "Example"
-      Affects: 1.0.0, 1.2.0
+      Affects: 1.0.0
       https://github.com/advisories/VXYZ-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
