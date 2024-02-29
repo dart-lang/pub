@@ -31,8 +31,9 @@ void main() {
       ]),
     ]).create();
     await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
-        output: contains('+ dev_dep'));
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains('+ dev_dep'),
+    );
     final lockfile = loadYaml(
       File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
