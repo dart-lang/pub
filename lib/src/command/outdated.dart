@@ -676,10 +676,31 @@ Future<void> _outputHuman(
     }
   }
 
+  List<Advisory> advisoriesWithAffectedVersions(_PackageDetails package) {
+    return package.advisories
+        .where(
+          (advisory) => advisory.affectedVersions
+              .intersection(
+                [
+                  package.current,
+                  package.upgradable,
+                  package.resolvable,
+                  package.latest,
+                ].map((e) => e?._pubspec.version.canonicalizedVersion).toSet(),
+              )
+              .isNotEmpty,
+        )
+        .toList();
+  }
+
+  var advisoriesToDisplay = <String, List<Advisory>>{};
+  for (final package in rows) {
+    advisoriesToDisplay[package.name] = advisoriesWithAffectedVersions(package);
+  }
   bool displayExtraInfo(_PackageDetails package) =>
       package.isDiscontinued ||
       package.isCurrentRetracted ||
-      (package.advisories.isNotEmpty);
+      (advisoriesToDisplay[package.name]!.isNotEmpty);
 
   if (rows.any(displayExtraInfo)) {
     log.message('\n');
@@ -700,8 +721,9 @@ Future<void> _outputHuman(
           'See https://dart.dev/go/package-retraction',
         );
       }
-      if (package.advisories.isNotEmpty) {
-        final advisoriesText = package.advisories.length > 1
+      var displayedAdvisories = advisoriesToDisplay[package.name]!;
+      if (displayedAdvisories.isNotEmpty) {
+        final advisoriesText = displayedAdvisories.length > 1
             ? 'security advisories'
             : 'a security advisory';
         log.message(
@@ -709,21 +731,16 @@ Future<void> _outputHuman(
           'See https://dart.dev//go/pub-security-advisories',
         );
         log.message('\n');
-        for (final advisory in package.advisories) {
-          final displayedVersions = <String>{};
-          for (final versionDetails in [
-            package.current,
-            package.upgradable,
-            package.resolvable,
-            package.latest,
-          ]) {
-            final version =
-                versionDetails?._pubspec.version.canonicalizedVersion;
-            if (version != null &&
-                advisory.affectedVersions.contains(version)) {
-              displayedVersions.add(version);
-            }
-          }
+
+        for (final advisory in displayedAdvisories) {
+          var displayedVersions = advisory.affectedVersions.intersection(
+            [
+              package.current,
+              package.upgradable,
+              package.resolvable,
+              package.latest,
+            ].map((e) => e?._pubspec.version.canonicalizedVersion).toSet(),
+          );
           log.message('    - "${advisory.summary}"');
           log.message('      Affects: ${displayedVersions.join(', ')}');
           log.message('      ${advisoriesDisplayUrl(advisory.id)}');
