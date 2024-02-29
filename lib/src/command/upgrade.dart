@@ -262,7 +262,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 
   Future<void> _runUpgradeMajorVersions() async {
-    // TODO(https://github.com/dart-lang/pub/issues/4127) Implement support for workspaces.
     final toUpgrade = _directDependenciesToUpgrade();
 
     final resolvablePubspec = stripVersionBounds(
