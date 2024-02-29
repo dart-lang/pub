@@ -146,8 +146,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       'Resolving',
       () async {
         final upgradablePackagesResult = await _tryResolve(
-          Package(upgradablePubspec, entrypoint.rootDir,
-              entrypoint.root.workspaceChildren,),
+          Package(
+            upgradablePubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
           cache,
           lockFile: entrypoint.lockFile,
         );
@@ -155,8 +158,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         upgradablePackages = upgradablePackagesResult ?? [];
 
         final resolvablePackagesResult = await _tryResolve(
-          Package(resolvablePubspec, entrypoint.rootDir,
-              entrypoint.root.workspaceChildren,),
+          Package(
+            resolvablePubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
           cache,
           lockFile: entrypoint.lockFile,
         );
