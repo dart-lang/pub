@@ -680,7 +680,7 @@ class HostedSource extends CachedSource {
           'Advisory $id does not contain $packageName among its affected packages.',
         );
       }
-      var affectedVersions = <String>{};
+      final affectedVersions = <String>{};
       final versions = affectedPkg['versions'];
       if (versions is! List) {
         throw FormatException('package versions must be a list');
