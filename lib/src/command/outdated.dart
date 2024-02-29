@@ -702,7 +702,7 @@ Future<void> _outputHuman(
         );
         log.message('\n');
         for (final advisory in package.advisories) {
-          var displayedVersions = <String>{};
+          final displayedVersions = <String>{};
           for (final versionDetails in [
             package.current,
             package.upgradable,
