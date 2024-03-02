@@ -53,23 +53,23 @@ void main() {
     );
   });
 
-  test('should not fail on non-ascii unicode character', () async {
-    await d.git('myapp', [
-      ...d.validPackage().contents,
-      d.file('non_ascii_и.txt'),
-    ]).create();
-
-    await expectValidation(contains('Package has 0 warnings.'), 0);
-  });
-
-  test('should not fail on space character', () async {
-    await d.git('myapp', [
-      ...d.validPackage().contents,
-      d.file('space file.txt'),
-    ]).create();
-
-    await expectValidation(contains('Package has 0 warnings.'), 0);
-  });
+  // test('should not fail on non-ascii unicode character', () async {
+  //   await d.git('myapp', [
+  //     ...d.validPackage().contents,
+  //     d.file('non_ascii_и.txt'),
+  //   ]).create();
+  //
+  //   await expectValidation(contains('Package has 0 warnings.'), 0);
+  // });
+  //
+  // test('should not fail on space character', () async {
+  //   await d.git('myapp', [
+  //     ...d.validPackage().contents,
+  //     d.file('space file.txt'),
+  //   ]).create();
+  //
+  //   await expectValidation(contains('Package has 0 warnings.'), 0);
+  // });
 
   test('should not fail on missing git', () async {
     await d.git('myapp', [

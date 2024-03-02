@@ -6,6 +6,8 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -83,11 +85,45 @@ Future<List<String>> run(
   }
 }
 
+// Stream<String> start(
+//     List<String> args, {
+//       String? workingDir,
+//       Map<String, String>? environment,
+//     }) async {
+//   if (!isInstalled) {
+//     fail('Cannot find a Git executable.\n'
+//         'Please ensure Git is correctly installed.');
+//   }
+//
+//   log.muteProgress();
+//   try {
+//     final result = await startProcess(
+//       command!,
+//       args,
+//       workingDir: workingDir,
+//       environment: {...?environment, 'LANG': 'en_GB'},
+//     );
+//     if ((await result.exitCode) != 0) {
+//       throw GitException(
+//         args,
+//         result.stdout.join('\n'),
+//         result.stderr.join('\n'),
+//         result.exitCode,
+//       );
+//     }
+//     return result.stdout;
+//   } finally {
+//     log.unmuteProgress();
+//   }
+// }
+
 /// Like [run], but synchronous.
 List<String> runSync(
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
+  Encoding? stdoutEncoding = systemEncoding,
+  Encoding? stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
@@ -99,6 +135,8 @@ List<String> runSync(
     args,
     workingDir: workingDir,
     environment: environment,
+    stdoutEncoding: stdoutEncoding,
+    stderrEncoding: stderrEncoding,
   );
   if (!result.success) {
     throw GitException(

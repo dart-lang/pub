@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -25,13 +26,15 @@ class GitignoreValidator extends Validator {
       try {
         checkedIntoGit = git.runSync(
           [
-            '-c core.quotePath=false',
+            // '-c core.quotePath=false',
             'ls-files',
+            // '-z',
             '--cached',
             '--exclude-standard',
             '--recurse-submodules',
           ],
           workingDir: entrypoint.rootDir,
+          // stdoutEncoding: Utf8Codec(),
         );
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
