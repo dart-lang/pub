@@ -77,8 +77,9 @@ class PackageServer {
       RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
 
   static Future<PackageServer> start() async {
-    final server =
-        PackageServer._(await shelf_io.IOServer.bind('localhost', 0));
+    final server = PackageServer._(
+      await shelf_io.IOServer.bind(InternetAddress.loopbackIPv4, 0),
+    );
     server.handle(
       _versionInfoPattern,
       (shelf.Request request) async {
@@ -325,20 +326,20 @@ class PackageServer {
       DateTime.fromMicrosecondsSinceEpoch(0);
 
   /// Add a security advisory which affects [affectedVersions] versions of
-  /// package [name].
+  /// package [packageName].
   void affectVersionsByAdvisory({
-    required String name,
+    required String packageName,
     required String advisoryId,
     required List<String> affectedVersions,
     DateTime? advisoriesUpdated,
     List<String> aliases = const <String>[],
   }) {
-    _packages[name]!.advisoriesUpdated =
+    _packages[packageName]!.advisoriesUpdated =
         advisoriesUpdated ?? defaultAdvisoriesUpdated;
-    _packages[name]!.advisories.add(
+    _packages[packageName]!.advisories.add(
           _ServedAdvisory(
             advisoryId,
-            name,
+            packageName,
             affectedVersions,
             aliases,
           ),

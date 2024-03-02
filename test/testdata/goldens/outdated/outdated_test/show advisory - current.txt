@@ -9,18 +9,18 @@ $ pub outdated --json
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
-      "isCurrentAffectedByAdvisory": false,
+      "isCurrentAffectedByAdvisory": true,
       "current": {
-        "version": "1.2.3"
+        "version": "1.0.0"
       },
       "upgradable": {
-        "version": "1.3.0"
+        "version": "1.2.0"
       },
       "resolvable": {
-        "version": "1.3.0"
+        "version": "1.2.0"
       },
       "latest": {
-        "version": "1.3.0"
+        "version": "1.2.0"
       }
     }
   ]
@@ -33,13 +33,20 @@ $ pub outdated --no-color
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current            Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3   1.3.0       1.3.0       1.3.0   
+foo           *1.0.0 (advisory)  1.2.0       1.2.0       1.2.0   
 
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
+
+foo
+    Package foo is affected by a security advisory. See https://dart.dev//go/pub-security-advisories
+
+    - "Example"
+      Affects: 1.0.0
+      https://github.com/advisories/ABCD-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -48,13 +55,20 @@ $ pub outdated --no-color --no-transitive
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current            Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3   1.3.0       1.3.0       1.3.0   
+foo           *1.0.0 (advisory)  1.2.0       1.2.0       1.2.0   
 
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
+
+foo
+    Package foo is affected by a security advisory. See https://dart.dev//go/pub-security-advisories
+
+    - "Example"
+      Affects: 1.0.0
+      https://github.com/advisories/ABCD-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -63,13 +77,20 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current            Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3   1.3.0       1.3.0       1.3.0   
+foo           *1.0.0 (advisory)  1.2.0       1.2.0       1.2.0   
 
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
+
+foo
+    Package foo is affected by a security advisory. See https://dart.dev//go/pub-security-advisories
+
+    - "Example"
+      Affects: 1.0.0
+      https://github.com/advisories/ABCD-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -78,13 +99,20 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current            Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3   1.3.0       1.3.0       1.3.0   
+foo           *1.0.0 (advisory)  1.2.0       1.2.0       1.2.0   
 
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
+
+foo
+    Package foo is affected by a security advisory. See https://dart.dev//go/pub-security-advisories
+
+    - "Example"
+      Affects: 1.0.0
+      https://github.com/advisories/ABCD-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -93,13 +121,20 @@ $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current            Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3   1.3.0       1.3.0       1.3.0   
+foo           *1.0.0 (advisory)  1.2.0       1.2.0       1.2.0   
 
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
+
+foo
+    Package foo is affected by a security advisory. See https://dart.dev//go/pub-security-advisories
+
+    - "Example"
+      Affects: 1.0.0
+      https://github.com/advisories/ABCD-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -108,13 +143,20 @@ $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current            Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3   1.3.0       1.3.0       1.3.0   
+foo           *1.0.0 (advisory)  1.2.0       1.2.0       1.2.0   
 
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
+
+foo
+    Package foo is affected by a security advisory. See https://dart.dev//go/pub-security-advisories
+
+    - "Example"
+      Affects: 1.0.0
+      https://github.com/advisories/ABCD-1234-5678-9101
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -127,18 +169,18 @@ $ pub outdated --json --no-dev-dependencies
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
-      "isCurrentAffectedByAdvisory": false,
+      "isCurrentAffectedByAdvisory": true,
       "current": {
-        "version": "1.2.3"
+        "version": "1.0.0"
       },
       "upgradable": {
-        "version": "1.3.0"
+        "version": "1.2.0"
       },
       "resolvable": {
-        "version": "1.3.0"
+        "version": "1.2.0"
       },
       "latest": {
-        "version": "1.3.0"
+        "version": "1.2.0"
       }
     }
   ]

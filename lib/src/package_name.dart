@@ -27,7 +27,7 @@ class PackageRef {
 
   /// Creates a reference to the given root package.
   static PackageRef root(Package package) =>
-      PackageRef(package.name, RootDescription(package));
+      PackageRef(package.name, RootDescription(package.dir));
 
   @override
   String toString([PackageDetail? detail]) {
@@ -88,7 +88,7 @@ class PackageId {
   static PackageId root(Package package) => PackageId(
         package.name,
         package.version,
-        ResolvedRootDescription(RootDescription(package)),
+        ResolvedRootDescription(RootDescription(package.dir)),
       );
 
   @override

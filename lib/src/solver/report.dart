@@ -45,7 +45,6 @@ class SolveReport {
   /// Version list will not contain any retracted package versions.
   final Map<String, List<Version>> _availableVersions;
 
-  static const githubAdvisoriesPrefixUrl = 'https://github.com/advisories/';
   static const maxAdvisoryFootnotesPerLine = 5;
   final advisoriesIds = <String>[];
 
@@ -289,7 +288,7 @@ $contentHashesDocumentationUrl
       message('Dependencies are affected by security advisories:');
       for (var footnote = 0; footnote < advisoriesIds.length; footnote++) {
         message(
-          '  [^$footnote]: $githubAdvisoriesPrefixUrl${advisoriesIds[footnote]}',
+          '  [^$footnote]: ${advisoriesDisplayUrl(advisoriesIds[footnote])}',
         );
       }
     }

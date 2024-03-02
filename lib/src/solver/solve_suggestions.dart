@@ -9,7 +9,6 @@ import '../flutter_releases.dart';
 import '../io.dart';
 import '../package.dart';
 import '../package_name.dart';
-import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
@@ -149,7 +148,7 @@ class _ResolutionContext {
         await inferBestFlutterRelease({cause.sdk.identifier: constraint});
     if (bestRelease == null) return null;
     final result = await _tryResolve(
-      entrypoint.root.pubspec,
+      entrypoint.root,
       sdkOverrides: {
         'dart': bestRelease.dartVersion,
         'flutter': bestRelease.flutterVersion,
@@ -185,7 +184,8 @@ class _ResolutionContext {
       stripLowerBound: true,
     );
 
-    final result = await _tryResolve(relaxedPubspec);
+    final result =
+        await _tryResolve(Package(relaxedPubspec, entrypoint.rootDir));
     if (result == null) {
       return null;
     }
@@ -223,7 +223,8 @@ class _ResolutionContext {
     final relaxedPubspec =
         stripVersionBounds(originalPubspec, stripLowerBound: stripLowerBound);
 
-    final result = await _tryResolve(relaxedPubspec);
+    final result =
+        await _tryResolve(Package(relaxedPubspec, entrypoint.rootDir));
     if (result == null) {
       return null;
     }
@@ -259,14 +260,14 @@ class _ResolutionContext {
 
   /// Attempt resolving
   Future<SolveResult?> _tryResolve(
-    Pubspec pubspec, {
+    Package package, {
     Map<String, Version> sdkOverrides = const {},
   }) async {
     try {
       return await resolveVersions(
         type,
         cache,
-        Package.inMemory(pubspec),
+        package,
         sdkOverrides: sdkOverrides,
         lockFile: entrypoint.lockFile,
         unlock: unlock,

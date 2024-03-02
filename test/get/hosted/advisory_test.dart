@@ -24,7 +24,7 @@ Future<void> main() async {
       }),
     ]).create();
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '123',
       affectedVersions: ['1.0.0'],
     );
@@ -47,7 +47,7 @@ Future<void> main() async {
       }),
     ]).create();
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '123',
       affectedVersions: ['1.2.3'],
     );
@@ -71,12 +71,12 @@ Future<void> main() async {
     ]).create();
 
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '123',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '456',
       affectedVersions: ['1.2.3'],
     );
@@ -99,37 +99,37 @@ Future<void> main() async {
       }),
     ]).create();
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '000',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '111',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '222',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '333',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '444',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '555',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '666',
       affectedVersions: ['1.2.3'],
     );
@@ -153,7 +153,7 @@ Future<void> main() async {
       }),
     ]).create();
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '123',
       affectedVersions: ['1.2.3'],
     );
@@ -180,12 +180,12 @@ Future<void> main() async {
       ),
     ]).create();
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '123',
       affectedVersions: ['1.2.3'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '456',
       affectedVersions: ['1.2.3'],
     );
@@ -212,13 +212,13 @@ Future<void> main() async {
       ),
     ]).create();
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '123',
       affectedVersions: ['1.2.3'],
       aliases: ['abc', 'def'],
     );
     server.affectVersionsByAdvisory(
-      name: 'foo',
+      packageName: 'foo',
       advisoryId: '456',
       affectedVersions: ['1.2.3'],
       aliases: ['cde'],

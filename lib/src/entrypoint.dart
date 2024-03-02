@@ -235,7 +235,7 @@ class Entrypoint {
     this.rootDir,
     this.cache, {
     Pubspec? pubspec,
-  })  : _root = pubspec == null ? null : Package.inMemory(pubspec),
+  })  : _root = pubspec == null ? null : Package(pubspec, rootDir),
         globalDir = null {
     if (p.isWithin(cache.rootDir, rootDir)) {
       fail('Cannot operate on packages inside the cache.');
@@ -251,7 +251,7 @@ class Entrypoint {
       _example,
       _packageGraph,
       cache,
-      Package.inMemory(pubspec),
+      Package(pubspec, rootDir),
       globalDir,
     );
   }
