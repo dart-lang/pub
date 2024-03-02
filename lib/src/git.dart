@@ -85,38 +85,6 @@ Future<List<String>> run(
   }
 }
 
-// Stream<String> start(
-//     List<String> args, {
-//       String? workingDir,
-//       Map<String, String>? environment,
-//     }) async {
-//   if (!isInstalled) {
-//     fail('Cannot find a Git executable.\n'
-//         'Please ensure Git is correctly installed.');
-//   }
-//
-//   log.muteProgress();
-//   try {
-//     final result = await startProcess(
-//       command!,
-//       args,
-//       workingDir: workingDir,
-//       environment: {...?environment, 'LANG': 'en_GB'},
-//     );
-//     if ((await result.exitCode) != 0) {
-//       throw GitException(
-//         args,
-//         result.stdout.join('\n'),
-//         result.stderr.join('\n'),
-//         result.exitCode,
-//       );
-//     }
-//     return result.stdout;
-//   } finally {
-//     log.unmuteProgress();
-//   }
-// }
-
 /// Like [run], but synchronous.
 List<String> runSync(
   List<String> args, {
