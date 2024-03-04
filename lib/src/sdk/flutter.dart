@@ -13,15 +13,18 @@ import '../log.dart';
 import '../sdk.dart';
 
 class FlutterSdk extends Sdk {
+  FlutterSdk._();
+  static final FlutterSdk _instance = FlutterSdk._();
+  factory FlutterSdk() => _instance;
+
   @override
   String get name => 'Flutter';
-  @override
-  bool get isAvailable => _isAvailable;
 
   // We only consider the Flutter SDK to present if we find a root directory
   // and the root directory contains a valid 'version' file.
-  static final bool _isAvailable = _rootDirectory != null && _version != null;
-  static final String? _rootDirectory = () {
+  @override
+  late final bool isAvailable = rootDirectory != null && version != null;
+  late final String? rootDirectory = () {
     // If FLUTTER_ROOT is specified, then this always points to the Flutter SDK
     if (Platform.environment.containsKey('FLUTTER_ROOT')) {
       return Platform.environment['FLUTTER_ROOT'];
@@ -55,15 +58,16 @@ class FlutterSdk extends Sdk {
 
     return null;
   }();
-  static final Version? _version = () {
-    final rootDirectory = _rootDirectory;
+  @override
+  late final Version? version = () {
+    final rootDirectory = this.rootDirectory;
     if (rootDirectory == null) return null;
     if (!dirExists(rootDirectory)) {
       // $FLUTTER_ROOT has been set, but doesn't exist.
       return null;
     }
     final flutterVersionPath =
-        p.join(_rootDirectory!, 'bin', 'cache', 'flutter.version.json');
+        p.join(rootDirectory, 'bin', 'cache', 'flutter.version.json');
 
     try {
       final versionJson = jsonDecode(
@@ -93,12 +97,6 @@ class FlutterSdk extends Sdk {
       'Flutter users should use `flutter pub` instead of `dart pub`.';
 
   @override
-  Version? get version {
-    if (!isAvailable) return null;
-    return _version;
-  }
-
-  @override
   String? packagePath(String name) {
     if (!isAvailable) return null;
 
@@ -106,10 +104,10 @@ class FlutterSdk extends Sdk {
     // `$flutter/bin/cache/pkg`. This checks both locations in order. If [name]
     // exists in neither place, it returns the `$flutter/packages` location
     // which is more human-readable for error messages.
-    var packagePath = p.join(_rootDirectory!, 'packages', name);
+    var packagePath = p.join(rootDirectory!, 'packages', name);
     if (dirExists(packagePath)) return packagePath;
 
-    var cachePath = p.join(_rootDirectory!, 'bin', 'cache', 'pkg', name);
+    var cachePath = p.join(rootDirectory!, 'bin', 'cache', 'pkg', name);
     if (dirExists(cachePath)) return cachePath;
 
     return null;
