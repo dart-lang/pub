@@ -209,6 +209,9 @@ class PackageLister {
   /// dependencies, this will return incompatibilities that reflect that. It
   /// won't return incompatibilities that have already been returned by a
   /// previous call to [incompatibilitiesFor].
+  ///
+  /// For a root package, incompatibilities for its dev-dependencies and
+  /// workspace-children are also added.
   Future<List<Incompatibility>> incompatibilitiesFor(PackageId id) async {
     if (_knownInvalidVersions.allows(id.version)) return const [];
     Pubspec pubspec;
