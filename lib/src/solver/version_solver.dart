@@ -62,7 +62,7 @@ class VersionSolver {
   /// The entrypoint package, whose dependencies seed the version solve process.
   final Package _root;
 
-  /// Mapping all rootpackages in the workspace from their name.
+  /// Mapping all root packages in the workspace from their name.
   late final Map<String, Package> _rootPackages = {
     for (final package in _root.transitiveWorkspace) package.name: package,
   };
