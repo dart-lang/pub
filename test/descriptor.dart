@@ -311,12 +311,27 @@ DirectoryDescriptor appDir({Map? dependencies, Map<String, Object>? pubspec}) =>
 Descriptor packageConfigFile(
   List<PackageConfigEntry> packages, {
   String generatorVersion = '3.1.2+3',
+  String? pubCache,
+  String? flutterVersion,
+  String? flutterRoot,
 }) =>
-    PackageConfigFileDescriptor(packages, generatorVersion);
+    PackageConfigFileDescriptor(
+      packages,
+      generatorVersion,
+      pubCache ??
+          p.join(
+            sandbox,
+            cachePath,
+          ),
+      flutterRoot,
+      flutterVersion,
+    );
 
 Descriptor appPackageConfigFile(
   List<PackageConfigEntry> packages, {
   String generatorVersion = '3.1.2+3',
+  String? flutterRoot,
+  String? flutterVersion,
 }) =>
     dir(
       appPath,
@@ -327,6 +342,8 @@ Descriptor appPackageConfigFile(
             ...packages,
           ],
           generatorVersion: generatorVersion,
+          flutterRoot: flutterRoot,
+          flutterVersion: flutterVersion,
         ),
       ],
     );

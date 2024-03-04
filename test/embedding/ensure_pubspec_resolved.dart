@@ -202,8 +202,7 @@ void testEnsurePubspecResolved() {
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.yaml');
 
-        await _implicitPubGet('The pubspec.yaml file has changed since the '
-            'pubspec.lock file was generated');
+        await _implicitPubGet('`pubspec.yaml` is newer than `pubspec.lock`');
       });
 
       test('the package_config.json file points to the wrong place', () async {
@@ -235,8 +234,7 @@ void testEnsurePubspecResolved() {
         // Ensure that the pubspec looks newer than the lockfile.
         await _touch('pubspec.lock');
 
-        await _implicitPubGet('The pubspec.lock file has changed since the '
-            '.dart_tool/package_config.json file was generated');
+        await _implicitPubGet('Could not find `../foo/pubspec.yaml`');
       });
 
       test("the lock file's SDK constraint doesn't match the current SDK",
@@ -270,8 +268,8 @@ void testEnsurePubspecResolved() {
         );
 
         await _implicitPubGet(
-            "Dart 3.1.2+3 is incompatible with your dependencies' "
-            'SDK constraints');
+          'The Dart SDK was updated since last package resolution.',
+        );
       });
 
       test(
@@ -314,7 +312,7 @@ void testEnsurePubspecResolved() {
         );
 
         await _implicitPubGet(
-          'Flutter 0.9.0 is incompatible with your dependencies\' SDK constraints',
+          'Flutter has updated since last invocation.',
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
         );
       });
@@ -496,38 +494,6 @@ void testEnsurePubspecResolved() {
         await _touch('pubspec.lock');
 
         await _noImplicitPubGet();
-      });
-
-      test('the lock file has a Flutter SDK but Flutter is unavailable',
-          () async {
-        // Avoid using a path dependency because it triggers the full validation
-        // logic. We want to be sure SDK-validation works without that logic.
-        server.serve(
-          'foo',
-          '3.0.0',
-          pubspec: {
-            'environment': {
-              'flutter': '>=1.0.0 <2.0.0',
-              'sdk': defaultSdkConstraint,
-            },
-          },
-        );
-
-        await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
-
-        await d.dir(appPath, [
-          d.appPubspec(dependencies: {'foo': '3.0.0'}),
-        ]).create();
-
-        await pubGet(
-          environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-        );
-
-        await d.dir('flutter', [d.flutterVersion('2.4.6')]).create();
-
-        // Run pub manually here because otherwise we don't have access to
-        // d.sandbox.
-        await runPub(args: ['run', 'bin/script.dart']);
       });
     });
   });
