@@ -273,14 +273,15 @@ class PackageLister {
         if (id.isRoot)
           ...pubspec.devDependencies.values
               .where((range) => !_overriddenPackages.contains(range.name)),
-        if (id.isRoot)
+        if (id.isRoot) ...[
           ..._rootPackage!.workspaceChildren.map((p) {
             return PackageRange(
               PackageRef(p.name, RootDescription(p.dir)),
               VersionConstraint.any,
             );
           }),
-        if (id.isRoot) ...pubspec.dependencyOverrides.values,
+          ...pubspec.dependencyOverrides.values,
+        ],
       ];
       return entries.map((range) => _dependency(depender, range)).toList();
     }
