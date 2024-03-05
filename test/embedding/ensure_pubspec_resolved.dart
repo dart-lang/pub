@@ -341,8 +341,7 @@ void testEnsurePubspecResolved() {
         // To ensure the timestamp is strictly later we need to touch again here.
         await _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
 
-        await _implicitPubGet(
-            '${p.join('..', 'bar', 'pubspec.yaml')} has changed '
+        await _implicitPubGet('../bar/pubspec.yaml has changed '
             'since the pubspec.lock file was generated.');
       });
 
@@ -382,8 +381,7 @@ void testEnsurePubspecResolved() {
         // To ensure the timestamp is strictly later we need to touch again here.
         await _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
 
-        await _implicitPubGet(
-            '${p.join('..', 'bar', 'pubspec.yaml')} has changed '
+        await _implicitPubGet('../bar/pubspec.yaml has changed '
             'since the pubspec.lock file was generated.');
       });
     });
