@@ -331,10 +331,10 @@ class Entrypoint {
       generatorVersion: sdk.version,
       additionalProperties: {
         if (FlutterSdk().isAvailable) ...{
-          'FLUTTER_ROOT': p.absolute(FlutterSdk().rootDirectory!),
-          'FLUTTER_VERSION': FlutterSdk().version.toString(),
+          'flutterRoot': p.absolute(FlutterSdk().rootDirectory!),
+          'flutterVersion': FlutterSdk().version.toString(),
         },
-        'PUB_CACHE': p.absolute(cache.rootDir),
+        'pubCache': p.absolute(cache.rootDir),
       },
     );
 
@@ -656,8 +656,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// up to date with respect to pubspec.yaml and its dependencies.
   ///
   /// Always returns false if `.dart_tool/package_config.json` was generated
-  /// with a different pub cache location, a different $FLUTTER_ROOT or a
-  /// different Dart or FLUTTER SDK version.
+  /// with a different PUB_CACHE location, a different $FLUTTER_ROOT or a
+  /// different Dart or Flutter SDK version.
   ///
   /// Otherwise first the `modified` timestamps are compared, and if
   /// `.dart_tool/package_config.json` is newer than `pubspec.lock` that is
@@ -686,9 +686,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// pubspec.lock; touch .dart_tool/package_config.json`) - that is hard to
   /// avoid, but also unlikely to happen by accident because
   /// `.dart_tool/package_config.json` is not checked into version control.
-  ///
-  /// If [checkForSdkUpdate] this will return `false` if the dart sdk version is
-  /// different than the one generating `.dart_tool/package_config.json`.
   bool _isUpToDate() {
     if (isCached) return true;
     final packageConfigStat = tryStatFile(packageConfigPath);
@@ -701,7 +698,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     // sdk-packages, and therefore do a new resolution.
     //
     // This also counts if Flutter was introduced or removed.
-    if (packageConfig.additionalProperties['FLUTTER_ROOT'] !=
+    if (packageConfig.additionalProperties['flutterRoot'] !=
         (flutter.rootDirectory == null
             ? null
             : p.absolute(flutter.rootDirectory!))) {
