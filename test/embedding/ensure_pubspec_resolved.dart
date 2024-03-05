@@ -338,6 +338,9 @@ void testEnsurePubspecResolved() {
           d.libPubspec('bar', '1.0.0', deps: {'foo': '2.0.0'}),
         ]).create();
 
+        // To ensure the timestamp is strictly later we need to touch again here.
+        _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
+
         await _implicitPubGet(
             '${p.join('..', 'bar', 'pubspec.yaml')} has changed '
             'since the pubspec.lock file was generated.');
@@ -376,6 +379,8 @@ void testEnsurePubspecResolved() {
             sdk: '>= 2.100.0 <=4.0.0', // tests runs with '3.1.2+3'
           ),
         ]).create();
+        // To ensure the timestamp is strictly later we need to touch again here.
+        _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
 
         await _implicitPubGet(
             '${p.join('..', 'bar', 'pubspec.yaml')} has changed '

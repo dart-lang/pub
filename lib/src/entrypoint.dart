@@ -694,7 +694,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       log.fine('No $packageConfigPath file found".\n');
       return false;
     }
-    log.fine('$packageConfigPath $packageConfigStat'); // XXX remove
     final flutter = FlutterSdk();
     // If Flutter has moved since last invocation, we want to have new
     // sdk-packages, and therefore do a new resolution.
@@ -729,7 +728,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       log.fine('No $lockFilePath file found.');
       return false;
     }
-    log.fine('$lockFilePath $lockFileStat'); // XXX remove
 
     final lockFileModified = lockFileStat.modified;
     var lockfileNewerThanPubspecs = true;
@@ -755,7 +753,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // A dependency is missing - do a full new resolution.
         return false;
       }
-      log.fine('$pubspecPath $pubspecStat'); // XXX remove
 
       if (pubspecStat.modified.isAfter(lockFileModified)) {
         log.fine('`$pubspecPath` is newer than `$lockFilePath`');
