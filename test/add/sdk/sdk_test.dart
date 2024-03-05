@@ -47,13 +47,17 @@ void main() {
       }),
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-        name: 'foo',
-        path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-      ),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackageConfigFile(
+      [
+        d.packageConfigEntry(
+          name: 'foo',
+          path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
+        ),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      ],
+      flutterRoot: p.join(d.sandbox, 'flutter'),
+      flutterVersion: '1.2.3',
+    ).validate();
   });
 
   test(
@@ -73,13 +77,17 @@ void main() {
         },
       }),
     ]).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-        name: 'foo',
-        path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-      ),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackageConfigFile(
+      [
+        d.packageConfigEntry(
+          name: 'foo',
+          path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
+        ),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      ],
+      flutterRoot: p.join(d.sandbox, 'flutter'),
+      flutterVersion: '1.2.3',
+    ).validate();
   });
 
   test('adds an SDK dependency from bin/cache/pkg', () async {
@@ -89,12 +97,16 @@ void main() {
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
     );
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-        name: 'baz',
-        path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
-      ),
-    ]).validate();
+    await d.appPackageConfigFile(
+      [
+        d.packageConfigEntry(
+          name: 'baz',
+          path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
+        ),
+      ],
+      flutterRoot: p.join(d.sandbox, 'flutter'),
+      flutterVersion: '1.2.3',
+    ).validate();
   });
 
   test("fails if the version constraint doesn't match", () async {

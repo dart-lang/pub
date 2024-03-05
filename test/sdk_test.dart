@@ -43,13 +43,17 @@ void main() {
         command,
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       );
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(
-          name: 'foo',
-          path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-        ),
-        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-      ]).validate();
+      await d.appPackageConfigFile(
+        [
+          d.packageConfigEntry(
+            name: 'foo',
+            path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
+          ),
+          d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+        ],
+        flutterRoot: p.join(d.sandbox, 'flutter'),
+        flutterVersion: '1.2.3',
+      ).validate();
     });
 
     test('gets an SDK dependency from bin/cache/pkg', () async {
@@ -63,12 +67,16 @@ void main() {
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       );
 
-      await d.appPackageConfigFile([
-        d.packageConfigEntry(
-          name: 'baz',
-          path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
-        ),
-      ]).validate();
+      await d.appPackageConfigFile(
+        [
+          d.packageConfigEntry(
+            name: 'baz',
+            path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
+          ),
+        ],
+        flutterRoot: p.join(d.sandbox, 'flutter'),
+        flutterVersion: '1.2.3',
+      ).validate();
     });
 
     test('unlocks an SDK dependency when the version changes', () async {
@@ -116,7 +124,11 @@ void main() {
         command,
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       );
-      await d.appPackageConfigFile([]).validate();
+      await d.appPackageConfigFile(
+        [],
+        flutterRoot: p.join(d.sandbox, 'flutter'),
+        flutterVersion: '1.2.3',
+      ).validate();
     });
 
     group('fails if', () {

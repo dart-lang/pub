@@ -970,7 +970,10 @@ class PubProcess {
 }
 
 /// Updates [path]'s modification time.
-void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
+void touch(String path) {
+  log.fine('Touching `$path`');
+  File(path).setLastModifiedSync(DateTime.now());
+}
 
 /// Creates a temporary directory and passes its path to [fn].
 ///
