@@ -234,8 +234,10 @@ class Entrypoint {
   Entrypoint(
     this.rootDir,
     this.cache, {
-    Pubspec? pubspec,
-  })  : _root = pubspec == null ? null : Package(pubspec, rootDir),
+    ({Pubspec pubspec, List<Package> workspacePackages})? preloaded,
+  })  : _root = preloaded == null
+            ? null
+            : Package(preloaded.pubspec, rootDir, preloaded.workspacePackages),
         globalDir = null {
     if (p.isWithin(cache.rootDir, rootDir)) {
       fail('Cannot operate on packages inside the cache.');
@@ -251,7 +253,11 @@ class Entrypoint {
       _example,
       _packageGraph,
       cache,
-      Package(pubspec, rootDir),
+      Package(
+        pubspec,
+        rootDir,
+        root.workspaceChildren,
+      ),
       globalDir,
     );
   }
@@ -330,14 +336,20 @@ class Entrypoint {
     }
 
     if (!isGlobal) {
-      entries.add(
-        PackageConfigEntry(
-          name: root.name,
-          rootUri: p.toUri('../'),
-          packageUri: p.toUri('lib/'),
-          languageVersion: root.pubspec.languageVersion,
-        ),
-      );
+      /// Run through the entire workspace transitive closure and add an entry
+      /// for each package.
+      for (final package in root.transitiveWorkspace) {
+        entries.add(
+          PackageConfigEntry(
+            name: package.name,
+            rootUri: p.toUri(
+              p.relative(package.dir, from: p.join(rootDir, '.dart_tool')),
+            ),
+            packageUri: p.toUri('lib/'),
+            languageVersion: package.pubspec.languageVersion,
+          ),
+        );
+      }
     }
 
     final packageConfig = PackageConfig(

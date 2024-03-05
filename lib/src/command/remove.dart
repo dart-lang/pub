@@ -130,6 +130,7 @@ To remove a dependency override of a package prefix the package name with
       dependencies: dependencies.values,
       devDependencies: devDependencies.values,
       dependencyOverrides: overrides.values,
+      workspace: original.workspace,
     );
   }
 
