@@ -377,7 +377,8 @@ void testEnsurePubspecResolved() {
           ),
         ]).create();
 
-        await _implicitPubGet('../bar/pubspec.yaml has changed '
+        await _implicitPubGet(
+            '${p.join('..', 'bar', 'pubspec.yaml')} has changed '
             'since the pubspec.lock file was generated.');
       });
     });
