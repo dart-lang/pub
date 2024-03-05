@@ -339,7 +339,7 @@ void testEnsurePubspecResolved() {
         ]).create();
 
         // To ensure the timestamp is strictly later we need to touch again here.
-        _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
+        await _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
 
         await _implicitPubGet(
             '${p.join('..', 'bar', 'pubspec.yaml')} has changed '
@@ -380,7 +380,7 @@ void testEnsurePubspecResolved() {
           ),
         ]).create();
         // To ensure the timestamp is strictly later we need to touch again here.
-        _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
+        await _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
 
         await _implicitPubGet(
             '${p.join('..', 'bar', 'pubspec.yaml')} has changed '
