@@ -30,8 +30,9 @@ class PackageConfigFileDescriptor extends Descriptor {
       generator: 'pub',
       generated: DateTime.now().toUtc(),
       additionalProperties: {
-        'pubCache': _pubCache,
-        if (_flutterRoot != null) 'flutterRoot': _flutterRoot,
+        'pubCache': p.toUri(_pubCache).toString(),
+        if (_flutterRoot != null)
+          'flutterRoot': p.toUri(_flutterRoot).toString(),
         if (_flutterVersion != null) 'flutterVersion': _flutterVersion,
       },
     );

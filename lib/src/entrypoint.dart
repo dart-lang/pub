@@ -331,10 +331,11 @@ class Entrypoint {
       generatorVersion: sdk.version,
       additionalProperties: {
         if (FlutterSdk().isAvailable) ...{
-          'flutterRoot': p.absolute(FlutterSdk().rootDirectory!),
+          'flutterRoot':
+              p.toUri(p.absolute(FlutterSdk().rootDirectory!)).toString(),
           'flutterVersion': FlutterSdk().version.toString(),
         },
-        'pubCache': p.absolute(cache.rootDir),
+        'pubCache': p.toUri(p.absolute(cache.rootDir)).toString(),
       },
     );
 
@@ -698,10 +699,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     // sdk-packages, and therefore do a new resolution.
     //
     // This also counts if Flutter was introduced or removed.
-    if (packageConfig.additionalProperties['flutterRoot'] !=
-        (flutter.rootDirectory == null
-            ? null
-            : p.absolute(flutter.rootDirectory!))) {
+    final flutterRoot = flutter.rootDirectory == null
+        ? null
+        : p.toUri(p.absolute(flutter.rootDirectory!)).toString();
+    if (packageConfig.additionalProperties['flutterRoot'] != flutterRoot) {
       log.fine('Flutter has moved since last invocation.');
       return false;
     }
@@ -711,10 +712,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       return false;
     }
     // If the pub cache was moved we should have a new resolution.
-    if (packageConfig.additionalProperties['pubCache'] !=
-        p.absolute(cache.rootDir)) {
+    final rootCacheUrl = p.toUri(p.absolute(cache.rootDir)).toString();
+    if (packageConfig.additionalProperties['pubCache'] != rootCacheUrl) {
       log.fine(
-        'The pub cache has moved from ${packageConfig.additionalProperties['pubCache']} to ${p.absolute(cache.rootDir)} since last invocation.',
+        'The pub cache has moved from ${packageConfig.additionalProperties['pubCache']} to $rootCacheUrl since last invocation.',
       );
       return false;
     }

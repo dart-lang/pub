@@ -123,7 +123,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   "generated": "$TIME",
 [E]    |   "generator": "pub",
 [E]    |   "generatorVersion": "3.1.2+3",
-[E]    |   "pubCache": "$SANDBOX/cache"
+[E]    |   "pubCache": "file://$SANDBOX/cache"
 [E]    | }
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/log/pub_log.txt.
 
@@ -285,7 +285,7 @@ FINE: Contents:
    |   "generated": "$TIME",
    |   "generator": "pub",
    |   "generatorVersion": "3.1.2+3",
-   |   "pubCache": "$SANDBOX/cache"
+   |   "pubCache": "file://$SANDBOX/cache"
    | }
 ---- End log transcript ----
 -------------------------------- END OF OUTPUT ---------------------------------
