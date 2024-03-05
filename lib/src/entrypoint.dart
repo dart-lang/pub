@@ -732,44 +732,42 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     final lockFileModified = lockFileStat.modified;
     var lockfileNewerThanPubspecs = true;
 
-    if (lockfileNewerThanPubspecs) {
-      // Check that all packages in packageConfig exist and their pubspecs have
-      // not been updated since the lockfile was written.
-      for (var package in packageConfig.packages) {
-        final pubspecPath = p.normalize(
-          p.join(
-            '.dart_tool',
-            package.rootUri
-                // Important to use `toFilePath()` here rather than `path`, as it handles Url-decoding.
-                .toFilePath(),
-            'pubspec.yaml',
-          ),
-        );
-        if (p.isWithin(cache.rootDir, pubspecPath)) {
-          continue;
-        }
-        final pubspecStat = tryStatFile(pubspecPath);
-        if (pubspecStat == null) {
-          log.fine('Could not find `$pubspecPath`');
-          // A dependency is missing - do a full new resolution.
-          return false;
-        }
-        if (pubspecStat.modified.isAfter(lockFileModified)) {
-          log.fine('`$pubspecPath` is newer than `$lockFilePath`');
+    // Check that all packages in packageConfig exist and their pubspecs have
+    // not been updated since the lockfile was written.
+    for (var package in packageConfig.packages) {
+      final pubspecPath = p.normalize(
+        p.join(
+          '.dart_tool',
+          package.rootUri
+              // Important to use `toFilePath()` here rather than `path`, as it handles Url-decoding.
+              .toFilePath(),
+          'pubspec.yaml',
+        ),
+      );
+      if (p.isWithin(cache.rootDir, pubspecPath)) {
+        continue;
+      }
+      final pubspecStat = tryStatFile(pubspecPath);
+      if (pubspecStat == null) {
+        log.fine('Could not find `$pubspecPath`');
+        // A dependency is missing - do a full new resolution.
+        return false;
+      }
+      if (pubspecStat.modified.isAfter(lockFileModified)) {
+        log.fine('`$pubspecPath` is newer than `$lockFilePath`');
+        lockfileNewerThanPubspecs = false;
+        break;
+      }
+      final pubspecOverridesPath =
+          p.join(package.rootUri.path, 'pubspec_overrides.yaml');
+      final pubspecOverridesStat = tryStatFile(pubspecOverridesPath);
+      if (pubspecOverridesStat != null) {
+        // This will wrongly require you to reresolve if a
+        // `pubspec_overrides.yaml` in a path-dependency is updated. That
+        // seems acceptable.
+        if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+          log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
           lockfileNewerThanPubspecs = false;
-          break;
-        }
-        final pubspecOverridesPath =
-            p.join(package.rootUri.path, 'pubspec_overrides.yaml');
-        final pubspecOverridesStat = tryStatFile(pubspecOverridesPath);
-        if (pubspecOverridesStat != null) {
-          // This will wrongly require you to reresolve if a
-          // `pubspec_overrides.yaml` in a path-dependency is updated. That
-          // seems acceptable.
-          if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
-            log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
-            lockfileNewerThanPubspecs = false;
-          }
         }
       }
     }
