@@ -705,16 +705,16 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       log.fine('Flutter has moved since last invocation.');
       return false;
     }
-    if (packageConfig.additionalProperties['FLUTTER_VERSION'] !=
+    if (packageConfig.additionalProperties['flutterVersion'] !=
         (flutter.isAvailable ? null : flutter.version)) {
       log.fine('Flutter has updated since last invocation.');
       return false;
     }
     // If the pub cache was moved we should have a new resolution.
-    if (packageConfig.additionalProperties['PUB_CACHE'] !=
+    if (packageConfig.additionalProperties['pubCache'] !=
         p.absolute(cache.rootDir)) {
       log.fine(
-        'The pub cache has moved from ${packageConfig.additionalProperties['PUB_CACHE']} to ${p.absolute(cache.rootDir)} since last invocation.',
+        'The pub cache has moved from ${packageConfig.additionalProperties['pubCache']} to ${p.absolute(cache.rootDir)} since last invocation.',
       );
       return false;
     }
