@@ -935,11 +935,14 @@ fi
           p.relative(binDir, from: Platform.environment['HOME']),
         );
       }
-
+      final shellConfigFiles = Platform.isMacOS
+          // zsh is default on mac - mention that first.
+          ? '(.zshrc, .bashrc, .bash_profile, etc.)'
+          : '(.bashrc, .bash_profile, .zshrc etc.)';
       log.warning("${log.yellow('Warning:')} Pub installs executables into "
           '${log.bold(binDir)}, which is not on your path.\n'
           "You can fix that by adding this to your shell's config file "
-          '(.bashrc, .bash_profile, etc.):\n'
+          '$shellConfigFiles:\n'
           '\n'
           "  ${log.bold('export PATH="\$PATH":"$binDir"')}\n"
           '\n');
