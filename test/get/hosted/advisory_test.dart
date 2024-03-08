@@ -4,6 +4,7 @@
 
 import '../../descriptor.dart' as d;
 import '../../golden_file.dart';
+import '../../package_server.dart';
 import '../../test_pub.dart';
 
 Future<void> main() async {
@@ -23,10 +24,13 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.0.0'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
+        AffectedPackage(name: 'foo', ecosystem: 'NotPub', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -46,10 +50,12 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -70,15 +76,18 @@ Future<void> main() async {
       }),
     ]).create();
 
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '456',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -98,40 +107,48 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '000',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '111',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '222',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '333',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '444',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '555',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '666',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -152,10 +169,11 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -179,15 +197,17 @@ Future<void> main() async {
         },
       ),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '456',
-      affectedVersions: ['1.2.3'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -211,18 +231,22 @@ Future<void> main() async {
         },
       ),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
       aliases: ['abc', 'def'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '456',
-      affectedVersions: ['1.2.3'],
       aliases: ['cde'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
+
     await ctx.run(['get']);
   });
 }
