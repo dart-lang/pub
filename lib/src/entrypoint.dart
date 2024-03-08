@@ -649,7 +649,355 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     bool summaryOnly = true,
     bool onlyOutputWhenTerminal = true,
   }) async {
-    if (!_isUpToDate()) {
+    /// Whether the lockfile is out of date with respect to the dependencies'
+    /// pubspecs.
+    ///
+    /// If any mutable pubspec contains dependencies that are not in the lockfile
+    /// or that don't match what's in there, this will return `false`.
+    bool isLockFileUpToDate() {
+      /// Returns whether the locked version of [dep] matches the dependency.
+      bool isDependencyUpToDate(PackageRange dep) {
+        if (dep.name == root.name) return true;
+
+        var locked = lockFile.packages[dep.name];
+        return locked != null && dep.allows(locked);
+      }
+
+      for (final MapEntry(key: sdkName, value: constraint)
+          in lockFile.sdkConstraints.entries) {
+        final sdk = sdks[sdkName];
+        if (sdk == null) {
+          log.fine('Unknown sdk $sdkName in `$lockFilePath`');
+          return false;
+        }
+        if (!sdk.isAvailable) {
+          log.fine('sdk: ${sdk.name} not available');
+          return false;
+        }
+        final sdkVersion = sdk.version;
+        if (sdkVersion != null) {
+          if (!constraint.effectiveConstraint.allows(sdkVersion)) {
+            log.fine(
+              '`$lockFilePath` requires $sdkName $constraint. Current version is $sdkVersion',
+            );
+            return false;
+          }
+        }
+      }
+
+      if (!root.immediateDependencies.values.every(isDependencyUpToDate)) {
+        log.fine(
+            'The $pubspecPath file has changed since the $lockFilePath file '
+            'was generated.');
+        return false;
+      }
+
+      var overrides = MapKeySet(root.dependencyOverrides);
+
+      // Check that uncached dependencies' pubspecs are also still satisfied,
+      // since they're mutable and may have changed since the last get.
+      for (var id in lockFile.packages.values) {
+        final source = id.source;
+        if (source is CachedSource) continue;
+
+        try {
+          if (cache.load(id).dependencies.values.every(
+                (dep) =>
+                    overrides.contains(dep.name) || isDependencyUpToDate(dep),
+              )) {
+            continue;
+          }
+        } on FileException {
+          // If we can't load the pubspec, the user needs to re-run "pub get".
+        }
+
+        final relativePubspecPath =
+            p.join(cache.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
+        log.fine('$relativePubspecPath has '
+            'changed since the $lockFilePath file was generated.');
+        return false;
+      }
+      return true;
+    }
+
+    /// Whether or not the `.dart_tool/package_config.json` file is
+    /// out of date with respect to the lockfile.
+    bool isPackageConfigUpToDate() {
+      /// Determines if [lockFile] agrees with the given [packagePathsMapping].
+      ///
+      /// The [packagePathsMapping] is a mapping from package names to paths where
+      /// the packages are located. (The library is located under
+      /// `lib/` relative to the path given).
+      bool isPackagePathsMappingUpToDateWithLockfile(
+        Map<String, String> packagePathsMapping,
+      ) {
+        // Check that [packagePathsMapping] does not contain more packages than what
+        // is required. This could lead to import statements working, when they are
+        // not supposed to work.
+        final hasExtraMappings = !packagePathsMapping.keys.every((packageName) {
+          return packageName == root.name ||
+              lockFile.packages.containsKey(packageName);
+        });
+        if (hasExtraMappings) {
+          return false;
+        }
+
+        // Check that all packages in the [lockFile] are reflected in the
+        // [packagePathsMapping].
+        return lockFile.packages.values.every((lockFileId) {
+          // It's very unlikely that the lockfile is invalid here, but it's not
+          // impossible—for example, the user may have a very old application
+          // package with a checked-in lockfile that's newer than the pubspec, but
+          // that contains SDK dependencies.
+          if (lockFileId.source is UnknownSource) return false;
+
+          final packagePath = packagePathsMapping[lockFileId.name];
+          if (packagePath == null) {
+            return false;
+          }
+
+          final source = lockFileId.source;
+          final lockFilePackagePath = root.path(
+            cache.getDirectory(lockFileId, relativeFrom: rootDir),
+          );
+
+          // Make sure that the packagePath agrees with the lock file about the
+          // path to the package.
+          if (p.normalize(packagePath) != p.normalize(lockFilePackagePath)) {
+            return false;
+          }
+
+          // For cached sources, make sure the directory exists and looks like a
+          // package. This is also done by [_arePackagesAvailable] but that may not
+          // be run if the lockfile is newer than the pubspec.
+          if (source is CachedSource && !dirExists(lockFilePackagePath) ||
+              !fileExists(p.join(lockFilePackagePath, 'pubspec.yaml'))) {
+            return false;
+          }
+
+          return true;
+        });
+      }
+
+      final packagePathsMapping = <String, String>{};
+
+      final packagesToCheck = packageConfig.nonInjectedPackages;
+      for (final pkg in packagesToCheck) {
+        // Pub always makes a packageUri of lib/
+        if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
+          log.fine(
+            'The "$packageConfigPath" file is not recognized by this pub version.',
+          );
+          return false;
+        }
+        packagePathsMapping[pkg.name] =
+            root.path('.dart_tool', p.fromUri(pkg.rootUri));
+      }
+      if (!isPackagePathsMappingUpToDateWithLockfile(packagePathsMapping)) {
+        log.fine('The $lockFilePath file has changed since the '
+            '$packageConfigPath file '
+            'was generated, please run "$topLevelProgram pub get" again.');
+        return false;
+      }
+
+      // Check if language version specified in the `package_config.json` is
+      // correct. This is important for path dependencies as these can mutate.
+      for (final pkg in packageConfig.nonInjectedPackages) {
+        if (pkg.name == root.name) continue;
+        final id = lockFile.packages[pkg.name];
+        if (id == null) {
+          assert(
+            false,
+            'unnecessary package_config.json entries should be forbidden by '
+            '_isPackagePathsMappingUpToDateWithLockfile',
+          );
+          continue;
+        }
+
+        // If a package is cached, then it's universally immutable and we need
+        // not check if the language version is correct.
+        final source = id.source;
+        if (source is CachedSource) {
+          continue;
+        }
+
+        try {
+          // Load `pubspec.yaml` and extract language version to compare with the
+          // language version from `package_config.json`.
+          final languageVersion = cache.load(id).pubspec.languageVersion;
+          if (pkg.languageVersion != languageVersion) {
+            final relativePubspecPath = p.join(
+              cache.getDirectory(id, relativeFrom: '.'),
+              'pubspec.yaml',
+            );
+            log.fine('$relativePubspecPath has '
+                'changed since the $lockFilePath file was generated.');
+            return false;
+          }
+        } on FileException {
+          log.fine('Failed to read pubspec.yaml for "${pkg.name}", perhaps the '
+              'entry is missing.');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    /// Whether `.dart_tool/package_config.json` and `pubspec.lock` exist and
+    /// are up to date with respect to pubspec.yaml and its dependencies.
+    ///
+    /// Always returns false if `.dart_tool/package_config.json` was generated
+    /// with a different PUB_CACHE location, a different $FLUTTER_ROOT or a
+    /// different Dart or Flutter SDK version.
+    ///
+    /// Otherwise first the `modified` timestamps are compared, and if
+    /// `.dart_tool/package_config.json` is newer than `pubspec.lock` that is
+    /// newer than all pubspec.yamls of all packages in
+    /// `.dart_tool/package_config.json` we short-circuit and return true.
+    ///
+    /// If any of the timestamps are out of order, the resolution in
+    /// pubspec.lock is validated against constraints of all pubspec.yamls, and
+    /// the packages of `.dart_tool/package_config.json` is validated against
+    /// pubspec.lock. We do this extra round of checking to accomodate for cases
+    /// where version control or other processes mess up the timestamp order.
+    ///
+    /// If the resolution is still valid, the timestamps are updated and this
+    /// returns `true`. Otherwise this returns `false`.
+    ///
+    /// This check is on the fast-path of `dart run` and should do as little
+    /// work as possible. Specifically we avoid parsing any yaml when the
+    /// timestamps are in the right order.
+    ///
+    /// `.dart_tool/package_config.json` is read parsed. In the case of `dart
+    /// run` this is acceptable: we speculate that it brings it to the file
+    /// system cache and the dart VM is going to read the file anyways.
+    ///
+    /// Note this procedure will give false positives if the timestamps are
+    /// artificially brought in the "right" order. (eg. by manually running
+    /// `touch pubspec.lock; touch .dart_tool/package_config.json`) - that is
+    /// hard to avoid, but also unlikely to happen by accident because
+    /// `.dart_tool/package_config.json` is not checked into version control.
+    bool isResolutionUpToDate() {
+      /// Whether or not the `.dart_tool/package_config.json` file is was
+      /// generated by a different sdk down to changes in minor versions.
+      bool isPackageConfigGeneratedBySameDartSdk() {
+        final generatorVersion = packageConfig.generatorVersion;
+        if (generatorVersion == null ||
+            generatorVersion.major != sdk.version.major ||
+            generatorVersion.minor != sdk.version.minor) {
+          log.fine('The Dart SDK was updated since last package resolution.');
+          return false;
+        }
+        return true;
+      }
+
+      if (isCached) return true;
+      final packageConfigStat = tryStatFile(packageConfigPath);
+      if (packageConfigStat == null) {
+        log.fine('No $packageConfigPath file found".\n');
+        return false;
+      }
+      final flutter = FlutterSdk();
+      // If Flutter has moved since last invocation, we want to have new
+      // sdk-packages, and therefore do a new resolution.
+      //
+      // This also counts if Flutter was introduced or removed.
+      final flutterRoot = flutter.rootDirectory == null
+          ? null
+          : p.toUri(p.absolute(flutter.rootDirectory!)).toString();
+      if (packageConfig.additionalProperties['flutterRoot'] != flutterRoot) {
+        log.fine('Flutter has moved since last invocation.');
+        return false;
+      }
+      if (packageConfig.additionalProperties['flutterVersion'] !=
+          (flutter.isAvailable ? null : flutter.version)) {
+        log.fine('Flutter has updated since last invocation.');
+        return false;
+      }
+      // If the pub cache was moved we should have a new resolution.
+      final rootCacheUrl = p.toUri(p.absolute(cache.rootDir)).toString();
+      if (packageConfig.additionalProperties['pubCache'] != rootCacheUrl) {
+        log.fine(
+          'The pub cache has moved from ${packageConfig.additionalProperties['pubCache']} to $rootCacheUrl since last invocation.',
+        );
+        return false;
+      }
+      // If the Dart sdk was updated we want a new resolution.
+      if (!isPackageConfigGeneratedBySameDartSdk()) {
+        return false;
+      }
+      final lockFileStat = tryStatFile(lockFilePath);
+      if (lockFileStat == null) {
+        log.fine('No $lockFilePath file found.');
+        return false;
+      }
+
+      final lockFileModified = lockFileStat.modified;
+      var lockfileNewerThanPubspecs = true;
+
+      // Check that all packages in packageConfig exist and their pubspecs have
+      // not been updated since the lockfile was written.
+      for (var package in packageConfig.packages) {
+        final pubspecPath = p.normalize(
+          p.join(
+            '.dart_tool',
+            package.rootUri
+                // Important to use `toFilePath()` here rather than `path`, as it handles Url-decoding.
+                .toFilePath(),
+            'pubspec.yaml',
+          ),
+        );
+        if (p.isWithin(cache.rootDir, pubspecPath)) {
+          continue;
+        }
+        final pubspecStat = tryStatFile(pubspecPath);
+        if (pubspecStat == null) {
+          log.fine('Could not find `$pubspecPath`');
+          // A dependency is missing - do a full new resolution.
+          return false;
+        }
+
+        if (pubspecStat.modified.isAfter(lockFileModified)) {
+          log.fine('`$pubspecPath` is newer than `$lockFilePath`');
+          lockfileNewerThanPubspecs = false;
+          break;
+        }
+        final pubspecOverridesPath =
+            p.join(package.rootUri.path, 'pubspec_overrides.yaml');
+        final pubspecOverridesStat = tryStatFile(pubspecOverridesPath);
+        if (pubspecOverridesStat != null) {
+          // This will wrongly require you to reresolve if a
+          // `pubspec_overrides.yaml` in a path-dependency is updated. That
+          // seems acceptable.
+          if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+            log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
+            lockfileNewerThanPubspecs = false;
+          }
+        }
+      }
+      var touchedLockFile = false;
+      if (!lockfileNewerThanPubspecs) {
+        if (isLockFileUpToDate()) {
+          touch(lockFilePath);
+          touchedLockFile = true;
+        } else {
+          return false;
+        }
+      }
+
+      if (touchedLockFile ||
+          lockFileModified.isAfter(packageConfigStat.modified)) {
+        log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
+        if (isPackageConfigUpToDate()) {
+          touch(packageConfigPath);
+        } else {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (!isResolutionUpToDate()) {
       if (onlyOutputWhenTerminal) {
         await log.errorsOnlyUnlessTerminal(() async {
           await acquireDependencies(
@@ -663,353 +1011,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     } else {
       log.fine('Package Config up to date.');
     }
-  }
-
-  /// Whether `.dart_tool/package_config.json` and `pubspec.lock` exist and are
-  /// up to date with respect to pubspec.yaml and its dependencies.
-  ///
-  /// Always returns false if `.dart_tool/package_config.json` was generated
-  /// with a different PUB_CACHE location, a different $FLUTTER_ROOT or a
-  /// different Dart or Flutter SDK version.
-  ///
-  /// Otherwise first the `modified` timestamps are compared, and if
-  /// `.dart_tool/package_config.json` is newer than `pubspec.lock` that is
-  /// newer than all pubspec.yamls of all packages in
-  /// `.dart_tool/package_config.json` we short-circuit and return true.
-  ///
-  /// If any of the timestamps are out of order, the resolution in pubspec.lock
-  /// is validated against constraints of all pubspec.yamls, and the packages of
-  /// `.dart_tool/package_config.json` is validated against pubspec.lock. We do
-  /// this extra round of checking to accomodate for cases where version control
-  /// or other processes mess up the timestamp order.
-  ///
-  /// If the resolution is still valid, the timestamps are updated and this
-  /// returns `true`. Otherwise this returns `false`.
-  ///
-  /// This check is on the fast-path of `dart run` and should do as little work
-  /// as possible. Specifically we avoid parsing any yaml when the timestamps
-  /// are in the right order.
-  ///
-  /// `.dart_tool/package_config.json` is read parsed. In the case of `dart run`
-  /// this is acceptable: we speculate that it brings it to the file system
-  /// cache and the dart VM is going to read the file anyways.
-  ///
-  /// Note this procedure will give false positives if the timestamps are
-  /// artificially brought in the "right" order. (eg. by manually running `touch
-  /// pubspec.lock; touch .dart_tool/package_config.json`) - that is hard to
-  /// avoid, but also unlikely to happen by accident because
-  /// `.dart_tool/package_config.json` is not checked into version control.
-  bool _isUpToDate() {
-    if (isCached) return true;
-    final packageConfigStat = tryStatFile(packageConfigPath);
-    if (packageConfigStat == null) {
-      log.fine('No $packageConfigPath file found".\n');
-      return false;
-    }
-    final flutter = FlutterSdk();
-    // If Flutter has moved since last invocation, we want to have new
-    // sdk-packages, and therefore do a new resolution.
-    //
-    // This also counts if Flutter was introduced or removed.
-    final flutterRoot = flutter.rootDirectory == null
-        ? null
-        : p.toUri(p.absolute(flutter.rootDirectory!)).toString();
-    if (packageConfig.additionalProperties['flutterRoot'] != flutterRoot) {
-      log.fine('Flutter has moved since last invocation.');
-      return false;
-    }
-    if (packageConfig.additionalProperties['flutterVersion'] !=
-        (flutter.isAvailable ? null : flutter.version)) {
-      log.fine('Flutter has updated since last invocation.');
-      return false;
-    }
-    // If the pub cache was moved we should have a new resolution.
-    final rootCacheUrl = p.toUri(p.absolute(cache.rootDir)).toString();
-    if (packageConfig.additionalProperties['pubCache'] != rootCacheUrl) {
-      log.fine(
-        'The pub cache has moved from ${packageConfig.additionalProperties['pubCache']} to $rootCacheUrl since last invocation.',
-      );
-      return false;
-    }
-    // If the Dart sdk was updated we want a new resolution.
-    if (!_isPackageConfigGeneratedBySameDartSdk()) {
-      return false;
-    }
-    final lockFileStat = tryStatFile(lockFilePath);
-    if (lockFileStat == null) {
-      log.fine('No $lockFilePath file found.');
-      return false;
-    }
-
-    final lockFileModified = lockFileStat.modified;
-    var lockfileNewerThanPubspecs = true;
-
-    // Check that all packages in packageConfig exist and their pubspecs have
-    // not been updated since the lockfile was written.
-    for (var package in packageConfig.packages) {
-      final pubspecPath = p.normalize(
-        p.join(
-          '.dart_tool',
-          package.rootUri
-              // Important to use `toFilePath()` here rather than `path`, as it handles Url-decoding.
-              .toFilePath(),
-          'pubspec.yaml',
-        ),
-      );
-      if (p.isWithin(cache.rootDir, pubspecPath)) {
-        continue;
-      }
-      final pubspecStat = tryStatFile(pubspecPath);
-      if (pubspecStat == null) {
-        log.fine('Could not find `$pubspecPath`');
-        // A dependency is missing - do a full new resolution.
-        return false;
-      }
-
-      if (pubspecStat.modified.isAfter(lockFileModified)) {
-        log.fine('`$pubspecPath` is newer than `$lockFilePath`');
-        lockfileNewerThanPubspecs = false;
-        break;
-      }
-      final pubspecOverridesPath =
-          p.join(package.rootUri.path, 'pubspec_overrides.yaml');
-      final pubspecOverridesStat = tryStatFile(pubspecOverridesPath);
-      if (pubspecOverridesStat != null) {
-        // This will wrongly require you to reresolve if a
-        // `pubspec_overrides.yaml` in a path-dependency is updated. That
-        // seems acceptable.
-        if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
-          log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
-          lockfileNewerThanPubspecs = false;
-        }
-      }
-    }
-    var touchedLockFile = false;
-    if (!lockfileNewerThanPubspecs) {
-      if (_isLockFileUpToDate()) {
-        touch(lockFilePath);
-        touchedLockFile = true;
-      } else {
-        return false;
-      }
-    }
-
-    if (touchedLockFile ||
-        lockFileModified.isAfter(packageConfigStat.modified)) {
-      log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
-      if (_isPackageConfigUpToDate()) {
-        touch(packageConfigPath);
-      } else {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /// Whether the lockfile is out of date with respect to the dependencies'
-  /// pubspecs.
-  ///
-  /// If any mutable pubspec contains dependencies that are not in the lockfile
-  /// or that don't match what's in there, this will return `false`.
-  bool _isLockFileUpToDate() {
-    for (final MapEntry(key: sdkName, value: constraint)
-        in lockFile.sdkConstraints.entries) {
-      final sdk = sdks[sdkName];
-      if (sdk == null) {
-        log.fine('Unknown sdk $sdkName in `$lockFilePath`');
-        return false;
-      }
-      if (!sdk.isAvailable) {
-        log.fine('sdk: ${sdk.name} not available');
-        return false;
-      }
-      final sdkVersion = sdk.version;
-      if (sdkVersion != null) {
-        if (!constraint.effectiveConstraint.allows(sdkVersion)) {
-          log.fine(
-            '`$lockFilePath` requires $sdkName $constraint. Current version is $sdkVersion',
-          );
-          return false;
-        }
-      }
-    }
-
-    if (!root.immediateDependencies.values.every(_isDependencyUpToDate)) {
-      log.fine('The $pubspecPath file has changed since the $lockFilePath file '
-          'was generated.');
-      return false;
-    }
-
-    var overrides = MapKeySet(root.dependencyOverrides);
-
-    // Check that uncached dependencies' pubspecs are also still satisfied,
-    // since they're mutable and may have changed since the last get.
-    for (var id in lockFile.packages.values) {
-      final source = id.source;
-      if (source is CachedSource) continue;
-
-      try {
-        if (cache.load(id).dependencies.values.every(
-              (dep) =>
-                  overrides.contains(dep.name) || _isDependencyUpToDate(dep),
-            )) {
-          continue;
-        }
-      } on FileException {
-        // If we can't load the pubspec, the user needs to re-run "pub get".
-      }
-
-      final relativePubspecPath =
-          p.join(cache.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
-      log.fine('$relativePubspecPath has '
-          'changed since the $lockFilePath file was generated.');
-      return false;
-    }
-    return true;
-  }
-
-  /// Returns whether the locked version of [dep] matches the dependency.
-  bool _isDependencyUpToDate(PackageRange dep) {
-    if (dep.name == root.name) return true;
-
-    var locked = lockFile.packages[dep.name];
-    return locked != null && dep.allows(locked);
-  }
-
-  /// Determines if [lockFile] agrees with the given [packagePathsMapping].
-  ///
-  /// The [packagePathsMapping] is a mapping from package names to paths where
-  /// the packages are located. (The library is located under
-  /// `lib/` relative to the path given).
-  bool _isPackagePathsMappingUpToDateWithLockfile(
-    Map<String, String> packagePathsMapping,
-  ) {
-    // Check that [packagePathsMapping] does not contain more packages than what
-    // is required. This could lead to import statements working, when they are
-    // not supposed to work.
-    final hasExtraMappings = !packagePathsMapping.keys.every((packageName) {
-      return packageName == root.name ||
-          lockFile.packages.containsKey(packageName);
-    });
-    if (hasExtraMappings) {
-      return false;
-    }
-
-    // Check that all packages in the [lockFile] are reflected in the
-    // [packagePathsMapping].
-    return lockFile.packages.values.every((lockFileId) {
-      // It's very unlikely that the lockfile is invalid here, but it's not
-      // impossible—for example, the user may have a very old application
-      // package with a checked-in lockfile that's newer than the pubspec, but
-      // that contains SDK dependencies.
-      if (lockFileId.source is UnknownSource) return false;
-
-      final packagePath = packagePathsMapping[lockFileId.name];
-      if (packagePath == null) {
-        return false;
-      }
-
-      final source = lockFileId.source;
-      final lockFilePackagePath = root.path(
-        cache.getDirectory(lockFileId, relativeFrom: rootDir),
-      );
-
-      // Make sure that the packagePath agrees with the lock file about the
-      // path to the package.
-      if (p.normalize(packagePath) != p.normalize(lockFilePackagePath)) {
-        return false;
-      }
-
-      // For cached sources, make sure the directory exists and looks like a
-      // package. This is also done by [_arePackagesAvailable] but that may not
-      // be run if the lockfile is newer than the pubspec.
-      if (source is CachedSource && !dirExists(lockFilePackagePath) ||
-          !fileExists(p.join(lockFilePackagePath, 'pubspec.yaml'))) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  /// Whether or not the `.dart_tool/package_config.json` file is
-  /// out of date with respect to the lockfile.
-  bool _isPackageConfigUpToDate() {
-    final packagePathsMapping = <String, String>{};
-
-    final packagesToCheck = packageConfig.nonInjectedPackages;
-    for (final pkg in packagesToCheck) {
-      // Pub always makes a packageUri of lib/
-      if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
-        log.fine(
-          'The "$packageConfigPath" file is not recognized by this pub version.',
-        );
-        return false;
-      }
-      packagePathsMapping[pkg.name] =
-          root.path('.dart_tool', p.fromUri(pkg.rootUri));
-    }
-    if (!_isPackagePathsMappingUpToDateWithLockfile(packagePathsMapping)) {
-      log.fine('The $lockFilePath file has changed since the '
-          '$packageConfigPath file '
-          'was generated, please run "$topLevelProgram pub get" again.');
-      return false;
-    }
-
-    // Check if language version specified in the `package_config.json` is
-    // correct. This is important for path dependencies as these can mutate.
-    for (final pkg in packageConfig.nonInjectedPackages) {
-      if (pkg.name == root.name) continue;
-      final id = lockFile.packages[pkg.name];
-      if (id == null) {
-        assert(
-          false,
-          'unnecessary package_config.json entries should be forbidden by '
-          '_isPackagePathsMappingUpToDateWithLockfile',
-        );
-        continue;
-      }
-
-      // If a package is cached, then it's universally immutable and we need
-      // not check if the language version is correct.
-      final source = id.source;
-      if (source is CachedSource) {
-        continue;
-      }
-
-      try {
-        // Load `pubspec.yaml` and extract language version to compare with the
-        // language version from `package_config.json`.
-        final languageVersion = cache.load(id).pubspec.languageVersion;
-        if (pkg.languageVersion != languageVersion) {
-          final relativePubspecPath = p.join(
-            cache.getDirectory(id, relativeFrom: '.'),
-            'pubspec.yaml',
-          );
-          log.fine('$relativePubspecPath has '
-              'changed since the $lockFilePath file was generated.');
-          return false;
-        }
-      } on FileException {
-        log.fine('Failed to read pubspec.yaml for "${pkg.name}", perhaps the '
-            'entry is missing.');
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /// Whether or not the `.dart_tool/package_config.json` file is was
-  /// generated by a different sdk down to changes in minor versions.
-  bool _isPackageConfigGeneratedBySameDartSdk() {
-    final generatorVersion = packageConfig.generatorVersion;
-    if (generatorVersion == null ||
-        generatorVersion.major != sdk.version.major ||
-        generatorVersion.minor != sdk.version.minor) {
-      log.fine('The Dart SDK was updated since last package resolution.');
-      return false;
-    }
-    return true;
   }
 
   /// We require an SDK constraint lower-bound as of Dart 2.12.0
