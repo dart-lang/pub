@@ -17,6 +17,8 @@ class FlutterSdk extends Sdk {
   String get name => 'Flutter';
   @override
   bool get isAvailable => _isAvailable;
+  @override
+  bool get allowsNonSdkDepsInSdkPackages => true;
 
   // We only consider the Flutter SDK to present if we find a root directory
   // and the root directory contains a valid 'version' file.

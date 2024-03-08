@@ -23,6 +23,8 @@ class DartSdk extends Sdk {
   bool get isAvailable => true;
   @override
   String? get installMessage => null;
+  @override
+  bool get allowsNonSdkDepsInSdkPackages => false;
 
   static final String _rootDirectory = () {
     // If DART_ROOT is specified, then this always points to the Dart SDK

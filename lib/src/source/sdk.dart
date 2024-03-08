@@ -89,11 +89,31 @@ class SdkSource extends Source {
   ///
   /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
-  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) => Pubspec.load(
-        _verifiedPackagePath(ref),
-        cache.sources,
-        expectedName: ref.name,
-      );
+  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) {
+    var pubspec = Pubspec.load(
+      _verifiedPackagePath(ref),
+      cache.sources,
+      expectedName: ref.name,
+    );
+
+    /// Validate that there are no non-sdk dependencies if the SDK does not
+    /// allow them.
+    if (ref.description case SdkDescription description) {
+      if (sdks[description.sdk]
+          case Sdk(allowsNonSdkDepsInSdkPackages: false)) {
+        for (var dep in pubspec.dependencies.entries) {
+          if (dep.value.source is! SdkSource) {
+            throw ArgumentError(
+              'Only SDK packages are allowed as regular dependencies for '
+              'packages vendored by the ${sdk.identifier} SDK, but the '
+              '`${ref.name}` package has a non-sdk dependency on `${dep.key}`.',
+            );
+          }
+        }
+      }
+    }
+    return pubspec;
+  }
 
   /// Returns the path for the given [ref].
   ///
