@@ -146,7 +146,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       'Resolving',
       () async {
         final upgradablePackagesResult = await _tryResolve(
-          Package(upgradablePubspec, entrypoint.rootDir),
+          Package(
+            upgradablePubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
           cache,
           lockFile: entrypoint.lockFile,
         );
@@ -154,7 +158,11 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         upgradablePackages = upgradablePackagesResult ?? [];
 
         final resolvablePackagesResult = await _tryResolve(
-          Package(resolvablePubspec, entrypoint.rootDir),
+          Package(
+            resolvablePubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
           cache,
           lockFile: entrypoint.lockFile,
         );
@@ -243,7 +251,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       );
 
       final id = current ?? upgradable ?? resolvable ?? latest;
-      final packageAdvisories = await id?.source
+      var packageAdvisories = await id?.source
               .getAdvisoriesForPackage(id, cache, Duration(days: 3)) ??
           [];
 
@@ -275,6 +283,26 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       final isLatest = currentVersionDetails == latestVersionDetails;
 
+      var isCurrentAffectedByAdvisory = false;
+      if (currentVersionDetails != null) {
+        // Filter out advisories added to `ignored_advisores` in the root pubspec.
+        packageAdvisories = packageAdvisories
+            .where(
+              (adv) => entrypoint.root.pubspec.ignoredAdvisories.intersection({
+                ...adv.aliases,
+                adv.id,
+              }).isEmpty,
+            )
+            .toList();
+        for (final advisory in packageAdvisories) {
+          if (advisory.affectedVersions.contains(
+            currentVersionDetails._pubspec.version.canonicalizedVersion,
+          )) {
+            isCurrentAffectedByAdvisory = true;
+          }
+        }
+      }
+
       return _PackageDetails(
         name: name,
         current: currentVersionDetails,
@@ -287,6 +315,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         isCurrentRetracted: isCurrentRetracted,
         isLatest: isLatest,
         advisories: packageAdvisories,
+        isCurrentAffectedBySecurityAdvisory: isCurrentAffectedByAdvisory,
       );
     }
 
@@ -466,6 +495,8 @@ Future<void> _outputJson(
               'kind': kindString(packageDetails.kind),
               'isDiscontinued': packageDetails.isDiscontinued,
               'isCurrentRetracted': packageDetails.isCurrentRetracted,
+              'isCurrentAffectedByAdvisory':
+                  packageDetails.isCurrentAffectedBySecurityAdvisory,
               'current': markedRows[packageDetails]![0].toJson(),
               'upgradable': markedRows[packageDetails]![1].toJson(),
               'resolvable': markedRows[packageDetails]![2].toJson(),
@@ -653,10 +684,31 @@ Future<void> _outputHuman(
     }
   }
 
+  List<Advisory> advisoriesWithAffectedVersions(_PackageDetails package) {
+    return package.advisories
+        .where(
+          (advisory) => advisory.affectedVersions
+              .intersection(
+                [
+                  package.current,
+                  package.upgradable,
+                  package.resolvable,
+                  package.latest,
+                ].map((e) => e?._pubspec.version.canonicalizedVersion).toSet(),
+              )
+              .isNotEmpty,
+        )
+        .toList();
+  }
+
+  var advisoriesToDisplay = <String, List<Advisory>>{};
+  for (final package in rows) {
+    advisoriesToDisplay[package.name] = advisoriesWithAffectedVersions(package);
+  }
   bool displayExtraInfo(_PackageDetails package) =>
       package.isDiscontinued ||
       package.isCurrentRetracted ||
-      (package.advisories.isNotEmpty);
+      (advisoriesToDisplay[package.name]!.isNotEmpty);
 
   if (rows.any(displayExtraInfo)) {
     log.message('\n');
@@ -677,8 +729,9 @@ Future<void> _outputHuman(
           'See https://dart.dev/go/package-retraction',
         );
       }
-      if (package.advisories.isNotEmpty) {
-        final advisoriesText = package.advisories.length > 1
+      var displayedAdvisories = advisoriesToDisplay[package.name]!;
+      if (displayedAdvisories.isNotEmpty) {
+        final advisoriesText = displayedAdvisories.length > 1
             ? 'security advisories'
             : 'a security advisory';
         log.message(
@@ -686,21 +739,16 @@ Future<void> _outputHuman(
           'See https://dart.dev//go/pub-security-advisories',
         );
         log.message('\n');
-        var displayedVersions = <String>{};
-        for (final advisory in package.advisories) {
-          for (final versionDetails in [
-            package.current,
-            package.upgradable,
-            package.resolvable,
-            package.latest,
-          ]) {
-            final version =
-                versionDetails?._pubspec.version.canonicalizedVersion;
-            if (version != null &&
-                advisory.affectedVersions.contains(version)) {
-              displayedVersions.add(version);
-            }
-          }
+
+        for (final advisory in displayedAdvisories) {
+          var displayedVersions = advisory.affectedVersions.intersection(
+            [
+              package.current,
+              package.upgradable,
+              package.resolvable,
+              package.latest,
+            ].map((e) => e?._pubspec.version.canonicalizedVersion).toSet(),
+          );
           log.message('    - "${advisory.summary}"');
           log.message('      Affects: ${displayedVersions.join(', ')}');
           log.message('      ${advisoriesDisplayUrl(advisory.id)}');
@@ -878,7 +926,11 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final String? discontinuedReplacedBy;
   final bool isCurrentRetracted;
   final bool isLatest;
+
+  /// List of advisories affecting this package which are not present in the
+  /// `ignored_advisories` list in the pubspec.
   final List<Advisory> advisories;
+  final bool isCurrentAffectedBySecurityAdvisory;
 
   _PackageDetails({
     required this.name,
@@ -892,6 +944,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     required this.isCurrentRetracted,
     required this.isLatest,
     required this.advisories,
+    required this.isCurrentAffectedBySecurityAdvisory,
   });
 
   @override
@@ -900,19 +953,6 @@ class _PackageDetails implements Comparable<_PackageDetails> {
       return kind.index.compareTo(other.kind.index);
     }
     return name.compareTo(other.name);
-  }
-
-  Map<String, Object?> toJson() {
-    return {
-      'package': name,
-      'current': current?.toJson(),
-      'upgradable': upgradable?.toJson(),
-      'resolvable': resolvable?.toJson(),
-      'latest': latest?.toJson(),
-      'isDiscontinued': isDiscontinued,
-      'discontinuedReplacedBy': discontinuedReplacedBy,
-      'isRetracted': isCurrentRetracted,
-    };
   }
 }
 

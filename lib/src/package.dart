@@ -44,6 +44,22 @@ class Package {
   /// The parsed pubspec associated with this package.
   final Pubspec pubspec;
 
+  /// The (non-transitive) workspace packages.
+  final List<Package> workspaceChildren;
+
+  /// The transitive closure of [workspaceChildren] rooted at this package.
+  ///
+  /// Includes this package.
+  Iterable<Package> get transitiveWorkspace sync* {
+    final stack = [this];
+
+    while (stack.isNotEmpty) {
+      final current = stack.removeLast();
+      yield current;
+      stack.addAll(current.workspaceChildren);
+    }
+  }
+
   /// The immediate dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get dependencies => pubspec.dependencies;
 
@@ -119,14 +135,17 @@ class Package {
       expectedName: name,
       allowOverridesFile: withPubspecOverrides,
     );
-    return Package(pubspec, dir);
+    final workspacePackages = pubspec.workspace
+        .map((e) => Package.load(null, p.join(dir, e), sources))
+        .toList();
+    return Package(pubspec, dir, workspacePackages);
   }
 
   /// Creates a package with [pubspec] associated with [dir].
   ///
   /// For temporary resolution attempts [pubspec] does not have to correspond
   /// to the one at disk.
-  Package(this.pubspec, this.dir);
+  Package(this.pubspec, this.dir, this.workspaceChildren);
 
   /// Given a relative path within this package, returns its absolute path.
   ///

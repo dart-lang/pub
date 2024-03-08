@@ -40,13 +40,11 @@ Command<int> pubCommand({required bool Function() isVerbose}) =>
 Future<void> ensurePubspecResolved(
   String dir, {
   bool isOffline = false,
-  bool checkForSdkUpdate = false,
   bool summaryOnly = true,
   bool onlyOutputWhenTerminal = true,
 }) async {
   try {
     await Entrypoint(dir, SystemCache(isOffline: isOffline)).ensureUpToDate(
-      checkForSdkUpdate: checkForSdkUpdate,
       summaryOnly: summaryOnly,
       onlyOutputWhenTerminal: onlyOutputWhenTerminal,
     );

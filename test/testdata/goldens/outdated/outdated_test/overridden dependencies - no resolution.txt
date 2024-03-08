@@ -9,6 +9,7 @@ $ pub outdated --json
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -30,6 +31,7 @@ $ pub outdated --json
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -149,6 +151,7 @@ $ pub outdated --json --no-dev-dependencies
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0",
         "overridden": true
@@ -170,6 +173,7 @@ $ pub outdated --json --no-dev-dependencies
       "kind": "direct",
       "isDiscontinued": false,
       "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0",
         "overridden": true

@@ -22,6 +22,7 @@ Pubspec stripDevDependencies(Pubspec original) {
     dependencies: original.dependencies.values,
     devDependencies: [], // explicitly give empty list, to prevent lazy parsing
     dependencyOverrides: original.dependencyOverrides.values,
+    workspace: original.workspace,
   );
 }
 
@@ -36,6 +37,7 @@ Pubspec stripDependencyOverrides(Pubspec original) {
     dependencies: original.dependencies.values,
     devDependencies: original.devDependencies.values,
     dependencyOverrides: [],
+    workspace: original.workspace,
   );
 }
 
@@ -85,6 +87,7 @@ Pubspec stripVersionBounds(
     dependencies: stripBounds(original.dependencies),
     devDependencies: stripBounds(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
+    workspace: original.workspace,
   );
 }
 
@@ -121,6 +124,7 @@ Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
     dependencies: fixBounds(original.dependencies),
     devDependencies: fixBounds(original.devDependencies),
     dependencyOverrides: original.dependencyOverrides.values,
+    workspace: original.workspace,
   );
 }
 

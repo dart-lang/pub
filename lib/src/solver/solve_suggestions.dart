@@ -184,8 +184,13 @@ class _ResolutionContext {
       stripLowerBound: true,
     );
 
-    final result =
-        await _tryResolve(Package(relaxedPubspec, entrypoint.rootDir));
+    final result = await _tryResolve(
+      Package(
+        relaxedPubspec,
+        entrypoint.rootDir,
+        entrypoint.root.workspaceChildren,
+      ),
+    );
     if (result == null) {
       return null;
     }
@@ -223,8 +228,13 @@ class _ResolutionContext {
     final relaxedPubspec =
         stripVersionBounds(originalPubspec, stripLowerBound: stripLowerBound);
 
-    final result =
-        await _tryResolve(Package(relaxedPubspec, entrypoint.rootDir));
+    final result = await _tryResolve(
+      Package(
+        relaxedPubspec,
+        entrypoint.rootDir,
+        entrypoint.root.workspaceChildren,
+      ),
+    );
     if (result == null) {
       return null;
     }

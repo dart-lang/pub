@@ -62,6 +62,11 @@ class VersionSolver {
   /// The entrypoint package, whose dependencies seed the version solve process.
   final Package _root;
 
+  /// Mapping all root packages in the workspace from their name.
+  late final Map<String, Package> _rootPackages = {
+    for (final package in _root.transitiveWorkspace) package.name: package,
+  };
+
   /// The lockfile, indicating which package versions were previously selected.
   final LockFile _lockFile;
 
@@ -457,7 +462,7 @@ class VersionSolver {
     var pubspecs = <String, Pubspec>{};
     for (var id in decisions) {
       if (id.isRoot) {
-        pubspecs[id.name] = _root.pubspec;
+        pubspecs[id.name] = _rootPackages[id.name]!.pubspec;
       } else {
         pubspecs[id.name] = await _systemCache.describe(id);
       }
@@ -516,7 +521,7 @@ class VersionSolver {
     return _packageListers.putIfAbsent(ref, () {
       if (ref.isRoot) {
         return PackageLister.root(
-          _root,
+          _rootPackages[ref.name]!,
           _systemCache,
           sdkOverrides: _sdkOverrides,
         );
@@ -529,7 +534,10 @@ class VersionSolver {
         ..._dependencyOverrides.keys,
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
-        if (_dependencyOverrides.containsKey(package.name)) _root.name,
+        if (_dependencyOverrides.containsKey(package.name)) ...[
+          _root.name,
+          ..._root.workspaceChildren.map((e) => e.name),
+        ],
       };
 
       return PackageLister(

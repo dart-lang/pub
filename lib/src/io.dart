@@ -757,19 +757,24 @@ Future<PubProcessResult> runProcess(
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
+  Encoding? stdoutEncoding = systemEncoding,
+  Encoding? stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
 
   return _descriptorPool.withResource(() async {
     ProcessResult result;
     try {
-      result = await _doProcess(
-        Process.run,
+      (executable, args) =
+          _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+      result = await Process.run(
         executable,
         args,
-        workingDir: workingDir,
+        workingDirectory: workingDir,
         environment: environment,
         runInShell: runInShell,
+        stdoutEncoding: stdoutEncoding,
+        stderrEncoding: stderrEncoding,
       );
     } on IOException catch (e) {
       throw RunProcessException(
@@ -806,11 +811,12 @@ Future<PubProcess> startProcess(
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
-      ioProcess = await _doProcess(
-        Process.start,
+      (executable, args) =
+          _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+      ioProcess = await Process.start(
         executable,
         args,
-        workingDir: workingDir,
+        workingDirectory: workingDir,
         environment: environment,
         runInShell: runInShell,
       );
@@ -833,17 +839,22 @@ PubProcessResult runProcessSync(
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
+  Encoding? stdoutEncoding = systemEncoding,
+  Encoding? stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
-    result = _doProcess(
-      Process.runSync,
+    (executable, args) =
+        _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+    result = Process.runSync(
       executable,
       args,
-      workingDir: workingDir,
+      workingDirectory: workingDir,
       environment: environment,
       runInShell: runInShell,
+      stdoutEncoding: stdoutEncoding,
+      stderrEncoding: stderrEncoding,
     );
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
@@ -938,23 +949,12 @@ class PubProcess {
       _process.kill(signal);
 }
 
-/// Calls [fn] with appropriately modified arguments.
-///
-/// [fn] should have the same signature as [Process.start], except that the
-/// returned value may have any return type.
-T _doProcess<T>(
-  T Function(
-    String,
-    List<String>, {
-    String? workingDirectory,
-    Map<String, String>? environment,
-    bool runInShell,
-  }) fn,
+/// Sanitizes the executable path on windows for [Process.start], [Process.run]
+/// and [Process.runSync].
+(String, List<String>) _sanitizeExecutablePath(
   String executable,
   List<String> args, {
   String? workingDir,
-  Map<String, String>? environment,
-  bool runInShell = false,
 }) {
   // TODO(rnystrom): Should dart:io just handle this?
   // Spawning a process on Windows will not look for the executable in the
@@ -966,18 +966,14 @@ T _doProcess<T>(
   }
 
   log.process(executable, args, workingDir ?? '.');
-
-  return fn(
-    executable,
-    args,
-    workingDirectory: workingDir,
-    environment: environment,
-    runInShell: runInShell,
-  );
+  return (executable, args);
 }
 
 /// Updates [path]'s modification time.
-void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
+void touch(String path) {
+  log.fine('Touching `$path`');
+  File(path).setLastModifiedSync(DateTime.now());
+}
 
 /// Creates a temporary directory and passes its path to [fn].
 ///

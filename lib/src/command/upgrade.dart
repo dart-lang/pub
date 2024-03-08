@@ -278,7 +278,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         return await resolveVersions(
           SolveType.upgrade,
           cache,
-          Package(resolvablePubspec, entrypoint.rootDir),
+          Package(
+            resolvablePubspec,
+            entrypoint.rootDir,
+            entrypoint.root.workspaceChildren,
+          ),
         );
       },
       condition: _shouldShowSpinner,
@@ -331,6 +335,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         Package(
           _updatedPubspec(newPubspecText, entrypoint),
           entrypoint.rootDir,
+          entrypoint.root.workspaceChildren,
         ),
       );
       changes = tighten(

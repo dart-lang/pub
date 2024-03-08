@@ -185,9 +185,6 @@ Consider setting the `PUB_CACHE` variable manually.
     Duration? maxAge,
     Version? allowedRetractedVersion,
   }) async {
-    if (ref.isRoot) {
-      throw ArgumentError('Cannot get versions for the root package.');
-    }
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
     versions = (await Future.wait(

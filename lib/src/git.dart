@@ -6,6 +6,8 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -88,6 +90,8 @@ List<String> runSync(
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
+  Encoding? stdoutEncoding = systemEncoding,
+  Encoding? stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
@@ -99,6 +103,8 @@ List<String> runSync(
     args,
     workingDir: workingDir,
     environment: environment,
+    stdoutEncoding: stdoutEncoding,
+    stderrEncoding: stderrEncoding,
   );
   if (!result.success) {
     throw GitException(

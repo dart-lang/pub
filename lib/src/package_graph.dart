@@ -37,11 +37,12 @@ class PackageGraph {
   ) {
     final packages = {
       for (final id in result.packages)
-        id.name: id.name == entrypoint.root.name
+        id.name: id.isRoot
             ? entrypoint.root
             : Package(
                 result.pubspecs[id.name]!,
                 entrypoint.cache.getDirectory(id),
+                [],
               ),
     };
 
