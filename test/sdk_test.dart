@@ -229,7 +229,71 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
     });
 
     group('dart', () {
-      setUp(() async {
+      group('with valid SDK configuration', () {
+        setUp(() async {
+          final server = await servePackages();
+          server.serve('bar', '1.0.0');
+
+          await d.dir('dart', [
+            d.dir('packages', [
+              d.dir('foo', [
+                d.libDir('foo', 'foo 0.0.1'),
+                d.libPubspec('foo', '0.0.1', deps: {}),
+              ]),
+            ]),
+            d.sdkPackagesConfig(
+              SdkPackageConfig('dart', [SdkPackage('foo', 'packages/foo')]),
+            ),
+          ]).create();
+        });
+
+        test('gets an SDK dependency from sdk_packages.yaml', () async {
+          await d.appDir(
+            dependencies: {
+              'foo': {'sdk': 'dart', 'version': '^0.0.1'},
+            },
+          ).create();
+
+          await pubCommand(
+            command,
+            environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
+          );
+
+          await d.appPackageConfigFile([
+            d.packageConfigEntry(
+              name: 'foo',
+              path: p.join(d.sandbox, 'dart', 'packages', 'foo'),
+              version: '0.0.1',
+            ),
+          ]).validate();
+        });
+
+        test(
+            'fails if the version range isn\'t compatible with the SDK '
+            'dependency from sdk_packages.yaml', () async {
+          await d.appDir(
+            dependencies: {
+              'foo': {'sdk': 'dart', 'version': '^1.0.0'},
+            },
+          ).create();
+
+          await pubCommand(
+            command,
+            environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
+            error: equalsIgnoringWhitespace('''
+             Because myapp depends on foo ^1.0.0 from sdk which doesn't match
+             any versions, version solving failed.
+
+             You can try the following suggestion to make the pubspec resolve:
+
+             * Try updating the following constraints: dart pub add
+               foo:'{"version":"^0.0.1","sdk":"dart"}'
+            '''),
+          );
+        });
+      });
+
+      test('does not allow non-SDK deps in SDK packages', () async {
         final server = await servePackages();
         server.serve('bar', '1.0.0');
 
@@ -237,39 +301,14 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
           d.dir('packages', [
             d.dir('foo', [
               d.libDir('foo', 'foo 0.0.1'),
-              d.libPubspec('foo', '0.0.1', deps: {}),
+              d.libPubspec('foo', '0.0.1', deps: {'bar': '^1.0.0'}),
             ]),
           ]),
           d.sdkPackagesConfig(
             SdkPackageConfig('dart', [SdkPackage('foo', 'packages/foo')]),
           ),
         ]).create();
-      });
 
-      test('gets an SDK dependency from sdk_packages.yaml', () async {
-        await d.appDir(
-          dependencies: {
-            'foo': {'sdk': 'dart', 'version': '^0.0.1'},
-          },
-        ).create();
-
-        await pubCommand(
-          command,
-          environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
-        );
-
-        await d.appPackageConfigFile([
-          d.packageConfigEntry(
-            name: 'foo',
-            path: p.join(d.sandbox, 'dart', 'packages', 'foo'),
-            version: '0.0.1',
-          ),
-        ]).validate();
-      });
-
-      test(
-          'fails if the version range isn\'t compatible with the SDK '
-          'dependency from sdk_packages.yaml', () async {
         await d.appDir(
           dependencies: {
             'foo': {'sdk': 'dart', 'version': '^1.0.0'},
@@ -279,15 +318,10 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
         await pubCommand(
           command,
           environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
-          error: equalsIgnoringWhitespace('''
-             Because myapp depends on foo ^1.0.0 from sdk which doesn't match
-             any versions, version solving failed.
-
-             You can try the following suggestion to make the pubspec resolve:
-
-             * Try updating the following constraints: dart pub add
-               foo:'{"version":"^0.0.1","sdk":"dart"}'
-            '''),
+          error: contains(
+              'Invalid argument(s): Only SDK packages are allowed as regular '
+              'dependencies for packages vendored by the dart SDK, but the `foo` '
+              'package has a hosted dependency on `bar`.'),
         );
       });
     });

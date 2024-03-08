@@ -106,7 +106,8 @@ class SdkSource extends Source {
             throw ArgumentError(
               'Only SDK packages are allowed as regular dependencies for '
               'packages vendored by the ${sdk.identifier} SDK, but the '
-              '`${ref.name}` package has a non-sdk dependency on `${dep.key}`.',
+              '`${ref.name}` package has a ${dep.value.source.name} dependency '
+              'on `${dep.key}`.',
             );
           }
         }
