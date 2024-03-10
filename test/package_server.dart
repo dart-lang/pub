@@ -156,7 +156,7 @@ class PackageServer {
                       {
                         'package': {
                           'name': package.name,
-                          'ecosystem': package.ecosystem
+                          'ecosystem': package.ecosystem,
                         },
                         'versions': [...package.versions],
                       },
