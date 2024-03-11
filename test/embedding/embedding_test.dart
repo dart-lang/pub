@@ -4,7 +4,9 @@
 
 import 'dart:io';
 
+import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
+import 'package:pub/src/command_runner.dart';
 import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart' show EnvironmentKeys;
 import 'package:test/test.dart';
@@ -66,7 +68,7 @@ extension on GoldenTestContext {
   Future<void> runEmbedding(
     List<String> args, {
     String? workingDirectory,
-    Map<String, String>? environment,
+    Map<String, String?>? environment,
     dynamic exitCode = 0,
   }) async {
     final buffer = StringBuffer();
@@ -196,13 +198,22 @@ main() {
     expect(buffer.toString(), contains('FINE: Pub 3.1.2+3'));
   });
 
-  testWithGolden('--help', (context) async {
-    await servePackages();
-    await context.runEmbedding(
-      ['pub', '--help'],
-      workingDirectory: d.path('.'),
-    );
-  });
+  final cmds = _extractCommands();
+  for (final c in cmds) {
+    testWithGolden(c.join(' '), (ctx) async {
+      await servePackages();
+      await ctx.runEmbedding(
+        c.toList(),
+        environment: {
+          // Use more columns to avoid unintended line breaking.
+          '_PUB_TEST_TERMINAL_COLUMNS': '200',
+          'HOME': null,
+          'PUB_CACHE': null,
+        },
+        workingDirectory: d.path('.'),
+      );
+    });
+  }
 
   testWithGolden('--color forces colors', (context) async {
     final server = await servePackages();
@@ -500,4 +511,36 @@ String _filter(String input) {
         ),
         (match) => match[1]!,
       );
+}
+
+/// Extract all commands and subcommands.
+///
+/// Result will be an iterable of lists, illustrated as follows:
+/// ```
+/// [
+///   [pub, --help]
+///   [pub, get, --help]
+///   ...
+/// ]
+/// ```
+Iterable<List<String>> _extractCommands() sync* {
+  // dedup aliases.
+  Set visitedCommands = <Command>{};
+  final stack = [PubCommandRunner().commands.values.toList()];
+  final parents = <String>[];
+  while (true) {
+    final commands = stack.last;
+    if (commands.isEmpty) {
+      stack.removeLast();
+      yield ['pub', ...parents, '--help'];
+      if (parents.isEmpty) break;
+      parents.removeLast();
+    } else {
+      final command = commands.removeLast();
+      if (!visitedCommands.add(command)) continue;
+      if (command.hidden) continue;
+      stack.add(command.subcommands.values.toList());
+      parents.add(command.name);
+    }
+  }
 }
