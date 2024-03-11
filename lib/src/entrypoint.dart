@@ -57,9 +57,11 @@ import 'utils.dart';
 class Entrypoint {
   /// The directory where the package is stored.
   ///
-  /// For global packages this is inside the pub cache.
+  /// For cached global packages this is `PUB_CACHE/global_packages/foo
   ///
-  /// Except for packages globally activated from path.
+  /// For path-activated global packages this is the actual package dir.
+  ///
+  /// The lock file and package configurations are to be found relative to here.
   final String rootDir;
 
   Package? _root;
@@ -74,10 +76,6 @@ class Entrypoint {
         withPubspecOverrides: true,
       );
 
-  /// For a global package, this is the directory that the package is installed
-  /// in. Non-global packages have null.
-  final String? globalDir;
-
   /// The system-wide cache which caches packages that need to be fetched over
   /// the network.
   final SystemCache cache;
@@ -86,8 +84,9 @@ class Entrypoint {
   bool get isCached => p.isWithin(cache.rootDir, rootDir);
 
   /// Whether this is an entrypoint for a globally-activated package.
-  // final bool isGlobal;
-  bool get isGlobal => globalDir != null;
+  ///
+  /// False for path-activated global packages.
+  final bool isCachedGlobal;
 
   /// The lockfile for the entrypoint.
   ///
@@ -171,16 +170,10 @@ class Entrypoint {
 
   Future<PackageGraph>? _packageGraph;
 
-  /// Where the lock file and package configurations are to be found.
-  ///
-  /// Global packages (except those from path source)
-  /// store these in the global cache.
-  String? get _configRoot => isCached ? globalDir : rootDir;
-
   /// The path to the entrypoint's ".dart_tool/package_config.json" file
   /// relative to the current working directory .
   late String packageConfigPath = p.relative(
-    p.normalize(p.join(_configRoot!, '.dart_tool', 'package_config.json')),
+    p.normalize(p.join(rootDir, '.dart_tool', 'package_config.json')),
   );
 
   /// The path to the entrypoint package's pubspec.
@@ -191,17 +184,13 @@ class Entrypoint {
       p.normalize(p.join(rootDir, 'pubspec_overrides.yaml'));
 
   /// The path to the entrypoint package's lockfile.
-  String get lockFilePath => p.normalize(p.join(_configRoot!, 'pubspec.lock'));
-
-  /// The path to the entrypoint package's `.dart_tool/pub` cache directory.
-  ///
-  /// For globally activated packages from path, this is not the same as
-  /// [configRoot], because the snapshots should be stored in the global cache,
-  /// but the configuration is stored at the package itself.
-  String get cachePath => globalDir ?? p.join(rootDir, '.dart_tool/pub');
+  String get lockFilePath => p.normalize(p.join(rootDir, 'pubspec.lock'));
 
   /// The path to the directory containing dependency executable snapshots.
-  String get _snapshotPath => p.join(cachePath, 'bin');
+  String get _snapshotPath => p.join(
+        isCachedGlobal ? rootDir : p.join(rootDir, '.dart_tool/pub'),
+        'bin',
+      );
 
   Entrypoint._(
     this.rootDir,
@@ -210,7 +199,7 @@ class Entrypoint {
     this._packageGraph,
     this.cache,
     this._root,
-    this.globalDir,
+    this.isCachedGlobal,
   );
 
   /// An entrypoint representing a package at [rootDir].
@@ -221,7 +210,7 @@ class Entrypoint {
   })  : _root = preloaded == null
             ? null
             : Package(preloaded.pubspec, rootDir, preloaded.workspacePackages),
-        globalDir = null {
+        isCachedGlobal = false {
     if (p.isWithin(cache.rootDir, rootDir)) {
       fail('Cannot operate on packages inside the cache.');
     }
@@ -241,19 +230,19 @@ class Entrypoint {
         rootDir,
         root.workspaceChildren,
       ),
-      globalDir,
+      isCachedGlobal,
     );
   }
 
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passed as an optimization.
   Entrypoint.global(
-    this.globalDir,
     Package this._root,
     this._lockFile,
     this.cache, {
     SolveResult? solveResult,
-  }) : rootDir = _root.dir {
+  })  : rootDir = _root.dir,
+        isCachedGlobal = true {
     if (solveResult != null) {
       _packageGraph =
           Future.value(PackageGraph.fromSolveResult(this, solveResult));
@@ -289,7 +278,7 @@ class Entrypoint {
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this entrypoint based on [lockFile].
   ///
-  /// If [isGlobal] no entry will be created for [root].
+  /// If [isCachedGlobal] no entry will be created for [root].
   Future<String> _packageConfigFile(
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
@@ -298,7 +287,7 @@ class Entrypoint {
     for (final name in ordered(lockFile.packages.keys)) {
       final id = lockFile.packages[name]!;
       final rootPath =
-          cache.getDirectory(id, relativeFrom: isGlobal ? null : rootDir);
+          cache.getDirectory(id, relativeFrom: isCachedGlobal ? null : rootDir);
       Uri rootUri;
       if (p.isRelative(rootPath)) {
         // Relative paths are relative to the root project, we want them
@@ -318,7 +307,7 @@ class Entrypoint {
       );
     }
 
-    if (!isGlobal) {
+    if (!isCachedGlobal) {
       /// Run through the entire workspace transitive closure and add an entry
       /// for each package.
       for (final package in root.transitiveWorkspace) {
@@ -484,15 +473,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// Except globally activated packages they should precompile executables from
   /// the package itself if they are immutable.
   Future<List<Executable>> get _builtExecutables async {
-    if (isGlobal) {
-      if (isCached) {
-        return root.executablePaths
-            .map((path) => Executable(root.name, path))
-            .toList();
-      } else {
-        return <Executable>[];
-      }
-    }
     final graph = await packageGraph;
     final r = root.immediateDependencies.keys.expand((packageName) {
       final package = graph.packages[packageName]!;
@@ -509,7 +489,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     if (executables.isEmpty) return;
 
     await log.progress('Building package executables', () async {
-      if (isGlobal) {
+      if (isCachedGlobal) {
         /// Global snapshots might linger in the cache if we don't remove old
         /// snapshots when it is re-activated.
         cleanDir(_snapshotPath);
@@ -582,7 +562,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   String pathOfExecutable(Executable executable) {
     assert(p.isRelative(executable.relativePath));
     final versionSuffix = sdk.version;
-    return isGlobal
+    return isCachedGlobal
         ? p.join(
             _snapshotPath,
             '${p.basename(executable.relativePath)}-$versionSuffix.snapshot',
