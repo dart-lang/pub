@@ -84,8 +84,9 @@ class Entrypoint {
   bool get isCached => p.isWithin(cache.rootDir, rootDir);
 
   /// Whether this is an entrypoint for a globally-activated package.
-  // final bool isGlobal;
-  final bool isGlobal;
+  ///
+  /// False for path-activated global packages.
+  final bool isCachedGlobal;
 
   /// The lockfile for the entrypoint.
   ///
@@ -186,8 +187,8 @@ class Entrypoint {
   String get lockFilePath => p.normalize(p.join(rootDir, 'pubspec.lock'));
 
   /// The path to the directory containing dependency executable snapshots.
-  String get _snapshotPath =>
-      p.join(isGlobal ? rootDir : p.join(rootDir, '.dart_tool/pub'), 'bin');
+  String get _snapshotPath => p.join(
+      isCachedGlobal ? rootDir : p.join(rootDir, '.dart_tool/pub'), 'bin');
 
   Entrypoint._(
     this.rootDir,
@@ -196,7 +197,7 @@ class Entrypoint {
     this._packageGraph,
     this.cache,
     this._root,
-    this.isGlobal,
+    this.isCachedGlobal,
   );
 
   /// An entrypoint representing a package at [rootDir].
@@ -207,7 +208,7 @@ class Entrypoint {
   })  : _root = preloaded == null
             ? null
             : Package(preloaded.pubspec, rootDir, preloaded.workspacePackages),
-        isGlobal = false {
+        isCachedGlobal = false {
     if (p.isWithin(cache.rootDir, rootDir)) {
       fail('Cannot operate on packages inside the cache.');
     }
@@ -227,7 +228,7 @@ class Entrypoint {
         rootDir,
         root.workspaceChildren,
       ),
-      isGlobal,
+      isCachedGlobal,
     );
   }
 
@@ -239,7 +240,7 @@ class Entrypoint {
     this.cache, {
     SolveResult? solveResult,
   })  : rootDir = _root.dir,
-        isGlobal = true {
+        isCachedGlobal = true {
     if (solveResult != null) {
       _packageGraph =
           Future.value(PackageGraph.fromSolveResult(this, solveResult));
@@ -275,7 +276,7 @@ class Entrypoint {
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this entrypoint based on [lockFile].
   ///
-  /// If [isGlobal] no entry will be created for [root].
+  /// If [isCachedGlobal] no entry will be created for [root].
   Future<String> _packageConfigFile(
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
@@ -284,7 +285,7 @@ class Entrypoint {
     for (final name in ordered(lockFile.packages.keys)) {
       final id = lockFile.packages[name]!;
       final rootPath =
-          cache.getDirectory(id, relativeFrom: isGlobal ? null : rootDir);
+          cache.getDirectory(id, relativeFrom: isCachedGlobal ? null : rootDir);
       Uri rootUri;
       if (p.isRelative(rootPath)) {
         // Relative paths are relative to the root project, we want them
@@ -304,7 +305,7 @@ class Entrypoint {
       );
     }
 
-    if (!isGlobal) {
+    if (!isCachedGlobal) {
       /// Run through the entire workspace transitive closure and add an entry
       /// for each package.
       for (final package in root.transitiveWorkspace) {
@@ -486,7 +487,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     if (executables.isEmpty) return;
 
     await log.progress('Building package executables', () async {
-      if (isGlobal) {
+      if (isCachedGlobal) {
         /// Global snapshots might linger in the cache if we don't remove old
         /// snapshots when it is re-activated.
         cleanDir(_snapshotPath);
@@ -559,7 +560,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   String pathOfExecutable(Executable executable) {
     assert(p.isRelative(executable.relativePath));
     final versionSuffix = sdk.version;
-    return isGlobal
+    return isCachedGlobal
         ? p.join(
             _snapshotPath,
             '${p.basename(executable.relativePath)}-$versionSuffix.snapshot',

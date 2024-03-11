@@ -78,7 +78,7 @@ Future<int> runExecutable(
   if (!fileExists(executablePath)) {
     var message =
         'Could not find ${log.bold(p.normalize(executable.relativePath))}';
-    if (entrypoint.isGlobal || package != entrypoint.root.name) {
+    if (entrypoint.isCachedGlobal || package != entrypoint.root.name) {
       message += ' in package ${log.bold(package)}';
     }
     log.error('$message.');
