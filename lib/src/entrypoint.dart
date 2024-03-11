@@ -188,7 +188,9 @@ class Entrypoint {
 
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(
-      isCachedGlobal ? rootDir : p.join(rootDir, '.dart_tool/pub'), 'bin');
+        isCachedGlobal ? rootDir : p.join(rootDir, '.dart_tool/pub'),
+        'bin',
+      );
 
   Entrypoint._(
     this.rootDir,
