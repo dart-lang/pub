@@ -744,7 +744,7 @@ class HostedSource extends CachedSource {
           tryDeleteEntry(advisoriesCachePath);
         } on FormatException catch (e) {
           tryDeleteEntry(advisoriesCachePath);
-          log.fine('Failed to read cached advisores: $e');
+          log.fine('Failed to read cached advisories: $e');
         }
       }
       return null;
