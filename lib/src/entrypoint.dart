@@ -151,7 +151,7 @@ class Entrypoint {
       _packageGraph ??= _createPackageGraph();
 
   Future<PackageGraph> _createPackageGraph() async {
-    // TODO(sigurdm): consider having [ensureUptoDate] and [AcquireDependencies]
+    // TODO(sigurdm): consider having [ensureUptoDate] and [acquireDependencies]
     // return the package-graph, such it by construction will always made from an
     // up-to-date package-config.
     await ensureUpToDate();

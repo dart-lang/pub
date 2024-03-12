@@ -7,6 +7,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../http.dart';
 import '../lock_file.dart';
+import '../log.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -58,21 +59,23 @@ class SolveResult {
   /// and the new one a warning will be printed but the new one will be
   /// returned.
   Future<LockFile> downloadCachedPackages(SystemCache cache) async {
-    final resolvedPackageIds = await Future.wait(
-      packages.map((id) async {
-        if (id.source is CachedSource) {
-          return await withDependencyType(_root.pubspec.dependencyType(id.name),
-              () async {
-            return (await cache.downloadPackage(
-              id,
-            ))
-                .packageId;
-          });
-        }
-        return id;
-      }),
-    );
-
+    final resolvedPackageIds =
+        await progress('Downloading dependencies', () async {
+      return await Future.wait(
+        packages.map((id) async {
+          if (id.source is CachedSource) {
+            return await withDependencyType(
+                _root.pubspec.dependencyType(id.name), () async {
+              return (await cache.downloadPackage(
+                id,
+              ))
+                  .packageId;
+            });
+          }
+          return id;
+        }),
+      );
+    });
     // Invariant: the content-hashes in PUB_CACHE matches those provided by the
     // server.
 
