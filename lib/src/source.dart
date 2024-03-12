@@ -65,10 +65,8 @@ abstract class Source {
   /// hosted dependencies like `foo:` or `foo: ^1.2.3`, the [description] may
   /// also be `null`.
   ///
-  /// [containingDir] is the path to the directory of the pubspec where this
-  /// description appears. It may be `null` if the description is coming from
-  /// some in-memory source (such as pulling down a pubspec from
-  /// pub.dev).
+  /// [containingDescription] describes the location of the pubspec where this
+  /// description appears.
   ///
   /// [languageVersion] is the minimum Dart version parsed from the pubspec's
   /// `environment` field. Source implementations may use this parameter to only
@@ -81,7 +79,7 @@ abstract class Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    required Description containingDescription,
     required LanguageVersion languageVersion,
   });
 

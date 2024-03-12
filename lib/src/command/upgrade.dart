@@ -21,6 +21,7 @@ import '../pubspec_utils.dart';
 import '../sdk.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
+import '../source/root.dart';
 import '../utils.dart';
 
 /// Handles the `upgrade` pub command.
@@ -399,6 +400,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       location: Uri.parse(entrypoint.pubspecPath),
       overridesFileContents: overridesFileContents,
       overridesLocation: Uri.file(overridesPath),
+      containingDescription: RootDescription(entrypoint.rootDir),
     );
   }
 

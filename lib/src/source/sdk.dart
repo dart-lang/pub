@@ -29,7 +29,7 @@ class SdkSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    required Description containingDescription,
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
@@ -93,6 +93,7 @@ class SdkSource extends Source {
         _verifiedPackagePath(ref),
         cache.sources,
         expectedName: ref.name,
+        containingDescription: ref.description,
       );
 
   /// Returns the path for the given [ref].

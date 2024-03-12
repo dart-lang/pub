@@ -16,6 +16,7 @@ import '../pubspec.dart';
 import '../sdk.dart';
 import '../solver/type.dart';
 import '../source/hosted.dart';
+import '../source/root.dart';
 import '../utils.dart';
 
 class UnpackCommand extends PubCommand {
@@ -182,6 +183,7 @@ in a directory `foo-<version>`.
           cache.sources,
           // Resolve relative paths relative to current, not where the pubspec.yaml is.
           location: p.toUri(p.join(p.current, 'descriptor')),
+          containingDescription: RootDescription('.'),
         );
       } on FormatException catch (e) {
         usageException('Failed parsing package specification: ${e.message}');

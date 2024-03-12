@@ -31,6 +31,7 @@ import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'cached.dart';
+import 'root.dart';
 
 const contentHashesDocumentationUrl = 'https://dart.dev/go/content-hashes';
 
@@ -225,7 +226,7 @@ class HostedSource extends CachedSource {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    required Description containingDescription,
     required LanguageVersion languageVersion,
   }) {
     return PackageRef(
@@ -400,6 +401,7 @@ class HostedSource extends CachedSource {
         cache.sources,
         expectedName: ref.name,
         location: location,
+        containingDescription: description,
       );
       final archiveSha256 = map['archive_sha256'];
       if (archiveSha256 != null && archiveSha256 is! String) {
@@ -1584,7 +1586,14 @@ See $contentHashesDocumentationUrl.
       }
       final Pubspec pubspec;
       try {
-        pubspec = Pubspec.load(tempDir, cache.sources);
+        pubspec = Pubspec.load(
+          tempDir,
+          cache.sources,
+          containingDescription:
+              // Dummy description.
+              // As we never use the dependencies, they don't need to be resolved.
+              RootDescription('.'),
+        );
         final errors = pubspec.dependencyErrors;
         if (errors.isNotEmpty) {
           throw errors.first;

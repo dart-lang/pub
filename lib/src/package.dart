@@ -14,6 +14,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'source/root.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -134,6 +135,7 @@ class Package {
       sources,
       expectedName: name,
       allowOverridesFile: withPubspecOverrides,
+      containingDescription: RootDescription(dir),
     );
     final workspacePackages = pubspec.workspace
         .map((e) => Package.load(null, p.join(dir, e), sources))
