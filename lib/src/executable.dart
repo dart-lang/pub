@@ -359,7 +359,11 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     );
   } else {
     final snapshotPath = entrypoint.pathOfExecutable(executable);
-    if (!fileExists(snapshotPath) ||
+    final snapshotStat = tryStatFile(snapshotPath);
+    final packageConfigStat = tryStatFile(packageConfigPath);
+    if (snapshotStat == null ||
+        packageConfigStat == null ||
+        packageConfigStat.modified.isAfter(snapshotStat.modified) ||
         (await entrypoint.packageGraph).isPackageMutable(package)) {
       try {
         await errorsOnlyUnlessTerminal(
