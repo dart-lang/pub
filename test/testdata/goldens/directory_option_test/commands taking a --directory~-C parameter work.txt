@@ -97,8 +97,6 @@ Got dependencies in myapp/example.
 $ pub run -C myapp 'bin/app.dart'
 Resolving dependencies in myapp...
 Got dependencies in myapp.
-Resolving dependencies in myapp...
-Got dependencies in myapp.
 Building package executable...
 Built test_pkg:app.
 Hi
@@ -143,6 +141,8 @@ $ pub uploader -C myapp add sigurdm@google.com
 
 ## Section 13
 $ pub deps -C myapp
+Resolving dependencies in myapp...
+Got dependencies in myapp.
 Resolving dependencies in myapp...
 Got dependencies in myapp.
 Dart SDK 3.1.2+3

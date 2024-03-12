@@ -8,6 +8,7 @@ import 'dart:convert';
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../command_runner.dart';
+import '../entrypoint.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
@@ -71,9 +72,6 @@ class DepsCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    // Explicitly run this in the directory in case
-    // we don't access `entrypoint.packageGraph`.
-    await entrypoint.ensureUpToDate();
     final buffer = StringBuffer();
 
     if (argResults.flag('json')) {
@@ -90,7 +88,6 @@ class DepsCommand extends PubCommand {
       if (argResults.wasParsed('style')) {
         usageException('Cannot combine --json and --style.');
       }
-      await entrypoint.ensureUpToDate();
       final visited = <String>[];
       final toVisit = [entrypoint.root.name];
       final packagesJson = <dynamic>[];

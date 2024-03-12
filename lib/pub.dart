@@ -44,7 +44,9 @@ Future<void> ensurePubspecResolved(
   bool onlyOutputWhenTerminal = true,
 }) async {
   try {
-    await Entrypoint(dir, SystemCache(isOffline: isOffline)).ensureUpToDate(
+    await Entrypoint.ensureUpToDate(
+      dir,
+      cache: SystemCache(isOffline: isOffline),
       summaryOnly: summaryOnly,
       onlyOutputWhenTerminal: onlyOutputWhenTerminal,
     );
