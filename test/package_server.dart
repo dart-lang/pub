@@ -161,6 +161,10 @@ class PackageServer {
                         'versions': [...package.versions],
                       },
                   ],
+                  if (advisory.displayUrl != null)
+                    'database_specific': {
+                      'pub_display_url': advisory.displayUrl,
+                    },
                 },
             ],
           }),
@@ -333,6 +337,7 @@ class PackageServer {
   /// package [packageName].
   void addAdvisory({
     required String advisoryId,
+    String? displayUrl,
     DateTime? advisoriesUpdated,
     List<String> aliases = const <String>[],
     required List<AffectedPackage> affectedPackages,
@@ -341,11 +346,7 @@ class PackageServer {
       _packages[package.name]!.advisoriesUpdated =
           advisoriesUpdated ?? defaultAdvisoriesUpdated;
       _packages[package.name]!.advisories.add(
-            _ServedAdvisory(
-              advisoryId,
-              affectedPackages,
-              aliases,
-            ),
+            _ServedAdvisory(advisoryId, affectedPackages, aliases, displayUrl),
           );
     }
   }
@@ -432,12 +433,14 @@ class _ServedPackageVersion {
 class _ServedAdvisory {
   String id;
   List<String> aliases;
+  String? displayUrl;
   List<AffectedPackage> affectedPackages;
 
   _ServedAdvisory(
     this.id,
     this.affectedPackages,
     this.aliases,
+    this.displayUrl,
   );
 }
 

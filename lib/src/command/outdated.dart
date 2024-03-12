@@ -751,7 +751,7 @@ Future<void> _outputHuman(
           );
           log.message('    - "${advisory.summary}"');
           log.message('      Affects: ${displayedVersions.join(', ')}');
-          log.message('      ${advisoriesDisplayUrl(advisory.id)}');
+          log.message('      ${advisory.displayUrl}');
         }
       }
     }
