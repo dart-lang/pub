@@ -400,6 +400,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -410,6 +411,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'EFGH-0000-1111-2222',
+      displayUrl: 'https://github.com/advisories/EFGH-0000-1111-2222',
       aliases: ['1234-ABCD-EFGH-IJKL'],
       affectedPackages: [
         AffectedPackage(
@@ -442,6 +444,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -453,6 +456,7 @@ Future<void> main() async {
     builder.addAdvisory(
       advisoryId: 'EFGH-0000-1111-2222',
       aliases: ['1234-ABCD-EFGH-IJKL'],
+      displayUrl: 'https://github.com/advisories/EFGH-0000-1111-2222',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -463,6 +467,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'VXYZ-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/VXYZ-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -494,6 +499,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -524,6 +530,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -556,6 +563,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -586,6 +594,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -617,6 +626,7 @@ Future<void> main() async {
     builder.discontinue('foo');
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -647,6 +657,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -677,6 +688,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
@@ -687,6 +699,7 @@ Future<void> main() async {
 
     builder.addAdvisory(
       advisoryId: 'VXYZ-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/VXYZ-1234-5678-9101',
       affectedPackages: [
         AffectedPackage(
           name: 'foo',
