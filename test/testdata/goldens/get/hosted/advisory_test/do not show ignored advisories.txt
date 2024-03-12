@@ -3,6 +3,7 @@
 ## Section 0
 $ pub get
 Resolving dependencies...
+Downloading dependencies...
 + baz 1.0.0
 + foo 1.2.3 (affected by advisory: [^0], 2.0.0 available)
 Changed 2 dependencies!

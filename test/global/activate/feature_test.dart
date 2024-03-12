@@ -34,6 +34,7 @@ void main() {
       args: ['global', 'activate', 'foo'],
       output: contains('''
 Resolving dependencies...
+Downloading dependencies...
 + bar 1.0.0
 + foo 1.0.0
 Downloading'''),
@@ -64,6 +65,7 @@ Downloading'''),
       args: ['global', 'activate', 'foo', '--features', 'things'],
       output: contains('''
 Resolving dependencies...
+Downloading dependencies...
 + bar 1.0.0
 + baz 1.0.0
 + foo 1.0.0
@@ -95,6 +97,7 @@ Downloading'''),
       args: ['global', 'activate', 'foo', '--omit-features', 'stuff'],
       output: contains('''
 Resolving dependencies...
+Downloading dependencies...
 + foo 1.0.0
 Downloading'''),
     );
@@ -125,6 +128,7 @@ Downloading'''),
       args: ['global', 'activate', 'foo', '--features', 'things,stuff'],
       output: contains('''
 Resolving dependencies...
+Downloading dependencies...
 + bar 1.0.0
 + baz 1.0.0
 + foo 1.0.0
@@ -164,6 +168,7 @@ Downloading'''),
       ],
       output: contains('''
 Resolving dependencies...
+Downloading dependencies...
 + baz 1.0.0
 + foo 1.0.0
 Downloading'''),

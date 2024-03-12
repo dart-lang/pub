@@ -2,6 +2,7 @@
 
 $ tool/test-bin/pub_command_runner.dart pub get
 Resolving dependencies...
+Downloading dependencies...
 Got dependencies!
 
 -------------------------------- END OF OUTPUT ---------------------------------

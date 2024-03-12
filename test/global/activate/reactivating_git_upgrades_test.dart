@@ -21,6 +21,7 @@ void main() {
       args: ['global', 'activate', '-sgit', '../foo.git'],
       output: allOf(
         startsWith('Resolving dependencies...\n'
+            'Downloading dependencies...\n'
             '+ foo 1.0.0 from git ..${separator}foo.git at '),
         // Specific revision number goes here.
         endsWith('Building package executables...\n'
@@ -38,6 +39,7 @@ void main() {
         startsWith('Package foo is currently active from Git repository '
             '"..${separator}foo.git".\n'
             'Resolving dependencies...\n'
+            'Downloading dependencies...\n'
             '> foo 1.0.1 from git ..${separator}foo.git at '),
         // Specific revision number goes here.
         endsWith('Building package executables...\n'

@@ -26,6 +26,7 @@ void main() {
       silent: contains('Downloading foo 2.0.0...'),
       output: '''
         Resolving dependencies...
+        Downloading dependencies...
         + foo 2.0.0
         Activated foo 2.0.0.''',
     );
