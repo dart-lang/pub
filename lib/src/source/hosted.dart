@@ -625,6 +625,16 @@ class HostedSource extends CachedSource {
         throw FormatException('advisory must be a map');
       }
 
+      final databaseSpecific = advisory['database_specific'];
+      if (databaseSpecific is! Map?) {
+        throw FormatException('database_specific must be a map or null');
+      }
+
+      final pubDisplayUrl = databaseSpecific?['pub_display_url'];
+      if (pubDisplayUrl is! String?) {
+        throw FormatException('pub_display_url must be a String or null');
+      }
+
       final id = advisory['id'];
       if (id is! String) {
         throw FormatException('id must be a String');
@@ -693,7 +703,15 @@ class HostedSource extends CachedSource {
         affectedVersions.add(v);
       }
 
-      advisoriesList.add(Advisory(id, affectedVersions, aliasIDs, summary));
+      advisoriesList.add(
+        Advisory(
+          id: id,
+          affectedVersions: affectedVersions,
+          aliases: aliasIDs,
+          summary: summary,
+          pubDisplayUrl: pubDisplayUrl,
+        ),
+      );
     }
 
     return advisoriesList;
@@ -744,7 +762,7 @@ class HostedSource extends CachedSource {
           tryDeleteEntry(advisoriesCachePath);
         } on FormatException catch (e) {
           tryDeleteEntry(advisoriesCachePath);
-          log.fine('Failed to read cached advisores: $e');
+          log.fine('Failed to read cached advisories: $e');
         }
       }
       return null;
@@ -1813,12 +1831,17 @@ class Advisory {
   Set<String> affectedVersions;
   List<String> aliases;
   String summary;
-  Advisory(this.id, this.affectedVersions, this.aliases, this.summary);
-}
+  String? pubDisplayUrl;
+  Advisory({
+    required this.id,
+    required this.affectedVersions,
+    required this.summary,
+    this.aliases = const [],
+    this.pubDisplayUrl,
+  });
 
-// TODO(https://github.com/dart-lang/pub-dev/issues/7471) Use `pub_display_url`
-// once this issue is resolved.
-String advisoriesDisplayUrl(String id) => 'https://github.com/advisories/$id';
+  String get displayHandle => pubDisplayUrl ?? id;
+}
 
 /// Given a URL, returns a "normalized" string to be used as a directory name
 /// for packages downloaded from the server at that URL.
