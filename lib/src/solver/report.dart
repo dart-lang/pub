@@ -46,7 +46,7 @@ class SolveReport {
   final Map<String, List<Version>> _availableVersions;
 
   static const maxAdvisoryFootnotesPerLine = 5;
-  final advisoryDisplayUrls = <String>[];
+  final advisoryDisplayHandles = <String>[];
 
   SolveReport(
     this._type,
@@ -284,13 +284,13 @@ $contentHashesDocumentationUrl
   }
 
   void reportAdvisories() {
-    if (advisoryDisplayUrls.isNotEmpty) {
+    if (advisoryDisplayHandles.isNotEmpty) {
       message('Dependencies are affected by security advisories:');
       for (var footnote = 0;
-          footnote < advisoryDisplayUrls.length;
+          footnote < advisoryDisplayHandles.length;
           footnote++) {
         message(
-          '  [^$footnote]: ${advisoryDisplayUrls[footnote]}',
+          '  [^$footnote]: ${advisoryDisplayHandles[footnote]}',
         );
       }
     }
@@ -428,8 +428,8 @@ $contentHashesDocumentationUrl
             )
             .take(maxAdvisoryFootnotesPerLine);
         for (final adv in reportedAdvisories) {
-          advisoryFootnotes.add(advisoryDisplayUrls.length);
-          advisoryDisplayUrls.add(adv.displayUrl);
+          advisoryFootnotes.add(advisoryDisplayHandles.length);
+          advisoryDisplayHandles.add(adv.displayHandle);
         }
 
         final advisoriesMessage = _constructAdvisoriesMessage(

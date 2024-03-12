@@ -1840,7 +1840,7 @@ class Advisory {
     this.pubDisplayUrl,
   });
 
-  String get displayUrl => pubDisplayUrl ?? id;
+  String get displayHandle => pubDisplayUrl ?? id;
 }
 
 /// Given a URL, returns a "normalized" string to be used as a directory name
