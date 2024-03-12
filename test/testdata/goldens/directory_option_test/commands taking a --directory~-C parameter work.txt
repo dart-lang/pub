@@ -143,8 +143,6 @@ $ pub uploader -C myapp add sigurdm@google.com
 $ pub deps -C myapp
 Resolving dependencies in myapp...
 Got dependencies in myapp.
-Resolving dependencies in myapp...
-Got dependencies in myapp.
 Dart SDK 3.1.2+3
 test_pkg 1.0.0
 └── foo 1.0.0
