@@ -665,55 +665,56 @@ class HostedSource extends CachedSource {
         throw FormatException('affectedPackages must be a list');
       }
 
-      final affectedPkg = affectedPackages.firstWhereOrNull((element) {
-        if (element is! Map) {
+      bool isPubPackage(dynamic affectedPackage) {
+        if (affectedPackage is! Map) {
           throw FormatException('affectedPackage must be a map');
         }
-        final pkg = element['package'];
-        if (pkg is! Map) {
+        final package = affectedPackage['package'];
+        if (package is! Map) {
           throw FormatException('package must be a map');
         }
-        final name = pkg['name'];
+        final name = package['name'];
         if (name is! String) {
           throw FormatException('package name must be a String');
         }
         if (name == packageName) {
-          final ecosystem = pkg['ecosystem'];
+          final ecosystem = package['ecosystem'];
           if (ecosystem is! String) {
             throw FormatException('ecosystem must be a String');
           }
           return ecosystem.toLowerCase() == 'pub';
         }
         return false;
-      }) as Map?;
-
-      if (affectedPkg == null) {
-        throw FormatException(
-          'Advisory $id does not contain $packageName among its affected packages.',
-        );
-      }
-      final affectedVersions = <String>{};
-      final versions = affectedPkg['versions'];
-      if (versions is! List) {
-        throw FormatException('package versions must be a list');
       }
 
-      for (final v in versions) {
-        if (v is! String) {
-          throw FormatException('package version elements must be a string');
+      for (final affectedPackage in affectedPackages) {
+        if (isPubPackage(affectedPackage)) {
+          final affectedVersions = <String>{};
+          final versions = affectedPackage['versions'];
+          if (versions is! List) {
+            throw FormatException('package versions must be a list');
+          }
+
+          for (final v in versions) {
+            if (v is! String) {
+              throw FormatException(
+                'package version elements must be a string',
+              );
+            }
+            affectedVersions.add(v);
+          }
+
+          advisoriesList.add(
+            Advisory(
+              id: id,
+              affectedVersions: affectedVersions,
+              aliases: aliasIDs,
+              summary: summary,
+              pubDisplayUrl: pubDisplayUrl,
+            ),
+          );
         }
-        affectedVersions.add(v);
       }
-
-      advisoriesList.add(
-        Advisory(
-          id: id,
-          affectedVersions: affectedVersions,
-          aliases: aliasIDs,
-          summary: summary,
-          pubDisplayUrl: pubDisplayUrl,
-        ),
-      );
     }
 
     return advisoriesList;
