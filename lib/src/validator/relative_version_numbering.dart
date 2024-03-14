@@ -49,8 +49,8 @@ The latest published version is $latestVersion.
 Your version $currentVersion is earlier than that.''');
     }
 
-    final previousRelease = existingVersions
-        .lastWhereOrNull((id) => id.version < package.version);
+    final previousRelease =
+        existingVersions.lastWhereOrNull((id) => id.version < package.version);
 
     if (previousRelease == null) return;
 
@@ -90,8 +90,7 @@ Consider one of:
 
     final previousPubspec = await cache.describe(previousRelease);
 
-    final currentOptedIn =
-        package.pubspec.languageVersion.supportsNullSafety;
+    final currentOptedIn = package.pubspec.languageVersion.supportsNullSafety;
     final previousOptedIn = previousPubspec.languageVersion.supportsNullSafety;
 
     if (currentOptedIn && !previousOptedIn) {

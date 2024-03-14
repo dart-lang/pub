@@ -13,8 +13,8 @@ import '../validator.dart';
 class ExecutableValidator extends Validator {
   @override
   Future validate() async {
-    final binFiles = filesBeneath('bin', recursive: false)
-        .map(package.relative);
+    final binFiles =
+        filesBeneath('bin', recursive: false).map(package.relative);
 
     package.pubspec.executables.forEach((executable, script) {
       var scriptPath = p.join('bin', '$script.dart');
