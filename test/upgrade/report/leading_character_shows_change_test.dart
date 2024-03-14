@@ -74,7 +74,7 @@ void main() {
       output: RegExp(
         r'''
 Resolving dependencies\.\.\..*
-Downloading dependencies\.\.\..*
+Downloading packages\.\.\..*
 \+ added .*
 \* description_changed .*
 < downgraded .*

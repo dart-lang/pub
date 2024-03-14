@@ -24,7 +24,7 @@ void main() {
       output: RegExp(
         r'''
 Resolving dependencies\.\.\..*
-Downloading dependencies\.\.\..*
+Downloading packages\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
 ''',
         multiLine: true,

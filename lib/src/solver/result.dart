@@ -59,8 +59,7 @@ class SolveResult {
   /// and the new one a warning will be printed but the new one will be
   /// returned.
   Future<LockFile> downloadCachedPackages(SystemCache cache) async {
-    final resolvedPackageIds =
-        await progress('Downloading dependencies', () async {
+    final resolvedPackageIds = await progress('Downloading packages', () async {
       return await Future.wait(
         packages.map((id) async {
           if (id.source is CachedSource) {

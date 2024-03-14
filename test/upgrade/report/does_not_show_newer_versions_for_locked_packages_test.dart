@@ -37,7 +37,7 @@ void main() {
       output: RegExp(
         r'''
 Resolving dependencies\.\.\..*
-Downloading dependencies\.\.\..*
+Downloading packages\.\.\..*
   not_upgraded 1\.0\.0 \(2\.0\.0 available\)
 . upgraded 2\.0\.0 \(was 1\.0\.0\)
 ''',

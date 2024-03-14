@@ -443,8 +443,8 @@ String _filter(String input) {
         r'Resolving dependencies finished ($TIME)',
       )
       .replaceAll(
-        RegExp(r'Downloading dependencies finished (.*)$', multiLine: true),
-        r'Downloading dependencies finished ($TIME)',
+        RegExp(r'Downloading packages finished (.*)$', multiLine: true),
+        r'Downloading packages finished ($TIME)',
       )
       .replaceAll(
         RegExp(r'Created temp directory (.*)$', multiLine: true),

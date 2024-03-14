@@ -14,7 +14,7 @@ void main() {
 
     await pubGet(
       output:
-          'Resolving dependencies...\nDownloading dependencies...\nGot dependencies.',
+          'Resolving dependencies...\nDownloading packages...\nGot dependencies.',
       silent: contains('+ foo 1.0.0'),
       environment: {'PUB_SUMMARY_ONLY': '1'},
     );

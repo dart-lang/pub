@@ -21,7 +21,7 @@ void main() {
       args: ['global', 'activate', '-sgit', '../foo.git'],
       output: allOf(
         startsWith('Resolving dependencies...\n'
-            'Downloading dependencies...\n'
+            'Downloading packages...\n'
             '+ foo 1.0.0 from git ..${p.separator}foo.git at '),
         // Specific revision number goes here.
         endsWith('Building package executables...\n'
@@ -78,7 +78,7 @@ void main() {
       ],
       output: allOf(
         startsWith('Resolving dependencies...\n'
-            'Downloading dependencies...\n'
+            'Downloading packages...\n'
             '+ sub 2.0.0 from git ..${p.separator}foo.git at'),
         // Specific revision number goes here.
         contains('in sub'),
