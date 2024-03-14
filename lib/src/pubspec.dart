@@ -14,6 +14,8 @@ import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
+import 'source.dart';
+import 'source/root.dart';
 import 'system_cache.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
@@ -58,11 +60,9 @@ class Pubspec extends PubspecBase {
   /// This will be null if this was created using [Pubspec] or [Pubspec.empty].
   final SourceRegistry _sources;
 
-  /// The location from which the pubspec was loaded.
-  ///
-  /// This can be null if the pubspec was created in-memory or if its location
-  /// is unknown.
-  Uri? get _location => fields.span.sourceUrl;
+  /// It is used to resolve relative paths. And to resolve path-descriptions
+  /// from a git dependency as git-descriptions.
+  final Description _containingDescription;
 
   /// Directories of packages that should resolve together with this package.
   late List<String> workspace = () {
@@ -118,7 +118,7 @@ class Pubspec extends PubspecBase {
         _sources,
         languageVersion,
         _packageName,
-        _location,
+        _containingDescription,
       );
 
   Map<String, PackageRange>? _dependencies;
@@ -131,7 +131,7 @@ class Pubspec extends PubspecBase {
         _sources,
         languageVersion,
         _packageName,
-        _location,
+        _containingDescription,
       );
 
   Map<String, PackageRange>? _devDependencies;
@@ -163,7 +163,7 @@ class Pubspec extends PubspecBase {
           _sources,
           languageVersion,
           _packageName,
-          _location,
+          _containingDescription,
           fileType: _FileType.pubspecOverrides,
         );
       }
@@ -174,7 +174,7 @@ class Pubspec extends PubspecBase {
       _sources,
       languageVersion,
       _packageName,
-      _location,
+      _containingDescription,
     );
   }
 
@@ -263,6 +263,7 @@ class Pubspec extends PubspecBase {
     SourceRegistry sources, {
     String? expectedName,
     bool allowOverridesFile = false,
+    required Description containingDescription,
   }) {
     var pubspecPath = path.join(packageDir, pubspecYamlFilename);
     var overridesPath = path.join(packageDir, pubspecOverridesFilename);
@@ -287,6 +288,7 @@ class Pubspec extends PubspecBase {
       location: path.toUri(pubspecPath),
       overridesFileContents: overridesFileContents,
       overridesLocation: path.toUri(overridesPath),
+      containingDescription: containingDescription,
     );
   }
 
@@ -316,6 +318,9 @@ class Pubspec extends PubspecBase {
         _sources = sources ??
             ((String? name) => throw StateError('No source registry given')),
         _overridesFileFields = null,
+        // This is a dummy value.
+        // Dependencies should already be resolved, so we never need to do relative resolutions.
+        _containingDescription = RootDescription('.'),
         super(
           fields == null ? YamlMap() : YamlMap.wrap(fields),
           name: name,
@@ -335,11 +340,13 @@ class Pubspec extends PubspecBase {
     YamlMap? overridesFields,
     String? expectedName,
     Uri? location,
+    required Description containingDescription,
   })  : _overridesFileFields = overridesFields,
         _includeDefaultSdkConstraint = true,
         _givenSdkConstraints = null,
         dependencyOverridesFromOverridesFile = overridesFields != null &&
             overridesFields.containsKey('dependency_overrides'),
+        _containingDescription = containingDescription,
         super(
           fields is YamlMap
               ? fields
@@ -368,6 +375,7 @@ class Pubspec extends PubspecBase {
     Uri? location,
     String? overridesFileContents,
     Uri? overridesLocation,
+    required Description containingDescription,
   }) {
     late final YamlMap pubspecMap;
     YamlMap? overridesFileMap;
@@ -388,6 +396,7 @@ class Pubspec extends PubspecBase {
       overridesFields: overridesFileMap,
       expectedName: expectedName,
       location: location,
+      containingDescription: containingDescription,
     );
   }
 
@@ -484,7 +493,7 @@ Map<String, PackageRange> _parseDependencies(
   SourceRegistry sources,
   LanguageVersion languageVersion,
   String? packageName,
-  Uri? location, {
+  Description containingDescription, {
   _FileType fileType = _FileType.pubspec,
 }) {
   var dependencies = <String, PackageRange>{};
@@ -568,15 +577,10 @@ Map<String, PackageRange> _parseDependencies(
         'description',
         descriptionNode?.span,
         () {
-          String? pubspecDir;
-          if (location != null && _isFileUri(location)) {
-            pubspecDir = path.dirname(path.fromUri(location));
-          }
-
           return sources(sourceName).parseRef(
             name,
             descriptionNode?.value,
-            containingDir: pubspecDir,
+            containingDescription: containingDescription,
             languageVersion: languageVersion,
           );
         },
@@ -591,12 +595,6 @@ Map<String, PackageRange> _parseDependencies(
 
   return dependencies;
 }
-
-/// Returns whether [uri] is a file URI.
-///
-/// This is slightly more complicated than just checking if the scheme is
-/// 'file', since relative URIs also refer to the filesystem on the VM.
-bool _isFileUri(Uri uri) => uri.scheme == 'file' || uri.scheme == '';
 
 /// Parses [node] to a [VersionConstraint].
 ///

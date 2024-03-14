@@ -26,6 +26,7 @@ import '../solver.dart';
 import '../source/git.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
+import '../source/root.dart';
 import '../utils.dart';
 
 /// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
@@ -272,6 +273,7 @@ Specify multiple sdk packages with descriptors.''');
             location: Uri.parse(entrypoint.pubspecPath),
             overridesFileContents: overridesFileContents,
             overridesLocation: Uri.file(overridesPath),
+            containingDescription: RootDescription(entrypoint.rootDir),
           ),
         )
         .acquireDependencies(
@@ -547,7 +549,11 @@ Specify multiple sdk packages with descriptors.''');
         PathDescription(p.absolute(path), p.isRelative(path)),
       );
     } else if (argResults.sdk != null) {
-      ref = cache.sdk.parseRef(packageName, argResults.sdk);
+      ref = cache.sdk.parseRef(
+        packageName,
+        argResults.sdk,
+        containingDescription: RootDescription(p.current),
+      );
     } else {
       ref = PackageRef(
         packageName,
@@ -634,7 +640,7 @@ Specify multiple sdk packages with descriptors.''');
             },
             cache.sources,
             // Resolve relative paths relative to current, not where the pubspec.yaml is.
-            location: p.toUri(p.join(p.current, 'descriptor')),
+            containingDescription: RootDescription(p.current),
           );
         } on FormatException catch (e) {
           usageException('Failed parsing package specification: ${e.message}');

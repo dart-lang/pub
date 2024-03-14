@@ -69,7 +69,7 @@ class RootSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    required Description containingDescription,
     required LanguageVersion languageVersion,
   }) {
     throw UnsupportedError('Trying to parse a root package description.');

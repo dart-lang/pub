@@ -8,6 +8,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';
@@ -22,6 +23,7 @@ import '../oauth2.dart' as oauth2;
 import '../pubspec.dart';
 import '../solver/type.dart';
 import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
+import '../source/root.dart';
 import '../utils.dart';
 import '../validator.dart';
 
@@ -346,6 +348,7 @@ the \$PUB_HOSTED_URL environment variable.''',
           ),
         ),
         cache.sources,
+        containingDescription: RootDescription(p.dirname(archive)),
       );
     } on FormatException catch (e) {
       dataError('Failed to read pubspec.yaml from archive: ${e.message}');

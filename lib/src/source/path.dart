@@ -14,6 +14,9 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
+import 'git.dart';
+import 'hosted.dart';
+import 'root.dart';
 
 /// A package [Source] that gets packages from a given local file path.
 class PathSource extends Source {
@@ -60,7 +63,7 @@ class PathSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    required Description containingDescription,
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
@@ -69,21 +72,70 @@ class PathSource extends Source {
     var dir = description;
     // Resolve the path relative to the containing file path, and remember
     // whether the original path was relative or absolute.
-    var isRelative = p.isRelative(description);
-    if (isRelative) {
-      // Relative paths coming from pubspecs that are not on the local file
-      // system aren't allowed. This can happen if a hosted or git dependency
-      // has a path dependency.
-      if (containingDir == null) {
+    var isRelative = p.isRelative(dir);
+
+    if (containingDescription is PathDescription) {
+      return PackageRef(
+        name,
+        PathDescription(
+          isRelative
+              ? p.join(p.absolute(containingDescription.path), dir)
+              : dir,
+          isRelative,
+        ),
+      );
+    } else if (containingDescription is RootDescription) {
+      return PackageRef(
+        name,
+        PathDescription(
+          p.normalize(
+            p.join(
+              p.absolute(containingDescription.path),
+              description,
+            ),
+          ),
+          isRelative,
+        ),
+      );
+    } else if (containingDescription is GitDescription) {
+      if (!isRelative) {
+        throw FormatException(
+          '"$description" is an absolute path, it can\'t be referenced from a git pubspec.',
+        );
+      }
+      final resolvedPath = p.url.joinAll([
+        containingDescription.path,
+        ...p.posix.split(dir),
+      ]);
+      if (!p.isWithin('.', resolvedPath)) {
+        throw FormatException(
+          'the path "$description" cannot refer outside the git repository $resolvedPath.',
+        );
+      }
+      return PackageRef(
+        name,
+        GitDescription.raw(
+          url: containingDescription.url,
+          relative: containingDescription.relative,
+          ref: containingDescription.ref,
+          path: p.normalize(
+            p.join(
+              containingDescription.path,
+              dir,
+            ),
+          ),
+        ),
+      );
+    } else if (containingDescription is HostedDescription) {
+      if (isRelative) {
         throw FormatException('"$description" is a relative path, but this '
             'isn\'t a local pubspec.');
       }
-
-      dir = p.normalize(
-        p.absolute(p.join(containingDir, description)),
-      );
+      return PackageRef(name, PathDescription(dir, false));
+    } else {
+      throw FormatException('"$description" is a path, but this '
+          'isn\'t a local pubspec.');
     }
-    return PackageRef(name, PathDescription(dir, isRelative));
   }
 
   @override
@@ -168,7 +220,12 @@ class PathSource extends Source {
       throw ArgumentError('Wrong source');
     }
     var dir = _validatePath(ref.name, description);
-    return Pubspec.load(dir, cache.sources, expectedName: ref.name);
+    return Pubspec.load(
+      dir,
+      cache.sources,
+      containingDescription: description,
+      expectedName: ref.name,
+    );
   }
 
   @override

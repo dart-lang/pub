@@ -27,6 +27,7 @@ import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
+import 'source/root.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -113,7 +114,7 @@ class GlobalPackages {
           if (path != null) 'path': path,
           if (ref != null) 'ref': ref,
         },
-        containingDir: '.',
+        containingDescription: RootDescription(p.current),
       );
     } on FormatException catch (e) {
       throw ApplicationException(e.message);

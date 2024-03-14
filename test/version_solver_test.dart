@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
+import 'package:pub/src/source/root.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
@@ -1981,7 +1982,11 @@ Future expectResolves({
   var registry = cache.sources;
   var lockFile =
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
-  var resultPubspec = Pubspec.fromMap({'dependencies': result}, registry);
+  var resultPubspec = Pubspec.fromMap(
+    {'dependencies': result},
+    registry,
+    containingDescription: RootDescription('.'),
+  );
 
   var ids = {...lockFile.packages};
   for (var dep in resultPubspec.dependencies.values) {
