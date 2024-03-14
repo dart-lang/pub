@@ -38,6 +38,7 @@ void main() {
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
 Got dependencies!
 1 package is discontinued.
@@ -55,6 +56,7 @@ Got dependencies!
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
 Got dependencies!
 1 package is discontinued.''',
@@ -66,6 +68,7 @@ Got dependencies!
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!''',
     );
     // Repairing the cache should reset the package listing caches.
@@ -73,6 +76,7 @@ Got dependencies!''',
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
 Got dependencies!
 1 package is discontinued.''',
@@ -84,6 +88,7 @@ Got dependencies!
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
 Got dependencies!
 1 package is discontinued.''',
@@ -94,6 +99,7 @@ Got dependencies!
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!
 ''',
     );
@@ -132,6 +138,7 @@ environment:
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
 Got dependencies!
 1 package is discontinued.
@@ -147,6 +154,7 @@ Got dependencies!
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
 Got dependencies!
 1 package is discontinued.''',
@@ -158,6 +166,7 @@ Got dependencies!
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!''',
     );
     // Repairing the cache should reset the package listing caches.
@@ -165,6 +174,7 @@ Got dependencies!''',
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
 Got dependencies!
 1 package is discontinued.''',
@@ -176,6 +186,7 @@ Got dependencies!
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
 Got dependencies!
 1 package is discontinued.''',
@@ -185,6 +196,7 @@ Got dependencies!
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!
 ''',
     );

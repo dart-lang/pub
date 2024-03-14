@@ -162,7 +162,7 @@ class Entrypoint {
       _packageGraph ??= _createPackageGraph();
 
   Future<PackageGraph> _createPackageGraph() async {
-    // TODO(sigurdm): consider having [ensureUptoDate] and [AcquireDependencies]
+    // TODO(sigurdm): consider having [ensureUptoDate] and [acquireDependencies]
     // return the package-graph, such it by construction will always made from an
     // up-to-date package-config.
     await ensureUpToDate(rootDir, cache: cache);
@@ -462,7 +462,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         if (precompile) {
           await precompileExecutables();
         } else {
-          await _deleteExecutableSnapshots(changed: result.changedPackages);
+          await _deleteExecutableSnapshots();
         }
       } catch (error, stackTrace) {
         // Just log exceptions here. Since the method is just about acquiring
@@ -572,36 +572,18 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         : executable.pathOfSnapshot(rootDir);
   }
 
-  /// Deletes outdated cached executable snapshots for all packages that have a
-  /// transitive dependency on a package in [changed].
-  Future<void> _deleteExecutableSnapshots({
-    required Iterable<String> changed,
-  }) async {
+  /// Deletes cached snapshots that are from a different sdk.
+  Future<void> _deleteExecutableSnapshots() async {
     if (!dirExists(_snapshotPath)) return;
-
-    var changedDeps = changed;
-    changedDeps = changedDeps.toSet();
-
-    // If the existing executable was compiled with a different SDK, we need to
-    // recompile regardless of what changed.
-    // TODO(nweiz): Use the VM to check this when issue 20802 is fixed.
-    var sdkVersionPath = p.join(_snapshotPath, 'sdk-version');
-    if (!fileExists(sdkVersionPath) ||
-        readTextFile(sdkVersionPath) != '${sdk.version}\n') {
-      deleteEntry(_snapshotPath);
-      return;
-    }
-    final graph = await packageGraph;
-
     // Clean out any outdated snapshots.
     for (var entry in listDir(_snapshotPath)) {
-      if (!dirExists(entry)) continue;
-      var package = p.basename(entry);
-      if (!graph.packages.containsKey(package) ||
-          graph.isPackageMutable(package) ||
-          graph
-              .transitiveDependencies(package)
-              .any((dep) => changedDeps.contains(dep.name))) {
+      if (!fileExists(entry)) {
+        // Not a file
+        continue;
+      }
+
+      if (!entry.endsWith('${sdk.version}.snapshot')) {
+        // Made with a different sdk version. Clean it up.
         deleteEntry(entry);
       }
     }

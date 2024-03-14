@@ -388,7 +388,6 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       packageConfig: packageConfigPath,
     );
   } else {
-    final snapshotPath = executable.pathOfSnapshot(rootOrCurrent);
     // TODO(sigurdm): attempt to decide on package mutability without looking at
     // PackageGraph, as it requires loading and reading all the pubspec.yaml
     // files.
@@ -396,7 +395,13 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       rootOrCurrent,
       SystemCache(rootDir: pubCacheDir),
     );
-    if (!fileExists(snapshotPath) ||
+
+    final snapshotPath = entrypoint.pathOfSnapshot(executable);
+    final snapshotStat = tryStatFile(snapshotPath);
+    final packageConfigStat = tryStatFile(packageConfigPath);
+    if (snapshotStat == null ||
+        packageConfigStat == null ||
+        packageConfigStat.modified.isAfter(snapshotStat.modified) ||
         (await entrypoint.packageGraph).isPackageMutable(package)) {
       try {
         await errorsOnlyUnlessTerminal(
