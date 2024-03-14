@@ -29,6 +29,7 @@ import '../solver.dart';
 import '../solver/version_solver.dart';
 import '../source/git.dart';
 import '../source/hosted.dart';
+import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 
@@ -450,6 +451,7 @@ class DependencyServicesApplyCommand extends PubCommand {
               updatedPubspec,
               cache.sources,
               location: toUri(entrypoint.pubspecPath),
+              containingDescription: RootDescription(entrypoint.rootDir),
             ),
             entrypoint.rootDir,
             entrypoint.root.workspaceChildren,

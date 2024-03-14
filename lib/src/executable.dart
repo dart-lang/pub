@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/args.dart';
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
@@ -16,6 +17,8 @@ import 'io.dart';
 import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
+import 'package_config.dart';
+import 'sdk.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -64,7 +67,7 @@ Future<int> runExecutable(
     }
   }
 
-  var snapshotPath = entrypoint.pathOfExecutable(executable);
+  var snapshotPath = entrypoint.pathOfSnapshot(executable);
 
   // Don't compile snapshots for mutable packages, since their code may
   // change later on.
@@ -74,11 +77,14 @@ Future<int> runExecutable(
   // later invocation.
   var useSnapshot = vmArgs.isEmpty;
 
-  var executablePath = await entrypoint.resolveExecutable(executable);
+  var executablePath = executable.resolve(
+    entrypoint.packageConfig,
+    entrypoint.packageConfigPath,
+  );
   if (!fileExists(executablePath)) {
     var message =
         'Could not find ${log.bold(p.normalize(executable.relativePath))}';
-    if (entrypoint.isGlobal || package != entrypoint.root.name) {
+    if (entrypoint.isCachedGlobal || package != entrypoint.root.name) {
       message += ' in package ${log.bold(package)}';
     }
     log.error('$message.');
@@ -88,7 +94,10 @@ Future<int> runExecutable(
   if (useSnapshot) {
     // Since we don't access the package graph, this doesn't happen
     // automatically.
-    await entrypoint.ensureUpToDate();
+    await Entrypoint.ensureUpToDate(
+      entrypoint.rootDir,
+      cache: entrypoint.cache,
+    );
 
     if (!fileExists(snapshotPath) ||
         (await entrypoint.packageGraph).isPackageMutable(package)) {
@@ -281,7 +290,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   List<String> additionalSources = const [],
   String? nativeAssets,
 }) async {
-  root ??= p.current;
+  final rootOrCurrent = root ?? p.current;
   var asPath = descriptor;
   try {
     asPath = Uri.parse(descriptor).toFilePath();
@@ -293,29 +302,48 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     // modification to the VM.
   }
 
-  final asDirectFile = p.join(root, asPath);
+  final asDirectFile = p.join(rootOrCurrent, asPath);
   if (fileExists(asDirectFile)) {
     return DartExecutableWithPackageConfig(
-      executable: p.relative(asDirectFile, from: root),
+      executable: p.relative(asDirectFile, from: rootOrCurrent),
       packageConfig: null,
     );
   }
-  if (!fileExists(p.join(root, 'pubspec.yaml'))) {
+  if (!fileExists(p.join(rootOrCurrent, 'pubspec.yaml'))) {
     throw CommandResolutionFailedException._(
       'Could not find file `$descriptor`',
       CommandResolutionIssue.fileNotFound,
     );
   }
-  final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
+  final PackageConfig packageConfig;
   try {
-    await entrypoint.ensureUpToDate();
+    packageConfig = await Entrypoint.ensureUpToDate(
+      rootOrCurrent,
+      cache: SystemCache(rootDir: pubCacheDir),
+    );
   } on ApplicationException catch (e) {
     throw CommandResolutionFailedException._(
       e.toString(),
       CommandResolutionIssue.pubGetFailed,
     );
   }
-
+  // TODO(https://github.com/dart-lang/pub/issues/4127): for workspaces: close
+  // the nearest enclosing package. That is the "current package" the one to
+  // default to.
+  late final rootPackageName = packageConfig.packages
+      .firstWhereOrNull(
+        (package) => p.equals(
+          p.join(rootOrCurrent, '.dart_tool', p.fromUri(package.rootUri)),
+          rootOrCurrent,
+        ),
+      )
+      ?.name;
+  if (rootPackageName == null) {
+    throw CommandResolutionFailedException._(
+      '.dart_tool/package_config did not contain the root package',
+      CommandResolutionIssue.fileNotFound,
+    );
+  }
   late final String command;
   String package;
   if (descriptor.contains(':')) {
@@ -327,15 +355,15 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       );
     }
     package = parts[0];
-    if (package.isEmpty) package = entrypoint.root.name;
+    if (package.isEmpty) package = rootPackageName;
     command = parts[1];
   } else {
     package = descriptor;
-    if (package.isEmpty) package = entrypoint.root.name;
+    if (package.isEmpty) package = rootPackageName;
     command = package;
   }
 
-  if (!entrypoint.packageConfig.packages.any((p) => p.name == package)) {
+  if (!packageConfig.packages.any((p) => p.name == package)) {
     throw CommandResolutionFailedException._(
       'Could not find package `$package` or file `$descriptor`',
       CommandResolutionIssue.packageNotFound,
@@ -343,23 +371,37 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
 
-  final path = await entrypoint.resolveExecutable(executable);
-  if (!fileExists(path)) {
+  final packageConfigPath = p.relative(
+    p.join(rootOrCurrent, '.dart_tool', 'package_config.json'),
+    from: rootOrCurrent,
+  );
+  final path = executable.resolve(packageConfig, packageConfigPath);
+  if (!fileExists(p.join(rootOrCurrent, path))) {
     throw CommandResolutionFailedException._(
       'Could not find `bin${p.separator}$command.dart` in package `$package`.',
       CommandResolutionIssue.noBinaryFound,
     );
   }
-  final packageConfigPath =
-      p.relative(entrypoint.packageConfigPath, from: root);
   if (!allowSnapshot) {
     return DartExecutableWithPackageConfig(
-      executable: p.relative(path, from: root),
+      executable: p.relative(path, from: rootOrCurrent),
       packageConfig: packageConfigPath,
     );
   } else {
-    final snapshotPath = entrypoint.pathOfExecutable(executable);
-    if (!fileExists(snapshotPath) ||
+    // TODO(sigurdm): attempt to decide on package mutability without looking at
+    // PackageGraph, as it requires loading and reading all the pubspec.yaml
+    // files.
+    final entrypoint = Entrypoint(
+      rootOrCurrent,
+      SystemCache(rootDir: pubCacheDir),
+    );
+
+    final snapshotPath = entrypoint.pathOfSnapshot(executable);
+    final snapshotStat = tryStatFile(snapshotPath);
+    final packageConfigStat = tryStatFile(packageConfigPath);
+    if (snapshotStat == null ||
+        packageConfigStat == null ||
+        packageConfigStat.modified.isAfter(snapshotStat.modified) ||
         (await entrypoint.packageGraph).isPackageMutable(package)) {
       try {
         await errorsOnlyUnlessTerminal(
@@ -377,7 +419,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       }
     }
     return DartExecutableWithPackageConfig(
-      executable: p.relative(snapshotPath, from: root),
+      executable: p.relative(snapshotPath, from: rootOrCurrent),
       packageConfig: packageConfigPath,
     );
   }
@@ -442,5 +484,48 @@ class Executable {
     // to actually execute will always have one.
     if (p.extension(program) != '.dart') program += '.dart';
     return program;
+  }
+
+  /// The path to this executable given [packageConfig] Relative package dirs
+  /// are resolved relative to `dirname(packageConfigPath)`.
+  String resolve(PackageConfig packageConfig, String packageConfigPath) {
+    return p.normalize(
+      p.join(
+        p.dirname(packageConfigPath),
+        p.fromUri(
+          packageConfig.packages.firstWhere((p) => p.name == package).rootUri,
+        ),
+        relativePath,
+      ),
+    );
+  }
+
+  String pathOfGlobalSnapshot(String rootDir) {
+    assert(p.isRelative(relativePath));
+    final versionSuffix = sdk.version;
+    return p.join(
+      p.join(rootDir, 'bin'),
+      '${p.basename(relativePath)}-$versionSuffix.snapshot',
+    );
+  }
+
+  /// The location of the snapshot of the dart program at [path] in [package]
+  /// will be stored here.
+  ///
+  /// We use the sdk version to make sure we don't run snapshots from a
+  /// different sdk.
+  ///
+  /// [path] must be relative.
+  String pathOfSnapshot(String rootDir) {
+    assert(p.isRelative(relativePath));
+    final versionSuffix = sdk.version;
+
+    return p.join(
+      rootDir,
+      '.dart_tool/pub',
+      'bin',
+      package,
+      '${p.basename(relativePath)}-$versionSuffix.snapshot',
+    );
   }
 }

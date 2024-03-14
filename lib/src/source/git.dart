@@ -21,6 +21,8 @@ import '../source.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'cached.dart';
+import 'path.dart';
+import 'root.dart';
 
 /// A package source that gets packages from Git repos.
 class GitSource extends CachedSource {
@@ -35,7 +37,7 @@ class GitSource extends CachedSource {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    Description? containingDescription,
     LanguageVersion? languageVersion,
   }) {
     String url;
@@ -69,6 +71,12 @@ class GitSource extends CachedSource {
       }
       path = descriptionPath;
     }
+
+    final containingDir = switch (containingDescription) {
+      RootDescription(path: final path) => path,
+      PathDescription(path: final path) => path,
+      _ => null,
+    };
 
     return PackageRef(
       name,
@@ -234,6 +242,7 @@ class GitSource extends CachedSource {
       return Pubspec.parse(
         await _showFileAtRevision(resolvedDescription, 'pubspec.yaml', cache),
         cache.sources,
+        containingDescription: description,
       ).name;
     });
   }
@@ -338,6 +347,7 @@ class GitSource extends CachedSource {
       ),
       cache.sources,
       expectedName: ref.name,
+      containingDescription: ref.description,
     );
   }
 
@@ -755,7 +765,7 @@ class GitDescription extends Description {
   /// Represented as a relative url.
   final String path;
 
-  GitDescription._({
+  GitDescription.raw({
     required this.url,
     required this.relative,
     required String? ref,
@@ -770,7 +780,7 @@ class GitDescription extends Description {
     required String? containingDir,
   }) {
     final validatedUrl = GitSource._validatedUrl(url, containingDir);
-    return GitDescription._(
+    return GitDescription.raw(
       url: validatedUrl.url,
       relative: validatedUrl.wasRelative,
       ref: ref,
@@ -816,7 +826,7 @@ class GitDescription extends Description {
         other.path == path;
   }
 
-  GitDescription withRef(String newRef) => GitDescription._(
+  GitDescription withRef(String newRef) => GitDescription.raw(
         url: url,
         relative: relative,
         ref: newRef,

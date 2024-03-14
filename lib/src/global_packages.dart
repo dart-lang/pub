@@ -27,6 +27,7 @@ import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
+import 'source/root.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -113,7 +114,7 @@ class GlobalPackages {
           if (path != null) 'path': path,
           if (ref != null) 'ref': ref,
         },
-        containingDir: '.',
+        containingDescription: RootDescription(p.current),
       );
     } on FormatException catch (e) {
       throw ApplicationException(e.message);
@@ -122,6 +123,18 @@ class GlobalPackages {
       packageRef.withConstraint(VersionConstraint.any),
       executables,
       overwriteBinStubs: overwriteBinStubs,
+    );
+  }
+
+  Package packageForConstraint(PackageRange dep, String dir) {
+    return Package(
+      Pubspec(
+        'pub global activate',
+        dependencies: [dep],
+        sources: cache.sources,
+      ),
+      dir,
+      [],
     );
   }
 
@@ -211,16 +224,9 @@ class GlobalPackages {
     final name = dep.name;
     final originalLockFile = _describeActive(name, cache);
 
+    final tempDir = cache.createTempDir();
     // Create a dummy package with just [dep] so we can do resolution on it.
-    var root = Package(
-      Pubspec(
-        'pub global activate',
-        dependencies: [dep],
-        sources: cache.sources,
-      ),
-      _packageDir(name),
-      [],
-    );
+    var root = packageForConstraint(dep, tempDir);
 
     // Resolve it and download its dependencies.
     SolveResult result;
@@ -271,14 +277,12 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         ).show(summary: false);
       }
 
-      final tempDir = cache.createTempDir();
       lockFile.writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
       // Load the package graph from [result] so we don't need to re-parse all
       // the pubspecs.
       final entrypoint = Entrypoint.global(
-        tempDir,
-        cache.loadCached(id),
+        root,
         lockFile,
         cache,
         solveResult: result,
@@ -293,8 +297,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
     }
 
     final entrypoint = Entrypoint.global(
-      _packageDir(id.name),
-      cache.loadCached(id),
+      packageForConstraint(dep, _packageDir(dep.name)),
       lockFile,
       cache,
       solveResult: result,
@@ -387,8 +390,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
       entrypoint = Entrypoint.global(
-        _packageDir(id.name),
-        cache.loadCached(id),
+        packageForConstraint(id.toRange(), _packageDir(id.name)),
         lockFile,
         cache,
       );
@@ -400,23 +402,6 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         cache,
       );
     }
-
-    entrypoint.root.pubspec.sdkConstraints.forEach((sdkName, constraint) {
-      var sdk = sdks[sdkName];
-      if (sdk == null) {
-        dataError('${log.bold(name)} ${entrypoint.root.version} requires '
-            'unknown SDK "$name".');
-      } else if (sdkName == 'dart') {
-        if (constraint.effectiveConstraint.allows((sdk as DartSdk).version)) {
-          return;
-        }
-        dataError("${log.bold(name)} ${entrypoint.root.version} doesn't "
-            'support Dart ${sdk.version}.');
-      } else {
-        dataError('${log.bold(name)} ${entrypoint.root.version} requires the '
-            '${sdk.name} SDK, which is unsupported for global executables.');
-      }
-    });
 
     // Check that the SDK constraints the lockFile says we have are honored.
     lockFile.sdkConstraints.forEach((sdkName, constraint) {
@@ -571,7 +556,7 @@ try:
           final packageExecutables = executables.remove(id.name) ?? [];
 
           if (entrypoint.isCached) {
-            deleteEntry(entrypoint.globalDir!);
+            deleteEntry(_packageDir(id.name));
             await _installInCache(
               id.toRange(),
               packageExecutables,
@@ -643,7 +628,7 @@ try:
           p.basenameWithoutExtension(file),
           binStubScript,
           overwrite: true,
-          snapshot: entrypoint.pathOfExecutable(executable),
+          snapshot: executable.pathOfGlobalSnapshot(entrypoint.rootDir),
         );
       }
     }
@@ -698,7 +683,7 @@ try:
         executable,
         script,
         overwrite: overwriteBinStubs,
-        snapshot: entrypoint.pathOfExecutable(
+        snapshot: entrypoint.pathOfSnapshot(
           exec.Executable.adaptProgramName(package.name, script),
         ),
       );

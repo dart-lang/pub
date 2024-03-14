@@ -4,6 +4,7 @@
 
 import '../../descriptor.dart' as d;
 import '../../golden_file.dart';
+import '../../package_server.dart';
 import '../../test_pub.dart';
 
 Future<void> main() async {
@@ -23,10 +24,14 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
+        AffectedPackage(name: 'foo', ecosystem: 'NotPub', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -46,10 +51,13 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -70,15 +78,20 @@ Future<void> main() async {
       }),
     ]).create();
 
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '456',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/456',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -98,40 +111,55 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '000',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/000',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '111',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/111',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '222',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/222',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '333',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/333',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '444',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/444',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '555',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/555',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '666',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/666',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -152,10 +180,45 @@ Future<void> main() async {
         },
       }),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
+    );
+    await ctx.run(['get']);
+  });
+
+  testWithGolden('show id if no display url is present', (ctx) async {
+    final server = await servePackages();
+    server
+      ..serve('foo', '1.2.3')
+      ..serve('baz', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'baz': '^1.0.0',
+        },
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: 'ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
+    );
+
+    server.addAdvisory(
+      advisoryId: 'VXYZ-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/VXYZ-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -179,15 +242,19 @@ Future<void> main() async {
         },
       ),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '456',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/456',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
     await ctx.run(['get']);
   });
@@ -211,18 +278,24 @@ Future<void> main() async {
         },
       ),
     ]).create();
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    server.addAdvisory(
       advisoryId: '123',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/123',
       aliases: ['abc', 'def'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
-    server.affectVersionsByAdvisory(
-      packageName: 'foo',
+    server.addAdvisory(
       advisoryId: '456',
-      affectedVersions: ['1.2.3'],
+      displayUrl: 'https://github.com/advisories/456',
       aliases: ['cde'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
     );
+
     await ctx.run(['get']);
   });
 }

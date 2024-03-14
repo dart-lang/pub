@@ -4,6 +4,7 @@
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -95,12 +96,44 @@ void main() {
     );
   });
 
-  test('cannot have relative path dependencies transitively from Git',
+  test('can have relative path dependencies transitively from Git', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.dir('foo', [
+        d.libPubspec(
+          'foo',
+          '1.0.0',
+          deps: {
+            'bar': {'path': '../bar'},
+          },
+        ),
+      ]),
+      d.dir('bar', [d.libPubspec('bar', '1.0.0')]),
+    ]).create();
+
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {
+            'url': p
+                .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
+                .toString(),
+            'path': 'foo/',
+          },
+        },
+      },
+    ).create();
+
+    await pubGet();
+  });
+
+  test(
+      'cannot have relative path dependencies transitively from Git to outside the repo',
       () async {
     ensureGit();
 
     await d.git('foo.git', [
-      d.libDir('foo'),
       d.libPubspec(
         'foo',
         '1.0.0',
@@ -110,8 +143,7 @@ void main() {
       ),
     ]).create();
 
-    await d
-        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
+    await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
 
     await d.appDir(
       dependencies: {
@@ -123,10 +155,11 @@ void main() {
     ).create();
 
     await pubGet(
+      exitCode: DATA,
       error: contains(
-        '"../bar" is a relative path, but this isn\'t a local pubspec.',
+        'Invalid description in the "foo" pubspec on the "bar" dependency: '
+        'the path "../bar" cannot refer outside the git repository',
       ),
-      exitCode: exit_codes.DATA,
     );
   });
 }

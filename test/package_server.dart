@@ -152,11 +152,19 @@ class PackageServer {
                   'modified': defaultAdvisoriesUpdated.toIso8601String(),
                   'published': defaultAdvisoriesUpdated.toIso8601String(),
                   'affected': [
-                    {
-                      'package': {'name': name, 'ecosystem': 'Pub'},
-                      'versions': [...advisory.affectedPackageVersions],
-                    },
+                    for (final package in advisory.affectedPackages)
+                      {
+                        'package': {
+                          'name': package.name,
+                          'ecosystem': package.ecosystem,
+                        },
+                        'versions': [...package.versions],
+                      },
                   ],
+                  if (advisory.displayUrl != null)
+                    'database_specific': {
+                      'pub_display_url': advisory.displayUrl,
+                    },
                 },
             ],
           }),
@@ -327,23 +335,20 @@ class PackageServer {
 
   /// Add a security advisory which affects [affectedVersions] versions of
   /// package [packageName].
-  void affectVersionsByAdvisory({
-    required String packageName,
+  void addAdvisory({
     required String advisoryId,
-    required List<String> affectedVersions,
+    String? displayUrl,
     DateTime? advisoriesUpdated,
     List<String> aliases = const <String>[],
+    required List<AffectedPackage> affectedPackages,
   }) {
-    _packages[packageName]!.advisoriesUpdated =
-        advisoriesUpdated ?? defaultAdvisoriesUpdated;
-    _packages[packageName]!.advisories.add(
-          _ServedAdvisory(
-            advisoryId,
-            packageName,
-            affectedVersions,
-            aliases,
-          ),
-        );
+    for (final package in affectedPackages) {
+      _packages[package.name]!.advisoriesUpdated =
+          advisoriesUpdated ?? defaultAdvisoriesUpdated;
+      _packages[package.name]!.advisories.add(
+            _ServedAdvisory(advisoryId, affectedPackages, aliases, displayUrl),
+          );
+    }
   }
 
   /// Clears all existing packages from this builder.
@@ -427,16 +432,28 @@ class _ServedPackageVersion {
 
 class _ServedAdvisory {
   String id;
-  String affectedPackage;
-  List<String> affectedPackageVersions;
   List<String> aliases;
+  String? displayUrl;
+  List<AffectedPackage> affectedPackages;
 
   _ServedAdvisory(
     this.id,
-    this.affectedPackage,
-    this.affectedPackageVersions,
+    this.affectedPackages,
     this.aliases,
+    this.displayUrl,
   );
+}
+
+class AffectedPackage {
+  String name;
+  String ecosystem;
+  List<String> versions;
+
+  AffectedPackage({
+    required this.name,
+    this.ecosystem = 'Pub',
+    required this.versions,
+  });
 }
 
 class _PatternAndHandler {

@@ -4,6 +4,7 @@
 
 import '../descriptor.dart' as d;
 import '../golden_file.dart';
+import '../package_server.dart';
 import '../test_pub.dart';
 
 extension on GoldenTestContext {
@@ -397,17 +398,27 @@ Future<void> main() async {
     ]).create();
     await pubGet();
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'EFGH-0000-1111-2222',
+      displayUrl: 'https://github.com/advisories/EFGH-0000-1111-2222',
       aliases: ['1234-ABCD-EFGH-IJKL'],
-      affectedVersions: ['1.0.0'],
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
 
     builder.serve('foo', '1.2.0');
@@ -431,24 +442,40 @@ Future<void> main() async {
     ]).create();
     await pubGet();
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'EFGH-0000-1111-2222',
       aliases: ['1234-ABCD-EFGH-IJKL'],
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/EFGH-0000-1111-2222',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'VXYZ-1234-5678-9101',
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/VXYZ-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });
@@ -470,11 +497,17 @@ Future<void> main() async {
     ]).create();
     await pubGet();
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['0.1.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['0.1.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });
@@ -495,11 +528,17 @@ Future<void> main() async {
     ]).create();
     await pubGet();
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });
@@ -521,11 +560,18 @@ Future<void> main() async {
     await pubGet();
 
     builder.retractPackageVersion('foo', '1.0.0');
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });
@@ -546,11 +592,17 @@ Future<void> main() async {
     ]).create();
     await pubGet();
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.2.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.2.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });
@@ -572,11 +624,17 @@ Future<void> main() async {
     await pubGet();
 
     builder.discontinue('foo');
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.2.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.2.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });
@@ -597,11 +655,17 @@ Future<void> main() async {
     ]).create();
     await pubGet();
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.0.0', '1.2.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0', '1.2.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });
@@ -622,17 +686,28 @@ Future<void> main() async {
     ]).create();
     await pubGet();
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'ABCD-1234-5678-9101',
-      affectedVersions: ['1.0.0', '1.2.0'],
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0', '1.2.0'],
+        ),
+      ],
     );
 
-    builder.affectVersionsByAdvisory(
-      packageName: 'foo',
+    builder.addAdvisory(
       advisoryId: 'VXYZ-1234-5678-9101',
-      affectedVersions: ['1.0.0'],
+      displayUrl: 'https://github.com/advisories/VXYZ-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
     );
+
     builder.serve('foo', '1.2.0');
     await ctx.runOutdatedTests();
   });

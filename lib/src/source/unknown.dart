@@ -37,7 +37,7 @@ class UnknownSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    required Description containingDescription,
     LanguageVersion? languageVersion,
   }) =>
       PackageRef(name, UnknownDescription(description, this));
