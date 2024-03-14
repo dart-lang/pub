@@ -77,7 +77,10 @@ Future<int> runExecutable(
   // later invocation.
   var useSnapshot = vmArgs.isEmpty;
 
-  var executablePath = executable.resolve(entrypoint.packageConfig);
+  var executablePath = executable.resolve(
+    entrypoint.packageConfig,
+    entrypoint.packageConfigPath,
+  );
   if (!fileExists(executablePath)) {
     var message =
         'Could not find ${log.bold(p.normalize(executable.relativePath))}';
@@ -368,17 +371,17 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
 
-  final path = executable.resolve(packageConfig);
-  if (!fileExists(path)) {
+  final packageConfigPath = p.relative(
+    p.join(rootOrCurrent, '.dart_tool', 'package_config.json'),
+    from: rootOrCurrent,
+  );
+  final path = executable.resolve(packageConfig, packageConfigPath);
+  if (!fileExists(p.join(rootOrCurrent, path))) {
     throw CommandResolutionFailedException._(
       'Could not find `bin${p.separator}$command.dart` in package `$package`.',
       CommandResolutionIssue.noBinaryFound,
     );
   }
-  final packageConfigPath = p.relative(
-    p.join(rootOrCurrent, '.dart_tool', 'package_config.json'),
-    from: rootOrCurrent,
-  );
   if (!allowSnapshot) {
     return DartExecutableWithPackageConfig(
       executable: p.relative(path, from: rootOrCurrent),
@@ -478,11 +481,12 @@ class Executable {
     return program;
   }
 
-  /// The path to this executable given [packageConfig]
-  String resolve(PackageConfig packageConfig) {
+  /// The path to this executable given [packageConfig] Relative package dirs
+  /// are resolved relative to `dirname(packageConfigPath)`.
+  String resolve(PackageConfig packageConfig, String packageConfigPath) {
     return p.normalize(
       p.join(
-        p.dirname(packageConfig.path),
+        p.dirname(packageConfigPath),
         p.fromUri(
           packageConfig.packages.firstWhere((p) => p.name == package).rootUri,
         ),

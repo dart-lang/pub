@@ -11,9 +11,6 @@ import 'language_version.dart';
 
 /// Contents of a `.dart_tool/package_config.json` file.
 class PackageConfig {
-  /// The path where the package_config.json file is stored.
-  final String path;
-
   /// Version of the configuration in the `.dart_tool/package_config.json` file.
   ///
   /// The only supported value as of writing is `2`.
@@ -47,7 +44,6 @@ class PackageConfig {
   Map<String, dynamic> additionalProperties;
 
   PackageConfig({
-    required this.path,
     required this.configVersion,
     required this.packages,
     this.generated,
@@ -60,7 +56,7 @@ class PackageConfig {
   ///
   /// Throws [FormatException], if format is invalid, this does not validate the
   /// contents only that the format is correct.
-  factory PackageConfig.fromJson(String path, Object? data) {
+  factory PackageConfig.fromJson(Object? data) {
     if (data is! Map<String, dynamic>) {
       throw FormatException('package_config.json must be a JSON object');
     }
@@ -128,7 +124,6 @@ class PackageConfig {
     }
 
     return PackageConfig(
-      path: path,
       configVersion: configVersion,
       packages: packages,
       generated: generated,

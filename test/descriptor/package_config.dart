@@ -22,10 +22,8 @@ class PackageConfigFileDescriptor extends Descriptor {
   /// A map describing the packages in this `package_config.json` file.
   final List<PackageConfigEntry> _packages;
 
-  PackageConfig _config(String? parent) {
+  PackageConfig get _config {
     return PackageConfig(
-      path:
-          p.join(parent ?? sandbox, name, '.dart_tool', 'package_config.json'),
       configVersion: 2,
       packages: _packages,
       generatorVersion: Version.parse(_generatorVersion),
@@ -56,7 +54,7 @@ class PackageConfigFileDescriptor extends Descriptor {
     final packageConfigFile = File(p.join(parent ?? sandbox, name));
     await packageConfigFile.parent.create();
     await packageConfigFile.writeAsString(
-      '${const JsonEncoder.withIndent('  ').convert(_config(parent).toJson())}\n',
+      '${const JsonEncoder.withIndent('  ').convert(_config.toJson())}\n',
     );
   }
 
@@ -70,7 +68,7 @@ class PackageConfigFileDescriptor extends Descriptor {
     final rawJson = json.decode(await File(packageConfigFile).readAsString());
     PackageConfig config;
     try {
-      config = PackageConfig.fromJson(packageConfigFile, rawJson);
+      config = PackageConfig.fromJson(rawJson);
     } on FormatException catch (e) {
       fail('File "$packageConfigFile" is not valid: $e');
     }
@@ -94,8 +92,7 @@ class PackageConfigFileDescriptor extends Descriptor {
           .toSet(),
     );
 
-    final expected =
-        PackageConfig.fromJson(packageConfigFile, _config(parent).toJson());
+    final expected = PackageConfig.fromJson(_config.toJson());
     // omit generated date-time and packages
     expected.generated = null; // comparing timestamps is unnecessary.
     config.generated = null;

@@ -138,7 +138,6 @@ class Entrypoint {
     late PackageConfig result;
     try {
       result = PackageConfig.fromJson(
-        packageConfigPath,
         json.decode(packageConfigRaw) as Object?,
       );
     } on FormatException {
@@ -333,7 +332,6 @@ class Entrypoint {
     }
 
     final packageConfig = PackageConfig(
-      path: packageConfigPath,
       configVersion: 2,
       packages: entries,
       generated: DateTime.now(),
@@ -551,7 +549,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     final package = executable.package;
 
     await dart.precompile(
-      executablePath: executable.resolve(packageConfig),
+      executablePath: executable.resolve(packageConfig, packageConfigPath),
       outputPath: pathOfSnapshot(executable),
       packageConfigPath: packageConfigPath,
       name: '$package:${p.basenameWithoutExtension(executable.relativePath)}',
