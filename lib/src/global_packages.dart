@@ -627,7 +627,7 @@ try:
           p.basenameWithoutExtension(file),
           binStubScript,
           overwrite: true,
-          snapshot: entrypoint.pathOfExecutable(executable),
+          snapshot: executable.pathOfGlobalSnapshot(entrypoint.rootDir),
         );
       }
     }
@@ -682,7 +682,7 @@ try:
         executable,
         script,
         overwrite: overwriteBinStubs,
-        snapshot: entrypoint.pathOfExecutable(
+        snapshot: entrypoint.pathOfSnapshot(
           exec.Executable.adaptProgramName(package.name, script),
         ),
       );

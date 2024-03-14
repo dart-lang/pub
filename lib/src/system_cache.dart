@@ -40,7 +40,7 @@ class SystemCache {
 
   static String defaultDir = (() {
     if (Platform.environment.containsKey('PUB_CACHE')) {
-      return Platform.environment['PUB_CACHE']!;
+      return p.absolute(Platform.environment['PUB_CACHE']!);
     } else if (Platform.isWindows) {
       // %LOCALAPPDATA% is used as the cache location over %APPDATA%, because
       // the latter is synchronised between devices when the user roams between
