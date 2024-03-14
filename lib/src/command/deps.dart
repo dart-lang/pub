@@ -89,7 +89,7 @@ class DepsCommand extends PubCommand {
         usageException('Cannot combine --json and --style.');
       }
       final visited = <String>[];
-      final toVisit = [entrypoint.root.name];
+      final toVisit = [entrypoint.workspaceRoot.name];
       final packagesJson = <dynamic>[];
       final graph = await entrypoint.packageGraph;
       while (toVisit.isNotEmpty) {
@@ -98,13 +98,14 @@ class DepsCommand extends PubCommand {
         visited.add(current);
         final currentPackage =
             (await entrypoint.packageGraph).packages[current]!;
-        final next = (current == entrypoint.root.name
-                ? entrypoint.root.immediateDependencies
+        final next = (current == entrypoint.workspaceRoot.name
+                ? entrypoint.workspaceRoot.immediateDependencies
                 : currentPackage.dependencies)
             .keys
             .toList();
-        final dependencyType = entrypoint.root.pubspec.dependencyType(current);
-        final kind = currentPackage == entrypoint.root
+        final dependencyType =
+            entrypoint.workspaceRoot.pubspec.dependencyType(current);
+        final kind = currentPackage == entrypoint.workspaceRoot
             ? 'root'
             : (dependencyType == DependencyType.direct
                 ? 'direct'
@@ -124,12 +125,12 @@ class DepsCommand extends PubCommand {
       }
       var executables = [
         for (final package in [
-          entrypoint.root,
-          ...entrypoint.root.immediateDependencies.keys
+          entrypoint.workspaceRoot,
+          ...entrypoint.workspaceRoot.immediateDependencies.keys
               .map((name) => graph.packages[name]),
         ])
           ...package!.executableNames.map(
-            (name) => package == entrypoint.root
+            (name) => package == entrypoint.workspaceRoot
                 ? ':$name'
                 : (package.name == name ? name : '${package.name}:$name'),
           ),
@@ -138,7 +139,7 @@ class DepsCommand extends PubCommand {
       buffer.writeln(
         JsonEncoder.withIndent('  ').convert(
           {
-            'root': entrypoint.root.name,
+            'root': entrypoint.workspaceRoot.name,
             'packages': packagesJson,
             'sdks': [
               for (var sdk in sdks.values)
@@ -158,7 +159,7 @@ class DepsCommand extends PubCommand {
           buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
         }
 
-        buffer.writeln(_labelPackage(entrypoint.root));
+        buffer.writeln(_labelPackage(entrypoint.workspaceRoot));
 
         switch (argResults['style']) {
           case 'compact':
@@ -186,7 +187,7 @@ class DepsCommand extends PubCommand {
   Future<void> _outputCompact(
     StringBuffer buffer,
   ) async {
-    var root = entrypoint.root;
+    var root = entrypoint.workspaceRoot;
     await _outputCompactPackages(
       'dependencies',
       root.dependencies.keys,
@@ -239,7 +240,7 @@ class DepsCommand extends PubCommand {
   /// For each dependency listed, *that* package's immediate dependencies are
   /// shown.
   Future<void> _outputList(StringBuffer buffer) async {
-    var root = entrypoint.root;
+    var root = entrypoint.workspaceRoot;
     await _outputListSection('dependencies', root.dependencies.keys, buffer);
     if (_includeDev) {
       await _outputListSection(
@@ -300,14 +301,15 @@ class DepsCommand extends PubCommand {
     // being added to the tree, and the parent map that will receive that
     // package.
     var toWalk = Queue<(Package, Map<String, Map>)>();
-    var visited = <String>{entrypoint.root.name};
+    var visited = <String>{entrypoint.workspaceRoot.name};
 
     // Start with the root dependencies.
     var packageTree = <String, Map>{};
     var immediateDependencies =
-        entrypoint.root.immediateDependencies.keys.toSet();
+        entrypoint.workspaceRoot.immediateDependencies.keys.toSet();
     if (!_includeDev) {
-      immediateDependencies.removeAll(entrypoint.root.devDependencies.keys);
+      immediateDependencies
+          .removeAll(entrypoint.workspaceRoot.devDependencies.keys);
     }
     for (var name in immediateDependencies) {
       toWalk.add((await _getPackage(name), packageTree));
@@ -343,7 +345,7 @@ class DepsCommand extends PubCommand {
   /// Gets the names of the non-immediate dependencies of the root package.
   Future<Set<String>> _getTransitiveDependencies() async {
     var transitive = await _getAllDependencies();
-    var root = entrypoint.root;
+    var root = entrypoint.workspaceRoot;
     transitive.remove(root.name);
     transitive.removeAll(root.dependencies.keys);
     if (_includeDev) {
@@ -359,8 +361,8 @@ class DepsCommand extends PubCommand {
       return graph.packages.keys.toSet();
     }
 
-    var nonDevDependencies = entrypoint.root.dependencies.keys.toList()
-      ..addAll(entrypoint.root.dependencyOverrides.keys);
+    var nonDevDependencies = entrypoint.workspaceRoot.dependencies.keys.toList()
+      ..addAll(entrypoint.workspaceRoot.dependencyOverrides.keys);
     return nonDevDependencies
         .expand(graph.transitiveDependencies)
         .map((package) => package.name)
@@ -384,10 +386,10 @@ class DepsCommand extends PubCommand {
   Future<void> _outputExecutables(StringBuffer buffer) async {
     final graph = await entrypoint.packageGraph;
     var packages = [
-      entrypoint.root,
+      entrypoint.workspaceRoot,
       ...(_includeDev
-              ? entrypoint.root.immediateDependencies
-              : entrypoint.root.dependencies)
+              ? entrypoint.workspaceRoot.immediateDependencies
+              : entrypoint.workspaceRoot.dependencies)
           .keys
           .map((name) => graph.packages[name]!),
     ];

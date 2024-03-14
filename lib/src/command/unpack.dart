@@ -144,7 +144,9 @@ in a directory `foo-<version>`.
       } finally {
         log.message('To explore type: cd $destinationDir');
         if (e.example != null) {
-          log.message('To explore the example type: cd ${e.example!.rootDir}');
+          log.message(
+            'To explore the example type: cd ${e.example!.workspaceRoot.dir}',
+          );
         }
       }
     }

@@ -5,7 +5,7 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import 'entrypoint.dart';
+import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source/hosted.dart';
@@ -166,7 +166,7 @@ VersionConstraint stripUpperBound(VersionConstraint constraint) {
 Object pubspecDescription(
   PackageRange range,
   SystemCache cache,
-  Entrypoint relativeEntrypoint,
+  Package receivingPackage,
 ) {
   final description = range.description;
 
@@ -177,8 +177,8 @@ Object pubspecDescription(
   } else {
     return {
       range.source.name: description.serializeForPubspec(
-        containingDir: relativeEntrypoint.rootDir,
-        languageVersion: relativeEntrypoint.root.pubspec.languageVersion,
+        containingDir: receivingPackage.dir,
+        languageVersion: receivingPackage.pubspec.languageVersion,
       ),
       if (!constraint.isAny) 'version': constraint.toString(),
     };

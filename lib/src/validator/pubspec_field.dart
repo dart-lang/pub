@@ -29,18 +29,18 @@ class PubspecFieldValidator extends Validator {
 
     // Pubspec errors are detected lazily, so we make sure there aren't any
     // here.
-    for (var error in entrypoint.root.pubspec.allErrors) {
+    for (var error in package.pubspec.allErrors) {
       errors.add('In your pubspec.yaml, ${error.message}');
     }
 
     return Future.value();
   }
 
-  bool _hasField(String field) => entrypoint.root.pubspec.fields[field] != null;
+  bool _hasField(String field) => package.pubspec.fields[field] != null;
 
   /// Adds an error if [field] doesn't exist or isn't a string.
   void _validateFieldIsString(String field) {
-    var value = entrypoint.root.pubspec.fields[field];
+    var value = package.pubspec.fields[field];
     if (value == null) {
       errors.add('Your pubspec.yaml is missing a "$field" field.');
     } else if (value is! String) {
@@ -51,7 +51,7 @@ class PubspecFieldValidator extends Validator {
 
   /// Adds an error if the URL for [field] is invalid.
   void _validateFieldUrl(String field) {
-    var url = entrypoint.root.pubspec.fields[field];
+    var url = package.pubspec.fields[field];
     if (url == null) return;
 
     if (url is! String) {

@@ -295,19 +295,19 @@ the \$PUB_HOSTED_URL environment variable.''',
       await entrypoint.acquireDependencies(SolveType.get);
     }
 
-    var files = entrypoint.root.listFiles();
-    log.fine('Archiving and publishing ${entrypoint.root.name}.');
+    var files = entrypoint.workPackage.listFiles();
+    log.fine('Archiving and publishing ${entrypoint.workPackage.name}.');
 
     // Show the package contents so the user can verify they look OK.
-    var package = entrypoint.root;
+    var package = entrypoint.workPackage;
     final host = computeHost(package.pubspec);
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
-      '${tree.fromFiles(files, baseDir: entrypoint.rootDir, showFileSizes: true)}',
+      '${tree.fromFiles(files, baseDir: entrypoint.workPackage.dir, showFileSizes: true)}',
     );
 
     final packageBytes =
-        await createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
+        await createTarGz(files, baseDir: entrypoint.workPackage.dir).toBytes();
 
     log.message(
       '\nTotal compressed archive size: ${_readableFileSize(packageBytes.length)}.\n',

@@ -18,7 +18,7 @@ import '../validator.dart';
 class SdkConstraintValidator extends Validator {
   @override
   Future validate() async {
-    final dartConstraint = entrypoint.root.pubspec.dartSdkConstraint;
+    final dartConstraint = package.pubspec.dartSdkConstraint;
     final originalConstraint = dartConstraint.originalConstraint;
     final effectiveConstraint = dartConstraint.effectiveConstraint;
     if (originalConstraint is VersionRange) {
@@ -32,7 +32,7 @@ class SdkConstraintValidator extends Validator {
       }
 
       final constraintMin = originalConstraint.min;
-      final packageVersion = entrypoint.root.version;
+      final packageVersion = package.version;
 
       if (constraintMin != null &&
           constraintMin.isPreRelease &&

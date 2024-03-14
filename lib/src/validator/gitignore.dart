@@ -21,7 +21,7 @@ import '../validator.dart';
 class GitignoreValidator extends Validator {
   @override
   Future<void> validate() async {
-    if (entrypoint.root.inGitRepo) {
+    if (package.inGitRepo) {
       late final List<String> checkedIntoGit;
       try {
         checkedIntoGit = git.runSync(
@@ -33,7 +33,7 @@ class GitignoreValidator extends Validator {
             '--exclude-standard',
             '--recurse-submodules',
           ],
-          workingDir: entrypoint.rootDir,
+          workingDir: package.dir,
           stdoutEncoding: Utf8Codec(),
         );
       } on git.GitException catch (e) {
@@ -43,9 +43,9 @@ class GitignoreValidator extends Validator {
         // --recurse-submodules we just continue silently.
         return;
       }
-      final root = git.repoRoot(entrypoint.rootDir) ?? entrypoint.rootDir;
+      final root = git.repoRoot(package.dir) ?? package.dir;
       var beneath = p.posix.joinAll(
-        p.split(p.normalize(p.relative(entrypoint.rootDir, from: root))),
+        p.split(p.normalize(p.relative(package.dir, from: root))),
       );
       if (beneath == './') {
         beneath = '';
@@ -77,7 +77,7 @@ class GitignoreValidator extends Validator {
         },
         isDir: (dir) => dirExists(resolve(dir)),
       ).map((file) {
-        final relative = p.relative(resolve(file), from: entrypoint.rootDir);
+        final relative = p.relative(resolve(file), from: package.dir);
         return Platform.isWindows
             ? p.posix.joinAll(p.split(relative))
             : relative;

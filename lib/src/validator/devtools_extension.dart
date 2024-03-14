@@ -15,12 +15,12 @@ class DevtoolsExtensionValidator extends Validator {
 
   @override
   Future<void> validate() async {
-    if (dirExists(p.join(entrypoint.rootDir, 'extension', 'devtools'))) {
+    if (dirExists(p.join(package.dir, 'extension', 'devtools'))) {
       if (!files.any(
             (f) => p.equals(
               f,
               p.join(
-                entrypoint.rootDir,
+                package.dir,
                 'extension',
                 'devtools',
                 'config.yaml',
@@ -29,7 +29,7 @@ class DevtoolsExtensionValidator extends Validator {
           ) ||
           !files.any(
             (f) => p.isWithin(
-              p.join(entrypoint.rootDir, 'extension', 'devtools', 'build'),
+              p.join(package.dir, 'extension', 'devtools', 'build'),
               f,
             ),
           )) {

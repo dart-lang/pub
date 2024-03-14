@@ -33,7 +33,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      entrypoint!.root.listFiles(),
+      entrypoint!.workspaceRoot.listFiles(),
       unorderedEquals([
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file1.txt'),
@@ -75,7 +75,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint!.root.listFiles(),
+      () => entrypoint!.workspaceRoot.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
@@ -106,7 +106,7 @@ void main() {
       SystemCache(rootDir: p.join(d.sandbox, cachePath)),
     );
 
-    expect(entrypoint.root.listFiles(), {
+    expect(entrypoint.workspaceRoot.listFiles(), {
       p.join(root, 'pubspec.yaml'),
       p.join(root, 'file1.txt'),
       p.join(root, 'file2.txt'),
@@ -129,7 +129,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint!.root.listFiles(),
+      () => entrypoint!.workspaceRoot.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
@@ -158,7 +158,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint!.root.listFiles(),
+      () => entrypoint!.workspaceRoot.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
@@ -177,7 +177,7 @@ void main() {
       d.file('.foo', ''),
     ]).create();
     createEntrypoint();
-    expect(entrypoint!.root.listFiles(), {
+    expect(entrypoint!.workspaceRoot.listFiles(), {
       p.join(root, '.foo'),
       p.join(root, 'pubspec.yaml'),
     });
@@ -201,7 +201,7 @@ void main() {
         ]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file1.txt'),
         p.join(root, 'file2.txt'),
@@ -221,7 +221,7 @@ void main() {
         ]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
         p.join(root, 'subdir', 'subfile2.text'),
@@ -254,7 +254,7 @@ void main() {
 
       createEntrypoint(p.join(appPath, 'rep', 'sub'));
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
         p.join(root, 'file4.gak'),
@@ -284,7 +284,7 @@ void main() {
       });
 
       test('respects its .gitignore with useGitIgnore', () {
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'submodule', 'file2.text'),
         });
@@ -297,7 +297,10 @@ void main() {
         d.dir('subdir', [d.file('pubspec.lock')]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
+      expect(
+        entrypoint!.workspaceRoot.listFiles(),
+        {p.join(root, 'pubspec.yaml')},
+      );
     });
 
     test('allows pubspec.lock directories', () async {
@@ -307,7 +310,7 @@ void main() {
         ]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'pubspec.lock', 'file.txt'),
       });
@@ -328,7 +331,7 @@ void main() {
           ]),
         ]).create();
 
-        expect(entrypoint!.root.listFiles(beneath: 'subdir'), {
+        expect(entrypoint!.workspaceRoot.listFiles(beneath: 'subdir'), {
           p.join(root, 'subdir', 'subfile1.txt'),
           p.join(root, 'subdir', 'subfile2.txt'),
           p.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
@@ -347,7 +350,7 @@ void main() {
         d.dir('lib', [d.file('not_ignored.dart', 'content')]),
       ]).create();
       createEntrypoint();
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'LICENSE'),
         p.join(root, 'CHANGELOG.md'),
         p.join(root, 'README.md'),
@@ -399,7 +402,7 @@ void main() {
     ]).create();
 
     createEntrypoint();
-    expect(entrypoint!.root.listFiles(), {
+    expect(entrypoint!.workspaceRoot.listFiles(), {
       p.join(root, 'pubspec.yaml'),
       p.join(root, 'not_ignored_by_gitignore.txt'),
       p.join(root, 'ignored_by_gitignore.txt'),
@@ -431,7 +434,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
         });
       });
@@ -449,7 +452,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'bin'),
         });
@@ -470,7 +473,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
         });
       });
@@ -493,7 +496,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'bin', 'nested_again', 'run.dart'),
         });
@@ -518,7 +521,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'bin', 'run.dart'),
         });
@@ -545,7 +548,7 @@ void main() {
       await repo.create();
       createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'bin', 'nested_again', 'run.dart'),
       });
@@ -569,7 +572,7 @@ void main() {
       await repo.create();
       createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'bin', 'run.dart'),
         p.join(root, 'bin', 'nested_again', 'run.dart'),

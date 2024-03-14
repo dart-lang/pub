@@ -10,7 +10,9 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
+import 'package.dart';
 import 'sdk.dart';
+import 'system_cache.dart';
 import 'validator/analyze.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
@@ -60,7 +62,8 @@ abstract class Validator {
   final hints = <String>[];
 
   late ValidationContext context;
-  Entrypoint get entrypoint => context.entrypoint;
+  Package get package => context.entrypoint.workPackage;
+  SystemCache get cache => context.entrypoint.cache;
   int get packageSize => context.packageSize;
   Uri get serverUrl => context.serverUrl;
   List<String> get files => context.files;
@@ -75,7 +78,7 @@ abstract class Validator {
   void validateSdkConstraint(Version firstSdkVersion, String message) {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
-    if (entrypoint.root.pubspec.dartSdkConstraint.originalConstraint
+    if (package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
@@ -97,8 +100,7 @@ abstract class Validator {
           : firstSdkVersion.nextBreaking,
     );
 
-    var newSdkConstraint = entrypoint
-        .root.pubspec.dartSdkConstraint.originalConstraint
+    var newSdkConstraint = package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
@@ -217,7 +219,7 @@ abstract class Validator {
   /// entrypoint).
   // TODO(sigurdm): Consider moving this to a more central location.
   List<String> filesBeneath(String dir, {required bool recursive}) {
-    final base = p.canonicalize(p.join(entrypoint.rootDir, dir));
+    final base = p.canonicalize(p.join(package.dir, dir));
     return files
         .where(
           recursive

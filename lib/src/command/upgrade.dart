@@ -133,7 +133,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     if (_upgradeMajorVersions) {
       if (argResults.flag('example') && entrypoint.example != null) {
         log.warning(
-          'Running `upgrade --major-versions` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
+          'Running `upgrade --major-versions` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
         );
       }
       await _runUpgradeMajorVersions();
@@ -141,14 +141,14 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       await _runUpgrade(entrypoint);
       if (_tighten) {
         final changes = tighten(
-          entrypoint.root.pubspec,
+          entrypoint.workspaceRoot.pubspec,
           entrypoint.lockFile.packages.values.toList(),
         );
         if (!_dryRun) {
           final newPubspecText = _updatePubspec(changes);
 
           if (changes.isNotEmpty) {
-            writeTextFile(entrypoint.pubspecPath, newPubspecText);
+            writeTextFile(entrypoint.workspaceRoot.pubspecPath, newPubspecText);
           }
         }
         _outputChangeSummary(changes);
@@ -192,7 +192,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     final result = {...existingChanges};
     if (argResults.flag('example') && entrypoint.example != null) {
       log.warning(
-        'Running `upgrade --tighten` only in `${entrypoint.rootDir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
+        'Running `upgrade --tighten` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
       );
     }
     final toTighten = _packagesToUpgrade.isEmpty
@@ -237,8 +237,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     assert(_upgradeMajorVersions);
 
     final directDeps = [
-      ...entrypoint.root.pubspec.dependencies.keys,
-      ...entrypoint.root.pubspec.devDependencies.keys,
+      ...entrypoint.workspaceRoot.pubspec.dependencies.keys,
+      ...entrypoint.workspaceRoot.pubspec.devDependencies.keys,
     ];
     final toUpgrade =
         _packagesToUpgrade.isEmpty ? directDeps : _packagesToUpgrade;
@@ -263,10 +263,12 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 
   Future<void> _runUpgradeMajorVersions() async {
+    // TODO(https://github.com/dart-lang/pub/issues/4127): This should operate
+    // on all pubspecs in the workspace.
     final toUpgrade = _directDependenciesToUpgrade();
 
     final resolvablePubspec = stripVersionBounds(
-      entrypoint.root.pubspec,
+      entrypoint.workspaceRoot.pubspec,
       stripOnly: toUpgrade,
     );
 
@@ -281,8 +283,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
           cache,
           Package(
             resolvablePubspec,
-            entrypoint.rootDir,
-            entrypoint.root.workspaceChildren,
+            entrypoint.workspaceRoot.dir,
+            entrypoint.workspaceRoot.workspaceChildren,
           ),
         );
       },
@@ -296,8 +298,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // Mapping from original to changed value.
     var changes = <PackageRange, PackageRange>{};
     final declaredHostedDependencies = [
-      ...entrypoint.root.pubspec.dependencies.values,
-      ...entrypoint.root.pubspec.devDependencies.values,
+      ...entrypoint.workspaceRoot.pubspec.dependencies.values,
+      ...entrypoint.workspaceRoot.pubspec.devDependencies.values,
     ].where((dep) => dep.source is HostedSource);
     for (final dep in declaredHostedDependencies) {
       final resolvedPackage = resolvedPackages[dep.name]!;
@@ -308,7 +310,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       }
 
       // Skip [dep] if it has a dependency_override.
-      if (entrypoint.root.dependencyOverrides.containsKey(dep.name)) {
+      if (entrypoint.workspaceRoot.dependencyOverrides.containsKey(dep.name)) {
         continue;
       }
 
@@ -335,12 +337,12 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         cache,
         Package(
           _updatedPubspec(newPubspecText, entrypoint),
-          entrypoint.rootDir,
-          entrypoint.root.workspaceChildren,
+          entrypoint.workspaceRoot.dir,
+          entrypoint.workspaceRoot.workspaceChildren,
         ),
       );
       changes = tighten(
-        entrypoint.root.pubspec,
+        entrypoint.workspaceRoot.pubspec,
         solveResult.packages,
         existingChanges: changes,
       );
@@ -357,7 +359,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
     if (!_dryRun) {
       if (changes.isNotEmpty) {
-        writeTextFile(entrypoint.pubspecPath, newPubspecText);
+        writeTextFile(entrypoint.workspaceRoot.pubspecPath, newPubspecText);
       }
     }
 
@@ -373,8 +375,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
     // If any of the packages to upgrade are dependency overrides, then we
     // show a warning.
-    final toUpgradeOverrides =
-        toUpgrade.where(entrypoint.root.dependencyOverrides.containsKey);
+    final toUpgradeOverrides = toUpgrade
+        .where(entrypoint.workspaceRoot.dependencyOverrides.containsKey);
     if (toUpgradeOverrides.isNotEmpty) {
       log.warning(
         'Warning: dependency_overrides prevents upgrades for: '
@@ -388,7 +390,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   Pubspec _updatedPubspec(String contents, Entrypoint entrypoint) {
     String? overridesFileContents;
     final overridesPath =
-        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
+        p.join(entrypoint.workspaceRoot.dir, Pubspec.pubspecOverridesFilename);
     try {
       overridesFileContents = readTextFile(overridesPath);
     } on IOException {
@@ -397,10 +399,10 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     return Pubspec.parse(
       contents,
       cache.sources,
-      location: Uri.parse(entrypoint.pubspecPath),
+      location: Uri.parse(entrypoint.workspaceRoot.pubspecPath),
       overridesFileContents: overridesFileContents,
       overridesLocation: Uri.file(overridesPath),
-      containingDescription: RootDescription(entrypoint.rootDir),
+      containingDescription: RootDescription(entrypoint.workspaceRoot.dir),
     );
   }
 
@@ -409,15 +411,16 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     Map<PackageRange, PackageRange> changes,
   ) {
     ArgumentError.checkNotNull(changes, 'changes');
-    final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
-    final deps = entrypoint.root.pubspec.dependencies.keys;
+    final yamlEditor =
+        YamlEditor(readTextFile(entrypoint.workspaceRoot.pubspecPath));
+    final deps = entrypoint.workspaceRoot.pubspec.dependencies.keys;
 
     for (final change in changes.values) {
       final section =
           deps.contains(change.name) ? 'dependencies' : 'dev_dependencies';
       yamlEditor.update(
         [section, change.name],
-        pubspecDescription(change, cache, entrypoint),
+        pubspecDescription(change, cache, entrypoint.workspaceRoot),
       );
     }
     return yamlEditor.toString();

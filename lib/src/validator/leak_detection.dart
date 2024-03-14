@@ -29,14 +29,14 @@ final class LeakDetectionValidator extends Validator {
   Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
     final falseSecrets = Ignore(
-      entrypoint.root.pubspec.falseSecrets,
+      package.pubspec.falseSecrets,
       ignoreCase: Platform.isWindows || Platform.isMacOS,
     );
 
     final pool = Pool(20); // don't read more than 20 files concurrently!
     final leaks = await Future.wait(
       files.map((f) async {
-        final relPath = entrypoint.root.relative(f);
+        final relPath = package.relative(f);
 
         // Skip files matching patterns in `false_secrets`
         final nixPath = p.posix.joinAll(p.split(relPath));

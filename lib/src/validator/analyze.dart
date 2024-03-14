@@ -25,11 +25,11 @@ class AnalyzeValidator extends Validator {
   @override
   Future<void> validate() async {
     final entries = _entriesToAnalyze
-        .map((dir) => p.join(entrypoint.rootDir, dir))
+        .map((dir) => p.join(package.dir, dir))
         .where(entryExists);
     final result = await runProcess(
       Platform.resolvedExecutable,
-      ['analyze', ...entries, p.join(entrypoint.rootDir, 'pubspec.yaml')],
+      ['analyze', ...entries, p.join(package.dir, 'pubspec.yaml')],
     );
     if (result.exitCode != 0) {
       final limitedOutput = limitLength(result.stdout.join('\n'), 1000);

@@ -37,8 +37,7 @@ class DependencyValidator extends Validator {
     Future warnAboutSource(PackageRange dep) async {
       List<Version> versions;
       try {
-        var ids = await entrypoint.cache
-            .getVersions(entrypoint.cache.hosted.refFor(dep.name));
+        var ids = await cache.getVersions(cache.hosted.refFor(dep.name));
         versions = ids.map((id) => id.version).toList();
       } on ApplicationException catch (_) {
         versions = [];
@@ -88,7 +87,7 @@ class DependencyValidator extends Validator {
     void warnAboutNoConstraint(PackageRange dep) {
       var message = 'Your dependency on "${dep.name}" should have a version '
           'constraint.';
-      var locked = entrypoint.lockFile.packages[dep.name];
+      var locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         message = '$message For example:\n'
             '\n'
@@ -118,7 +117,7 @@ class DependencyValidator extends Validator {
     void warnAboutNoConstraintLowerBound(PackageRange dep) {
       var message =
           'Your dependency on "${dep.name}" should have a lower bound.';
-      var locked = entrypoint.lockFile.packages[dep.name];
+      var locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         String constraint;
         if (locked.version == (dep.constraint as VersionRange).max) {
@@ -160,7 +159,7 @@ class DependencyValidator extends Validator {
     }
 
     void warnAboutPrerelease(String dependencyName, VersionRange constraint) {
-      final packageVersion = entrypoint.root.version;
+      final packageVersion = package.version;
       if (constraint.min != null &&
           constraint.min!.isPreRelease &&
           !packageVersion.isPreRelease) {
@@ -203,6 +202,6 @@ class DependencyValidator extends Validator {
       }
     }
 
-    await validateDependencies(entrypoint.root.pubspec.dependencies.values);
+    await validateDependencies(package.pubspec.dependencies.values);
   }
 }

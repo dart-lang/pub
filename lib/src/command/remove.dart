@@ -88,7 +88,9 @@ To remove a dependency override of a package prefix the package name with
       /// Update the pubspec.
       _writeRemovalToPubspec(targets);
     }
-    final rootPubspec = entrypoint.root.pubspec;
+    // TODO(https://github.com/dart-lang/pub/issues/4127): This should
+    // operate on entrypoint.workPackage.
+    final rootPubspec = entrypoint.workspaceRoot.pubspec;
     final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
 
     await entrypoint.withPubspec(newPubspec).acquireDependencies(
@@ -138,7 +140,8 @@ To remove a dependency override of a package prefix the package name with
   void _writeRemovalToPubspec(Iterable<_PackageRemoval> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
-    final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
+    final yamlEditor =
+        YamlEditor(readTextFile(entrypoint.workspaceRoot.pubspecPath));
 
     for (final package in packages) {
       final dependencyKeys = package.removeFromOverride
@@ -165,13 +168,13 @@ To remove a dependency override of a package prefix the package name with
       }
       if (!found) {
         log.warning(
-          'Package "$name" was not found in ${entrypoint.pubspecPath}!',
+          'Package "$name" was not found in ${entrypoint.workspaceRoot.pubspecPath}!',
         );
       }
     }
 
     /// Windows line endings are already handled by [yamlEditor]
-    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
+    writeTextFile(entrypoint.workspaceRoot.pubspecPath, yamlEditor.toString());
   }
 }
 
