@@ -4,7 +4,6 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
@@ -45,13 +44,16 @@ class DartSdk extends Sdk {
   static final SdkPackageConfig? _sdkPackages = () {
     var path = p.join(_rootDirectory, 'sdk_packages.yaml');
     if (!fileExists(path)) return null;
-    var config = SdkPackageConfig.fromMap(
-      loadYaml(readTextFile(path)) as Map<Object?, Object?>,
-    );
+    final text = readTextFile(path);
+    final yaml = loadYamlDocument(text).contents as YamlMap;
+    var config = SdkPackageConfig.fromMap(yaml);
     if (config.sdk != 'dart') {
-      throw ArgumentError(
-          'Expected a configuration for the `dart` sdk but got one for '
-          '`${config.sdk}`.');
+      throw FormatException(
+        'Expected a configuration for the `dart` sdk but got one for '
+        '`${config.sdk}`.',
+        text,
+        (yaml.nodes['sdk']!).span.start.offset,
+      );
     }
     return config;
   }();
@@ -80,10 +82,9 @@ class DartSdk extends Sdk {
     var sdkPackages = _sdkPackages;
     if (sdkPackages == null) return null;
 
-    var package =
-        sdkPackages.packages.firstWhereOrNull((pkg) => pkg.name == name);
+    var package = sdkPackages.packages[name];
     if (package == null) return null;
-    var packagePath = p.joinAll([_rootDirectory, ...p.url.split(package.path)]);
+    var packagePath = p.joinAll([_rootDirectory, ...package.path.split('/')]);
     if (dirExists(packagePath)) return packagePath;
 
     return null;

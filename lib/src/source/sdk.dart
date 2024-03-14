@@ -104,7 +104,7 @@ class SdkSource extends Source {
           case Sdk(allowsNonSdkDepsInSdkPackages: false)) {
         for (var dep in pubspec.dependencies.entries) {
           if (dep.value.source is! SdkSource) {
-            throw ArgumentError(
+            throw UnsupportedError(
               'Only SDK packages are allowed as regular dependencies for '
               'packages vendored by the ${sdk.identifier} SDK, but the '
               '`${ref.name}` package has a ${dep.value.source.name} dependency '

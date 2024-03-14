@@ -254,7 +254,11 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
               ]),
             ]),
             d.sdkPackagesConfig(
-              SdkPackageConfig('dart', [SdkPackage('foo', 'packages/foo')]),
+              SdkPackageConfig(
+                'dart',
+                {'foo': SdkPackage('foo', 'packages/foo')},
+                1,
+              ),
             ),
           ]).create();
         });
@@ -317,7 +321,11 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
             ]),
           ]),
           d.sdkPackagesConfig(
-            SdkPackageConfig('dart', [SdkPackage('foo', 'packages/foo')]),
+            SdkPackageConfig(
+              'dart',
+              {'foo': SdkPackage('foo', 'packages/foo')},
+              1,
+            ),
           ),
         ]).create();
 
@@ -331,9 +339,45 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
           command,
           environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
           error: contains(
-              'Invalid argument(s): Only SDK packages are allowed as regular '
+              'Unsupported operation: Only SDK packages are allowed as regular '
               'dependencies for packages vendored by the dart SDK, but the `foo` '
               'package has a hosted dependency on `bar`.'),
+        );
+      });
+
+      test('expects a value of `dart` for the `sdk` field', () async {
+        final server = await servePackages();
+        server.serve('bar', '1.0.0');
+
+        await d.dir('dart', [
+          d.dir('packages', [
+            d.dir('foo', [
+              d.libDir('foo', 'foo 0.0.1'),
+              d.libPubspec('foo', '0.0.1', deps: {}),
+            ]),
+          ]),
+          d.sdkPackagesConfig(
+            SdkPackageConfig(
+              'fuschia',
+              {'foo': SdkPackage('foo', 'packages/foo')},
+              1,
+            ),
+          ),
+        ]).create();
+
+        await d.appDir(
+          dependencies: {
+            'foo': {'sdk': 'dart', 'version': '^1.0.0'},
+          },
+        ).create();
+
+        await pubCommand(
+          command,
+          environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
+          error: contains(
+              'Expected a configuration for the `dart` sdk but got one for '
+              '`fuschia`. (at character 8)'),
+          exitCode: 65,
         );
       });
     });
