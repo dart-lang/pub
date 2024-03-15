@@ -287,6 +287,11 @@ the \$PUB_HOSTED_URL environment variable.''',
   }
 
   Future<_Publication> _publicationFromEntrypoint() async {
+    if (_toArchive == null && entrypoint.root.pubspec.isPrivate) {
+      dataError('A private package cannot be published.\n'
+          'You can enable this by changing the "publish_to" field in your '
+          'pubspec.');
+    }
     if (skipValidation) {
       log.warning(
         'Running with `skip-validation`. No client-side validation is done.',
@@ -352,6 +357,11 @@ the \$PUB_HOSTED_URL environment variable.''',
       );
     } on FormatException catch (e) {
       dataError('Failed to read pubspec.yaml from archive: ${e.message}');
+    }
+    if (_toArchive == null && entrypoint.root.pubspec.isPrivate) {
+      dataError('A private package cannot be published.\n'
+          'You can enable this by changing the "publish_to" field in your '
+          'pubspec.');
     }
     final host = computeHost(pubspec);
     log.message('Publishing ${pubspec.name} ${pubspec.version} to $host.');
@@ -435,11 +445,6 @@ the \$PUB_HOSTED_URL environment variable.''',
     }
     if (_toArchive == null) {
       final host = computeHost(publication.pubspec);
-      if (publication.pubspec.isPrivate) {
-        dataError('A private package cannot be published.\n'
-            'You can enable this by changing the "publish_to" field in your '
-            'pubspec.');
-      }
       await _confirmUpload(publication, host);
 
       await _publish(publication.packageBytes, host);
