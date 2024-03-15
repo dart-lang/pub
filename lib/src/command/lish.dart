@@ -287,7 +287,7 @@ the \$PUB_HOSTED_URL environment variable.''',
   }
 
   Future<_Publication> _publicationFromEntrypoint() async {
-    if (_toArchive == null && entrypoint.root.pubspec.isPrivate) {
+    if (!dryRun && _toArchive == null && entrypoint.root.pubspec.isPrivate) {
       dataError('A private package cannot be published.\n'
           'You can enable this by changing the "publish_to" field in your '
           'pubspec.');
@@ -358,7 +358,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     } on FormatException catch (e) {
       dataError('Failed to read pubspec.yaml from archive: ${e.message}');
     }
-    if (_toArchive == null && entrypoint.root.pubspec.isPrivate) {
+    if (!dryRun && _toArchive == null && entrypoint.root.pubspec.isPrivate) {
       dataError('A private package cannot be published.\n'
           'You can enable this by changing the "publish_to" field in your '
           'pubspec.');
