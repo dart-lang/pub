@@ -21,7 +21,7 @@ import 'package:pub/src/utils.dart';
 class _DependencyServicesCommandRunner extends CommandRunner<int>
     implements PubTopLevel {
   @override
-  String get directory => argResults.option('directory');
+  String get directory => argResults.optionWithDefault('directory');
 
   @override
   bool get captureStackChains => argResults.flag('verbose');

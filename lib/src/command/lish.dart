@@ -45,7 +45,9 @@ class LishCommand extends PubCommand {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
-        return validateAndNormalizeHostedUrl(argResults.option('server'));
+        return validateAndNormalizeHostedUrl(
+          argResults.optionWithDefault('server'),
+        );
       } on FormatException catch (e) {
         usageException('Invalid server: $e');
       }

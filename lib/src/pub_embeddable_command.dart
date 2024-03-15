@@ -39,7 +39,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   @override
-  String get directory => argResults.option('directory');
+  String get directory => argResults.optionWithDefault('directory');
 
   final bool Function() isVerbose;
 
