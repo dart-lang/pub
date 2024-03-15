@@ -5,7 +5,26 @@
 /// The top level structure of an `sdk_packages.yaml` file.
 ///
 /// See https://github.com/dart-lang/pub/issues/3980 for discussion of the
-/// format.
+/// feature and format.
+///
+/// Version 1 of the format is as follows:
+///
+/// ```yaml
+/// # Required, the version of the format used in this file. Not all versions
+/// # will be supported forever, but some number of previous ones will be.
+/// version: 1
+///
+/// # The SDK this configuration file is targetting. Used for validation, to
+/// # ensure we are parsing a file intended for the SDK we are configuring.
+/// sdk: dart
+///
+/// # A list of package descriptors, for each package vendored by this SDK.
+/// packages:
+/// - name: my_sdk_package
+///   # A path relative to the root of the installed SDK, in URL form (with `/`
+///   # path separators).
+///   path: path/to/my_sdk_package
+/// ```
 class SdkPackageConfig {
   /// The name of the SDK this configuration is for.
   ///
@@ -13,7 +32,9 @@ class SdkPackageConfig {
   /// real use for this field.
   final String sdk;
 
-  /// All the packages vendored by this SDK.
+  /// All the packages vendored by this SDK. Note that the format in the file is
+  /// not a map, but a list. When parsing the file we convert it to map for easy
+  /// lookups.
   final Map<String, SdkPackage> packages;
 
   /// The version of the format.
