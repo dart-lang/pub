@@ -2,6 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:yaml/yaml.dart';
+
+import '../utils.dart' show ExpectField, ExpectEntries;
+
 /// The top level structure of an `sdk_packages.yaml` file.
 ///
 /// See https://github.com/dart-lang/pub/issues/3980 for discussion of the
@@ -42,23 +46,22 @@ class SdkPackageConfig {
 
   SdkPackageConfig(this.sdk, this.packages, this.version);
 
-  // Note: yaml has `Object?` keys.
-  //
-  // TODO: Add more friendly validation messages here as opposed to just casts.
-  factory SdkPackageConfig.fromMap(Map<Object?, Object?> map) {
-    final version = map['version'] as int;
+  factory SdkPackageConfig.fromYaml(YamlMap yaml) {
+    final version = yaml.expectField<int>('version');
     if (version != 1) {
       throw UnsupportedError('This SDK only supports version 1 of the '
           'sdk_packages.yaml format, but got version $version');
     }
     final packages = <String, SdkPackage>{};
-    for (var entry in map['packages'] as List<Object?>) {
-      final package = SdkPackage.fromMap(entry as Map<Object?, Object?>);
+    final packageDescriptions =
+        yaml.expectField<YamlList>('packages').expectEntries<YamlMap>();
+    for (var description in packageDescriptions) {
+      final package = SdkPackage.fromYaml(description);
       packages[package.name] = package;
     }
 
     return SdkPackageConfig(
-      map['sdk'] as String,
+      yaml.expectField<String>('sdk'),
       packages,
       version,
     );
@@ -87,10 +90,9 @@ class SdkPackage {
 
   SdkPackage(this.name, this.path);
 
-  // Note: yaml has `Object?` keys.
-  SdkPackage.fromMap(Map<Object?, Object?> map)
-      : name = map['name'] as String,
-        path = map['path'] as String;
+  SdkPackage.fromYaml(YamlMap yaml)
+      : name = yaml.expectPackageNameField(),
+        path = yaml.expectField<String>('path');
 
   Map<String, Object?> toMap() => {
         'name': name,

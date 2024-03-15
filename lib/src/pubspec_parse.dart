@@ -7,7 +7,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
-import 'utils.dart' show identifierRegExp, reservedWords;
+import 'utils.dart' show identifierRegExp, ExpectField;
 
 /// A regular expression matching allowed package names.
 ///
@@ -36,34 +36,7 @@ abstract class PubspecBase {
         _version = version;
 
   /// The package's name.
-  String get name => _name ??= _lookupName();
-
-  String _lookupName() {
-    final name = fields['name'];
-    if (name == null) {
-      throw SourceSpanApplicationException(
-        'Missing the required "name" field.',
-        fields.span,
-      );
-    } else if (name is! String) {
-      throw SourceSpanApplicationException(
-        '"name" field must be a string.',
-        fields.nodes['name']?.span,
-      );
-    } else if (!packageNameRegExp.hasMatch(name)) {
-      throw SourceSpanApplicationException(
-        '"name" field must be a valid Dart identifier.',
-        fields.nodes['name']?.span,
-      );
-    } else if (reservedWords.contains(name.toLowerCase())) {
-      throw SourceSpanApplicationException(
-        '"name" field may not be a Dart reserved word.',
-        fields.nodes['name']?.span,
-      );
-    }
-
-    return name;
-  }
+  String get name => _name ??= fields.expectPackageNameField();
 
   String? _name;
 

@@ -45,8 +45,8 @@ class DartSdk extends Sdk {
     var path = p.join(_rootDirectory, 'sdk_packages.yaml');
     if (!fileExists(path)) return null;
     final text = readTextFile(path);
-    final yaml = loadYamlDocument(text).contents as YamlMap;
-    var config = SdkPackageConfig.fromMap(yaml);
+    final yaml = loadYaml(text) as YamlMap;
+    var config = SdkPackageConfig.fromYaml(yaml);
     if (config.sdk != 'dart') {
       throw FormatException(
         'Expected a configuration for the `dart` sdk but got one for '
