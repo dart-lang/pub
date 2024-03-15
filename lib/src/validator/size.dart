@@ -17,17 +17,17 @@ class SizeValidator extends Validator {
     if (packageSize <= _maxSize) return;
     var sizeInMb = (packageSize / (1 << 20)).toStringAsPrecision(4);
     // Current implementation of Package.listFiles skips hidden files
-    var ignoreExists = fileExists(entrypoint.root.path('.gitignore'));
+    var ignoreExists = fileExists(package.path('.gitignore'));
 
     var hint = StringBuffer('''
 Your package is $sizeInMb MB.
 
 Consider the impact large downloads can have on the package consumer.''');
 
-    if (ignoreExists && !entrypoint.root.inGitRepo) {
+    if (ignoreExists && !package.inGitRepo) {
       hint.write('\nYour .gitignore has no effect since your project '
           'does not appear to be in version control.');
-    } else if (!ignoreExists && entrypoint.root.inGitRepo) {
+    } else if (!ignoreExists && package.inGitRepo) {
       hint.write('\nConsider adding a .gitignore to avoid including '
           'temporary files.');
     }

@@ -38,7 +38,7 @@ class PackageGraph {
     final packages = {
       for (final id in result.packages)
         id.name: id.isRoot
-            ? entrypoint.root
+            ? entrypoint.workspaceRoot
             : Package(
                 result.pubspecs[id.name]!,
                 entrypoint.cache.getDirectory(id),
@@ -55,7 +55,9 @@ class PackageGraph {
   /// dev and override. For any other package, it ignores dev and override
   /// dependencies.
   Set<Package> transitiveDependencies(String package) {
-    if (package == entrypoint.root.name) return packages.values.toSet();
+    if (package == entrypoint.workspaceRoot.name) {
+      return packages.values.toSet();
+    }
 
     if (_transitiveDependencies == null) {
       var closure = transitiveClosure(

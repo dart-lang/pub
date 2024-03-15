@@ -56,8 +56,8 @@ Future<int> runExecutable(
 
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
-  if (entrypoint.root.name != executable.package &&
-      !entrypoint.root.immediateDependencies.containsKey(package)) {
+  if (entrypoint.workspaceRoot.name != executable.package &&
+      !entrypoint.workspaceRoot.immediateDependencies.containsKey(package)) {
     if ((await entrypoint.packageGraph).packages.containsKey(package)) {
       dataError('Package "$package" is not an immediate dependency.\n'
           'Cannot run executables in transitive dependencies.');
@@ -84,7 +84,7 @@ Future<int> runExecutable(
   if (!fileExists(executablePath)) {
     var message =
         'Could not find ${log.bold(p.normalize(executable.relativePath))}';
-    if (entrypoint.isCachedGlobal || package != entrypoint.root.name) {
+    if (entrypoint.isCachedGlobal || package != entrypoint.workspaceRoot.name) {
       message += ' in package ${log.bold(package)}';
     }
     log.error('$message.');
@@ -95,7 +95,7 @@ Future<int> runExecutable(
     // Since we don't access the package graph, this doesn't happen
     // automatically.
     await Entrypoint.ensureUpToDate(
-      entrypoint.rootDir,
+      entrypoint.workspaceRoot.dir,
       cache: entrypoint.cache,
     );
 

@@ -25,18 +25,21 @@ class RelativeVersionNumberingValidator extends Validator {
 
   @override
   Future<void> validate() async {
-    final hostedSource = entrypoint.cache.hosted;
+    final hostedSource = cache.hosted;
     List<PackageId> existingVersions;
     try {
-      existingVersions = await entrypoint.cache.getVersions(
-        hostedSource.refFor(entrypoint.root.name, url: serverUrl.toString()),
+      existingVersions = await cache.getVersions(
+        hostedSource.refFor(
+          package.name,
+          url: serverUrl.toString(),
+        ),
       );
     } on PackageNotFoundException {
       existingVersions = [];
     }
     existingVersions.sort((a, b) => a.version.compareTo(b.version));
 
-    final currentVersion = entrypoint.root.pubspec.version;
+    final currentVersion = package.pubspec.version;
 
     final latestVersion =
         existingVersions.isEmpty ? null : existingVersions.last.version;
@@ -46,8 +49,8 @@ The latest published version is $latestVersion.
 Your version $currentVersion is earlier than that.''');
     }
 
-    final previousRelease = existingVersions
-        .lastWhereOrNull((id) => id.version < entrypoint.root.version);
+    final previousRelease =
+        existingVersions.lastWhereOrNull((id) => id.version < package.version);
 
     if (previousRelease == null) return;
 
@@ -85,10 +88,9 @@ Consider one of:
       hints.add(hint + suggestion);
     }
 
-    final previousPubspec = await entrypoint.cache.describe(previousRelease);
+    final previousPubspec = await cache.describe(previousRelease);
 
-    final currentOptedIn =
-        entrypoint.root.pubspec.languageVersion.supportsNullSafety;
+    final currentOptedIn = package.pubspec.languageVersion.supportsNullSafety;
     final previousOptedIn = previousPubspec.languageVersion.supportsNullSafety;
 
     if (currentOptedIn && !previousOptedIn) {

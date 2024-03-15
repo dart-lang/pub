@@ -11,19 +11,19 @@ import '../validator.dart';
 class DeprecatedFieldsValidator extends Validator {
   @override
   Future validate() async {
-    if (entrypoint.root.pubspec.fields.containsKey('transformers')) {
+    if (package.pubspec.fields.containsKey('transformers')) {
       warnings.add('Your pubspec.yaml includes a "transformers" section which'
           ' is no longer used and may be removed.');
     }
-    if (entrypoint.root.pubspec.fields.containsKey('web')) {
+    if (package.pubspec.fields.containsKey('web')) {
       warnings.add('Your pubspec.yaml includes a "web" section which'
           ' is no longer used and may be removed.');
     }
-    if (entrypoint.root.pubspec.fields.containsKey('author')) {
+    if (package.pubspec.fields.containsKey('author')) {
       warnings.add('Your pubspec.yaml includes an "author" section which'
           ' is no longer used and may be removed.');
     }
-    if (entrypoint.root.pubspec.fields.containsKey('authors')) {
+    if (package.pubspec.fields.containsKey('authors')) {
       warnings.add('Your pubspec.yaml includes an "authors" section which'
           ' is no longer used and may be removed.');
     }

@@ -49,7 +49,7 @@ class UploaderCommand extends PubCommand {
   Future<void> runProtected() async {
     var packageName = '<packageName>';
     try {
-      packageName = entrypoint.root.name;
+      packageName = entrypoint.workspaceRoot.name;
     } on Exception catch (_) {
       // Probably run without a pubspec.
       // Just print error below without a specific package name.

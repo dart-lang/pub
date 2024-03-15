@@ -20,7 +20,7 @@ const _pluginDocsUrl =
 class FlutterPluginFormatValidator extends Validator {
   @override
   Future validate() async {
-    final pubspec = entrypoint.root.pubspec;
+    final pubspec = package.pubspec;
 
     // Ignore all packages that do not have the `flutter.plugin` property.
     if (pubspec.fields['flutter'] is! Map ||

@@ -192,7 +192,9 @@ Specify multiple sdk packages with descriptors.''');
     /// Compute a pubspec that will depend on all the given packages, but the
     /// actual constraint will only be determined after a resolution decides the
     /// best version.
-    var resolutionPubspec = entrypoint.root.pubspec;
+    // TODO(https://github.com/dart-lang/pub/issues/4127): This should
+    // operate on entrypoint.workPackage.
+    var resolutionPubspec = entrypoint.workspaceRoot.pubspec;
     for (final update in updates) {
       /// Perform version resolution in-memory.
       resolutionPubspec = await _addPackageToPubspec(resolutionPubspec, update);
@@ -211,8 +213,8 @@ Specify multiple sdk packages with descriptors.''');
         cache,
         Package(
           resolutionPubspec,
-          entrypoint.rootDir,
-          entrypoint.root.workspaceChildren,
+          entrypoint.workspaceRoot.dir,
+          entrypoint.workspaceRoot.workspaceChildren,
         ),
       );
     } on GitException {
@@ -250,12 +252,12 @@ Specify multiple sdk packages with descriptors.''');
       /// ensure that the modification timestamp on `pubspec.lock` and
       /// `.dart_tool/package_config.json` is newer than `pubspec.yaml`,
       /// ensuring that [entrypoint.assertUptoDate] will pass.
-      writeTextFile(entrypoint.pubspecPath, newPubspecText);
+      writeTextFile(entrypoint.workspaceRoot.pubspecPath, newPubspecText);
     }
 
     String? overridesFileContents;
     final overridesPath =
-        p.join(entrypoint.rootDir, Pubspec.pubspecOverridesFilename);
+        p.join(entrypoint.workspaceRoot.dir, Pubspec.pubspecOverridesFilename);
     try {
       overridesFileContents = readTextFile(overridesPath);
     } on IOException {
@@ -270,10 +272,11 @@ Specify multiple sdk packages with descriptors.''');
           Pubspec.parse(
             newPubspecText,
             cache.sources,
-            location: Uri.parse(entrypoint.pubspecPath),
+            location: Uri.parse(entrypoint.workspaceRoot.pubspecPath),
             overridesFileContents: overridesFileContents,
             overridesLocation: Uri.file(overridesPath),
-            containingDescription: RootDescription(entrypoint.rootDir),
+            containingDescription:
+                RootDescription(entrypoint.workspaceRoot.dir),
           ),
         )
         .acquireDependencies(
@@ -680,8 +683,9 @@ Specify multiple sdk packages with descriptors.''');
     List<PackageId> resultPackages,
     List<_ParseResult> updates,
   ) {
-    final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
-    log.io('Reading ${entrypoint.pubspecPath}.');
+    final yamlEditor =
+        YamlEditor(readTextFile(entrypoint.workspaceRoot.pubspecPath));
+    log.io('Reading ${entrypoint.workspaceRoot.pubspecPath}.');
     log.fine('Contents:\n$yamlEditor');
 
     for (final update in updates) {
@@ -701,7 +705,7 @@ Specify multiple sdk packages with descriptors.''');
                   : VersionConstraint.any),
         ),
         cache,
-        entrypoint,
+        entrypoint.workPackage,
       );
 
       if (yamlEditor.parseAt(
