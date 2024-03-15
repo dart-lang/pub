@@ -128,8 +128,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
 
     final rootPubspec = includeDependencyOverrides
-        ? entrypoint.root.pubspec
-        : stripDependencyOverrides(entrypoint.root.pubspec);
+        ? entrypoint.workspaceRoot.pubspec
+        : stripDependencyOverrides(entrypoint.workspaceRoot.pubspec);
 
     final upgradablePubspec = includeDevDependencies
         ? rootPubspec
@@ -148,8 +148,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         final upgradablePackagesResult = await _tryResolve(
           Package(
             upgradablePubspec,
-            entrypoint.rootDir,
-            entrypoint.root.workspaceChildren,
+            entrypoint.workspaceRoot.dir,
+            entrypoint.workspaceRoot.workspaceChildren,
           ),
           cache,
           lockFile: entrypoint.lockFile,
@@ -160,8 +160,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         final resolvablePackagesResult = await _tryResolve(
           Package(
             resolvablePubspec,
-            entrypoint.rootDir,
-            entrypoint.root.workspaceChildren,
+            entrypoint.workspaceRoot.dir,
+            entrypoint.workspaceRoot.workspaceChildren,
           ),
           cache,
           lockFile: entrypoint.lockFile,
@@ -179,9 +179,18 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     /// closure of the non-dev dependencies from the root in at least one of
     /// the current, upgradable and resolvable resolutions.
     final nonDevDependencies = <String>{
-      ...await _nonDevDependencyClosure(entrypoint.root, currentPackages),
-      ...await _nonDevDependencyClosure(entrypoint.root, upgradablePackages),
-      ...await _nonDevDependencyClosure(entrypoint.root, resolvablePackages),
+      ...await _nonDevDependencyClosure(
+        entrypoint.workspaceRoot,
+        currentPackages,
+      ),
+      ...await _nonDevDependencyClosure(
+        entrypoint.workspaceRoot,
+        upgradablePackages,
+      ),
+      ...await _nonDevDependencyClosure(
+        entrypoint.workspaceRoot,
+        resolvablePackages,
+      ),
     };
 
     Future<_PackageDetails> analyzeDependency(PackageRef packageRef) async {
@@ -197,7 +206,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       var latestIsOverridden = false;
       PackageId? latest;
       // If not overridden in current resolution we can use this
-      if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
+      if (!entrypoint.workspaceRoot.pubspec.dependencyOverrides
+          .containsKey(name)) {
         latest ??= await cache.getLatest(
           current?.toRef(),
           version: current?.version,
@@ -263,7 +273,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       final currentVersionDetails = await _describeVersion(
         current,
-        entrypoint.root.pubspec.dependencyOverrides.containsKey(name),
+        entrypoint.workspaceRoot.pubspec.dependencyOverrides.containsKey(name),
       );
 
       final upgradableVersionDetails = await _describeVersion(
@@ -288,7 +298,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         // Filter out advisories added to `ignored_advisores` in the root pubspec.
         packageAdvisories = packageAdvisories
             .where(
-              (adv) => entrypoint.root.pubspec.ignoredAdvisories.intersection({
+              (adv) => entrypoint.workspaceRoot.pubspec.ignoredAdvisories
+                  .intersection({
                 ...adv.aliases,
                 adv.id,
               }).isEmpty,
@@ -322,7 +333,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     final rows = <_PackageDetails>[];
 
     final visited = <String>{
-      entrypoint.root.name,
+      entrypoint.workspaceRoot.name,
     };
     // Add all dependencies from the lockfile.
     for (final id in [
@@ -961,9 +972,9 @@ _DependencyKind _kind(
   Entrypoint entrypoint,
   Set<String> nonDevTransitive,
 ) {
-  if (entrypoint.root.dependencies.containsKey(name)) {
+  if (entrypoint.workspaceRoot.dependencies.containsKey(name)) {
     return _DependencyKind.direct;
-  } else if (entrypoint.root.devDependencies.containsKey(name)) {
+  } else if (entrypoint.workspaceRoot.devDependencies.containsKey(name)) {
     return _DependencyKind.dev;
   } else {
     if (nonDevTransitive.contains(name)) {

@@ -45,6 +45,13 @@ class Package {
   /// The parsed pubspec associated with this package.
   final Pubspec pubspec;
 
+  /// The path to the entrypoint package's pubspec.
+  String get pubspecPath => p.normalize(p.join(dir, 'pubspec.yaml'));
+
+  /// The path to the entrypoint package's pubspec overrides file.
+  String get pubspecOverridesPath =>
+      p.normalize(p.join(dir, 'pubspec_overrides.yaml'));
+
   /// The (non-transitive) workspace packages.
   final List<Package> workspaceChildren;
 

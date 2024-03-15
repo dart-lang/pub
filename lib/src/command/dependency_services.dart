@@ -65,15 +65,16 @@ class DependencyServicesReportCommand extends PubCommand {
       throw FormatException('"target" should be a String.');
     }
 
-    final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
+    final compatiblePubspec =
+        stripDependencyOverrides(entrypoint.workspaceRoot.pubspec);
 
     final breakingPubspec = stripVersionBounds(compatiblePubspec);
 
     final compatiblePackagesResult = await _tryResolve(
       Package(
         compatiblePubspec,
-        entrypoint.rootDir,
-        entrypoint.root.workspaceChildren,
+        entrypoint.workspaceRoot.dir,
+        entrypoint.workspaceRoot.workspaceChildren,
       ),
       cache,
       additionalConstraints: additionalConstraints,
@@ -82,8 +83,8 @@ class DependencyServicesReportCommand extends PubCommand {
     final breakingPackagesResult = await _tryResolve(
       Package(
         breakingPubspec,
-        entrypoint.rootDir,
-        entrypoint.root.workspaceChildren,
+        entrypoint.workspaceRoot.dir,
+        entrypoint.workspaceRoot.workspaceChildren,
       ),
       cache,
       additionalConstraints: additionalConstraints,
@@ -123,8 +124,8 @@ class DependencyServicesReportCommand extends PubCommand {
         final singleBreakingPackagesResult = await _tryResolve(
           Package(
             singleBreakingPubspec,
-            entrypoint.rootDir,
-            entrypoint.root.workspaceChildren,
+            entrypoint.workspaceRoot.dir,
+            entrypoint.workspaceRoot.workspaceChildren,
           ),
           cache,
         );
@@ -144,8 +145,8 @@ class DependencyServicesReportCommand extends PubCommand {
         final smallestUpgradeResult = await _tryResolve(
           Package(
             atLeastCurrentPubspec,
-            entrypoint.rootDir,
-            entrypoint.root.workspaceChildren,
+            entrypoint.workspaceRoot.dir,
+            entrypoint.workspaceRoot.workspaceChildren,
           ),
           cache,
           solveType: SolveType.downgrade,
@@ -230,15 +231,15 @@ class DependencyServicesListCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    final pubspec = entrypoint.root.pubspec;
+    final pubspec = entrypoint.workspaceRoot.pubspec;
 
     final currentPackages = fileExists(entrypoint.lockFilePath)
         ? entrypoint.lockFile.packages.values.toList()
         : (await _tryResolve(
               Package(
                 pubspec,
-                entrypoint.rootDir,
-                entrypoint.root.workspaceChildren,
+                entrypoint.workspaceRoot.dir,
+                entrypoint.workspaceRoot.workspaceChildren,
               ),
               cache,
             ) ??
@@ -308,7 +309,7 @@ class DependencyServicesApplyCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    YamlEditor(readTextFile(entrypoint.pubspecPath));
+    YamlEditor(readTextFile(entrypoint.workspaceRoot.pubspecPath));
     final toApply = <_PackageVersion>[];
     final input = json.decode(await utf8.decodeStream(stdin));
     for (final change in input['dependencyChanges'] as Iterable) {
@@ -323,8 +324,9 @@ class DependencyServicesApplyCommand extends PubCommand {
       );
     }
 
-    final pubspec = entrypoint.root.pubspec;
-    final pubspecEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
+    final pubspec = entrypoint.workspaceRoot.pubspec;
+    final pubspecEditor =
+        YamlEditor(readTextFile(entrypoint.workspaceRoot.pubspecPath));
     final lockFile = fileExists(entrypoint.lockFilePath)
         ? readTextFile(entrypoint.lockFilePath)
         : null;
@@ -450,16 +452,17 @@ class DependencyServicesApplyCommand extends PubCommand {
             Pubspec.parse(
               updatedPubspec,
               cache.sources,
-              location: toUri(entrypoint.pubspecPath),
-              containingDescription: RootDescription(entrypoint.rootDir),
+              location: toUri(entrypoint.workspaceRoot.pubspecPath),
+              containingDescription:
+                  RootDescription(entrypoint.workspaceRoot.dir),
             ),
-            entrypoint.rootDir,
-            entrypoint.root.workspaceChildren,
+            entrypoint.workspaceRoot.dir,
+            entrypoint.workspaceRoot.workspaceChildren,
           ),
           lockFile: updatedLockfile,
         );
         if (pubspecEditor.edits.isNotEmpty) {
-          writeTextFile(entrypoint.pubspecPath, updatedPubspec);
+          writeTextFile(entrypoint.workspaceRoot.pubspecPath, updatedPubspec);
         }
         // Only if we originally had a lock-file we write the resulting lockfile back.
         if (updatedLockfile != null) {
@@ -717,14 +720,14 @@ Future<Map<String, PackageId>> _computeCurrentPackages(
   if (fileExists(entrypoint.lockFilePath)) {
     currentPackages = Map<String, PackageId>.from(entrypoint.lockFile.packages);
   } else {
-    final resolution = await _tryResolve(entrypoint.root, cache) ??
+    final resolution = await _tryResolve(entrypoint.workspaceRoot, cache) ??
         (throw DataException('Failed to resolve pubspec'));
     currentPackages = Map<String, PackageId>.fromIterable(
       resolution,
       key: (e) => (e as PackageId).name,
     );
   }
-  currentPackages.remove(entrypoint.root.name);
+  currentPackages.remove(entrypoint.workspaceRoot.name);
   return currentPackages;
 }
 
@@ -762,7 +765,11 @@ Future<List<Object>> _computeUpgradeSet(
         ? SolveType.downgrade
         : SolveType.get,
     cache,
-    Package(pubspec, entrypoint.rootDir, entrypoint.root.workspaceChildren),
+    Package(
+      pubspec,
+      entrypoint.workspaceRoot.dir,
+      entrypoint.workspaceRoot.workspaceChildren,
+    ),
     lockFile: lockFile,
     additionalConstraints: additionalConstraints,
   );
@@ -785,7 +792,7 @@ Future<List<Object>> _computeUpgradeSet(
         'name': p.name,
         'version': p.versionOrHash(),
         'kind': _kindString(pubspec, p.name),
-        'source': _source(p, containingDir: entrypoint.root.dir),
+        'source': _source(p, containingDir: entrypoint.workspaceRoot.dir),
         'constraintBumped': originalConstraint == null
             ? null
             : upgradeType == _UpgradeType.compatible
@@ -807,7 +814,10 @@ Future<List<Object>> _computeUpgradeSet(
         'previousConstraint': originalConstraint?.toString(),
         'previousSource': currentPackage == null
             ? null
-            : _source(currentPackage, containingDir: entrypoint.root.dir),
+            : _source(
+                currentPackage,
+                containingDir: entrypoint.workspaceRoot.dir,
+              ),
       };
     }),
     // Find packages that were removed by the resolution
@@ -825,7 +835,7 @@ Future<List<Object>> _computeUpgradeSet(
           'previousConstraint': null,
           'previous': _source(
             currentPackages[oldPackageName]!,
-            containingDir: entrypoint.root.dir,
+            containingDir: entrypoint.workspaceRoot.dir,
           ),
         },
   ];

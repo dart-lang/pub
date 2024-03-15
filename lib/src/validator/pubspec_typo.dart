@@ -9,7 +9,7 @@ import '../validator.dart';
 class PubspecTypoValidator extends Validator {
   @override
   Future validate() async {
-    final fields = entrypoint.root.pubspec.fields;
+    final fields = package.pubspec.fields;
 
     /// Limit the number of typo warnings so as not to drown out the other
     /// warnings

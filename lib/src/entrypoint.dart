@@ -37,51 +37,75 @@ import 'source/unknown.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
-/// The context surrounding the root package pub is operating on.
+/// The context surrounding the workspace pub is operating on.
 ///
 /// Pub operates over a directed graph of dependencies that starts at a root
 /// "entrypoint" package. This is typically the package where the current
-/// working directory is located. An entrypoint knows the [root] package it is
-/// associated with and is responsible for managing the "packages" directory
-/// for it.
+/// working directory is located.
 ///
-/// That directory contains symlinks to all packages used by an app. These links
-/// point either to the [SystemCache] or to some other location on the local
-/// filesystem.
+/// An entrypoint knows the [workspaceRoot] package it is associated with and is
+/// responsible for managing the package config (.dart_tool/package_config.json)
+/// and lock file (pubspec.lock) for it.
 ///
 /// While entrypoints are typically applications, a pure library package may end
-/// up being used as an entrypoint. Also, a single package may be used as an
-/// entrypoint in one context but not in another. For example, a package that
-/// contains a reusable library may not be the entrypoint when used by an app,
-/// but may be the entrypoint when you're running its tests.
+/// up being used as an entrypoint while under development. Also, a single
+/// package may be used as an entrypoint in one context but not in another. For
+/// example, a package that contains a reusable library may not be the
+/// entrypoint when used by an app, but may be the entrypoint when you're
+/// running its tests.
 class Entrypoint {
-  /// The directory where the package is stored.
+  /// The directory where this entrypoint is created.
   ///
-  /// For cached global packages this is `PUB_CACHE/global_packages/foo
-  ///
-  /// For path-activated global packages this is the actual package dir.
-  ///
-  /// The lock file and package configurations are to be found relative to here.
-  final String rootDir;
+  /// [workspaceRoot] will be the package in the nearest parent directory that
+  /// has `resolution: null`
+  // TODO(https://github.com/dart-lang/pub/issues/4127): make this actually
+  // true.
+  final String workingDir;
 
-  Package? _root;
+  Package? _workspaceRoot;
 
   /// The root package this entrypoint is associated with.
   ///
   /// For a global package, this is the activated package.
-  Package get root => _root ??= Package.load(
+  Package get workspaceRoot => _workspaceRoot ??= Package.load(
         null,
-        rootDir,
+        workingDir,
         cache.sources,
         withPubspecOverrides: true,
       );
+
+  bool get canFindWorkspaceRoot {
+    try {
+      workspaceRoot;
+      return true;
+    } on FileException {
+      return false;
+    }
+  }
+
+  /// The "focus" package that the current command should act upon.
+  ///
+  /// It will be the package in the nearest parent directory to `workingDir`.
+  /// Example: if a workspace looks like this:
+  // TODO(https://github.com/dart-lang/pub/issues/4127): make this actually
+  // true.
+  ///
+  /// foo/ pubspec.yaml # contains `workspace: [- 'bar'] bar/ pubspec.yaml #
+  ///   contains `resolution: workspace`.
+  ///
+  /// Running `pub add` in `foo/bar` will have bar as workPackage, and add
+  /// dependencies to `foo/bar/pubspec.yaml`.
+  ///
+  /// Running `pub add` in `foo` will have foo as workPackage, and add
+  /// dependencies to `foo/pubspec.yaml`.
+  Package get workPackage => workspaceRoot;
 
   /// The system-wide cache which caches packages that need to be fetched over
   /// the network.
   final SystemCache cache;
 
   /// Whether this entrypoint exists within the package cache.
-  bool get isCached => p.isWithin(cache.rootDir, rootDir);
+  bool get isCached => p.isWithin(cache.rootDir, workingDir);
 
   /// Whether this is an entrypoint for a globally-activated package.
   ///
@@ -165,7 +189,7 @@ class Entrypoint {
     // TODO(sigurdm): consider having [ensureUptoDate] and [acquireDependencies]
     // return the package-graph, such it by construction will always made from an
     // up-to-date package-config.
-    await ensureUpToDate(rootDir, cache: cache);
+    await ensureUpToDate(workspaceRoot.dir, cache: cache);
     var packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
@@ -174,7 +198,7 @@ class Entrypoint {
           cache.sources,
         ),
     };
-    packages[root.name] = root;
+    packages[workspaceRoot.name] = workspaceRoot;
 
     return PackageGraph(this, packages);
   }
@@ -184,32 +208,28 @@ class Entrypoint {
   /// The path to the entrypoint's ".dart_tool/package_config.json" file
   /// relative to the current working directory .
   late String packageConfigPath = p.relative(
-    p.normalize(p.join(rootDir, '.dart_tool', 'package_config.json')),
+    p.normalize(p.join(workspaceRoot.dir, '.dart_tool', 'package_config.json')),
   );
 
-  /// The path to the entrypoint package's pubspec.
-  String get pubspecPath => p.normalize(p.join(rootDir, 'pubspec.yaml'));
-
-  /// The path to the entrypoint package's pubspec overrides file.
-  String get pubspecOverridesPath =>
-      p.normalize(p.join(rootDir, 'pubspec_overrides.yaml'));
-
-  /// The path to the entrypoint package's lockfile.
-  String get lockFilePath => p.normalize(p.join(rootDir, 'pubspec.lock'));
+  /// The path to the entrypoint workspace's lockfile.
+  String get lockFilePath =>
+      p.normalize(p.join(workspaceRoot.dir, 'pubspec.lock'));
 
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(
-        isCachedGlobal ? rootDir : p.join(rootDir, '.dart_tool/pub'),
+        isCachedGlobal
+            ? workspaceRoot.dir
+            : p.join(workspaceRoot.dir, '.dart_tool/pub'),
         'bin',
       );
 
   Entrypoint._(
-    this.rootDir,
+    this.workingDir,
     this._lockFile,
     this._example,
     this._packageGraph,
     this.cache,
-    this._root,
+    this._workspaceRoot,
     this.isCachedGlobal,
   );
 
@@ -218,15 +238,19 @@ class Entrypoint {
   /// If [checkInCache] is `true` (the default) an error will be thrown if
   /// [rootDir] is located inside [cache.rootDir].
   Entrypoint(
-    this.rootDir,
+    this.workingDir,
     this.cache, {
     ({Pubspec pubspec, List<Package> workspacePackages})? preloaded,
     bool checkInCache = true,
-  })  : _root = preloaded == null
+  })  : _workspaceRoot = preloaded == null
             ? null
-            : Package(preloaded.pubspec, rootDir, preloaded.workspacePackages),
+            : Package(
+                preloaded.pubspec,
+                workingDir,
+                preloaded.workspacePackages,
+              ),
         isCachedGlobal = false {
-    if (checkInCache && p.isWithin(cache.rootDir, rootDir)) {
+    if (checkInCache && p.isWithin(cache.rootDir, workingDir)) {
       fail('Cannot operate on packages inside the cache.');
     }
   }
@@ -235,15 +259,15 @@ class Entrypoint {
   /// resolution.
   Entrypoint withPubspec(Pubspec pubspec) {
     return Entrypoint._(
-      rootDir,
+      workingDir,
       _lockFile,
       _example,
       _packageGraph,
       cache,
       Package(
         pubspec,
-        rootDir,
-        root.workspaceChildren,
+        workingDir,
+        workspaceRoot.workspaceChildren,
       ),
       isCachedGlobal,
     );
@@ -252,11 +276,11 @@ class Entrypoint {
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passed as an optimization.
   Entrypoint.global(
-    Package this._root,
+    Package this._workspaceRoot,
     this._lockFile,
     this.cache, {
     SolveResult? solveResult,
-  })  : rootDir = _root.dir,
+  })  : workingDir = _workspaceRoot.dir,
         isCachedGlobal = true {
     if (solveResult != null) {
       _packageGraph =
@@ -269,10 +293,10 @@ class Entrypoint {
   /// This will be null if the example folder doesn't have a `pubspec.yaml`.
   Entrypoint? get example {
     if (_example != null) return _example;
-    if (!fileExists(root.path('example', 'pubspec.yaml'))) {
+    if (!fileExists(workspaceRoot.path('example', 'pubspec.yaml'))) {
       return null;
     }
-    return _example = Entrypoint(root.path('example'), cache);
+    return _example = Entrypoint(workspaceRoot.path('example'), cache);
   }
 
   Entrypoint? _example;
@@ -284,8 +308,8 @@ class Entrypoint {
       packageConfigPath,
       await _packageConfigFile(
         cache,
-        entrypointSdkConstraint:
-            root.pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
+        entrypointSdkConstraint: workspaceRoot
+            .pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
       ),
     );
   }
@@ -293,13 +317,13 @@ class Entrypoint {
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this entrypoint based on [lockFile].
   ///
-  /// If [isCachedGlobal] no entry will be created for [root].
+  /// If [isCachedGlobal] no entry will be created for [workspaceRoot].
   Future<String> _packageConfigFile(
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
   }) async {
     final entries = <PackageConfigEntry>[];
-    late final relativeFromPath = p.join(rootDir, '.dart_tool');
+    late final relativeFromPath = p.join(workspaceRoot.dir, '.dart_tool');
     for (final name in ordered(lockFile.packages.keys)) {
       final id = lockFile.packages[name]!;
       final rootPath = cache.getDirectory(id, relativeFrom: relativeFromPath);
@@ -317,12 +341,15 @@ class Entrypoint {
     if (!isCachedGlobal) {
       /// Run through the entire workspace transitive closure and add an entry
       /// for each package.
-      for (final package in root.transitiveWorkspace) {
+      for (final package in workspaceRoot.transitiveWorkspace) {
         entries.add(
           PackageConfigEntry(
             name: package.name,
             rootUri: p.toUri(
-              p.relative(package.dir, from: p.join(rootDir, '.dart_tool')),
+              p.relative(
+                package.dir,
+                from: p.join(workspaceRoot.dir, '.dart_tool'),
+              ),
             ),
             packageUri: p.toUri('lib/'),
             languageVersion: package.pubspec.languageVersion,
@@ -350,7 +377,7 @@ class Entrypoint {
     return '${JsonEncoder.withIndent('  ').convert(packageConfig.toJson())}\n';
   }
 
-  /// Gets all dependencies of the [root] package.
+  /// Gets all dependencies of the [workspaceRoot] package.
   ///
   /// Performs version resolution according to [SolveType].
   ///
@@ -381,9 +408,9 @@ class Entrypoint {
     bool summaryOnly = false,
     bool enforceLockfile = false,
   }) async {
-    root; // This will throw early if pubspec.yaml could not be found.
+    workspaceRoot; // This will throw early if pubspec.yaml could not be found.
     summaryOnly = summaryOnly || _summaryOnlyEnvironment;
-    final suffix = rootDir == '.' ? '' : ' in $rootDir';
+    final suffix = workspaceRoot.dir == '.' ? '' : ' in ${workspaceRoot.dir}';
 
     if (enforceLockfile && !fileExists(lockFilePath)) {
       throw ApplicationException('''
@@ -397,11 +424,13 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
 
     try {
       result = await log.progress('Resolving dependencies$suffix', () async {
-        _checkSdkConstraint(root.pubspec);
+        // TODO(https://github.com/dart-lang/pub/issues/4127): Check this for
+        // all workspace pubspecs.
+        _checkSdkConstraint(workspaceRoot.pubspecPath, workspaceRoot.pubspec);
         return resolveVersions(
           type,
           cache,
-          root,
+          workspaceRoot,
           lockFile: lockFile,
           unlock: unlock ?? [],
         );
@@ -425,8 +454,8 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
 
     final report = SolveReport(
       type,
-      rootDir,
-      root.pubspec,
+      workspaceRoot.dir,
+      workspaceRoot.pubspec,
       lockFile,
       newLockFile,
       result.availableVersions,
@@ -439,7 +468,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
     await report.show(summary: true);
     if (enforceLockfile && !_lockfilesMatch(lockFile, newLockFile)) {
       dataError('''
-Unable to satisfy `$pubspecPath` using `$lockFilePath`$suffix.
+Unable to satisfy `${workspaceRoot.pubspecPath}` using `$lockFilePath`$suffix.
 
 To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 `--enforce-lockfile`.''');
@@ -481,7 +510,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// the package itself if they are immutable.
   Future<List<Executable>> get _builtExecutables async {
     final graph = await packageGraph;
-    final r = root.immediateDependencies.keys.expand((packageName) {
+    final r = workspaceRoot.immediateDependencies.keys.expand((packageName) {
       final package = graph.packages[packageName]!;
       return package.executablePaths
           .map((path) => Executable(packageName, path));
@@ -568,8 +597,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// [path] must be relative.
   String pathOfSnapshot(Executable executable) {
     return isCachedGlobal
-        ? executable.pathOfGlobalSnapshot(rootDir)
-        : executable.pathOfSnapshot(rootDir);
+        ? executable.pathOfGlobalSnapshot(workspaceRoot.dir)
+        : executable.pathOfSnapshot(workspaceRoot.dir);
   }
 
   /// Deletes cached snapshots that are from a different sdk.
@@ -1002,7 +1031,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// We require an SDK constraint lower-bound as of Dart 2.12.0
   ///
   /// We don't allow unknown sdks.
-  void _checkSdkConstraint(Pubspec pubspec) {
+  void _checkSdkConstraint(String pubspecPath, Pubspec pubspec) {
     final dartSdkConstraint = pubspec.dartSdkConstraint.effectiveConstraint;
     // Suggest an sdk constraint giving the same language version as the
     // current sdk.

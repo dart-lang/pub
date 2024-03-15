@@ -376,20 +376,31 @@ Platform: ${Platform.operatingSystem}
 ''');
 
   if (entrypoint != null) {
-    buffer.writeln('---- ${p.absolute(entrypoint.pubspecPath)} ----');
-    if (fileExists(entrypoint.pubspecPath)) {
-      buffer.writeln(limitLength(readTextFile(entrypoint.pubspecPath), 5000));
+    // TODO(https://github.com/dart-lang/pub/issues/4127): We probably want to
+    // log all pubspecs in workspace?
+
+    if (entrypoint.canFindWorkspaceRoot) {
+      buffer.writeln(
+        '---- ${p.absolute(entrypoint.workspaceRoot.pubspecPath)} ----',
+      );
+      buffer.writeln(
+        limitLength(
+          readTextFile(entrypoint.workspaceRoot.pubspecPath),
+          5000,
+        ),
+      );
+      buffer.writeln('---- End pubspec.yaml ----');
     } else {
       buffer.writeln('<No pubspec.yaml>');
     }
-    buffer.writeln('---- End pubspec.yaml ----');
-    buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
-    if (fileExists(entrypoint.lockFilePath)) {
+    if (entrypoint.canFindWorkspaceRoot &&
+        fileExists(entrypoint.lockFilePath)) {
+      buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
       buffer.writeln(limitLength(readTextFile(entrypoint.lockFilePath), 5000));
+      buffer.writeln('---- End pubspec.lock ----');
     } else {
       buffer.writeln('<No pubspec.lock>');
     }
-    buffer.writeln('---- End pubspec.lock ----');
   }
 
   buffer.writeln('---- Log transcript ----');

@@ -15,7 +15,7 @@ class FlutterConstraintValidator extends Validator {
 
   @override
   Future validate() async {
-    final environment = entrypoint.root.pubspec.fields['environment'];
+    final environment = package.pubspec.fields['environment'];
     if (environment is Map) {
       final flutterConstraint = environment['flutter'];
       if (flutterConstraint is String) {

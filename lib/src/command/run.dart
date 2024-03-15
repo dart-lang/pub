@@ -69,7 +69,7 @@ class RunCommand extends PubCommand {
       dataError('The --(no-)sound-null-safety flag is no longer supported.');
     }
 
-    var package = entrypoint.root.name;
+    var package = entrypoint.workspaceRoot.name;
     var executable = argResults.rest[0];
     var args = argResults.rest.skip(1).toList();
 

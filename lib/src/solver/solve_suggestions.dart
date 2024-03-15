@@ -93,7 +93,8 @@ class _ResolutionSuggestion {
 
 String packageAddDescription(Entrypoint entrypoint, PackageId id) {
   final name = id.name;
-  final isDev = entrypoint.root.pubspec.devDependencies.containsKey(name);
+  final isDev =
+      entrypoint.workspaceRoot.pubspec.devDependencies.containsKey(name);
   final resolvedDescription = id.description;
   final String descriptor;
   final d = resolvedDescription.description.serializeForPubspec(
@@ -102,7 +103,7 @@ String packageAddDescription(Entrypoint entrypoint, PackageId id) {
     // This currently should have no implications as we don't create suggestions
     // for path-packages.
     ,
-    languageVersion: entrypoint.root.pubspec.languageVersion,
+    languageVersion: entrypoint.workspaceRoot.pubspec.languageVersion,
   );
   if (d == null) {
     descriptor = VersionConstraint.compatibleWith(id.version).toString();
@@ -148,7 +149,7 @@ class _ResolutionContext {
         await inferBestFlutterRelease({cause.sdk.identifier: constraint});
     if (bestRelease == null) return null;
     final result = await _tryResolve(
-      entrypoint.root,
+      entrypoint.workspaceRoot,
       sdkOverrides: {
         'dart': bestRelease.dartVersion,
         'flutter': bestRelease.flutterVersion,
@@ -170,8 +171,10 @@ class _ResolutionContext {
   /// Attempt another resolution with a relaxed constraint on [name]. If that
   /// resolves, suggest upgrading to that version.
   Future<_ResolutionSuggestion?> suggestSinglePackageUpdate(String name) async {
-    final originalRange = entrypoint.root.dependencies[name] ??
-        entrypoint.root.devDependencies[name];
+    // TODO(https://github.com/dart-lang/pub/issues/4127): This should
+    // operate on all packages in workspace.
+    final originalRange = entrypoint.workspaceRoot.dependencies[name] ??
+        entrypoint.workspaceRoot.devDependencies[name];
     if (originalRange == null ||
         originalRange.description is! HostedDescription) {
       // We can only relax constraints on hosted dependencies.
@@ -179,7 +182,7 @@ class _ResolutionContext {
     }
     final originalConstraint = originalRange.constraint;
     final relaxedPubspec = stripVersionBounds(
-      entrypoint.root.pubspec,
+      entrypoint.workspaceRoot.pubspec,
       stripOnly: [name],
       stripLowerBound: true,
     );
@@ -187,8 +190,8 @@ class _ResolutionContext {
     final result = await _tryResolve(
       Package(
         relaxedPubspec,
-        entrypoint.rootDir,
-        entrypoint.root.workspaceChildren,
+        entrypoint.workspaceRoot.dir,
+        entrypoint.workspaceRoot.workspaceChildren,
       ),
     );
     if (result == null) {
@@ -224,15 +227,15 @@ class _ResolutionContext {
   Future<_ResolutionSuggestion?> suggestUnlockingAll({
     required bool stripLowerBound,
   }) async {
-    final originalPubspec = entrypoint.root.pubspec;
+    final originalPubspec = entrypoint.workspaceRoot.pubspec;
     final relaxedPubspec =
         stripVersionBounds(originalPubspec, stripLowerBound: stripLowerBound);
 
     final result = await _tryResolve(
       Package(
         relaxedPubspec,
-        entrypoint.rootDir,
-        entrypoint.root.workspaceChildren,
+        entrypoint.workspaceRoot.dir,
+        entrypoint.workspaceRoot.workspaceChildren,
       ),
     );
     if (result == null) {

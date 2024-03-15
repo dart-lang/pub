@@ -182,14 +182,14 @@ class GlobalPackages {
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.get);
-    var name = entrypoint.root.name;
+    var name = entrypoint.workspaceRoot.name;
     _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
-    var fullPath = canonicalize(entrypoint.rootDir);
+    var fullPath = canonicalize(entrypoint.workspaceRoot.dir);
     var id = cache.path.idFor(
       name,
-      entrypoint.root.version,
+      entrypoint.workspaceRoot.version,
       fullPath,
       p.current,
     );
@@ -205,7 +205,7 @@ class GlobalPackages {
 
     _updateBinStubs(
       entrypoint,
-      entrypoint.root,
+      entrypoint.workspaceRoot,
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
@@ -565,7 +565,7 @@ try:
             );
           } else {
             await activatePath(
-              entrypoint.rootDir,
+              entrypoint.workspaceRoot.dir,
               packageExecutables,
               overwriteBinStubs: true,
             );
@@ -618,17 +618,18 @@ try:
         log.fine('Could not parse binstub $file:\n$contents');
         continue;
       }
-      if (binStubPackage == entrypoint.root.name &&
+      if (binStubPackage == entrypoint.workspaceRoot.name &&
           binStubScript ==
               p.basenameWithoutExtension(executable.relativePath)) {
         log.fine('Replacing old binstub $file');
         deleteEntry(file);
         _createBinStub(
-          entrypoint.root,
+          entrypoint.workspaceRoot,
           p.basenameWithoutExtension(file),
           binStubScript,
           overwrite: true,
-          snapshot: executable.pathOfGlobalSnapshot(entrypoint.rootDir),
+          snapshot:
+              executable.pathOfGlobalSnapshot(entrypoint.workspaceRoot.dir),
         );
       }
     }
