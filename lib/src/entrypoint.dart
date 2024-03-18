@@ -59,8 +59,6 @@ class Entrypoint {
   ///
   /// [workspaceRoot] will be the package in the nearest parent directory that
   /// has `resolution: null`
-  // TODO(https://github.com/dart-lang/pub/issues/4127): make this actually
-  // true.
   final String workingDir;
 
   static ({Package root, Package work}) _loadWorkspace(
@@ -145,8 +143,6 @@ See $workspacesDocUrl for more information.''',
   ///
   /// It will be the package in the nearest parent directory to `workingDir`.
   /// Example: if a workspace looks like this:
-  // TODO(https://github.com/dart-lang/pub/issues/4127): make this actually
-  // true.
   ///
   /// foo/ pubspec.yaml # contains `workspace: [- 'bar'] bar/ pubspec.yaml #
   ///   contains `resolution: workspace`.
