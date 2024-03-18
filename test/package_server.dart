@@ -143,7 +143,7 @@ class PackageServer {
           jsonEncode({
             'advisoriesUpdated': defaultAdvisoriesUpdated.toIso8601String(),
             'advisories': [
-              for (final advisory in package.advisories)
+              for (final advisory in package.advisories.values)
                 {
                   'id': advisory.id,
                   'summary': 'Example',
@@ -345,8 +345,14 @@ class PackageServer {
     for (final package in affectedPackages) {
       _packages[package.name]!.advisoriesUpdated =
           advisoriesUpdated ?? defaultAdvisoriesUpdated;
-      _packages[package.name]!.advisories.add(
-            _ServedAdvisory(advisoryId, affectedPackages, aliases, displayUrl),
+      _packages[package.name]!.advisories.putIfAbsent(
+            advisoryId,
+            () => _ServedAdvisory(
+              advisoryId,
+              affectedPackages,
+              aliases,
+              displayUrl,
+            ),
           );
     }
   }
@@ -409,7 +415,7 @@ class _ServedPackage {
   bool isDiscontinued = false;
   String? discontinuedReplacementText;
   DateTime? advisoriesUpdated;
-  final advisories = <_ServedAdvisory>[];
+  final advisories = <String, _ServedAdvisory>{};
 }
 
 /// A package that's intended to be served.

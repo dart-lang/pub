@@ -190,6 +190,35 @@ Future<void> main() async {
     await ctx.run(['get']);
   });
 
+  testWithGolden('show advisory - same package mentioned twice', (ctx) async {
+    final server = await servePackages();
+    server
+      ..serve('foo', '1.0.0')
+      ..serve('foo', '1.2.3')
+      ..serve('baz', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'baz': '^1.0.0',
+        },
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: '123',
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
+    );
+
+    await ctx.run(['get']);
+  });
+
   testWithGolden('show id if no display url is present', (ctx) async {
     final server = await servePackages();
     server
