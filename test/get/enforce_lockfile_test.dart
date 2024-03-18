@@ -84,14 +84,14 @@ Try running `dart pub get` to create `pubspec.lock`.
       args: ['--enforce-lockfile', '--example'],
       output: allOf(
         contains('Got dependencies!'),
-        contains('Resolving dependencies in $example...'),
+        contains('Resolving dependencies in `$example`...'),
       ),
       error: allOf(
         contains(
-          'Unable to satisfy `$examplePubspec` using `$examplePubspecLock` in $example.',
+          'Unable to satisfy `$examplePubspec` using `$examplePubspecLock` in `$example`.',
         ),
         contains(
-            'To update `$examplePubspecLock` run `dart pub get` in $example without\n'
+            'To update `$examplePubspecLock` run `dart pub get` in `$example` without\n'
             '`--enforce-lockfile`.'),
       ),
       exitCode: DATA,

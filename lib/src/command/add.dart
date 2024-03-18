@@ -256,8 +256,7 @@ Specify multiple sdk packages with descriptors.''');
     }
 
     String? overridesFileContents;
-    final overridesPath =
-        p.join(entrypoint.workspaceRoot.dir, Pubspec.pubspecOverridesFilename);
+    final overridesPath = entrypoint.workspaceRoot.pubspecOverridesPath;
     try {
       overridesFileContents = readTextFile(overridesPath);
     } on IOException {
@@ -268,7 +267,7 @@ Specify multiple sdk packages with descriptors.''');
     /// gets a report on the other packages that might change version due
     /// to this new dependency.
     await entrypoint
-        .withPubspec(
+        .withWorkPubspec(
           Pubspec.parse(
             newPubspecText,
             cache.sources,

@@ -364,7 +364,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     }
 
     await entrypoint
-        .withPubspec(_updatedPubspec(newPubspecText, entrypoint))
+        .withWorkPubspec(_updatedPubspec(newPubspecText, entrypoint))
         .acquireDependencies(
           solveType,
           dryRun: _dryRun,

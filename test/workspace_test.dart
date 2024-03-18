@@ -26,7 +26,12 @@ void main() {
       ),
       dir('pkgs', [
         dir('a', [
-          libPubspec('a', '1.1.1', devDeps: {'dev_dep': '^1.0.0'}),
+          libPubspec(
+            'a',
+            '1.1.1',
+            devDeps: {'dev_dep': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
         ]),
       ]),
     ]).create();
@@ -62,7 +67,12 @@ void main() {
       ),
       dir('pkgs', [
         dir('a', [
-          libPubspec('a', '1.1.1', deps: {'b': '^2.0.0'}),
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'b': '^2.0.0'},
+            resolutionWorkspace: true,
+          ),
         ]),
         dir('b', [
           libPubspec(
@@ -71,6 +81,7 @@ void main() {
             deps: {
               'myapp': {'git': 'somewhere'},
             },
+            resolutionWorkspace: true,
           ),
         ]),
       ]),
@@ -109,7 +120,7 @@ void main() {
             extras: {
               'workspace': ['example'],
             },
-            sdk: '^3.7.0',
+            resolutionWorkspace: true,
           ),
           dir('example', [
             libPubspec(
@@ -118,6 +129,7 @@ void main() {
               deps: {
                 'a': {'path': '..'},
               },
+              resolutionWorkspace: true,
             ),
           ]),
         ]),
@@ -151,7 +163,12 @@ void main() {
       ),
       dir('pkgs', [
         dir('a', [
-          libPubspec('a', '1.1.1', deps: {'myapp': '^0.2.3'}),
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'myapp': '^0.2.3'},
+            resolutionWorkspace: true,
+          ),
         ]),
       ]),
     ]).create();
@@ -181,10 +198,53 @@ void main() {
             deps: {
               'myapp': {'posted': 'https://abc'},
             },
+            resolutionWorkspace: true,
           ),
         ]),
       ]),
     ]).create();
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+  });
+
+  test('Can resolve from any directory inside the workspace', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {
+              'myapp': {'posted': 'https://abc'},
+            },
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      workingDirectory: p.join(sandbox, appPath, 'pkgs'),
+      output: contains('Resolving dependencies in `..`...'),
+    );
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      workingDirectory: p.join(sandbox, appPath, 'pkgs', 'a'),
+      output: contains('Resolving dependencies in `../..`...'),
+    );
+
+    await pubGet(
+      args: ['-C$appPath/pkgs'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      workingDirectory: sandbox,
+      output: contains('Resolving dependencies in `$appPath`...'),
+    );
   });
 }

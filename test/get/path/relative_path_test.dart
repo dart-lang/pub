@@ -92,7 +92,7 @@ void main() {
     await pubGet(
       args: ['--directory', appPath],
       workingDirectory: d.sandbox,
-      output: contains('Changed 2 dependencies in myapp!'),
+      output: contains('Changed 2 dependencies in `myapp`!'),
     );
 
     await d.appPackageConfigFile([

@@ -131,22 +131,48 @@ class Package {
   ///
   /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
   /// `true`.
+  ///
+  /// [alreadyLoadedPubspecs] contains a map from the `p.canonicalize`d
+  /// directory containing a pubspec, to the loaded [Pubspec] object.
+  ///
+  /// This mechanism can be used to avoid loading pubspecs twice. It can also be
+  /// used to override a pubspec in memory for trying out an alternative
+  /// resolution.
   factory Package.load(
     String? name,
     String dir,
     SourceRegistry sources, {
     bool withPubspecOverrides = false,
+    Map<String, Pubspec> alreadyLoadedPubspecs = const {},
   }) {
-    final pubspec = Pubspec.load(
-      dir,
-      sources,
-      expectedName: name,
-      allowOverridesFile: withPubspecOverrides,
-      containingDescription: RootDescription(dir),
-    );
+    final pubspec = alreadyLoadedPubspecs[p.canonicalize(dir)] ??
+        Pubspec.load(
+          dir,
+          sources,
+          expectedName: name,
+          allowOverridesFile: withPubspecOverrides,
+          containingDescription: RootDescription(dir),
+        );
     final workspacePackages = pubspec.workspace
-        .map((e) => Package.load(null, p.join(dir, e), sources))
+        .map(
+          (e) => Package.load(
+            null,
+            p.join(dir, e),
+            sources,
+            alreadyLoadedPubspecs: alreadyLoadedPubspecs,
+            withPubspecOverrides: withPubspecOverrides,
+          ),
+        )
         .toList();
+    for (final package in workspacePackages) {
+      if (package.pubspec.resolution != Resolution.workspace) {
+        fail('''
+${package.pubspecPath} is inluded in the workspace from ${p.join(dir, 'pubspec.yaml')}, but does not have `resolution: workspace`.
+
+See $workspacesDocUrl for more information.
+''');
+      }
+    }
     return Package(pubspec, dir, workspacePackages);
   }
 
