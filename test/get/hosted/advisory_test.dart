@@ -190,8 +190,7 @@ Future<void> main() async {
     await ctx.run(['get']);
   });
 
-  testWithGolden('more than one affected package with pub as ecosystem',
-      (ctx) async {
+  testWithGolden('show advisory - same package mentioned twice', (ctx) async {
     final server = await servePackages();
     server
       ..serve('foo', '1.0.0')

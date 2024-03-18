@@ -665,7 +665,11 @@ class HostedSource extends CachedSource {
         throw FormatException('affectedPackages must be a list');
       }
 
-      bool isPubPackage(dynamic affectedPackage) {
+      bool matchesNameAndEcosystem(
+        dynamic affectedPackage,
+        String name,
+        String ecosystem,
+      ) {
         if (affectedPackage is! Map) {
           throw FormatException('affectedPackage must be a map');
         }
@@ -673,22 +677,22 @@ class HostedSource extends CachedSource {
         if (package is! Map) {
           throw FormatException('package must be a map');
         }
-        final name = package['name'];
-        if (name is! String) {
+        final affectedName = package['name'];
+        if (affectedName is! String) {
           throw FormatException('package name must be a String');
         }
-        if (name == packageName) {
-          final ecosystem = package['ecosystem'];
-          if (ecosystem is! String) {
+        if (affectedName == name) {
+          final affectedEcosystem = package['ecosystem'];
+          if (affectedEcosystem is! String) {
             throw FormatException('ecosystem must be a String');
           }
-          return ecosystem.toLowerCase() == 'pub';
+          return affectedEcosystem.toLowerCase() == ecosystem;
         }
         return false;
       }
 
       for (final affectedPackage in affectedPackages) {
-        if (isPubPackage(affectedPackage)) {
+        if (matchesNameAndEcosystem(affectedPackage, packageName, 'pub')) {
           final affectedVersions = <String>{};
           final versions = affectedPackage['versions'];
           if (versions is! List) {
