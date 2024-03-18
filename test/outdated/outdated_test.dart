@@ -543,6 +543,42 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
+  testWithGolden('show advisory - current, same package mentioned twice',
+      (ctx) async {
+    final builder = await servePackages();
+    builder
+      ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
+      ..serve('transitive', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+        },
+      }),
+    ]).create();
+    await pubGet();
+
+    builder.addAdvisory(
+      advisoryId: 'ABCD-1234-5678-9101',
+      displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
+      affectedPackages: [
+        AffectedPackage(
+          name: 'foo',
+          versions: ['0.0.1'],
+        ),
+        AffectedPackage(
+          name: 'foo',
+          versions: ['1.0.0'],
+        ),
+      ],
+    );
+
+    builder.serve('foo', '1.2.0');
+    await ctx.runOutdatedTests();
+  });
+
   testWithGolden('show advisory - current also retracted', (ctx) async {
     final builder = await servePackages();
     builder
