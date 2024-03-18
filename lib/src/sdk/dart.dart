@@ -27,8 +27,8 @@ class DartSdk extends Sdk {
 
   static final String _rootDirectory = () {
     // If DART_ROOT is specified, then this always points to the Dart SDK
-    if (Platform.environment.containsKey('DART_ROOT')) {
-      return Platform.environment['DART_ROOT']!;
+    if (Platform.environment['DART_ROOT'] case var root?) {
+      return root;
     }
 
     if (runningFromDartRepo) return p.join(dartRepoRoot, 'sdk');

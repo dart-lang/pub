@@ -825,19 +825,14 @@ extension ExpectEntries on YamlList {
   ///
   /// Throws a [SourceSpanApplicationException] for the first entry that does
   /// not have a value of type [T].
-  List<T> expectEntries<T extends Object?>() {
-    final entries = <T>[];
-    for (var node in nodes) {
-      final value = node.value;
-      if (value is T) {
-        entries.add(value);
-      } else {
-        throw SourceSpanApplicationException(
-          'Entries must be a $T.',
-          node.span,
-        );
-      }
-    }
-    return entries;
-  }
+  List<T> expectElements<T extends Object?>() => [
+        for (var node in nodes)
+          if (node.value case T value)
+            value
+          else
+            throw SourceSpanApplicationException(
+              'Elements must be of type $T.',
+              node.span,
+            ),
+      ];
 }

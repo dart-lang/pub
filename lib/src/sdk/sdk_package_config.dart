@@ -18,7 +18,7 @@ import '../utils.dart' show ExpectField, ExpectEntries;
 /// # will be supported forever, but some number of previous ones will be.
 /// version: 1
 ///
-/// # The SDK this configuration file is targetting. Used for validation, to
+/// # The SDK this configuration file is targeting. Used for validation, to
 /// # ensure we are parsing a file intended for the SDK we are configuring.
 /// sdk: dart
 ///
@@ -54,7 +54,7 @@ class SdkPackageConfig {
     }
     final packages = <String, SdkPackage>{};
     final packageDescriptions =
-        yaml.expectField<YamlList>('packages').expectEntries<YamlMap>();
+        yaml.expectField<YamlList>('packages').expectElements<YamlMap>();
     for (var description in packageDescriptions) {
       final package = SdkPackage.fromYaml(description);
       packages[package.name] = package;
