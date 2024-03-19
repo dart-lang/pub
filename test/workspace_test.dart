@@ -246,5 +246,16 @@ void main() {
       workingDirectory: sandbox,
       output: contains('Resolving dependencies in `$appPath`...'),
     );
+
+    await pubGet(
+      args: ['-C..'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      workingDirectory: p.join(
+        sandbox,
+        appPath,
+        'pkgs',
+      ),
+      output: contains('Resolving dependencies in `..`...'),
+    );
   });
 }

@@ -1248,8 +1248,8 @@ Iterable<String> parentDirs(String path, {String? from}) sync* {
     } else {
       yield d;
     }
-    if (p.isRelative(d) && p.equals(d, '.')) {
-      d = from ?? p.current;
+    if (!p.isWithin(from ?? p.current, d)) {
+      d = p.normalize(p.join(from ?? p.current, d));
       relative = true;
     }
     final parent = p.dirname(d);
