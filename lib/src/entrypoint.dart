@@ -105,7 +105,7 @@ class Entrypoint {
     }
     if (pubspecsMet.isEmpty) {
       throw FileException(
-        'Found no `pubspec.yaml` file in `${p.canonicalize(workingDir)}` or parent directories',
+        'Found no `pubspec.yaml` file in `${p.normalize(p.absolute(workingDir))}` or parent directories',
         p.join(workingDir, 'pubspec.yaml'),
       );
     } else {
@@ -121,7 +121,11 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
+  /// Stores the result of [_loadWorkspace].
+  /// Only access via [workspaceRoot], [workPackage] and [canFindWorkspaceRoot].
   ({Package root, Package work})? _packages;
+
+  /// Only access via [workspaceRoot], [workPackage] and [canFindWorkspaceRoot].
   ({Package root, Package work}) get _getPackages =>
       _packages ??= _loadWorkspace(workingDir, cache);
 
@@ -130,6 +134,8 @@ See $workspacesDocUrl for more information.''',
   /// For a global package, this is the activated package.
   Package get workspaceRoot => _getPackages.root;
 
+  /// True if we can find a `pubspec.yaml` to resolve in [workingDir] or any
+  /// parent directory.
   bool get canFindWorkspaceRoot {
     try {
       _getPackages;
