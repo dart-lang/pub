@@ -234,10 +234,11 @@ void main() {
       workingDirectory: p.join(sandbox, appPath, 'pkgs'),
       output: contains('Resolving dependencies in `..`...'),
     );
+    final s = p.separator;
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
       workingDirectory: p.join(sandbox, appPath, 'pkgs', 'a'),
-      output: contains('Resolving dependencies in `../..`...'),
+      output: contains('Resolving dependencies in `..$s..`...'),
     );
 
     await pubGet(
