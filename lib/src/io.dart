@@ -1230,7 +1230,8 @@ String escapeShellArgument(String x) =>
         ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
         : x;
 
-/// Returns all parent directories of [path], starting from [path] to the root.
+/// Returns all parent directories of [path], starting from [path] to the
+/// filesystem root.
 ///
 /// If [path] is relative the directories will also be.
 ///
