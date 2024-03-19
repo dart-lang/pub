@@ -618,7 +618,7 @@ try:
         log.fine('Could not parse binstub $file:\n$contents');
         continue;
       }
-      if (binStubPackage == entrypoint.workspaceRoot.name &&
+      if (binStubPackage == executable.package &&
           binStubScript ==
               p.basenameWithoutExtension(executable.relativePath)) {
         log.fine('Replacing old binstub $file');
