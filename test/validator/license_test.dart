@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/license.dart';
@@ -23,7 +23,7 @@ void main() {
 
     test('has both LICENSE and UNLICENSE file', () async {
       await d.validPackage().create();
-      await d.file(path.join(appPath, 'UNLICENSE'), '').create();
+      await d.file(p.join(appPath, 'UNLICENSE'), '').create();
       await expectValidationDeprecated(license);
     });
   });
@@ -31,29 +31,29 @@ void main() {
   group('should warn if it', () {
     test('has only a COPYING file', () async {
       await d.validPackage().create();
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      await d.file(path.join(appPath, 'COPYING'), '').create();
+      deleteEntry(p.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(p.join(appPath, 'COPYING'), '').create();
       await expectValidationDeprecated(license, warnings: isNotEmpty);
     });
 
     test('has only an UNLICENSE file', () async {
       await d.validPackage().create();
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      await d.file(path.join(appPath, 'UNLICENSE'), '').create();
+      deleteEntry(p.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(p.join(appPath, 'UNLICENSE'), '').create();
       await expectValidationDeprecated(license, warnings: isNotEmpty);
     });
 
     test('has only a prefixed LICENSE file', () async {
       await d.validPackage().create();
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      await d.file(path.join(appPath, 'MIT_LICENSE'), '').create();
+      deleteEntry(p.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(p.join(appPath, 'MIT_LICENSE'), '').create();
       await expectValidationDeprecated(license, warnings: isNotEmpty);
     });
 
     test('has only a suffixed LICENSE file', () async {
       await d.validPackage().create();
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      await d.file(path.join(appPath, 'LICENSE.md'), '').create();
+      deleteEntry(p.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(p.join(appPath, 'LICENSE.md'), '').create();
       await expectValidationDeprecated(license, warnings: isNotEmpty);
     });
   });
@@ -61,14 +61,14 @@ void main() {
   group('should consider a package invalid if it', () {
     test('has no LICENSE file', () async {
       await d.validPackage().create();
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
+      deleteEntry(p.join(d.sandbox, appPath, 'LICENSE'));
       await expectValidationDeprecated(license, errors: isNotEmpty);
     });
 
     test('has a prefixed UNLICENSE file', () async {
       await d.validPackage().create();
-      deleteEntry(path.join(d.sandbox, appPath, 'LICENSE'));
-      await d.file(path.join(appPath, 'MIT_UNLICENSE'), '').create();
+      deleteEntry(p.join(d.sandbox, appPath, 'LICENSE'));
+      await d.file(p.join(appPath, 'MIT_UNLICENSE'), '').create();
       await expectValidationDeprecated(license, errors: isNotEmpty);
     });
 

@@ -5,7 +5,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../exceptions.dart';
 import '../io.dart';
@@ -101,7 +101,7 @@ class TokenStore {
     if (tokensFile == null) {
       missingConfigDir();
     }
-    ensureDir(path.dirname(tokensFile));
+    ensureDir(p.dirname(tokensFile));
     writeTextFile(
       tokensFile,
       jsonEncode(<String, dynamic>{
@@ -187,6 +187,6 @@ class TokenStore {
   /// `null` if no config directory could be found.
   String? get tokensFile {
     var dir = configDir;
-    return dir == null ? null : path.join(dir, 'pub-tokens.json');
+    return dir == null ? null : p.join(dir, 'pub-tokens.json');
   }
 }

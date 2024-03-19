@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -34,7 +34,7 @@ void main() {
 
     // Move the app but not the package. Since the symlink is absolute, it
     // should still be able to find it.
-    renameInSandbox(appPath, path.join('moved', appPath));
+    renameInSandbox(appPath, p.join('moved', appPath));
 
     await d.dir('moved', [
       d.appPackageConfigFile([

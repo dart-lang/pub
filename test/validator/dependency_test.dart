@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
@@ -133,7 +133,7 @@ void main() {
       ).create();
 
       await expectValidation(
-        environment: {'FLUTTER_ROOT': path.join(d.sandbox, 'flutter')},
+        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       );
     });
 
@@ -150,7 +150,7 @@ void main() {
 
         await expectValidation(
           environment: {
-            'FLUTTER_ROOT': path.join(d.sandbox, 'flutter'),
+            'FLUTTER_ROOT': p.join(d.sandbox, 'flutter'),
           },
         );
       },
@@ -168,7 +168,7 @@ void main() {
 
         await expectValidation(
           environment: {
-            'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
+            'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia'),
           },
         );
       },
@@ -185,7 +185,7 @@ void main() {
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo')},
+            {'path': p.join(d.sandbox, 'foo')},
             hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0'],
           );
           await expectValidationError(
@@ -200,7 +200,7 @@ void main() {
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo')},
+            {'path': p.join(d.sandbox, 'foo')},
             hostedVersions: ['3.0.0-pre', '2.0.0-pre'],
           );
           await expectValidationError(
@@ -214,7 +214,7 @@ void main() {
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo')},
+            {'path': p.join(d.sandbox, 'foo')},
             hostedVersions: ['0.0.1', '0.0.2'],
           );
           await expectValidationError(
@@ -229,7 +229,7 @@ void main() {
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency({
-            'path': path.join(d.sandbox, 'foo'),
+            'path': p.join(d.sandbox, 'foo'),
             'version': '>=1.0.0 <2.0.0',
           });
           await expectValidationError(
@@ -244,7 +244,7 @@ void main() {
             d.libPubspec('foo', '0.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'},
+            {'path': p.join(d.sandbox, 'foo'), 'version': '0.2.3'},
           );
           await expectValidationError(
             '  foo: 0.2.3',
