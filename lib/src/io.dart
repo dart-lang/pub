@@ -17,7 +17,7 @@ import 'package:cli_util/cli_util.dart'
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 // ignore: prefer_relative_imports
@@ -110,7 +110,7 @@ FileStat? tryStatFile(String path) {
 String canonicalize(String pathString) {
   var seen = <String>{};
   var components =
-      Queue<String>.from(path.split(path.normalize(path.absolute(pathString))));
+      Queue<String>.from(p.split(p.normalize(p.absolute(pathString))));
 
   // The canonical path, built incrementally as we iterate through [components].
   var newPath = components.removeFirst();
@@ -119,22 +119,21 @@ String canonicalize(String pathString) {
   // necessary. A resolved component may also add new components that need to be
   // resolved in turn.
   while (components.isNotEmpty) {
-    seen.add(path.join(newPath, path.joinAll(components)));
-    var resolvedPath =
-        _resolveLink(path.join(newPath, components.removeFirst()));
-    var relative = path.relative(resolvedPath, from: newPath);
+    seen.add(p.join(newPath, p.joinAll(components)));
+    var resolvedPath = _resolveLink(p.join(newPath, components.removeFirst()));
+    var relative = p.relative(resolvedPath, from: newPath);
 
     // If the resolved path of the component relative to `newPath` is just ".",
     // that means component was a symlink pointing to its parent directory. We
     // can safely ignore such components.
     if (relative == '.') continue;
 
-    var relativeComponents = Queue<String>.from(path.split(relative));
+    var relativeComponents = Queue<String>.from(p.split(relative));
 
     // If the resolved path is absolute relative to `newPath`, that means it's
     // on a different drive. We need to canonicalize the entire target of that
     // symlink again.
-    if (path.isAbsolute(relative)) {
+    if (p.isAbsolute(relative)) {
       // If we've already tried to canonicalize the new path, we've encountered
       // a symlink loop. Avoid going infinite by treating the recursive symlink
       // as the canonical path.
@@ -151,7 +150,7 @@ String canonicalize(String pathString) {
     // Pop directories off `newPath` if the component links upwards in the
     // directory hierarchy.
     while (relativeComponents.firstOrNull == '..') {
-      newPath = path.dirname(newPath);
+      newPath = p.dirname(newPath);
       relativeComponents.removeFirst();
     }
 
@@ -159,14 +158,14 @@ String canonicalize(String pathString) {
     // not a link (or is a broken link). We can just add it to `newPath` and
     // continue resolving the remaining components.
     if (relativeComponents.length == 1) {
-      newPath = path.join(newPath, relativeComponents.single);
+      newPath = p.join(newPath, relativeComponents.single);
       continue;
     }
 
     // If we've already tried to canonicalize the new path, we've encountered a
     // symlink loop. Avoid going infinite by treating the recursive symlink as
     // the canonical path.
-    var newSubPath = path.join(newPath, path.joinAll(relativeComponents));
+    var newSubPath = p.join(newPath, p.joinAll(relativeComponents));
     if (seen.contains(newSubPath)) {
       newPath = newSubPath;
       continue;
@@ -192,8 +191,7 @@ String canonicalize(String pathString) {
 String _resolveLink(String link) {
   var seen = <String>{};
   while (linkExists(link) && seen.add(link)) {
-    link =
-        path.normalize(path.join(path.dirname(link), Link(link).targetSync()));
+    link = p.normalize(p.join(p.dirname(link), Link(link).targetSync()));
   }
   return link;
 }
@@ -520,7 +518,7 @@ void renameDir(String from, String to) {
 /// If it fails with "destination not empty" we log and continue, assuming
 /// another process got there before us.
 void tryRenameDir(String from, String to) {
-  ensureDir(path.dirname(to));
+  ensureDir(p.dirname(to));
   try {
     renameDir(from, to);
   } on FileSystemException catch (e) {
@@ -576,13 +574,13 @@ void createSymlink(String target, String symlink, {bool relative = false}) {
     // relative path to be relative to the cwd, not the symlink, and will be
     // confused by forward slashes.
     if (Platform.isWindows) {
-      target = path.normalize(path.absolute(target));
+      target = p.normalize(p.absolute(target));
     } else {
       // If the directory where we're creating the symlink was itself reached
       // by traversing a symlink, we want the relative path to be relative to
       // it's actual location, not the one we went through to get to it.
-      var symlinkDir = canonicalize(path.dirname(symlink));
-      target = path.normalize(path.relative(target, from: symlinkDir));
+      var symlinkDir = canonicalize(p.dirname(symlink));
+      target = p.normalize(p.relative(target, from: symlinkDir));
     }
   }
 
@@ -607,7 +605,7 @@ void createPackageSymlink(
 }) {
   // See if the package has a "lib" directory. If not, there's nothing to
   // symlink to.
-  target = path.join(target, 'lib');
+  target = p.join(target, 'lib');
   if (!dirExists(target)) return;
 
   log.fine("Creating ${isSelfLink ? "self" : ""}link for package '$name'.");
@@ -662,7 +660,7 @@ final String dartRepoRoot = (() {
   // as a test or as a pub executable.
   var url = Platform.script
       .replace(path: Platform.script.path.replaceAll(_dartRepoRegExp, ''));
-  return path.fromUri(url);
+  return p.fromUri(url);
 })();
 
 /// Displays a message and reads a yes/no confirmation from the user.
@@ -1015,10 +1013,10 @@ Future<Uint8List> extractFileFromTarGz(
   String filename,
 ) async {
   final reader = TarReader(stream.transform(gzip.decoder));
-  filename = path.posix.normalize(filename);
+  filename = p.posix.normalize(filename);
   while (await reader.moveNext()) {
     final entry = reader.current;
-    if (path.posix.normalize(entry.name) != filename) continue;
+    if (p.posix.normalize(entry.name) != filename) continue;
     if (!(entry.type == TypeFlag.reg || entry.type == TypeFlag.regA)) {
       // Can only read regular files.
       throw FormatException('$filename is not a file');
@@ -1032,16 +1030,16 @@ Future<Uint8List> extractFileFromTarGz(
 Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
 
-  destination = path.absolute(destination);
+  destination = p.absolute(destination);
   final reader = TarReader(stream.transform(gzip.decoder));
   final paths = <String>{};
   while (await reader.moveNext()) {
     final entry = reader.current;
 
-    final filePath = path.joinAll([
+    final filePath = p.joinAll([
       destination,
       // Tar file names always use forward slashes
-      ...path.posix.split(entry.name),
+      ...p.posix.split(entry.name),
     ]);
     if (!paths.add(filePath)) {
       // The tar file contained the same entry twice. Assume it is broken.
@@ -1049,7 +1047,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
       throw FormatException('Tar file contained duplicate path ${entry.name}');
     }
 
-    if (!path.isWithin(destination, filePath)) {
+    if (!p.isWithin(destination, filePath)) {
       // The tar contains entries that would be written outside of the
       // destination. That doesn't happen by accident, assume that the tar file
       // is malicious.
@@ -1057,10 +1055,10 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
       throw FormatException('Invalid tar entry: ${entry.name}');
     }
 
-    final parentDirectory = path.dirname(filePath);
+    final parentDirectory = p.dirname(filePath);
 
     bool checkValidTarget(String linkTarget) {
-      final isValid = path.isWithin(destination, linkTarget);
+      final isValid = p.isWithin(destination, linkTarget);
       if (!isValid) {
         log.fine('Skipping ${entry.name}: Invalid link target');
       }
@@ -1091,8 +1089,8 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
         break;
       case TypeFlag.symlink:
         // Link to another file in this tar, relative from this entry.
-        final resolvedTarget = path.joinAll(
-          [parentDirectory, ...path.posix.split(entry.header.linkName!)],
+        final resolvedTarget = p.joinAll(
+          [parentDirectory, ...p.posix.split(entry.header.linkName!)],
         );
         if (!checkValidTarget(resolvedTarget)) {
           // Don't allow links to files outside of this tar.
@@ -1101,7 +1099,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
 
         ensureDir(parentDirectory);
         createSymlink(
-          path.relative(resolvedTarget, from: parentDirectory),
+          p.relative(resolvedTarget, from: parentDirectory),
           filePath,
         );
         break;
@@ -1109,12 +1107,12 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
         // We generate hardlinks as symlinks too, but their linkName is relative
         // to the root of the tar file (unlike symlink entries, whose linkName
         // is relative to the entry itself).
-        final fromDestination = path.join(destination, entry.header.linkName);
+        final fromDestination = p.join(destination, entry.header.linkName);
         if (!checkValidTarget(fromDestination)) {
           break; // Link points outside of the tar file.
         }
 
-        final fromFile = path.relative(fromDestination, from: parentDirectory);
+        final fromFile = p.relative(fromDestination, from: parentDirectory);
         ensureDir(parentDirectory);
         createSymlink(fromFile, filePath);
         break;
@@ -1144,18 +1142,18 @@ ByteStream createTarGz(
   log.fine(buffer.toString());
 
   ArgumentError.checkNotNull(baseDir, 'baseDir');
-  baseDir = path.normalize(path.absolute(baseDir));
+  baseDir = p.normalize(p.absolute(baseDir));
 
   final tarContents = Stream.fromIterable(
     contents.map((entry) {
-      entry = path.normalize(path.absolute(entry));
-      if (!path.isWithin(baseDir, entry)) {
+      entry = p.normalize(p.absolute(entry));
+      if (!p.isWithin(baseDir, entry)) {
         throw ArgumentError('Entry $entry is not inside $baseDir.');
       }
 
-      final relative = path.relative(entry, from: baseDir);
+      final relative = p.relative(entry, from: baseDir);
       // On Windows, we can't open some files without normalizing them
-      final file = File(path.normalize(entry));
+      final file = File(p.normalize(entry));
       final stat = file.statSync();
 
       if (stat.type == FileSystemEntityType.link) {
@@ -1166,7 +1164,7 @@ ByteStream createTarGz(
       return TarEntry(
         TarHeader(
           // Ensure paths in tar files use forward slashes
-          name: path.url.joinAll(path.split(relative)),
+          name: p.url.joinAll(p.split(relative)),
           // We want to keep executable bits, but otherwise use the default
           // file mode
           mode: _defaultMode | (stat.mode & _executableMask),
@@ -1213,7 +1211,7 @@ class PubProcessResult {
 final String? dartConfigDir = () {
   if (runningFromTest &&
       Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
-    return path.join(Platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
+    return p.join(Platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
   }
   try {
     return applicationConfigHome('dart');

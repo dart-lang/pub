@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:collection/collection.dart' show IterableExtension;
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -379,7 +379,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         showTransitiveDependencies: showTransitiveDependencies,
         hasUpgradableResolution: hasUpgradableResolution,
         hasResolvableResolution: hasResolvableResolution,
-        directory: path.normalize(directory),
+        directory: p.normalize(directory),
       );
     }
   }

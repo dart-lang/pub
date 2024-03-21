@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart' hide mapMap;
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
@@ -265,8 +265,8 @@ class Pubspec extends PubspecBase {
     bool allowOverridesFile = false,
     required Description containingDescription,
   }) {
-    var pubspecPath = path.join(packageDir, pubspecYamlFilename);
-    var overridesPath = path.join(packageDir, pubspecOverridesFilename);
+    var pubspecPath = p.join(packageDir, pubspecYamlFilename);
+    var overridesPath = p.join(packageDir, pubspecOverridesFilename);
     if (!fileExists(pubspecPath)) {
       throw FileException(
         // Make the package dir absolute because for the entrypoint it'll just
@@ -285,9 +285,9 @@ class Pubspec extends PubspecBase {
       readTextFile(pubspecPath),
       sources,
       expectedName: expectedName,
-      location: path.toUri(pubspecPath),
+      location: p.toUri(pubspecPath),
       overridesFileContents: overridesFileContents,
-      overridesLocation: path.toUri(overridesPath),
+      overridesLocation: p.toUri(overridesPath),
       containingDescription: containingDescription,
     );
   }

@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
 import 'package:test/test.dart';
 
@@ -18,7 +18,7 @@ Future<void> main() async {
 
     await d
         .file(
-          path.join(appPath, 'pubspec.lock'),
+          p.join(appPath, 'pubspec.lock'),
           allOf(contains('\n'), isNot(contains('\r\n'))),
         )
         .validate();
@@ -29,7 +29,7 @@ Future<void> main() async {
 
     await pubGet();
 
-    final lockFile = d.file(path.join(appPath, 'pubspec.lock')).io;
+    final lockFile = d.file(p.join(appPath, 'pubspec.lock')).io;
     lockFile.writeAsStringSync(
       lockFile.readAsStringSync().replaceAll('\n', '\r\n'),
     );

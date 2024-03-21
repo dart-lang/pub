@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -10,7 +10,7 @@ import '../test_pub.dart';
 
 void main() {
   String hostedDir(String package) {
-    return path.join(d.sandbox, cachePath, 'hosted', 'pub.dev', package);
+    return p.join(d.sandbox, cachePath, 'hosted', 'pub.dev', package);
   }
 
   test('running pub cache list when there is no cache', () async {

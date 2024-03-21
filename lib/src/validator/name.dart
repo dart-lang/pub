@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../utils.dart';
 import '../validator.dart';
@@ -20,7 +20,7 @@ class NameValidator extends Validator {
       var libraries = _libraries(files);
 
       if (libraries.length == 1) {
-        var libName = path.basenameWithoutExtension(libraries[0]);
+        var libName = p.basenameWithoutExtension(libraries[0]);
         if (libName == package.name) return;
         warnings.add('The name of "${libraries[0]}", "$libName", should match '
             'the name of the package, "${package.name}".\n'
@@ -34,11 +34,10 @@ class NameValidator extends Validator {
   List<String> _libraries(List<String> files) {
     var libDir = package.path('lib');
     return filesBeneath('lib', recursive: true)
-        .map((file) => path.relative(file, from: path.dirname(libDir)))
+        .map((file) => p.relative(file, from: p.dirname(libDir)))
         .where(
           (file) =>
-              !path.split(file).contains('src') &&
-              path.extension(file) == '.dart',
+              !p.split(file).contains('src') && p.extension(file) == '.dart',
         )
         .toList();
   }

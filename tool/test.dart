@@ -13,7 +13,7 @@
 library;
 
 import 'dart:io';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
@@ -29,15 +29,15 @@ Future<void> main(List<String> args) async {
     testProcess?.kill(signal);
   });
   final pubSnapshotFilename =
-      path.absolute(path.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
+      p.absolute(p.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
   try {
     final stopwatch = Stopwatch()..start();
     stderr.write('Building snapshot...');
     await precompile(
-      executablePath: path.join('bin', 'pub.dart'),
+      executablePath: p.join('bin', 'pub.dart'),
       outputPath: pubSnapshotFilename,
       name: 'bin/pub.dart',
-      packageConfigPath: path.join('.dart_tool', 'package_config.json'),
+      packageConfigPath: p.join('.dart_tool', 'package_config.json'),
     );
     stderr.writeln(' (${stopwatch.elapsed.inMilliseconds}ms)');
     testProcess = await Process.start(

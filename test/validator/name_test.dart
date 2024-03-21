@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/name.dart';
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('has a single library named differently than the package', () async {
-      deleteEntry(path.join(d.sandbox, appPath, 'lib', 'test_pkg.dart'));
+      deleteEntry(p.join(d.sandbox, appPath, 'lib', 'test_pkg.dart'));
       await d.dir(appPath, [
         d.dir('lib', [d.file('best_pkg.dart', 'int i = 0;')]),
       ]).create();

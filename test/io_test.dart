@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
 import 'package:tar/tar.dart';
@@ -17,8 +17,7 @@ import 'test_pub.dart';
 
 void main() {
   group('process', () {
-    final nonExisting =
-        path.join(path.dirname(Platform.resolvedExecutable), 'gone');
+    final nonExisting = p.join(p.dirname(Platform.resolvedExecutable), 'gone');
     test('Nice error message when failing to start process.', () {
       final throwsNiceErrorMessage = throwsA(
         predicate(
@@ -48,16 +47,16 @@ void main() {
     test('ignores hidden files by default', () {
       expect(
         withTempDir((temp) {
-          writeTextFile(path.join(temp, 'file1.txt'), '');
-          writeTextFile(path.join(temp, 'file2.txt'), '');
-          writeTextFile(path.join(temp, '.file3.txt'), '');
-          _createDir(path.join(temp, '.subdir'));
-          writeTextFile(path.join(temp, '.subdir', 'file3.txt'), '');
+          writeTextFile(p.join(temp, 'file1.txt'), '');
+          writeTextFile(p.join(temp, 'file2.txt'), '');
+          writeTextFile(p.join(temp, '.file3.txt'), '');
+          _createDir(p.join(temp, '.subdir'));
+          writeTextFile(p.join(temp, '.subdir', 'file3.txt'), '');
 
           expect(
             listDir(temp, recursive: true),
             unorderedEquals(
-              [path.join(temp, 'file1.txt'), path.join(temp, 'file2.txt')],
+              [p.join(temp, 'file1.txt'), p.join(temp, 'file2.txt')],
             ),
           );
         }),
@@ -68,20 +67,20 @@ void main() {
     test('includes hidden files when told to', () {
       expect(
         withTempDir((temp) {
-          writeTextFile(path.join(temp, 'file1.txt'), '');
-          writeTextFile(path.join(temp, 'file2.txt'), '');
-          writeTextFile(path.join(temp, '.file3.txt'), '');
-          _createDir(path.join(temp, '.subdir'));
-          writeTextFile(path.join(temp, '.subdir', 'file3.txt'), '');
+          writeTextFile(p.join(temp, 'file1.txt'), '');
+          writeTextFile(p.join(temp, 'file2.txt'), '');
+          writeTextFile(p.join(temp, '.file3.txt'), '');
+          _createDir(p.join(temp, '.subdir'));
+          writeTextFile(p.join(temp, '.subdir', 'file3.txt'), '');
 
           expect(
             listDir(temp, recursive: true, includeHidden: true),
             unorderedEquals([
-              path.join(temp, 'file1.txt'),
-              path.join(temp, 'file2.txt'),
-              path.join(temp, '.file3.txt'),
-              path.join(temp, '.subdir'),
-              path.join(temp, '.subdir', 'file3.txt'),
+              p.join(temp, 'file1.txt'),
+              p.join(temp, 'file2.txt'),
+              p.join(temp, '.file3.txt'),
+              p.join(temp, '.subdir'),
+              p.join(temp, '.subdir', 'file3.txt'),
             ]),
           );
         }),
@@ -92,18 +91,18 @@ void main() {
     test("doesn't ignore hidden files above the directory being listed", () {
       expect(
         withTempDir((temp) {
-          var dir = path.join(temp, '.foo', 'bar');
+          var dir = p.join(temp, '.foo', 'bar');
           ensureDir(dir);
-          writeTextFile(path.join(dir, 'file1.txt'), '');
-          writeTextFile(path.join(dir, 'file2.txt'), '');
-          writeTextFile(path.join(dir, 'file3.txt'), '');
+          writeTextFile(p.join(dir, 'file1.txt'), '');
+          writeTextFile(p.join(dir, 'file2.txt'), '');
+          writeTextFile(p.join(dir, 'file3.txt'), '');
 
           expect(
             listDir(dir, recursive: true),
             unorderedEquals([
-              path.join(dir, 'file1.txt'),
-              path.join(dir, 'file2.txt'),
-              path.join(dir, 'file3.txt'),
+              p.join(dir, 'file1.txt'),
+              p.join(dir, 'file2.txt'),
+              p.join(dir, 'file3.txt'),
             ]),
           );
         }),
@@ -116,7 +115,7 @@ void main() {
     test('resolves a non-link', () {
       expect(
         _withCanonicalTempDir((temp) {
-          var filePath = path.join(temp, 'file');
+          var filePath = p.join(temp, 'file');
           writeTextFile(filePath, '');
           expect(canonicalize(filePath), equals(filePath));
         }),
@@ -128,8 +127,8 @@ void main() {
       expect(
         _withCanonicalTempDir((temp) {
           expect(
-            canonicalize(path.join(temp, 'nothing')),
-            equals(path.join(temp, 'nothing')),
+            canonicalize(p.join(temp, 'nothing')),
+            equals(p.join(temp, 'nothing')),
           );
         }),
         completes,
@@ -139,11 +138,11 @@ void main() {
     test('resolves a symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
-          _createDir(path.join(temp, 'linked-dir'));
-          createSymlink(path.join(temp, 'linked-dir'), path.join(temp, 'dir'));
+          _createDir(p.join(temp, 'linked-dir'));
+          createSymlink(p.join(temp, 'linked-dir'), p.join(temp, 'dir'));
           expect(
-            canonicalize(path.join(temp, 'dir')),
-            equals(path.join(temp, 'linked-dir')),
+            canonicalize(p.join(temp, 'dir')),
+            equals(p.join(temp, 'linked-dir')),
           );
         }),
         completes,
@@ -153,16 +152,16 @@ void main() {
     test('resolves a symlink to parent', () {
       expect(
         _withCanonicalTempDir((temp) {
-          _createDir(path.join(temp, 'linked-dir'));
-          _createDir(path.join(temp, 'linked-dir', 'a'));
-          _createDir(path.join(temp, 'linked-dir', 'b'));
+          _createDir(p.join(temp, 'linked-dir'));
+          _createDir(p.join(temp, 'linked-dir', 'a'));
+          _createDir(p.join(temp, 'linked-dir', 'b'));
           createSymlink(
-            path.join(temp, 'linked-dir'),
-            path.join(temp, 'linked-dir', 'a', 'symlink'),
+            p.join(temp, 'linked-dir'),
+            p.join(temp, 'linked-dir', 'a', 'symlink'),
           );
           expect(
-            canonicalize(path.join(temp, 'linked-dir', 'a', 'symlink', 'b')),
-            equals(path.join(temp, 'linked-dir', 'b')),
+            canonicalize(p.join(temp, 'linked-dir', 'a', 'symlink', 'b')),
+            equals(p.join(temp, 'linked-dir', 'b')),
           );
         }),
         completes,
@@ -172,15 +171,15 @@ void main() {
     test('resolves a relative symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
-          _createDir(path.join(temp, 'linked-dir'));
+          _createDir(p.join(temp, 'linked-dir'));
           createSymlink(
-            path.join(temp, 'linked-dir'),
-            path.join(temp, 'dir'),
+            p.join(temp, 'linked-dir'),
+            p.join(temp, 'dir'),
             relative: true,
           );
           expect(
-            canonicalize(path.join(temp, 'dir')),
-            equals(path.join(temp, 'linked-dir')),
+            canonicalize(p.join(temp, 'dir')),
+            equals(p.join(temp, 'linked-dir')),
           );
         }),
         completes,
@@ -190,7 +189,7 @@ void main() {
     test('resolves a single-level horizontally recursive symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
-          var linkPath = path.join(temp, 'foo');
+          var linkPath = p.join(temp, 'foo');
           createSymlink(linkPath, linkPath);
           expect(canonicalize(linkPath), equals(linkPath));
         }),
@@ -201,9 +200,9 @@ void main() {
     test('resolves a multi-level horizontally recursive symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
-          var fooPath = path.join(temp, 'foo');
-          var barPath = path.join(temp, 'bar');
-          var bazPath = path.join(temp, 'baz');
+          var fooPath = p.join(temp, 'foo');
+          var barPath = p.join(temp, 'bar');
+          var bazPath = p.join(temp, 'baz');
           createSymlink(barPath, fooPath);
           createSymlink(bazPath, barPath);
           createSymlink(fooPath, bazPath);
@@ -211,8 +210,8 @@ void main() {
           expect(canonicalize(barPath), equals(barPath));
           expect(canonicalize(bazPath), equals(bazPath));
 
-          createSymlink(fooPath, path.join(temp, 'outer'));
-          expect(canonicalize(path.join(temp, 'outer')), equals(fooPath));
+          createSymlink(fooPath, p.join(temp, 'outer'));
+          expect(canonicalize(p.join(temp, 'outer')), equals(fooPath));
         }),
         completes,
       );
@@ -221,10 +220,10 @@ void main() {
     test('resolves a broken symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
-          createSymlink(path.join(temp, 'nonexistent'), path.join(temp, 'foo'));
+          createSymlink(p.join(temp, 'nonexistent'), p.join(temp, 'foo'));
           expect(
-            canonicalize(path.join(temp, 'foo')),
-            equals(path.join(temp, 'nonexistent')),
+            canonicalize(p.join(temp, 'foo')),
+            equals(p.join(temp, 'nonexistent')),
           );
         }),
         completes,
@@ -234,17 +233,17 @@ void main() {
     test('resolves multiple nested symlinks', () {
       expect(
         _withCanonicalTempDir((temp) {
-          var dir1 = path.join(temp, 'dir1');
-          var dir2 = path.join(temp, 'dir2');
-          var subdir1 = path.join(dir1, 'subdir1');
-          var subdir2 = path.join(dir2, 'subdir2');
+          var dir1 = p.join(temp, 'dir1');
+          var dir2 = p.join(temp, 'dir2');
+          var subdir1 = p.join(dir1, 'subdir1');
+          var subdir2 = p.join(dir2, 'subdir2');
           _createDir(dir2);
           _createDir(subdir2);
           createSymlink(dir2, dir1);
           createSymlink(subdir2, subdir1);
           expect(
-            canonicalize(path.join(subdir1, 'file')),
-            equals(path.join(subdir2, 'file')),
+            canonicalize(p.join(subdir1, 'file')),
+            equals(p.join(subdir2, 'file')),
           );
         }),
         completes,
@@ -254,15 +253,15 @@ void main() {
     test('resolves a nested vertical symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
-          var dir1 = path.join(temp, 'dir1');
-          var dir2 = path.join(temp, 'dir2');
-          var subdir = path.join(dir1, 'subdir');
+          var dir1 = p.join(temp, 'dir1');
+          var dir2 = p.join(temp, 'dir2');
+          var subdir = p.join(dir1, 'subdir');
           _createDir(dir1);
           _createDir(dir2);
           createSymlink(dir2, subdir);
           expect(
-            canonicalize(path.join(subdir, 'file')),
-            equals(path.join(dir2, 'file')),
+            canonicalize(p.join(subdir, 'file')),
+            equals(p.join(dir2, 'file')),
           );
         }),
         completes,
@@ -272,13 +271,13 @@ void main() {
     test('resolves a vertically recursive symlink', () {
       expect(
         _withCanonicalTempDir((temp) {
-          var dir = path.join(temp, 'dir');
-          var subdir = path.join(dir, 'subdir');
+          var dir = p.join(temp, 'dir');
+          var subdir = p.join(dir, 'subdir');
           _createDir(dir);
           createSymlink(dir, subdir);
           expect(
             canonicalize(
-              path.join(
+              p.join(
                 temp,
                 'dir',
                 'subdir',
@@ -288,7 +287,7 @@ void main() {
                 'file',
               ),
             ),
-            equals(path.join(dir, 'file')),
+            equals(p.join(dir, 'file')),
           );
         }),
         completes,
@@ -299,13 +298,13 @@ void main() {
         () {
       expect(
         _withCanonicalTempDir((temp) {
-          var dir = path.join(temp, 'dir');
-          var linkdir = path.join(temp, 'linkdir');
-          var linkfile = path.join(dir, 'link');
+          var dir = p.join(temp, 'dir');
+          var linkdir = p.join(temp, 'linkdir');
+          var linkfile = p.join(dir, 'link');
           _createDir(dir);
           createSymlink(dir, linkdir);
-          createSymlink(path.join(linkdir, 'file'), linkfile);
-          expect(canonicalize(linkfile), equals(path.join(dir, 'file')));
+          createSymlink(p.join(linkdir, 'file'), linkfile);
+          expect(canonicalize(linkfile), equals(p.join(dir, 'file')));
         }),
         completes,
       );
@@ -314,15 +313,15 @@ void main() {
     test('resolves a pair of pathologically-recursive symlinks', () {
       expect(
         _withCanonicalTempDir((temp) {
-          var foo = path.join(temp, 'foo');
-          var subfoo = path.join(foo, 'subfoo');
-          var bar = path.join(temp, 'bar');
-          var subbar = path.join(bar, 'subbar');
+          var foo = p.join(temp, 'foo');
+          var subfoo = p.join(foo, 'subfoo');
+          var bar = p.join(temp, 'bar');
+          var subbar = p.join(bar, 'subbar');
           createSymlink(subbar, foo);
           createSymlink(subfoo, bar);
           expect(
             canonicalize(subfoo),
-            equals(path.join(subfoo, 'subbar', 'subfoo')),
+            equals(p.join(subfoo, 'subbar', 'subfoo')),
           );
         }),
         completes,
@@ -484,7 +483,7 @@ void main() {
           Directory(tempDir).list(),
           emits(
             isA<Directory>()
-                .having((e) => path.basename(e.path), 'basename', 'bin'),
+                .having((e) => p.basename(e.path), 'basename', 'bin'),
           ),
         );
       });
@@ -628,7 +627,7 @@ void testExistencePredicate(
     test('returns $forFile for a file', () {
       expect(
         withTempDir((temp) {
-          var file = path.join(temp, 'test.txt');
+          var file = p.join(temp, 'test.txt');
           writeTextFile(file, 'contents');
           expect(predicate(file), equals(forFile));
         }),
@@ -639,7 +638,7 @@ void testExistencePredicate(
     test('returns $forDirectory for a directory', () {
       expect(
         withTempDir((temp) {
-          var file = path.join(temp, 'dir');
+          var file = p.join(temp, 'dir');
           _createDir(file);
           expect(predicate(file), equals(forDirectory));
         }),
@@ -650,8 +649,8 @@ void testExistencePredicate(
     test('returns $forDirectorySymlink for a symlink to a directory', () {
       expect(
         withTempDir((temp) {
-          var targetPath = path.join(temp, 'dir');
-          var symlinkPath = path.join(temp, 'linkdir');
+          var targetPath = p.join(temp, 'dir');
+          var symlinkPath = p.join(temp, 'linkdir');
           _createDir(targetPath);
           createSymlink(targetPath, symlinkPath);
           expect(predicate(symlinkPath), equals(forDirectorySymlink));
@@ -665,9 +664,9 @@ void testExistencePredicate(
         'a directory', () {
       expect(
         withTempDir((temp) {
-          var targetPath = path.join(temp, 'dir');
-          var symlink1Path = path.join(temp, 'link1dir');
-          var symlink2Path = path.join(temp, 'link2dir');
+          var targetPath = p.join(temp, 'dir');
+          var symlink1Path = p.join(temp, 'link1dir');
+          var symlink2Path = p.join(temp, 'link2dir');
           _createDir(targetPath);
           createSymlink(targetPath, symlink1Path);
           createSymlink(symlink1Path, symlink2Path);
@@ -683,8 +682,8 @@ void testExistencePredicate(
     test('returns $forBrokenSymlink for a broken symlink', () {
       expect(
         withTempDir((temp) {
-          var targetPath = path.join(temp, 'dir');
-          var symlinkPath = path.join(temp, 'linkdir');
+          var targetPath = p.join(temp, 'dir');
+          var symlinkPath = p.join(temp, 'linkdir');
           _createDir(targetPath);
           createSymlink(targetPath, symlinkPath);
           deleteEntry(targetPath);
@@ -698,9 +697,9 @@ void testExistencePredicate(
         () {
       expect(
         withTempDir((temp) {
-          var targetPath = path.join(temp, 'dir');
-          var symlink1Path = path.join(temp, 'link1dir');
-          var symlink2Path = path.join(temp, 'link2dir');
+          var targetPath = p.join(temp, 'dir');
+          var symlink1Path = p.join(temp, 'link1dir');
+          var symlink2Path = p.join(temp, 'link2dir');
           _createDir(targetPath);
           createSymlink(targetPath, symlink1Path);
           createSymlink(symlink1Path, symlink2Path);
@@ -716,8 +715,8 @@ void testExistencePredicate(
       test('returns $forFileSymlink for a symlink to a file', () {
         expect(
           withTempDir((temp) {
-            var targetPath = path.join(temp, 'test.txt');
-            var symlinkPath = path.join(temp, 'link.txt');
+            var targetPath = p.join(temp, 'test.txt');
+            var symlinkPath = p.join(temp, 'link.txt');
             writeTextFile(targetPath, 'contents');
             createSymlink(targetPath, symlinkPath);
             expect(predicate(symlinkPath), equals(forFileSymlink));
@@ -731,9 +730,9 @@ void testExistencePredicate(
           'file', () {
         expect(
           withTempDir((temp) {
-            var targetPath = path.join(temp, 'test.txt');
-            var symlink1Path = path.join(temp, 'link1.txt');
-            var symlink2Path = path.join(temp, 'link2.txt');
+            var targetPath = p.join(temp, 'test.txt');
+            var symlink1Path = p.join(temp, 'link1.txt');
+            var symlink2Path = p.join(temp, 'link2.txt');
             writeTextFile(targetPath, 'contents');
             createSymlink(targetPath, symlink1Path);
             createSymlink(symlink1Path, symlink2Path);

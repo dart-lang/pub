@@ -9,7 +9,7 @@
 @TestOn('!windows')
 library;
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -41,8 +41,8 @@ void main() {
     // Move the app and package. Since they are still next to each other, it
     // should still be found and have the same relative path in the package
     // spec.
-    renameInSandbox('foo', path.join('moved', 'foo'));
-    renameInSandbox(appPath, path.join('moved', appPath));
+    renameInSandbox('foo', p.join('moved', 'foo'));
+    renameInSandbox(appPath, p.join('moved', appPath));
 
     await d.dir('moved', [
       d.appPackageConfigFile([
