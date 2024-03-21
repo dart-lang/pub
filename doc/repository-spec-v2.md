@@ -429,6 +429,11 @@ fully populated by a hosted pub-server that provides advisories. Hence, the
 `dart pub` client will exclusively rely on `affected[].versions`, and disregard
 `affected[].ranges`.
 
+In the `database_specific` field of a security advisory the `dart pub` client
+will lookup the property called `pub_display_url`. This property is optional. It
+is intended to be used by the client to display a reference url when reporting
+security advisories.
+
 The `advisoriesUpdated` property is the most recent timestamp of when the result
 from this end-point for this package changed. This can be used for caching
 purposes.
