@@ -84,7 +84,7 @@ class FlutterSdk extends Sdk {
       }
       return Version.parse(flutterVersion);
     } on IOException catch (e) {
-      warning(
+      fine(
         'Could not open flutter version file at `$flutterVersionPath`: $e\n',
       );
       return null;
