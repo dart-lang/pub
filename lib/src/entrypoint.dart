@@ -111,7 +111,6 @@ class Entrypoint {
           withPubspecOverrides: true,
         );
         for (final package in root.transitiveWorkspace) {
-          pubspecsMet.entries.first;
           if (identical(pubspecsMet.entries.first.value, package.pubspec)) {
             return (root: root, work: package);
           }
