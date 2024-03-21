@@ -782,6 +782,10 @@ try:
         return previousPackage;
       }
     }
+    // When running tests we want the binstub to invoke the current pub, not the
+    // one from the sdk.
+    final pubInvocation =
+        runningFromTest ? Platform.script.toFilePath() : 'pub';
 
     late String binstub;
     // We need an absolute path since relative ones won't be relative to the
@@ -809,9 +813,9 @@ if exist "$snapshot" $padding(
   if not errorlevel 253 (
     goto error
   )
-  call dart pub global run ${package.name}:$script %*
+  call dart $pubInvocation global run ${package.name}:$script %*
 ) else (
-  call dart pub global run ${package.name}:$script %*
+  call dart $pubInvocation global run ${package.name}:$script %*
 )
 goto eof
 :error
@@ -834,9 +838,9 @@ if [ -f $snapshot ]; then
   if [ \$exit_code != 253 ]; then
     exit \$exit_code
   fi
-  dart pub global run ${package.name}:$script "\$@"
+  dart $pubInvocation -v global run ${package.name}:$script "\$@"
 else
-  dart pub global run ${package.name}:$script "\$@"
+  dart $pubInvocation global run ${package.name}:$script "\$@"
 fi
 ''';
     }
