@@ -61,6 +61,22 @@ class Entrypoint {
   /// has `resolution: null`
   final String workingDir;
 
+  /// Finds the [workspaceRoot] and [workPackage] based on [workingDir].
+  ///
+  /// Works by iterating through the parent directories from [workingDir].
+  ///
+  /// [workPackage] is the package of first dir we find with a `pubspec.yaml`
+  /// file.
+  ///
+  /// [workspaceRoot] is the package of the first dir we find with a
+  /// `pubspec.yaml` that does not have `resolution: workspace`.
+  ///
+  /// [workPackage] and [workspaceRoot] can be the same. And will always be the
+  /// same when no `workspace` is involved.
+  /// =
+  /// If [workingDir] doesn't exist, [fail].
+  ///
+  /// If no `pubspec.yaml` is found without `resolution: workspace` we [fail].
   static ({Package root, Package work}) _loadWorkspace(
     String workingDir,
     SystemCache cache,
