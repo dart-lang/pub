@@ -8,7 +8,7 @@ library;
 
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'log.dart' as log;
 import 'utils.dart';
@@ -69,10 +69,10 @@ String fromFiles(
   var root = <String, Map>{};
   for (var file in files) {
     final relativeFile =
-        baseDir == null ? file : path.relative(file, from: baseDir);
-    final parts = path.split(relativeFile);
+        baseDir == null ? file : p.relative(file, from: baseDir);
+    final parts = p.split(relativeFile);
     if (showFileSizes) {
-      final size = File(path.normalize(file)).statSync().size;
+      final size = File(p.normalize(file)).statSync().size;
       final sizeString = _readableFileSize(size);
       parts.last = '${parts.last} $sizeString';
     }

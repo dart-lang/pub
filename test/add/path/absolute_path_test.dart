@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -16,7 +16,7 @@ void main() {
 
     await d.appDir(dependencies: {}).create();
 
-    final absolutePath = path.join(d.sandbox, 'foo');
+    final absolutePath = p.join(d.sandbox, 'foo');
 
     await pubAdd(args: ['foo', '--path', absolutePath]);
 
@@ -36,7 +36,7 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.appDir(dependencies: {}).create();
-    final absolutePath = path.join(d.sandbox, 'foo');
+    final absolutePath = p.join(d.sandbox, 'foo');
 
     await pubAdd(args: ['foo:0.0.1', '--path', absolutePath]);
 
@@ -56,7 +56,7 @@ void main() {
     ).create();
 
     await d.appDir(dependencies: {}).create();
-    final absolutePath = path.join(d.sandbox, 'foo');
+    final absolutePath = p.join(d.sandbox, 'foo');
 
     await pubAdd(
       args: ['foo:2.0.0', 'bar:0.1.3', 'baz:1.3.1', '--path', absolutePath],
@@ -80,7 +80,7 @@ void main() {
     ).create();
 
     await d.appDir(dependencies: {}).create();
-    final absolutePath = path.join(d.sandbox, 'foo');
+    final absolutePath = p.join(d.sandbox, 'foo');
 
     await pubAdd(
       args: ['foo:2.0.0', '--path', absolutePath],
@@ -101,7 +101,7 @@ void main() {
   test('fails if path does not exist', () async {
     await d.appDir(dependencies: {}).create();
 
-    final absolutePath = path.join(d.sandbox, 'foo');
+    final absolutePath = p.join(d.sandbox, 'foo');
 
     await pubAdd(
       args: ['foo', '--path', absolutePath],
@@ -133,7 +133,7 @@ void main() {
       }),
     ]).create();
 
-    final absolutePath = path.join(d.sandbox, 'foo');
+    final absolutePath = p.join(d.sandbox, 'foo');
     await pubAdd(args: ['foo', '--path', absolutePath]);
 
     await d.cacheDir({'foo': '1.2.2'}).validate();

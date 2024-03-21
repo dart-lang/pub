@@ -12,7 +12,7 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
 import 'package:http_parser/http_parser.dart';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
@@ -202,7 +202,7 @@ void _saveCredentials(Credentials credentials) {
   _credentials = credentials;
   var credentialsPath = _credentialsFile();
   if (credentialsPath != null) {
-    ensureDir(path.dirname(credentialsPath));
+    ensureDir(p.dirname(credentialsPath));
     writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
   }
 }
@@ -212,9 +212,7 @@ void _saveCredentials(Credentials credentials) {
 /// Returns `null` if there is no good place for the file.
 String? _credentialsFile() {
   final configDir = dartConfigDir;
-  return configDir == null
-      ? null
-      : path.join(configDir, 'pub-credentials.json');
+  return configDir == null ? null : p.join(configDir, 'pub-credentials.json');
 }
 
 /// Gets the user to authorize pub as a client of pub.dev via oauth2.

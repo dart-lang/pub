@@ -424,6 +424,11 @@ The  `advisories` property is a list of security advisories in [OSV
 format](https://ossf.github.io/osv-schema/). The list is empty, if
 no security advisory affects this package.
 
+The `affected[].versions` field within a security advisory must be present and
+fully populated by a hosted pub-server that provides advisories. Hence, the
+`dart pub` client will exclusively rely on `affected[].versions`, and disregard
+`affected[].ranges`.
+
 The `advisoriesUpdated` property is the most recent timestamp of when the result
 from this end-point for this package changed. This can be used for caching
 purposes.

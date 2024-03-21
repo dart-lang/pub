@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -11,7 +11,7 @@ import '../test_pub.dart';
 
 void main() {
   test('running pub cache clean when there is no cache', () async {
-    final cache = path.join(d.sandbox, cachePath);
+    final cache = p.join(d.sandbox, cachePath);
 
     await runPub(args: ['cache', 'clean'], output: 'No pub cache at $cache.');
   });
@@ -22,7 +22,7 @@ void main() {
       ..serve('bar', '1.2.3');
     await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
-    final cache = path.join(d.sandbox, cachePath);
+    final cache = p.join(d.sandbox, cachePath);
     expect(listDir(cache, includeHidden: true), contains(endsWith('hosted')));
     await runPub(
       args: ['cache', 'clean', '--force'],
@@ -43,7 +43,7 @@ void main() {
       ..serve('bar', '1.2.3');
     await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
-    final cache = path.join(d.sandbox, cachePath);
+    final cache = p.join(d.sandbox, cachePath);
     expect(
       listDir(cache, includeHidden: true),
       contains(pathInCache('hosted')),

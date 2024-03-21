@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -24,7 +24,7 @@ void main() {
     await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Also delete the "packages" directory.
-    deleteEntry(path.join(d.sandbox, appPath, 'packages'));
+    deleteEntry(p.join(d.sandbox, appPath, 'packages'));
 
     // Do the dry run.
     await pubDowngrade(

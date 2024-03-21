@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/strict_dependencies.dart';
 import 'package:test/test.dart';
@@ -128,7 +128,7 @@ void main() {
     }
 
     test('only uses dart: dependencies (not pub packages)', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import 'dart:async';
         import 'dart:collection';
         import 'dart:typed_data';
@@ -138,7 +138,7 @@ void main() {
     });
 
     test('imports itself', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:test_pkg/test_pkg.dart';
       ''').create();
 
@@ -146,7 +146,7 @@ void main() {
     });
 
     test('has a relative import', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import 'some/relative/path.dart';
       ''').create();
 
@@ -154,7 +154,7 @@ void main() {
     });
 
     test('has an absolute import', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import 'file://shared/some/library.dart';
       ''').create();
 
@@ -162,7 +162,7 @@ void main() {
     });
 
     test('has a parse error preventing reading directives', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import not_supported_keyword 'dart:async';
       ''').create();
 
@@ -170,7 +170,7 @@ void main() {
     });
 
     test('has a top-level Dart file with an invalid dependency', () async {
-      await d.file(path.join(appPath, 'top_level.dart'), r'''
+      await d.file(p.join(appPath, 'top_level.dart'), r'''
         import 'package:';
       ''').create();
 
@@ -178,7 +178,7 @@ void main() {
     });
 
     test('has a Dart-like file with an invalid dependency', () async {
-      await d.file(path.join(appPath, 'lib', 'generator.dart.template'), r'''
+      await d.file(p.join(appPath, 'lib', 'generator.dart.template'), r'''
         import 'package:';
       ''').create();
 
@@ -259,7 +259,7 @@ linter:
     setUp(d.validPackage().create);
 
     test('has an invalid String value', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:$bad';
       ''').create();
 
@@ -270,7 +270,7 @@ linter:
     });
 
     test('does not declare an "import" as a dependency', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
@@ -283,7 +283,7 @@ linter:
     });
 
     test('does not declare an "export" as a dependency', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         export 'package:silly_monkey/silly_monkey.dart';
       ''').create();
 
@@ -296,7 +296,7 @@ linter:
     });
 
     test('has an invalid URI', () async {
-      await d.file(path.join(appPath, 'lib', 'library.dart'), r'''
+      await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         import 'package:/';
       ''').create();
 

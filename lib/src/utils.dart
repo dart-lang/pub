@@ -16,10 +16,12 @@ import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
+import 'pubspec_parse.dart';
 
 /// A regular expression matching a Dart identifier.
 ///
@@ -766,7 +768,7 @@ Future<T> retry<T>(
 extension RetrieveFlags on ArgResults {
   bool flag(String name) => this[name] as bool;
 
-  String option(String name) => this[name] as String;
+  String optionWithDefault(String name) => this[name] as String;
   String? optionWithoutDefault(String name) => this[name] as String?;
 }
 
@@ -779,3 +781,60 @@ extension RetrieveFlags on ArgResults {
 String sanitizeForTerminal(String input) => String.fromCharCodes(
       input.runes.map((r) => 32 <= r && r <= 127 ? r : 32).take(1024),
     );
+
+extension ExpectField on YamlMap {
+  /// Looks up the [key] in this map, and validates that it is of type [T],
+  /// returning it if so.
+  ///
+  /// Throws a [SourceSpanApplicationException] if not present and [T] is not
+  /// nullable, or if the value is not of type [T].
+  T expectField<T extends Object?>(String key) {
+    final value = this[key];
+    if (value is T) return value;
+    if (value == null) {
+      throw SourceSpanApplicationException(
+        'Missing the required "$key" field.',
+        span,
+      );
+    } else {
+      throw SourceSpanApplicationException(
+        '"$key" field must be a $T.',
+        nodes[key]?.span,
+      );
+    }
+  }
+
+  String expectPackageNameField() {
+    final name = expectField<String>('name');
+    if (!packageNameRegExp.hasMatch(name)) {
+      throw SourceSpanApplicationException(
+        '"name" field must be a valid Dart identifier.',
+        nodes['name']?.span,
+      );
+    } else if (reservedWords.contains(name.toLowerCase())) {
+      throw SourceSpanApplicationException(
+        '"name" field may not be a Dart reserved word.',
+        nodes['name']?.span,
+      );
+    }
+    return name;
+  }
+}
+
+extension ExpectEntries on YamlList {
+  /// Expects each entry in [this] to have a value of type [T],
+  /// and returns a `List<T>`.
+  ///
+  /// Throws a [SourceSpanApplicationException] for the first entry that does
+  /// not have a value of type [T].
+  List<T> expectElements<T extends Object?>() => [
+        for (var node in nodes)
+          if (node.value case T value)
+            value
+          else
+            throw SourceSpanApplicationException(
+              'Elements must be of type $T.',
+              node.span,
+            ),
+      ];
+}

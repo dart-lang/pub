@@ -19,6 +19,8 @@ class FlutterSdk extends Sdk {
 
   @override
   String get name => 'Flutter';
+  @override
+  bool get allowsNonSdkDepsInSdkPackages => true;
 
   // We only consider the Flutter SDK to present if we find a root directory
   // and the root directory contains a valid 'version' file.
@@ -82,7 +84,7 @@ class FlutterSdk extends Sdk {
       }
       return Version.parse(flutterVersion);
     } on IOException catch (e) {
-      warning(
+      fine(
         'Could not open flutter version file at `$flutterVersionPath`: $e\n',
       );
       return null;

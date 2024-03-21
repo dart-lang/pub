@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
@@ -28,7 +28,7 @@ abstract class CachedSource extends Source {
   @override
   Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async {
     var packageDir = getDirectoryInCache(id, cache);
-    if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
+    if (fileExists(p.join(packageDir, 'pubspec.yaml'))) {
       return Pubspec.load(
         packageDir,
         cache.sources,

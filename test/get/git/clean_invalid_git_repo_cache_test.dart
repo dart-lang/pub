@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -12,8 +12,7 @@ import '../../test_pub.dart';
 
 /// Invalidates a git clone in the pub-cache, by recreating it as empty-directory.
 void _invalidateGitCache(String repo) {
-  final cacheDir =
-      path.join(d.sandbox, path.joinAll([cachePath, 'git', 'cache']));
+  final cacheDir = p.join(d.sandbox, p.joinAll([cachePath, 'git', 'cache']));
   final fooCacheDir = Directory(cacheDir).listSync().firstWhere((entity) {
     return entity is Directory &&
         entity.path.split(Platform.pathSeparator).last.startsWith(repo);

@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -32,7 +32,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: [path.join('tool', 'a', 'b', 'app')]);
+    var pub = await pubRun(args: [p.join('tool', 'a', 'b', 'app')]);
     expect(pub.stdout, emitsThrough('a b'));
     await pub.shouldExit();
   });

@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:test_descriptor/test_descriptor.dart';
@@ -34,7 +34,7 @@ class TarFileDescriptor extends FileDescriptor {
       var bytes =
           await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
-      var file = path.join(parent ?? sandbox, name);
+      var file = p.join(parent ?? sandbox, name);
       _writeBinaryFile(file, bytes);
       return file;
     });
@@ -56,7 +56,7 @@ class TarFileDescriptor extends FileDescriptor {
     return Stream<List<int>>.fromFuture(
       withTempDir((tempDir) async {
         await create(tempDir);
-        return readBinaryFile(path.join(tempDir, name));
+        return readBinaryFile(p.join(tempDir, name));
       }),
     );
   }

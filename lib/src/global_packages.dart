@@ -618,7 +618,7 @@ try:
         log.fine('Could not parse binstub $file:\n$contents');
         continue;
       }
-      if (binStubPackage == entrypoint.workspaceRoot.name &&
+      if (binStubPackage == executable.package &&
           binStubScript ==
               p.basenameWithoutExtension(executable.relativePath)) {
         log.fine('Replacing old binstub $file');
@@ -784,6 +784,9 @@ try:
     }
 
     late String binstub;
+    // We need an absolute path since relative ones won't be relative to the
+    // right directory when the user runs this.
+    snapshot = p.absolute(snapshot);
     // Batch files behave in funky ways if they are modified while updating.
     // To ensure that the byte-offsets of everything stays the same even if the
     // snapshot filename changes we insert some padding in lines containing the
@@ -791,9 +794,6 @@ try:
     // 260 is the maximal short path length on Windows. Hopefully that is
     // enough.
     final padding = ' ' * (260 - snapshot.length);
-    // We need an absolute path since relative ones won't be relative to the
-    // right directory when the user runs this.
-    snapshot = p.absolute(snapshot);
     if (Platform.isWindows) {
       binstub = '''
 @echo off

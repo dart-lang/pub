@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/git.dart' as git;
 import 'package:test_descriptor/test_descriptor.dart';
 
@@ -69,7 +69,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
 
     return git.run(
       args,
-      workingDir: path.join(parent ?? sandbox, name),
+      workingDir: p.join(parent ?? sandbox, name),
       environment: environment,
     );
   }

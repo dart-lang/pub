@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/source/path.dart';
 import 'package:pub/src/system_cache.dart';
@@ -115,7 +115,7 @@ void main() {
 
     await pubGet();
 
-    var lockfilePath = path.join(d.sandbox, appPath, 'pubspec.lock');
+    var lockfilePath = p.join(d.sandbox, appPath, 'pubspec.lock');
     final lockfileJson = loadYaml(File(lockfilePath).readAsStringSync());
     expect(
       lockfileJson['packages']['foo']['description']['path'],
@@ -127,6 +127,6 @@ void main() {
         lockfile.packages['foo']!.description.description as PathDescription;
 
     expect(description.relative, isTrue);
-    expect(description.path, path.join(d.sandbox, 'foo'));
+    expect(description.path, p.join(d.sandbox, 'foo'));
   });
 }
