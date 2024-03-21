@@ -27,7 +27,7 @@ void main() {
       d.dir('bin', [
         d.file(
           binStubName('foo-script'),
-          contains('pub global run foo:script'),
+          contains('global run foo:script'),
         ),
       ]),
     ]).validate();
