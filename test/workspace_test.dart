@@ -259,4 +259,102 @@ void main() {
       output: contains('Resolving dependencies in `..`...'),
     );
   });
+
+  test('`pub add` acts on the work package', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', sdk: '^3.7.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+    final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+    await pubAdd(
+      args: ['foo'],
+      output: contains('+ foo 1.0.0'),
+      workingDirectory: aDir,
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+    await dir(appPath, [
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'foo': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).validate();
+  });
+
+  test('`pub remove` acts on the work package', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', sdk: '^3.7.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        deps: {'foo': '^1.0.0'},
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'foo': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+    final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+    await pubRemove(
+      args: ['foo'],
+      output: isNot(contains('- foo 1.0.0')),
+      workingDirectory: aDir,
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+    await dir(appPath, [
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).validate();
+    // Only when removing it from the root it shows the update.
+    await pubRemove(
+      args: ['foo'],
+      output: contains('- foo 1.0.0'),
+      workingDirectory: path(appPath),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+  });
 }
