@@ -272,6 +272,33 @@ void main() {
     );
   });
 
+  test('Rejects workspace pubspecs without "resolution: workspace"', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'pkgs/a/pubspec.yaml is inluded in the workspace from ./pubspec.yaml, but does not have `resolution: workspace`.',
+      ),
+    );
+  });
+
   test('Can resolve from any directory inside the workspace', () async {
     await dir(appPath, [
       libPubspec(
