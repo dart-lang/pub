@@ -47,7 +47,7 @@ void main() {
     await pubAdd(
       args: ['--directory', appPath, 'foo', '--git-url', 'foo.git'],
       workingDirectory: d.sandbox,
-      output: contains('Changed 1 dependency in myapp!'),
+      output: contains('Changed 1 dependency in `myapp`!'),
     );
 
     await d.dir(cachePath, [
@@ -228,7 +228,7 @@ void main() {
         'foo:{"git": {"url":"foo.git", "path":"subdir"}}',
       ],
       workingDirectory: d.sandbox,
-      output: contains('Changed 1 dependency in myapp!'),
+      output: contains('Changed 1 dependency in `myapp`!'),
     );
 
     await d.appDir(

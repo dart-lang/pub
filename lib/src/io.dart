@@ -1229,3 +1229,32 @@ String escapeShellArgument(String x) =>
     RegExp(r'^[a-zA-Z0-9-_=@.^]+$').stringMatch(x) == null
         ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
         : x;
+
+/// Returns all parent directories of [path], starting from [path] to the
+/// filesystem root.
+///
+/// If [path] is relative the directories will also be.
+///
+/// If [from] is passed, directories are made relative to that.
+///
+/// Examples:
+///   parentDirs('/a/b/c') => ('/a/b/c', '/a/b', '/a', '/')
+///   parentDirs('./d/e', from: '/a/b/c') => ('./d/e', './d', '.', '..', '../..', '../../..')
+Iterable<String> parentDirs(String path, {String? from}) sync* {
+  var relative = false;
+  var d = path;
+  while (true) {
+    if (relative) {
+      yield p.relative(d, from: from);
+    } else {
+      yield d;
+    }
+    if (!p.isWithin(from ?? p.current, d)) {
+      d = p.normalize(p.join(from ?? p.current, d));
+      relative = true;
+    }
+    final parent = p.dirname(d);
+    if (parent == d) break;
+    d = parent;
+  }
+}

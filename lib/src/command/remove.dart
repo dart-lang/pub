@@ -93,7 +93,7 @@ To remove a dependency override of a package prefix the package name with
     final rootPubspec = entrypoint.workspaceRoot.pubspec;
     final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
 
-    await entrypoint.withPubspec(newPubspec).acquireDependencies(
+    await entrypoint.withWorkPubspec(newPubspec).acquireDependencies(
           SolveType.get,
           precompile: !isDryRun && argResults.flag('precompile'),
           dryRun: isDryRun,

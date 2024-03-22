@@ -443,7 +443,7 @@ class GitSource extends CachedSource {
 
             var packageDir = p.join(revisionCachePath, relative);
             try {
-              return Package.load(null, packageDir, cache.sources);
+              return Package.load(packageDir, cache.sources);
             } catch (error, stackTrace) {
               log.error('Failed to load package', error, stackTrace);
               var name = p.basename(revisionCachePath).split('-').first;

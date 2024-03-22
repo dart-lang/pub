@@ -19,7 +19,7 @@ void main() {
     ]).create();
 
     var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);
-    expect(pub.stdout, emitsThrough('Resolving dependencies in ../foo...'));
+    expect(pub.stdout, emitsThrough('Resolving dependencies in `../foo`...'));
     expect(pub.stdout, emitsThrough(startsWith('Activated foo 0.0.0 at path')));
     await pub.shouldExit();
 

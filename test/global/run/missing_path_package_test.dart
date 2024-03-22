@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -22,11 +21,10 @@ void main() {
     deleteEntry(p.join(d.sandbox, 'foo'));
 
     var pub = await pubRun(global: true, args: ['foo']);
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
     expect(
       pub.stderr,
-      emits('Could not find a file named "pubspec.yaml" in "$path".'),
+      emits('The directory `${d.path('foo')}` does not exist.'),
     );
-    await pub.shouldExit(exit_codes.NO_INPUT);
+    await pub.shouldExit(1);
   });
 }

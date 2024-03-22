@@ -33,6 +33,7 @@ import 'solver.dart';
 import 'solver/report.dart';
 import 'solver/solve_suggestions.dart';
 import 'source/cached.dart';
+import 'source/root.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
 import 'utils.dart';
@@ -58,25 +59,112 @@ class Entrypoint {
   ///
   /// [workspaceRoot] will be the package in the nearest parent directory that
   /// has `resolution: null`
-  // TODO(https://github.com/dart-lang/pub/issues/4127): make this actually
-  // true.
   final String workingDir;
 
-  Package? _workspaceRoot;
+  /// Finds the [workspaceRoot] and [workPackage] based on [workingDir].
+  ///
+  /// Works by iterating through the parent directories from [workingDir].
+  ///
+  /// [workPackage] is the package of first dir we find with a `pubspec.yaml`
+  /// file.
+  ///
+  /// [workspaceRoot] is the package of the first dir we find with a
+  /// `pubspec.yaml` that does not have `resolution: workspace`.
+  ///
+  /// [workPackage] and [workspaceRoot] can be the same. And will always be the
+  /// same when no `workspace` is involved.
+  /// =
+  /// If [workingDir] doesn't exist, [fail].
+  ///
+  /// If no `pubspec.yaml` is found without `resolution: workspace` we [fail].
+  static ({Package root, Package work}) _loadWorkspace(
+    String workingDir,
+    SystemCache cache,
+  ) {
+    if (!dirExists(workingDir)) {
+      fail('The directory `$workingDir` does not exist.');
+    }
+    // Keep track of all the pubspecs met when walking up the file system.
+    // The first of these is the workingPackage.
+    final pubspecsMet = <String, Pubspec>{};
+    for (final dir in parentDirs(workingDir)) {
+      final Pubspec pubspec;
+
+      try {
+        pubspec = Pubspec.load(
+          dir,
+          cache.sources,
+          containingDescription: RootDescription(dir),
+          allowOverridesFile: true,
+        );
+      } on FileException {
+        continue;
+      }
+      pubspecsMet[p.canonicalize(dir)] = pubspec;
+      final Package root;
+      if (pubspec.resolution == Resolution.none) {
+        root = Package.load(
+          dir,
+          cache.sources,
+          loadPubspec: (
+            path, {
+            expectedName,
+            required withPubspecOverrides,
+          }) =>
+              pubspecsMet[p.canonicalize(path)] ??
+              Pubspec.load(
+                path,
+                cache.sources,
+                expectedName: expectedName,
+                allowOverridesFile: withPubspecOverrides,
+                containingDescription: RootDescription(path),
+              ),
+          withPubspecOverrides: true,
+        );
+        for (final package in root.transitiveWorkspace) {
+          if (identical(pubspecsMet.entries.first.value, package.pubspec)) {
+            return (root: root, work: package);
+          }
+        }
+        assert(false);
+      }
+    }
+    if (pubspecsMet.isEmpty) {
+      throw FileException(
+        'Found no `pubspec.yaml` file in `${p.normalize(p.absolute(workingDir))}` or parent directories',
+        p.join(workingDir, 'pubspec.yaml'),
+      );
+    } else {
+      final firstEntry = pubspecsMet.entries.first;
+      throw FileException(
+        '''
+Found a pubspec.yaml at ${firstEntry.key}. But it has resolution `${firstEntry.value.resolution.name}`.
+But found no workspace root including it in parent directories.
+
+See $workspacesDocUrl for more information.''',
+        p.join(workingDir, 'pubspec.yaml'),
+      );
+    }
+  }
+
+  /// Stores the result of [_loadWorkspace].
+  /// Only access via [workspaceRoot], [workPackage] and [canFindWorkspaceRoot].
+  ({Package root, Package work})? _packages;
+
+  /// Only access via [workspaceRoot], [workPackage] and [canFindWorkspaceRoot].
+  ({Package root, Package work}) get _getPackages =>
+      _packages ??= _loadWorkspace(workingDir, cache);
 
   /// The root package this entrypoint is associated with.
   ///
   /// For a global package, this is the activated package.
-  Package get workspaceRoot => _workspaceRoot ??= Package.load(
-        null,
-        workingDir,
-        cache.sources,
-        withPubspecOverrides: true,
-      );
+  Package get workspaceRoot => _getPackages.root;
 
+  /// True if we can find a `pubspec.yaml` to resolve in [workingDir] or any
+  /// parent directory.
   bool get canFindWorkspaceRoot {
     try {
-      workspaceRoot;
+      _getPackages;
       return true;
     } on FileException {
       return false;
@@ -87,8 +175,6 @@ class Entrypoint {
   ///
   /// It will be the package in the nearest parent directory to `workingDir`.
   /// Example: if a workspace looks like this:
-  // TODO(https://github.com/dart-lang/pub/issues/4127): make this actually
-  // true.
   ///
   /// foo/ pubspec.yaml # contains `workspace: [- 'bar'] bar/ pubspec.yaml #
   ///   contains `resolution: workspace`.
@@ -98,7 +184,7 @@ class Entrypoint {
   ///
   /// Running `pub add` in `foo` will have foo as workPackage, and add
   /// dependencies to `foo/pubspec.yaml`.
-  Package get workPackage => workspaceRoot;
+  Package get workPackage => _getPackages.work;
 
   /// The system-wide cache which caches packages that need to be fetched over
   /// the network.
@@ -193,9 +279,9 @@ class Entrypoint {
     var packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
-          packageEntry.name,
           packageEntry.resolvedRootDir(packageConfigPath),
           cache.sources,
+          expectedName: packageEntry.name,
         ),
     };
     packages[workspaceRoot.name] = workspaceRoot;
@@ -229,46 +315,59 @@ class Entrypoint {
     this._example,
     this._packageGraph,
     this.cache,
-    this._workspaceRoot,
+    this._packages,
     this.isCachedGlobal,
   );
 
-  /// An entrypoint representing a package at [rootDir].
+  /// An entrypoint for the workspace containing [workingDir]/
   ///
   /// If [checkInCache] is `true` (the default) an error will be thrown if
   /// [rootDir] is located inside [cache.rootDir].
+
   Entrypoint(
     this.workingDir,
     this.cache, {
-    ({Pubspec pubspec, List<Package> workspacePackages})? preloaded,
     bool checkInCache = true,
-  })  : _workspaceRoot = preloaded == null
-            ? null
-            : Package(
-                preloaded.pubspec,
-                workingDir,
-                preloaded.workspacePackages,
-              ),
-        isCachedGlobal = false {
+  }) : isCachedGlobal = false {
     if (checkInCache && p.isWithin(cache.rootDir, workingDir)) {
       fail('Cannot operate on packages inside the cache.');
     }
   }
 
   /// Creates an entrypoint at the same location, that will use [pubspec] for
-  /// resolution.
-  Entrypoint withPubspec(Pubspec pubspec) {
+  /// resolution of the [workPackage].
+  Entrypoint withWorkPubspec(Pubspec pubspec) {
+    final existingPubspecs = <String, Pubspec>{};
+    // First extract all pubspecs from the workspace.
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      existingPubspecs[package.dir] = package.pubspec;
+    }
+    // Then override the one of the workPackage.
+    existingPubspecs[p.canonicalize(workPackage.dir)] = pubspec;
+    final newWorkspaceRoot = Package.load(
+      workspaceRoot.dir,
+      cache.sources,
+      loadPubspec: (
+        dir, {
+        expectedName,
+        required withPubspecOverrides,
+      }) =>
+          existingPubspecs[p.canonicalize(dir)] ??
+          Pubspec.load(
+            dir,
+            cache.sources,
+            containingDescription: RootDescription(dir),
+          ),
+    );
+    final newWorkPackage = newWorkspaceRoot.transitiveWorkspace
+        .firstWhere((package) => package.dir == workPackage.dir);
     return Entrypoint._(
       workingDir,
       _lockFile,
       _example,
       _packageGraph,
       cache,
-      Package(
-        pubspec,
-        workingDir,
-        workspaceRoot.workspaceChildren,
-      ),
+      (root: newWorkspaceRoot, work: newWorkPackage),
       isCachedGlobal,
     );
   }
@@ -276,11 +375,12 @@ class Entrypoint {
   /// Creates an entrypoint given package and lockfile objects.
   /// If a SolveResult is already created it can be passed as an optimization.
   Entrypoint.global(
-    Package this._workspaceRoot,
+    Package package,
     this._lockFile,
     this.cache, {
     SolveResult? solveResult,
-  })  : workingDir = _workspaceRoot.dir,
+  })  : _packages = (root: package, work: package),
+        workingDir = package.dir,
         isCachedGlobal = true {
     if (solveResult != null) {
       _packageGraph =
@@ -410,7 +510,7 @@ class Entrypoint {
   }) async {
     workspaceRoot; // This will throw early if pubspec.yaml could not be found.
     summaryOnly = summaryOnly || _summaryOnlyEnvironment;
-    final suffix = workspaceRoot.dir == '.' ? '' : ' in ${workspaceRoot.dir}';
+    final suffix = workspaceRoot.dir == '.' ? '' : ' in `${workspaceRoot.dir}`';
 
     if (enforceLockfile && !fileExists(lockFilePath)) {
       throw ApplicationException('''
@@ -978,7 +1078,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       }
       var touchedLockFile = false;
       late final lockFile = _loadLockFile(lockFilePath, cache);
-      late final root = Package.load(null, dir, cache.sources);
+      late final root = Package.load(dir, cache.sources);
 
       if (!lockfileNewerThanPubspecs) {
         if (isLockFileUpToDate(lockFile, root)) {

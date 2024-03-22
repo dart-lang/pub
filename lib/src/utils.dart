@@ -104,6 +104,8 @@ const reservedWords = <String>{
   'yield',
 };
 
+const workspacesDocUrl = 'https://dart.dev/go/pub-workspaces';
+
 /// An cryptographically secure instance of [math.Random].
 final random = math.Random.secure();
 

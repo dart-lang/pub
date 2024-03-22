@@ -125,28 +125,62 @@ class Package {
 
   /// Loads the package whose root directory is [packageDir].
   ///
+  /// Will also load the workspace sub-packages of this package (recursively).
+  ///
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
   ///
   /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
   /// `true`.
+  ///
+  /// [loadPubspec] if given will be used to obtain a pubspec from a path. Also
+  /// for the workspace children.
+  ///
+  /// This mechanism can be used to avoid loading pubspecs twice. It can also be
+  /// used to override a pubspec in memory for trying out an alternative
+  /// resolution.
   factory Package.load(
-    String? name,
     String dir,
     SourceRegistry sources, {
     bool withPubspecOverrides = false,
+    String? expectedName,
+    Pubspec Function(
+      String path, {
+      String? expectedName,
+      required bool withPubspecOverrides,
+    })? loadPubspec,
   }) {
-    final pubspec = Pubspec.load(
+    loadPubspec ??=
+        (path, {expectedName, required withPubspecOverrides}) => Pubspec.load(
+              path,
+              sources,
+              containingDescription: RootDescription(path),
+            );
+    final pubspec = loadPubspec(
       dir,
-      sources,
-      expectedName: name,
-      allowOverridesFile: withPubspecOverrides,
-      containingDescription: RootDescription(dir),
+      withPubspecOverrides: withPubspecOverrides,
+      expectedName: expectedName,
     );
     final workspacePackages = pubspec.workspace
-        .map((e) => Package.load(null, p.join(dir, e), sources))
+        .map(
+          (e) => Package.load(
+            p.join(dir, e),
+            sources,
+            loadPubspec: loadPubspec,
+            withPubspecOverrides: withPubspecOverrides,
+          ),
+        )
         .toList();
+    for (final package in workspacePackages) {
+      if (package.pubspec.resolution != Resolution.workspace) {
+        fail('''
+${package.pubspecPath} is inluded in the workspace from ${p.join(dir, 'pubspec.yaml')}, but does not have `resolution: workspace`.
+
+See $workspacesDocUrl for more information.
+''');
+      }
+    }
     return Package(pubspec, dir, workspacePackages);
   }
 

@@ -9,19 +9,19 @@ Changed 1 dependency!
 
 Changed 1 constraint in pubspec.yaml:
   bar: ^1.0.0 -> ^2.0.0
-Resolving dependencies in ./example...
+Resolving dependencies in `./example`...
 Downloading packages...
-Got dependencies in ./example.
+Got dependencies in `./example`.
 [STDERR] Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory example/` separately.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 1
 $ pub upgrade --major-versions --directory example
-Resolving dependencies in example...
+Resolving dependencies in `example`...
 Downloading packages...
 > foo 2.0.0 (was 1.0.0)
-Changed 1 dependency in example!
+Changed 1 dependency in `example`!
 
 Changed 1 constraint in pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0

@@ -111,14 +111,25 @@ FileDescriptor libPubspec(
   String version, {
   Map<String, Object?>? deps,
   Map<String, Object?>? devDeps,
+  String? resolution,
   String? sdk,
   Map<String, Object?>? extras,
+  bool resolutionWorkspace = false,
 }) {
   var map = packageMap(name, version, deps, devDeps);
+  if (resolutionWorkspace && sdk == null) {
+    sdk = '3.7.0';
+  }
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
   }
-  return pubspec({...map, ...extras ?? {}});
+  return pubspec(
+    {
+      ...map,
+      if (resolutionWorkspace) 'resolution': 'workspace',
+      ...extras ?? {},
+    },
+  );
 }
 
 /// Describes a file named `pubspec_overrides.yaml` by default, with the given

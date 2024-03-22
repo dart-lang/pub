@@ -59,7 +59,7 @@ void main() {
     await pubAdd(
       args: ['--directory', appPath, 'foo', '--path', 'foo'],
       workingDirectory: d.sandbox,
-      output: contains('Changed 1 dependency in myapp!'),
+      output: contains('Changed 1 dependency in `myapp`!'),
     );
 
     await d.appPackageConfigFile([
@@ -180,7 +180,7 @@ void main() {
         'bar:{"path":"bar"}',
       ],
       workingDirectory: d.sandbox,
-      output: contains('Changed 2 dependencies in myapp!'),
+      output: contains('Changed 2 dependencies in `myapp`!'),
     );
 
     await d.appPackageConfigFile([

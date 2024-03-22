@@ -153,7 +153,7 @@ $contentHashesDocumentationUrl
     final dir = _location;
     if (dir != null) {
       if (dir != '.') {
-        suffix = ' in $dir';
+        suffix = ' in `$dir`';
       }
     }
 

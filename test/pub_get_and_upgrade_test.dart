@@ -17,8 +17,9 @@ void main() {
 
         await pubCommand(
           command,
-          error: RegExp(r'Could not find a file named "pubspec.yaml" '
-              r'in "[^\n]*"\.'),
+          error: contains(
+            'Found no `pubspec.yaml` file in `${d.path(appPath)}` or parent directories',
+          ),
           exitCode: exit_codes.NO_INPUT,
         );
       });
