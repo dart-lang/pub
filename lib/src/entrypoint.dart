@@ -104,10 +104,21 @@ class Entrypoint {
       final Package root;
       if (pubspec.resolution == Resolution.none) {
         root = Package.load(
-          null,
           dir,
           cache.sources,
-          alreadyLoadedPubspecs: pubspecsMet,
+          loadPubspec: (
+            path, {
+            expectedName,
+            required withPubspecOverrides,
+          }) =>
+              pubspecsMet[p.canonicalize(path)] ??
+              Pubspec.load(
+                path,
+                cache.sources,
+                expectedName: expectedName,
+                allowOverridesFile: withPubspecOverrides,
+                containingDescription: RootDescription(path),
+              ),
           withPubspecOverrides: true,
         );
         for (final package in root.transitiveWorkspace) {
@@ -268,9 +279,9 @@ See $workspacesDocUrl for more information.''',
     var packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
-          packageEntry.name,
           packageEntry.resolvedRootDir(packageConfigPath),
           cache.sources,
+          expectedName: packageEntry.name,
         ),
     };
     packages[workspaceRoot.name] = workspaceRoot;
@@ -334,10 +345,19 @@ See $workspacesDocUrl for more information.''',
     // Then override the one of the workPackage.
     existingPubspecs[p.canonicalize(workPackage.dir)] = pubspec;
     final newWorkspaceRoot = Package.load(
-      null,
       workspaceRoot.dir,
       cache.sources,
-      alreadyLoadedPubspecs: existingPubspecs,
+      loadPubspec: (
+        dir, {
+        expectedName,
+        required withPubspecOverrides,
+      }) =>
+          existingPubspecs[p.canonicalize(dir)] ??
+          Pubspec.load(
+            dir,
+            cache.sources,
+            containingDescription: RootDescription(dir),
+          ),
     );
     final newWorkPackage = newWorkspaceRoot.transitiveWorkspace
         .firstWhere((package) => package.dir == workPackage.dir);
@@ -1058,7 +1078,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       }
       var touchedLockFile = false;
       late final lockFile = _loadLockFile(lockFilePath, cache);
-      late final root = Package.load(null, dir, cache.sources);
+      late final root = Package.load(dir, cache.sources);
 
       if (!lockfileNewerThanPubspecs) {
         if (isLockFileUpToDate(lockFile, root)) {

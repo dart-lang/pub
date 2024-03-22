@@ -125,6 +125,8 @@ class Package {
 
   /// Loads the package whose root directory is [packageDir].
   ///
+  /// Will also load the workspace sub-packages of this package (recursively).
+  ///
   /// [name] is the expected name of that package (e.g. the name given in the
   /// dependency), or `null` if the package being loaded is the entrypoint
   /// package.
@@ -132,34 +134,40 @@ class Package {
   /// `pubspec_overrides.yaml` is only loaded if [withPubspecOverrides] is
   /// `true`.
   ///
-  /// [alreadyLoadedPubspecs] contains a map from the `p.canonicalize`d
-  /// directory containing a pubspec, to the loaded [Pubspec] object.
+  /// [loadPubspec] if given will be used to obtain a pubspec from a path. Also
+  /// for the workspace children.
   ///
   /// This mechanism can be used to avoid loading pubspecs twice. It can also be
   /// used to override a pubspec in memory for trying out an alternative
   /// resolution.
   factory Package.load(
-    String? name,
     String dir,
     SourceRegistry sources, {
     bool withPubspecOverrides = false,
-    Map<String, Pubspec> alreadyLoadedPubspecs = const {},
+    String? expectedName,
+    Pubspec Function(
+      String path, {
+      String? expectedName,
+      required bool withPubspecOverrides,
+    })? loadPubspec,
   }) {
-    final pubspec = alreadyLoadedPubspecs[p.canonicalize(dir)] ??
-        Pubspec.load(
-          dir,
-          sources,
-          expectedName: name,
-          allowOverridesFile: withPubspecOverrides,
-          containingDescription: RootDescription(dir),
-        );
+    loadPubspec ??=
+        (path, {expectedName, required withPubspecOverrides}) => Pubspec.load(
+              path,
+              sources,
+              containingDescription: RootDescription(path),
+            );
+    final pubspec = loadPubspec(
+      dir,
+      withPubspecOverrides: withPubspecOverrides,
+      expectedName: expectedName,
+    );
     final workspacePackages = pubspec.workspace
         .map(
           (e) => Package.load(
-            null,
             p.join(dir, e),
             sources,
-            alreadyLoadedPubspecs: alreadyLoadedPubspecs,
+            loadPubspec: loadPubspec,
             withPubspecOverrides: withPubspecOverrides,
           ),
         )
