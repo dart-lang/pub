@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -180,7 +181,9 @@ void main() {
     );
   });
 
-  test('reports errors in workspace pubspec.yamls correctly', () async {
+  test(
+      'ignores the source of dependencies on root packages. (Uses the local version instead)',
+      () async {
     await dir(appPath, [
       libPubspec(
         'myapp',
@@ -204,6 +207,69 @@ void main() {
       ]),
     ]).create();
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+  });
+
+  test('reports errors in workspace pubspec.yamls correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {
+              'foo': [1, 2, 3],
+            },
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'Error on line 1, column 118 of pkgs/a/pubspec.yaml: A dependency specification must be a string or a mapping.',
+      ),
+      exitCode: DATA,
+    );
+  });
+
+  test('reports solve failures in workspace pubspec.yamls correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {
+              'foo': {'posted': 'https://abc'},
+            },
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'Because every version of a depends on foo from unknown source "posted", version solving failed.',
+      ),
+    );
   });
 
   test('Can resolve from any directory inside the workspace', () async {
