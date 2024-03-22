@@ -232,10 +232,11 @@ void main() {
         ]),
       ]),
     ]).create();
+    final s = p.separator;
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
       error: contains(
-        'Error on line 1, column 118 of pkgs/a/pubspec.yaml: A dependency specification must be a string or a mapping.',
+        'Error on line 1, column 118 of pkgs${s}a${s}pubspec.yaml: A dependency specification must be a string or a mapping.',
       ),
       exitCode: DATA,
     );
@@ -291,10 +292,11 @@ void main() {
         ]),
       ]),
     ]).create();
+    final s = p.separator;
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
       error: contains(
-        'pkgs/a/pubspec.yaml is inluded in the workspace from ./pubspec.yaml, but does not have `resolution: workspace`.',
+        'pkgs${s}a${s}pubspec.yaml is inluded in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
       ),
     );
   });
