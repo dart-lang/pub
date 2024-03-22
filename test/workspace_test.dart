@@ -354,4 +354,50 @@ void main() {
       output: contains('Resolving dependencies in `..`...'),
     );
   });
+
+  test('Removes lock files and package configs from workspace members',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir(
+          'a',
+          [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+          ],
+        ),
+      ]),
+    ]).create();
+    final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+    final pkgsDir = p.join(sandbox, appPath, 'pkgs');
+    final strayLockFile = File(p.join(aDir, 'pubspec.lock'));
+    final strayPackageConfig =
+        File(p.join(aDir, '.dart_tool', 'package_config.json'));
+
+    final unmanagedLockFile = File(p.join(pkgsDir, 'pubspec.lock'));
+    final unmanagedPackageConfig =
+        File(p.join(pkgsDir, '.dart_tool', 'package_config.json'));
+    strayPackageConfig.createSync(recursive: true);
+    strayLockFile.createSync(recursive: true);
+
+    unmanagedPackageConfig.createSync(recursive: true);
+    unmanagedLockFile.createSync(recursive: true);
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+
+    expect(strayLockFile.statSync().type, FileSystemEntityType.notFound);
+    expect(strayPackageConfig.statSync().type, FileSystemEntityType.notFound);
+
+    // We only delete stray files from directories that contain an actual
+    // package.
+    expect(unmanagedLockFile.statSync().type, FileSystemEntityType.file);
+    expect(unmanagedPackageConfig.statSync().type, FileSystemEntityType.file);
+  });
 }
