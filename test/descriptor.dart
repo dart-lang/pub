@@ -111,7 +111,6 @@ FileDescriptor libPubspec(
   String version, {
   Map<String, Object?>? deps,
   Map<String, Object?>? devDeps,
-  String? resolution,
   String? sdk,
   Map<String, Object?>? extras,
   bool resolutionWorkspace = false,
