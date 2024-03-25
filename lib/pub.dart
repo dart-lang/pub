@@ -6,6 +6,7 @@ import 'package:args/command_runner.dart';
 
 import 'src/entrypoint.dart';
 import 'src/exceptions.dart';
+import 'src/http.dart';
 import 'src/pub_embeddable_command.dart';
 import 'src/system_cache.dart';
 
@@ -52,6 +53,11 @@ Future<void> ensurePubspecResolved(
     );
   } on ApplicationException catch (e) {
     throw ResolutionFailedException._(e.toString());
+  } finally {
+    // TODO(https://github.com/dart-lang/pub/issues/4200)
+    // This is a bit of a hack.
+    // We should most likely take a client here.
+    globalHttpClient.close();
   }
 }
 
