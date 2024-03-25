@@ -581,6 +581,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     _lockFile = newLockFile;
 
     if (!dryRun) {
+      _removeStrayLockAndConfigFiles();
+
       /// Build a package graph from the version solver results so we don't
       /// have to reload and reparse all the pubspecs.
       _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
@@ -1215,5 +1217,19 @@ See https://dart.dev/go/sdk-constraint
       if (oldPackage.description != package.description) return false;
     }
     return true;
+  }
+
+  /// Remove any `pubspec.lock` or `.dart_tool/package_config.json` files in
+  /// workspace packages that are not the root package.
+  ///
+  /// This is to avoid surprises if a package is turned into a workspace member
+  /// but still has an old package config or lockfile.
+  void _removeStrayLockAndConfigFiles() {
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      if (package.pubspec.resolution == Resolution.workspace) {
+        deleteEntry(p.join(package.dir, 'pubspec.lock'));
+        deleteEntry(p.join(package.dir, '.dart_tool', 'package_config.json'));
+      }
+    }
   }
 }
