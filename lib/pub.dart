@@ -6,6 +6,7 @@ import 'package:args/command_runner.dart';
 
 import 'src/entrypoint.dart';
 import 'src/exceptions.dart';
+import 'src/http.dart';
 import 'src/pub_embeddable_command.dart';
 import 'src/system_cache.dart';
 
@@ -52,6 +53,8 @@ Future<void> ensurePubspecResolved(
     );
   } on ApplicationException catch (e) {
     throw ResolutionFailedException._(e.toString());
+  } finally {
+    globalHttpClient.close();
   }
 }
 
