@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -180,7 +181,9 @@ void main() {
     );
   });
 
-  test('reports errors in workspace pubspec.yamls correctly', () async {
+  test(
+      'ignores the source of dependencies on root packages. (Uses the local version instead)',
+      () async {
     await dir(appPath, [
       libPubspec(
         'myapp',
@@ -257,6 +260,38 @@ void main() {
         'pkgs',
       ),
       output: contains('Resolving dependencies in `..`...'),
+    );
+  });
+
+  test('reports missing pubspec.yaml of workspace member correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          resolutionWorkspace: true,
+          extras: {
+            'workspace': ['b'], // Doesn't exist.
+          },
+        ),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'Could not find a file named "pubspec.yaml" in "${p.join(sandbox, appPath, 'a', 'b')}".\n'
+        'That was included in the workspace of ${p.join('.', 'a', 'pubspec.yaml')}.\n'
+        'That was included in the workspace of ${p.join('.', 'pubspec.yaml')}.',
+      ),
+      exitCode: NO_INPUT,
     );
   });
 }
