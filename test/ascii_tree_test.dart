@@ -98,6 +98,6 @@ void main() {
       },
     };
 
-    ctx.expectNextSection(tree.fromMap(map));
+    ctx.expectNextSection(tree.fromMap(map, startingAtTop: false));
   });
 }

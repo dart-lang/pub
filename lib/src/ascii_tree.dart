@@ -118,7 +118,7 @@ String fromFiles(
 ///     '---barback
 String fromMap(Map<String, Map> map, {bool startingAtTop = true}) {
   var buffer = StringBuffer();
-  _draw(buffer, '', null, map, isRoot: startingAtTop);
+  _draw(buffer, '', null, map, depth: startingAtTop ? 0 : 1);
   return buffer.toString();
 }
 
@@ -156,16 +156,16 @@ void _draw(
   Map<String, Map> children, {
   bool showAllChildren = false,
   bool isLast = false,
-  bool isRoot = true,
+  required int depth,
 }) {
   // Don't draw a line for the root node.
-  if (name != null) _drawLine(buffer, prefix, isLast, name, isRoot);
+  if (name != null) _drawLine(buffer, prefix, isLast, name, depth <= 1);
 
   // Recurse to the children.
   var childNames = ordered(children.keys);
 
   void drawChild(bool isLastChild, String child) {
-    var childPrefix = _getPrefix(isRoot, isLast);
+    var childPrefix = _getPrefix(depth <= 1, isLast);
     _draw(
       buffer,
       '$prefix$childPrefix',
@@ -173,7 +173,7 @@ void _draw(
       children[child] as Map<String, Map>,
       showAllChildren: showAllChildren,
       isLast: isLastChild,
-      isRoot: name == null,
+      depth: depth + 1,
     );
   }
 
