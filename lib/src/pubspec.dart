@@ -84,6 +84,12 @@ class Pubspec extends PubspecBase {
       if (value is! String) {
         _error('"workspace" must be a list of strings', t.span);
       }
+      if (!p.isRelative(value)) {
+        _error('"workspace" members must be relative paths', t.span);
+      }
+      if (p.equals(value, '.') || !p.isWithin('.', value)) {
+        _error('"workspace" members must be subdirectories', t.span);
+      }
       result.add(value);
     }
     return result;
