@@ -498,4 +498,61 @@ void main() {
     expect(unmanagedLockFile.statSync().type, FileSystemEntityType.file);
     expect(unmanagedPackageConfig.statSync().type, FileSystemEntityType.file);
   });
+
+  test(
+      'Reports a failure if a workspace pubspec is not nested inside the parent dir',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['../'],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains('"workspace" members must be subdirectories'),
+      exitCode: DATA,
+    );
+  });
+
+  test('Reports a failure if a workspace includes "."', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['.'],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains('"workspace" members must be subdirectories'),
+      exitCode: DATA,
+    );
+  });
+
+  test('Reports a failure if a workspace pubspec is not a relative path',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': [p.join(sandbox, appPath, 'a')],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains('"workspace" members must be relative paths'),
+      exitCode: DATA,
+    );
+  });
 }
