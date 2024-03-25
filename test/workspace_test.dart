@@ -259,4 +259,192 @@ void main() {
       output: contains('Resolving dependencies in `..`...'),
     );
   });
+
+  test('`pub deps` lists dependencies for all members of workspace', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      deps: {'transitive': '^1.0.0'},
+      contents: [
+        dir('bin', [file('foomain.dart')]),
+      ],
+    );
+    server.serve(
+      'transitive',
+      '1.0.0',
+      contents: [
+        dir('bin', [file('transitivemain.dart')]),
+      ],
+    );
+    server.serve(
+      'both',
+      '1.0.0',
+      contents: [
+        dir('bin', [file('bothmain.dart')]),
+      ],
+    );
+
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/b'],
+        },
+        deps: {'both': '^1.0.0', 'b': null},
+        sdk: '^3.7.0',
+      ),
+      dir('bin', [file('myappmain.dart')]),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'myapp': null, 'foo': '^1.0.0'},
+            devDeps: {'both': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+        dir('bin', [file('amain.dart')]),
+        dir('b', [
+          libPubspec(
+            'b',
+            '1.1.1',
+            deps: {'myapp': null, 'both': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+          dir('bin', [file('bmain.dart')]),
+        ]),
+      ]),
+    ]).create();
+    await runPub(
+      args: ['deps'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+Dart SDK 3.7.0
+a 1.1.1
+├── both...
+├── foo 1.0.0
+│   └── transitive 1.0.0
+└── myapp...
+b 1.1.1
+├── both...
+└── myapp...
+myapp 1.2.3
+├── b...
+└── both 1.0.0''',
+      ),
+    );
+
+    await runPub(
+      args: ['deps', '--style=list', '--dev'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+Dart SDK 3.7.0
+myapp 1.2.3
+
+dependencies:
+- both 1.0.0
+- b 1.1.1
+  - myapp any
+  - both ^1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- both 1.0.0
+
+a 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- foo 1.0.0
+  - transitive ^1.0.0
+
+dev dependencies:
+- both 1.0.0
+
+transitive dependencies:
+- transitive 1.0.0''',
+    );
+
+    await runPub(
+      args: ['deps', '--style=list', '--no-dev'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+Dart SDK 3.7.0
+myapp 1.2.3
+
+dependencies:
+- both 1.0.0
+- b 1.1.1
+  - myapp any
+  - both ^1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- both 1.0.0
+
+a 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- foo 1.0.0
+  - transitive ^1.0.0
+
+transitive dependencies:
+- transitive 1.0.0''',
+    );
+    await runPub(
+      args: ['deps', '--style=compact'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+    Dart SDK 3.7.0
+myapp 1.2.3
+
+dependencies:
+- b 1.1.1 [myapp both]
+- both 1.0.0
+
+b 1.1.1
+
+dependencies:
+- both 1.0.0
+- myapp 1.2.3 [both b]
+
+a 1.1.1
+
+dependencies:
+- foo 1.0.0 [transitive]
+- myapp 1.2.3 [both b]
+
+dev dependencies:
+- both 1.0.0
+
+transitive dependencies:
+- transitive 1.0.0''',
+    );
+    await runPub(
+      args: ['deps', '--executables'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+myapp:myappmain
+both:bothmain
+b:bmain
+foo:foomain''',
+    );
+  });
 }
