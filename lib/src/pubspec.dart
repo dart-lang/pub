@@ -303,6 +303,7 @@ class Pubspec extends PubspecBase {
     Map<String, SdkConstraint>? sdkConstraints,
     this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
+    this.resolution = Resolution.none,
   })  : _dependencies = dependencies == null
             ? null
             : {for (final d in dependencies) d.name: d},
