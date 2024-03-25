@@ -209,6 +209,98 @@ void main() {
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
   });
 
+  test('reports errors in workspace pubspec.yamls correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {
+              'foo': [1, 2, 3],
+            },
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    final s = p.separator;
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'Error on line 1, column 118 of pkgs${s}a${s}pubspec.yaml: A dependency specification must be a string or a mapping.',
+      ),
+      exitCode: DATA,
+    );
+  });
+
+  test('reports solve failures in workspace pubspec.yamls correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {
+              'foo': {'posted': 'https://abc'},
+            },
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'Because every version of a depends on foo from unknown source "posted", version solving failed.',
+      ),
+    );
+  });
+
+  test('Rejects workspace pubspecs without "resolution: workspace"', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+          ),
+        ]),
+      ]),
+    ]).create();
+    final s = p.separator;
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'pkgs${s}a${s}pubspec.yaml is inluded in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
+      ),
+    );
+  });
+
   test('Can resolve from any directory inside the workspace', () async {
     await dir(appPath, [
       libPubspec(
@@ -293,5 +385,337 @@ void main() {
       ),
       exitCode: NO_INPUT,
     );
+  });
+
+  test('`pub deps` lists dependencies for all members of workspace', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      deps: {'transitive': '^1.0.0'},
+      contents: [
+        dir('bin', [file('foomain.dart')]),
+      ],
+    );
+    server.serve(
+      'transitive',
+      '1.0.0',
+      contents: [
+        dir('bin', [file('transitivemain.dart')]),
+      ],
+    );
+    server.serve(
+      'both',
+      '1.0.0',
+      contents: [
+        dir('bin', [file('bothmain.dart')]),
+      ],
+    );
+
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/b'],
+        },
+        deps: {'both': '^1.0.0', 'b': null},
+        sdk: '^3.7.0',
+      ),
+      dir('bin', [file('myappmain.dart')]),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'myapp': null, 'foo': '^1.0.0'},
+            devDeps: {'both': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+        dir('bin', [file('amain.dart')]),
+        dir('b', [
+          libPubspec(
+            'b',
+            '1.1.1',
+            deps: {'myapp': null, 'both': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+          dir('bin', [file('bmain.dart')]),
+        ]),
+      ]),
+    ]).create();
+    await runPub(
+      args: ['deps'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+Dart SDK 3.7.0
+a 1.1.1
+├── both...
+├── foo 1.0.0
+│   └── transitive 1.0.0
+└── myapp...
+b 1.1.1
+├── both...
+└── myapp...
+myapp 1.2.3
+├── b...
+└── both 1.0.0''',
+      ),
+    );
+
+    await runPub(
+      args: ['deps', '--style=list', '--dev'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+Dart SDK 3.7.0
+myapp 1.2.3
+
+dependencies:
+- both 1.0.0
+- b 1.1.1
+  - myapp any
+  - both ^1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- both 1.0.0
+
+a 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- foo 1.0.0
+  - transitive ^1.0.0
+
+dev dependencies:
+- both 1.0.0
+
+transitive dependencies:
+- transitive 1.0.0''',
+    );
+
+    await runPub(
+      args: ['deps', '--style=list', '--no-dev'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+Dart SDK 3.7.0
+myapp 1.2.3
+
+dependencies:
+- both 1.0.0
+- b 1.1.1
+  - myapp any
+  - both ^1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- both 1.0.0
+
+a 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- foo 1.0.0
+  - transitive ^1.0.0
+
+transitive dependencies:
+- transitive 1.0.0''',
+    );
+    await runPub(
+      args: ['deps', '--style=compact'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+    Dart SDK 3.7.0
+myapp 1.2.3
+
+dependencies:
+- b 1.1.1 [myapp both]
+- both 1.0.0
+
+b 1.1.1
+
+dependencies:
+- both 1.0.0
+- myapp 1.2.3 [both b]
+
+a 1.1.1
+
+dependencies:
+- foo 1.0.0 [transitive]
+- myapp 1.2.3 [both b]
+
+dev dependencies:
+- both 1.0.0
+
+transitive dependencies:
+- transitive 1.0.0''',
+    );
+    await runPub(
+      args: ['deps', '--executables'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: '''
+myapp:myappmain
+both:bothmain
+b:bmain
+foo:foomain''',
+    );
+  });
+
+  test('`pub add` acts on the work package', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', sdk: '^3.7.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+    final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+    await pubAdd(
+      args: ['foo'],
+      output: contains('+ foo 1.0.0'),
+      workingDirectory: aDir,
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+    await dir(appPath, [
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'foo': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).validate();
+  });
+
+  test('`pub remove` acts on the work package', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0', sdk: '^3.7.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        deps: {'foo': '^1.0.0'},
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'foo': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+    final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+    await pubRemove(
+      args: ['foo'],
+      output: isNot(contains('- foo 1.0.0')),
+      workingDirectory: aDir,
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+    await dir(appPath, [
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).validate();
+    // Only when removing it from the root it shows the update.
+    await pubRemove(
+      args: ['foo'],
+      output: contains('- foo 1.0.0'),
+      workingDirectory: path(appPath),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+  });
+
+  test('Removes lock files and package configs from workspace members',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir(
+          'a',
+          [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+          ],
+        ),
+      ]),
+    ]).create();
+    final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+    final pkgsDir = p.join(sandbox, appPath, 'pkgs');
+    final strayLockFile = File(p.join(aDir, 'pubspec.lock'));
+    final strayPackageConfig =
+        File(p.join(aDir, '.dart_tool', 'package_config.json'));
+
+    final unmanagedLockFile = File(p.join(pkgsDir, 'pubspec.lock'));
+    final unmanagedPackageConfig =
+        File(p.join(pkgsDir, '.dart_tool', 'package_config.json'));
+    strayPackageConfig.createSync(recursive: true);
+    strayLockFile.createSync(recursive: true);
+
+    unmanagedPackageConfig.createSync(recursive: true);
+    unmanagedLockFile.createSync(recursive: true);
+
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+
+    expect(strayLockFile.statSync().type, FileSystemEntityType.notFound);
+    expect(strayPackageConfig.statSync().type, FileSystemEntityType.notFound);
+
+    // We only delete stray files from directories that contain an actual
+    // package.
+    expect(unmanagedLockFile.statSync().type, FileSystemEntityType.file);
+    expect(unmanagedPackageConfig.statSync().type, FileSystemEntityType.file);
   });
 }
