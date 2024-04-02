@@ -371,7 +371,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   /// Returns an [Entrypoint] loaded with the active package if found.
   Future<Entrypoint> find(String name) async {
     var lockFilePath = _getLockFilePath(name);
-    late LockFile lockFile;
+    late final LockFile lockFile;
     try {
       lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
@@ -379,11 +379,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       dataError('No active package ${log.bold(name)}.');
     }
 
-    // Remove the package itself from the lockfile. We put it in there so we
-    // could find and load the [Package] object, but normally an entrypoint
-    // doesn't expect to be in its own lockfile.
-    var id = lockFile.packages[name]!;
-    lockFile = lockFile.removePackage(name);
+    final id = lockFile.packages[name]!;
 
     Entrypoint entrypoint;
     if (id.source is CachedSource) {
@@ -624,7 +620,7 @@ try:
         log.fine('Replacing old binstub $file');
         deleteEntry(file);
         _createBinStub(
-          entrypoint.workspaceRoot,
+          activatedPackage(entrypoint),
           p.basenameWithoutExtension(file),
           binStubScript,
           overwrite: true,
@@ -945,5 +941,19 @@ fi
     var pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
     var match = pattern.firstMatch(source);
     return match == null ? null : match[1];
+  }
+}
+
+/// The package that was activated.
+///
+/// * For path packages this is [Entrypoint.workspaceRoot].
+/// * For cached packages this is the sole dependency of
+///   [Entrypoint.workspaceRoot].
+Package activatedPackage(Entrypoint entrypoint) {
+  if (entrypoint.isCachedGlobal) {
+    final dep = entrypoint.workspaceRoot.dependencies.keys.single;
+    return entrypoint.cache.load(entrypoint.lockFile.packages[dep]!);
+  } else {
+    return entrypoint.workspaceRoot;
   }
 }
