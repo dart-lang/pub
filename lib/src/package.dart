@@ -347,3 +347,27 @@ See $workspacesDocUrl for more information.
     ).map(resolve).toList();
   }
 }
+
+/// Reports an error if the graph of the workspace rooted at [root] is not a
+/// tree.
+void validateWorkspaceGraph(Package root) {
+  final includedFrom = <String, String>{};
+  final stack = [root];
+
+  while (stack.isNotEmpty) {
+    final current = stack.removeLast();
+    for (final child in current.workspaceChildren) {
+      final previous = includedFrom[child.dir];
+      if (previous != null) {
+        fail('''
+Packages can only be included in the workspace once.
+
+`${p.join(child.dir, 'pubspec.yaml')}` is included in the workspace, both from:
+* `${p.join(current.dir, 'pubspec.yaml')}` and
+* ${p.join(previous, 'pubspec.yaml')}.''');
+      }
+      includedFrom[child.dir] = current.dir;
+    }
+    stack.addAll(current.workspaceChildren);
+  }
+}

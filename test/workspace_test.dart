@@ -686,4 +686,43 @@ foo:foomain''',
     expect(unmanagedLockFile.statSync().type, FileSystemEntityType.file);
     expect(unmanagedPackageConfig.statSync().type, FileSystemEntityType.file);
   });
+
+  test('Reports error if workspace doesn\'t form a tree.', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs'],
+        },
+      ),
+      dir('pkgs', [
+        libPubspec(
+          'a',
+          '1.1.1',
+          resolutionWorkspace: true,
+          extras: {
+            'workspace': ['a'],
+          },
+        ),
+        dir(
+          'a',
+          [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+          ],
+        ),
+      ]),
+    ]).create();
+    final s = p.separator;
+    await pubGet(
+      error: '''
+Packages can only be included in the workspace once.
+
+`.${s}pkgs/a${s}pubspec.yaml` is included in the workspace, both from:
+* `.${s}pkgs${s}pubspec.yaml` and
+* .${s}pubspec.yaml.''',
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+  });
 }
