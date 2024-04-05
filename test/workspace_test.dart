@@ -296,7 +296,7 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
       error: contains(
-        'pkgs${s}a${s}pubspec.yaml is inluded in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
+        'pkgs${s}a${s}pubspec.yaml is included in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
       ),
     );
   });
