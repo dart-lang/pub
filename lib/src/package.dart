@@ -123,7 +123,7 @@ class Package {
     }
   }
 
-  /// Loads the package whose root directory is [packageDir].
+  /// Loads the package whose root directory is [dir].
   ///
   /// Will also load the workspace sub-packages of this package (recursively).
   ///
@@ -140,9 +140,6 @@ class Package {
   /// This mechanism can be used to avoid loading pubspecs twice. It can also be
   /// used to override a pubspec in memory for trying out an alternative
   /// resolution.
-  ///
-  /// [referringPubspec] is the path to the pubspec that includes this one in
-  /// the workspace.
   factory Package.load(
     String dir,
     SourceRegistry sources, {
