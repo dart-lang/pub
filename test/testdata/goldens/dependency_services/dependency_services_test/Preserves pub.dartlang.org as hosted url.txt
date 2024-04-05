@@ -10,7 +10,7 @@ packages:
     dependency: "direct main"
     description:
       name: bar
-      sha256: "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+      sha256: $SHA256
       url: https://pub.dartlang.org
     source: hosted
     version: "1.2.3"
@@ -18,7 +18,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "0a2eec28c63c8ee616670da9bae0dbfe9294f5b04b264cc4a9be24876ea23d3b"
+      sha256: $SHA256
       url: https://pub.dartlang.org
     source: hosted
     version: "1.2.3"
@@ -40,7 +40,7 @@ $ echo '' | dependency_services list
         "description": {
           "name": "bar",
           "url": "https://pub.dev",
-          "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+          "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
         }
       }
     },
@@ -54,7 +54,7 @@ $ echo '' | dependency_services list
         "description": {
           "name": "foo",
           "url": "https://pub.dev",
-          "sha256": "0a2eec28c63c8ee616670da9bae0dbfe9294f5b04b264cc4a9be24876ea23d3b"
+          "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
         }
       }
     }
@@ -76,7 +76,7 @@ $ echo '' | dependency_services report
         "description": {
           "name": "bar",
           "url": "https://pub.dev",
-          "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+          "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
         }
       },
       "latest": null,
@@ -91,7 +91,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -104,7 +104,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "https://pub.dev",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           }
         },
@@ -117,7 +117,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "98405f2be818d57d0c01a1252e6bc50c1db9bb69b90557909740083019f214cd"
+              "sha256": "0362935f659b1fd166b6036575bffd6e735cd9953eb60324192d1fdd4929b4c1"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -130,7 +130,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "https://pub.dev",
-              "sha256": "0a2eec28c63c8ee616670da9bae0dbfe9294f5b04b264cc4a9be24876ea23d3b"
+              "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
             }
           }
         }
@@ -146,7 +146,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           },
           "constraintBumped": "^1.2.3",
@@ -159,7 +159,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "https://pub.dev",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           }
         },
@@ -172,7 +172,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "98405f2be818d57d0c01a1252e6bc50c1db9bb69b90557909740083019f214cd"
+              "sha256": "0362935f659b1fd166b6036575bffd6e735cd9953eb60324192d1fdd4929b4c1"
             }
           },
           "constraintBumped": "^1.2.4",
@@ -185,7 +185,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "https://pub.dev",
-              "sha256": "0a2eec28c63c8ee616670da9bae0dbfe9294f5b04b264cc4a9be24876ea23d3b"
+              "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
             }
           }
         }
@@ -200,7 +200,7 @@ $ echo '' | dependency_services report
         "description": {
           "name": "foo",
           "url": "https://pub.dev",
-          "sha256": "0a2eec28c63c8ee616670da9bae0dbfe9294f5b04b264cc4a9be24876ea23d3b"
+          "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
         }
       },
       "latest": "0.0.1",
@@ -215,7 +215,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -228,7 +228,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "https://pub.dev",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           }
         },
@@ -241,7 +241,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "98405f2be818d57d0c01a1252e6bc50c1db9bb69b90557909740083019f214cd"
+              "sha256": "0362935f659b1fd166b6036575bffd6e735cd9953eb60324192d1fdd4929b4c1"
             }
           },
           "constraintBumped": "^1.0.0",
@@ -254,7 +254,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "https://pub.dev",
-              "sha256": "0a2eec28c63c8ee616670da9bae0dbfe9294f5b04b264cc4a9be24876ea23d3b"
+              "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
             }
           }
         }
@@ -270,7 +270,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "http://localhost:$PORT",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           },
           "constraintBumped": "^1.2.3",
@@ -283,7 +283,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "bar",
               "url": "https://pub.dev",
-              "sha256": "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+              "sha256": "0b119406be305b6e65d33551008b5b72fdd810965f0df914478c940d5fe28e53"
             }
           }
         },
@@ -296,7 +296,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "98405f2be818d57d0c01a1252e6bc50c1db9bb69b90557909740083019f214cd"
+              "sha256": "0362935f659b1fd166b6036575bffd6e735cd9953eb60324192d1fdd4929b4c1"
             }
           },
           "constraintBumped": "^1.2.4",
@@ -309,7 +309,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "https://pub.dev",
-              "sha256": "0a2eec28c63c8ee616670da9bae0dbfe9294f5b04b264cc4a9be24876ea23d3b"
+              "sha256": "b2b7fc405959806aa1f31ac7e68752534f66f66a11a280d9878ecb6cd835f01c"
             }
           }
         }
@@ -336,7 +336,7 @@ packages:
     dependency: "direct main"
     description:
       name: bar
-      sha256: "0a2afc2a042366f06a89e07dfe845d3c77c07534fe489d5c4d8e8a8bdcbf0c22"
+      sha256: $SHA256
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.3"
@@ -344,7 +344,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "98405f2be818d57d0c01a1252e6bc50c1db9bb69b90557909740083019f214cd"
+      sha256: $SHA256
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.4"

@@ -494,6 +494,14 @@ String _filter(String input) {
         r'Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of '
         r'$CRC32C.',
       )
+      .replaceAll(
+        RegExp(r'sha256: "?[0-9a-f]{64}"?', multiLine: true),
+        r'sha256: $SHA256',
+      )
+      .replaceAll(
+        RegExp(r'"archive_sha256":"[0-9a-f]{64}"', multiLine: true),
+        r'"archive_sha256":"$SHA256"',
+      )
 
       /// TODO(sigurdm): This hack suppresses differences in stack-traces
       /// between dart 2.17 and 2.18. Remove when 2.18 is stable.

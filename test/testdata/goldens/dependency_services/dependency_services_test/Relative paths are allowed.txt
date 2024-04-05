@@ -17,7 +17,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+      sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
     version: "1.0.0"
@@ -52,7 +52,7 @@ $ echo '' | dependency_services list
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+          "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
         }
       }
     }
@@ -91,7 +91,7 @@ $ echo '' | dependency_services report
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+          "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
         }
       },
       "latest": "2.0.0",
@@ -107,7 +107,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "3b080cba6d4ca9699c5c75c6b54852f77fe6d15e9cd13039ea4ca37683393021"
+              "sha256": "fee5502506315776878d8556f0f041c9c5c552716db3b25fc43ce1f0175a992d"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -120,7 +120,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+              "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
             }
           }
         }
@@ -135,7 +135,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "3b080cba6d4ca9699c5c75c6b54852f77fe6d15e9cd13039ea4ca37683393021"
+              "sha256": "fee5502506315776878d8556f0f041c9c5c552716db3b25fc43ce1f0175a992d"
             }
           },
           "constraintBumped": "^2.0.0",
@@ -148,7 +148,7 @@ $ echo '' | dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+              "sha256": "c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df"
             }
           }
         }
@@ -182,7 +182,7 @@ packages:
     dependency: "direct main"
     description:
       name: foo
-      sha256: "3b080cba6d4ca9699c5c75c6b54852f77fe6d15e9cd13039ea4ca37683393021"
+      sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
     version: "2.0.0"

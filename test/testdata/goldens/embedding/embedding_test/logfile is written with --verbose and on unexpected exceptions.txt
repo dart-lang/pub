@@ -32,7 +32,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | x-content-type-options: nosniff
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 [E] FINE: Contents:
-[E]    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0","environment":{"sdk":"^3.0.0"}},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"}],"_fetchedAt": "$TIME"}
+[E]    | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0","environment":{"sdk":"^3.0.0"}},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"$SHA256"}],"_fetchedAt": "$TIME"}
 [E] SLVR:   selecting foo 1.0.0
 [E] SLVR: Version solving took: $TIME
 [E]    | Tried 1 solutions.
@@ -61,7 +61,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] FINE: Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of $CRC32C.
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
 [E] FINE: Contents:
-[E]    | 4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59
+[E]    | c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df
 [E] FINE: Created $FILE from stream
 [E] IO  : Created temp directory $DIR
 [E] IO  : Reading binary file $FILE.
@@ -98,7 +98,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   dependency: "direct main"
 [E]    |   description:
 [E]    |   name: foo
-[E]    |   sha256: "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+[E]    |   sha256: $SHA256
 [E]    |   url: "http://localhost:$PORT"
 [E]    |   source: hosted
 [E]    |   version: "1.0.0"
@@ -157,7 +157,7 @@ packages:
    dependency: "direct main"
    description:
    name: foo
-   sha256: "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+   sha256: $SHA256
    url: "http://localhost:$PORT"
    source: hosted
    version: "1.0.0"
@@ -193,7 +193,7 @@ IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
    | x-content-type-options: nosniff
 IO  : Writing $N characters to text file $SANDBOX/cache/hosted/localhost%58$PORT/.cache/foo-versions.json.
 FINE: Contents:
-   | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0","environment":{"sdk":"^3.0.0"}},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"}],"_fetchedAt": "$TIME"}
+   | {"name":"foo","uploaders":["nweiz@google.com"],"versions":[{"pubspec":{"name":"foo","version":"1.0.0","environment":{"sdk":"^3.0.0"}},"version":"1.0.0","archive_url":"http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz","archive_sha256":"$SHA256"}],"_fetchedAt": "$TIME"}
 SLVR:   selecting foo 1.0.0
 SLVR: Version solving took: $TIME
    | Tried 1 solutions.
@@ -223,7 +223,7 @@ IO  : Creating $FILE from stream
 FINE: Computed checksum $CRC32C for foo 1.0.0 with expected CRC32C of $CRC32C.
 IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%58$PORT/foo-1.0.0.sha256.
 FINE: Contents:
-   | 4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59
+   | c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df
 FINE: Created $FILE from stream
 IO  : Created temp directory $DIR
 IO  : Reading binary file $FILE.
@@ -262,7 +262,7 @@ FINE: Contents:
    |   dependency: "direct main"
    |   description:
    |   name: foo
-   |   sha256: "4a8df8c695623e81d90f663801ead4a5269b406599b43b90ad558561a6f09c59"
+   |   sha256: $SHA256
    |   url: "http://localhost:$PORT"
    |   source: hosted
    |   version: "1.0.0"
