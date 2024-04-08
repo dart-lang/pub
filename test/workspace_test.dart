@@ -296,7 +296,7 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
       error: contains(
-        'pkgs${s}a${s}pubspec.yaml is inluded in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
+        'pkgs${s}a${s}pubspec.yaml is included in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
       ),
     );
   });
@@ -352,6 +352,38 @@ void main() {
         'pkgs',
       ),
       output: contains('Resolving dependencies in `..`...'),
+    );
+  });
+
+  test('reports missing pubspec.yaml of workspace member correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          resolutionWorkspace: true,
+          extras: {
+            'workspace': ['b'], // Doesn't exist.
+          },
+        ),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'Could not find a file named "pubspec.yaml" in "${p.join(sandbox, appPath, 'a', 'b')}".\n'
+        'That was included in the workspace of ${p.join('.', 'a', 'pubspec.yaml')}.\n'
+        'That was included in the workspace of ${p.join('.', 'pubspec.yaml')}.',
+      ),
+      exitCode: NO_INPUT,
     );
   });
 
