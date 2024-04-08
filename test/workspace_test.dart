@@ -296,7 +296,7 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
       error: contains(
-        'pkgs${s}a${s}pubspec.yaml is inluded in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
+        'pkgs${s}a${s}pubspec.yaml is included in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
       ),
     );
   });
@@ -352,6 +352,38 @@ void main() {
         'pkgs',
       ),
       output: contains('Resolving dependencies in `..`...'),
+    );
+  });
+
+  test('reports missing pubspec.yaml of workspace member correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['a'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          resolutionWorkspace: true,
+          extras: {
+            'workspace': ['b'], // Doesn't exist.
+          },
+        ),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'Could not find a file named "pubspec.yaml" in "${p.join(sandbox, appPath, 'a', 'b')}".\n'
+        'That was included in the workspace of ${p.join('.', 'a', 'pubspec.yaml')}.\n'
+        'That was included in the workspace of ${p.join('.', 'pubspec.yaml')}.',
+      ),
+      exitCode: NO_INPUT,
     );
   });
 
@@ -723,6 +755,63 @@ Packages can only be included in the workspace once.
 * `.${s}pkgs${s}pubspec.yaml` and
 * .${s}pubspec.yaml.''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+  });
+
+  test(
+      'Reports a failure if a workspace pubspec is not nested inside the parent dir',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['../'],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains('"workspace" members must be subdirectories'),
+      exitCode: DATA,
+    );
+  });
+
+  test('Reports a failure if a workspace includes "."', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['.'],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains('"workspace" members must be subdirectories'),
+      exitCode: DATA,
+    );
+  });
+
+  test('Reports a failure if a workspace pubspec is not a relative path',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': [p.join(sandbox, appPath, 'a')],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains('"workspace" members must be relative paths'),
+      exitCode: DATA,
     );
   });
 }

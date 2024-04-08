@@ -123,7 +123,7 @@ class Package {
     }
   }
 
-  /// Loads the package whose root directory is [packageDir].
+  /// Loads the package whose root directory is [dir].
   ///
   /// Will also load the workspace sub-packages of this package (recursively).
   ///
@@ -162,20 +162,29 @@ class Package {
       withPubspecOverrides: withPubspecOverrides,
       expectedName: expectedName,
     );
-    final workspacePackages = pubspec.workspace
-        .map(
-          (e) => Package.load(
-            p.join(dir, e),
+
+    final workspacePackages = pubspec.workspace.map(
+      (workspacePath) {
+        try {
+          return Package.load(
+            p.join(dir, workspacePath),
             sources,
             loadPubspec: loadPubspec,
             withPubspecOverrides: withPubspecOverrides,
-          ),
-        )
-        .toList();
+          );
+        } on FileException catch (e) {
+          throw FileException(
+            '${e.message}\n'
+            'That was included in the workspace of ${p.join(dir, 'pubspec.yaml')}.',
+            e.path,
+          );
+        }
+      },
+    ).toList();
     for (final package in workspacePackages) {
       if (package.pubspec.resolution != Resolution.workspace) {
         fail('''
-${package.pubspecPath} is inluded in the workspace from ${p.join(dir, 'pubspec.yaml')}, but does not have `resolution: workspace`.
+${package.pubspecPath} is included in the workspace from ${p.join(dir, 'pubspec.yaml')}, but does not have `resolution: workspace`.
 
 See $workspacesDocUrl for more information.
 ''');
