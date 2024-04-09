@@ -349,15 +349,10 @@ Specify multiple sdk packages with descriptors.''');
       dependencies.add(range);
     }
 
-    return Pubspec(
-      original.name,
-      version: original.version,
-      sdkConstraints: original.sdkConstraints,
+    return original.copyWith(
       dependencies: dependencies,
       devDependencies: devDependencies,
       dependencyOverrides: dependencyOverrides,
-      workspace: original.workspace,
-      resolution: original.resolution,
     );
   }
 

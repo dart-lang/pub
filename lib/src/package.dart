@@ -64,7 +64,10 @@ class Package {
     while (stack.isNotEmpty) {
       final current = stack.removeLast();
       yield current;
-      stack.addAll(current.workspaceChildren);
+      // Because we pick from the end of the stack, elements are added in
+      // reverse, such that they will be visited in the order they appear in the
+      // list.
+      stack.addAll(current.workspaceChildren.reversed);
     }
   }
 

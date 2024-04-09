@@ -334,16 +334,15 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
-  /// Creates an entrypoint at the same location, that will use [pubspec] for
-  /// resolution of the [workPackage].
-  Entrypoint withWorkPubspec(Pubspec pubspec) {
+  /// Creates an entrypoint at the same location, but with each pubspec in
+  /// [updatedPubspec] replacing the with one for the corresponding package.
+  Entrypoint withUpdatedPubspecs(Map<Package, Pubspec> updatedPubspecs) {
     final existingPubspecs = <String, Pubspec>{};
     // First extract all pubspecs from the workspace.
     for (final package in workspaceRoot.transitiveWorkspace) {
-      existingPubspecs[package.dir] = package.pubspec;
+      existingPubspecs[package.dir] =
+          updatedPubspecs[package] ?? package.pubspec;
     }
-    // Then override the one of the workPackage.
-    existingPubspecs[p.canonicalize(workPackage.dir)] = pubspec;
     final newWorkspaceRoot = Package.load(
       workspaceRoot.dir,
       cache.sources,
@@ -352,7 +351,7 @@ See $workspacesDocUrl for more information.''',
         expectedName,
         required withPubspecOverrides,
       }) =>
-          existingPubspecs[p.canonicalize(dir)] ??
+          existingPubspecs[dir] ??
           Pubspec.load(
             dir,
             cache.sources,
@@ -370,6 +369,12 @@ See $workspacesDocUrl for more information.''',
       (root: newWorkspaceRoot, work: newWorkPackage),
       isCachedGlobal,
     );
+  }
+
+  /// Creates an entrypoint at the same location, that will use [pubspec] for
+  /// resolution of the [workPackage].
+  Entrypoint withWorkPubspec(Pubspec pubspec) {
+    return withUpdatedPubspecs({workPackage: pubspec});
   }
 
   /// Creates an entrypoint given package and lockfile objects.

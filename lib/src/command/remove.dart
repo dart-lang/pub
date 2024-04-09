@@ -123,15 +123,9 @@ To remove a dependency override of a package prefix the package name with
         devDependencies.remove(package.name);
       }
     }
-    return Pubspec(
-      original.name,
-      version: original.version,
-      sdkConstraints: original.sdkConstraints,
+    return original.copyWith(
       dependencies: dependencies.values,
       devDependencies: devDependencies.values,
-      dependencyOverrides: overrides.values,
-      workspace: original.workspace,
-      resolution: original.resolution,
     );
   }
 

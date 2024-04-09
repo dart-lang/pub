@@ -407,6 +407,31 @@ class Pubspec extends PubspecBase {
     );
   }
 
+  Pubspec copyWith({
+    String? name,
+    Version? version,
+    Iterable<PackageRange>? dependencies,
+    Iterable<PackageRange>? devDependencies,
+    Iterable<PackageRange>? dependencyOverrides,
+    Map? fields,
+    Map<String, SdkConstraint>? sdkConstraints,
+    List<String>? workspace,
+    //this.dependencyOverridesFromOverridesFile = false,
+    Resolution? resolution,
+  }) {
+    return Pubspec(
+      name ?? this.name,
+      version: version ?? this.version,
+      dependencies: dependencies ?? this.dependencies.values,
+      devDependencies: devDependencies ?? this.devDependencies.values,
+      dependencyOverrides:
+          dependencyOverrides ?? this.dependencyOverrides.values,
+      sdkConstraints: sdkConstraints ?? this.sdkConstraints,
+      workspace: workspace ?? this.workspace,
+      resolution: resolution ?? this.resolution,
+    );
+  }
+
   /// Ensures that [node] is a mapping.
   ///
   /// If [node] is already a map it is returned.
