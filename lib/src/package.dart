@@ -366,7 +366,7 @@ void validateWorkspaceGraph(Package root) {
   while (stack.isNotEmpty) {
     final current = stack.removeLast();
     for (final child in current.workspaceChildren) {
-      final previous = includedFrom[child.dir];
+      final previous = includedFrom[p.canonicalize(child.dir)];
       if (previous != null) {
         fail('''
 Packages can only be included in the workspace once.
@@ -375,7 +375,7 @@ Packages can only be included in the workspace once.
 * `${p.join(current.dir, 'pubspec.yaml')}` and
 * ${p.join(previous, 'pubspec.yaml')}.''');
       }
-      includedFrom[child.dir] = current.dir;
+      includedFrom[p.canonicalize(child.dir)] = current.dir;
     }
     stack.addAll(current.workspaceChildren);
   }
