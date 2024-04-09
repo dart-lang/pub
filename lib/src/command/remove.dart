@@ -126,6 +126,7 @@ To remove a dependency override of a package prefix the package name with
     return original.copyWith(
       dependencies: dependencies.values,
       devDependencies: devDependencies.values,
+      dependencyOverrides: overrides.values,
     );
   }
 
