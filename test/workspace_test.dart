@@ -851,7 +851,7 @@ Changed 2 constraints in pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
   bar: 1.0.0 -> ^2.0.0
 
-Changed 1 constraint in a/pubspec.yaml:
+Changed 1 constraint in a${s}pubspec.yaml:
   foo: 1.5.0 -> ^2.0.0''',
       ),
     );
@@ -915,7 +915,7 @@ Changed 1 constraint in a/pubspec.yaml:
 Changed 1 constraint in pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
 
-Changed 1 constraint in a/pubspec.yaml:
+Changed 1 constraint in a${s}pubspec.yaml:
   foo: 1.5.0 -> ^2.0.0''',
       ),
     );
@@ -1003,7 +1003,7 @@ Changed 2 constraints in pubspec.yaml:
   foo: ^1.0.0 -> ^1.5.0
   bar: ^1.0.0 -> ^1.5.0
 
-Changed 1 constraint in a/pubspec.yaml:
+Changed 1 constraint in a${s}pubspec.yaml:
   foo: ^1.0.0 -> ^1.5.0''',
       ),
     );
@@ -1083,12 +1083,14 @@ Changed 2 constraints in pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
   bar: ^1.0.0 -> ^1.5.0
 
-Changed 1 constraint in a/pubspec.yaml:
+Changed 1 constraint in a${s}pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
 
-Changed 1 constraint in b/pubspec.yaml:
+Changed 1 constraint in b${s}pubspec.yaml:
   bar: ^1.0.0 -> ^1.5.0''',
       ),
     );
   });
 }
+
+final s = p.separator;
