@@ -478,14 +478,6 @@ dependencies:
   - myapp any
   - both ^1.0.0
 
-b 1.1.1
-
-dependencies:
-- myapp 1.2.3
-  - both ^1.0.0
-  - b any
-- both 1.0.0
-
 a 1.1.1
 
 dependencies:
@@ -496,6 +488,14 @@ dependencies:
   - transitive ^1.0.0
 
 dev dependencies:
+- both 1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
 - both 1.0.0
 
 transitive dependencies:
@@ -515,14 +515,6 @@ dependencies:
   - myapp any
   - both ^1.0.0
 
-b 1.1.1
-
-dependencies:
-- myapp 1.2.3
-  - both ^1.0.0
-  - b any
-- both 1.0.0
-
 a 1.1.1
 
 dependencies:
@@ -531,6 +523,14 @@ dependencies:
   - b any
 - foo 1.0.0
   - transitive ^1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- both 1.0.0
 
 transitive dependencies:
 - transitive 1.0.0''',
@@ -546,12 +546,6 @@ dependencies:
 - b 1.1.1 [myapp both]
 - both 1.0.0
 
-b 1.1.1
-
-dependencies:
-- both 1.0.0
-- myapp 1.2.3 [both b]
-
 a 1.1.1
 
 dependencies:
@@ -560,6 +554,12 @@ dependencies:
 
 dev dependencies:
 - both 1.0.0
+
+b 1.1.1
+
+dependencies:
+- both 1.0.0
+- myapp 1.2.3 [both b]
 
 transitive dependencies:
 - transitive 1.0.0''',
@@ -775,4 +775,322 @@ foo:foomain''',
       exitCode: DATA,
     );
   });
+
+  test('`upgrade` upgrades all workspace', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    server.serve('bar', '1.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^1.0.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'bar': '^1.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'});
+    server.serve('foo', '1.5.0');
+    server.serve('bar', '1.5.0');
+    await pubUpgrade(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+> bar 1.5.0 (was 1.0.0)
+> foo 1.5.0 (was 1.0.0)''',
+      ),
+    );
+  });
+
+  test('`upgrade --major-versions` upgrades all workspace', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.5.0');
+    server.serve('foo', '2.0.0');
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^1.0.0', 'bar': '1.0.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '1.5.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains('+ foo 1.5.0'),
+    );
+    await pubUpgrade(
+      args: ['--major-versions'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+Changed 2 constraints in pubspec.yaml:
+  foo: ^1.0.0 -> ^2.0.0
+  bar: 1.0.0 -> ^2.0.0
+
+Changed 1 constraint in a${s}pubspec.yaml:
+  foo: 1.5.0 -> ^2.0.0''',
+      ),
+    );
+
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^2.0.0', 'bar': '^2.0.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^2.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).validate();
+  });
+  test('`upgrade --major-versions foo` upgrades foo in all workspace',
+      () async {
+    final server = await servePackages();
+    server.serve('foo', '1.5.0');
+    server.serve('foo', '2.0.0');
+    server.serve('bar', '1.0.0');
+    server.serve('bar', '2.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^1.0.0', 'bar': '1.0.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '1.5.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains('+ foo 1.5.0'),
+    );
+    await pubUpgrade(
+      args: ['--major-versions', 'foo'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+Changed 1 constraint in pubspec.yaml:
+  foo: ^1.0.0 -> ^2.0.0
+
+Changed 1 constraint in a${s}pubspec.yaml:
+  foo: 1.5.0 -> ^2.0.0''',
+      ),
+    );
+    // Second run should mention "any pubspec.yaml".
+    await pubUpgrade(
+      args: ['--major-versions', 'foo'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+No changes to any pubspec.yaml!''',
+      ),
+    );
+    await pubUpgrade(
+      args: ['--major-versions', 'foo', '--dry-run'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+No changes would be made to any pubspec.yaml!''',
+      ),
+    );
+
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^2.0.0', 'bar': '1.0.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^2.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`upgrade --tighten` updates all workspace', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.5.0');
+    server.serve('bar', '1.5.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^1.0.0', 'bar': '^1.0.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a', 'b'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^1.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+      dir('b', [
+        libPubspec(
+          'b',
+          '1.0.0',
+          deps: {'bar': '^1.5.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains('+ foo 1.5.0'),
+    );
+    await pubUpgrade(
+      args: ['--tighten'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+Changed 2 constraints in pubspec.yaml:
+  foo: ^1.0.0 -> ^1.5.0
+  bar: ^1.0.0 -> ^1.5.0
+
+Changed 1 constraint in a${s}pubspec.yaml:
+  foo: ^1.0.0 -> ^1.5.0''',
+      ),
+    );
+
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^1.5.0', 'bar': '^1.5.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a', 'b'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^1.5.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+      dir('b', [
+        libPubspec(
+          'b',
+          '1.0.0',
+          deps: {'bar': '^1.5.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).validate();
+  });
+
+  test('`upgrade --major-versions --tighten` updates all workspace', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.5.0');
+    server.serve('bar', '1.5.0');
+    server.serve('foo', '2.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '^1.0.0', 'bar': '^1.0.0'},
+        sdk: '^3.7.0',
+        extras: {
+          'workspace': ['a', 'b'],
+        },
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          deps: {'foo': '^1.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+      dir('b', [
+        libPubspec(
+          'b',
+          '1.0.0',
+          deps: {'bar': '^1.0.0'},
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains('+ foo 1.5.0'),
+    );
+    await pubUpgrade(
+      args: ['--tighten', '--major-versions'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: contains(
+        '''
+Changed 2 constraints in pubspec.yaml:
+  foo: ^1.0.0 -> ^2.0.0
+  bar: ^1.0.0 -> ^1.5.0
+
+Changed 1 constraint in a${s}pubspec.yaml:
+  foo: ^1.0.0 -> ^2.0.0
+
+Changed 1 constraint in b${s}pubspec.yaml:
+  bar: ^1.0.0 -> ^1.5.0''',
+      ),
+    );
+  });
 }
+
+final s = p.separator;

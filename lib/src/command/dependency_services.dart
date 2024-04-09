@@ -105,14 +105,8 @@ class DependencyServicesReportCommand extends PubCommand {
           ?.firstWhereOrNull((element) => element.name == package.name);
       final multiBreakingVersion = breakingPackagesResult
           ?.firstWhereOrNull((element) => element.name == package.name);
-      final singleBreakingPubspec = Pubspec(
-        compatiblePubspec.name,
-        version: compatiblePubspec.version,
-        sdkConstraints: compatiblePubspec.sdkConstraints,
-        dependencies: compatiblePubspec.dependencies.values,
-        devDependencies: compatiblePubspec.devDependencies.values,
-        workspace: compatiblePubspec.workspace,
-      );
+      final singleBreakingPubspec = compatiblePubspec.copyWith();
+
       final dependencySet =
           _dependencySetOfPackage(singleBreakingPubspec, package);
       final kind = _kindString(compatiblePubspec, package.name);
@@ -745,13 +739,7 @@ Future<List<Object>> _computeUpgradeSet(
   final pubspec = (upgradeType == _UpgradeType.multiBreaking ||
           upgradeType == _UpgradeType.smallestUpdate)
       ? stripVersionBounds(rootPubspec)
-      : Pubspec(
-          rootPubspec.name,
-          dependencies: rootPubspec.dependencies.values,
-          devDependencies: rootPubspec.devDependencies.values,
-          sdkConstraints: rootPubspec.sdkConstraints,
-          workspace: rootPubspec.workspace,
-        );
+      : rootPubspec.copyWith();
 
   final dependencySet = _dependencySetOfPackage(pubspec, package);
   if (dependencySet != null) {

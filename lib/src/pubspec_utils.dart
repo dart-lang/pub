@@ -13,32 +13,12 @@ import 'system_cache.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original');
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: [], // explicitly give empty list, to prevent lazy parsing
-    dependencyOverrides: original.dependencyOverrides.values,
-    workspace: original.workspace,
-  );
+  return original.copyWith(devDependencies: []);
 }
 
 /// Returns a new [Pubspec] without [original]'s dependency_overrides.
 Pubspec stripDependencyOverrides(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original');
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: original.devDependencies.values,
-    dependencyOverrides: [],
-    workspace: original.workspace,
-  );
+  return original.copyWith(dependencyOverrides: []);
 }
 
 /// Returns new pubspec with the same dependencies as [original] but with the
@@ -54,7 +34,6 @@ Pubspec stripVersionBounds(
   Iterable<String>? stripOnly,
   bool stripLowerBound = false,
 }) {
-  ArgumentError.checkNotNull(original, 'original');
   stripOnly ??= [];
 
   List<PackageRange> stripBounds(
@@ -80,14 +59,9 @@ Pubspec stripVersionBounds(
     return result;
   }
 
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
+  return original.copyWith(
     dependencies: stripBounds(original.dependencies),
     devDependencies: stripBounds(original.devDependencies),
-    dependencyOverrides: original.dependencyOverrides.values,
-    workspace: original.workspace,
   );
 }
 
@@ -117,14 +91,9 @@ Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
     return result;
   }
 
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
+  return original.copyWith(
     dependencies: fixBounds(original.dependencies),
     devDependencies: fixBounds(original.devDependencies),
-    dependencyOverrides: original.dependencyOverrides.values,
-    workspace: original.workspace,
   );
 }
 

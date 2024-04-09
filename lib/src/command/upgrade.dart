@@ -3,9 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
@@ -21,7 +19,6 @@ import '../pubspec_utils.dart';
 import '../sdk.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
-import '../source/root.dart';
 import '../utils.dart';
 
 /// Handles the `upgrade` pub command.
@@ -141,14 +138,21 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       await _runUpgrade(entrypoint);
       if (_tighten) {
         final changes = tighten(
-          entrypoint.workspaceRoot.pubspec,
+          entrypoint,
           entrypoint.lockFile.packages.values.toList(),
         );
         if (!_dryRun) {
-          final newPubspecText = _updatePubspec(changes);
+          for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+            final changesForPackage = changes[package];
+            if (changesForPackage == null || changesForPackage.isEmpty) {
+              continue;
+            }
+            final newPubspecText =
+                _updatePubspecText(package, changesForPackage);
 
-          if (changes.isNotEmpty) {
-            writeTextFile(entrypoint.workspaceRoot.pubspecPath, newPubspecText);
+            if (changes.isNotEmpty) {
+              writeTextFile(package.pubspecPath, newPubspecText);
+            }
           }
         }
         _outputChangeSummary(changes);
@@ -184,10 +188,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   ///
   /// If a dependency has already been updated in [existingChanges], the update
   /// will apply on top of that change (eg. preserving the new upper bound).
-  Map<PackageRange, PackageRange> tighten(
-    Pubspec pubspec,
+  Map<Package, Map<PackageRange, PackageRange>> tighten(
+    Entrypoint entrypoint,
     List<PackageId> packages, {
-    Map<PackageRange, PackageRange> existingChanges = const {},
+    Map<Package, Map<PackageRange, PackageRange>> existingChanges = const {},
   }) {
     final result = {...existingChanges};
     if (argResults.flag('example') && entrypoint.example != null) {
@@ -195,27 +199,41 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         'Running `upgrade --tighten` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
       );
     }
-    final toTighten = _packagesToUpgrade.isEmpty
-        ? [
-            ...pubspec.dependencies.values,
-            ...pubspec.devDependencies.values,
-          ]
-        : [
-            for (final name in _packagesToUpgrade)
-              pubspec.dependencies[name] ?? pubspec.devDependencies[name],
-          ].nonNulls;
-    for (final range in toTighten) {
-      final constraint = (result[range] ?? range).constraint;
+
+    final toTighten = <(Package, PackageRange)>[];
+
+    for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+      if (_packagesToUpgrade.isEmpty) {
+        for (final range in [
+          ...package.dependencies.values,
+          ...package.devDependencies.values,
+        ]) {
+          toTighten.add((package, range));
+        }
+      } else {
+        for (final packageToUpgrade in _packagesToUpgrade) {
+          final range = package.dependencies[packageToUpgrade] ??
+              package.devDependencies[packageToUpgrade];
+          if (range != null) {
+            toTighten.add((package, range));
+          }
+        }
+      }
+    }
+
+    for (final (package, range) in toTighten) {
+      final changesForPackage = result[package] ??= {};
+      final constraint = (changesForPackage[range] ?? range).constraint;
       final resolvedVersion =
           packages.firstWhere((p) => p.name == range.name).version;
       if (range.source is HostedSource && constraint.isAny) {
-        result[range] = range
+        changesForPackage[range] = range
             .toRef()
             .withConstraint(VersionConstraint.compatibleWith(resolvedVersion));
       } else if (constraint is VersionRange) {
         final min = constraint.min;
         if (min != null && min < resolvedVersion) {
-          result[range] = range.toRef().withConstraint(
+          changesForPackage[range] = range.toRef().withConstraint(
                 VersionRange(
                   min: resolvedVersion,
                   max: constraint.max,
@@ -232,27 +250,24 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   /// Return names of packages to be upgraded, and throws [UsageException] if
   /// any package names not in the direct dependencies or dev_dependencies are given.
   ///
-  /// This assumes that either `--major-versions` or `--null-safety` was passed.
+  /// This assumes that `--major-versions` was passed.
   List<String> _directDependenciesToUpgrade() {
     assert(_upgradeMajorVersions);
 
-    final directDeps = [
-      ...entrypoint.workspaceRoot.pubspec.dependencies.keys,
-      ...entrypoint.workspaceRoot.pubspec.devDependencies.keys,
-    ];
+    final directDeps = {
+      for (final package in entrypoint.workspaceRoot.transitiveWorkspace) ...[
+        ...package.dependencies.keys,
+        ...package.devDependencies.keys,
+      ],
+    }.toList();
     final toUpgrade =
         _packagesToUpgrade.isEmpty ? directDeps : _packagesToUpgrade;
 
     // Check that all package names in upgradeOnly are direct-dependencies
     final notInDeps = toUpgrade.where((n) => !directDeps.contains(n));
     if (toUpgrade.any(notInDeps.contains)) {
-      var modeFlag = '';
-      if (_upgradeMajorVersions) {
-        modeFlag = '--major-versions';
-      }
-
       usageException('''
-Dependencies specified in `$topLevelProgram pub upgrade $modeFlag <dependencies>` must
+Dependencies specified in `$topLevelProgram pub upgrade --major-versions <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:
  - ${notInDeps.join('\n - ')}
 
@@ -263,15 +278,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 
   Future<void> _runUpgradeMajorVersions() async {
-    // TODO(https://github.com/dart-lang/pub/issues/4127): This should operate
-    // on all pubspecs in the workspace.
     final toUpgrade = _directDependenciesToUpgrade();
-
-    final resolvablePubspec = stripVersionBounds(
-      entrypoint.workspaceRoot.pubspec,
-      stripOnly: toUpgrade,
-    );
-
+    final workspace = {
+      for (final package in entrypoint.workspaceRoot.transitiveWorkspace)
+        package.dir: package,
+    };
     // Solve [resolvablePubspec] in-memory and consolidate the resolved
     // versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
@@ -281,10 +292,16 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         return await resolveVersions(
           SolveType.upgrade,
           cache,
-          Package(
-            resolvablePubspec,
+          Package.load(
             entrypoint.workspaceRoot.dir,
-            entrypoint.workspaceRoot.workspaceChildren,
+            entrypoint.cache.sources,
+            withPubspecOverrides: true,
+            loadPubspec: (
+              path, {
+              expectedName,
+              required withPubspecOverrides,
+            }) =>
+                stripVersionBounds(workspace[path]!.pubspec),
           ),
         );
       },
@@ -293,40 +310,42 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     for (final resolvedPackage in solveResult.packages) {
       resolvedPackages[resolvedPackage.name] = resolvedPackage;
     }
-
-    // Changes to be made to `pubspec.yaml`.
+    final dependencyOverriddenDeps = <String>[];
+    // Changes to be made to `pubspec.yaml` of each package.
     // Mapping from original to changed value.
-    var changes = <PackageRange, PackageRange>{};
-    final declaredHostedDependencies = [
-      ...entrypoint.workspaceRoot.pubspec.dependencies.values,
-      ...entrypoint.workspaceRoot.pubspec.devDependencies.values,
-    ].where((dep) => dep.source is HostedSource);
-    for (final dep in declaredHostedDependencies) {
-      final resolvedPackage = resolvedPackages[dep.name]!;
-      if (!toUpgrade.contains(dep.name)) {
-        // If we're not trying to upgrade this package, or it wasn't in the
-        // resolution somehow, then we ignore it.
-        continue;
-      }
+    var changes = <Package, Map<PackageRange, PackageRange>>{};
+    for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+      final declaredHostedDependencies = [
+        ...package.dependencies.values,
+        ...package.devDependencies.values,
+      ].where((dep) => dep.source is HostedSource);
+      for (final dep in declaredHostedDependencies) {
+        final resolvedPackage = resolvedPackages[dep.name]!;
+        if (!toUpgrade.contains(dep.name)) {
+          // If we're not trying to upgrade this package, or it wasn't in the
+          // resolution somehow, then we ignore it.
+          continue;
+        }
 
-      // Skip [dep] if it has a dependency_override.
-      if (entrypoint.workspaceRoot.dependencyOverrides.containsKey(dep.name)) {
-        continue;
-      }
+        // Skip [dep] if it has a dependency_override.
+        if (entrypoint.workspaceRoot.dependencyOverrides
+            .containsKey(dep.name)) {
+          dependencyOverriddenDeps.add(dep.name);
+          continue;
+        }
 
-      if (dep.constraint.allowsAll(resolvedPackage.version)) {
-        // If constraint allows the resolvable version we found, then there is
-        // no need to update the `pubspec.yaml`
-        continue;
-      }
+        if (dep.constraint.allowsAll(resolvedPackage.version)) {
+          // If constraint allows the resolvable version we found, then there is
+          // no need to update the `pubspec.yaml`
+          continue;
+        }
 
-      changes[dep] = dep.toRef().withConstraint(
-            VersionConstraint.compatibleWith(
-              resolvedPackage.version,
-            ),
-          );
+        (changes[package] ??= {})[dep] = dep.toRef().withConstraint(
+              VersionConstraint.compatibleWith(resolvedPackage.version),
+            );
+      }
     }
-    var newPubspecText = _updatePubspec(changes);
+
     if (_tighten) {
       // Do another solve with the updated constraints to obtain the correct
       // versions to tighten to. This should be fast (everything is cached, and
@@ -335,18 +354,21 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       final solveResult = await resolveVersions(
         SolveType.upgrade,
         cache,
-        Package(
-          _updatedPubspec(newPubspecText, entrypoint),
+        Package.load(
           entrypoint.workspaceRoot.dir,
-          entrypoint.workspaceRoot.workspaceChildren,
+          entrypoint.cache.sources,
+          loadPubspec: (path, {expectedName, required withPubspecOverrides}) {
+            final package = workspace[path]!;
+            final changesForPackage = changes[package] ?? {};
+            return applyChanges(package.pubspec, changesForPackage);
+          },
         ),
       );
       changes = tighten(
-        entrypoint.workspaceRoot.pubspec,
+        entrypoint,
         solveResult.packages,
         existingChanges: changes,
       );
-      newPubspecText = _updatePubspec(changes);
     }
 
     // When doing '--majorVersions' for specific packages we try to update other
@@ -358,18 +380,23 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         _packagesToUpgrade.isEmpty ? SolveType.upgrade : SolveType.get;
 
     if (!_dryRun) {
-      if (changes.isNotEmpty) {
-        writeTextFile(entrypoint.workspaceRoot.pubspecPath, newPubspecText);
+      for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+        final changesForPackage = changes[package] ?? {};
+        if (changesForPackage.isNotEmpty) {
+          final newPubspecText = _updatePubspecText(package, changesForPackage);
+          writeTextFile(package.pubspecPath, newPubspecText);
+        }
       }
     }
-
-    await entrypoint
-        .withWorkPubspec(_updatedPubspec(newPubspecText, entrypoint))
-        .acquireDependencies(
-          solveType,
-          dryRun: _dryRun,
-          precompile: !_dryRun && _precompile,
-        );
+    await entrypoint.withUpdatedPubspecs({
+      for (final MapEntry(key: package, value: changesForPackage)
+          in changes.entries)
+        package: applyChanges(package.pubspec, changesForPackage),
+    }).acquireDependencies(
+      solveType,
+      dryRun: _dryRun,
+      precompile: !_dryRun && _precompile,
+    );
 
     _outputChangeSummary(changes);
 
@@ -387,59 +414,82 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     _showOfflineWarning();
   }
 
-  Pubspec _updatedPubspec(String contents, Entrypoint entrypoint) {
-    String? overridesFileContents;
-    final overridesPath =
-        p.join(entrypoint.workspaceRoot.dir, Pubspec.pubspecOverridesFilename);
-    try {
-      overridesFileContents = readTextFile(overridesPath);
-    } on IOException {
-      overridesFileContents = null;
+  Pubspec applyChanges(
+    Pubspec original,
+    Map<PackageRange, PackageRange> changes,
+  ) {
+    final dependencies = {...original.dependencies};
+    final devDependencies = {...original.devDependencies};
+
+    for (final change in changes.values) {
+      if (dependencies[change.name] != null) {
+        dependencies[change.name] = change;
+      } else {
+        devDependencies[change.name] = change;
+      }
     }
-    return Pubspec.parse(
-      contents,
-      cache.sources,
-      location: Uri.parse(entrypoint.workspaceRoot.pubspecPath),
-      overridesFileContents: overridesFileContents,
-      overridesLocation: Uri.file(overridesPath),
-      containingDescription: RootDescription(entrypoint.workspaceRoot.dir),
+    return original.copyWith(
+      dependencies: dependencies.values,
+      devDependencies: devDependencies.values,
     );
   }
 
-  /// Updates `pubspec.yaml` with given [changes].
-  String _updatePubspec(
+  /// Loads `pubspec.yaml` of [package] and applies [changes] to its
+  /// (dev)-dependencies.
+  ///
+  /// Returns the updated textual representation using yaml-edit to preserve
+  /// structure.
+  String _updatePubspecText(
+    Package package,
     Map<PackageRange, PackageRange> changes,
   ) {
     ArgumentError.checkNotNull(changes, 'changes');
-    final yamlEditor =
-        YamlEditor(readTextFile(entrypoint.workspaceRoot.pubspecPath));
-    final deps = entrypoint.workspaceRoot.pubspec.dependencies.keys;
+    final yamlEditor = YamlEditor(readTextFile(package.pubspecPath));
+    final deps = package.dependencies.keys;
 
     for (final change in changes.values) {
       final section =
           deps.contains(change.name) ? 'dependencies' : 'dev_dependencies';
       yamlEditor.update(
         [section, change.name],
-        pubspecDescription(change, cache, entrypoint.workspaceRoot),
+        pubspecDescription(change, cache, package),
       );
     }
     return yamlEditor.toString();
   }
 
   /// Outputs a summary of changes made to `pubspec.yaml`.
-  void _outputChangeSummary(Map<PackageRange, PackageRange> changes) {
-    ArgumentError.checkNotNull(changes, 'changes');
-
-    if (changes.isEmpty) {
-      final wouldBe = _dryRun ? 'would be made to' : 'to';
-      log.message('\nNo changes $wouldBe pubspec.yaml!');
+  void _outputChangeSummary(
+    Map<Package, Map<PackageRange, PackageRange>> changes,
+  ) {
+    if (entrypoint.workspaceRoot.workspaceChildren.isEmpty) {
+      final changesToWorkspaceRoot = changes[entrypoint.workspaceRoot] ?? {};
+      if (changesToWorkspaceRoot.isEmpty) {
+        final wouldBe = _dryRun ? 'would be made to' : 'to';
+        log.message('\nNo changes $wouldBe pubspec.yaml!');
+      } else {
+        final changed = _dryRun ? 'Would change' : 'Changed';
+        log.message('\n$changed ${changesToWorkspaceRoot.length} '
+            '${pluralize('constraint', changesToWorkspaceRoot.length)} in pubspec.yaml:');
+        changesToWorkspaceRoot.forEach((from, to) {
+          log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
+        });
+      }
     } else {
-      final changed = _dryRun ? 'Would change' : 'Changed';
-      log.message('\n$changed ${changes.length} '
-          '${pluralize('constraint', changes.length)} in pubspec.yaml:');
-      changes.forEach((from, to) {
-        log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
-      });
+      if (changes.isEmpty) {
+        final wouldBe = _dryRun ? 'would be made to' : 'to';
+        log.message('\nNo changes $wouldBe any pubspec.yaml!');
+      }
+      for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+        final changesToPackage = changes[package] ?? {};
+        if (changesToPackage.isEmpty) continue;
+        final changed = _dryRun ? 'Would change' : 'Changed';
+        log.message('\n$changed ${changesToPackage.length} '
+            '${pluralize('constraint', changesToPackage.length)} in ${package.pubspecPath}:');
+        changesToPackage.forEach((from, to) {
+          log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
+        });
+      }
     }
   }
 
