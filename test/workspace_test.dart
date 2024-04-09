@@ -751,7 +751,7 @@ foo:foomain''',
       error: '''
 Packages can only be included in the workspace once.
 
-`.${s}pkgs/a${s}pubspec.yaml` is included in the workspace, both from:
+`.${s}pkgs${s}a${s}pubspec.yaml` is included in the workspace, both from:
 * `.${s}pkgs${s}pubspec.yaml` and
 * .${s}pubspec.yaml.''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
