@@ -478,14 +478,6 @@ dependencies:
   - myapp any
   - both ^1.0.0
 
-b 1.1.1
-
-dependencies:
-- myapp 1.2.3
-  - both ^1.0.0
-  - b any
-- both 1.0.0
-
 a 1.1.1
 
 dependencies:
@@ -496,6 +488,14 @@ dependencies:
   - transitive ^1.0.0
 
 dev dependencies:
+- both 1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
 - both 1.0.0
 
 transitive dependencies:
@@ -515,14 +515,6 @@ dependencies:
   - myapp any
   - both ^1.0.0
 
-b 1.1.1
-
-dependencies:
-- myapp 1.2.3
-  - both ^1.0.0
-  - b any
-- both 1.0.0
-
 a 1.1.1
 
 dependencies:
@@ -531,6 +523,14 @@ dependencies:
   - b any
 - foo 1.0.0
   - transitive ^1.0.0
+
+b 1.1.1
+
+dependencies:
+- myapp 1.2.3
+  - both ^1.0.0
+  - b any
+- both 1.0.0
 
 transitive dependencies:
 - transitive 1.0.0''',
@@ -546,12 +546,6 @@ dependencies:
 - b 1.1.1 [myapp both]
 - both 1.0.0
 
-b 1.1.1
-
-dependencies:
-- both 1.0.0
-- myapp 1.2.3 [both b]
-
 a 1.1.1
 
 dependencies:
@@ -560,6 +554,12 @@ dependencies:
 
 dev dependencies:
 - both 1.0.0
+
+b 1.1.1
+
+dependencies:
+- both 1.0.0
+- myapp 1.2.3 [both b]
 
 transitive dependencies:
 - transitive 1.0.0''',
