@@ -123,6 +123,7 @@ class Entrypoint {
         );
         for (final package in root.transitiveWorkspace) {
           if (identical(pubspecsMet.entries.first.value, package.pubspec)) {
+            validateWorkspaceGraph(root);
             return (root: root, work: package);
           }
         }
