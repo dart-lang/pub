@@ -327,7 +327,7 @@ class ResolvedPathDescription extends ResolvedDescription {
         'relative': true,
       };
     }
-    return {'path': description.path, 'relative': p.relative('false')};
+    return {'path': description.path, 'relative': false};
   }
 
   @override
