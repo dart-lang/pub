@@ -24,7 +24,7 @@ import 'utils.dart';
 
 /// Extracting vm arguments from arguments.
 List<String> vmArgsFromArgResults(ArgResults argResults) {
-  final experiments = argResults['enable-experiment'] as List;
+  final experiments = argResults.multiOption('enable-experiment');
   return [
     if (experiments.isNotEmpty) "--enable-experiment=${experiments.join(',')}",
   ];

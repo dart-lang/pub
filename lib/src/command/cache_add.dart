@@ -51,9 +51,10 @@ class CacheAddCommand extends PubCommand {
 
     // Parse the version constraint, if there is one.
     var constraint = VersionConstraint.any;
-    if (argResults['version'] != null) {
+    final versionArg = argResults.option('version');
+    if (versionArg != null) {
       try {
-        constraint = VersionConstraint.parse(argResults['version'] as String);
+        constraint = VersionConstraint.parse(versionArg);
       } on FormatException catch (error) {
         usageException(error.message);
       }

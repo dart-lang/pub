@@ -75,9 +75,8 @@ class LishCommand extends PubCommand {
 
   bool get skipValidation => argResults.flag('skip-validation');
 
-  late final String? _fromArchive =
-      argResults.optionWithoutDefault('from-archive');
-  late final String? _toArchive = argResults.optionWithoutDefault('to-archive');
+  late final String? _fromArchive = argResults.option('from-archive');
+  late final String? _toArchive = argResults.option('to-archive');
 
   LishCommand() {
     argParser.addFlag(

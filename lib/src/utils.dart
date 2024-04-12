@@ -766,10 +766,7 @@ Future<T> retry<T>(
 }
 
 extension RetrieveFlags on ArgResults {
-  bool flag(String name) => this[name] as bool;
-
-  String optionWithDefault(String name) => this[name] as String;
-  String? optionWithoutDefault(String name) => this[name] as String?;
+  String optionWithDefault(String name) => option(name)!;
 }
 
 /// Limits the range of characters and length.

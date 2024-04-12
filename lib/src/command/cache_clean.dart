@@ -6,7 +6,6 @@ import '../command.dart';
 import '../command_runner.dart';
 import '../io.dart';
 import '../log.dart' as log;
-import '../utils.dart';
 
 class CacheCleanCommand extends PubCommand {
   @override
