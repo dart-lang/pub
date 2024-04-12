@@ -474,7 +474,7 @@ String _filter(String input) {
         r'   ',
       )
       .replaceAll(
-        RegExp(r' [\d]+:[\d]+ ', multiLine: true),
+        RegExp(r' [\d]+:[\d]+ +', multiLine: true),
         r' $LINE:$COL ',
       )
       .replaceAll(
