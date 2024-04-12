@@ -371,7 +371,7 @@ Specify multiple sdk packages with descriptors.''');
   /// Split [arg] on ':' and interpret it with the flags in [argResult] either as
   /// an old-style or a new-style descriptor to produce a PackageRef].
   _ParseResult _parsePackage(String arg, ArgResults argResults) {
-    var isDev = argResults['dev'] as bool;
+    var isDev = argResults.flag('dev');
     var isOverride = false;
 
     final match = _argRegExp.firstMatch(arg);

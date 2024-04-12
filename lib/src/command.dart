@@ -68,7 +68,7 @@ abstract class PubCommand extends Command<int> {
 
   String get directory {
     return (argResults.options.contains('directory')
-            ? argResults.optionWithoutDefault('directory')
+            ? argResults.option('directory')
             : null) ??
         _pubTopLevel.directory;
   }
@@ -315,7 +315,7 @@ and attaching the relevant parts of that log file.
     if (!argResults.wasParsed('color')) {
       forceColors = ForceColorOption.auto;
     } else {
-      forceColors = argResults['color'] as bool
+      forceColors = argResults.flag('color')
           ? ForceColorOption.always
           : ForceColorOption.never;
     }

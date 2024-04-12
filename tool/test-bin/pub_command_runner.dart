@@ -13,7 +13,6 @@ import 'package:pub/pub.dart';
 import 'package:pub/src/command.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/log.dart' as log;
-import 'package:pub/src/utils.dart';
 
 /// A command for explicitly throwing an exception, to test the handling of
 /// unexpected exceptions.

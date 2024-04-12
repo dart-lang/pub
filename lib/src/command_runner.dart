@@ -50,7 +50,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   bool get captureStackChains {
     return argResults.flag('trace') ||
         argResults.flag('verbose') ||
-        argResults.optionWithoutDefault('verbosity') == 'all';
+        argResults.option('verbosity') == 'all';
   }
 
   @override

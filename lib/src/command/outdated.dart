@@ -114,7 +114,7 @@ class OutdatedCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (argResults['mode'] == 'null-safety') {
+    if (argResults.option('mode') == 'null-safety') {
       dataError('''The `--mode=null-safety` option is no longer supported.
 Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }

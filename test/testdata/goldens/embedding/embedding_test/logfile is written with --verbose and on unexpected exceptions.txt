@@ -305,7 +305,7 @@ $ tool/test-bin/pub_command_runner.dart pub fail
 [E] package:pub/src/command.dart $LINE:$COL   PubCommand.run
 [E] package:args/command_runner.dart $LINE:$COL   CommandRunner.runCommand
 [E]  tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.runCommand
-[E]  tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.run
+[E]  tool/test-bin/pub_command_runner.dart $LINE:$COL   Runner.run
 [E]  tool/test-bin/pub_command_runner.dart $LINE:$COL  main
 [E] This is an unexpected error. The full log and other details are collected in:
 [E] 
@@ -346,7 +346,7 @@ ERR : tool/test-bin/pub_command_runner.dart $LINE:$COL   ThrowingCommand.runProt
    | package:pub/src/command.dart $LINE:$COL   PubCommand.run
    | package:args/command_runner.dart $LINE:$COL   CommandRunner.runCommand
    | tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.runCommand
-   | tool/test-bin/pub_command_runner.dart $LINE:$COL  Runner.run
+   | tool/test-bin/pub_command_runner.dart $LINE:$COL   Runner.run
    | tool/test-bin/pub_command_runner.dart $LINE:$COL  main
 ERR : This is an unexpected error. The full log and other details are collected in:
    | 
