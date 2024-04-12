@@ -68,6 +68,7 @@ extension on GoldenTestContext {
     String? workingDirectory,
     Map<String, String>? environment,
     dynamic exitCode = 0,
+    String Function(String)? filter,
   }) async {
     final buffer = StringBuffer();
     await runEmbeddingToBuffer(
@@ -474,7 +475,7 @@ String _filter(String input) {
         r'   ',
       )
       .replaceAll(
-        RegExp(r' [\d]+:[\d]+ ', multiLine: true),
+        RegExp(r' [\d]+:[\d]+ +', multiLine: true),
         r' $LINE:$COL ',
       )
       .replaceAll(
