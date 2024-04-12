@@ -117,7 +117,7 @@ in a directory `foo-<version>`.
     final id = versions.last;
     final name = id.name;
 
-    final outputArg = argResults['output'] as String;
+    final outputArg = argResults.optionWithDefault('output');
     final destinationDir = p.join(outputArg, '$name-${id.version}');
     if (entryExists(destinationDir)) {
       if (argResults.flag('force')) {
@@ -138,7 +138,7 @@ in a directory `foo-<version>`.
       destinationDir,
       cache,
     );
-    if (argResults['resolve'] as bool) {
+    if (argResults.flag('resolve')) {
       try {
         await e.acquireDependencies(SolveType.get);
       } finally {

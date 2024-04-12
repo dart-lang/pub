@@ -7,7 +7,6 @@ import 'dart:async';
 import '../command.dart';
 import '../log.dart' as log;
 import '../solver.dart';
-import '../utils.dart';
 
 /// Handles the `downgrade` pub command.
 class DowngradeCommand extends PubCommand {

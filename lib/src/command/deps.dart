@@ -163,7 +163,7 @@ class DepsCommand extends PubCommand {
           buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
         }
 
-        switch (argResults['style']) {
+        switch (argResults.optionWithDefault('style')) {
           case 'compact':
             await _outputCompact(buffer);
             break;

@@ -6,7 +6,6 @@ import '../command.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../source/hosted.dart';
-import '../utils.dart';
 
 /// Handles the `token remove` pub command.
 class TokenRemoveCommand extends PubCommand {
