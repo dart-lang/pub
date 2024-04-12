@@ -68,7 +68,6 @@ extension on GoldenTestContext {
     String? workingDirectory,
     Map<String, String>? environment,
     dynamic exitCode = 0,
-    String Function(String)? filter,
   }) async {
     final buffer = StringBuffer();
     await runEmbeddingToBuffer(
