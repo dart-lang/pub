@@ -4,6 +4,8 @@
 
 import 'dart:io';
 
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -166,22 +168,43 @@ class Package {
       expectedName: expectedName,
     );
 
-    final workspacePackages = pubspec.workspace.map(
-      (workspacePath) {
-        try {
-          return Package.load(
-            p.join(dir, workspacePath),
-            sources,
-            loadPubspec: loadPubspec,
-            withPubspecOverrides: withPubspecOverrides,
-          );
-        } on FileException catch (e) {
-          throw FileException(
-            '${e.message}\n'
-            'That was included in the workspace of ${p.join(dir, 'pubspec.yaml')}.',
-            e.path,
+    final workspacePackages = pubspec.workspace.expand(
+      (e) {
+        final (span, entry) = e;
+        final glob = Glob(entry);
+        final paths = glob.listSync(root: dir);
+        if (paths.isEmpty) {
+          throw SourceSpanApplicationException(
+            'No directories matched `$entry`',
+            span,
           );
         }
+        final packages = <Package>[];
+        for (final FileSystemEntity(:path) in paths) {
+          if (fileExists(path)) {
+            throw SourceSpanApplicationException(
+              '`$entry` matched `$path` that is not a directory',
+              span,
+            );
+          }
+          try {
+            packages.add(
+              Package.load(
+                path,
+                sources,
+                loadPubspec: loadPubspec,
+                withPubspecOverrides: withPubspecOverrides,
+              ),
+            );
+          } on FileException catch (e) {
+            throw FileException(
+              '${e.message}\n'
+              'That was included in the workspace of ${p.join(dir, 'pubspec.yaml')}.',
+              e.path,
+            );
+          }
+        }
+        return packages;
       },
     ).toList();
     for (final package in workspacePackages) {

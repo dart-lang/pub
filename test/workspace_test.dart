@@ -374,6 +374,7 @@ void main() {
             'workspace': ['b'], // Doesn't exist.
           },
         ),
+        dir('b'),
       ]),
     ]).create();
     await pubGet(
@@ -385,6 +386,94 @@ void main() {
       ),
       exitCode: NO_INPUT,
     );
+  });
+
+  test('reports nonresolving glob of workspace member correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['a*'],
+        },
+        sdk: '^3.7.0',
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        'No directories matched `a*`',
+      ),
+      exitCode: DATA,
+    );
+  });
+
+  test('reports workspace member resolving to file correctly', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['f?le'],
+        },
+        sdk: '^3.7.0',
+      ),
+      file('file'),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      error: contains(
+        ' `f?le` matched `./file` that is not a directory',
+      ),
+      exitCode: DATA,
+    );
+  });
+
+  test('globs resolve correctly', () async {
+    final server = await servePackages();
+    server.serve('dep', '1.0.0');
+    server.serve('dev_dep', '1.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/*'],
+        },
+        sdk: '^3.7.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            devDeps: {'dep': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+        dir('b', [
+          libPubspec(
+            'b',
+            '1.1.1',
+            devDeps: {'dev_dep': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      output: allOf(contains('+ dev_dep'), contains('+ dep')),
+    );
+    await appPackageConfigFile(
+      [
+        packageConfigEntry(name: 'dep', version: '1.0.0'),
+        packageConfigEntry(name: 'dev_dep', version: '1.0.0'),
+        packageConfigEntry(name: 'a', path: './pkgs/a'),
+        packageConfigEntry(name: 'b', path: './pkgs/b'),
+      ],
+      generatorVersion: '3.7.0',
+    ).validate();
   });
 
   test('`pub deps` lists dependencies for all members of workspace', () async {
@@ -771,6 +860,7 @@ Packages can only be included in the workspace once.
         },
       ),
     ]).create();
+    await libPubspec('foo', '1.0.0', resolutionWorkspace: true).create();
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
       error: contains('"workspace" members must be subdirectories'),

@@ -65,8 +65,10 @@ class Pubspec extends PubspecBase {
   final Description _containingDescription;
 
   /// Directories of packages that should resolve together with this package.
-  late List<String> workspace = () {
-    final result = <String>[];
+  ///
+  /// Contains the source spans for error reporting.
+  late List<(SourceSpan, String)> workspace = () {
+    final result = <(SourceSpan, String)>[];
     final r = fields.nodes['workspace'];
     if (r != null && !languageVersion.supportsWorkspaces) {
       _error(
@@ -74,7 +76,7 @@ class Pubspec extends PubspecBase {
         r.span,
       );
     }
-    if (r == null || r.value == null) return <String>[];
+    if (r == null || r.value == null) return <(SourceSpan, String)>[];
 
     if (r is! YamlList) {
       _error('"workspace" must be a list of strings', r.span);
@@ -84,13 +86,15 @@ class Pubspec extends PubspecBase {
       if (value is! String) {
         _error('"workspace" must be a list of strings', t.span);
       }
+      // The values are "globs" not paths, but these checks are valid even when
+      // treating them as paths.
       if (!p.isRelative(value)) {
         _error('"workspace" members must be relative paths', t.span);
       }
       if (p.equals(value, '.') || !p.isWithin('.', value)) {
         _error('"workspace" members must be subdirectories', t.span);
       }
-      result.add(value);
+      result.add((t.span, value));
     }
     return result;
   }();
@@ -307,7 +311,7 @@ class Pubspec extends PubspecBase {
     Map? fields,
     SourceRegistry? sources,
     Map<String, SdkConstraint>? sdkConstraints,
-    this.workspace = const <String>[],
+    this.workspace = const <(SourceSpan, String)>[],
     this.dependencyOverridesFromOverridesFile = false,
     this.resolution = Resolution.none,
   })  : _dependencies = dependencies == null
@@ -415,7 +419,7 @@ class Pubspec extends PubspecBase {
     Iterable<PackageRange>? dependencyOverrides,
     Map? fields,
     Map<String, SdkConstraint>? sdkConstraints,
-    List<String>? workspace,
+    List<(SourceSpan, String)>? workspace,
     //this.dependencyOverridesFromOverridesFile = false,
     Resolution? resolution,
   }) {
