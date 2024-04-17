@@ -32,6 +32,10 @@ Future<String?> suggestResolutionAlternatives(
   Iterable<String> unlock,
   SystemCache cache,
 ) async {
+  if (entrypoint.workspaceRoot.workspaceChildren.isNotEmpty) {
+    // TODO(https://github.com/dart-lang/pub/issues/4227): handle workspaces.
+    return null;
+  }
   final resolutionContext = _ResolutionContext(
     entrypoint: entrypoint,
     type: type,
