@@ -1159,7 +1159,8 @@ Changed 1 constraint in b${s}pubspec.yaml:
     ]).create();
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: 'Because no versions of a match 2.0.0, version solving failed.',
+      error:
+          'Because myapp depends on both a 2.0.0 and a, version solving failed.',
     );
   });
 }
