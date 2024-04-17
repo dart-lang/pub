@@ -277,7 +277,7 @@ class PackageLister {
           ..._rootPackage!.workspaceChildren.map((p) {
             return PackageRange(
               PackageRef(p.name, RootDescription(p.dir)),
-              VersionConstraint.any,
+              p.version,
             );
           }),
           ...pubspec.dependencyOverrides.values,
