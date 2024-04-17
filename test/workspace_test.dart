@@ -268,7 +268,7 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Because every version of a depends on foo from unknown source "posted", version solving failed.',
+        'Because a depends on foo from unknown source "posted", version solving failed.',
       ),
     );
   });
