@@ -108,8 +108,7 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   static const defaultLanguageVersion = LanguageVersion(2, 7);
   static const firstVersionWithNullSafety = LanguageVersion(2, 12);
   static const firstVersionWithShorterHostedSyntax = LanguageVersion(2, 15);
-  // TODO(https://github.com/dart-lang/pub/issues/4127) update when we know actual version.
-  static const firstVersionWithWorkspaces = LanguageVersion(3, 7);
+  static const firstVersionWithWorkspaces = LanguageVersion(3, 5);
 
   /// Transform language version to string that can be parsed with
   /// [LanguageVersion.parse].
