@@ -1163,6 +1163,41 @@ Changed 1 constraint in b${s}pubspec.yaml:
           'Because myapp depends on both a 2.0.0 and a, version solving failed.',
     );
   });
+
+  test('Reports error if two members of workspace has same name', () async {
+    final server = await servePackages();
+    server.serve('dev_dep', '1.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['a', 'b'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          resolutionWorkspace: true,
+        ),
+      ]),
+      dir('b', [
+        libPubspec(
+          'a', // Has same name as sibling.
+          '1.0.0',
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: '''
+Workspace members must have unique names.
+`a/pubspec.yaml` and `b/pubspec.yaml` are both called "a".''',
+    );
+  });
 }
 
 final s = p.separator;
