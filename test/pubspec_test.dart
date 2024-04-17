@@ -351,7 +351,7 @@ dependencies:
         Pubspec.parse(
           '''
 environment:
-  sdk: ^3.7.0
+  sdk: ^3.5.0
 workspace: ['a', 'b', 'c']
 ''',
           sources,
@@ -366,7 +366,7 @@ workspace: ['a', 'b', 'c']
         Pubspec.parse(
           '''
 environment:
-  sdk: ^3.7.0
+  sdk: ^3.5.0
 resolution: workspace
 ''',
           sources,
@@ -416,7 +416,7 @@ resolution: local
       expectPubspecException(
         '''
 environment:
-  sdk: ^3.7.0
+  sdk: ^3.5.0
 workspace: 'a string'
 ''',
         (pubspec) => pubspec.workspace,
@@ -427,7 +427,7 @@ workspace: 'a string'
       expectPubspecException(
         '''
 environment:
-  sdk: ^3.7.0
+  sdk: ^3.5.0
 workspace: ['a string', 24]
 ''',
         (pubspec) => pubspec.workspace,
@@ -438,7 +438,7 @@ workspace: ['a string', 24]
       expectPubspecException(
         '''
 environment:
-  sdk: ^3.7.0
+  sdk: ^3.5.0
 resolution: "sometimes"''',
         (pubspec) => pubspec.resolution,
       );
