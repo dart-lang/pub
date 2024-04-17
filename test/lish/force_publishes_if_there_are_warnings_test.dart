@@ -52,7 +52,9 @@ void main() {
         ),
       ]),
     );
-    expect(pub.stdout,
-        emitsThrough('Message from server: Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emitsThrough('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
   });
 }

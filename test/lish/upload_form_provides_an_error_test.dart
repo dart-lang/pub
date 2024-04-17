@@ -23,7 +23,7 @@ void main() {
       return shelf.Response.notFound(
         jsonEncode({
           'error': {
-            'message': 'your request\u0000sucked'
+            'message': 'your request\u0000sucked',
           }, // The \u0000 should be sanitized to a space.
         }),
       );
