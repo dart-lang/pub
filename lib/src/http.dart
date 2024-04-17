@@ -223,7 +223,7 @@ void handleJsonSuccess(http.Response response) {
     invalidServerResponse(response);
   }
   log.message(
-    log.green(sanitizeForTerminal(parsed['success']['message'] as String)),
+    'Message from server: ${log.green(sanitizeForTerminal(parsed['success']['message'] as String))}',
   );
 }
 
@@ -245,7 +245,9 @@ void handleJsonError(http.BaseResponse response) {
       error['message'] is! String) {
     invalidServerResponse(response);
   }
-  fail(log.red(sanitizeForTerminal(error['message'] as String)));
+  fail(
+    'Message from server: ${log.red(sanitizeForTerminal(error['message'] as String))}',
+  );
 }
 
 /// Handles an unsuccessful XML-formatted response from google cloud storage.
