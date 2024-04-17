@@ -49,7 +49,10 @@ void main() {
     handleUpload(server);
 
     expect(pub.stdout, emitsThrough(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emits('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
     await pub.shouldExit(SUCCESS);
   });
 }

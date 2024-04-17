@@ -31,6 +31,9 @@ void main() {
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
-    expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emitsThrough('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
   });
 }
