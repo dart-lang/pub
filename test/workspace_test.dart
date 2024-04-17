@@ -1130,6 +1130,38 @@ Changed 1 constraint in b${s}pubspec.yaml:
       ),
     );
   });
+
+  // TODO(https://github.com/dart-lang/pub/issues/4227): we want to enable this at some point.
+  test('No suggestions for workspaces', () async {
+    final server = await servePackages();
+    server.serve('dev_dep', '1.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {
+          'a': '2.0.0'
+        }, // Would provoke a suggestion to update the constraint.
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.0.0',
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: 'Because no versions of a match 2.0.0, version solving failed.',
+    );
+  });
 }
 
 final s = p.separator;
