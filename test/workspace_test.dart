@@ -1140,7 +1140,7 @@ Changed 1 constraint in b${s}pubspec.yaml:
         'myapp',
         '1.2.3',
         deps: {
-          'a': '2.0.0'
+          'a': '2.0.0',
         }, // Would provoke a suggestion to update the constraint.
         extras: {
           'workspace': ['pkgs/a'],
