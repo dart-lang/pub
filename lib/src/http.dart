@@ -222,7 +222,9 @@ void handleJsonSuccess(http.Response response) {
       parsed['success']['message'] is! String) {
     invalidServerResponse(response);
   }
-  log.message(log.green(parsed['success']['message'] as String));
+  log.message(
+    log.green(sanitizeForTerminal(parsed['success']['message'] as String)),
+  );
 }
 
 /// Handles an unsuccessful JSON-formatted response from pub.dev.
@@ -243,7 +245,7 @@ void handleJsonError(http.BaseResponse response) {
       error['message'] is! String) {
     invalidServerResponse(response);
   }
-  fail(log.red(error['message'] as String));
+  fail(log.red(sanitizeForTerminal(error['message'] as String)));
 }
 
 /// Handles an unsuccessful XML-formatted response from google cloud storage.
@@ -269,13 +271,13 @@ void handleGCSError(http.BaseResponse response) {
       // `Details` are not specified in the doc above, but have been observed in actual responses.
       final details = getTagText('Details');
       if (code != null) {
-        log.error('Server error code: $code');
+        log.error('Server error code: ${sanitizeForTerminal(code)}');
       }
       if (message != null) {
-        log.error('Server message: $message');
+        log.error('Server message: ${sanitizeForTerminal(message)}');
       }
       if (details != null) {
-        log.error('Server details: $details');
+        log.error('Server details: ${sanitizeForTerminal(details)}');
       }
     }
   }
