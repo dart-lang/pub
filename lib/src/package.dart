@@ -385,6 +385,7 @@ Packages can only be included in the workspace once.
     stack.addAll(current.workspaceChildren);
   }
 
+  // Check that the workspace doesn't contain two packages with the same name!
   final namesSeen = <String, Package>{};
   for (final package in root.transitiveWorkspace) {
     final collision = namesSeen[package.name];
