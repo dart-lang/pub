@@ -1195,7 +1195,7 @@ Changed 1 constraint in b${s}pubspec.yaml:
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: '''
 Workspace members must have unique names.
-`a/pubspec.yaml` and `b/pubspec.yaml` are both called "a".''',
+`a${s}pubspec.yaml` and `b${s}pubspec.yaml` are both called "a".''',
     );
   });
 }
