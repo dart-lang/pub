@@ -50,7 +50,17 @@ class PackageConfig {
     this.generator,
     this.generatorVersion,
     Map<String, dynamic>? additionalProperties,
-  }) : additionalProperties = additionalProperties ?? {};
+  }) : additionalProperties = additionalProperties ?? {} {
+    final names = <String>{};
+    // Sanity check:
+    for (final p in packages) {
+      if (!names.add(p.name)) {
+        throw ArgumentError(
+          'Duplicate name ${p.name} in generated package config',
+        );
+      }
+    }
+  }
 
   /// Create [PackageConfig] from JSON [data].
   ///
