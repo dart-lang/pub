@@ -363,6 +363,8 @@ See $workspacesDocUrl for more information.
 /// Reports an error if the graph of the workspace rooted at [root] is not a
 /// tree. Or if a package name occurs twice.
 void validateWorkspace(Package root) {
+  if (root.workspaceChildren.isEmpty) return;
+
   final includedFrom = <String, String>{};
   final stack = [root];
 
