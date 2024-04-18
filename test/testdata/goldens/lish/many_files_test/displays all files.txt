@@ -39,4 +39,4 @@ Policy details are available at https://pub.dev/policy
 
 Do you want to publish test_pkg 1.0.0 to http://localhost:$PORT (y/N)?
 Uploading...
-Package test_pkg 1.0.0 uploaded!
+Message from server: Package test_pkg 1.0.0 uploaded!

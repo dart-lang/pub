@@ -30,7 +30,10 @@ void main() {
       );
     });
 
-    expect(pub.stderr, emits('Your package was too boring.'));
+    expect(
+      pub.stderr,
+      emits('Message from server: Your package was too boring.'),
+    );
     await pub.shouldExit(1);
   });
 }
