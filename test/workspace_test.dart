@@ -327,13 +327,16 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       workingDirectory: p.join(sandbox, appPath, 'pkgs'),
-      output: contains('Resolving dependencies in `..`...'),
+      output: contains(
+        'Resolving dependencies in `${p.join(sandbox, appPath)}`...',
+      ),
     );
-    final s = p.separator;
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       workingDirectory: p.join(sandbox, appPath, 'pkgs', 'a'),
-      output: contains('Resolving dependencies in `..$s..`...'),
+      output: contains(
+        'Resolving dependencies in `${p.join(sandbox, appPath)}`...',
+      ),
     );
 
     await pubGet(
@@ -351,7 +354,9 @@ void main() {
         appPath,
         'pkgs',
       ),
-      output: contains('Resolving dependencies in `..`...'),
+      output: contains(
+        'Resolving dependencies in `${p.join(sandbox, appPath)}`...',
+      ),
     );
   });
 

@@ -516,7 +516,9 @@ See $workspacesDocUrl for more information.''',
   }) async {
     workspaceRoot; // This will throw early if pubspec.yaml could not be found.
     summaryOnly = summaryOnly || _summaryOnlyEnvironment;
-    final suffix = workspaceRoot.dir == '.' ? '' : ' in `${workspaceRoot.dir}`';
+    final suffix = workspaceRoot.dir == '.'
+        ? ''
+        : ' in `${workspaceRoot.presentationDir}`';
 
     if (enforceLockfile && !fileExists(lockFilePath)) {
       throw ApplicationException('''

@@ -36,6 +36,13 @@ class Package {
   /// The path to the directory containing the package.
   final String dir;
 
+  /// A version of [dir] adapted for presenting in the terminal.
+  ///
+  /// If [dir] is just a parent directory like ../.. it gets replaced with
+  /// the absolute dir.
+  late String presentationDir =
+      p.isWithin(dir, '.') ? p.normalize(p.absolute(dir)) : dir;
+
   /// The name of the package.
   String get name => pubspec.name;
 
