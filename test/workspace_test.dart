@@ -1236,7 +1236,7 @@ Workspace members must have unique names.
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: '''
 The package `foo` is overridden in both:
-package `myapp` at `.` and 'a' at `./a`.
+package `myapp` at `.` and 'a' at `.${s}a`.
 
 Consider removing one of the overrides.''',
     );
