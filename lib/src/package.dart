@@ -361,8 +361,10 @@ See $workspacesDocUrl for more information.
 }
 
 /// Reports an error if the graph of the workspace rooted at [root] is not a
-/// tree.
-void validateWorkspaceGraph(Package root) {
+/// tree. Or if a package name occurs twice.
+void validateWorkspace(Package root) {
+  if (root.workspaceChildren.isEmpty) return;
+
   final includedFrom = <String, String>{};
   final stack = [root];
 
@@ -381,5 +383,18 @@ Packages can only be included in the workspace once.
       includedFrom[p.canonicalize(child.dir)] = current.dir;
     }
     stack.addAll(current.workspaceChildren);
+  }
+
+  // Check that the workspace doesn't contain two packages with the same name!
+  final namesSeen = <String, Package>{};
+  for (final package in root.transitiveWorkspace) {
+    final collision = namesSeen[package.name];
+    if (collision != null) {
+      fail('''
+Workspace members must have unique names.
+`${collision.pubspecPath}` and `${package.pubspecPath}` are both called "${package.name}".
+''');
+    }
+    namesSeen[package.name] = package;
   }
 }
