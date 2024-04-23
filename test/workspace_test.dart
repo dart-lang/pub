@@ -1203,6 +1203,44 @@ Workspace members must have unique names.
 `a${s}pubspec.yaml` and `b${s}pubspec.yaml` are both called "a".''',
     );
   });
+
+  test('Reports error if two members of workspace override the same package',
+      () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': 'any'},
+        extras: {
+          'dependency_overrides': {
+            'foo': {'path': '../foo'},
+          },
+          'workspace': ['a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          resolutionWorkspace: true,
+        ),
+        pubspecOverrides({
+          'dependency_overrides': {'foo': '2.0.0'},
+        }),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: '''
+The package `foo` is overridden in both:
+package `myapp` at `.` and 'a' at `./a`.
+
+Consider removing one of the overrides.''',
+    );
+  });
 }
 
 final s = p.separator;

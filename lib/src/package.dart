@@ -367,8 +367,11 @@ See $workspacesDocUrl for more information.
   }
 }
 
-/// Reports an error if the graph of the workspace rooted at [root] is not a
-/// tree. Or if a package name occurs twice.
+/// Reports an error if one or more of:
+///
+/// * The graph of the workspace rooted at [root] is not a tree.
+/// * If a package name occurs twice.
+/// * If two packages in the workspace override the same package name.
 void validateWorkspace(Package root) {
   if (root.workspaceChildren.isEmpty) return;
 
@@ -403,5 +406,22 @@ Workspace members must have unique names.
 ''');
     }
     namesSeen[package.name] = package;
+  }
+
+  // Check that the workspace doesn't contain two overrides of the same package.
+  final overridesSeen = <String, Package>{};
+  for (final package in root.transitiveWorkspace) {
+    for (final override in package.dependencyOverrides.keys) {
+      final collision = overridesSeen[override];
+      if (collision != null) {
+        fail('''
+The package `$override` is overridden in both:
+package `${collision.name}` at `${collision.dir}` and '${package.name}' at `${package.dir}`.
+
+Consider removing one of the overrides.
+''');
+      }
+      overridesSeen[override] = package;
+    }
   }
 }
