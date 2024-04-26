@@ -5,10 +5,10 @@
 import 'dart:async';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../log.dart' as log;
 import '../solver.dart';
 
-/// Handles the `downgrade` pub command.
 class DowngradeCommand extends PubCommand {
   @override
   String get name => 'downgrade';
@@ -22,6 +22,12 @@ class DowngradeCommand extends PubCommand {
 
   @override
   bool get isOffline => argResults.flag('offline');
+
+  bool get _dryRun => argResults.flag('dry-run');
+
+  bool get _tighten => argResults.flag('tighten');
+
+  bool get _example => argResults.flag('example');
 
   DowngradeCommand() {
     argParser.addFlag(
@@ -51,6 +57,13 @@ class DowngradeCommand extends PubCommand {
       help: 'Run this in the directory <dir>.',
       valueHelp: 'dir',
     );
+
+    argParser.addFlag(
+      'tighten',
+      help:
+          'Updates lower bounds in pubspec.yaml to match the resolved version.',
+      negatable: false,
+    );
   }
 
   @override
@@ -62,21 +75,30 @@ class DowngradeCommand extends PubCommand {
         ),
       );
     }
-    var dryRun = argResults.flag('dry-run');
 
     await entrypoint.acquireDependencies(
       SolveType.downgrade,
       unlock: argResults.rest,
-      dryRun: dryRun,
+      dryRun: _dryRun,
     );
     var example = entrypoint.example;
     if (argResults.flag('example') && example != null) {
       await example.acquireDependencies(
         SolveType.get,
         unlock: argResults.rest,
-        dryRun: dryRun,
+        dryRun: _dryRun,
         summaryOnly: true,
       );
+    }
+
+    if (_tighten) {
+      if (_example && entrypoint.example != null) {
+        log.warning(
+          'Running `downgrade --tighten` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
+        );
+      }
+      final changes = entrypoint.tighten();
+      entrypoint.applyChanges(changes, _dryRun);
     }
 
     if (isOffline) {
