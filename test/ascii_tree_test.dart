@@ -12,11 +12,6 @@ import 'descriptor.dart';
 import 'golden_file.dart';
 import 'test_pub.dart';
 
-/// Removes ansi color codes from [s].
-String stripColors(String s) {
-  return s.replaceAll(RegExp('\u001b\\[.*?m'), '');
-}
-
 void main() {
   setUp(() {
     forceColors = ForceColorOption.always;
