@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -51,6 +52,25 @@ void main() {
       ],
       generatorVersion: '3.5.0',
     ).validate();
+    final workspaceRefA = jsonDecode(
+      File(
+        p.join(
+          sandbox,
+          appPath,
+          'pkgs',
+          'a',
+          '.dart_tool',
+          'pub',
+          'workspace_ref.json',
+        ),
+      ).readAsStringSync(),
+    );
+    expect(workspaceRefA, {'workspaceRoot': p.join('..', '..', '..', '..')});
+    final workspaceRefMyApp = jsonDecode(
+      File(p.join(sandbox, appPath, '.dart_tool', 'pub', 'workspace_ref.json'))
+          .readAsStringSync(),
+    );
+    expect(workspaceRefMyApp, {'workspaceRoot': p.join('..', '..')});
   });
 
   test(

@@ -407,7 +407,12 @@ See $workspacesDocUrl for more information.''',
 
   Entrypoint? _example;
 
-  /// Writes the .dart_tool/package_config.json file
+  /// Writes the .dart_tool/package_config.json file and workspace references to
+  /// it.
+  ///
+  /// If the workspace is non-trivial: For each package in the workspace write:
+  /// `.dart_tool/pub/workspace_ref.json` with a pointer to the workspace root
+  /// package dir.
   Future<void> writePackageConfigFile() async {
     ensureDir(p.dirname(packageConfigPath));
     writeTextFile(
@@ -418,6 +423,21 @@ See $workspacesDocUrl for more information.''',
             .pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
       ),
     );
+    if (workspaceRoot.workspaceChildren.isNotEmpty) {
+      for (final package in workspaceRoot.transitiveWorkspace) {
+        final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
+        final workspaceRefPath = p.join(workspaceRefDir, 'workspace_ref.json');
+        ensureDir(workspaceRefDir);
+        final relativeRootPath =
+            p.relative(workspaceRoot.dir, from: workspaceRefDir);
+        writeTextFile(
+          workspaceRefPath,
+          '${JsonEncoder.withIndent('  ').convert({
+                'workspaceRoot': relativeRootPath,
+              })}\n',
+        );
+      }
+    }
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
