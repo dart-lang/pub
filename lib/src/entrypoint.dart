@@ -105,7 +105,6 @@ class Entrypoint {
       if (pubspec.resolution == Resolution.none) {
         root = Package.load(
           dir,
-          cache.sources,
           loadPubspec: (
             path, {
             expectedName,
@@ -281,8 +280,8 @@ See $workspacesDocUrl for more information.''',
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
           packageEntry.resolvedRootDir(packageConfigPath),
-          cache.sources,
           expectedName: packageEntry.name,
+          loadPubspec: Pubspec.loadRootWithSources(cache.sources),
         ),
     };
     packages[workspaceRoot.name] = workspaceRoot;
@@ -336,28 +335,10 @@ See $workspacesDocUrl for more information.''',
   }
 
   /// Creates an entrypoint at the same location, but with each pubspec in
-  /// [updatedPubspec] replacing the with one for the corresponding package.
-  Entrypoint withUpdatedPubspecs(Map<Package, Pubspec> updatedPubspecs) {
-    final existingPubspecs = <String, Pubspec>{};
-    // First extract all pubspecs from the workspace.
-    for (final package in workspaceRoot.transitiveWorkspace) {
-      existingPubspecs[package.dir] =
-          updatedPubspecs[package] ?? package.pubspec;
-    }
-    final newWorkspaceRoot = Package.load(
-      workspaceRoot.dir,
-      cache.sources,
-      loadPubspec: (
-        dir, {
-        expectedName,
-        required withPubspecOverrides,
-      }) =>
-          existingPubspecs[dir] ??
-          Pubspec.load(
-            dir,
-            cache.sources,
-            containingDescription: RootDescription(dir),
-          ),
+  /// [updatedPubspecs] replacing the with one for the corresponding package.
+  Entrypoint withUpdatedRootPubspecs(Map<Package, Pubspec> updatedPubspecs) {
+    final newWorkspaceRoot = workspaceRoot.transformWorkspace(
+      (package) => updatedPubspecs[package] ?? package.pubspec,
     );
     final newWorkPackage = newWorkspaceRoot.transitiveWorkspace
         .firstWhere((package) => package.dir == workPackage.dir);
@@ -375,7 +356,7 @@ See $workspacesDocUrl for more information.''',
   /// Creates an entrypoint at the same location, that will use [pubspec] for
   /// resolution of the [workPackage].
   Entrypoint withWorkPubspec(Pubspec pubspec) {
-    return withUpdatedPubspecs({workPackage: pubspec});
+    return withUpdatedRootPubspecs({workPackage: pubspec});
   }
 
   /// Creates an entrypoint given package and lockfile objects.
@@ -1108,7 +1089,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       }
       var touchedLockFile = false;
       late final lockFile = _loadLockFile(lockFilePath, cache);
-      late final root = Package.load(dir, cache.sources);
+      late final root = Package.load(
+        dir,
+        loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+      );
 
       if (!lockfileNewerThanPubspecs) {
         if (isLockFileUpToDate(lockFile, root)) {

@@ -279,10 +279,6 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = _directDependenciesToUpgrade();
-    final workspace = {
-      for (final package in entrypoint.workspaceRoot.transitiveWorkspace)
-        package.dir: package,
-    };
     // Solve [resolvablePubspec] in-memory and consolidate the resolved
     // versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
@@ -292,16 +288,8 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         return await resolveVersions(
           SolveType.upgrade,
           cache,
-          Package.load(
-            entrypoint.workspaceRoot.dir,
-            entrypoint.cache.sources,
-            withPubspecOverrides: true,
-            loadPubspec: (
-              path, {
-              expectedName,
-              required withPubspecOverrides,
-            }) =>
-                stripVersionBounds(workspace[path]!.pubspec),
+          entrypoint.workspaceRoot.transformWorkspace(
+            (package) => stripVersionBounds(package.pubspec),
           ),
         );
       },
@@ -354,15 +342,9 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       final solveResult = await resolveVersions(
         SolveType.upgrade,
         cache,
-        Package.load(
-          entrypoint.workspaceRoot.dir,
-          entrypoint.cache.sources,
-          loadPubspec: (path, {expectedName, required withPubspecOverrides}) {
-            final package = workspace[path]!;
-            final changesForPackage = changes[package] ?? {};
-            return applyChanges(package.pubspec, changesForPackage);
-          },
-        ),
+        entrypoint.workspaceRoot.transformWorkspace((package) {
+          return applyChanges(package.pubspec, changes[package] ?? {});
+        }),
       );
       changes = tighten(
         entrypoint,
@@ -388,7 +370,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         }
       }
     }
-    await entrypoint.withUpdatedPubspecs({
+    await entrypoint.withUpdatedRootPubspecs({
       for (final MapEntry(key: package, value: changesForPackage)
           in changes.entries)
         package: applyChanges(package.pubspec, changesForPackage),

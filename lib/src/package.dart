@@ -14,8 +14,6 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'source/root.dart';
-import 'system_cache.dart';
 import 'utils.dart';
 
 /// A Package is a [Pubspec] and a directory where it belongs that can be used
@@ -151,22 +149,15 @@ class Package {
   /// used to override a pubspec in memory for trying out an alternative
   /// resolution.
   factory Package.load(
-    String dir,
-    SourceRegistry sources, {
+    String dir, {
     bool withPubspecOverrides = false,
     String? expectedName,
-    Pubspec Function(
+    required Pubspec Function(
       String path, {
       String? expectedName,
       required bool withPubspecOverrides,
-    })? loadPubspec,
+    }) loadPubspec,
   }) {
-    loadPubspec ??=
-        (path, {expectedName, required withPubspecOverrides}) => Pubspec.load(
-              path,
-              sources,
-              containingDescription: RootDescription(path),
-            );
     final pubspec = loadPubspec(
       dir,
       withPubspecOverrides: withPubspecOverrides,
@@ -178,7 +169,6 @@ class Package {
         try {
           return Package.load(
             p.join(dir, workspacePath),
-            sources,
             loadPubspec: loadPubspec,
             withPubspecOverrides: withPubspecOverrides,
           );
@@ -364,6 +354,26 @@ See $workspacesDocUrl for more information.
       },
       isDir: (dir) => dirExists(resolve(dir)),
     ).map(resolve).toList();
+  }
+
+  /// Applies [transform] to each package in the workspace and returns a derived
+  /// package.
+  Package transformWorkspace(
+    Pubspec Function(Package) transform,
+  ) {
+    final workspace = {
+      for (final package in transitiveWorkspace) package.dir: package,
+    };
+    return Package.load(
+      dir,
+      withPubspecOverrides: true,
+      loadPubspec: (
+        path, {
+        expectedName,
+        required withPubspecOverrides,
+      }) =>
+          transform(workspace[path]!),
+    );
   }
 }
 
