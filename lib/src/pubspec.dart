@@ -58,7 +58,7 @@ class Pubspec extends PubspecBase {
   /// [devDependencies].
   ///
   /// This will be null if this was created using [Pubspec] or [Pubspec.empty].
-  final SourceRegistry _sources;
+  final SourceRegistry sources;
 
   /// It is used to resolve relative paths. And to resolve path-descriptions
   /// from a git dependency as git-descriptions.
@@ -121,7 +121,7 @@ class Pubspec extends PubspecBase {
       _dependencies ??= _parseDependencies(
         'dependencies',
         fields.nodes['dependencies'],
-        _sources,
+        sources,
         languageVersion,
         _packageName,
         _containingDescription,
@@ -134,7 +134,7 @@ class Pubspec extends PubspecBase {
       _devDependencies ??= _parseDependencies(
         'dev_dependencies',
         fields.nodes['dev_dependencies'],
-        _sources,
+        sources,
         languageVersion,
         _packageName,
         _containingDescription,
@@ -166,7 +166,7 @@ class Pubspec extends PubspecBase {
         _dependencyOverrides = _parseDependencies(
           'dependency_overrides',
           pubspecOverridesFields.nodes['dependency_overrides'],
-          _sources,
+          sources,
           languageVersion,
           _packageName,
           _containingDescription,
@@ -177,7 +177,7 @@ class Pubspec extends PubspecBase {
     return _dependencyOverrides ??= _parseDependencies(
       'dependency_overrides',
       fields.nodes['dependency_overrides'],
-      _sources,
+      sources,
       languageVersion,
       _packageName,
       _containingDescription,
@@ -298,6 +298,26 @@ class Pubspec extends PubspecBase {
     );
   }
 
+  /// Convenience helper to pass to [Package.load].
+  static Pubspec Function(
+    String dir, {
+    String? expectedName,
+    required bool withPubspecOverrides,
+  }) loadRootWithSources(SourceRegistry sources) {
+    return (
+      String dir, {
+      String? expectedName,
+      required bool withPubspecOverrides,
+    }) =>
+        Pubspec.load(
+          dir,
+          sources,
+          expectedName: expectedName,
+          allowOverridesFile: withPubspecOverrides,
+          containingDescription: RootDescription(dir),
+        );
+  }
+
   Pubspec(
     String name, {
     Version? version,
@@ -322,7 +342,7 @@ class Pubspec extends PubspecBase {
         _givenSdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': SdkConstraint(VersionConstraint.any)}),
         _includeDefaultSdkConstraint = false,
-        _sources = sources ??
+        sources = sources ??
             ((String? name) => throw StateError('No source registry given')),
         _overridesFileFields = null,
         // This is a dummy value.
@@ -343,7 +363,7 @@ class Pubspec extends PubspecBase {
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(
     Map fields,
-    this._sources, {
+    this.sources, {
     YamlMap? overridesFields,
     String? expectedName,
     Uri? location,
