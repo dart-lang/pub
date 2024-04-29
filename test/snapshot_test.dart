@@ -146,7 +146,7 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!')),
         ]).validate();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
         expect(process.stdout, emits('hello 2!'));
         await process.shouldExit();
       });
@@ -206,7 +206,7 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!')),
         ]).validate();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
         expect(process.stdout, emits('hello 2!'));
         await process.shouldExit();
       });
@@ -253,7 +253,7 @@ void main() {
           d.file('hello.dart-$versionSuffix.snapshot', contains('Goodbye!')),
         ]).validate();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
         expect(process.stdout, emits('Goodbye!'));
         await process.shouldExit();
       });
@@ -282,7 +282,7 @@ void main() {
           ),
         ]).create();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
 
         // In the real world this would just print "hello!", but since we collect
         // all output we see the precompilation messages as well.

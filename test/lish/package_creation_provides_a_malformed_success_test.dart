@@ -16,13 +16,13 @@ void main() {
     await servePackages();
     await d.validPackage().create();
     await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
-    var body = {'success': 'Your package was awesome.'};
+    final body = {'success': 'Your package was awesome.'};
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode(body));
     });

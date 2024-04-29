@@ -27,7 +27,7 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var pub = await startPub(
+    final pub = await startPub(
       args: ['global', 'activate', '-spath', '../bar', '--overwrite'],
     );
     expect(

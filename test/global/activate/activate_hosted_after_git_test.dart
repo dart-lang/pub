@@ -38,7 +38,7 @@ void main() {
     );
 
     // Should now run the hosted one.
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('hosted'));
     await pub.shouldExit();
   });

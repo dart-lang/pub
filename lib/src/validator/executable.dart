@@ -17,7 +17,7 @@ class ExecutableValidator extends Validator {
         filesBeneath('bin', recursive: false).map(package.relative);
 
     package.pubspec.executables.forEach((executable, script) {
-      var scriptPath = p.join('bin', '$script.dart');
+      final scriptPath = p.join('bin', '$script.dart');
       if (binFiles.contains(scriptPath)) return;
 
       warnings.add('Your pubspec.yaml lists an executable "$executable" that '

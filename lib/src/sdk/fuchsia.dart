@@ -42,7 +42,7 @@ class FuchsiaSdk extends Sdk {
   String? packagePath(String name) {
     if (!isAvailable) return null;
 
-    var packagePath = p.join(_rootDirectory!, 'packages', name);
+    final packagePath = p.join(_rootDirectory!, 'packages', name);
     if (dirExists(packagePath)) return packagePath;
 
     return null;

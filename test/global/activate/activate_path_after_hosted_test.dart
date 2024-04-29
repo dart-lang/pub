@@ -27,7 +27,7 @@ void main() {
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
+    final path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
       args: ['global', 'activate', '-spath', '../foo'],
       output: allOf([
@@ -37,7 +37,7 @@ void main() {
     );
 
     // Should now run the path one.
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emitsThrough('path'));
     await pub.shouldExit();
   });

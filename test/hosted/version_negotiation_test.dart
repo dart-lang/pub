@@ -48,7 +48,7 @@ void main() {
         },
       ).create();
 
-      var pub = await startPub(args: [command.name]);
+      final pub = await startPub(args: [command.name]);
 
       globalServer.expect(
         'GET',

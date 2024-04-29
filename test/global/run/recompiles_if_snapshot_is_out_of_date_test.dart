@@ -41,7 +41,7 @@ void main() {
         'script.dart-$versionSuffix.snapshot',
       ),
     );
-    var pub = await pubRun(global: true, args: ['foo:script']);
+    final pub = await pubRun(global: true, args: ['foo:script']);
     // In the real world this would just print "hello!", but since we collect
     // all output we see the precompilation messages as well.
     expect(pub.stdout, emits('Building package executable...'));

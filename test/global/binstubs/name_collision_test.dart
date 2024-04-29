@@ -27,7 +27,7 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var pub = await startPub(args: ['global', 'activate', '-spath', '../bar']);
+    final pub = await startPub(args: ['global', 'activate', '-spath', '../bar']);
     expect(pub.stdout, emitsThrough('Installed executable bar.'));
     expect(
       pub.stderr,

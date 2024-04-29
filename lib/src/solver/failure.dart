@@ -31,7 +31,7 @@ class SolveFailure implements ApplicationException {
   /// which one is returned.
   PackageNotFoundException? get packageNotFound {
     for (var incompatibility in incompatibility.externalIncompatibilities) {
-      var cause = incompatibility.cause;
+      final cause = incompatibility.cause;
       if (cause is PackageNotFoundIncompatibilityCause) return cause.exception;
     }
     return null;
@@ -90,7 +90,7 @@ class _Writer {
       incompatibility,
       (value) => value + 1,
       ifAbsent: () {
-        var cause = incompatibility.cause;
+        final cause = incompatibility.cause;
         if (cause is ConflictCause) {
           _countDerivations(cause.conflict);
           _countDerivations(cause.other);
@@ -101,7 +101,7 @@ class _Writer {
   }
 
   String write() {
-    var buffer = StringBuffer();
+    final buffer = StringBuffer();
 
     // Find all notices from incompatibility causes. This allows an
     // [IncompatibilityCause] to provide a notice that is printed before the
@@ -126,7 +126,7 @@ class _Writer {
 
     // Only add line numbers if the derivation actually needs to refer to a line
     // by number.
-    var padding =
+    final padding =
         _lineNumbers.isEmpty ? 0 : '(${_lineNumbers.values.last}) '.length;
 
     var lastWasEmpty = false;
@@ -179,7 +179,7 @@ class _Writer {
     bool numbered = false,
   }) {
     if (numbered) {
-      var number = _lineNumbers.length + 1;
+      final number = _lineNumbers.length + 1;
       _lineNumbers[incompatibility] = number;
       _lines.add((message, number));
     } else {
@@ -202,18 +202,18 @@ class _Writer {
   }) {
     // Add explicit numbers for incompatibilities that are written far away
     // from their successors or that are used for multiple derivations.
-    var numbered = conclusion || _derivations[incompatibility]! > 1;
-    var conjunction = conclusion || incompatibility == _root ? 'So,' : 'And';
-    var incompatibilityString =
+    final numbered = conclusion || _derivations[incompatibility]! > 1;
+    final conjunction = conclusion || incompatibility == _root ? 'So,' : 'And';
+    final incompatibilityString =
         log.bold(incompatibility.toString(detailsForIncompatibility));
 
-    var conflictClause = incompatibility.cause as ConflictCause;
+    final conflictClause = incompatibility.cause as ConflictCause;
     var detailsForCause = _detailsForCause(conflictClause);
-    var cause = conflictClause.conflict.cause;
-    var otherCause = conflictClause.other.cause;
+    final cause = conflictClause.conflict.cause;
+    final otherCause = conflictClause.other.cause;
     if (cause is ConflictCause && otherCause is ConflictCause) {
-      var conflictLine = _lineNumbers[conflictClause.conflict];
-      var otherLine = _lineNumbers[conflictClause.other];
+      final conflictLine = _lineNumbers[conflictClause.conflict];
+      final otherLine = _lineNumbers[conflictClause.other];
       if (conflictLine != null && otherLine != null) {
         _write(
           incompatibility,
@@ -242,12 +242,12 @@ class _Writer {
           numbered: numbered,
         );
       } else {
-        var singleLineConflict = _isSingleLine(cause);
-        var singleLineOther = _isSingleLine(otherCause);
+        final singleLineConflict = _isSingleLine(cause);
+        final singleLineOther = _isSingleLine(otherCause);
         if (singleLineOther || singleLineConflict) {
-          var first =
+          final first =
               singleLineOther ? conflictClause.conflict : conflictClause.other;
-          var second =
+          final second =
               singleLineOther ? conflictClause.other : conflictClause.conflict;
           _visit(first, detailsForCause);
           _visit(second, detailsForCause);
@@ -272,14 +272,14 @@ class _Writer {
         }
       }
     } else if (cause is ConflictCause || otherCause is ConflictCause) {
-      var derived = cause is ConflictCause
+      final derived = cause is ConflictCause
           ? conflictClause.conflict
           : conflictClause.other;
-      var ext = cause is ConflictCause
+      final ext = cause is ConflictCause
           ? conflictClause.other
           : conflictClause.conflict;
 
-      var derivedLine = _lineNumbers[derived];
+      final derivedLine = _lineNumbers[derived];
       if (derivedLine != null) {
         _write(
           incompatibility,
@@ -287,11 +287,11 @@ class _Writer {
           numbered: numbered,
         );
       } else if (_isCollapsible(derived)) {
-        var derivedCause = derived.cause as ConflictCause;
-        var collapsedDerived = derivedCause.conflict.cause is ConflictCause
+        final derivedCause = derived.cause as ConflictCause;
+        final collapsedDerived = derivedCause.conflict.cause is ConflictCause
             ? derivedCause.conflict
             : derivedCause.other;
-        var collapsedExt = derivedCause.conflict.cause is ConflictCause
+        final collapsedExt = derivedCause.conflict.cause is ConflictCause
             ? derivedCause.other
             : derivedCause.conflict;
 
@@ -359,7 +359,7 @@ class _Writer {
     // line number and so will need to be written explicitly.
     if (_derivations[incompatibility]! > 1) return false;
 
-    var cause = incompatibility.cause as ConflictCause;
+    final cause = incompatibility.cause as ConflictCause;
     // If [incompatibility] is derived from two derived incompatibilities,
     // there are too many transitive causes to display concisely.
     if (cause.conflict.cause is ConflictCause &&
@@ -376,7 +376,7 @@ class _Writer {
 
     // If [incompatibility]'s internal cause is numbered, collapsing it would
     // get too noisy.
-    var complex =
+    final complex =
         cause.conflict.cause is ConflictCause ? cause.conflict : cause.other;
     return !_lineNumbers.containsKey(complex);
   }
@@ -394,15 +394,15 @@ class _Writer {
   /// but each has a different source, those incompatibilities should explicitly
   /// print their sources, and similarly for differing descriptions.
   Map<String, PackageDetail> _detailsForCause(ConflictCause cause) {
-    var conflictPackages = <String, PackageRange>{};
+    final conflictPackages = <String, PackageRange>{};
     for (var term in cause.conflict.terms) {
       if (term.package.isRoot) continue;
       conflictPackages[term.package.name] = term.package;
     }
 
-    var details = <String, PackageDetail>{};
+    final details = <String, PackageDetail>{};
     for (var term in cause.other.terms) {
-      var conflictPackage = conflictPackages[term.package.name];
+      final conflictPackage = conflictPackages[term.package.name];
       if (term.package.isRoot) continue;
       if (conflictPackage == null) continue;
       if (conflictPackage.description.source !=

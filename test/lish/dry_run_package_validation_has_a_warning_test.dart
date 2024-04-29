@@ -14,7 +14,7 @@ void main() {
     (await servePackages()).serve('foo', '1.0.0');
     await d.validPackage().create();
 
-    var pkg = packageMap(
+    final pkg = packageMap(
       'test_pkg',
       '1.0.0',
       null,
@@ -24,7 +24,7 @@ void main() {
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    var pub = await startPublish(globalServer, args: ['--dry-run']);
+    final pub = await startPublish(globalServer, args: ['--dry-run']);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(

@@ -99,15 +99,15 @@ class GlobalActivateCommand extends PubCommand {
 
     String readArg([String error = '']) {
       if (args.isEmpty) usageException(error);
-      var arg = args.first;
+      final arg = args.first;
       args = args.skip(1);
       return arg;
     }
 
     void validateNoExtraArgs() {
       if (args.isEmpty) return;
-      var unexpected = args.map((arg) => '"$arg"');
-      var arguments = pluralize('argument', unexpected.length);
+      final unexpected = args.map((arg) => '"$arg"');
+      final arguments = pluralize('argument', unexpected.length);
       usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 
@@ -121,7 +121,7 @@ class GlobalActivateCommand extends PubCommand {
 
     switch (argResults.optionWithDefault('source')) {
       case 'git':
-        var repo = readArg('No Git repository given.');
+        final repo = readArg('No Git repository given.');
         validateNoExtraArgs();
         return globals.activateGit(
           repo,
@@ -132,7 +132,7 @@ class GlobalActivateCommand extends PubCommand {
         );
 
       case 'hosted':
-        var package = readArg('No package to activate given.');
+        final package = readArg('No package to activate given.');
 
         PackageRef ref;
         try {
@@ -168,7 +168,7 @@ class GlobalActivateCommand extends PubCommand {
         );
 
       case 'path':
-        var path = readArg('No package to activate given.');
+        final path = readArg('No package to activate given.');
         validateNoExtraArgs();
         return globals.activatePath(
           path,

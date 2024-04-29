@@ -480,7 +480,7 @@ Because myapp depends on foo ^1.0.0 which doesn't match any versions, version so
   });
 
   test('mismatched descriptions', () async {
-    var otherServer = await startPackageServer();
+    final otherServer = await startPackageServer();
     otherServer.serve('shared', '1.0.0');
 
     await servePackages()
@@ -903,7 +903,7 @@ void backtracking() {
 
   // Like the above test, but for a conflicting description.
   test('successful backjump to conflicting description', () async {
-    var otherServer = await startPackageServer();
+    final otherServer = await startPackageServer();
     otherServer.serve('a', '1.0.0');
 
     await servePackages()
@@ -959,7 +959,7 @@ void backtracking() {
   });
 
   test('failing backjump to conflicting description', () async {
-    var otherServer = await startPackageServer();
+    final otherServer = await startPackageServer();
     otherServer.serve('a', '1.0.0');
 
     await servePackages()
@@ -1978,20 +1978,20 @@ Future expectResolves({
 
   if (result == null) return;
 
-  var cache = SystemCache();
-  var registry = cache.sources;
-  var lockFile =
+  final cache = SystemCache();
+  final registry = cache.sources;
+  final lockFile =
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
-  var resultPubspec = Pubspec.fromMap(
+  final resultPubspec = Pubspec.fromMap(
     {'dependencies': result},
     registry,
     containingDescription: RootDescription('.'),
   );
 
-  var ids = {...lockFile.packages};
+  final ids = {...lockFile.packages};
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
-    var id = ids.remove(dep.name)!;
+    final id = ids.remove(dep.name)!;
     final description = dep.description;
     if (description is HostedDescription &&
         (description.url == SystemCache().hosted.defaultUrl)) {

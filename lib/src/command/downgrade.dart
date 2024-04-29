@@ -62,14 +62,14 @@ class DowngradeCommand extends PubCommand {
         ),
       );
     }
-    var dryRun = argResults.flag('dry-run');
+    final dryRun = argResults.flag('dry-run');
 
     await entrypoint.acquireDependencies(
       SolveType.downgrade,
       unlock: argResults.rest,
       dryRun: dryRun,
     );
-    var example = entrypoint.example;
+    final example = entrypoint.example;
     if (argResults.flag('example') && example != null) {
       await example.acquireDependencies(
         SolveType.get,

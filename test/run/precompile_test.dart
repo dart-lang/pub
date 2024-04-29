@@ -38,7 +38,7 @@ void main() {
 
   test('`pub run` precompiles script', () async {
     await setupForPubRunToPrecompile();
-    var pub = await pubRun(args: ['test']);
+    final pub = await pubRun(args: ['test']);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
     expect(lines, contains('Building package executable...'));
@@ -50,7 +50,7 @@ void main() {
       () async {
     await setupForPubRunToPrecompile();
 
-    var pub = await pubRun(args: ['test'], verbose: false);
+    final pub = await pubRun(args: ['test'], verbose: false);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
     expect(lines, isNot(contains('Building package executable...')));
@@ -77,7 +77,7 @@ void main() {
       environment: {'PUB_CACHE': '.pub_cache'},
     );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
       environment: {'PUB_CACHE': '.pub_cache'},
     );
@@ -106,7 +106,7 @@ void main() {
       output: contains('Building package executables...'),
     );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
     );
     await pub.shouldExit(0);
@@ -136,7 +136,7 @@ void main() {
       output: contains('Building package executables...'),
     );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
       environment: {'PUB_CACHE': '.pub_cache'},
     );

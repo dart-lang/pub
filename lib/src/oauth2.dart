@@ -62,7 +62,7 @@ final _authorizationEndpoint =
 /// This can be controlled externally by setting the `_PUB_TEST_TOKEN_ENDPOINT`
 /// environment variable.
 Uri get tokenEndpoint {
-  var tokenEndpoint = Platform.environment['_PUB_TEST_TOKEN_ENDPOINT'];
+  final tokenEndpoint = Platform.environment['_PUB_TEST_TOKEN_ENDPOINT'];
   if (tokenEndpoint != null) {
     return Uri.parse(tokenEndpoint);
   } else {
@@ -87,7 +87,7 @@ Credentials? _credentials;
 /// Delete the cached credentials, if they exist.
 void _clearCredentials() {
   _credentials = null;
-  var credentialsFile = _credentialsFile();
+  final credentialsFile = _credentialsFile();
   if (credentialsFile != null && entryExists(credentialsFile)) {
     deleteEntry(credentialsFile);
   }
@@ -95,7 +95,7 @@ void _clearCredentials() {
 
 /// Try to delete the cached credentials.
 void logout() {
-  var credentialsFile = _credentialsFile();
+  final credentialsFile = _credentialsFile();
   if (credentialsFile != null && entryExists(credentialsFile)) {
     log.message('Logging out of pub.dev.');
     log.message('Deleting $credentialsFile');
@@ -149,10 +149,10 @@ Future<T> withClient<T>(Future<T> Function(http.Client) fn) {
 /// If saved credentials are available, those are used; otherwise, the user is
 /// prompted to authorize the pub client.
 Future<_Client> _getClient() async {
-  var credentials = loadCredentials();
+  final credentials = loadCredentials();
   if (credentials == null) return await _authorize();
 
-  var client = _Client(
+  final client = _Client(
     credentials,
     identifier: _identifier,
     secret: _secret,
@@ -175,10 +175,10 @@ Credentials? loadCredentials() {
   try {
     if (_credentials != null) return _credentials;
 
-    var path = _credentialsFile();
+    final path = _credentialsFile();
     if (path == null || !fileExists(path)) return null;
 
-    var credentials = Credentials.fromJson(readTextFile(path));
+    final credentials = Credentials.fromJson(readTextFile(path));
     if (credentials.isExpired && !credentials.canRefresh) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
@@ -200,7 +200,7 @@ Credentials? loadCredentials() {
 void _saveCredentials(Credentials credentials) {
   log.fine('Saving OAuth2 credentials.');
   _credentials = credentials;
-  var credentialsPath = _credentialsFile();
+  final credentialsPath = _credentialsFile();
   if (credentialsPath != null) {
     ensureDir(p.dirname(credentialsPath));
     writeTextFile(credentialsPath, credentials.toJson(), dontLogContents: true);
@@ -219,7 +219,7 @@ String? _credentialsFile() {
 ///
 /// Returns a Future that completes to a fully-authorized [_Client].
 Future<_Client> _authorize() async {
-  var grant = _AuthorizationCodeGrant(
+  final grant = _AuthorizationCodeGrant(
     _identifier, _authorizationEndpoint, tokenEndpoint,
     secret: _secret,
     // Google's OAuth2 API doesn't support basic auth.
@@ -230,15 +230,15 @@ Future<_Client> _authorize() async {
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as
   // the code is received.
-  var completer = Completer<_Client>();
-  var server = await bindServer('localhost', 0);
+  final completer = Completer<_Client>();
+  final server = await bindServer('localhost', 0);
   shelf_io.serveRequests(server, (request) {
     if (request.url.path.isNotEmpty) {
       return shelf.Response.notFound('Invalid URI.');
     }
 
     log.message('Authorization received, processing...');
-    var queryString = request.url.query;
+    final queryString = request.url.query;
     // Closing the server here is safe, since it will wait until the response
     // is sent to actually shut down.
     server.close();
@@ -248,7 +248,7 @@ Future<_Client> _authorize() async {
     return shelf.Response.found('https://pub.dev/authorized');
   });
 
-  var authUrl = grant.getAuthorizationUrl(
+  final authUrl = grant.getAuthorizationUrl(
     Uri.parse('http://localhost:${server.port}'),
     scopes: _scopes,
   );
@@ -259,7 +259,7 @@ Future<_Client> _authorize() async {
       'Then click "Allow access".\n\n'
       'Waiting for your authorization...');
 
-  var client = await completer.future;
+  final client = await completer.future;
   log.message('Successfully authorized.\n');
   return client;
 }
@@ -457,15 +457,15 @@ class _AuthorizationCodeGrant {
     }
     _state = _State.awaitingResponse;
 
-    var scopeList = scopes?.toList() ?? <String>[];
-    var codeChallenge = base64Url
+    final scopeList = scopes?.toList() ?? <String>[];
+    final codeChallenge = base64Url
         .encode(sha256.convert(ascii.encode(_codeVerifier)).bytes)
         .replaceAll('=', '');
 
     _redirectEndpoint = redirect;
     _scopes = scopeList;
     _stateString = state;
-    var parameters = {
+    final parameters = {
       'response_type': 'code',
       'client_id': identifier,
       'redirect_uri': redirect.toString(),
@@ -520,9 +520,9 @@ class _AuthorizationCodeGrant {
     }
 
     if (parameters.containsKey('error')) {
-      var description = parameters['error_description'];
-      var uriString = parameters['error_uri'];
-      var uri = uriString == null ? null : Uri.parse(uriString);
+      final description = parameters['error_description'];
+      final uriString = parameters['error_uri'];
+      final uri = uriString == null ? null : Uri.parse(uriString);
       throw _AuthorizationException(parameters['error']!, description, uri);
     } else if (!parameters.containsKey('code')) {
       throw FormatException('Invalid OAuth response for '
@@ -562,18 +562,18 @@ class _AuthorizationCodeGrant {
   /// This works just like [handleAuthorizationCode], except it doesn't validate
   /// the state beforehand.
   Future<_Client> _handleAuthorizationCode(String? authorizationCode) async {
-    var startTime = DateTime.now();
+    final startTime = DateTime.now();
 
-    var headers = <String, String>{};
+    final headers = <String, String>{};
 
-    var body = {
+    final body = {
       'grant_type': 'authorization_code',
       'code': authorizationCode,
       'redirect_uri': _redirectEndpoint.toString(),
       'code_verifier': _codeVerifier,
     };
 
-    var secret = this.secret;
+    final secret = this.secret;
     if (_basicAuth && secret != null) {
       headers['Authorization'] = _basicAuthHeader(identifier, secret);
     } else {
@@ -583,10 +583,10 @@ class _AuthorizationCodeGrant {
       if (secret != null) body['client_secret'] = secret;
     }
 
-    var response =
+    final response =
         await _httpClient!.post(tokenEndpoint, headers: headers, body: body);
 
-    var credentials = _handleAccessTokenResponse(
+    final credentials = _handleAccessTokenResponse(
       response,
       tokenEndpoint,
       startTime,
@@ -772,7 +772,7 @@ class _Client extends http.BaseClient {
     }
 
     request.headers['authorization'] = 'Bearer ${credentials.accessToken}';
-    var response = await _httpClient!.send(request);
+    final response = await _httpClient!.send(request);
 
     if (response.statusCode != 401) return response;
     if (!response.headers.containsKey('www-authenticate')) return response;
@@ -786,11 +786,11 @@ class _Client extends http.BaseClient {
       return response;
     }
 
-    var challenge = challenges
+    final challenge = challenges
         .firstWhereOrNull((challenge) => challenge.scheme == 'bearer');
     if (challenge == null) return response;
 
-    var params = challenge.parameters;
+    final params = challenge.parameters;
     if (!params.containsKey('error')) return response;
 
     throw _AuthorizationException(
@@ -919,7 +919,7 @@ class Credentials {
   /// called. However, since the client's expiration date is kept a few seconds
   /// earlier than the server's, there should be enough leeway to rely on this.
   bool get isExpired {
-    var expiration = this.expiration;
+    final expiration = this.expiration;
     return expiration != null && DateTime.now().isAfter(expiration);
   }
 
@@ -994,20 +994,20 @@ class Credentials {
     );
 
     for (var stringField in ['refreshToken', 'idToken', 'tokenEndpoint']) {
-      var value = parsed[stringField];
+      final value = parsed[stringField];
       validate(
         value == null || value is String,
         'field "$stringField" was not a string, was "$value"',
       );
     }
 
-    var scopes = parsed['scopes'];
+    final scopes = parsed['scopes'];
     validate(
       scopes == null || scopes is List,
       'field "scopes" was not a list, was "$scopes"',
     );
 
-    var tokenEndpoint = parsed['tokenEndpoint'];
+    final tokenEndpoint = parsed['tokenEndpoint'];
     Uri? tokenEndpointUri;
     if (tokenEndpoint != null) {
       tokenEndpointUri = Uri.parse(tokenEndpoint as String);
@@ -1075,8 +1075,8 @@ class Credentials {
       throw ArgumentError('secret may not be passed without identifier.');
     }
 
-    var startTime = DateTime.now();
-    var tokenEndpoint = this.tokenEndpoint;
+    final startTime = DateTime.now();
+    final tokenEndpoint = this.tokenEndpoint;
     if (refreshToken == null) {
       throw StateError("Can't refresh credentials without a refresh "
           'token.');
@@ -1085,9 +1085,9 @@ class Credentials {
           'endpoint.');
     }
 
-    var headers = <String, String>{};
+    final headers = <String, String>{};
 
-    var body = {'grant_type': 'refresh_token', 'refresh_token': refreshToken};
+    final body = {'grant_type': 'refresh_token', 'refresh_token': refreshToken};
     if (scopes.isNotEmpty) body['scope'] = scopes.join(_delimiter);
 
     if (basicAuth && secret != null) {
@@ -1097,9 +1097,9 @@ class Credentials {
       if (secret != null) body['client_secret'] = secret;
     }
 
-    var response =
+    final response =
         await httpClient.post(tokenEndpoint, headers: headers, body: body);
-    var credentials = _handleAccessTokenResponse(
+    final credentials = _handleAccessTokenResponse(
       response,
       tokenEndpoint,
       startTime,
@@ -1173,12 +1173,12 @@ Credentials _handleAccessTokenResponse(
       _handleErrorResponse(response, tokenEndpoint, getParameters);
     }
 
-    var contentTypeString = response.headers['content-type'];
+    final contentTypeString = response.headers['content-type'];
     if (contentTypeString == null) {
       throw const FormatException('Missing Content-Type string.');
     }
 
-    var parameters =
+    final parameters =
         getParameters(MediaType.parse(contentTypeString), response.body);
 
     for (var requiredParameter in ['access_token', 'token_type']) {
@@ -1219,7 +1219,7 @@ Credentials _handleAccessTokenResponse(
     }
 
     for (var name in ['refresh_token', 'id_token', 'scope']) {
-      var value = parameters[name];
+      final value = parameters[name];
       if (value != null && value is! String) {
         throw FormatException(
           'parameter "$name" was not a string, was "$value"',
@@ -1227,10 +1227,10 @@ Credentials _handleAccessTokenResponse(
       }
     }
 
-    var scope = parameters['scope'] as String?;
+    final scope = parameters['scope'] as String?;
     if (scope != null) scopes = scope.split(delimiter);
 
-    var expiration = expiresIn == null
+    final expiration = expiresIn == null
         ? null
         : startTime.add(Duration(seconds: expiresIn as int) - _expirationGrace);
 
@@ -1260,7 +1260,7 @@ void _handleErrorResponse(
   // off-spec.
   if (response.statusCode != 400 && response.statusCode != 401) {
     var reason = '';
-    var reasonPhrase = response.reasonPhrase;
+    final reasonPhrase = response.reasonPhrase;
     if (reasonPhrase != null && reasonPhrase.isNotEmpty) {
       reason = ' $reasonPhrase';
     }
@@ -1268,11 +1268,11 @@ void _handleErrorResponse(
         'with status ${response.statusCode}$reason.\n\n${response.body}');
   }
 
-  var contentTypeString = response.headers['content-type'];
-  var contentType =
+  final contentTypeString = response.headers['content-type'];
+  final contentType =
       contentTypeString == null ? null : MediaType.parse(contentTypeString);
 
-  var parameters = getParameters(contentType, response.body);
+  final parameters = getParameters(contentType, response.body);
 
   if (!parameters.containsKey('error')) {
     throw const FormatException('did not contain required parameter "error"');
@@ -1282,16 +1282,16 @@ void _handleErrorResponse(
   }
 
   for (var name in ['error_description', 'error_uri']) {
-    var value = parameters[name];
+    final value = parameters[name];
 
     if (value != null && value is! String) {
       throw FormatException('parameter "$name" was not a string, was "$value"');
     }
   }
 
-  var uriString = parameters['error_uri'] as String?;
-  var uri = uriString == null ? null : Uri.parse(uriString);
-  var description = parameters['error_description'] as String?;
+  final uriString = parameters['error_uri'] as String?;
+  final uri = uriString == null ? null : Uri.parse(uriString);
+  final description = parameters['error_description'] as String?;
   throw _AuthorizationException(
     parameters['error'] as String,
     description,
@@ -1320,7 +1320,7 @@ Map<String, dynamic> parseJsonParameters(MediaType? contentType, String body) {
     );
   }
 
-  var untypedParameters = jsonDecode(body);
+  final untypedParameters = jsonDecode(body);
   if (untypedParameters is Map<String, dynamic>) {
     return untypedParameters;
   }
@@ -1335,6 +1335,6 @@ Uri _addQueryParameters(Uri url, Map<String, String> parameters) => url.replace(
     );
 
 String _basicAuthHeader(String identifier, String secret) {
-  var userPass = '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}';
+  final userPass = '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}';
   return 'Basic ${base64Encode(ascii.encode(userPass))}';
 }

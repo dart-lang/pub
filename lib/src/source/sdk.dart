@@ -67,8 +67,8 @@ class SdkSource extends Source {
     if (description is! SdkDescription) {
       throw ArgumentError('Wrong source');
     }
-    var pubspec = _loadPubspec(ref, cache);
-    var id = PackageId(
+    final pubspec = _loadPubspec(ref, cache);
+    final id = PackageId(
       ref.name,
       pubspec.version,
       ResolvedSdkDescription(description),
@@ -90,7 +90,7 @@ class SdkSource extends Source {
   /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
   Pubspec _loadPubspec(PackageRef ref, SystemCache cache) {
-    var pubspec = Pubspec.load(
+    final pubspec = Pubspec.load(
       _verifiedPackagePath(ref),
       cache.sources,
       expectedName: ref.name,
@@ -99,7 +99,7 @@ class SdkSource extends Source {
 
     /// Validate that there are no non-sdk dependencies if the SDK does not
     /// allow them.
-    if (ref.description case SdkDescription description) {
+    if (ref.description case final SdkDescription description) {
       if (sdks[description.sdk]
           case Sdk(allowsNonSdkDepsInSdkPackages: false)) {
         for (var dep in pubspec.dependencies.entries) {
@@ -126,8 +126,8 @@ class SdkSource extends Source {
     if (description is! SdkDescription) {
       throw ArgumentError('Wrong source');
     }
-    var sdkName = description.sdk;
-    var sdk = sdks[sdkName];
+    final sdkName = description.sdk;
+    final sdk = sdks[sdkName];
     if (sdk == null) {
       throw PackageNotFoundException('unknown SDK "$sdkName"');
     } else if (!sdk.isAvailable) {
@@ -137,7 +137,7 @@ class SdkSource extends Source {
       );
     }
 
-    var path = sdk.packagePath(ref.name);
+    final path = sdk.packagePath(ref.name);
     if (path != null) return path;
 
     throw PackageNotFoundException(

@@ -40,7 +40,7 @@ void main() {
       ]),
     ]).validate();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     await d.git(
       'foo.git',

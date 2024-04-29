@@ -36,8 +36,8 @@ void main() {
 
     test('reinstalls previously cached git packages', () async {
       // Find the cached foo packages for each revision.
-      var gitCacheDir = p.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
           .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
@@ -56,8 +56,8 @@ void main() {
       );
 
       // The missing libraries should have been replaced.
-      var fooLibs = fooDirs.map((dir) {
-        var fooDirName = p.basename(dir);
+      final fooLibs = fooDirs.map((dir) {
+        final fooDirName = p.basename(dir);
         return d.dir(fooDirName, [
           d.dir('lib', [d.file('foo.dart', 'main() => "foo";')]),
         ]);
@@ -67,8 +67,8 @@ void main() {
     });
 
     test('deletes packages without pubspecs', () async {
-      var gitCacheDir = p.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
           .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
@@ -97,8 +97,8 @@ void main() {
     });
 
     test('deletes packages with invalid pubspecs', () async {
-      var gitCacheDir = p.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
           .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
@@ -152,8 +152,8 @@ void main() {
 
     test('reinstalls previously cached git packages', () async {
       // Find the cached foo packages for each revision.
-      var gitCacheDir = p.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
           .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
@@ -172,8 +172,8 @@ void main() {
       );
 
       // The missing libraries should have been replaced.
-      var fooLibs = fooDirs.map((dir) {
-        var fooDirName = p.basename(dir);
+      final fooLibs = fooDirs.map((dir) {
+        final fooDirName = p.basename(dir);
         return d.dir(fooDirName, [
           d.dir('subdir', [
             d.dir('lib', [d.file('sub.dart', 'main() => "sub";')]),
@@ -185,8 +185,8 @@ void main() {
     });
 
     test('deletes packages without pubspecs', () async {
-      var gitCacheDir = p.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
           .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 

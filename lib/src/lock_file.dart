@@ -170,15 +170,15 @@ class LockFile {
           // Parse the source.
           final sourceName = _getStringEntry(spec, 'source');
 
-          var descriptionNode =
+          final descriptionNode =
               _getEntry<YamlNode>(spec, 'description', 'description');
 
-          dynamic description = descriptionNode is YamlScalar
+          final dynamic description = descriptionNode is YamlScalar
               ? descriptionNode.value
               : descriptionNode;
 
           // Let the source parse the description.
-          var source = sources(sourceName);
+          final source = sources(sourceName);
           PackageId id;
           try {
             id = source.parseId(
@@ -337,7 +337,7 @@ class LockFile {
   LockFile removePackage(String name) {
     if (!this.packages.containsKey(name)) return this;
 
-    var packages = Map<String, PackageId>.from(this.packages);
+    final packages = Map<String, PackageId>.from(this.packages);
     packages.remove(name);
     return LockFile._(
       packages,
@@ -355,7 +355,7 @@ class LockFile {
   /// serialized as absolute.
   String serialize(String? packageDir, SystemCache cache) {
     // Convert the dependencies to a simple object.
-    var packageMap = <String, Object?>{};
+    final packageMap = <String, Object?>{};
     for (final id in packages.values) {
       packageMap[id.name] = {
         'version': id.version.toString(),
@@ -366,7 +366,7 @@ class LockFile {
       };
     }
 
-    var data = {
+    final data = {
       'sdks': mapMap<String, SdkConstraint, String, String>(
         sdkConstraints,
         value: (_, constraint) => constraint.effectiveConstraint.toString(),

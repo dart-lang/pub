@@ -13,7 +13,7 @@ void main() {
   test('path dependency to non-package directory', () async {
     // Make an empty directory.
     await d.dir('foo').create();
-    var fooPath = p.join(d.sandbox, 'foo');
+    final fooPath = p.join(d.sandbox, 'foo');
 
     await d.dir(appPath, [
       d.appPubspec(

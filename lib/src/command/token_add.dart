@@ -60,8 +60,8 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
     final rawHostedUrl = argResults.rest.first;
 
     try {
-      var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
-      var isLocalhost =
+      final hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
+      final isLocalhost =
           ['localhost', '127.0.0.1', '::1'].contains(hostedUrl.host);
       if (!hostedUrl.isScheme('HTTPS') && !isLocalhost) {
         throw FormatException('url must be https://, '

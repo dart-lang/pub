@@ -17,7 +17,7 @@ void main() {
   test('depends on a package in a subdirectory', () async {
     ensureGit();
 
-    var repo = d.git('foo.git', [
+    final repo = d.git('foo.git', [
       d.dir('subdir', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')]),
     ]);
     await repo.create();
@@ -52,7 +52,7 @@ void main() {
   test('depends on a package in a deep subdirectory', () async {
     ensureGit();
 
-    var repo = d.git('foo.git', [
+    final repo = d.git('foo.git', [
       d.dir('sub', [
         d.dir('dir%', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')]),
       ]),
@@ -192,7 +192,7 @@ void main() {
       () async {
     ensureGit();
 
-    var repo = d.git('foo.git', [
+    final repo = d.git('foo.git', [
       d.dir('sub', [
         d.dir('dir%', [d.libPubspec('sub', '1.0.0'), d.libDir('sub', '1.0.0')]),
       ]),
@@ -246,7 +246,7 @@ void main() {
   test('depends on multiple packages in subdirectories', () async {
     ensureGit();
 
-    var repo = d.git('foo.git', [
+    final repo = d.git('foo.git', [
       d.dir(
         'subdir1',
         [d.libPubspec('sub1', '1.0.0'), d.libDir('sub1', '1.0.0')],
@@ -297,14 +297,14 @@ void main() {
       () async {
     ensureGit();
 
-    var repo = d.git('foo.git', [
+    final repo = d.git('foo.git', [
       d.dir(
         'subdir',
         [d.libPubspec('sub1', '1.0.0'), d.libDir('sub1', '1.0.0')],
       ),
     ]);
     await repo.create();
-    var oldRevision = await repo.revParse('HEAD');
+    final oldRevision = await repo.revParse('HEAD');
 
     deleteEntry(p.join(d.sandbox, 'foo.git', 'subdir'));
 
@@ -314,7 +314,7 @@ void main() {
         [d.libPubspec('sub2', '1.0.0'), d.libDir('sub2', '1.0.0')],
       ),
     ]).commit();
-    var newRevision = await repo.revParse('HEAD');
+    final newRevision = await repo.revParse('HEAD');
 
     await d.appDir(
       dependencies: {

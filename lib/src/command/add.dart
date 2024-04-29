@@ -300,8 +300,8 @@ Specify multiple sdk packages with descriptors.''');
   ) async {
     final name = package.ref.name;
     final dependencies = [...original.dependencies.values];
-    var devDependencies = [...original.devDependencies.values];
-    var dependencyOverrides = [...original.dependencyOverrides.values];
+    final devDependencies = [...original.devDependencies.values];
+    final dependencyOverrides = [...original.dependencyOverrides.values];
 
     final dependencyNames = dependencies.map((dependency) => dependency.name);
     final devDependencyNames =

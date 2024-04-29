@@ -33,7 +33,7 @@ void main() {
     await d.credentialsFile(globalServer, 'access-token').create();
 
     await servePackages();
-    var pub = await startPublish(globalServer, args: ['--skip-validation']);
+    final pub = await startPublish(globalServer, args: ['--skip-validation']);
 
     await confirmPublish(pub);
 

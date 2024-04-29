@@ -15,7 +15,7 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.file('dummy.txt', '').create();
-    var dummyPath = p.join(d.sandbox, 'dummy.txt');
+    final dummyPath = p.join(d.sandbox, 'dummy.txt');
 
     await d.dir(appPath, [
       d.appPubspec(

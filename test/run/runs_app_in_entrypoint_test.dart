@@ -25,7 +25,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
     expect(pub.stdout, emitsThrough('stdout output'));
     expect(pub.stderr, emits('stderr output'));
     await pub.shouldExit(123);

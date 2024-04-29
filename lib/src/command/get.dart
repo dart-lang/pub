@@ -80,7 +80,7 @@ class GetCommand extends PubCommand {
       enforceLockfile: argResults.flag('enforce-lockfile'),
     );
 
-    var example = entrypoint.example;
+    final example = entrypoint.example;
     if ((argResults.flag('example')) && example != null) {
       await example.acquireDependencies(
         SolveType.get,

@@ -92,7 +92,7 @@ abstract class Validator {
       firstSdkVersion = firstSdkVersion.nextPatch;
     }
 
-    var allowedSdks = VersionRange(
+    final allowedSdks = VersionRange(
       min: firstSdkVersion,
       includeMin: true,
       max: firstSdkVersion.isPreRelease
@@ -138,7 +138,7 @@ abstract class Validator {
     required List<String> warnings,
     required List<String> errors,
   }) async {
-    var validators = [
+    final validators = [
       FileCaseValidator(),
       AnalyzeValidator(),
       GitignoreValidator(),

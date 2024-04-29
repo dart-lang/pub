@@ -145,7 +145,7 @@ $contentHashesDocumentationUrl
   /// packages.
   Future<void> summarize(int changes) async {
     // Count how many dependencies actually changed.
-    var dependencies = _newLockFile.packages.keys.toSet();
+    final dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
     dependencies.remove(_rootPubspec.name);
 
@@ -210,7 +210,7 @@ $contentHashesDocumentationUrl
   Future<int> _reportChanges() async {
     final output = StringBuffer();
     // Show the new set of dependencies ordered by name.
-    var names = _newLockFile.packages.keys.toList();
+    final names = _newLockFile.packages.keys.toList();
     names.remove(_rootPubspec.name);
     names.sort();
     var changes = 0;
@@ -218,7 +218,7 @@ $contentHashesDocumentationUrl
       changes += await _reportPackage(name, output) ? 1 : 0;
     }
     // Show any removed ones.
-    var removed = _previousLockFile.packages.keys.toSet();
+    final removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
     removed.remove(_rootPubspec.name); // Never consider root.
     if (removed.isNotEmpty) {
@@ -335,11 +335,11 @@ $contentHashesDocumentationUrl
     StringBuffer output, {
     bool alwaysShow = false,
   }) async {
-    var newId = _newLockFile.packages[name];
-    var oldId = _previousLockFile.packages[name];
-    var id = newId ?? oldId!;
+    final newId = _newLockFile.packages[name];
+    final oldId = _previousLockFile.packages[name];
+    final id = newId ?? oldId!;
 
-    var isOverridden = _rootPubspec.dependencyOverrides.containsKey(id.name);
+    final isOverridden = _rootPubspec.dependencyOverrides.containsKey(id.name);
 
     // If the package was previously a dependency but the dependency has
     // changed in some way.
@@ -388,7 +388,7 @@ $contentHashesDocumentationUrl
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
     if (newId != null && _type != SolveType.downgrade) {
-      var versions = _availableVersions[newId.name]!;
+      final versions = _availableVersions[newId.name]!;
 
       var newerStable = false;
       var newerUnstable = false;
@@ -487,7 +487,7 @@ $contentHashesDocumentationUrl
     final oldDependencyType = dependencyType(_previousLockFile, name);
     final newDependencyType = dependencyType(_newLockFile, name);
 
-    var dependencyTypeChanged = oldId != null &&
+    final dependencyTypeChanged = oldId != null &&
         newId != null &&
         oldDependencyType != newDependencyType;
 
@@ -545,7 +545,7 @@ $contentHashesDocumentationUrl
     output.write(id.version);
 
     if (id.source != _cache.defaultSource) {
-      var description = id.description.format();
+      final description = id.description.format();
       output.write(' from ${id.source} $description');
     }
   }

@@ -26,7 +26,7 @@ void main() {
         )
         .create();
 
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
     await confirmPublish(pub);
 
     globalServer.expect('POST', '/token', (request) {

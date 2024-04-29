@@ -62,7 +62,7 @@ void main() {
         file('path.dart', bytes(100)),
       ]),
     ]).create();
-    var files = Package.load(
+    final files = Package.load(
       path(appPath),
       loadPubspec:
           Pubspec.loadRootWithSources((name) => throw UnimplementedError()),
@@ -76,7 +76,7 @@ void main() {
   });
 
   testWithGolden('tree.fromMap a complex example', colors: true, (ctx) {
-    var map = {
+    final map = {
       '.gitignore': <String, Map>{},
       'README.md': <String, Map>{},
       'TODO': <String, Map>{},

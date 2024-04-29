@@ -25,7 +25,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['script.dart']);
+    final pub = await pubRun(args: ['script.dart']);
     expect(pub.stdout, emitsThrough('stdout output'));
     expect(pub.stderr, emitsThrough('stderr output'));
     await pub.shouldExit(123);

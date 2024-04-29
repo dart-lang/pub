@@ -54,7 +54,7 @@ void main() {
   test('Clean-up invalid git repo cache at a specific branch', () async {
     ensureGit();
 
-    var repo =
+    final repo =
         d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
     await repo.create();
     await repo.runGit(['branch', 'old']);
@@ -84,10 +84,10 @@ void main() {
   test('Clean-up invalid git repo cache at a specific commit', () async {
     ensureGit();
 
-    var repo =
+    final repo =
         d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
     await repo.create();
-    var commit = await repo.revParse('HEAD');
+    final commit = await repo.revParse('HEAD');
 
     await d.appDir(
       dependencies: {

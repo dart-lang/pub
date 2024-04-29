@@ -71,12 +71,12 @@ class RunCommand extends PubCommand {
 
     var package = entrypoint.workspaceRoot.name;
     var executable = argResults.rest[0];
-    var args = argResults.rest.skip(1).toList();
+    final args = argResults.rest.skip(1).toList();
 
     // A command like "foo:bar" runs the "bar" script from the "foo" package.
     // If there is no colon prefix, default to the root package.
     if (executable.contains(':')) {
-      var components = split1(executable, ':');
+      final components = split1(executable, ':');
       package = components[0];
       executable = components[1];
 
@@ -97,7 +97,7 @@ class RunCommand extends PubCommand {
 
     final vmArgs = vmArgsFromArgResults(argResults);
 
-    var exitCode = await runExecutable(
+    final exitCode = await runExecutable(
       entrypoint,
       Executable.adaptProgramName(package, executable),
       args,
