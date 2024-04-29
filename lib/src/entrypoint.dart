@@ -13,6 +13,7 @@ import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import 'command_runner.dart';
 import 'dart.dart' as dart;
@@ -27,12 +28,14 @@ import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'pubspec_utils.dart';
 import 'sdk.dart';
 import 'sdk/flutter.dart';
 import 'solver.dart';
 import 'solver/report.dart';
 import 'solver/solve_suggestions.dart';
 import 'source/cached.dart';
+import 'source/hosted.dart';
 import 'source/root.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -1244,4 +1247,139 @@ See https://dart.dev/go/sdk-constraint
       }
     }
   }
+
+  /// Returns a list of changes to constraints of workspace pubspecs updated to
+  /// have their lower bound match the version in [packageVersions] (or
+  /// `this.lockFile`).
+  ///
+  /// The return value for each workspace package is a mapping from the original
+  /// package range to the updated.
+  ///
+  /// If packages to update where given in [packagesToUpgrade], only those are
+  /// tightened. Otherwise all packages are tightened.
+  ///
+  /// If a dependency has already been updated in [existingChanges], the update
+  /// will apply on top of that change (eg. preserving the new upper bound).
+  Map<Package, Map<PackageRange, PackageRange>> tighten({
+    List<String> packagesToUpgrade = const [],
+    Map<Package, Map<PackageRange, PackageRange>> existingChanges = const {},
+    List<PackageId>? packageVersions,
+  }) {
+    final result = {...existingChanges};
+
+    final toTighten = <(Package, PackageRange)>[];
+
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      if (packagesToUpgrade.isEmpty) {
+        for (final range in [
+          ...package.dependencies.values,
+          ...package.devDependencies.values,
+        ]) {
+          toTighten.add((package, range));
+        }
+      } else {
+        for (final packageToUpgrade in packagesToUpgrade) {
+          final range = package.dependencies[packageToUpgrade] ??
+              package.devDependencies[packageToUpgrade];
+          if (range != null) {
+            toTighten.add((package, range));
+          }
+        }
+      }
+    }
+
+    for (final (package, range) in toTighten) {
+      final changesForPackage = result[package] ??= {};
+      final constraint = (changesForPackage[range] ?? range).constraint;
+      final resolvedVersion =
+          (packageVersions?.firstWhere((p) => p.name == range.name) ??
+                  lockFile.packages[range.name])!
+              .version;
+      if (range.source is HostedSource && constraint.isAny) {
+        changesForPackage[range] = range
+            .toRef()
+            .withConstraint(VersionConstraint.compatibleWith(resolvedVersion));
+      } else if (constraint is VersionRange) {
+        final min = constraint.min;
+        if (min != null && min < resolvedVersion) {
+          changesForPackage[range] = range.toRef().withConstraint(
+                VersionRange(
+                  min: resolvedVersion,
+                  max: constraint.max,
+                  includeMin: true,
+                  includeMax: constraint.includeMax,
+                ).asCompatibleWithIfPossible(),
+              );
+        }
+      }
+    }
+    return result;
+  }
+
+  /// Unless [dryRun], loads `pubspec.yaml` of each [package] in [changeSet] and applies the
+  /// changes to its (dev)-dependencies using yaml_edit to preserve textual structure.
+  ///
+  /// Outputs a summary of changes done or would have been done if not [dryRun].
+  void applyChanges(ChangeSet changeSet, bool dryRun) {
+    if (!dryRun) {
+      for (final package in workspaceRoot.transitiveWorkspace) {
+        final changesForPackage = changeSet[package];
+        if (changesForPackage == null || changesForPackage.isEmpty) {
+          continue;
+        }
+        final yamlEditor = YamlEditor(readTextFile(package.pubspecPath));
+        final deps = package.dependencies.keys;
+
+        for (final change in changesForPackage.values) {
+          final section =
+              deps.contains(change.name) ? 'dependencies' : 'dev_dependencies';
+          yamlEditor.update(
+            [section, change.name],
+            pubspecDescription(change, cache, package),
+          );
+        }
+        writeTextFile(package.pubspecPath, yamlEditor.toString());
+      }
+    }
+    _outputChangeSummary(changeSet, dryRun: dryRun);
+  }
+
+  /// Outputs a summary of [changeSet].
+  void _outputChangeSummary(
+    ChangeSet changeSet, {
+    required bool dryRun,
+  }) {
+    if (workspaceRoot.workspaceChildren.isEmpty) {
+      final changesToWorkspaceRoot = changeSet[workspaceRoot] ?? {};
+      if (changesToWorkspaceRoot.isEmpty) {
+        final wouldBe = dryRun ? 'would be made to' : 'to';
+        log.message('\nNo changes $wouldBe pubspec.yaml!');
+      } else {
+        final changed = dryRun ? 'Would change' : 'Changed';
+        log.message('\n$changed ${changesToWorkspaceRoot.length} '
+            '${pluralize('constraint', changesToWorkspaceRoot.length)} in pubspec.yaml:');
+        changesToWorkspaceRoot.forEach((from, to) {
+          log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
+        });
+      }
+    } else {
+      if (changeSet.isEmpty) {
+        final wouldBe = dryRun ? 'would be made to' : 'to';
+        log.message('\nNo changes $wouldBe any pubspec.yaml!');
+      }
+      for (final package in workspaceRoot.transitiveWorkspace) {
+        final changesToPackage = changeSet[package] ?? {};
+        if (changesToPackage.isEmpty) continue;
+        final changed = dryRun ? 'Would change' : 'Changed';
+        log.message('\n$changed ${changesToPackage.length} '
+            '${pluralize('constraint', changesToPackage.length)} in ${package.pubspecPath}:');
+        changesToPackage.forEach((from, to) {
+          log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
+        });
+      }
+    }
+  }
 }
+
+/// For each package in a workspace, a set of changes to dependencies.
+typedef ChangeSet = Map<Package, Map<PackageRange, PackageRange>>;
