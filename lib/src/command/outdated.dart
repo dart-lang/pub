@@ -1106,8 +1106,7 @@ class _FormattedString {
 /// Whether the package [name] is overridden anywhere in the workspace rooted at
 /// [workspaceRoot].
 bool hasOverride(Package workspaceRoot, String name) {
-  return workspaceRoot.transitiveWorkspace
-      .any((p) => p.dependencyOverrides.containsKey(name));
+  return workspaceRoot.allOverridesInWorkspace.containsKey(name);
 }
 
 /// Whether the package [name] is depended on directly anywhere in the workspace
