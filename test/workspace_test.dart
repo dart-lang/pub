@@ -1253,7 +1253,7 @@ Workspace members must have unique names.
     ]).create();
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains('! foo 1.0.1 from path ../foo (overridden)'),
+      output: contains('! foo 1.0.1 from path ..${s}foo (overridden)'),
     );
   });
 }
