@@ -127,16 +127,24 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           'The json report always includes transitive dependencies.');
     }
 
-    final rootPubspec = includeDependencyOverrides
-        ? entrypoint.workspaceRoot.pubspec
-        : stripDependencyOverrides(entrypoint.workspaceRoot.pubspec);
+    /// The workspace root with dependency overrides removed if requested.
+    final baseWorkspace = includeDependencyOverrides
+        ? entrypoint.workspaceRoot
+        : entrypoint.workspaceRoot.transformWorkspace(
+            (package) => stripDependencyOverrides(package.pubspec),
+          );
 
-    final upgradablePubspec = includeDevDependencies
-        ? rootPubspec
-        : stripDevDependencies(rootPubspec);
+    /// [baseWorkspace] with dev-dependencies removed if requested.
+    final upgradableWorkspace = includeDevDependencies
+        ? baseWorkspace
+        : baseWorkspace.transformWorkspace(
+            (package) => stripDevDependencies(package.pubspec),
+          );
 
-    final resolvablePubspec = await mode.resolvablePubspec(upgradablePubspec);
-
+    /// [upgradableWorkspace] with upper bounds removed.
+    final resolvableWorkspace = upgradableWorkspace.transformWorkspace(
+      (package) => mode.resolvablePubspec(package.pubspec),
+    );
     late List<PackageId> upgradablePackages;
     late List<PackageId> resolvablePackages;
     late bool hasUpgradableResolution;
@@ -146,11 +154,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       'Resolving',
       () async {
         final upgradablePackagesResult = await _tryResolve(
-          Package(
-            upgradablePubspec,
-            entrypoint.workspaceRoot.dir,
-            entrypoint.workspaceRoot.workspaceChildren,
-          ),
+          upgradableWorkspace,
           cache,
           lockFile: entrypoint.lockFile,
         );
@@ -158,11 +162,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         upgradablePackages = upgradablePackagesResult ?? [];
 
         final resolvablePackagesResult = await _tryResolve(
-          Package(
-            resolvablePubspec,
-            entrypoint.workspaceRoot.dir,
-            entrypoint.workspaceRoot.workspaceChildren,
-          ),
+          resolvableWorkspace,
           cache,
           lockFile: entrypoint.lockFile,
         );
@@ -206,8 +206,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       var latestIsOverridden = false;
       PackageId? latest;
       // If not overridden in current resolution we can use this
-      if (!entrypoint.workspaceRoot.pubspec.dependencyOverrides
-          .containsKey(name)) {
+      if (!hasOverride(entrypoint.workspaceRoot, name)) {
         latest ??= await cache.getLatest(
           current?.toRef(),
           version: current?.version,
@@ -216,23 +215,27 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       }
       // If present as a dependency or dev_dependency we use this
       latest ??= await cache.getLatest(
-        rootPubspec.dependencies[name]?.toRef(),
+        allDependencies(baseWorkspace)
+            .firstWhereOrNull((r) => r.name == name)
+            ?.toRef(),
         allowPrereleases: prereleases,
       );
       latest ??= await cache.getLatest(
-        rootPubspec.devDependencies[name]?.toRef(),
+        allDevDependencies(baseWorkspace)
+            .firstWhereOrNull((r) => r.name == name)
+            ?.toRef(),
         allowPrereleases: prereleases,
       );
       // If not overridden and present in either upgradable or resolvable we
       // use this reference to find the latest
-      if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
+      if (!hasOverride(upgradableWorkspace, name)) {
         latest ??= await cache.getLatest(
           upgradable?.toRef(),
           version: upgradable?.version,
           allowPrereleases: prereleases,
         );
       }
-      if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
+      if (!hasOverride(resolvableWorkspace, name)) {
         latest ??= await cache.getLatest(
           resolvable?.toRef(),
           version: resolvable?.version,
@@ -278,12 +281,12 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       final upgradableVersionDetails = await _describeVersion(
         upgradable,
-        upgradablePubspec.dependencyOverrides.containsKey(name),
+        hasOverride(upgradableWorkspace, name),
       );
 
       final resolvableVersionDetails = await _describeVersion(
         resolvable,
-        resolvablePubspec.dependencyOverrides.containsKey(name),
+        hasOverride(resolvableWorkspace, name),
       );
 
       final latestVersionDetails = await _describeVersion(
@@ -332,8 +335,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
     final rows = <_PackageDetails>[];
 
-    final visited = <String>{
-      entrypoint.workspaceRoot.name,
+    final visited = {
+      ...entrypoint.workspaceRoot.transitiveWorkspace
+          .map((package) => package.name),
     };
     // Add all dependencies from the lockfile.
     for (final id in [
@@ -361,6 +365,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         includeDevDependencies: includeDevDependencies,
       );
     } else {
+      bool isNotFromSdk(PackageRange range) => range.source is! SdkSource;
       await _outputHuman(
         rows,
         mode,
@@ -368,13 +373,13 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         showAll: showAll,
         includeDevDependencies: includeDevDependencies,
         lockFileExists: fileExists(entrypoint.lockFilePath),
-        hasDirectDependencies: rootPubspec.dependencies.values.any(
+        hasDirectDependencies: allDependencies(baseWorkspace).any(
           // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
+          isNotFromSdk,
         ),
-        hasDevDependencies: rootPubspec.devDependencies.values.any(
+        hasDevDependencies: allDevDependencies(baseWorkspace).any(
           // Test if it contains non-SDK dependencies
-          (c) => c.source is! SdkSource,
+          isNotFromSdk,
         ),
         showTransitiveDependencies: showTransitiveDependencies,
         hasUpgradableResolution: hasUpgradableResolution,
@@ -420,23 +425,27 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   /// Computes the closure of the graph of dependencies (not including
-  /// `dev_dependencies` from [root], given the package versions
-  /// in [resolution].
+  /// `dev_dependencies`) from all workspace packages in [workspaceRoot], given
+  /// the package versions in [resolution].
   ///
   /// The [resolution] is allowed to be a partial (or empty) resolution not
-  /// satisfying all the dependencies of [root].
+  /// satisfying all the dependencies of [workspaceRoot].
   Future<Set<String>> _nonDevDependencyClosure(
-    Package root,
+    Package workspaceRoot,
     Iterable<PackageId> resolution,
   ) async {
     final nameToId = {for (final id in resolution) id.name: id};
 
-    final nonDevDependencies = <String>{root.name};
-    final queue = [...root.dependencies.keys];
+    final result = <String>{
+      for (final p in workspaceRoot.transitiveWorkspace) p.name,
+    };
+    final queue = [
+      for (final p in workspaceRoot.transitiveWorkspace) ...p.dependencies.keys,
+    ];
 
     while (queue.isNotEmpty) {
       final name = queue.removeLast();
-      if (!nonDevDependencies.add(name)) {
+      if (!result.add(name)) {
         continue;
       }
 
@@ -448,7 +457,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       queue.addAll(pubspec.dependencies.keys);
     }
 
-    return nonDevDependencies;
+    return result;
   }
 }
 
@@ -784,7 +793,7 @@ abstract class _Mode {
   String get upgradeConstrained;
   String get allSafe;
 
-  Future<Pubspec> resolvablePubspec(Pubspec pubspec);
+  Pubspec resolvablePubspec(Pubspec pubspec);
 }
 
 class _OutdatedMode implements _Mode {
@@ -873,8 +882,8 @@ Showing outdated packages$directoryDescription.
   }
 
   @override
-  Future<Pubspec> resolvablePubspec(Pubspec? pubspec) async {
-    return stripVersionBounds(pubspec!);
+  Pubspec resolvablePubspec(Pubspec pubspec) {
+    return stripVersionBounds(pubspec);
   }
 }
 
@@ -972,9 +981,9 @@ _DependencyKind _kind(
   Entrypoint entrypoint,
   Set<String> nonDevTransitive,
 ) {
-  if (entrypoint.workspaceRoot.dependencies.containsKey(name)) {
+  if (hasDependency(entrypoint.workspaceRoot, name)) {
     return _DependencyKind.direct;
-  } else if (entrypoint.workspaceRoot.devDependencies.containsKey(name)) {
+  } else if (hasDevDependency(entrypoint.workspaceRoot, name)) {
     return _DependencyKind.dev;
   } else {
     if (nonDevTransitive.contains(name)) {
@@ -1093,3 +1102,30 @@ class _FormattedString {
 
   static String _noFormat(String x) => x;
 }
+
+/// Whether the package [name] is overridden anywhere in the workspace rooted at
+/// [workspaceRoot].
+bool hasOverride(Package workspaceRoot, String name) {
+  return workspaceRoot.transitiveWorkspace
+      .any((p) => p.dependencyOverrides.containsKey(name));
+}
+
+/// Whether the package [name] is depended on directly anywhere in the workspace
+/// rooted at [workspaceRoot].
+bool hasDependency(Package workspaceRoot, String name) {
+  return workspaceRoot.transitiveWorkspace
+      .any((p) => p.dependencies.containsKey(name));
+}
+
+/// Whether the package [name] is dev-depended on directly anywhere in the workspace
+/// rooted at [workspaceRoot].
+bool hasDevDependency(Package workspaceRoot, String name) {
+  return workspaceRoot.transitiveWorkspace
+      .any((p) => p.devDependencies.containsKey(name));
+}
+
+Iterable<PackageRange> allDependencies(Package workspaceRoot) =>
+    workspaceRoot.transitiveWorkspace.expand((p) => p.dependencies.values);
+
+Iterable<PackageRange> allDevDependencies(Package workspaceRoot) =>
+    workspaceRoot.transitiveWorkspace.expand((p) => p.devDependencies.values);
