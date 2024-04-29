@@ -31,6 +31,7 @@ class SolveReport {
   final LockFile _newLockFile;
   final SystemCache _cache;
   final bool _dryRun;
+  final Map<String, PackageRange> _overriddenPackages;
 
   /// If quiet only a single summary line is output.
   final bool _quiet;
@@ -52,6 +53,7 @@ class SolveReport {
     this._type,
     this._location,
     this._rootPubspec,
+    this._overriddenPackages,
     this._previousLockFile,
     this._newLockFile,
     this._availableVersions,
@@ -339,7 +341,7 @@ $contentHashesDocumentationUrl
     var oldId = _previousLockFile.packages[name];
     var id = newId ?? oldId!;
 
-    var isOverridden = _rootPubspec.dependencyOverrides.containsKey(id.name);
+    var isOverridden = _overriddenPackages.containsKey(id.name);
 
     // If the package was previously a dependency but the dependency has
     // changed in some way.

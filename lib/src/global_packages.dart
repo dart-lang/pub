@@ -267,6 +267,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           SolveType.get,
           null,
           root.pubspec,
+          root.pubspec.dependencyOverrides,
           originalLockFile ?? LockFile.empty(),
           lockFile,
           result.availableVersions,

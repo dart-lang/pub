@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
@@ -77,6 +78,11 @@ class VersionSolver {
   /// name anywhere in the dependency graph.
   final Map<String, PackageRange> _dependencyOverrides;
 
+  /// Names of packages that are overridden in this resolution as a [Set] for
+  /// convenience.
+  late final Set<String> _overriddenPackages =
+      MapKeySet(_root.allOverridesInWorkspace);
+
   /// The set of packages for which the lockfile should be ignored.
   final Set<String> _unlock;
 
@@ -94,7 +100,7 @@ class VersionSolver {
     Iterable<String> unlock, {
     Map<String, Version> sdkOverrides = const {},
   })  : _sdkOverrides = sdkOverrides,
-        _dependencyOverrides = _root.dependencyOverrides,
+        _dependencyOverrides = _root.allOverridesInWorkspace,
         _unlock = {...unlock};
 
   /// Prime the solver with [constraints].
@@ -470,6 +476,7 @@ class VersionSolver {
 
     return SolveResult(
       _root,
+      _overriddenPackages,
       _lockFile,
       decisions,
       pubspecs,
@@ -523,6 +530,7 @@ class VersionSolver {
         return PackageLister.root(
           _rootPackages[ref.name]!,
           _systemCache,
+          overriddenPackages: _overriddenPackages,
           sdkOverrides: _sdkOverrides,
         );
       }
@@ -531,12 +539,12 @@ class VersionSolver {
       if (locked != null && locked.toRef() != ref) locked = null;
 
       final overridden = <String>{
-        ..._dependencyOverrides.keys,
+        ..._overriddenPackages,
         // If the package is overridden, ignore its dependencies back onto the
         // root package.
-        if (_dependencyOverrides.containsKey(package.name)) ...[
+        if (_overriddenPackages.contains(package.name)) ...[
           _root.name,
-          ..._root.workspaceChildren.map((e) => e.name),
+          ..._root.transitiveWorkspace.map((e) => e.name),
         ],
       };
 

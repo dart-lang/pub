@@ -211,7 +211,7 @@ class DepsCommand extends PubCommand {
       }
       await _outputCompactPackages(
         'dependency overrides',
-        root.dependencyOverrides.keys,
+        root.pubspec.dependencyOverrides.keys,
         buffer,
       );
     }
@@ -268,7 +268,7 @@ class DepsCommand extends PubCommand {
       }
       await _outputListSection(
         'dependency overrides',
-        root.dependencyOverrides.keys,
+        root.pubspec.dependencyOverrides.keys,
         buffer,
       );
     }
@@ -377,7 +377,7 @@ class DepsCommand extends PubCommand {
       if (_includeDev) {
         transitive.removeAll(root.devDependencies.keys);
       }
-      transitive.removeAll(root.dependencyOverrides.keys);
+      transitive.removeAll(root.pubspec.dependencyOverrides.keys);
     }
     return transitive;
   }
@@ -391,7 +391,7 @@ class DepsCommand extends PubCommand {
     var nonDevDependencies = [
       for (final package in entrypoint.workspaceRoot.transitiveWorkspace) ...[
         ...package.dependencies.keys,
-        ...package.dependencyOverrides.keys,
+        ...package.pubspec.dependencyOverrides.keys,
       ],
     ];
     return nonDevDependencies

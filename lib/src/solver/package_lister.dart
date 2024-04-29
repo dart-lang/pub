@@ -131,6 +131,7 @@ class PackageLister {
   PackageLister.root(
     Package package,
     this._systemCache, {
+    required Set<String> overriddenPackages,
     required Map<String, Version>? sdkOverrides,
   })  : _ref = PackageRef.root(package),
         // Treat the package as locked so we avoid the logic for finding the
@@ -138,8 +139,7 @@ class PackageLister {
         // package.
         _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
-        _overriddenPackages =
-            Set.unmodifiable(package.dependencyOverrides.keys),
+        _overriddenPackages = overriddenPackages,
         _isDowngrade = false,
         _allowedRetractedVersion = null,
         sdkOverrides = sdkOverrides ?? {},

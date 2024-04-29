@@ -13,7 +13,8 @@ import '../validator.dart';
 class DependencyOverrideValidator extends Validator {
   @override
   Future validate() {
-    var overridden = MapKeySet(package.dependencyOverrides);
+    var overridden =
+        MapKeySet(context.entrypoint.workspaceRoot.allOverridesInWorkspace);
     var dev = MapKeySet(package.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {
       final overridesFile = package.pubspec.dependencyOverridesFromOverridesFile

@@ -20,6 +20,9 @@ class SolveResult {
   /// reachable from the root.
   final List<PackageId> packages;
 
+  /// Names of all dependency overrides in the workspace.
+  final Set<String> _overriddenPackages;
+
   /// The root package of this resolution.
   final Package _root;
 
@@ -81,9 +84,7 @@ class SolveResult {
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
-        .where(
-          (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name),
-        )
+        .where((pubspec) => !_overriddenPackages.contains(pubspec.name))
         .toList();
 
     var sdkConstraints = <String, VersionConstraint>{};
@@ -101,7 +102,7 @@ class SolveResult {
       },
       mainDependencies: MapKeySet(_root.dependencies),
       devDependencies: MapKeySet(_root.devDependencies),
-      overriddenDependencies: MapKeySet(_root.dependencyOverrides),
+      overriddenDependencies: _overriddenPackages,
     );
   }
 
@@ -125,6 +126,7 @@ class SolveResult {
 
   SolveResult(
     this._root,
+    this._overriddenPackages,
     this._previousLockFile,
     this.packages,
     this.pubspecs,

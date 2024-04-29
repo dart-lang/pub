@@ -1223,6 +1223,39 @@ Workspace members must have unique names.
 `a${s}pubspec.yaml` and `b${s}pubspec.yaml` are both called "a".''',
     );
   });
+
+  test('overrides are applied', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await dir('foo', [libPubspec('foo', '1.0.1')]).create();
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'foo': '1.0.0'},
+        extras: {
+          'workspace': ['a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('a', [
+        libPubspec(
+          'a',
+          '1.0.0',
+          extras: {
+            'dependency_overrides': {
+              'foo': {'path': '../../foo'},
+            },
+          },
+          resolutionWorkspace: true,
+        ),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('! foo 1.0.1 from path ../foo (overridden)'),
+    );
+  });
 }
 
 final s = p.separator;

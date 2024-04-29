@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -565,6 +564,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       type,
       workspaceRoot.dir,
       workspaceRoot.pubspec,
+      workspaceRoot.allOverridesInWorkspace,
       lockFile,
       newLockFile,
       result.availableVersions,
@@ -792,8 +792,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return false;
       }
 
-      var overrides = MapKeySet(root.dependencyOverrides);
-
       // Check that uncached dependencies' pubspecs are also still satisfied,
       // since they're mutable and may have changed since the last get.
       for (var id in lockFile.packages.values) {
@@ -803,7 +801,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         try {
           if (cache.load(id).dependencies.values.every(
                 (dep) =>
-                    overrides.contains(dep.name) || isDependencyUpToDate(dep),
+                    root.allOverridesInWorkspace.containsKey(dep.name) ||
+                    isDependencyUpToDate(dep),
               )) {
             continue;
           }
