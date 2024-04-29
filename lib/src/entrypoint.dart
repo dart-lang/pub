@@ -1248,9 +1248,9 @@ See https://dart.dev/go/sdk-constraint
     }
   }
 
-  /// Returns a list of changes to constraints ofg workspace pubspecs updated to
-  ///  have their lower bound match the version in [packageVersions] (or
-  ///  `this.lockFile`).
+  /// Returns a list of changes to constraints of workspace pubspecs updated to
+  /// have their lower bound match the version in [packageVersions] (or
+  /// `this.lockFile`).
   ///
   /// The return value for each workspace package is a mapping from the original
   /// package range to the updated.
