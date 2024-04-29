@@ -778,6 +778,56 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
+  testWithGolden('reports dependencies from all of workspace', (ctx) async {
+    final server = await servePackages();
+    server.serve('myapp', '1.2.4');
+    server.serve('dep', '0.9.0', deps: {'myapp': '^1.2.3'});
+    server.serve('dep', '0.8.0', deps: {'myapp': '^1.2.3'});
+    server.serve('dep', '1.0.0');
+    server.serve('dep_a', '0.9.0');
+    server.serve('dep_a', '1.0.0');
+    server.serve('dev_dep_a', '0.9.0');
+    server.serve('dev_dep_a', '1.0.0');
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {'dep': '^0.9.0'},
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      d.dir('pkgs', [
+        d.dir('a', [
+          d.libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'myapp': '^1.0.0', 'dep_a': '^0.9.0'},
+            devDeps: {'dev_dep_a': '^0.9.0'},
+            extras: {
+              'dependency_overrides': {'dep': '0.8.0'},
+            },
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+
+    server.serve('dep', '0.9.5');
+    server.serve('dep_a', '0.9.5');
+    server.serve('dev_dep_a', '0.9.5');
+
+    await ctx.runOutdatedTests(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+  });
+
   testWithGolden('Handles SDK dependencies', (ctx) async {
     await servePackages()
       ..serve(
