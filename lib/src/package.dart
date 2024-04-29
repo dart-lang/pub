@@ -76,26 +76,32 @@ class Package {
     }
   }
 
+  /// A collection of all overrides in the workspace.
+  ///
+  /// Should only be called on the workspace root.
+  ///
+  /// We only allow each package to be overridden once, so it is ok to collapse
+  /// the overrides into a single map.
+  late final Map<String, PackageRange> allOverridesInWorkspace = {
+    for (final package in transitiveWorkspace)
+      ...package.pubspec.dependencyOverrides,
+  };
+
   /// The immediate dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get dependencies => pubspec.dependencies;
 
   /// The immediate dev dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get devDependencies => pubspec.devDependencies;
 
-  /// The dependency overrides this package specifies in its pubspec or pubspec
-  /// overrides.
-  Map<String, PackageRange> get dependencyOverrides =>
-      pubspec.dependencyOverrides;
-
   /// All immediate dependencies this package specifies.
   ///
-  /// This includes regular, dev dependencies, and overrides.
+  /// This includes regular, dev dependencies, and overrides from this package.
   Map<String, PackageRange> get immediateDependencies {
     // Make sure to add overrides last so they replace normal dependencies.
     return {}
       ..addAll(dependencies)
       ..addAll(devDependencies)
-      ..addAll(dependencyOverrides);
+      ..addAll(pubspec.dependencyOverrides);
   }
 
   /// Returns a list of paths to all Dart executables in this package's bin

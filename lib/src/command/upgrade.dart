@@ -234,7 +234,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         }
 
         // Skip [dep] if it has a dependency_override.
-        if (entrypoint.workspaceRoot.dependencyOverrides
+        if (entrypoint.workspaceRoot.pubspec.dependencyOverrides
             .containsKey(dep.name)) {
           dependencyOverriddenDeps.add(dep.name);
           continue;
@@ -293,7 +293,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // If any of the packages to upgrade are dependency overrides, then we
     // show a warning.
     final toUpgradeOverrides = toUpgrade
-        .where(entrypoint.workspaceRoot.dependencyOverrides.containsKey);
+        .where(entrypoint.workspaceRoot.allOverridesInWorkspace.containsKey);
     if (toUpgradeOverrides.isNotEmpty) {
       log.warning(
         'Warning: dependency_overrides prevents upgrades for: '
