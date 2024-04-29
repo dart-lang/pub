@@ -111,7 +111,8 @@ class Incompatibility {
       assert(terms.first.isPositive);
 
       final cause = this.cause as SdkIncompatibilityCause;
-      final buffer = StringBuffer(_terse(terms.first, details, allowEvery: true));
+      final buffer =
+          StringBuffer(_terse(terms.first, details, allowEvery: true));
       if (cause.noNullSafetyCause) {
         buffer.write(' doesn\'t support null safety');
       } else {

@@ -1886,7 +1886,8 @@ String _urlToDirectory(String hostedUrl) {
     // nice for the default and most recommended scheme. We also don't include
     // it for localhost URLs, since they're always known to be HTTP.
     final localhost = match[2] == null ? '' : 'localhost';
-    final scheme = match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
+    final scheme =
+        match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
     return '$scheme$localhost';
   });
   return replace(

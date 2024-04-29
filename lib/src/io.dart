@@ -120,7 +120,8 @@ String canonicalize(String pathString) {
   // resolved in turn.
   while (components.isNotEmpty) {
     seen.add(p.join(newPath, p.joinAll(components)));
-    final resolvedPath = _resolveLink(p.join(newPath, components.removeFirst()));
+    final resolvedPath =
+        _resolveLink(p.join(newPath, components.removeFirst()));
     final relative = p.relative(resolvedPath, from: newPath);
 
     // If the resolved path of the component relative to `newPath` is just ".",

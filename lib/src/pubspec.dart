@@ -607,7 +607,10 @@ Map<String, PackageRange> _parseDependencies(
           sourceName = 'hosted';
         } else {
           switch (otherEntries.single) {
-            case MapEntry(key: YamlScalar(value: final String s), value: final d):
+            case MapEntry(
+                key: YamlScalar(value: final String s),
+                value: final d
+              ):
               sourceName = s;
               descriptionNode = d;
             case MapEntry(key: final k, value: _):
