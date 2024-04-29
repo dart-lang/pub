@@ -782,6 +782,7 @@ Future<void> main() async {
     final server = await servePackages();
     server.serve('myapp', '1.2.4');
     server.serve('dep', '0.9.0', deps: {'myapp': '^1.2.3'});
+    server.serve('dep', '0.8.0', deps: {'myapp': '^1.2.3'});
     server.serve('dep', '1.0.0');
     server.serve('dep_a', '0.9.0');
     server.serve('dep_a', '1.0.0');
@@ -805,6 +806,9 @@ Future<void> main() async {
             '1.1.1',
             deps: {'myapp': '^1.0.0', 'dep_a': '^0.9.0'},
             devDeps: {'dev_dep_a': '^0.9.0'},
+            extras: {
+              'dependency_overrides': {'dep': '0.8.0'},
+            },
             resolutionWorkspace: true,
           ),
         ]),

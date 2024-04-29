@@ -11,13 +11,15 @@ $ pub outdated --json
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
-        "version": "0.9.0"
+        "version": "0.8.0"
       },
       "upgradable": {
-        "version": "0.9.5"
+        "version": "0.8.0",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.0"
+        "version": "0.8.0",
+        "overridden": true
       },
       "latest": {
         "version": "1.0.0"
@@ -71,19 +73,19 @@ $ pub outdated --no-color
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable           Resolvable           Latest  
 
 direct dependencies:
-dep           *0.9.0   *0.9.5      1.0.0       1.0.0   
-dep_a         *0.9.0   *0.9.5      1.0.0       1.0.0   
+dep           *0.8.0   *0.8.0 (overridden)  *0.8.0 (overridden)  1.0.0   
+dep_a         *0.9.0   *0.9.5               1.0.0                1.0.0   
 
 dev_dependencies:
-dev_dep_a     *0.9.0   *0.9.5      1.0.0       1.0.0   
+dev_dep_a     *0.9.0   *0.9.5               1.0.0                1.0.0   
 
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -93,19 +95,19 @@ $ pub outdated --no-color --no-transitive
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable           Resolvable           Latest  
 
 direct dependencies:
-dep           *0.9.0   *0.9.5      1.0.0       1.0.0   
-dep_a         *0.9.0   *0.9.5      1.0.0       1.0.0   
+dep           *0.8.0   *0.8.0 (overridden)  *0.8.0 (overridden)  1.0.0   
+dep_a         *0.9.0   *0.9.5               1.0.0                1.0.0   
 
 dev_dependencies:
-dev_dep_a     *0.9.0   *0.9.5      1.0.0       1.0.0   
+dev_dep_a     *0.9.0   *0.9.5               1.0.0                1.0.0   
 
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -115,19 +117,19 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable           Resolvable           Latest  
 
 direct dependencies:
-dep           *0.9.0   *0.9.5      1.0.0       1.0.0   
-dep_a         *0.9.0   *0.9.5      1.0.0       1.0.0   
+dep           *0.8.0   *0.8.0 (overridden)  *0.8.0 (overridden)  1.0.0   
+dep_a         *0.9.0   *0.9.5               1.0.0                1.0.0   
 
 dev_dependencies:
-dev_dep_a     *0.9.0   *0.9.5      1.0.0       1.0.0   
+dev_dep_a     *0.9.0   *0.9.5               1.0.0                1.0.0   
 
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -137,19 +139,19 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable           Resolvable           Latest  
 
 direct dependencies:
-dep           *0.9.0   *0.9.5      1.0.0       1.0.0   
-dep_a         *0.9.0   *0.9.5      1.0.0       1.0.0   
+dep           *0.8.0   *0.8.0 (overridden)  *0.8.0 (overridden)  1.0.0   
+dep_a         *0.9.0   *0.9.5               1.0.0                1.0.0   
 
 dev_dependencies:
-dev_dep_a     *0.9.0   *0.9.5      1.0.0       1.0.0   
+dev_dep_a     *0.9.0   *0.9.5               1.0.0                1.0.0   
 
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -159,17 +161,17 @@ $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current  Upgradable           Resolvable           Latest  
 
 direct dependencies:
-dep           *0.9.0   *0.9.5      1.0.0       1.0.0   
-dep_a         *0.9.0   *0.9.5      1.0.0       1.0.0   
+dep           *0.8.0   *0.8.0 (overridden)  *0.8.0 (overridden)  1.0.0   
+dep_a         *0.9.0   *0.9.5               1.0.0                1.0.0   
 
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
+1 upgradable dependency is locked (in pubspec.lock) to an older version.
+To update it, use `dart pub upgrade`.
 
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
+1 dependency is constrained to a version that is older than a resolvable version.
+To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -181,7 +183,7 @@ Showing outdated packages.
 Package Name  Current  Upgradable  Resolvable  Latest  
 
 direct dependencies:
-dep           *0.9.0   *0.9.5      1.0.0       1.0.0   
+dep           *0.8.0   *0.9.5      1.0.0       1.0.0   
 dep_a         *0.9.0   *0.9.5      1.0.0       1.0.0   
 
 dev_dependencies:
@@ -206,13 +208,15 @@ $ pub outdated --json --no-dev-dependencies
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
-        "version": "0.9.0"
+        "version": "0.8.0"
       },
       "upgradable": {
-        "version": "0.9.5"
+        "version": "0.8.0",
+        "overridden": true
       },
       "resolvable": {
-        "version": "1.0.0"
+        "version": "0.8.0",
+        "overridden": true
       },
       "latest": {
         "version": "1.0.0"
