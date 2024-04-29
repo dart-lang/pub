@@ -89,14 +89,14 @@ class _PubHttpClient extends http.BaseClient {
 
   /// Logs the fact that [request] was sent, and information about it.
   void _logRequest(http.BaseRequest request) {
-    var requestLog = StringBuffer();
+    final requestLog = StringBuffer();
     requestLog.writeln('HTTP ${request.method} ${request.url}');
     request.headers
         .forEach((name, value) => requestLog.writeln(_logField(name, value)));
 
     if (request.method == 'POST') {
-      var contentTypeString = request.headers[HttpHeaders.contentTypeHeader];
-      var contentType = ContentType.parse(contentTypeString ?? '');
+      final contentTypeString = request.headers[HttpHeaders.contentTypeHeader];
+      final contentType = ContentType.parse(contentTypeString ?? '');
       if (request is http.MultipartRequest) {
         requestLog.writeln();
         requestLog.writeln('Body fields:');
@@ -127,9 +127,9 @@ class _PubHttpClient extends http.BaseClient {
     // TODO(nweiz): Fork the response stream and log the response body. Be
     // careful not to log OAuth2 private data, though.
 
-    var responseLog = StringBuffer();
-    var request = response.request!;
-    var stopwatch = _requestStopwatches.remove(request)!..stop();
+    final responseLog = StringBuffer();
+    final request = response.request!;
+    final stopwatch = _requestStopwatches.remove(request)!..stop();
     responseLog.writeln('HTTP response ${response.statusCode} '
         '${response.reasonPhrase} for ${request.method} ${request.url}');
     responseLog.writeln('took ${stopwatch.elapsed}');
@@ -197,12 +197,12 @@ extension AttachHeaders on http.Request {
     headers['X-Pub-Command'] = PubCommand.command;
     headers['X-Pub-Session-ID'] = _sessionId;
 
-    var environment = Platform.environment['PUB_ENVIRONMENT'];
+    final environment = Platform.environment['PUB_ENVIRONMENT'];
     if (environment != null) {
       headers['X-Pub-Environment'] = environment;
     }
 
-    var type = Zone.current[#_dependencyType];
+    final type = Zone.current[#_dependencyType];
     if (type != null && type != DependencyType.none) {
       headers['X-Pub-Reason'] = type.toString();
     }
@@ -238,7 +238,7 @@ void handleJsonError(http.BaseResponse response) {
     // See https://github.com/dart-lang/pub/pull/3590#discussion_r1012978108
     fail(log.red('Invalid server response'));
   }
-  var errorMap = parseJsonResponse(response);
+  final errorMap = parseJsonResponse(response);
   final error = errorMap['error'];
   if (error is! Map ||
       !error.containsKey('message') ||

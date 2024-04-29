@@ -15,11 +15,11 @@ void main() {
     await servePackages();
     await d.validPackage().create();
     await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 
-    var body = {'url': 'http://example.com/upload'};
+    final body = {'url': 'http://example.com/upload'};
     handleUploadForm(globalServer, body: body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));

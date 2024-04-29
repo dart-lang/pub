@@ -60,7 +60,7 @@ class GitignoreValidator extends Validator {
       final unignoredByGitignore = Ignore.listFiles(
         beneath: beneath,
         listDir: (dir) {
-          var contents = Directory(resolve(dir)).listSync();
+          final contents = Directory(resolve(dir)).listSync();
           return contents
               .where((e) => !(linkExists(e.path) && dirExists(e.path)))
               .map(

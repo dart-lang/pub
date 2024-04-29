@@ -20,7 +20,7 @@ void main() {
 
     deleteEntry(p.join(d.sandbox, 'foo'));
 
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(
       pub.stderr,
       emits('The directory `${d.path('foo')}` does not exist.'),

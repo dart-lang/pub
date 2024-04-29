@@ -20,7 +20,7 @@ import 'package:pub/src/log.dart' as log;
 const statusFilename = 'extract_all_pub_status.json';
 
 Future<List<String>> allPackageNames() async {
-  var nextUrl = Uri.https('pub.dev', 'api/packages', {'compact': '1'});
+  final nextUrl = Uri.https('pub.dev', 'api/packages', {'compact': '1'});
   final request = http.Request('GET', nextUrl);
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
@@ -40,8 +40,8 @@ Future<List<String>> versionArchiveUrls(String packageName) async {
 }
 
 Future<void> main() async {
-  var alreadyDonePackages = <String>{};
-  var failures = <Map<String, dynamic>?>[];
+  final alreadyDonePackages = <String>{};
+  final failures = <Map<String, dynamic>?>[];
   if (fileExists(statusFilename)) {
     final json = jsonDecode(readTextFile(statusFilename));
     for (final packageName in json['packages'] as Iterable? ?? []) {

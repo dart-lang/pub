@@ -19,7 +19,7 @@ void main() {
         {'url': globalServer.url, 'env': 'TOKEN'},
       ],
     }).create();
-    var pub = await startPublish(
+    final pub = await startPublish(
       globalServer,
       overrideDefaultHostedServer: false,
       environment: {'TOKEN': 'access-token'},
@@ -87,7 +87,7 @@ void main() {
         {'url': globalServer.url, 'token': 'access-token'},
       ],
     }).create();
-    var pub = await startPublish(
+    final pub = await startPublish(
       globalServer,
       overrideDefaultHostedServer: false,
     );

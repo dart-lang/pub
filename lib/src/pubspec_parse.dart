@@ -197,7 +197,7 @@ abstract class PubspecBase {
     if (_executables != null) return _executables!;
 
     _executables = {};
-    var yaml = fields['executables'];
+    final yaml = fields['executables'];
     if (yaml == null) return _executables!;
 
     if (yaml is! YamlMap) {
@@ -207,7 +207,7 @@ abstract class PubspecBase {
       );
     }
 
-    var yamlMap = yaml;
+    final yamlMap = yaml;
 
     yamlMap.nodes.forEach((key, value) {
       key = key as YamlNode;
@@ -228,11 +228,11 @@ abstract class PubspecBase {
       final valuePattern = RegExp(r'[/\\]');
       _executables![keyValue] = switch (value.value) {
         null => keyValue,
-        String s when valuePattern.hasMatch(s) => _error(
+        final String s when valuePattern.hasMatch(s) => _error(
             '"executables" values may not contain path separators.',
             value.span,
           ),
-        String s => s,
+        final String s => s,
         _ => _error('"executables" values must be strings or null.', value.span)
       };
     });

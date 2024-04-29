@@ -69,10 +69,10 @@ class PathSource extends Source {
     if (description is! String) {
       throw FormatException('The description must be a path string.');
     }
-    var dir = description;
+    final dir = description;
     // Resolve the path relative to the containing file path, and remember
     // whether the original path was relative or absolute.
-    var isRelative = p.isRelative(dir);
+    final isRelative = p.isRelative(dir);
 
     if (containingDescription is PathDescription) {
       return PackageRef(
@@ -199,8 +199,8 @@ class PathSource extends Source {
     }
     // There's only one package ID for a given path. We just need to find the
     // version.
-    var pubspec = _loadPubspec(ref, cache);
-    var id = PackageId(
+    final pubspec = _loadPubspec(ref, cache);
+    final id = PackageId(
       ref.name,
       pubspec.version,
       ResolvedPathDescription(description),
@@ -219,7 +219,7 @@ class PathSource extends Source {
     if (description is! PathDescription) {
       throw ArgumentError('Wrong source');
     }
-    var dir = _validatePath(ref.name, description);
+    final dir = _validatePath(ref.name, description);
     return Pubspec.load(
       dir,
       cache.sources,

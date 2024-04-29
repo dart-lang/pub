@@ -23,7 +23,7 @@ void main() {
 
     await pubGet();
 
-    var pub = await pubRun(args: ['foo:script']);
+    final pub = await pubRun(args: ['foo:script']);
     expect(
       pub.stderr,
       emits(

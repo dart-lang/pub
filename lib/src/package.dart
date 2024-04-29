@@ -14,8 +14,6 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'source/root.dart';
-import 'system_cache.dart';
 import 'utils.dart';
 
 /// A Package is a [Pubspec] and a directory where it belongs that can be used
@@ -27,7 +25,7 @@ class Package {
   /// take a package's description or root directory into account, so multiple
   /// distinct packages may order the same.
   static int orderByNameAndVersion(Package a, Package b) {
-    var name = a.name.compareTo(b.name);
+    final name = a.name.compareTo(b.name);
     if (name != 0) return name;
 
     return a.version.compareTo(b.version);
@@ -78,26 +76,32 @@ class Package {
     }
   }
 
+  /// A collection of all overrides in the workspace.
+  ///
+  /// Should only be called on the workspace root.
+  ///
+  /// We only allow each package to be overridden once, so it is ok to collapse
+  /// the overrides into a single map.
+  late final Map<String, PackageRange> allOverridesInWorkspace = {
+    for (final package in transitiveWorkspace)
+      ...package.pubspec.dependencyOverrides,
+  };
+
   /// The immediate dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get dependencies => pubspec.dependencies;
 
   /// The immediate dev dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get devDependencies => pubspec.devDependencies;
 
-  /// The dependency overrides this package specifies in its pubspec or pubspec
-  /// overrides.
-  Map<String, PackageRange> get dependencyOverrides =>
-      pubspec.dependencyOverrides;
-
   /// All immediate dependencies this package specifies.
   ///
-  /// This includes regular, dev dependencies, and overrides.
+  /// This includes regular, dev dependencies, and overrides from this package.
   Map<String, PackageRange> get immediateDependencies {
     // Make sure to add overrides last so they replace normal dependencies.
     return {}
       ..addAll(dependencies)
       ..addAll(devDependencies)
-      ..addAll(dependencyOverrides);
+      ..addAll(pubspec.dependencyOverrides);
   }
 
   /// Returns a list of paths to all Dart executables in this package's bin
@@ -124,7 +128,7 @@ class Package {
       // If the entire package directory is ignored, don't consider it part of a
       // git repo. `git check-ignore` will return a status code of 0 for
       // ignored, 1 for not ignored, and 128 for not a Git repo.
-      var result = runProcessSync(
+      final result = runProcessSync(
         git.command!,
         ['check-ignore', '--quiet', '.'],
         workingDir: dir,
@@ -151,22 +155,15 @@ class Package {
   /// used to override a pubspec in memory for trying out an alternative
   /// resolution.
   factory Package.load(
-    String dir,
-    SourceRegistry sources, {
+    String dir, {
     bool withPubspecOverrides = false,
     String? expectedName,
-    Pubspec Function(
+    required Pubspec Function(
       String path, {
       String? expectedName,
       required bool withPubspecOverrides,
-    })? loadPubspec,
+    }) loadPubspec,
   }) {
-    loadPubspec ??=
-        (path, {expectedName, required withPubspecOverrides}) => Pubspec.load(
-              path,
-              sources,
-              containingDescription: RootDescription(path),
-            );
     final pubspec = loadPubspec(
       dir,
       withPubspecOverrides: withPubspecOverrides,
@@ -178,7 +175,6 @@ class Package {
         try {
           return Package.load(
             p.join(dir, workspacePath),
-            sources,
             loadPubspec: loadPubspec,
             withPubspecOverrides: withPubspecOverrides,
           );
@@ -260,8 +256,8 @@ See $workspacesDocUrl for more information.
   ///
   /// To convert them to paths relative to the package root, use [p.relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
-    var packageDir = dir;
-    var root = git.repoRoot(packageDir) ?? packageDir;
+    final packageDir = dir;
+    final root = git.repoRoot(packageDir) ?? packageDir;
     beneath = p
         .toUri(
           p.normalize(
@@ -365,6 +361,26 @@ See $workspacesDocUrl for more information.
       isDir: (dir) => dirExists(resolve(dir)),
     ).map(resolve).toList();
   }
+
+  /// Applies [transform] to each package in the workspace and returns a derived
+  /// package.
+  Package transformWorkspace(
+    Pubspec Function(Package) transform,
+  ) {
+    final workspace = {
+      for (final package in transitiveWorkspace) package.dir: package,
+    };
+    return Package.load(
+      dir,
+      withPubspecOverrides: true,
+      loadPubspec: (
+        path, {
+        expectedName,
+        required withPubspecOverrides,
+      }) =>
+          transform(workspace[path]!),
+    );
+  }
 }
 
 /// Reports an error if one or more of:
@@ -411,7 +427,7 @@ Workspace members must have unique names.
   // Check that the workspace doesn't contain two overrides of the same package.
   final overridesSeen = <String, Package>{};
   for (final package in root.transitiveWorkspace) {
-    for (final override in package.dependencyOverrides.keys) {
+    for (final override in package.pubspec.dependencyOverrides.keys) {
       final collision = overridesSeen[override];
       if (collision != null) {
         fail('''

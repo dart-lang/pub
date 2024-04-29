@@ -622,7 +622,7 @@ Future<void> _outputHuman(
     log.message(b.toString());
   }
 
-  var upgradable = rows.where(
+  final upgradable = rows.where(
     (row) {
       final current = row.current;
       final upgradable = row.upgradable;
@@ -636,7 +636,7 @@ Future<void> _outputHuman(
     },
   ).length;
 
-  var notAtResolvable = rows.where(
+  final notAtResolvable = rows.where(
     (row) {
       final current = row.current;
       final upgradable = row.upgradable;
@@ -712,7 +712,7 @@ Future<void> _outputHuman(
         .toList();
   }
 
-  var advisoriesToDisplay = <String, List<Advisory>>{};
+  final advisoriesToDisplay = <String, List<Advisory>>{};
   for (final package in rows) {
     advisoriesToDisplay[package.name] = advisoriesWithAffectedVersions(package);
   }
@@ -740,7 +740,7 @@ Future<void> _outputHuman(
           'See https://dart.dev/go/package-retraction',
         );
       }
-      var displayedAdvisories = advisoriesToDisplay[package.name]!;
+      final displayedAdvisories = advisoriesToDisplay[package.name]!;
       if (displayedAdvisories.isNotEmpty) {
         final advisoriesText = displayedAdvisories.length > 1
             ? 'security advisories'
@@ -752,7 +752,7 @@ Future<void> _outputHuman(
         log.message('\n');
 
         for (final advisory in displayedAdvisories) {
-          var displayedVersions = advisory.affectedVersions.intersection(
+          final displayedVersions = advisory.affectedVersions.intersection(
             [
               package.current,
               package.upgradable,
@@ -1054,7 +1054,7 @@ class _MarkedVersionDetails implements _Details {
   Object? toJson() {
     if (_versionDetails == null) return null;
 
-    var jsonExplanation = _jsonExplanation;
+    final jsonExplanation = _jsonExplanation;
     return jsonExplanation == null
         ? _versionDetails.toJson()
         : (_versionDetails.toJson()..addEntries([jsonExplanation]));

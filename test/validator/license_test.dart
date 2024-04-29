@@ -73,7 +73,7 @@ void main() {
     });
 
     test('has a .gitignored LICENSE file', () async {
-      var repo = d.git(appPath, [d.file('.gitignore', 'LICENSE')]);
+      final repo = d.git(appPath, [d.file('.gitignore', 'LICENSE')]);
       await d.validPackage().create();
       await repo.create();
       await expectValidationDeprecated(license, errors: isNotEmpty);

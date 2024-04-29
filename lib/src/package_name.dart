@@ -34,7 +34,7 @@ class PackageRef {
     detail ??= PackageDetail.defaults;
     if (isRoot) return name;
 
-    var buffer = StringBuffer(name);
+    final buffer = StringBuffer(name);
     if (detail.showSource ?? description is! HostedDescription) {
       buffer.write(' from ${description.source}');
       if (detail.showDescription) {
@@ -110,7 +110,7 @@ class PackageId {
   String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
 
-    var buffer = StringBuffer(name);
+    final buffer = StringBuffer(name);
     if (detail.showVersion ?? !isRoot) buffer.write(' $version');
 
     if (!isRoot &&
@@ -156,7 +156,7 @@ class PackageRange {
   String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
 
-    var buffer = StringBuffer(name);
+    final buffer = StringBuffer(name);
     if (detail.showVersion ?? _showVersionConstraint) {
       buffer.write(' $constraint');
     }
@@ -183,10 +183,10 @@ class PackageRange {
     if (constraint is! VersionRange) return this;
     if (constraint.toString().startsWith('^')) return this;
 
-    var range = constraint as VersionRange;
+    final range = constraint as VersionRange;
     if (!range.includeMin) return this;
     if (range.includeMax) return this;
-    var min = range.min;
+    final min = range.min;
     if (min == null) return this;
     if (range.max == min.nextBreaking.firstPreRelease) {
       return PackageRange(_ref, VersionConstraint.compatibleWith(min));

@@ -374,9 +374,9 @@ class DependencyServicesApplyCommand extends PubCommand {
           );
           // Remove the now outdated content-hash - it will be restored below
           // after resolution.
-          var packageMap = lockFileEditor
+          final packageMap = lockFileEditor
               .parseAt(['packages', targetPackage, 'description']).value as Map;
-          var hasSha = packageMap.containsKey('sha256');
+          final hasSha = packageMap.containsKey('sha256');
           if (hasSha) {
             lockFileEditor.remove(
               ['packages', targetPackage, 'description', 'sha256'],

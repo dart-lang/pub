@@ -54,7 +54,7 @@ class AnalysisContextManager {
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
     path = p.normalize(p.absolute(path));
-    var parseResult = _session.getParsedUnit(path);
+    final parseResult = _session.getParsedUnit(path);
     if (parseResult is ParsedUnitResult) {
       if (parseResult.errors.isNotEmpty) {
         throw AnalyzerErrorGroup(parseResult.errors);
@@ -69,8 +69,8 @@ class AnalysisContextManager {
   ///
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   List<UriBasedDirective> parseImportsAndExports(String path) {
-    var unit = parse(path);
-    var uriDirectives = <UriBasedDirective>[];
+    final unit = parse(path);
+    final uriDirectives = <UriBasedDirective>[];
     for (var directive in unit.directives) {
       if (directive is UriBasedDirective) {
         uriDirectives.add(directive);

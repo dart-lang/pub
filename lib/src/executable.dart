@@ -67,7 +67,7 @@ Future<int> runExecutable(
     }
   }
 
-  var snapshotPath = entrypoint.pathOfSnapshot(executable);
+  final snapshotPath = entrypoint.pathOfSnapshot(executable);
 
   // Don't compile snapshots for mutable packages, since their code may
   // change later on.
@@ -75,7 +75,7 @@ Future<int> runExecutable(
   // Also we don't snapshot if we have non-default arguments to the VM, as
   // these would be inconsistent if another set of settings are given in a
   // later invocation.
-  var useSnapshot = vmArgs.isEmpty;
+  final useSnapshot = vmArgs.isEmpty;
 
   var executablePath = executable.resolve(
     entrypoint.packageConfig,
@@ -167,7 +167,7 @@ Future<int> _runDartProgram(
   // We use Isolate.spawnUri when there are no extra vm-options.
   // That provides better signal handling, and possibly faster startup.
   if ((!alwaysUseSubprocess) && vmArgs.isEmpty) {
-    var argList = args.toList();
+    final argList = args.toList();
     return await isolate.runUri(
       p.toUri(path),
       argList,

@@ -396,7 +396,7 @@ class HostedSource extends CachedSource {
       if (pubspecData is! Map) {
         throw FormatException('pubspec must be a map');
       }
-      var pubspec = Pubspec.fromMap(
+      final pubspec = Pubspec.fromMap(
         pubspecData,
         cache.sources,
         expectedName: ref.name,
@@ -647,7 +647,7 @@ class HostedSource extends CachedSource {
         throw FormatException('summary must be a String');
       }
 
-      var aliasIDs = <String>[];
+      final aliasIDs = <String>[];
       final aliases = advisory['aliases'];
       if (aliases is! List) {
         throw FormatException('aliases must be a list');
@@ -828,7 +828,7 @@ class HostedSource extends CachedSource {
             // Too old according to internal timestamp - delete.
             tryDeleteEntry(cachePath);
           } else {
-            var res = _versionInfoFromPackageListing(
+            final res = _versionInfoFromPackageListing(
               cachedDoc,
               ref,
               Uri.file(cachePath),
@@ -1213,7 +1213,7 @@ class HostedSource extends CachedSource {
     }
     final rootDir = cache.rootDirForSource(this);
 
-    var dir = _urlToDirectory(description.url);
+    final dir = _urlToDirectory(description.url);
     return p.join(rootDir, dir, '${id.name}-${id.version}');
   }
 
@@ -1229,7 +1229,7 @@ class HostedSource extends CachedSource {
     }
     final rootDir = cache.rootDir;
 
-    var serverDir = _urlToDirectory(description.url);
+    final serverDir = _urlToDirectory(description.url);
     return p.join(
       rootDir,
       'hosted-hashes',
@@ -1274,10 +1274,15 @@ class HostedSource extends CachedSource {
         }
 
         final results = <RepairResult>[];
-        var packages = <Package>[];
+        final packages = <Package>[];
         for (var entry in listDir(serverDir)) {
           try {
-            packages.add(Package.load(entry, cache.sources));
+            packages.add(
+              Package.load(
+                entry,
+                loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+              ),
+            );
           } catch (error, stackTrace) {
             log.error('Failed to load package', error, stackTrace);
             final id = _idForBasename(
@@ -1305,7 +1310,7 @@ class HostedSource extends CachedSource {
           ..addAll(
             await Future.wait(
               packages.map((package) async {
-                var id = PackageId(
+                final id = PackageId(
                   package.name,
                   package.version,
                   ResolvedHostedDescription(
@@ -1343,7 +1348,7 @@ class HostedSource extends CachedSource {
   /// Returns the best-guess package ID for [basename], which should be a
   /// subdirectory in a hosted cache.
   PackageId _idForBasename(String basename, String url) {
-    var components = split1(basename, '-');
+    final components = split1(basename, '-');
     var version = Version.none;
     if (components.length > 1) {
       try {
@@ -1361,7 +1366,7 @@ class HostedSource extends CachedSource {
   }
 
   bool _looksLikePackageDir(String path) {
-    var components = split1(p.basename(path), '-');
+    final components = split1(p.basename(path), '-');
     if (components.length < 2) return false;
     try {
       Version.parse(components.last);
@@ -1376,7 +1381,7 @@ class HostedSource extends CachedSource {
   @override
   List<Package> getCachedPackages(SystemCache cache) {
     final root = cache.rootDirForSource(HostedSource.instance);
-    var cacheDir =
+    final cacheDir =
         p.join(root, _urlToDirectory(HostedSource.instance.defaultUrl));
     if (!dirExists(cacheDir)) return [];
 
@@ -1384,7 +1389,10 @@ class HostedSource extends CachedSource {
         .where(_looksLikePackageDir)
         .map((entry) {
           try {
-            return Package.load(entry, cache.sources);
+            return Package.load(
+              entry,
+              loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+            );
           } catch (error, stackTrace) {
             log.fine('Failed to load package from $entry:\n'
                 '$error\n'
@@ -1447,8 +1455,8 @@ class HostedSource extends CachedSource {
 
     // Download and extract the archive to a temp directory.
     return await withTempDir((tempDirForArchive) async {
-      var fileName = '$packageName-$version.tar.gz';
-      var archivePath = p.join(tempDirForArchive, fileName);
+      final fileName = '$packageName-$version.tar.gz';
+      final archivePath = p.join(tempDirForArchive, fileName);
 
       Stream<List<int>> validateSha256(
         Stream<List<int>> stream,
@@ -1522,7 +1530,7 @@ See $contentHashesDocumentationUrl.
         _throwFriendlyError(error, stackTrace, id.name, description.url);
       }
 
-      var tempDir = cache.createTempDir();
+      final tempDir = cache.createTempDir();
       try {
         try {
           await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
@@ -1568,7 +1576,7 @@ See $contentHashesDocumentationUrl.
     // of the cache.
     late final Uint8List contentHash;
 
-    var tempDir = cache.createTempDir();
+    final tempDir = cache.createTempDir();
     final PackageId id;
     try {
       try {
@@ -1877,8 +1885,9 @@ String _urlToDirectory(String hostedUrl) {
     // Don't include the scheme for HTTPS URLs. This makes the directory names
     // nice for the default and most recommended scheme. We also don't include
     // it for localhost URLs, since they're always known to be HTTP.
-    var localhost = match[2] == null ? '' : 'localhost';
-    var scheme = match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
+    final localhost = match[2] == null ? '' : 'localhost';
+    final scheme =
+        match[1] == 'https://' || localhost.isNotEmpty ? '' : match[1];
     return '$scheme$localhost';
   });
   return replace(
@@ -1897,9 +1906,9 @@ String _urlToDirectory(String hostedUrl) {
 /// "https" for all others.
 String _directoryToUrl(String directory) {
   // Decode the pseudo-URL-encoded characters.
-  var chars = '<>:"\\/|?*%';
+  const chars = '<>:"\\/|?*%';
   for (var i = 0; i < chars.length; i++) {
-    var c = chars.substring(i, i + 1);
+    final c = chars.substring(i, i + 1);
     directory = directory.replaceAll('%${c.codeUnitAt(0)}', c);
   }
 
@@ -1909,7 +1918,7 @@ String _directoryToUrl(String directory) {
   }
 
   // Otherwise, default to http for localhost and https for everything else.
-  var scheme =
+  final scheme =
       isLoopback(directory.replaceAll(RegExp(':.*'), '')) ? 'http' : 'https';
   return Uri.parse('$scheme://$directory').toString();
 }

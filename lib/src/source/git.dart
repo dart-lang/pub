@@ -101,7 +101,7 @@ class GitSource extends CachedSource {
           'key.');
     }
 
-    var ref = description['ref'];
+    final ref = description['ref'];
     if (ref is! String?) {
       throw FormatException("The 'ref' field of the description must be a "
           'string.');
@@ -235,8 +235,8 @@ class GitSource extends CachedSource {
     );
     return await _pool.withResource(() async {
       await _ensureRepoCache(description, cache);
-      var path = _repoCachePath(description, cache);
-      var revision = await _firstRevision(path, description.ref);
+      final path = _repoCachePath(description, cache);
+      final revision = await _firstRevision(path, description.ref);
       final resolvedDescription = ResolvedGitDescription(description, revision);
 
       return Pubspec.parse(
@@ -295,9 +295,9 @@ class GitSource extends CachedSource {
     }
     return await _pool.withResource(() async {
       await _ensureRepoCache(description, cache);
-      var path = _repoCachePath(description, cache);
-      var revision = await _firstRevision(path, description.ref);
-      var pubspec = await _describeUncached(ref, revision, cache);
+      final path = _repoCachePath(description, cache);
+      final revision = await _firstRevision(path, description.ref);
+      final pubspec = await _describeUncached(ref, revision, cache);
 
       return [
         PackageId(
@@ -386,7 +386,7 @@ class GitSource extends CachedSource {
 
       didUpdate |= await _ensureRevision(description, resolvedRef, cache);
 
-      var revisionCachePath = _revisionCachePath(id, cache);
+      final revisionCachePath = _revisionCachePath(id, cache);
       final path = description.path;
       await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
         if (!entryExists(revisionCachePath)) {
@@ -433,7 +433,7 @@ class GitSource extends CachedSource {
 
     final result = <RepairResult>[];
 
-    var packages = listDir(rootDir)
+    final packages = listDir(rootDir)
         .where((entry) => dirExists(p.join(entry, '.git')))
         .expand((revisionCachePath) {
           return _readPackageList(revisionCachePath).map((relative) {
@@ -441,12 +441,15 @@ class GitSource extends CachedSource {
             // repository, ignore it.
             if (!dirExists(revisionCachePath)) return null;
 
-            var packageDir = p.join(revisionCachePath, relative);
+            final packageDir = p.join(revisionCachePath, relative);
             try {
-              return Package.load(packageDir, cache.sources);
+              return Package.load(
+                packageDir,
+                loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+              );
             } catch (error, stackTrace) {
               log.error('Failed to load package', error, stackTrace);
-              var name = p.basename(revisionCachePath).split('-').first;
+              final name = p.basename(revisionCachePath).split('-').first;
               result.add(
                 RepairResult(name, Version.none, this, success: false),
               );
@@ -505,7 +508,7 @@ class GitSource extends CachedSource {
     String revision,
     SystemCache cache,
   ) async {
-    var path = _repoCachePath(description, cache);
+    final path = _repoCachePath(description, cache);
     if (_updatedRepos.contains(path)) return false;
 
     await _deleteGitRepoIfInvalid(path);
@@ -531,7 +534,7 @@ class GitSource extends CachedSource {
     GitDescription description,
     SystemCache cache,
   ) async {
-    var path = _repoCachePath(description, cache);
+    final path = _repoCachePath(description, cache);
     if (_updatedRepos.contains(path)) return false;
 
     await _deleteGitRepoIfInvalid(path);
@@ -551,7 +554,7 @@ class GitSource extends CachedSource {
     GitDescription description,
     SystemCache cache,
   ) async {
-    var path = _repoCachePath(description, cache);
+    final path = _repoCachePath(description, cache);
     assert(!_updatedRepos.contains(path));
     try {
       await _cloneViaTemp(description.url, path, cache, mirror: true);
@@ -572,7 +575,7 @@ class GitSource extends CachedSource {
     GitDescription description,
     SystemCache cache,
   ) async {
-    var path = _repoCachePath(description, cache);
+    final path = _repoCachePath(description, cache);
     if (_updatedRepos.contains(path)) return false;
     await git.run([_gitDirArg(path), 'fetch'], workingDir: path);
     _updatedRepos.add(path);
@@ -611,7 +614,7 @@ class GitSource extends CachedSource {
   ///
   /// Returns `true` if it had to update anything.
   bool _updatePackageList(String revisionCachePath, String path) {
-    var packages = _readPackageList(revisionCachePath);
+    final packages = _readPackageList(revisionCachePath);
     if (packages.contains(path)) return false;
 
     _writePackageList(revisionCachePath, packages..add(path));
@@ -620,7 +623,7 @@ class GitSource extends CachedSource {
 
   /// Returns the list of packages in [revisionCachePath].
   List<String> _readPackageList(String revisionCachePath) {
-    var path = _packageListPath(revisionCachePath);
+    final path = _packageListPath(revisionCachePath);
 
     // If there's no package list file, this cache was created by an older
     // version of pub where pubspecs were only allowed at the root of the
@@ -679,7 +682,7 @@ class GitSource extends CachedSource {
     // Git on Windows does not seem to automatically create the destination
     // directory.
     ensureDir(to);
-    var args = ['clone', if (mirror) '--mirror', from, to];
+    final args = ['clone', if (mirror) '--mirror', from, to];
 
     await git.run(args);
   }

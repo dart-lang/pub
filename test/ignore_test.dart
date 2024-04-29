@@ -98,7 +98,7 @@ void main() {
 
     for (final c in testData) {
       c.paths.forEach((path, expected) {
-        var ignoreCase = c.ignoreCase;
+        final ignoreCase = c.ignoreCase;
         if (ignoreCase == null) {
           testIgnorePath(c, path, expected, false);
           testIgnorePath(c, path, expected, true);
@@ -197,7 +197,7 @@ void main() {
 
     for (final c in testData) {
       c.paths.forEach((path, expected) {
-        var ignoreCase = c.ignoreCase;
+        final ignoreCase = c.ignoreCase;
         if (ignoreCase == null) {
           testIgnorePath(c, path, expected, false);
           testIgnorePath(c, path, expected, true);

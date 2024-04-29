@@ -41,7 +41,7 @@ void main() {
       ]),
     ]).validate();
 
-    var originalBarSpec = packageSpec('bar');
+    final originalBarSpec = packageSpec('bar');
 
     await d.git(
       'foo.git',

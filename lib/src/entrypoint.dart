@@ -7,12 +7,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import 'command_runner.dart';
 import 'dart.dart' as dart;
@@ -27,12 +27,14 @@ import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'pubspec_utils.dart';
 import 'sdk.dart';
 import 'sdk/flutter.dart';
 import 'solver.dart';
 import 'solver/report.dart';
 import 'solver/solve_suggestions.dart';
 import 'source/cached.dart';
+import 'source/hosted.dart';
 import 'source/root.dart';
 import 'source/unknown.dart';
 import 'system_cache.dart';
@@ -105,7 +107,6 @@ class Entrypoint {
       if (pubspec.resolution == Resolution.none) {
         root = Package.load(
           dir,
-          cache.sources,
           loadPubspec: (
             path, {
             expectedName,
@@ -277,12 +278,12 @@ See $workspacesDocUrl for more information.''',
     // return the package-graph, such it by construction will always made from an
     // up-to-date package-config.
     await ensureUpToDate(workspaceRoot.dir, cache: cache);
-    var packages = {
+    final packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
           packageEntry.resolvedRootDir(packageConfigPath),
-          cache.sources,
           expectedName: packageEntry.name,
+          loadPubspec: Pubspec.loadRootWithSources(cache.sources),
         ),
     };
     packages[workspaceRoot.name] = workspaceRoot;
@@ -336,28 +337,10 @@ See $workspacesDocUrl for more information.''',
   }
 
   /// Creates an entrypoint at the same location, but with each pubspec in
-  /// [updatedPubspec] replacing the with one for the corresponding package.
-  Entrypoint withUpdatedPubspecs(Map<Package, Pubspec> updatedPubspecs) {
-    final existingPubspecs = <String, Pubspec>{};
-    // First extract all pubspecs from the workspace.
-    for (final package in workspaceRoot.transitiveWorkspace) {
-      existingPubspecs[package.dir] =
-          updatedPubspecs[package] ?? package.pubspec;
-    }
-    final newWorkspaceRoot = Package.load(
-      workspaceRoot.dir,
-      cache.sources,
-      loadPubspec: (
-        dir, {
-        expectedName,
-        required withPubspecOverrides,
-      }) =>
-          existingPubspecs[dir] ??
-          Pubspec.load(
-            dir,
-            cache.sources,
-            containingDescription: RootDescription(dir),
-          ),
+  /// [updatedPubspecs] replacing the with one for the corresponding package.
+  Entrypoint withUpdatedRootPubspecs(Map<Package, Pubspec> updatedPubspecs) {
+    final newWorkspaceRoot = workspaceRoot.transformWorkspace(
+      (package) => updatedPubspecs[package] ?? package.pubspec,
     );
     final newWorkPackage = newWorkspaceRoot.transitiveWorkspace
         .firstWhere((package) => package.dir == workPackage.dir);
@@ -375,7 +358,7 @@ See $workspacesDocUrl for more information.''',
   /// Creates an entrypoint at the same location, that will use [pubspec] for
   /// resolution of the [workPackage].
   Entrypoint withWorkPubspec(Pubspec pubspec) {
-    return withUpdatedPubspecs({workPackage: pubspec});
+    return withUpdatedRootPubspecs({workPackage: pubspec});
   }
 
   /// Creates an entrypoint given package and lockfile objects.
@@ -407,7 +390,12 @@ See $workspacesDocUrl for more information.''',
 
   Entrypoint? _example;
 
-  /// Writes the .dart_tool/package_config.json file
+  /// Writes the .dart_tool/package_config.json file and workspace references to
+  /// it.
+  ///
+  /// If the workspace is non-trivial: For each package in the workspace write:
+  /// `.dart_tool/pub/workspace_ref.json` with a pointer to the workspace root
+  /// package dir.
   Future<void> writePackageConfigFile() async {
     ensureDir(p.dirname(packageConfigPath));
     writeTextFile(
@@ -418,6 +406,21 @@ See $workspacesDocUrl for more information.''',
             .pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
       ),
     );
+    if (workspaceRoot.workspaceChildren.isNotEmpty) {
+      for (final package in workspaceRoot.transitiveWorkspace) {
+        final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
+        final workspaceRefPath = p.join(workspaceRefDir, 'workspace_ref.json');
+        ensureDir(workspaceRefDir);
+        final relativeRootPath =
+            p.relative(workspaceRoot.dir, from: workspaceRefDir);
+        writeTextFile(
+          workspaceRefPath,
+          '${JsonEncoder.withIndent('  ').convert({
+                'workspaceRoot': relativeRootPath,
+              })}\n',
+        );
+      }
+    }
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
@@ -564,6 +567,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       type,
       workspaceRoot.dir,
       workspaceRoot.pubspec,
+      workspaceRoot.allOverridesInWorkspace,
       lockFile,
       newLockFile,
       result.availableVersions,
@@ -756,7 +760,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       bool isDependencyUpToDate(PackageRange dep) {
         if (dep.name == root.name) return true;
 
-        var locked = lockFile.packages[dep.name];
+        final locked = lockFile.packages[dep.name];
         return locked != null && dep.allows(locked);
       }
 
@@ -791,8 +795,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return false;
       }
 
-      var overrides = MapKeySet(root.dependencyOverrides);
-
       // Check that uncached dependencies' pubspecs are also still satisfied,
       // since they're mutable and may have changed since the last get.
       for (var id in lockFile.packages.values) {
@@ -802,7 +804,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         try {
           if (cache.load(id).dependencies.values.every(
                 (dep) =>
-                    overrides.contains(dep.name) || isDependencyUpToDate(dep),
+                    root.allOverridesInWorkspace.containsKey(dep.name) ||
+                    isDependencyUpToDate(dep),
               )) {
             continue;
           }
@@ -1088,7 +1091,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       }
       var touchedLockFile = false;
       late final lockFile = _loadLockFile(lockFilePath, cache);
-      late final root = Package.load(dir, cache.sources);
+      late final root = Package.load(
+        dir,
+        loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+      );
 
       if (!lockfileNewerThanPubspecs) {
         if (isLockFileUpToDate(lockFile, root)) {
@@ -1132,7 +1138,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           );
         }
         return entrypoint.packageConfig;
-      case PackageConfig packageConfig:
+      case final PackageConfig packageConfig:
         log.fine('Package Config up to date.');
         return packageConfig;
     }
@@ -1240,4 +1246,139 @@ See https://dart.dev/go/sdk-constraint
       }
     }
   }
+
+  /// Returns a list of changes to constraints of workspace pubspecs updated to
+  /// have their lower bound match the version in [packageVersions] (or
+  /// `this.lockFile`).
+  ///
+  /// The return value for each workspace package is a mapping from the original
+  /// package range to the updated.
+  ///
+  /// If packages to update where given in [packagesToUpgrade], only those are
+  /// tightened. Otherwise all packages are tightened.
+  ///
+  /// If a dependency has already been updated in [existingChanges], the update
+  /// will apply on top of that change (eg. preserving the new upper bound).
+  Map<Package, Map<PackageRange, PackageRange>> tighten({
+    List<String> packagesToUpgrade = const [],
+    Map<Package, Map<PackageRange, PackageRange>> existingChanges = const {},
+    List<PackageId>? packageVersions,
+  }) {
+    final result = {...existingChanges};
+
+    final toTighten = <(Package, PackageRange)>[];
+
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      if (packagesToUpgrade.isEmpty) {
+        for (final range in [
+          ...package.dependencies.values,
+          ...package.devDependencies.values,
+        ]) {
+          toTighten.add((package, range));
+        }
+      } else {
+        for (final packageToUpgrade in packagesToUpgrade) {
+          final range = package.dependencies[packageToUpgrade] ??
+              package.devDependencies[packageToUpgrade];
+          if (range != null) {
+            toTighten.add((package, range));
+          }
+        }
+      }
+    }
+
+    for (final (package, range) in toTighten) {
+      final changesForPackage = result[package] ??= {};
+      final constraint = (changesForPackage[range] ?? range).constraint;
+      final resolvedVersion =
+          (packageVersions?.firstWhere((p) => p.name == range.name) ??
+                  lockFile.packages[range.name])!
+              .version;
+      if (range.source is HostedSource && constraint.isAny) {
+        changesForPackage[range] = range
+            .toRef()
+            .withConstraint(VersionConstraint.compatibleWith(resolvedVersion));
+      } else if (constraint is VersionRange) {
+        final min = constraint.min;
+        if (min != null && min < resolvedVersion) {
+          changesForPackage[range] = range.toRef().withConstraint(
+                VersionRange(
+                  min: resolvedVersion,
+                  max: constraint.max,
+                  includeMin: true,
+                  includeMax: constraint.includeMax,
+                ).asCompatibleWithIfPossible(),
+              );
+        }
+      }
+    }
+    return result;
+  }
+
+  /// Unless [dryRun], loads `pubspec.yaml` of each [package] in [changeSet] and applies the
+  /// changes to its (dev)-dependencies using yaml_edit to preserve textual structure.
+  ///
+  /// Outputs a summary of changes done or would have been done if not [dryRun].
+  void applyChanges(ChangeSet changeSet, bool dryRun) {
+    if (!dryRun) {
+      for (final package in workspaceRoot.transitiveWorkspace) {
+        final changesForPackage = changeSet[package];
+        if (changesForPackage == null || changesForPackage.isEmpty) {
+          continue;
+        }
+        final yamlEditor = YamlEditor(readTextFile(package.pubspecPath));
+        final deps = package.dependencies.keys;
+
+        for (final change in changesForPackage.values) {
+          final section =
+              deps.contains(change.name) ? 'dependencies' : 'dev_dependencies';
+          yamlEditor.update(
+            [section, change.name],
+            pubspecDescription(change, cache, package),
+          );
+        }
+        writeTextFile(package.pubspecPath, yamlEditor.toString());
+      }
+    }
+    _outputChangeSummary(changeSet, dryRun: dryRun);
+  }
+
+  /// Outputs a summary of [changeSet].
+  void _outputChangeSummary(
+    ChangeSet changeSet, {
+    required bool dryRun,
+  }) {
+    if (workspaceRoot.workspaceChildren.isEmpty) {
+      final changesToWorkspaceRoot = changeSet[workspaceRoot] ?? {};
+      if (changesToWorkspaceRoot.isEmpty) {
+        final wouldBe = dryRun ? 'would be made to' : 'to';
+        log.message('\nNo changes $wouldBe pubspec.yaml!');
+      } else {
+        final changed = dryRun ? 'Would change' : 'Changed';
+        log.message('\n$changed ${changesToWorkspaceRoot.length} '
+            '${pluralize('constraint', changesToWorkspaceRoot.length)} in pubspec.yaml:');
+        changesToWorkspaceRoot.forEach((from, to) {
+          log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
+        });
+      }
+    } else {
+      if (changeSet.isEmpty) {
+        final wouldBe = dryRun ? 'would be made to' : 'to';
+        log.message('\nNo changes $wouldBe any pubspec.yaml!');
+      }
+      for (final package in workspaceRoot.transitiveWorkspace) {
+        final changesToPackage = changeSet[package] ?? {};
+        if (changesToPackage.isEmpty) continue;
+        final changed = dryRun ? 'Would change' : 'Changed';
+        log.message('\n$changed ${changesToPackage.length} '
+            '${pluralize('constraint', changesToPackage.length)} in ${package.pubspecPath}:');
+        changesToPackage.forEach((from, to) {
+          log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
+        });
+      }
+    }
+  }
 }
+
+/// For each package in a workspace, a set of changes to dependencies.
+typedef ChangeSet = Map<Package, Map<PackageRange, PackageRange>>;

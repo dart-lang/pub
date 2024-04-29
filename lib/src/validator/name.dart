@@ -17,10 +17,10 @@ class NameValidator extends Validator {
     return Future.sync(() {
       _checkName(package.name);
 
-      var libraries = _libraries(files);
+      final libraries = _libraries(files);
 
       if (libraries.length == 1) {
-        var libName = p.basenameWithoutExtension(libraries[0]);
+        final libName = p.basenameWithoutExtension(libraries[0]);
         if (libName == package.name) return;
         warnings.add('The name of "${libraries[0]}", "$libName", should match '
             'the name of the package, "${package.name}".\n'
@@ -32,7 +32,7 @@ class NameValidator extends Validator {
   /// Returns a list of all libraries in the current package as paths relative
   /// to the package's root directory.
   List<String> _libraries(List<String> files) {
-    var libDir = package.path('lib');
+    final libDir = package.path('lib');
     return filesBeneath('lib', recursive: true)
         .map((file) => p.relative(file, from: p.dirname(libDir)))
         .where(
@@ -63,7 +63,7 @@ class NameValidator extends Validator {
   }
 
   String _unCamelCase(String source) {
-    var builder = StringBuffer();
+    final builder = StringBuffer();
     var lastMatchEnd = 0;
     for (var match in RegExp(r'[a-z]([A-Z])').allMatches(source)) {
       builder

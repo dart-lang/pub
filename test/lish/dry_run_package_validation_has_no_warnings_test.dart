@@ -15,7 +15,7 @@ void main() {
     await d.validPackage().create();
 
     await servePackages();
-    var pub = await startPublish(globalServer, args: ['--dry-run']);
+    final pub = await startPublish(globalServer, args: ['--dry-run']);
 
     await pub.shouldExit(exit_codes.SUCCESS);
     expect(pub.stderr, emitsThrough('Package has 0 warnings.'));

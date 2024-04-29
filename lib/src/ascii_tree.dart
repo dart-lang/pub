@@ -66,7 +66,7 @@ String fromFiles(
   required bool showFileSizes,
 }) {
   // Parse out the files into a tree of nested maps.
-  var root = <String, Map>{};
+  final root = <String, Map>{};
   for (var file in files) {
     final relativeFile =
         baseDir == null ? file : p.relative(file, from: baseDir);
@@ -117,7 +117,7 @@ String fromFiles(
 ///     '   '---logging
 ///     '---barback
 String fromMap(Map<String, Map> map, {bool startingAtTop = true}) {
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   _draw(buffer, '', null, map, depth: startingAtTop ? 0 : 1);
   return buffer.toString();
 }
@@ -162,10 +162,10 @@ void _draw(
   if (name != null) _drawLine(buffer, prefix, isLast, name, depth <= 1);
 
   // Recurse to the children.
-  var childNames = ordered(children.keys);
+  final childNames = ordered(children.keys);
 
   void drawChild(bool isLastChild, String child) {
-    var childPrefix = _getPrefix(depth <= 1, isLast);
+    final childPrefix = _getPrefix(depth <= 1, isLast);
     _draw(
       buffer,
       '$prefix$childPrefix',

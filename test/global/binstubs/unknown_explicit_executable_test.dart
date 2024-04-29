@@ -18,7 +18,7 @@ void main() {
       d.dir('bin', [d.file('one.dart', "main() => print('ok');")]),
     ]).create();
 
-    var pub = await startPub(
+    final pub = await startPub(
       args: [
         'global', 'activate', '--source', 'path', '../foo', //
         '-x', 'who', '-x', 'one', '--executable', 'wat',

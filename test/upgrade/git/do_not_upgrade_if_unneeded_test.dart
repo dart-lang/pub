@@ -53,7 +53,7 @@ void main() {
       ]),
     ]).validate();
 
-    var originalFooDepSpec = packageSpec('foo_dep');
+    final originalFooDepSpec = packageSpec('foo_dep');
 
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),

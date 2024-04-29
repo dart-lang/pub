@@ -16,10 +16,10 @@ class CompiledDartdocValidator extends Validator {
     return Future.sync(() {
       for (var entry in files) {
         if (p.basename(entry) != 'nav.json') continue;
-        var dir = p.dirname(entry);
+        final dir = p.dirname(entry);
 
         // Look for tell-tale Dartdoc output files all in the same directory.
-        var files = [
+        final files = [
           entry,
           p.join(dir, 'index.html'),
           p.join(dir, 'styles.css'),

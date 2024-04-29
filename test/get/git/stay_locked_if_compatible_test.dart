@@ -26,7 +26,7 @@ void main() {
 
     await pubGet();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     await d.git(
       'foo.git',

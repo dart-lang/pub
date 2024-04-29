@@ -40,7 +40,7 @@ class PubspecFieldValidator extends Validator {
 
   /// Adds an error if [field] doesn't exist or isn't a string.
   void _validateFieldIsString(String field) {
-    var value = package.pubspec.fields[field];
+    final value = package.pubspec.fields[field];
     if (value == null) {
       errors.add('Your pubspec.yaml is missing a "$field" field.');
     } else if (value is! String) {
@@ -51,7 +51,7 @@ class PubspecFieldValidator extends Validator {
 
   /// Adds an error if the URL for [field] is invalid.
   void _validateFieldUrl(String field) {
-    var url = package.pubspec.fields[field];
+    final url = package.pubspec.fields[field];
     if (url == null) return;
 
     if (url is! String) {
@@ -60,7 +60,7 @@ class PubspecFieldValidator extends Validator {
       return;
     }
 
-    var goodScheme = RegExp(r'^https?:');
+    final goodScheme = RegExp(r'^https?:');
     if (!goodScheme.hasMatch(url)) {
       errors.add('Your pubspec.yaml\'s "$field" field must be an "http:" or '
           '"https:" URL, but it was "$url".');

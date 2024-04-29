@@ -51,7 +51,7 @@ class Term {
       );
     }
 
-    var otherConstraint = other.constraint;
+    final otherConstraint = other.constraint;
     if (other.isPositive) {
       if (isPositive) {
         // foo from hosted is disjoint with foo from git
@@ -127,8 +127,8 @@ class Term {
     if (_compatiblePackage(other.package)) {
       if (isPositive != other.isPositive) {
         // foo ^1.0.0 ∩ not foo ^1.5.0 → foo >=1.0.0 <1.5.0
-        var positive = isPositive ? this : other;
-        var negative = isPositive ? other : this;
+        final positive = isPositive ? this : other;
+        final negative = isPositive ? other : this;
         return _nonEmptyTerm(
           positive.constraint.difference(negative.constraint),
           true,

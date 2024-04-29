@@ -111,20 +111,11 @@ Consider setting the `PUB_CACHE` variable manually.
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
   Package load(PackageId id) {
-    return Package.load(getDirectory(id), sources, expectedName: id.name);
-  }
-
-  Package loadCached(PackageId id) {
-    final source = id.description.description.source;
-    if (source is CachedSource) {
-      return Package.load(
-        source.getDirectoryInCache(id, this),
-        sources,
-        expectedName: id.name,
-      );
-    } else {
-      throw ArgumentError('Call only on Cached ids.');
-    }
+    return Package.load(
+      getDirectory(id),
+      loadPubspec: Pubspec.loadRootWithSources(sources),
+      expectedName: id.name,
+    );
   }
 
   /// Create a new temporary directory within the system cache.
@@ -134,7 +125,7 @@ Consider setting the `PUB_CACHE` variable manually.
   /// system temp directory to ensure that it's on the same volume as the pub
   /// system cache so that it can move the directory from it.
   String createTempDir() {
-    var temp = ensureDir(tempDir);
+    final temp = ensureDir(tempDir);
     return io.createTempDir(temp, 'dir');
   }
 
@@ -156,7 +147,7 @@ Consider setting the `PUB_CACHE` variable manually.
   /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
   /// version.
   Future<Pubspec> describe(PackageId id) async {
-    var pubspec = cachedPubspecs[id] ??= await id.source.doDescribe(id, this);
+    final pubspec = cachedPubspecs[id] ??= await id.source.doDescribe(id, this);
     if (pubspec.version != id.version) {
       throw PackageNotFoundException(
         'the pubspec for $id has version ${pubspec.version}',

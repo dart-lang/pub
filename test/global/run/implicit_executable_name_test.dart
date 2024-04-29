@@ -20,7 +20,7 @@ void main() {
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('foo'));
     await pub.shouldExit();
   });

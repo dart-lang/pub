@@ -27,7 +27,7 @@ class DartSdk extends Sdk {
 
   static final String _rootDirectory = () {
     // If DART_ROOT is specified, then this always points to the Dart SDK
-    if (Platform.environment['DART_ROOT'] case var root?) {
+    if (Platform.environment['DART_ROOT'] case final root?) {
       return root;
     }
 
@@ -35,18 +35,18 @@ class DartSdk extends Sdk {
 
     // The Dart executable is in "/path/to/sdk/bin/dart", so two levels up is
     // "/path/to/sdk".
-    var aboveExecutable = p.dirname(p.dirname(Platform.resolvedExecutable));
+    final aboveExecutable = p.dirname(p.dirname(Platform.resolvedExecutable));
     assert(fileExists(p.join(aboveExecutable, 'version')));
     return aboveExecutable;
   }();
 
   /// The loaded `sdk_packages.yaml` file if present.
   static final SdkPackageConfig? _sdkPackages = () {
-    var path = p.join(_rootDirectory, 'sdk_packages.yaml');
+    final path = p.join(_rootDirectory, 'sdk_packages.yaml');
     if (!fileExists(path)) return null;
     final text = readTextFile(path);
     final yaml = loadYaml(text) as YamlMap;
-    var config = SdkPackageConfig.fromYaml(yaml);
+    final config = SdkPackageConfig.fromYaml(yaml);
     if (config.sdk != 'dart') {
       throw FormatException(
         'Expected a configuration for the `dart` sdk but got one for '
@@ -63,7 +63,7 @@ class DartSdk extends Sdk {
     // Some of the pub integration tests require an SDK version number, but the
     // tests on the bots are not run from a built SDK so this lets us avoid
     // parsing the missing version file.
-    var sdkVersion = Platform.environment['_PUB_TEST_SDK_VERSION'] ??
+    final sdkVersion = Platform.environment['_PUB_TEST_SDK_VERSION'] ??
         Platform.version.split(' ').first;
 
     return Version.parse(sdkVersion);
@@ -79,12 +79,12 @@ class DartSdk extends Sdk {
   @override
   String? packagePath(String name) {
     if (!isAvailable) return null;
-    var sdkPackages = _sdkPackages;
+    final sdkPackages = _sdkPackages;
     if (sdkPackages == null) return null;
 
-    var package = sdkPackages.packages[name];
+    final package = sdkPackages.packages[name];
     if (package == null) return null;
-    var packagePath = p.joinAll([_rootDirectory, ...package.path.split('/')]);
+    final packagePath = p.joinAll([_rootDirectory, ...package.path.split('/')]);
     if (dirExists(packagePath)) return packagePath;
 
     return null;

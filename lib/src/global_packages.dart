@@ -93,7 +93,7 @@ class GlobalPackages {
     String? path,
     String? ref,
   }) async {
-    var name = await cache.git.getPackageNameFromRepo(
+    final name = await cache.git.getPackageNameFromRepo(
       repo,
       ref,
       path,
@@ -178,16 +178,16 @@ class GlobalPackages {
     List<String>? executables, {
     required bool overwriteBinStubs,
   }) async {
-    var entrypoint = Entrypoint(path, cache);
+    final entrypoint = Entrypoint(path, cache);
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.get);
-    var name = entrypoint.workspaceRoot.name;
+    final name = entrypoint.workspaceRoot.name;
     _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
-    var fullPath = canonicalize(entrypoint.workspaceRoot.dir);
-    var id = cache.path.idFor(
+    final fullPath = canonicalize(entrypoint.workspaceRoot.dir);
+    final id = cache.path.idFor(
       name,
       entrypoint.workspaceRoot.version,
       fullPath,
@@ -226,7 +226,7 @@ class GlobalPackages {
 
     final tempDir = cache.createTempDir();
     // Create a dummy package with just [dep] so we can do resolution on it.
-    var root = packageForConstraint(dep, tempDir);
+    final root = packageForConstraint(dep, tempDir);
 
     // Resolve it and download its dependencies.
     SolveResult result;
@@ -267,6 +267,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           SolveType.get,
           null,
           root.pubspec,
+          root.pubspec.dependencyOverrides,
           originalLockFile ?? LockFile.empty(),
           lockFile,
           result.availableVersions,
@@ -320,7 +321,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       // Couldn't read the lock file. It probably doesn't exist.
       return null;
     }
-    var id = lockFile.packages[name]!;
+    final id = lockFile.packages[name]!;
     final description = id.description.description;
 
     if (description is GitDescription) {
@@ -340,7 +341,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   ///
   /// Returns `false` if no package with [name] was currently active.
   bool deactivate(String name) {
-    var dir = p.join(_directory, name);
+    final dir = p.join(_directory, name);
     if (!dirExists(_directory)) {
       return false;
     }
@@ -357,8 +358,8 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
     _deleteBinStubs(name);
 
-    var lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
-    var id = lockFile.packages[name]!;
+    final lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
+    final id = lockFile.packages[name]!;
     log.message('Deactivated package ${_formatPackage(id)}.');
 
     deleteEntry(dir);
@@ -370,7 +371,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   ///
   /// Returns an [Entrypoint] loaded with the active package if found.
   Future<Entrypoint> find(String name) async {
-    var lockFilePath = _getLockFilePath(name);
+    final lockFilePath = _getLockFilePath(name);
     late final LockFile lockFile;
     try {
       lockFile = LockFile.load(lockFilePath, cache.sources);
@@ -401,7 +402,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
     // Check that the SDK constraints the lockFile says we have are honored.
     lockFile.sdkConstraints.forEach((sdkName, constraint) {
-      var sdk = sdks[sdkName];
+      final sdk = sdks[sdkName];
       if (sdk == null) {
         dataError('${log.bold(name)} as globally activated requires '
             'unknown SDK "$name".');
@@ -476,10 +477,10 @@ try:
   /// path to a single lockfile or a new-style path to a directory containing a
   /// lockfile.
   PackageId _loadPackageId(String path) {
-    var name = p.basenameWithoutExtension(path);
+    final name = p.basenameWithoutExtension(path);
     if (!fileExists(path)) path = p.join(path, 'pubspec.lock');
 
-    var id =
+    final id =
         LockFile.load(p.join(_directory, path), cache.sources).packages[name];
 
     if (id == null) {
@@ -494,10 +495,10 @@ try:
   String _formatPackage(PackageId id) {
     final description = id.description.description;
     if (description is GitDescription) {
-      var url = GitDescription.prettyUri(description.url);
+      final url = GitDescription.prettyUri(description.url);
       return '${log.bold(id.name)} ${id.version} from Git repository "$url"';
     } else if (description is PathDescription) {
-      var path = description.path;
+      final path = description.path;
       return '${log.bold(id.name)} ${id.version} at path "$path"';
     } else {
       return '${log.bold(id.name)} ${id.version}';
@@ -510,17 +511,17 @@ try:
   /// were successfully re-activated; the second indicates which failed.
   Future<(List<String> successes, List<String> failures)>
       repairActivatedPackages() async {
-    var executables = <String, List<String>>{};
+    final executables = <String, List<String>>{};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
         try {
-          var binstub = readTextFile(entry);
-          var package = _binStubProperty(binstub, 'Package');
+          final binstub = readTextFile(entry);
+          final package = _binStubProperty(binstub, 'Package');
           if (package == null) {
             throw ApplicationException("No 'Package' property.");
           }
 
-          var executable = _binStubProperty(binstub, 'Executable');
+          final executable = _binStubProperty(binstub, 'Executable');
           if (executable == null) {
             throw ApplicationException("No 'Executable' property.");
           }
@@ -539,8 +540,8 @@ try:
       }
     }
 
-    var successes = <String>[];
-    var failures = <String>[];
+    final successes = <String>[];
+    final failures = <String>[];
     if (dirExists(_directory)) {
       for (var entry in listDir(_directory)) {
         PackageId? id;
@@ -548,7 +549,7 @@ try:
           id = _loadPackageId(entry);
           log.message('Reactivating ${log.bold(id.name)} ${id.version}...');
 
-          var entrypoint = await find(id.name);
+          final entrypoint = await find(id.name);
           final packageExecutables = executables.remove(id.name) ?? [];
 
           if (entrypoint.isCached) {
@@ -584,7 +585,7 @@ try:
     }
 
     if (executables.isNotEmpty) {
-      var message = StringBuffer('Binstubs exist for non-activated '
+      final message = StringBuffer('Binstubs exist for non-activated '
           'packages:\n');
       executables.forEach((package, executableNames) {
         for (var executable in executableNames) {
@@ -607,9 +608,9 @@ try:
   void _refreshBinStubs(Entrypoint entrypoint, exec.Executable executable) {
     if (!dirExists(_binStubDir)) return;
     for (var file in listDir(_binStubDir, includeDirs: false)) {
-      var contents = readTextFile(file);
-      var binStubPackage = _binStubProperty(contents, 'Package');
-      var binStubScript = _binStubProperty(contents, 'Script');
+      final contents = readTextFile(file);
+      final binStubPackage = _binStubProperty(contents, 'Package');
+      final binStubScript = _binStubProperty(contents, 'Script');
       if (binStubPackage == null || binStubScript == null) {
         log.fine('Could not parse binstub $file:\n$contents');
         continue;
@@ -667,15 +668,15 @@ try:
 
     ensureDir(_binStubDir);
 
-    var installed = <String>[];
-    var collided = <String, String>{};
-    var allExecutables = ordered(package.pubspec.executables.keys);
+    final installed = <String>[];
+    final collided = <String, String>{};
+    final allExecutables = ordered(package.pubspec.executables.keys);
     for (var executable in allExecutables) {
       if (executables != null && !executables.contains(executable)) continue;
 
-      var script = package.pubspec.executables[executable]!;
+      final script = package.pubspec.executables[executable]!;
 
-      var previousPackage = _createBinStub(
+      final previousPackage = _createBinStub(
         package,
         executable,
         script,
@@ -694,7 +695,7 @@ try:
     }
 
     if (installed.isNotEmpty) {
-      var names = namedSequence('executable', installed.map(log.bold));
+      final names = namedSequence('executable', installed.map(log.bold));
       log.message('Installed $names.');
     }
 
@@ -718,7 +719,7 @@ try:
 
     // Show errors for any unknown executables.
     if (executables != null) {
-      var unknown = ordered(
+      final unknown = ordered(
         executables
             .where((exe) => !package.pubspec.executables.keys.contains(exe)),
       );
@@ -730,10 +731,10 @@ try:
     // Show errors for any missing scripts.
     // TODO(rnystrom): This can print false positives since a script may be
     // produced by a transformer. Do something better.
-    var binFiles = package.executablePaths;
+    final binFiles = package.executablePaths;
     for (var executable in installed) {
-      var script = package.pubspec.executables[executable];
-      var scriptPath = p.join('bin', '$script.dart');
+      final script = package.pubspec.executables[executable];
+      final scriptPath = p.join('bin', '$script.dart');
       if (!binFiles.contains(scriptPath)) {
         log.warning('Warning: Executable "$executable" runs "$scriptPath", '
             'which was not found in ${log.bold(package.name)}.');
@@ -770,7 +771,7 @@ try:
     // since we already deleted all of this package's binstubs.
     String? previousPackage;
     if (fileExists(binStubPath)) {
-      var contents = readTextFile(binStubPath);
+      final contents = readTextFile(binStubPath);
       previousPackage = _binStubProperty(contents, 'Package');
       if (previousPackage == null) {
         log.fine('Could not parse binstub $binStubPath:\n$contents');
@@ -854,7 +855,7 @@ fi
 
       if (Platform.isLinux || Platform.isMacOS) {
         // Make it executable.
-        var result = Process.runSync('chmod', ['+x', tmpPath]);
+        final result = Process.runSync('chmod', ['+x', tmpPath]);
         if (result.exitCode != 0) {
           // Couldn't make it executable so don't leave it laying around.
           fail('Could not make "$tmpPath" executable (exit code '
@@ -874,8 +875,8 @@ fi
     if (!dirExists(_binStubDir)) return;
 
     for (var file in listDir(_binStubDir, includeDirs: false)) {
-      var contents = readTextFile(file);
-      var binStubPackage = _binStubProperty(contents, 'Package');
+      final contents = readTextFile(file);
+      final binStubPackage = _binStubProperty(contents, 'Package');
       if (binStubPackage == null) {
         log.fine('Could not parse binstub $file:\n$contents');
         continue;
@@ -897,7 +898,7 @@ fi
     if (Platform.isWindows) {
       // See if the shell can find one of the binstubs.
       // "\q" means return exit code 0 if found or 1 if not.
-      var result = runProcessSync('where', [r'\q', '$installed.bat']);
+      final result = runProcessSync('where', [r'\q', '$installed.bat']);
       if (result.exitCode == 0) return;
 
       log.warning("${log.yellow('Warning:')} Pub installs executables into "
@@ -910,7 +911,7 @@ fi
       //
       // The "command" builtin is more reliable than the "which" executable. See
       // http://unix.stackexchange.com/questions/85249/why-not-use-which-what-to-use-then
-      var result =
+      final result =
           runProcessSync('command', ['-v', installed], runInShell: true);
       if (result.exitCode == 0) return;
 
@@ -938,8 +939,8 @@ fi
   /// Returns the value of the property named [name] in the bin stub script
   /// [source].
   String? _binStubProperty(String source, String name) {
-    var pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
-    var match = pattern.firstMatch(source);
+    final pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
+    final match = pattern.firstMatch(source);
     return match == null ? null : match[1];
   }
 }

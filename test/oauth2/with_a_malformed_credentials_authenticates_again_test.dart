@@ -18,7 +18,7 @@ void main() {
     await servePackages();
     await configDir([d.file('pub-credentials.json', '{bad json')]).create();
 
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
     await confirmPublish(pub);
     await authorizePub(pub, globalServer, 'new access token');
 

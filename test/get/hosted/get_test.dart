@@ -102,7 +102,7 @@ void main() {
     // be accessed.
     (await servePackages()).serveErrors();
 
-    var server = await startPackageServer();
+    final server = await startPackageServer();
     server.serve('foo', '1.2.3');
 
     await d.appDir(
@@ -124,7 +124,7 @@ void main() {
 
   test('recognizes and retries a package with a CRC32C checksum mismatch',
       () async {
-    var server = await startPackageServer();
+    final server = await startPackageServer();
 
     server.serve(
       'foo',
@@ -312,7 +312,7 @@ void main() {
 
       await pubGet();
 
-      var packages = loadYaml(
+      final packages = loadYaml(
         readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
       )['packages'];
       expect(
@@ -353,7 +353,7 @@ void main() {
 
       await pubGet();
 
-      var packages = loadYaml(
+      final packages = loadYaml(
         readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
       )['packages'];
       expect(

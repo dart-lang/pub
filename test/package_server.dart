@@ -300,7 +300,7 @@ class PackageServer {
     String? sdk,
     Map<String, List<String>>? headers,
   }) {
-    var pubspecFields = <String, dynamic>{
+    final pubspecFields = <String, dynamic>{
       'name': name,
       'version': version,
       'environment': {'sdk': sdk ?? '^3.0.0'},
@@ -311,7 +311,7 @@ class PackageServer {
     contents ??= [d.libDir(name, '$name $version')];
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
-    var package = _packages.putIfAbsent(name, _ServedPackage.new);
+    final package = _packages.putIfAbsent(name, _ServedPackage.new);
     package.versions[version] = _ServedPackageVersion(
       pubspecFields,
       headers: headers,

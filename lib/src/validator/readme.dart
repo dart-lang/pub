@@ -42,7 +42,7 @@ class ReadmeValidator extends Validator {
           'See https://dart.dev/tools/pub/publishing#important-files.');
     }
 
-    var bytes = readBinaryFile(readme);
+    final bytes = readBinaryFile(readme);
     try {
       // utf8.decode doesn't allow invalid UTF-8.
       utf8.decode(bytes);

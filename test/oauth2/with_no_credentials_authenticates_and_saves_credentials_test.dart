@@ -15,7 +15,7 @@ void main() {
       'credentials.json', () async {
     await d.validPackage().create();
     await servePackages();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
     await confirmPublish(pub);
     await authorizePub(pub, globalServer);
 

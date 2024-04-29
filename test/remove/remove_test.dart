@@ -213,7 +213,7 @@ environment:
     final server = await servePackages();
     server.serve('bar', '2.0.1');
 
-    var custom = await startPackageServer();
+    final custom = await startPackageServer();
     custom.serve('foo', '1.2.3');
 
     await d.appDir(
