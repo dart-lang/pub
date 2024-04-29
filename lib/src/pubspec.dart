@@ -201,7 +201,7 @@ class Pubspec extends PubspecBase {
   /// Parses the "environment" field in [parent] and returns a map from SDK
   /// identifiers to constraints on those SDKs.
   Map<String, SdkConstraint> _parseEnvironment(YamlMap parent) {
-    var yaml = parent['environment'];
+    final yaml = parent['environment'];
     final VersionConstraint originalDartSdkConstraint;
     if (yaml == null) {
       originalDartSdkConstraint = VersionConstraint.any;
@@ -217,7 +217,7 @@ class Pubspec extends PubspecBase {
         _FileType.pubspec,
       );
     }
-    var constraints = {
+    final constraints = {
       'dart': SdkConstraint.interpretDartSdkConstraint(
         originalDartSdkConstraint,
         defaultUpperBoundConstraint: _includeDefaultSdkConstraint
@@ -271,8 +271,8 @@ class Pubspec extends PubspecBase {
     bool allowOverridesFile = false,
     required Description containingDescription,
   }) {
-    var pubspecPath = p.join(packageDir, pubspecYamlFilename);
-    var overridesPath = p.join(packageDir, pubspecOverridesFilename);
+    final pubspecPath = p.join(packageDir, pubspecYamlFilename);
+    final overridesPath = p.join(packageDir, pubspecOverridesFilename);
     if (!fileExists(pubspecPath)) {
       throw FileException(
         // Make the package dir absolute because for the entrypoint it'll just
@@ -473,7 +473,7 @@ class Pubspec extends PubspecBase {
   List<SourceSpanApplicationException> _collectErrorsFor(
     List<dynamic Function()> toCheck,
   ) {
-    var errors = <SourceSpanApplicationException>[];
+    final errors = <SourceSpanApplicationException>[];
     void collectError(void Function() fn) {
       try {
         fn();
@@ -548,7 +548,7 @@ Map<String, PackageRange> _parseDependencies(
   Description containingDescription, {
   _FileType fileType = _FileType.pubspec,
 }) {
-  var dependencies = <String, PackageRange>{};
+  final dependencies = <String, PackageRange>{};
 
   // Allow an empty dependencies key.
   if (node == null || node.value == null) return dependencies;
@@ -557,7 +557,7 @@ Map<String, PackageRange> _parseDependencies(
     _error('"$field" field must be a map.', node.span);
   }
 
-  var nonStringNode = node.nodes.keys
+  final nonStringNode = node.nodes.keys
       .firstWhereOrNull((e) => e is YamlScalar && e.value is! String);
   if (nonStringNode != null) {
     _error(
@@ -568,14 +568,14 @@ Map<String, PackageRange> _parseDependencies(
 
   node.nodes.forEach(
     (nameNode, specNode) {
-      var name = (nameNode as YamlNode).value;
+      final name = (nameNode as YamlNode).value;
       if (name is! String) {
         _error('A dependency name must be a string.', nameNode.span);
       }
       if (!packageNameRegExp.hasMatch(name)) {
         _error('Not a valid package name.', nameNode.span);
       }
-      var spec = specNode.value;
+      final spec = specNode.value;
       if (packageName != null && name == packageName) {
         _error('A package may not list itself as a dependency.', nameNode.span);
       }
@@ -607,7 +607,10 @@ Map<String, PackageRange> _parseDependencies(
           sourceName = 'hosted';
         } else {
           switch (otherEntries.single) {
-            case MapEntry(key: YamlScalar(value: String s), value: final d):
+            case MapEntry(
+                key: YamlScalar(value: final String s),
+                value: final d
+              ):
               sourceName = s;
               descriptionNode = d;
             case MapEntry(key: final k, value: _):
@@ -625,7 +628,7 @@ Map<String, PackageRange> _parseDependencies(
       }
 
       // Let the source validate the description.
-      var ref = _wrapFormatException(
+      final ref = _wrapFormatException(
         'description',
         descriptionNode?.span,
         () {
@@ -670,7 +673,7 @@ VersionConstraint _parseVersionConstraint(
     'version constraint',
     node.span,
     () {
-      var constraint = VersionConstraint.parse(value);
+      final constraint = VersionConstraint.parse(value);
       return constraint;
     },
     packageName,

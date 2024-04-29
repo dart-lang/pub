@@ -44,7 +44,7 @@ To recompile executables, first run `dart pub global deactivate foo`.
 Activated foo 1.0.0.''',
     );
 
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('bar 1.0.0'));
     await pub.shouldExit();
 
@@ -70,7 +70,7 @@ Built foo:foo.
 Activated foo 1.0.0.''',
     );
 
-    var pub2 = await pubRun(global: true, args: ['foo']);
+    final pub2 = await pubRun(global: true, args: ['foo']);
     expect(pub2.stdout, emits('bar 2.0.0'));
     await pub2.shouldExit();
   });

@@ -31,7 +31,7 @@ void main() {
 
     test('has a gitignored README with invalid utf-8', () async {
       await d.validPackage().create();
-      var repo = d.git(appPath, [
+      final repo = d.git(appPath, [
         d.file('README', [192]),
         d.file('.gitignore', 'README'),
       ]);

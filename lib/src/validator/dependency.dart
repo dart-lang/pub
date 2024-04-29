@@ -25,8 +25,8 @@ class DependencyValidator extends Validator {
     /// Emit an error for dependencies from unknown SDKs or without appropriate
     /// constraints on the Dart SDK.
     void warnAboutSdkSource(PackageRange dep) {
-      var identifier = (dep.description as SdkDescription).sdk;
-      var sdk = sdks[identifier];
+      final identifier = (dep.description as SdkDescription).sdk;
+      final sdk = sdks[identifier];
       if (sdk == null) {
         errors.add('Unknown SDK "$identifier" for dependency "${dep.name}".');
         return;
@@ -37,7 +37,7 @@ class DependencyValidator extends Validator {
     Future warnAboutSource(PackageRange dep) async {
       List<Version> versions;
       try {
-        var ids = await cache.getVersions(cache.hosted.refFor(dep.name));
+        final ids = await cache.getVersions(cache.hosted.refFor(dep.name));
         versions = ids.map((id) => id.version).toList();
       } on ApplicationException catch (_) {
         versions = [];
@@ -54,7 +54,7 @@ class DependencyValidator extends Validator {
       }
 
       // Path sources are errors. Other sources are just warnings.
-      var messages = dep.source is PathSource ? errors : warnings;
+      final messages = dep.source is PathSource ? errors : warnings;
 
       messages.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
           'source. Use the hosted source instead. For example:\n'
@@ -87,7 +87,7 @@ class DependencyValidator extends Validator {
     void warnAboutNoConstraint(PackageRange dep) {
       var message = 'Your dependency on "${dep.name}" should have a version '
           'constraint.';
-      var locked = context.entrypoint.lockFile.packages[dep.name];
+      final locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         message = '$message For example:\n'
             '\n'
@@ -117,7 +117,7 @@ class DependencyValidator extends Validator {
     void warnAboutNoConstraintLowerBound(PackageRange dep) {
       var message =
           'Your dependency on "${dep.name}" should have a lower bound.';
-      var locked = context.entrypoint.lockFile.packages[dep.name];
+      final locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         String constraint;
         if (locked.version == (dep.constraint as VersionRange).max) {
@@ -175,7 +175,7 @@ class DependencyValidator extends Validator {
     /// Validates all dependencies in [dependencies].
     Future validateDependencies(Iterable<PackageRange> dependencies) async {
       for (var dependency in dependencies) {
-        var constraint = dependency.constraint;
+        final constraint = dependency.constraint;
         if (dependency.name == 'flutter') {
           warnAboutFlutterSdk(dependency);
         } else if (dependency.source is SdkSource) {

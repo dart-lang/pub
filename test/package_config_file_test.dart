@@ -81,7 +81,7 @@ void main() {
         d.dir('lib'),
       ]).create();
 
-      var oldFile = d.dir(appPath, [
+      final oldFile = d.dir(appPath, [
         d.packageConfigFile([
           d.packageConfigEntry(
             name: 'notFoo',

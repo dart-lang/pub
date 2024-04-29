@@ -36,7 +36,7 @@ class DirectoryValidator extends Validator {
       final dirName = p.basename(dir);
       if (_pluralNames.contains(dirName)) {
         // Cut off the "s"
-        var singularName = dirName.substring(0, dirName.length - 1);
+        final singularName = dirName.substring(0, dirName.length - 1);
         warnings.add('Rename the top-level "$dirName" directory to '
             '"$singularName".\n'
             'The Pub layout convention is to use singular directory '

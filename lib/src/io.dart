@@ -108,7 +108,7 @@ FileStat? tryStatFile(String path) {
 /// filesystem; nonexistent or unreadable path entries are treated as normal
 /// directories.
 String canonicalize(String pathString) {
-  var seen = <String>{};
+  final seen = <String>{};
   var components =
       Queue<String>.from(p.split(p.normalize(p.absolute(pathString))));
 
@@ -120,15 +120,16 @@ String canonicalize(String pathString) {
   // resolved in turn.
   while (components.isNotEmpty) {
     seen.add(p.join(newPath, p.joinAll(components)));
-    var resolvedPath = _resolveLink(p.join(newPath, components.removeFirst()));
-    var relative = p.relative(resolvedPath, from: newPath);
+    final resolvedPath =
+        _resolveLink(p.join(newPath, components.removeFirst()));
+    final relative = p.relative(resolvedPath, from: newPath);
 
     // If the resolved path of the component relative to `newPath` is just ".",
     // that means component was a symlink pointing to its parent directory. We
     // can safely ignore such components.
     if (relative == '.') continue;
 
-    var relativeComponents = Queue<String>.from(p.split(relative));
+    final relativeComponents = Queue<String>.from(p.split(relative));
 
     // If the resolved path is absolute relative to `newPath`, that means it's
     // on a different drive. We need to canonicalize the entire target of that
@@ -165,7 +166,7 @@ String canonicalize(String pathString) {
     // If we've already tried to canonicalize the new path, we've encountered a
     // symlink loop. Avoid going infinite by treating the recursive symlink as
     // the canonical path.
-    var newSubPath = p.join(newPath, p.joinAll(relativeComponents));
+    final newSubPath = p.join(newPath, p.joinAll(relativeComponents));
     if (seen.contains(newSubPath)) {
       newPath = newSubPath;
       continue;
@@ -189,7 +190,7 @@ String canonicalize(String pathString) {
 ///
 /// This accepts paths to non-links or broken links, and returns them as-is.
 String _resolveLink(String link) {
-  var seen = <String>{};
+  final seen = <String>{};
   while (linkExists(link) && seen.add(link)) {
     link = p.normalize(p.join(p.dirname(link), Link(link).targetSync()));
   }
@@ -207,7 +208,7 @@ Future<String> readTextFileAsync(String file) {
 /// Reads the contents of the binary file [file].
 Uint8List readBinaryFile(String file) {
   log.io('Reading binary file $file.');
-  var contents = File(file).readAsBytesSync();
+  final contents = File(file).readAsBytesSync();
   log.io('Read ${contents.length} bytes from $file.');
   return contents;
 }
@@ -215,7 +216,7 @@ Uint8List readBinaryFile(String file) {
 /// Reads the contents of the binary file [file] as a [Stream].
 Stream<List<int>> readBinaryFileAsStream(String file) {
   log.io('Reading binary file $file.');
-  var contents = File(file).openRead();
+  final contents = File(file).openRead();
   return contents;
 }
 
@@ -308,7 +309,7 @@ String ensureDir(String dir) {
 ///
 /// Returns the path of the created directory.
 String createTempDir(String base, String prefix) {
-  var tempDir = Directory(base).createTempSync(prefix);
+  final tempDir = Directory(base).createTempSync(prefix);
   log.io('Created temp directory ${tempDir.path}');
   return tempDir.path;
 }
@@ -318,7 +319,7 @@ String createTempDir(String base, String prefix) {
 ///
 /// Returns the path of the created directory.
 Future<String> _createSystemTempDir() async {
-  var tempDir = await Directory.systemTemp.createTemp('pub_');
+  final tempDir = await Directory.systemTemp.createTemp('pub_');
   log.io('Created temp directory ${tempDir.path}');
   return tempDir.resolveSymbolicLinksSync();
 }
@@ -352,7 +353,7 @@ List<String> listDir(
   bool includeDirs = true,
   Iterable<String> allowed = const <String>[],
 }) {
-  var allowListFilter = createFileFilter(allowed);
+  final allowListFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
   // files. As such, it leans more heavily towards optimization as opposed to
@@ -448,7 +449,7 @@ void _attempt(
       operation();
       break;
     } on FileSystemException catch (error) {
-      var reason = getErrorReason(error);
+      final reason = getErrorReason(error);
       if (reason == null) rethrow;
 
       if (i < maxRetries - 1) {
@@ -579,7 +580,7 @@ void createSymlink(String target, String symlink, {bool relative = false}) {
       // If the directory where we're creating the symlink was itself reached
       // by traversing a symlink, we want the relative path to be relative to
       // it's actual location, not the one we went through to get to it.
-      var symlinkDir = canonicalize(p.dirname(symlink));
+      final symlinkDir = canonicalize(p.dirname(symlink));
       target = p.normalize(p.relative(target, from: symlinkDir));
     }
   }
@@ -658,7 +659,7 @@ final String dartRepoRoot = (() {
 
   // Get the URL of the repo root in a way that works when either both running
   // as a test or as a pub executable.
-  var url = Platform.script
+  final url = Platform.script
       .replace(path: Platform.script.path.replaceAll(_dartRepoRegExp, ''));
   return p.fromUri(url);
 })();
@@ -736,8 +737,8 @@ Future flushThenExit(int status) {
 (EventSink<T> consumerSink, Future done) _consumerToSink<T>(
   StreamConsumer<T> consumer,
 ) {
-  var controller = StreamController<T>(sync: true);
-  var done = controller.stream.pipe(consumer);
+  final controller = StreamController<T>(sync: true);
+  final done = controller.stream.pipe(consumer);
   return (controller.sink, done);
 }
 
@@ -780,7 +781,7 @@ Future<PubProcessResult> runProcess(
       );
     }
 
-    var pubResult = PubProcessResult(
+    final pubResult = PubProcessResult(
       result.stdout as String,
       result.stderr as String,
       result.exitCode,
@@ -824,7 +825,7 @@ Future<PubProcess> startProcess(
       );
     }
 
-    var process = PubProcess(ioProcess);
+    final process = PubProcess(ioProcess);
     unawaited(process.exitCode.whenComplete(resource.release));
     return process;
   });
@@ -857,7 +858,7 @@ PubProcessResult runProcessSync(
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
-  var pubResult = PubProcessResult(
+  final pubResult = PubProcessResult(
     result.stdout as String,
     result.stderr as String,
     result.exitCode,
@@ -928,18 +929,18 @@ class PubProcess {
 
   /// Creates a new [PubProcess] wrapping [process].
   PubProcess(Process process) : _process = process {
-    var errorGroup = ErrorGroup();
+    final errorGroup = ErrorGroup();
 
-    var (consumerSink, done) = _consumerToSink(process.stdin);
+    final (consumerSink, done) = _consumerToSink(process.stdin);
     _stdin = consumerSink;
     _stdinClosed = errorGroup.registerFuture(done);
 
     _stdout = ByteStream(errorGroup.registerStream(process.stdout));
     _stderr = ByteStream(errorGroup.registerStream(process.stderr));
 
-    var exitCodeCompleter = Completer<int>();
+    final exitCodeCompleter = Completer<int>();
     _exitCode = errorGroup.registerFuture(exitCodeCompleter.future);
-    _process.exitCode.then((code) => exitCodeCompleter.complete(code));
+    _process.exitCode.then(exitCodeCompleter.complete);
   }
 
   /// Sends [signal] to the underlying process.
@@ -982,7 +983,7 @@ void touch(String path) {
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
 Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
-  var tempDir = await _createSystemTempDir();
+  final tempDir = await _createSystemTempDir();
   try {
     return await fn(tempDir);
   } finally {
@@ -995,7 +996,7 @@ Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
 /// If [host] is "localhost", this will automatically listen on both the IPv4
 /// and IPv6 loopback addresses.
 Future<HttpServer> bindServer(String host, int port) async {
-  var server = host == 'localhost'
+  final server = host == 'localhost'
       ? await HttpMultiServer.loopback(port)
       : await HttpServer.bind(host, port);
   server.autoCompress = true;
@@ -1136,7 +1137,7 @@ ByteStream createTarGz(
   List<String> contents, {
   required String baseDir,
 }) {
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   buffer.write('Creating .tar.gz stream containing:\n');
   contents.forEach(buffer.writeln);
   log.fine(buffer.toString());
@@ -1197,7 +1198,7 @@ class PubProcessResult {
 
   // TODO(rnystrom): Remove this and change to returning one string.
   static List<String> _toLines(String output) {
-    var lines = splitLines(output);
+    final lines = splitLines(output);
     if (lines.isNotEmpty && lines.last == '') lines.removeLast();
     return lines;
   }

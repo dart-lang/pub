@@ -17,7 +17,8 @@ void main() {
       }),
     ]).create();
 
-    var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);
+    final pub =
+        await startPub(args: ['global', 'activate', '-spath', '../foo']);
 
     expect(
       pub.stderr,

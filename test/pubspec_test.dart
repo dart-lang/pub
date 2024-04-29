@@ -17,7 +17,7 @@ void main() {
   group('parse()', () {
     final sources = SystemCache().sources;
 
-    var throwsPubspecException =
+    final throwsPubspecException =
         throwsA(const TypeMatcher<SourceSpanApplicationException>());
 
     void expectPubspecException(
@@ -35,7 +35,7 @@ void main() {
         );
       }
 
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         contents,
         sources,
         containingDescription: containingDescription ?? RootDescription('.'),
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('allows a version constraint for dependencies', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dependencies:
   foo:
@@ -94,7 +94,7 @@ dependencies:
         containingDescription: RootDescription('.'),
       );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -102,7 +102,7 @@ dependencies:
     });
 
     test('allows empty version constraint', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dependencies:
   foo:
@@ -115,13 +115,13 @@ dependencies:
         containingDescription: RootDescription('.'),
       );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.isEmpty, isTrue);
     });
 
     test('allows an empty dependencies map', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dependencies:
 ''',
@@ -133,7 +133,7 @@ dependencies:
     });
 
     test('allows a version constraint for dev dependencies', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dev_dependencies:
   foo:
@@ -146,7 +146,7 @@ dev_dependencies:
         containingDescription: RootDescription('.'),
       );
 
-      var foo = pubspec.devDependencies['foo']!;
+      final foo = pubspec.devDependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -154,7 +154,7 @@ dev_dependencies:
     });
 
     test('allows an empty dev dependencies map', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dev_dependencies:
 ''',
@@ -166,7 +166,7 @@ dev_dependencies:
     });
 
     test('allows a version constraint for dependency overrides', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dependency_overrides:
   foo:
@@ -179,7 +179,7 @@ dependency_overrides:
         containingDescription: RootDescription('.'),
       );
 
-      var foo = pubspec.dependencyOverrides['foo']!;
+      final foo = pubspec.dependencyOverrides['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -187,7 +187,7 @@ dependency_overrides:
     });
 
     test('allows an empty dependency overrides map', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dependency_overrides:
 ''',
@@ -199,7 +199,7 @@ dependency_overrides:
     });
 
     test('allows an unknown source', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dependencies:
   foo:
@@ -209,13 +209,13 @@ dependencies:
         containingDescription: RootDescription('.'),
       );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources('unknown')));
     });
 
     test('allows a default source', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 dependencies:
   foo:
@@ -225,7 +225,7 @@ dependencies:
         containingDescription: RootDescription('.'),
       );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources('hosted')));
     });
@@ -445,7 +445,7 @@ resolution: "sometimes"''',
     });
 
     test('allows comment-only files', () {
-      var pubspec = Pubspec.parse(
+      final pubspec = Pubspec.parse(
         '''
 # No external dependencies yet
 # Including for completeness
@@ -477,7 +477,7 @@ dependencies:
 
     group('source dependencies', () {
       test('with url and name', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 dependencies:
@@ -490,7 +490,7 @@ dependencies:
           containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
@@ -505,7 +505,7 @@ dependencies:
       });
 
       test('with url only', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 environment:
@@ -519,7 +519,7 @@ dependencies:
           containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
@@ -534,7 +534,7 @@ dependencies:
       });
 
       test('with url as string', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 environment:
@@ -547,7 +547,7 @@ dependencies:
           containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
@@ -562,7 +562,7 @@ dependencies:
       });
 
       test('interprets string description as name for older versions', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 environment:
@@ -575,7 +575,7 @@ dependencies:
           containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
@@ -592,7 +592,7 @@ dependencies:
       test(
         'reports helpful span when using new syntax with invalid environment',
         () {
-          var pubspec = Pubspec.parse(
+          final pubspec = Pubspec.parse(
             '''
 name: pkg
 environment:
@@ -616,7 +616,7 @@ dependencies:
       );
 
       test('without a description', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 dependencies:
@@ -626,7 +626,7 @@ dependencies:
           containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
@@ -730,7 +730,7 @@ dependencies:
 
     group('environment', () {
       test('allows an omitted environment', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           'name: testing',
           sources,
           containingDescription: RootDescription('.'),
@@ -745,7 +745,7 @@ dependencies:
       });
 
       test('default SDK constraint can be omitted with empty environment', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '',
           sources,
           containingDescription: RootDescription('.'),
@@ -759,7 +759,7 @@ dependencies:
       });
 
       test('defaults the upper constraint for the SDK', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
   name: test
   environment:
@@ -779,7 +779,7 @@ dependencies:
       test(
           'default upper constraint for the SDK applies only if compatible '
           'with the lower bound', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
   environment:
     sdk: ">3.0.0"
@@ -806,7 +806,7 @@ dependencies:
       });
 
       test('allows a version constraint for the SDKs', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 environment:
   sdk: ">=1.2.3 <2.3.4"
@@ -875,7 +875,7 @@ environment:
 
     group('publishTo', () {
       test('defaults to null if omitted', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '',
           sources,
           containingDescription: RootDescription('.'),
@@ -891,7 +891,7 @@ environment:
       });
 
       test('allows a URL', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 publish_to: http://example.com
 ''',
@@ -902,7 +902,7 @@ publish_to: http://example.com
       });
 
       test('allows none', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 publish_to: none
 ''',
@@ -929,7 +929,7 @@ publish_to: none
 
     group('executables', () {
       test('defaults to an empty map if omitted', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '',
           sources,
           containingDescription: RootDescription('.'),
@@ -938,7 +938,7 @@ publish_to: none
       });
 
       test('allows simple names for keys and most characters in values', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 executables:
   abcDEF-123_: "abc DEF-123._"
@@ -992,7 +992,7 @@ executables:
       });
 
       test('uses the key if the value is null', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 executables:
   command:
@@ -1035,12 +1035,12 @@ dependency_overrides:
           );
         }
 
-        var pubspec = parsePubspecOverrides(contents);
+        final pubspec = parsePubspecOverrides(contents);
         expect(() => fn(pubspec), throwsA(expectation));
       }
 
       test('allows empty overrides file', () {
-        var pubspec = parsePubspecOverrides('');
+        final pubspec = parsePubspecOverrides('');
         expect(pubspec.dependencyOverrides['foo'], isNull);
         final bar = pubspec.dependencyOverrides['bar']!;
         expect(bar.name, equals('bar'));

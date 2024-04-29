@@ -22,11 +22,11 @@ class CacheListCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     // TODO(keertip): Add flag to list packages from non default sources.
-    var packagesObj = <String, Map>{};
+    final packagesObj = <String, Map>{};
 
-    var source = cache.defaultSource as CachedSource;
+    final source = cache.defaultSource as CachedSource;
     for (var package in source.getCachedPackages(cache)) {
-      var packageInfo = packagesObj.putIfAbsent(package.name, () => {});
+      final packageInfo = packagesObj.putIfAbsent(package.name, () => {});
       packageInfo[package.version.toString()] = {'location': package.dir};
     }
 

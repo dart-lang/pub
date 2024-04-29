@@ -121,7 +121,7 @@ void main() {
         }),
       ]).create();
 
-      var bazPath = p.join('..', 'baz');
+      final bazPath = p.join('..', 'baz');
 
       await runPub(
         args: [command.name],

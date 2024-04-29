@@ -145,16 +145,16 @@ class LishCommand extends PubCommand {
         final parameters = parseJsonResponse(parametersResponse);
 
         /// 2. Upload package
-        var url = _expectField(parameters, 'url', parametersResponse);
+        final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
         final uploadResponse =
             await retryForHttp('uploading package', () async {
           // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
           // should report that error and exit.
-          var request = http.MultipartRequest('POST', cloudStorageUrl!);
+          final request = http.MultipartRequest('POST', cloudStorageUrl!);
 
-          var fields = _expectField(parameters, 'fields', parametersResponse);
+          final fields = _expectField(parameters, 'fields', parametersResponse);
           if (fields is! Map) invalidServerResponse(parametersResponse);
           fields.forEach((key, value) {
             if (value is! String) invalidServerResponse(parametersResponse);
@@ -173,7 +173,7 @@ class LishCommand extends PubCommand {
         });
 
         /// 3. Finalize publish
-        var location = uploadResponse.headers['location'];
+        final location = uploadResponse.headers['location'];
         if (location == null) throw PubHttpResponseException(uploadResponse);
         final finalizeResponse =
             await retryForHttp('finalizing publish', () async {
@@ -201,7 +201,7 @@ class LishCommand extends PubCommand {
       }
       dataError(msg + log.red('Authentication failed!'));
     } on PubHttpResponseException catch (error) {
-      var url = error.response.request!.url;
+      final url = error.response.request!.url;
       if (url == cloudStorageUrl) {
         handleGCSError(error.response);
         fail(log.red('Failed to upload the package.'));
@@ -250,7 +250,7 @@ class LishCommand extends PubCommand {
         });
       }
     } on PubHttpResponseException catch (error) {
-      var url = error.response.request!.url;
+      final url = error.response.request!.url;
       if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
       } else {
@@ -303,11 +303,11 @@ the \$PUB_HOSTED_URL environment variable.''',
       await entrypoint.acquireDependencies(SolveType.get);
     }
 
-    var files = entrypoint.workPackage.listFiles();
+    final files = entrypoint.workPackage.listFiles();
     log.fine('Archiving and publishing ${entrypoint.workPackage.name}.');
 
     // Show the package contents so the user can verify they look OK.
-    var package = entrypoint.workPackage;
+    final package = entrypoint.workPackage;
     final host = computeHost(package.pubspec);
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'

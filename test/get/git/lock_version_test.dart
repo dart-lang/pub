@@ -36,7 +36,7 @@ void main() {
       ]),
     ]).validate();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     // Delete the package spec to simulate a new checkout of the application.
     deleteEntry(p.join(d.sandbox, packageConfigFilePath));

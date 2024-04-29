@@ -132,7 +132,7 @@ Future<T> captureErrors<T>(
   Future<T> Function() callback, {
   bool captureStackChains = false,
 }) {
-  var completer = Completer<T>();
+  final completer = Completer<T>();
   void wrappedCallback() {
     Future.sync(callback)
         .then(completer.complete)
@@ -259,7 +259,7 @@ bool isLoopback(String host) {
 
 /// Returns a list containing the sorted elements of [iter].
 List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
-  var list = iter.toList();
+  final list = iter.toList();
   list.sort();
   return list;
 }
@@ -271,7 +271,7 @@ List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
 /// and only if that path's basename is in [files].
 Set<String> createFileFilter(Iterable<String> files) {
   return files.expand<String>((file) {
-    var result = ['/$file'];
+    final result = ['/$file'];
     if (Platform.isWindows) result.add('\\$file');
     return result;
   }).toSet();
@@ -284,7 +284,7 @@ Set<String> createFileFilter(Iterable<String> files) {
 /// and only if one of that path's components is in [dirs].
 Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
-    var result = ['/$dir/'];
+    final result = ['/$dir/'];
     if (Platform.isWindows) {
       result
         ..add('/$dir\\')
@@ -316,7 +316,7 @@ Future<S?> minByAsync<S, T>(
 ) async {
   int? minIndex;
   T? minOrderBy;
-  var valuesList = values.toList();
+  final valuesList = values.toList();
   final orderByResults = await Future.wait(values.map(orderBy));
   for (var i = 0; i < orderByResults.length; i++) {
     final elementOrderBy = orderByResults[i];
@@ -361,7 +361,7 @@ Future<S> foldAsync<S, T>(
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
 String replace(String source, Pattern matcher, String Function(Match) fn) {
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   var start = 0;
   for (var match in matcher.allMatches(source)) {
     buffer.write(source.substring(start, match.start));
@@ -395,7 +395,7 @@ List<String> splitLines(String text) =>
 List<String> split1(String toSplit, String pattern) {
   if (toSplit.isEmpty) return <String>[];
 
-  var index = toSplit.indexOf(pattern);
+  final index = toSplit.indexOf(pattern);
   if (index == -1) return [toSplit];
   return [
     toSplit.substring(0, index),
@@ -406,12 +406,12 @@ List<String> split1(String toSplit, String pattern) {
 /// Convert a URL query string (or `application/x-www-form-urlencoded` body)
 /// into a [Map] from parameter names to values.
 Map<String, String> queryToMap(String queryList) {
-  var map = <String, String>{};
+  final map = <String, String>{};
   for (var pair in queryList.split('&')) {
-    var split = split1(pair, '=');
+    final split = split1(pair, '=');
     if (split.isEmpty) continue;
-    var key = _urlDecode(split[0]);
-    var value = split.length > 1 ? _urlDecode(split[1]) : '';
+    final key = _urlDecode(split[0]);
+    final value = split.length > 1 ? _urlDecode(split[1]) : '';
     map[key] = value;
   }
   return map;
@@ -419,15 +419,15 @@ Map<String, String> queryToMap(String queryList) {
 
 /// Returns a human-friendly representation of [duration].
 String niceDuration(Duration duration) {
-  var hasMinutes = duration.inMinutes > 0;
-  var result = hasMinutes ? '${duration.inMinutes}:' : '';
+  final hasMinutes = duration.inMinutes > 0;
+  final result = hasMinutes ? '${duration.inMinutes}:' : '';
 
-  var s = duration.inSeconds % 60;
-  var ms = duration.inMilliseconds % 1000;
+  final s = duration.inSeconds % 60;
+  final ms = duration.inMilliseconds % 1000;
 
   // If we're using verbose logging, be more verbose but more accurate when
   // reporting timing information.
-  var msString = log.verbosity.isLevelVisible(log.Level.fine)
+  final msString = log.verbosity.isLevelVisible(log.Level.fine)
       ? _padLeft(ms.toString(), 3, '0')
       : (ms ~/ 100).toString();
 
@@ -498,7 +498,7 @@ String prefixLines(String text, {String prefix = '| ', String? firstPrefix}) {
     return lines.map((line) => '$prefix$line').join('\n');
   }
 
-  var firstLine = '$firstPrefix${lines.first}';
+  final firstLine = '$firstPrefix${lines.first}';
   lines = lines.skip(1).map((line) => '$prefix$line').toList();
   lines.insert(0, firstLine);
   return lines.join('\n');
@@ -513,7 +513,7 @@ final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 /// Converts [data], which is a parsed YAML object, to a pretty-printed string,
 /// using indentation for maps.
 String yamlToString(Object? data) {
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
 
   void stringify(bool isMapValue, String indent, Object? data) {
     // TODO(nweiz): Serialize using the YAML library once it supports
@@ -527,7 +527,7 @@ String yamlToString(Object? data) {
       }
 
       // Sort the keys. This minimizes deltas in diffs.
-      var keys = data.keys.toList();
+      final keys = data.keys.toList();
       keys.sort((a, b) => a.toString().compareTo(b.toString()));
 
       var first = true;
@@ -589,14 +589,14 @@ Never dataError(String message) => throw DataException(message);
 ///
 /// If [bytes] is not provided, it is generated using `Random.secure`.
 String createUuid([List<int>? bytes]) {
-  var rnd = math.Random.secure();
+  final rnd = math.Random.secure();
 
   // See http://www.cryptosys.net/pki/uuid-rfc4122.html for notes
   bytes ??= List<int>.generate(16, (_) => rnd.nextInt(256));
   bytes[6] = (bytes[6] & 0x0F) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
-  var chars = bytes
+  final chars = bytes
       .map((b) => b.toRadixString(16).padLeft(2, '0'))
       .join()
       .toUpperCase();
@@ -620,11 +620,11 @@ String wordWrap(String text, {String prefix = ''}) {
   }
 
   return text.split('\n').map((originalLine) {
-    var buffer = StringBuffer();
+    final buffer = StringBuffer();
     var lengthSoFar = 0;
     var firstLine = true;
     for (var word in originalLine.split(' ')) {
-      var wordLength = _withoutColors(word).length;
+      final wordLength = _withoutColors(word).length;
       if (wordLength > lineLength) {
         if (lengthSoFar != 0) buffer.writeln();
         if (!firstLine) buffer.write(prefix);
@@ -826,7 +826,7 @@ extension ExpectEntries on YamlList {
   /// not have a value of type [T].
   List<T> expectElements<T extends Object?>() => [
         for (var node in nodes)
-          if (node.value case T value)
+          if (node.value case final T value)
             value
           else
             throw SourceSpanApplicationException(

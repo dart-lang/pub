@@ -32,7 +32,7 @@ class ChangelogValidator extends Validator {
           'See https://dart.dev/tools/pub/publishing#important-files.');
     }
 
-    var bytes = readBinaryFile(changelog);
+    final bytes = readBinaryFile(changelog);
     String contents;
 
     try {

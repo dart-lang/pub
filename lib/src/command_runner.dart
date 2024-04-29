@@ -193,11 +193,11 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     if (!runningFromDartRepo) return;
     if (!git.isInstalled) return;
 
-    var deps = readTextFile(p.join(dartRepoRoot, 'DEPS'));
-    var pubRevRegExp = RegExp(r'^ +"pub_rev": +"@([^"]+)"', multiLine: true);
-    var match = pubRevRegExp.firstMatch(deps);
+    final deps = readTextFile(p.join(dartRepoRoot, 'DEPS'));
+    final pubRevRegExp = RegExp(r'^ +"pub_rev": +"@([^"]+)"', multiLine: true);
+    final match = pubRevRegExp.firstMatch(deps);
     if (match == null) return;
-    var depsRev = match[1];
+    final depsRev = match[1];
 
     String actualRev;
     final pubRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));

@@ -127,7 +127,7 @@ class DepsCommand extends PubCommand {
         });
         toVisit.addAll(next);
       }
-      var executables = [
+      final executables = [
         for (final package in [
           entrypoint.workspaceRoot,
           ...entrypoint.workspaceRoot.immediateDependencies.keys
@@ -216,7 +216,7 @@ class DepsCommand extends PubCommand {
       );
     }
 
-    var transitive = await _getTransitiveDependencies();
+    final transitive = await _getTransitiveDependencies();
     await _outputCompactPackages('transitive dependencies', transitive, buffer);
   }
 
@@ -231,14 +231,14 @@ class DepsCommand extends PubCommand {
     buffer.writeln();
     buffer.writeln('$section:');
     for (var name in ordered(names)) {
-      var package = await _getPackage(name);
+      final package = await _getPackage(name);
 
       buffer.write('- ${_labelPackage(package)}');
       if (package.dependencies.isEmpty) {
         buffer.writeln();
       } else {
-        var depNames = package.dependencies.keys;
-        var depsList = "[${depNames.join(' ')}]";
+        final depNames = package.dependencies.keys;
+        final depsList = "[${depNames.join(' ')}]";
         buffer.writeln(' ${log.gray(depsList)}');
       }
     }
@@ -273,7 +273,7 @@ class DepsCommand extends PubCommand {
       );
     }
 
-    var transitive = await _getTransitiveDependencies();
+    final transitive = await _getTransitiveDependencies();
     if (transitive.isEmpty) return;
 
     await _outputListSection(
@@ -295,7 +295,7 @@ class DepsCommand extends PubCommand {
     buffer.writeln('$name:');
 
     for (var name in deps) {
-      var package = await _getPackage(name);
+      final package = await _getPackage(name);
       buffer.writeln('- ${_labelPackage(package)}');
 
       for (var dep in package.dependencies.values) {
@@ -318,15 +318,15 @@ class DepsCommand extends PubCommand {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
-    var toWalk = Queue<(Package, Map<String, Map>)>();
-    var visited = <String>{};
+    final toWalk = Queue<(Package, Map<String, Map>)>();
+    final visited = <String>{};
 
     // Start with the root dependencies.
-    var packageTree = <String, Map>{};
+    final packageTree = <String, Map>{};
     final workspacePackageNames = [
       ...entrypoint.workspaceRoot.transitiveWorkspace.map((p) => p.name),
     ];
-    var immediateDependencies =
+    final immediateDependencies =
         entrypoint.workspaceRoot.immediateDependencies.keys.toSet();
     if (!_includeDev) {
       immediateDependencies
@@ -346,7 +346,7 @@ class DepsCommand extends PubCommand {
       }
 
       // Populate the map with this package's dependencies.
-      var childMap = <String, Map>{};
+      final childMap = <String, Map>{};
       map[_labelPackage(package)] = childMap;
 
       final isRoot = workspacePackageNames.contains(package.name);
@@ -370,7 +370,7 @@ class DepsCommand extends PubCommand {
 
   /// Gets the names of the non-immediate dependencies of the workspace packages.
   Future<Set<String>> _getTransitiveDependencies() async {
-    var transitive = await _getAllDependencies();
+    final transitive = await _getAllDependencies();
     for (final root in entrypoint.workspaceRoot.transitiveWorkspace) {
       transitive.remove(root.name);
       transitive.removeAll(root.dependencies.keys);
@@ -388,7 +388,7 @@ class DepsCommand extends PubCommand {
       return graph.packages.keys.toSet();
     }
 
-    var nonDevDependencies = [
+    final nonDevDependencies = [
       for (final package in entrypoint.workspaceRoot.transitiveWorkspace) ...[
         ...package.dependencies.keys,
         ...package.pubspec.dependencyOverrides.keys,
@@ -407,7 +407,7 @@ class DepsCommand extends PubCommand {
   /// but it's possible, since [Entrypoint.assertUpToDate]'s modification time
   /// check can return a false negative. This fails gracefully if that happens.
   Future<Package> _getPackage(String name) async {
-    var package = (await entrypoint.packageGraph).packages[name];
+    final package = (await entrypoint.packageGraph).packages[name];
     if (package != null) return package;
     dataError('The pubspec.yaml file has changed since the pubspec.lock file '
         'was generated, please run "$topLevelProgram pub get" again.');
@@ -426,7 +426,7 @@ class DepsCommand extends PubCommand {
     };
 
     for (var package in packages) {
-      var executables = package.executableNames;
+      final executables = package.executableNames;
       if (executables.isNotEmpty) {
         buffer.writeln(_formatExecutables(package.name, executables.toList()));
       }

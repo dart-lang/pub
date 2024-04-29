@@ -27,7 +27,7 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
+    final path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
       args: ['global', 'activate', 'foo'],
       output: '''
@@ -41,7 +41,7 @@ void main() {
     );
 
     // Should now run the hosted one.
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('hosted'));
     await pub.shouldExit();
   });

@@ -60,7 +60,7 @@ class PackageGraph {
     }
 
     if (_transitiveDependencies == null) {
-      var closure = transitiveClosure(
+      final closure = transitiveClosure(
         mapMap<String, Package, String, Iterable<String>>(
           packages,
           value: (_, package) => package.dependencies.keys,
@@ -70,7 +70,7 @@ class PackageGraph {
           mapMap<String, Set<String>, String, Set<Package>>(
         closure,
         value: (depender, names) {
-          var set = names.map((name) => packages[name]!).toSet();
+          final set = names.map((name) => packages[name]!).toSet();
           set.add(packages[depender]!);
           return set;
         },

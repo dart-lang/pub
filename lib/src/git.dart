@@ -146,7 +146,7 @@ final _minSupportedGitVersion = Version(2, 14, 0);
 bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
-    var result = runProcessSync(command, ['--version']);
+    final result = runProcessSync(command, ['--version']);
     final output = result.stdout;
 
     // Some users may have configured commands such as autorun, which may

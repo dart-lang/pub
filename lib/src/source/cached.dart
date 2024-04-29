@@ -27,7 +27,7 @@ abstract class CachedSource extends Source {
   /// Otherwise, defers to the subclass.
   @override
   Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async {
-    var packageDir = getDirectoryInCache(id, cache);
+    final packageDir = getDirectoryInCache(id, cache);
     if (fileExists(p.join(packageDir, 'pubspec.yaml'))) {
       return Pubspec.load(
         packageDir,

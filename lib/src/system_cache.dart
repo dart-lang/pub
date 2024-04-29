@@ -125,7 +125,7 @@ Consider setting the `PUB_CACHE` variable manually.
   /// system temp directory to ensure that it's on the same volume as the pub
   /// system cache so that it can move the directory from it.
   String createTempDir() {
-    var temp = ensureDir(tempDir);
+    final temp = ensureDir(tempDir);
     return io.createTempDir(temp, 'dir');
   }
 
@@ -147,7 +147,7 @@ Consider setting the `PUB_CACHE` variable manually.
   /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
   /// version.
   Future<Pubspec> describe(PackageId id) async {
-    var pubspec = cachedPubspecs[id] ??= await id.source.doDescribe(id, this);
+    final pubspec = cachedPubspecs[id] ??= await id.source.doDescribe(id, this);
     if (pubspec.version != id.version) {
       throw PackageNotFoundException(
         'the pubspec for $id has version ${pubspec.version}',

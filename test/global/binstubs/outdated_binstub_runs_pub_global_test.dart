@@ -95,7 +95,7 @@ void main() {
       ]),
     ]).create();
 
-    var process = await TestProcess.start(
+    final process = await TestProcess.start(
       p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
       ['arg1', 'arg2'],
       environment: getEnvironment(),

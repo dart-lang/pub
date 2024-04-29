@@ -87,7 +87,7 @@ void main() {
     });
 
     test("doesn't send metadata headers to a foreign server", () async {
-      var server = await startPackageServer()
+      final server = await startPackageServer()
         ..serve('foo', '1.0.0');
 
       await d.appDir(

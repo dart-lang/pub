@@ -25,7 +25,7 @@ class Package {
   /// take a package's description or root directory into account, so multiple
   /// distinct packages may order the same.
   static int orderByNameAndVersion(Package a, Package b) {
-    var name = a.name.compareTo(b.name);
+    final name = a.name.compareTo(b.name);
     if (name != 0) return name;
 
     return a.version.compareTo(b.version);
@@ -128,7 +128,7 @@ class Package {
       // If the entire package directory is ignored, don't consider it part of a
       // git repo. `git check-ignore` will return a status code of 0 for
       // ignored, 1 for not ignored, and 128 for not a Git repo.
-      var result = runProcessSync(
+      final result = runProcessSync(
         git.command!,
         ['check-ignore', '--quiet', '.'],
         workingDir: dir,
@@ -256,8 +256,8 @@ See $workspacesDocUrl for more information.
   ///
   /// To convert them to paths relative to the package root, use [p.relative].
   List<String> listFiles({String? beneath, bool recursive = true}) {
-    var packageDir = dir;
-    var root = git.repoRoot(packageDir) ?? packageDir;
+    final packageDir = dir;
+    final root = git.repoRoot(packageDir) ?? packageDir;
     beneath = p
         .toUri(
           p.normalize(

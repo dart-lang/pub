@@ -241,7 +241,7 @@ void main() {
     });
 
     test('should pass through values from the stream', () {
-      var iter = StreamIterator(stream);
+      final iter = StreamIterator(stream);
       iter.moveNext().then((hasNext) {
         expect(hasNext, isTrue);
         expect(iter.current, equals(1));
@@ -407,7 +407,7 @@ void main() {
     test(
         "shouldn't throw a top-level exception if a stream receives an error "
         'after the other listened stream completes', () {
-      var signal = Completer<void>();
+      final signal = Completer<void>();
       expect(
         stream1.toList().whenComplete(signal.complete),
         completion(equals(['value1', 'value2'])),
@@ -429,7 +429,7 @@ void main() {
     test(
         "shouldn't throw a top-level exception if an error is signaled after "
         'one listened stream completes', () {
-      var signal = Completer<void>();
+      final signal = Completer<void>();
       expect(
         stream1.toList().whenComplete(signal.complete),
         completion(equals(['value1', 'value2'])),
@@ -511,7 +511,7 @@ void main() {
     test(
         "shouldn't throw a top-level exception if the future receives an "
         'error after the listened stream completes', () {
-      var signal = Completer<void>();
+      final signal = Completer<void>();
       expect(
         stream.toList().whenComplete(signal.complete),
         completion(equals(['value1', 'value2'])),

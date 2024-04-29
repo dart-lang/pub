@@ -17,17 +17,17 @@ void main() {
   group('LockFile', () {
     group('parse()', () {
       test('returns an empty lockfile if the contents are empty', () {
-        var lockFile = LockFile.parse('', sources);
+        final lockFile = LockFile.parse('', sources);
         expect(lockFile.packages.length, equals(0));
       });
 
       test('returns an empty lockfile if the contents are whitespace', () {
-        var lockFile = LockFile.parse('  \t\n  ', sources);
+        final lockFile = LockFile.parse('  \t\n  ', sources);
         expect(lockFile.packages.length, equals(0));
       });
 
       test('parses a series of package descriptions', () {
-        var lockFile = LockFile.parse(
+        final lockFile = LockFile.parse(
           '''
 packages:
   bar:
@@ -48,7 +48,7 @@ packages:
 
         expect(lockFile.packages.length, equals(2));
 
-        var bar = lockFile.packages['bar']!;
+        final bar = lockFile.packages['bar']!;
         expect(bar.name, equals('bar'));
         expect(bar.version, equals(Version(1, 2, 3)));
         expect(bar.source, equals(cache.hosted));
@@ -57,7 +57,7 @@ packages:
           equals('https://bar.com'),
         );
 
-        var foo = lockFile.packages['foo']!;
+        final foo = lockFile.packages['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.version, equals(Version(2, 3, 4)));
         expect(foo.source, equals(cache.hosted));
@@ -68,7 +68,7 @@ packages:
       });
 
       test('allows an unknown source', () {
-        var lockFile = LockFile.parse(
+        final lockFile = LockFile.parse(
           '''
 packages:
   foo:
@@ -78,12 +78,12 @@ packages:
 ''',
           cache.sources,
         );
-        var foo = lockFile.packages['foo']!;
+        final foo = lockFile.packages['foo']!;
         expect(foo.source, equals(sources('bad')));
       });
 
       test('allows an empty dependency map', () {
-        var lockFile = LockFile.parse(
+        final lockFile = LockFile.parse(
           '''
 packages:
 ''',
@@ -93,7 +93,7 @@ packages:
       });
 
       test('allows an old-style SDK constraint', () {
-        var lockFile = LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
+        final lockFile = LockFile.parse('sdk: ">=1.2.3 <4.0.0"', sources);
         expect(
           lockFile.sdkConstraints['dart']!.effectiveConstraint,
           VersionConstraint.parse('>=1.2.3 <4.0.0'),
@@ -103,7 +103,7 @@ packages:
       });
 
       test('allows new-style SDK constraints', () {
-        var lockFile = LockFile.parse(
+        final lockFile = LockFile.parse(
           '''
 sdks:
   dart: ">=1.2.3 <4.0.0"
@@ -367,7 +367,7 @@ packages:
     });
 
     test('serialize() dumps the lockfile to YAML', () {
-      var lockfile = LockFile(
+      final lockfile = LockFile(
         [
           PackageId(
             'foo',

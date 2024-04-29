@@ -35,20 +35,20 @@ main() async {
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ['foo:script']);
+    final pub = await pubRun(global: true, args: ['foo:script']);
 
-    var packageConfigPath = p.join(
+    final packageConfigPath = p.join(
       d.sandbox,
       cachePath,
       'global_packages/foo/.dart_tool/package_config.json',
     );
     expect(pub.stdout, emits(p.toUri(packageConfigPath).toString()));
 
-    var fooResourcePath =
+    final fooResourcePath =
         p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
 
-    var barResourcePath =
+    final barResourcePath =
         p.join(globalServer.pathInCache('bar', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(barResourcePath).toString()));
     await pub.shouldExit(0);
@@ -81,16 +81,16 @@ main() async {
 
     await runPub(args: ['global', 'activate', '-s', 'path', '.']);
 
-    var pub = await pubRun(global: true, args: ['myapp:script']);
+    final pub = await pubRun(global: true, args: ['myapp:script']);
 
-    var packageConfigPath =
+    final packageConfigPath =
         p.join(d.sandbox, 'myapp/.dart_tool/package_config.json');
     expect(pub.stdout, emitsThrough(p.toUri(packageConfigPath).toString()));
 
-    var myappResourcePath = p.join(d.sandbox, 'myapp/lib/resource.txt');
+    final myappResourcePath = p.join(d.sandbox, 'myapp/lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(myappResourcePath).toString()));
 
-    var fooResourcePath = p.join(d.sandbox, 'foo/lib/resource.txt');
+    final fooResourcePath = p.join(d.sandbox, 'foo/lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });

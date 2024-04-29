@@ -15,11 +15,11 @@ class SizeValidator extends Validator {
   @override
   Future<void> validate() async {
     if (packageSize <= _maxSize) return;
-    var sizeInMb = (packageSize / (1 << 20)).toStringAsPrecision(4);
+    final sizeInMb = (packageSize / (1 << 20)).toStringAsPrecision(4);
     // Current implementation of Package.listFiles skips hidden files
-    var ignoreExists = fileExists(package.path('.gitignore'));
+    final ignoreExists = fileExists(package.path('.gitignore'));
 
-    var hint = StringBuffer('''
+    final hint = StringBuffer('''
 Your package is $sizeInMb MB.
 
 Consider the impact large downloads can have on the package consumer.''');

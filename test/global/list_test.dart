@@ -44,7 +44,7 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
+    final path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(args: ['global', 'list'], output: 'foo 1.0.0 at path "$path"');
   });
 

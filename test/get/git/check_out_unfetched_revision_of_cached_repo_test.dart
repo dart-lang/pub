@@ -32,7 +32,7 @@ void main() {
 
     await pubGet();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     // Switch to a new cache.
     renameInSandbox(cachePath, '$cachePath.old');
@@ -46,7 +46,7 @@ void main() {
     await pubUpgrade(output: contains('Changed 1 dependency!'));
 
     // Switch back to the old cache.
-    var cacheDir = p.join(d.sandbox, cachePath);
+    final cacheDir = p.join(d.sandbox, cachePath);
     deleteEntry(cacheDir);
     renameInSandbox('$cachePath.old', cacheDir);
 

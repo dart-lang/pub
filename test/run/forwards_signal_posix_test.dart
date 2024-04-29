@@ -47,7 +47,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
 
     await expectLater(pub.stdout, emitsThrough('ready'));
     for (var signal in _catchableSignals) {

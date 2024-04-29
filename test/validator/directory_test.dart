@@ -43,7 +43,7 @@ void main() {
       'named', () {
     setUp(d.validPackage().create);
 
-    var names = [
+    final names = [
       'benchmarks',
       'docs',
       'examples',

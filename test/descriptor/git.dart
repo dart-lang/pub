@@ -45,7 +45,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   ///
   /// [parent] defaults to [sandbox].
   Future<String> revParse(String ref, [String? parent]) async {
-    var output = await _runGit(['rev-parse', ref], parent);
+    final output = await _runGit(['rev-parse', ref], parent);
     return output[0];
   }
 
@@ -57,7 +57,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   Future<List<String>> _runGit(List<String> args, String? parent) {
     // Explicitly specify the committer information. Git needs this to commit
     // and we don't want to rely on the buildbots having this already set up.
-    var environment = {
+    final environment = {
       'GIT_AUTHOR_NAME': 'Pub Test',
       'GIT_AUTHOR_EMAIL': 'pub@dartlang.org',
       'GIT_COMMITTER_NAME': 'Pub Test',

@@ -34,7 +34,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
 
     expect(
       pub.stdout,
@@ -71,7 +71,7 @@ void main() {
 
     await pubGet();
 
-    var pub = await pubRun(args: ['foo:script']);
+    final pub = await pubRun(args: ['foo:script']);
 
     expect(pub.stdout, emitsThrough('Building package executable...'));
     expect(pub.stdout, emits('Built foo:script.'));
@@ -87,7 +87,7 @@ void main() {
       pub.stdout,
       emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()),
     );
-    var fooResourcePath =
+    final fooResourcePath =
         p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);

@@ -33,6 +33,7 @@ linter:
     - package_api_docs
     - prefer_asserts_in_initializer_lists
     - prefer_const_declarations
+    - prefer_final_locals
     - prefer_relative_imports
     - prefer_single_quotes
     - require_trailing_commas

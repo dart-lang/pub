@@ -18,7 +18,7 @@ void main() {
 
   test('should consider a package invalid if it has a .gitignored pubspec',
       () async {
-    var repo = d.git(appPath, [d.file('.gitignore', 'pubspec.yaml')]);
+    final repo = d.git(appPath, [d.file('.gitignore', 'pubspec.yaml')]);
     await d.validPackage().create();
     await repo.create();
 

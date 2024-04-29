@@ -148,10 +148,10 @@ class VersionSolver {
   ///
   /// [unit propagation]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#unit-propagation
   void _propagate(String package) {
-    var changed = {package};
+    final changed = {package};
 
     while (changed.isNotEmpty) {
-      var package = changed.first;
+      final package = changed.first;
       changed.remove(package);
 
       // Iterate in reverse because conflict resolution tends to produce more
@@ -159,14 +159,14 @@ class VersionSolver {
       // we can derive stronger assignments sooner and more eagerly find
       // conflicts.
       for (var incompatibility in _incompatibilities[package]!.reversed) {
-        var result = _propagateIncompatibility(incompatibility);
+        final result = _propagateIncompatibility(incompatibility);
         if (result == #conflict) {
           // If [incompatibility] is satisfied by [_solution], we use
           // [_resolveConflict] to determine the root cause of the conflict as a
           // new incompatibility. It also backjumps to a point in [_solution]
           // where that incompatibility will allow us to derive new assignments
           // that avoid the conflict.
-          var rootCause = _resolveConflict(incompatibility);
+          final rootCause = _resolveConflict(incompatibility);
 
           // Backjumping erases all the assignments we did at the previous
           // decision level, so we clear [changed] and refill it with the
@@ -198,8 +198,8 @@ class VersionSolver {
     Term? unsatisfied;
 
     for (var i = 0; i < incompatibility.terms.length; i++) {
-      var term = incompatibility.terms[i];
-      var relation = _solution.relation(term);
+      final term = incompatibility.terms[i];
+      final relation = _solution.relation(term);
 
       if (relation == SetRelation.disjoint) {
         // If [term] is already contradicted by [_solution], then
@@ -271,7 +271,7 @@ class VersionSolver {
       var previousSatisfierLevel = 1;
 
       for (var term in incompatibility.terms) {
-        var satisfier = _solution.satisfier(term);
+        final satisfier = _solution.satisfier(term);
         if (mostRecentSatisfier == null) {
           mostRecentTerm = term;
           mostRecentSatisfier = satisfier;
@@ -320,7 +320,7 @@ class VersionSolver {
       // true (that is, we know for sure no solution will satisfy the
       // incompatibility) while also approximating the intuitive notion of the
       // "root cause" of the conflict.
-      var newTerms = <Term>[
+      final newTerms = <Term>[
         for (var term in incompatibility.terms)
           if (term != mostRecentTerm) term,
         for (var term in mostRecentSatisfier.cause!.terms)
@@ -347,8 +347,8 @@ class VersionSolver {
       );
       newIncompatibility = true;
 
-      var partially = difference == null ? '' : ' partially';
-      var bang = log.red('!');
+      final partially = difference == null ? '' : ' partially';
+      final bang = log.red('!');
       _log('$bang $mostRecentTerm is$partially satisfied by '
           '$mostRecentSatisfier');
       _log('$bang which is caused by "${mostRecentSatisfier.cause}"');
@@ -364,7 +364,7 @@ class VersionSolver {
   /// propagated by [_propagate], or `null` indicating that version solving is
   /// complete and a solution has been found.
   Future<String?> _choosePackageVersion() async {
-    var unsatisfied = _solution.unsatisfied.toList();
+    final unsatisfied = _solution.unsatisfied.toList();
     if (unsatisfied.isEmpty) return null;
 
     // If we require a package from an unknown source, add an incompatibility
@@ -382,7 +382,7 @@ class VersionSolver {
 
     /// Prefer packages with as few remaining versions as possible, so that if a
     /// conflict is necessary it's forced quickly.
-    var package = await minByAsync(unsatisfied, (PackageRange package) async {
+    final package = await minByAsync(unsatisfied, (PackageRange package) async {
       return await _packageLister(package).countVersions(package.constraint);
     });
     if (package == null) {
@@ -464,8 +464,8 @@ class VersionSolver {
 
   /// Creates a [SolveResult] from the decisions in [_solution].
   Future<SolveResult> _result() async {
-    var decisions = _solution.decisions.toList();
-    var pubspecs = <String, Pubspec>{};
+    final decisions = _solution.decisions.toList();
+    final pubspecs = <String, Pubspec>{};
     for (var id in decisions) {
       if (id.isRoot) {
         pubspecs[id.name] = _rootPackages[id.name]!.pubspec;
@@ -497,7 +497,7 @@ class VersionSolver {
   Future<Map<String, List<Version>>> _getAvailableVersions(
     List<PackageId> packages,
   ) async {
-    var availableVersions = <String, List<Version>>{};
+    final availableVersions = <String, List<Version>>{};
     for (var package in packages) {
       // If the version list was never requested, use versions from cached
       // version listings if the package is "hosted".
@@ -524,7 +524,7 @@ class VersionSolver {
 
   /// Returns the package lister for [package], creating it if necessary.
   PackageLister _packageLister(PackageRange package) {
-    var ref = package.toRef();
+    final ref = package.toRef();
     return _packageListers.putIfAbsent(ref, () {
       if (ref.isRoot) {
         return PackageLister.root(
@@ -576,7 +576,7 @@ class VersionSolver {
     // non-hosted packages, since they don't support multiple versions and thus
     // can't be downgraded.
     if (_type == SolveType.downgrade) {
-      var locked = _lockFile.packages[package];
+      final locked = _lockFile.packages[package];
       if (locked != null && !locked.source.hasMultipleVersions) return locked;
     }
 
@@ -592,7 +592,7 @@ class VersionSolver {
   /// `pubspec.lock` or pinned in `dependency_overrides`.
   Version? _getAllowedRetracted(String? package) {
     if (_dependencyOverrides.containsKey(package)) {
-      var range = _dependencyOverrides[package]!;
+      final range = _dependencyOverrides[package]!;
       if (range.constraint is Version) {
         // We have a pinned dependency.
         return range.constraint as Version?;

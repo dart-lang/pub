@@ -15,7 +15,7 @@ void main() {
     // try to ping it, and will use multiple retries when doing so.
     final packageServer = await startPackageServer();
 
-    var pkg = packageMap('test_pkg', '1.0.0');
+    final pkg = packageMap('test_pkg', '1.0.0');
     pkg['publish_to'] = 'http://pubspec.com';
     await d.dir(appPath, [d.pubspec(pkg)]).create();
     await runPub(
