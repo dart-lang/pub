@@ -11,7 +11,7 @@ void main() {
   test('checks out a package at a specific branch from Git', () async {
     ensureGit();
 
-    var repo = d.git(
+    final repo = d.git(
       'foo.git',
       [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')],
     );

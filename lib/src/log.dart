@@ -233,7 +233,7 @@ void fine(String message) => write(Level.fine, message);
 /// Logs [message] at [level].
 void write(Level level, String message) {
   message = message.toString();
-  var lines = splitLines(message);
+  final lines = splitLines(message);
 
   // Discard a trailing newline. This is useful since StringBuffers often end
   // up with an extra newline at the end from using [writeln].
@@ -241,9 +241,9 @@ void write(Level level, String message) {
     lines.removeLast();
   }
 
-  var entry = _Entry(level, lines);
+  final entry = _Entry(level, lines);
 
-  var logFn = verbosity._loggers[level];
+  final logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
   _transcript.add(entry);
@@ -263,7 +263,7 @@ void process(
 /// Logs the results of running [executable].
 void processResult(String executable, PubProcessResult result) {
   // Log it all as one message so that it shows up as a single unit in the logs.
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   buffer.writeln('Finished $executable. Exit code ${result.exitCode}.');
 
   void dumpOutput(String name, List<String> output) {
@@ -294,7 +294,7 @@ void processResult(String executable, PubProcessResult result) {
 void exception(Object exception, [StackTrace? trace]) {
   if (exception is SilentException) return;
 
-  var chain = trace == null ? Chain.current() : Chain.forTrace(trace);
+  final chain = trace == null ? Chain.current() : Chain.forTrace(trace);
 
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
@@ -445,7 +445,7 @@ Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 Future<T> progress<T>(String message, Future<T> Function() callback) {
   _stopProgress();
 
-  var progress = Progress(message);
+  final progress = Progress(message);
   _animatedProgress = progress;
   return callback().whenComplete(progress.stop);
 }
@@ -459,11 +459,9 @@ Future<T> spinner<T>(
   if (condition) {
     _stopProgress();
 
-    var progress = Progress(message);
+    final progress = Progress(message);
     _animatedProgress = progress;
-    return callback().whenComplete(() {
-      progress.stopAndClear();
-    });
+    return callback().whenComplete(progress.stopAndClear);
   }
   return callback();
 }
@@ -614,7 +612,7 @@ class _JsonLogger {
   ///
   /// Always prints to stdout.
   void error(Object error, [StackTrace? stackTrace]) {
-    var errorJson = {'error': error.toString()};
+    final errorJson = {'error': error.toString()};
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;
     if (stackTrace != null) {

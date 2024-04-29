@@ -25,16 +25,16 @@ class TarFileDescriptor extends FileDescriptor {
     return withTempDir((tempDir) async {
       await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
-      var createdContents = listDir(
+      final createdContents = listDir(
         tempDir,
         recursive: true,
         includeHidden: true,
         includeDirs: false,
       );
-      var bytes =
+      final bytes =
           await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
-      var file = p.join(parent ?? sandbox, name);
+      final file = p.join(parent ?? sandbox, name);
       _writeBinaryFile(file, bytes);
       return file;
     });

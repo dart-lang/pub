@@ -25,8 +25,8 @@ Future<int> runUri(
   bool automaticPackageResolution = false,
   Uri? packageConfig,
 }) async {
-  var errorPort = ReceivePort();
-  var exitPort = ReceivePort();
+  final errorPort = ReceivePort();
+  final exitPort = ReceivePort();
 
   await Isolate.spawnUri(
     url,

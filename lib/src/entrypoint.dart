@@ -279,7 +279,7 @@ See $workspacesDocUrl for more information.''',
     // return the package-graph, such it by construction will always made from an
     // up-to-date package-config.
     await ensureUpToDate(workspaceRoot.dir, cache: cache);
-    var packages = {
+    final packages = {
       for (var packageEntry in packageConfig.nonInjectedPackages)
         packageEntry.name: Package.load(
           packageEntry.resolvedRootDir(packageConfigPath),
@@ -760,7 +760,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       bool isDependencyUpToDate(PackageRange dep) {
         if (dep.name == root.name) return true;
 
-        var locked = lockFile.packages[dep.name];
+        final locked = lockFile.packages[dep.name];
         return locked != null && dep.allows(locked);
       }
 
@@ -795,7 +795,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return false;
       }
 
-      var overrides = MapKeySet(root.dependencyOverrides);
+      final overrides = MapKeySet(root.dependencyOverrides);
 
       // Check that uncached dependencies' pubspecs are also still satisfied,
       // since they're mutable and may have changed since the last get.
@@ -1139,7 +1139,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           );
         }
         return entrypoint.packageConfig;
-      case PackageConfig packageConfig:
+      case final PackageConfig packageConfig:
         log.fine('Package Config up to date.');
         return packageConfig;
     }

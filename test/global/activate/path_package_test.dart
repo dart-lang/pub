@@ -16,7 +16,7 @@ void main() {
       d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
+    final path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
       args: ['global', 'activate', '--source', 'path', '../foo'],
       output: endsWith('Activated foo 1.0.0 at path "$path".'),
@@ -48,7 +48,7 @@ void main() {
       d.dir('lib', [d.file('bar.dart', "final value = 'ok';")]),
     ]).create();
 
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
+    final path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
       args: ['global', 'activate', '--source', 'path', '../foo'],
       output: endsWith('Activated foo 1.0.0 at path "$path".'),

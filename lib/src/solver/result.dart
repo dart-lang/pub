@@ -80,13 +80,13 @@ class SolveResult {
 
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
-    var nonOverrides = pubspecs.values
+    final nonOverrides = pubspecs.values
         .where(
           (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name),
         )
         .toList();
 
-    var sdkConstraints = <String, VersionConstraint>{};
+    final sdkConstraints = <String, VersionConstraint>{};
     for (var pubspec in nonOverrides) {
       pubspec.sdkConstraints.forEach((identifier, constraint) {
         sdkConstraints[identifier] = constraint.effectiveConstraint
@@ -111,7 +111,7 @@ class SolveResult {
   ///
   /// This includes packages that were added or removed.
   Set<String> get changedPackages {
-    var changed = packages
+    final changed = packages
         .where((id) => _previousLockFile.packages[id.name] != id)
         .map((id) => id.name)
         .toSet();

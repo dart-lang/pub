@@ -28,7 +28,7 @@ class StrictDependenciesValidator extends Validator {
 
     for (var file in files) {
       List<UriBasedDirective> directives;
-      var contents = readTextFile(file);
+      final contents = readTextFile(file);
       try {
         directives = analysisContextManager.parseImportsAndExports(file);
       } on AnalyzerErrorGroup catch (e, s) {
@@ -63,8 +63,8 @@ class StrictDependenciesValidator extends Validator {
 
   @override
   Future validate() async {
-    var dependencies = package.dependencies.keys.toSet()..add(package.name);
-    var devDependencies = MapKeySet(package.devDependencies);
+    final dependencies = package.dependencies.keys.toSet()..add(package.name);
+    final devDependencies = MapKeySet(package.devDependencies);
     _validateLibBin(dependencies, devDependencies);
     _validateBenchmarkTestTool(dependencies, devDependencies);
   }
@@ -89,7 +89,7 @@ class StrictDependenciesValidator extends Validator {
   /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
   void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
-    var directories = ['benchmark', 'test', 'tool'];
+    final directories = ['benchmark', 'test', 'tool'];
     for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependenciesMissingMessage());
@@ -161,7 +161,7 @@ class _Usage {
 
   /// Returns an error message saying the package should be in `dependencies`.
   String dependencyMisplaceMessage() {
-    var shortFile = p.split(p.relative(_file)).first;
+    final shortFile = p.split(p.relative(_file)).first;
     return _toMessage(
         '$package is in the `dev_dependencies` section of `pubspec.yaml`. '
         'Packages used in $shortFile/ must be declared in the `dependencies` '

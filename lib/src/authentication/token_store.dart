@@ -186,7 +186,7 @@ class TokenStore {
   ///
   /// `null` if no config directory could be found.
   String? get tokensFile {
-    var dir = configDir;
+    final dir = configDir;
     return dir == null ? null : p.join(dir, 'pub-tokens.json');
   }
 }

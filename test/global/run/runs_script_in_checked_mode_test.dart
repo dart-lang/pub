@@ -20,7 +20,7 @@ void main() {
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub =
+    final pub =
         await pubRun(global: true, args: ['--enable-asserts', 'foo:script']);
     expect(pub.stderr, emitsThrough(contains('Failed assertion')));
     await pub.shouldExit(255);

@@ -71,7 +71,7 @@ class ErrorGroup {
           'ErrorGroup.');
     }
 
-    var wrapped = _ErrorGroupFuture(this, future);
+    final wrapped = _ErrorGroupFuture(this, future);
     _futures.add(wrapped);
     return wrapped;
   }
@@ -94,7 +94,7 @@ class ErrorGroup {
           'ErrorGroup.');
     }
 
-    var wrapped = _ErrorGroupStream(this, stream);
+    final wrapped = _ErrorGroupStream(this, stream);
     _streams.add(wrapped);
     return wrapped;
   }

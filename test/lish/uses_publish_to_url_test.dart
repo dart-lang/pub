@@ -12,7 +12,7 @@ import '../test_pub.dart';
 void main() {
   test('uses the publish_to URL', () async {
     final server = await servePackages();
-    var pkg = packageMap('test_pkg', '1.0.0');
+    final pkg = packageMap('test_pkg', '1.0.0');
     pkg['publish_to'] = server.url;
     await d.dir(appPath, [d.pubspec(pkg)]).create();
     await runPub(

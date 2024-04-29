@@ -28,7 +28,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
 
     await expectLater(pub.stdout, emitsThrough('started'));
     pub.stdin.writeln('first');
@@ -55,7 +55,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
 
     await expectLater(pub.stdout, emitsThrough('started'));
     pub.stdin.writeln('first');

@@ -15,7 +15,7 @@ void main() {
     await d
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
-    var fooPath = d.path('foo');
+    final fooPath = d.path('foo');
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {

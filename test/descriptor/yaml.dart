@@ -28,12 +28,12 @@ class YamlDescriptor extends FileDescriptor {
 
   @override
   Future validate([String? parent]) async {
-    var fullPath = p.join(parent ?? sandbox, name);
+    final fullPath = p.join(parent ?? sandbox, name);
     if (!await File(fullPath).exists()) {
       fail("File not found: '$fullPath'.");
     }
 
-    var bytes = await File(fullPath).readAsBytes();
+    final bytes = await File(fullPath).readAsBytes();
 
     final actualContentsText = utf8.decode(bytes);
     final actual = loadYaml(actualContentsText);

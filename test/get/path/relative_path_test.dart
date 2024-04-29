@@ -115,15 +115,15 @@ void main() {
 
     await pubGet();
 
-    var lockfilePath = p.join(d.sandbox, appPath, 'pubspec.lock');
+    final lockfilePath = p.join(d.sandbox, appPath, 'pubspec.lock');
     final lockfileJson = loadYaml(File(lockfilePath).readAsStringSync());
     expect(
       lockfileJson['packages']['foo']['description']['path'],
       '../foo',
       reason: 'Should use `/` as separator on all platforms',
     );
-    var lockfile = LockFile.load(lockfilePath, SystemCache().sources);
-    var description =
+    final lockfile = LockFile.load(lockfilePath, SystemCache().sources);
+    final description =
         lockfile.packages['foo']!.description.description as PathDescription;
 
     expect(description.relative, isTrue);

@@ -75,7 +75,7 @@ no: 1
     });
 
     test('handles non-string map keys', () {
-      var map = <Object?, Object?>{};
+      final map = <Object?, Object?>{};
       map[null] = 'null';
       map[123] = 'num';
       map[true] = 'bool';
@@ -118,22 +118,22 @@ b: {}'''),
   });
 
   group('uuid', () {
-    var uuidRegexp = RegExp('^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-'
+    final uuidRegexp = RegExp('^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-'
         r'[8-9A-B][0-9A-F]{3}-[0-9A-F]{12}$');
 
     test('min value is valid', () {
-      var uuid = createUuid(List<int>.filled(16, 0));
+      final uuid = createUuid(List<int>.filled(16, 0));
       expect(uuid, matches(uuidRegexp));
       expect(uuid, '00000000-0000-4000-8000-000000000000');
     });
     test('max value is valid', () {
-      var uuid = createUuid(List<int>.filled(16, 255));
+      final uuid = createUuid(List<int>.filled(16, 255));
       expect(uuid, matches(uuidRegexp));
       expect(uuid, 'FFFFFFFF-FFFF-4FFF-BFFF-FFFFFFFFFFFF');
     });
     test('random values are valid', () {
       for (var i = 0; i < 100; i++) {
-        var uuid = createUuid();
+        final uuid = createUuid();
         expect(uuid, matches(uuidRegexp));
       }
     });

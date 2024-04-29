@@ -24,7 +24,8 @@ void main() {
 
     // Use some args that would trip up pub's arg parser to ensure that it
     // isn't trying to look at them.
-    var pub = await pubRun(args: ['bin/args', '--verbose', '-m', '--', 'help']);
+    final pub =
+        await pubRun(args: ['bin/args', '--verbose', '-m', '--', 'help']);
 
     expect(pub.stdout, emitsThrough('--verbose -m -- help'));
     await pub.shouldExit();

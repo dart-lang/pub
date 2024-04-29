@@ -42,12 +42,12 @@ class CacheAddCommand extends PubCommand {
 
     // Don't allow extra arguments.
     if (argResults.rest.length > 1) {
-      var unexpected = argResults.rest.skip(1).map((arg) => '"$arg"');
-      var arguments = pluralize('argument', unexpected.length);
+      final unexpected = argResults.rest.skip(1).map((arg) => '"$arg"');
+      final arguments = pluralize('argument', unexpected.length);
       usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 
-    var package = argResults.rest.single;
+    final package = argResults.rest.single;
 
     // Parse the version constraint, if there is one.
     var constraint = VersionConstraint.any;
@@ -61,10 +61,10 @@ class CacheAddCommand extends PubCommand {
     }
 
     // TODO(rnystrom): Support installing from git too.
-    var source = cache.hosted;
+    final source = cache.hosted;
 
     // TODO(rnystrom): Allow specifying the server.
-    var ids = (await cache.getVersions(source.refFor(package)))
+    final ids = (await cache.getVersions(source.refFor(package)))
         .where((id) => constraint.allows(id.version))
         .toList();
 

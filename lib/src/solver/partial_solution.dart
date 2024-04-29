@@ -91,9 +91,9 @@ class PartialSolution {
   void backtrack(int decisionLevel) {
     _backtracking = true;
 
-    var packages = <String>{};
+    final packages = <String>{};
     while (_assignments.last.decisionLevel > decisionLevel) {
-      var removed = _assignments.removeLast();
+      final removed = _assignments.removeLast();
       packages.add(removed.package.name);
       if (removed.isDecision) _decisions.remove(removed.package.name);
     }
@@ -113,17 +113,17 @@ class PartialSolution {
 
   /// Registers [assignment] in [_positive] or [_negative].
   void _register(Assignment assignment) {
-    var name = assignment.package.name;
-    var oldPositive = _positive[name];
+    final name = assignment.package.name;
+    final oldPositive = _positive[name];
     if (oldPositive != null) {
       _positive[name] = oldPositive.intersect(assignment);
       return;
     }
 
-    var ref = assignment.package.toRef();
-    var negativeByRef = _negative[name];
-    var oldNegative = negativeByRef == null ? null : negativeByRef[ref];
-    var term =
+    final ref = assignment.package.toRef();
+    final negativeByRef = _negative[name];
+    final oldNegative = negativeByRef == null ? null : negativeByRef[ref];
+    final term =
         oldNegative == null ? assignment : assignment.intersect(oldNegative)!;
 
     if (term.isPositive) {
@@ -173,18 +173,18 @@ class PartialSolution {
   /// Returns the relationship between the package versions allowed by all
   /// assignments in [this] and those allowed by [term].
   SetRelation relation(Term term) {
-    var positive = _positive[term.package.name];
+    final positive = _positive[term.package.name];
     if (positive != null) return positive.relation(term);
 
     // If there are no assignments related to [term], that means the
     // assignments allow any version of any package, which is a superset of
     // [term].
-    var byRef = _negative[term.package.name];
+    final byRef = _negative[term.package.name];
     if (byRef == null) return SetRelation.overlapping;
 
     // not foo from git is a superset of foo from hosted
     // not foo from git overlaps not foo from hosted
-    var negative = byRef[term.package.toRef()];
+    final negative = byRef[term.package.toRef()];
     if (negative == null) return SetRelation.overlapping;
 
     return negative.relation(term);

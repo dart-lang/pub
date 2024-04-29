@@ -92,7 +92,7 @@ Descriptor rawPubspec(Map<String, Object> contents) =>
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
 Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
-  var map = <String, Object>{
+  final map = <String, Object>{
     'name': 'myapp',
     ...?extras,
   };
@@ -115,7 +115,7 @@ FileDescriptor libPubspec(
   Map<String, Object?>? extras,
   bool resolutionWorkspace = false,
 }) {
-  var map = packageMap(name, version, deps, devDeps);
+  final map = packageMap(name, version, deps, devDeps);
   if (resolutionWorkspace && sdk == null) {
     sdk = '3.5.0';
   }
@@ -197,11 +197,11 @@ Descriptor cacheDir(
   int? port,
   bool includePubspecs = false,
 }) {
-  var contents = <Descriptor>[];
+  final contents = <Descriptor>[];
   packages.forEach((name, versions) {
     if (versions is! List) versions = [versions];
     for (var version in versions) {
-      var packageContents = [libDir(name, '$name $version')];
+      final packageContents = [libDir(name, '$name $version')];
       if (includePubspecs) {
         packageContents.add(libPubspec(name, version as String));
       }

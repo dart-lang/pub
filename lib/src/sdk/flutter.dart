@@ -106,10 +106,10 @@ class FlutterSdk extends Sdk {
     // `$flutter/bin/cache/pkg`. This checks both locations in order. If [name]
     // exists in neither place, it returns the `$flutter/packages` location
     // which is more human-readable for error messages.
-    var packagePath = p.join(rootDirectory!, 'packages', name);
+    final packagePath = p.join(rootDirectory!, 'packages', name);
     if (dirExists(packagePath)) return packagePath;
 
-    var cachePath = p.join(rootDirectory!, 'bin', 'cache', 'pkg', name);
+    final cachePath = p.join(rootDirectory!, 'bin', 'cache', 'pkg', name);
     if (dirExists(cachePath)) return cachePath;
 
     return null;

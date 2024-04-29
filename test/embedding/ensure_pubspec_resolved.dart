@@ -542,11 +542,11 @@ Future<void> _noImplicitPubGet({
   expect(output, isNot(contains('Resolving dependencies')));
   // If pub determines that everything is up-to-date, it should set the
   // mtimes to indicate that.
-  var pubspecModified =
+  final pubspecModified =
       File(p.join(d.sandbox, 'myapp/pubspec.yaml')).lastModifiedSync();
-  var lockFileModified =
+  final lockFileModified =
       File(p.join(d.sandbox, 'myapp/pubspec.lock')).lastModifiedSync();
-  var packageConfigModified =
+  final packageConfigModified =
       File(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
           .lastModifiedSync();
 

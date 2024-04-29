@@ -96,7 +96,7 @@ To remove a dependency override of a package prefix the package name with
           dryRun: isDryRun,
         );
 
-    var example = entrypoint.example;
+    final example = entrypoint.example;
     if (!isDryRun && argResults.flag('example') && example != null) {
       await example.acquireDependencies(
         SolveType.get,

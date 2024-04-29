@@ -32,7 +32,7 @@ void main() {
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: [p.join('tool', 'a', 'b', 'app')]);
+    final pub = await pubRun(args: [p.join('tool', 'a', 'b', 'app')]);
     expect(pub.stdout, emitsThrough('a b'));
     await pub.shouldExit();
   });

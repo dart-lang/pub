@@ -11,7 +11,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('path dependency to non-existent directory', () async {
-    var badPath = p.join(d.sandbox, 'bad_path');
+    final badPath = p.join(d.sandbox, 'bad_path');
 
     await d.dir(appPath, [
       d.appPubspec(

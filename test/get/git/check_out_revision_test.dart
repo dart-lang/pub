@@ -11,12 +11,12 @@ void main() {
   test('checks out a package at a specific revision from Git', () async {
     ensureGit();
 
-    var repo = d.git(
+    final repo = d.git(
       'foo.git',
       [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')],
     );
     await repo.create();
-    var commit = await repo.revParse('HEAD');
+    final commit = await repo.revParse('HEAD');
 
     await d.git(
       'foo.git',

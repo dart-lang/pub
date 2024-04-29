@@ -159,7 +159,7 @@ Future<void> pubCommand(
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
 
-  var allArgs = [command.name];
+  final allArgs = [command.name];
   if (args != null) allArgs.addAll(args);
 
   output ??= command.success;
@@ -301,9 +301,9 @@ Future<PubProcess> pubRun({
   Map<String, String>? environment,
   bool verbose = true,
 }) async {
-  var pubArgs = global ? ['global', 'run'] : ['run'];
+  final pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
-  var pub = await startPub(
+  final pub = await startPub(
     args: pubArgs,
     environment: environment,
     verbose: verbose,
@@ -358,7 +358,7 @@ Future<void> runPub({
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
-  var pub = await startPub(
+  final pub = await startPub(
     args: args,
     workingDirectory: workingDirectory,
     environment: environment,
@@ -372,11 +372,11 @@ Future<void> runPub({
 
   await pub.shouldExit(exitCode);
 
-  var actualOutput = (await pub.stdoutStream().toList()).join('\n');
-  var actualError = (await pub.stderrStream().toList()).join('\n');
-  var actualSilent = (await pub.silentStream().toList()).join('\n');
+  final actualOutput = (await pub.stdoutStream().toList()).join('\n');
+  final actualError = (await pub.stderrStream().toList()).join('\n');
+  final actualSilent = (await pub.silentStream().toList()).join('\n');
 
-  var failures = <String>[];
+  final failures = <String>[];
   if (outputJson == null) {
     _validateOutput(failures, 'stdout', output, actualOutput);
   } else {
@@ -404,7 +404,7 @@ Future<PubProcess> startPublish(
   String path = '',
   String? workingDirectory,
 }) async {
-  var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
+  final tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
   return await startPub(
     args: args,
@@ -510,7 +510,7 @@ Future<PubProcess> startPub({
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
-  var dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
+  final dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
   dartArgs
     ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
     ..addAll(args);
@@ -531,7 +531,7 @@ Future<PubProcess> startPub({
     ...getPubTestEnvironment(tokenEndpoint),
   };
   for (final e in (environment ?? {}).entries) {
-    var value = e.value;
+    final value = e.value;
     if (value == null) {
       mergedEnvironment.remove(e.key);
     } else {
@@ -576,7 +576,7 @@ class PubProcess extends TestProcess {
     Encoding encoding = utf8,
     bool forwardStdio = false,
   }) async {
-    var process = await Process.start(
+    final process = await Process.start(
       executable,
       arguments.toList(),
       workingDirectory: workingDirectory,
@@ -586,7 +586,7 @@ class PubProcess extends TestProcess {
     );
 
     if (description == null) {
-      var humanExecutable = p.isWithin(p.current, executable)
+      final humanExecutable = p.isWithin(p.current, executable)
           ? p.relative(executable)
           : executable;
       description = '$humanExecutable ${arguments.join(' ')}';
@@ -627,10 +627,10 @@ class PubProcess extends TestProcess {
   ) {
     late log.Level lastLevel;
     return stream.map((line) {
-      var match = _logLineRegExp.firstMatch(line);
+      final match = _logLineRegExp.firstMatch(line);
       if (match == null) return (defaultLevel, line);
 
-      var level = _logLevels[match[1]] ?? lastLevel;
+      final level = _logLevels[match[1]] ?? lastLevel;
       lastLevel = level;
       return (level, match[2]!);
     });
@@ -689,9 +689,9 @@ Future<void> createLockFile(
   Iterable<String>? dependenciesInSandBox,
   Map<String, String>? hosted,
 }) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
+  final cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
-  var lockFile =
+  final lockFile =
       _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
@@ -714,7 +714,7 @@ LockFile _createLockFile(
   Iterable<String>? sandbox,
   Map<String, String>? hosted,
 }) {
-  var dependencies = <String, dynamic>{};
+  final dependencies = <String, dynamic>{};
 
   if (sandbox != null) {
     for (var package in sandbox) {
@@ -755,7 +755,7 @@ LockFile _createLockFile(
 /// Note that this will only affect HTTP requests made via http.dart in the
 /// parent process.
 void useMockClient(MockClient client) {
-  var oldInnerClient = innerHttpClient;
+  final oldInnerClient = innerHttpClient;
   innerHttpClient = client;
   addTearDown(() {
     innerHttpClient = oldInnerClient;
@@ -771,7 +771,7 @@ Map<String, Object> packageMap(
   Map? devDependencies,
   Map? environment,
 ]) {
-  var package = <String, Object>{
+  final package = <String, Object>{
     'name': name,
     'version': version,
     'homepage': 'https://pub.dev',
@@ -817,8 +817,8 @@ void _validateOutputString(
   String expected,
   String actual,
 ) {
-  var actualLines = actual.split('\n');
-  var expectedLines = expected.split('\n');
+  final actualLines = actual.split('\n');
+  final expectedLines = expected.split('\n');
 
   // Strip off the last line. This lets us have expected multiline strings
   // where the closing ''' is on its own line. It also fixes '' expected output
@@ -827,11 +827,11 @@ void _validateOutputString(
     expectedLines.removeLast();
   }
 
-  var results = <String>[];
+  final results = <String>[];
   var failed = false;
 
   // Compare them line by line to see which ones match.
-  var length = max(expectedLines.length, actualLines.length);
+  final length = max(expectedLines.length, actualLines.length);
   for (var i = 0; i < length; i++) {
     if (i >= actualLines.length) {
       // Missing output.
@@ -842,8 +842,8 @@ void _validateOutputString(
       failed = true;
       results.add('X ${actualLines[i]}');
     } else {
-      var expectedLine = expectedLines[i].trim();
-      var actualLine = actualLines[i].trim();
+      final expectedLine = expectedLines[i].trim();
+      final actualLine = actualLines[i].trim();
 
       if (expectedLine != actualLine) {
         // Mismatched lines.
@@ -902,9 +902,9 @@ typedef ValidatorCreator = Validator Function();
 ///
 /// Returns a scheduled Future that contains the validator after validation.
 Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
+  final cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   final entrypoint = Entrypoint(_pathInSandbox(appPath), cache);
-  var validator = fn();
+  final validator = fn();
   validator.context = ValidationContext(
     entrypoint,
     await Future.value(size ?? 100),
@@ -920,7 +920,7 @@ Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
 /// Returns a matcher that asserts that a string contains [times] distinct
 /// occurrences of [pattern], which must be a regular expression pattern.
 Matcher matchesMultiple(String pattern, int times) {
-  var buffer = StringBuffer(pattern);
+  final buffer = StringBuffer(pattern);
   for (var i = 1; i < times; i++) {
     buffer.write(r'(.|\n)*');
     buffer.write(pattern);
@@ -942,7 +942,7 @@ String filterUnstableText(String input) {
         RegExp(r'sha256: "?[0-9a-f]{64}"?', multiLine: true),
         r'sha256: $SHA256',
       );
-  var port = _globalServer?.port;
+  final port = _globalServer?.port;
   if (port != null) {
     input = input.replaceAll(port.toString(), '\$PORT');
   }
