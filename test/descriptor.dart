@@ -117,7 +117,7 @@ FileDescriptor libPubspec(
 }) {
   final map = packageMap(name, version, deps, devDeps);
   if (resolutionWorkspace && sdk == null) {
-    sdk = '3.5.0';
+    sdk = '^3.5.0-0';
   }
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};

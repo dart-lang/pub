@@ -138,7 +138,7 @@ Future<void> main() async {
     );
   });
 
-  test('Does `pub get` if there is a pubspec.yaml', () async {
+  test('Reports file not found if the path looks like a file', () async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -156,8 +156,8 @@ Future<void> main() async {
     await testGetExecutable(
       'bar/m.dart',
       d.path(appPath),
-      errorMessage: matches(r'version\s+solving\s+failed'),
-      issue: CommandResolutionIssue.pubGetFailed,
+      errorMessage: matches(r'Could not find file `bar/m.dart`'),
+      issue: CommandResolutionIssue.fileNotFound,
     );
   });
 
@@ -206,11 +206,25 @@ Future<void> main() async {
       pubspec: {
         'environment': {'sdk': '^$_currentVersion'},
       },
+      deps: {
+        'transitive': {'hosted': globalServer.url},
+      },
       contents: [
         d.dir('bin', [
           d.file('foo.dart', 'main() {print(42);}'),
           d.file('tool.dart', 'main() {print(42);}'),
         ]),
+      ],
+    );
+
+    server.serve(
+      'transitive',
+      '1.0.0',
+      pubspec: {
+        'environment': {'sdk': '^$_currentVersion'},
+      },
+      contents: [
+        d.dir('bin', [d.file('transitive.dart', 'main() {print(42);}')]),
       ],
     );
 
@@ -220,10 +234,7 @@ Future<void> main() async {
         'environment': {'sdk': '^$_currentVersion'},
         'dependencies': {
           'foo': {
-            'hosted': {
-              'name': 'foo',
-              'url': globalServer.url,
-            },
+            'hosted': globalServer.url,
             'version': '^1.0.0',
           },
         },
@@ -330,6 +341,119 @@ Future<void> main() async {
       errorMessage:
           'Could not find package `unknownTool` or file `unknownTool`',
       issue: CommandResolutionIssue.packageNotFound,
+    );
+    await testGetExecutable(
+      'transitive',
+      dir,
+      executable: p.relative(
+        p.join(
+          d.sandbox,
+          d.hostedCachePath(port: globalServer.port),
+          'transitive-1.0.0',
+          'bin',
+          'transitive.dart',
+        ),
+        from: dir,
+      ),
+      allowSnapshot: false,
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+  });
+
+  test('works with workspace', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [
+          d.file('foo.dart', 'main() {print(42);}'),
+          d.file('tool.dart', 'main() {print(42);}'),
+        ]),
+      ],
+    );
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.2.3',
+        deps: {
+          'a': 'any',
+        },
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/b'],
+        },
+        sdk: '^3.5.0-0',
+      ),
+      d.dir('bin', [
+        d.file('myapp.dart', 'main() {print(42);}'),
+        d.file('tool.dart', 'main() {print(42);}'),
+      ]),
+      d.dir('pkgs', [
+        d.dir('a', [
+          d.libPubspec(
+            'a',
+            '1.0.0',
+            resolutionWorkspace: true,
+          ),
+          d.dir('bin', [
+            d.file('a.dart', 'main() {print(42);}'),
+            d.file('tool.dart', 'main() {print(42);}'),
+          ]),
+        ]),
+        d.dir('b', [
+          d.libPubspec(
+            'b',
+            '1.0.0',
+            resolutionWorkspace: true,
+          ),
+          d.dir('bin', [
+            d.file('b.dart', 'main() {print(42);}'),
+            d.file('tool.dart', 'main() {print(42);}'),
+          ]),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+
+    await testGetExecutable(
+      'myapp',
+      p.join(d.sandbox, appPath, 'pkgs', 'a'),
+      executable: p.join(
+        '..',
+        '..',
+        '.dart_tool',
+        'pub',
+        'bin',
+        'myapp',
+        'myapp.dart-$_currentVersion.snapshot',
+      ),
+      packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'a',
+      p.join(d.sandbox, appPath, 'pkgs'),
+      executable: p.join(
+        'a',
+        'bin',
+        'a.dart',
+      ),
+      allowSnapshot: false,
+      packageConfig: p.join('..', '.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'b:tool',
+      p.join(d.sandbox, appPath),
+      allowSnapshot: false,
+      executable: p.join(
+        'pkgs',
+        'b',
+        'bin',
+        'tool.dart',
+      ),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
     );
   });
 }
