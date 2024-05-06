@@ -80,7 +80,7 @@ void testEnsurePubspecResolved() {
             .deleteSync();
 
         await _implicitPubGet(
-          './pubspec.yaml` exists without corresponding `./pubspec.yaml` or `.dart_tool/pub/workspace_ref.json`.',
+          '`./pubspec.yaml` exists without corresponding `./pubspec.yaml` or `.dart_tool/pub/workspace_ref.json`.',
         );
       });
 
