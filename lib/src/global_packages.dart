@@ -619,12 +619,12 @@ try:
           binStubScript ==
               p.basenameWithoutExtension(executable.relativePath)) {
         log.fine('Replacing old binstub $file');
-        deleteEntry(file);
         _createBinStub(
           activatedPackage(entrypoint),
           p.basenameWithoutExtension(file),
           binStubScript,
           overwrite: true,
+          isRefreshingBinstub: true,
           snapshot:
               executable.pathOfGlobalSnapshot(entrypoint.workspaceRoot.dir),
         );
@@ -681,6 +681,7 @@ try:
         executable,
         script,
         overwrite: overwriteBinStubs,
+        isRefreshingBinstub: false,
         snapshot: entrypoint.pathOfSnapshot(
           exec.Executable.adaptProgramName(package.name, script),
         ),
@@ -763,14 +764,13 @@ try:
     String script, {
     required bool overwrite,
     required String snapshot,
+    required bool isRefreshingBinstub,
   }) {
     var binStubPath = p.join(_binStubDir, executable);
     if (Platform.isWindows) binStubPath += '.bat';
 
-    // See if the binstub already exists. If so, it's for another package
-    // since we already deleted all of this package's binstubs.
     String? previousPackage;
-    if (fileExists(binStubPath)) {
+    if (!isRefreshingBinstub && fileExists(binStubPath)) {
       final contents = readTextFile(binStubPath);
       previousPackage = _binStubProperty(contents, 'Package');
       if (previousPackage == null) {
@@ -846,7 +846,7 @@ fi
     // it into place afterwards to avoid races.
     final tempDir = cache.createTempDir();
     try {
-      final tmpPath = p.join(tempDir, binStubPath);
+      final tmpPath = p.join(tempDir, p.basename(binStubPath));
 
       // Write this as the system encoding since the system is going to
       // execute it and it might contain non-ASCII characters in the
