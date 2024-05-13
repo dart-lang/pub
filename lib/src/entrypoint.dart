@@ -845,8 +845,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
               lockFile.packages.containsKey(packageName);
         });
         if (hasExtraMappings) {
-          log.fine(packagePathsMapping.toString());
-          log.fine(lockFile.packages.toString());
           return false;
         }
 
