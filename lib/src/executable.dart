@@ -380,7 +380,6 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     );
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
-  print('wor $workspaceRootDir');
   final packageConfigPath = p.normalize(
     p.join(
       rootOrCurrent,
@@ -510,16 +509,6 @@ class Executable {
   /// The path to this executable given [packageConfig] Relative package dirs
   /// are resolved relative to `dirname(packageConfigPath)`.
   String resolve(PackageConfig packageConfig, String packageConfigPath) {
-    print(
-      (
-        p.dirname(packageConfigPath),
-        p.fromUri(
-          packageConfig.packages.firstWhere((p) => p.name == package).rootUri,
-        ),
-        relativePath,
-      ),
-    );
-
     return p.normalize(
       p.join(
         p.dirname(packageConfigPath),
