@@ -749,6 +749,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     bool summaryOnly = true,
     bool onlyOutputWhenTerminal = true,
   }) async {
+    late final wasRelative = p.isRelative(dir);
+    String relativeIfNeeded(String path) =>
+        wasRelative ? p.relative(path) : path;
+
     /// Whether the lockfile is out of date with respect to the dependencies'
     /// pubspecs.
     ///
@@ -1003,8 +1007,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       FileStat? packageConfigStat;
       late final String packageConfigPath;
       late final String rootDir;
-      final wasRelative = p.isRelative(dir);
-      for (final parent in parentDirs(p.absolute(dir))) {
+      for (final parent in parentDirs(dir)) {
         final potentialPackageConfigPath =
             p.normalize(p.join(parent, '.dart_tool', 'package_config.json'));
         packageConfigStat = tryStatFile(potentialPackageConfigPath);
@@ -1034,13 +1037,17 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           try {
             if (jsonDecode(workspaceRefText)
                 case {'workspaceRoot': final String path}) {
-              final potentialPackageConfigPath2 = p.normalize(
-                p.join(
-                  p.dirname(potentialWorkspaceRefPath),
-                  workspaceRefText,
-                  path,
-                  '.dart_tool',
-                  'package_config.json',
+              final potentialPackageConfigPath2 = relativeIfNeeded(
+                p.normalize(
+                  p.absolute(
+                    p.join(
+                      p.dirname(potentialWorkspaceRefPath),
+                      workspaceRefText,
+                      path,
+                      '.dart_tool',
+                      'package_config.json',
+                    ),
+                  ),
                 ),
               );
               packageConfigStat = tryStatFile(potentialPackageConfigPath2);
@@ -1051,17 +1058,18 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
                 return null;
               } else {
                 packageConfigPath = potentialPackageConfigPath2;
-                final rootDirAbsolute = p.absolute(
-                  p.join(
-                    p.dirname(potentialWorkspaceRefPath),
-                    workspaceRefText,
-                    path,
+                rootDir = relativeIfNeeded(
+                  p.normalize(
+                    p.absolute(
+                      p.join(
+                        p.dirname(potentialWorkspaceRefPath),
+                        workspaceRefText,
+                        path,
+                      ),
+                    ),
                   ),
                 );
 
-                rootDir = p.normalize(
-                  wasRelative ? p.relative(rootDirAbsolute) : rootDirAbsolute,
-                );
                 break;
               }
             } else {
