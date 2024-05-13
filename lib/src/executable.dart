@@ -331,22 +331,23 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   // Find the first directory from [rootOrCurrent] to [workspaceRootDir] (both
   // inclusive) that contains a package from the package config.
-  String? rootPackageName;
-  for (final parent in parentDirs(rootOrCurrent)) {
-    final rootPackage = packageConfig.packages.firstWhereOrNull(
-      (package) => p.equals(
-        p.join(workspaceRootDir, '.dart_tool', p.fromUri(package.rootUri)),
-        parent,
-      ),
-    );
-    if (rootPackage != null) {
-      rootPackageName = rootPackage.name;
-      break;
-    }
-    if (p.equals(parent, workspaceRootDir)) {
-      break;
-    }
-  }
+  final packageConfigDir =
+      p.join(workspaceRootDir, '.dart_tool', 'package_config.json');
+
+  final rootPackageName = maxBy<(String, String), int>(
+    packageConfig.packages.map((package) {
+      final packageRootDir =
+          p.canonicalize(package.resolvedRootDir(packageConfigDir));
+      if (p.equals(packageRootDir, rootOrCurrent) ||
+          p.isWithin(packageRootDir, rootOrCurrent)) {
+        return (package.name, packageRootDir);
+      } else {
+        return null;
+      }
+    }).whereNotNull(),
+    (tuple) => tuple.$2.length,
+  )?.$1;
+
   if (rootPackageName == null) {
     throw CommandResolutionFailedException._(
       '${p.join(workspaceRootDir, '.dart_tool', 'package_config.json')} did not contain its own root package',
@@ -379,7 +380,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     );
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
-
+  print('wor $workspaceRootDir');
   final packageConfigPath = p.normalize(
     p.join(
       rootOrCurrent,
@@ -397,7 +398,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   if (!allowSnapshot) {
     return DartExecutableWithPackageConfig(
-      executable: p.normalize(p.relative(path, from: rootOrCurrent)),
+      executable: p.normalize(path),
       packageConfig: p.relative(packageConfigPath, from: rootOrCurrent),
     );
   } else {
@@ -440,6 +441,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
 
 bool _looksLikeFile(String candidate) {
   return candidate.contains('/') ||
+      (Platform.isWindows && candidate.contains(r'\')) ||
       candidate.endsWith('.dart') ||
       candidate.endsWith('.snapshot');
 }
@@ -508,6 +510,16 @@ class Executable {
   /// The path to this executable given [packageConfig] Relative package dirs
   /// are resolved relative to `dirname(packageConfigPath)`.
   String resolve(PackageConfig packageConfig, String packageConfigPath) {
+    print(
+      (
+        p.dirname(packageConfigPath),
+        p.fromUri(
+          packageConfig.packages.firstWhere((p) => p.name == package).rootUri,
+        ),
+        relativePath,
+      ),
+    );
+
     return p.normalize(
       p.join(
         p.dirname(packageConfigPath),

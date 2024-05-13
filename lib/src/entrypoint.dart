@@ -983,7 +983,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     /// where version control or other processes mess up the timestamp order.
     ///
     /// If the resolution is still valid, the timestamps are updated and this
-    /// returns `true`. Otherwise this returns `false`.
+    /// returns the package configuration and the root dir. Otherwise this
+    /// returns `null`.
     ///
     /// This check is on the fast-path of `dart run` and should do as little
     /// work as possible. Specifically we avoid parsing any yaml when the
@@ -1001,8 +1002,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     (PackageConfig, String)? isResolutionUpToDate() {
       FileStat? packageConfigStat;
       late final String packageConfigPath;
-      late final String rootDir;
-      for (final parent in parentDirs(dir)) {
+      late String rootDir;
+      final wasRelative = p.isRelative(dir);
+      for (final parent in parentDirs(p.absolute(dir))) {
         final potentialPackageConfigPath =
             p.normalize(p.join(parent, '.dart_tool', 'package_config.json'));
         packageConfigStat = tryStatFile(potentialPackageConfigPath);
@@ -1030,28 +1032,43 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           return null;
         } else {
           try {
-            switch (jsonDecode(workspaceRefText)) {
-              case {'workspaceRoot': final String path}:
-                final potentialPackageConfigPath2 = p.normalize(
+            if (jsonDecode(workspaceRefText)
+                case {'workspaceRoot': final String path}) {
+              final potentialPackageConfigPath2 = p.normalize(
+                p.join(
+                  p.dirname(potentialWorkspaceRefPath),
+                  workspaceRefText,
+                  path,
+                  '.dart_tool',
+                  'package_config.json',
+                ),
+              );
+              packageConfigStat = tryStatFile(potentialPackageConfigPath2);
+              if (packageConfigStat == null) {
+                log.fine(
+                  '`$potentialWorkspaceRefPath` points to non-existing `$potentialPackageConfigPath2`',
+                );
+                return null;
+              } else {
+                packageConfigPath = potentialPackageConfigPath2;
+                final rootDirAbsolute = p.absolute(
                   p.join(
                     p.dirname(potentialWorkspaceRefPath),
                     workspaceRefText,
                     path,
-                    '.dart_tool',
-                    'package_config.json',
                   ),
                 );
-                packageConfigStat = tryStatFile(potentialPackageConfigPath2);
-                if (packageConfigStat == null) {
-                  log.fine(
-                    '`$potentialWorkspaceRefPath` points to non-existing $potentialPackageConfigPath2',
-                  );
-                  return null;
-                }
-              case _:
-                log.fine(
-                  '`$potentialWorkspaceRefPath` is missing "workspaceRoot" property',
+
+                rootDir = p.normalize(
+                  wasRelative ? p.relative(rootDirAbsolute) : rootDirAbsolute,
                 );
+                break;
+              }
+            } else {
+              log.fine(
+                '`$potentialWorkspaceRefPath` is missing "workspaceRoot" property',
+              );
+              return null;
             }
           } on FormatException catch (e) {
             log.fine(
@@ -1199,34 +1216,33 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       return (packageConfig, rootDir);
     }
 
-    switch (isResolutionUpToDate()) {
-      case null:
-        final entrypoint = Entrypoint(
-          dir, cache,
-          // [ensureUpToDate] is also used for entries in 'global_packages/'
-          checkInCache: false,
-        );
-        if (onlyOutputWhenTerminal) {
-          await log.errorsOnlyUnlessTerminal(() async {
-            await entrypoint.acquireDependencies(
-              SolveType.get,
-              summaryOnly: summaryOnly,
-            );
-          });
-        } else {
-          await entrypoint.acquireDependencies(
-            SolveType.get,
-            summaryOnly: summaryOnly,
-          );
-        }
-        return (
-          packageConfig: entrypoint.packageConfig,
-          rootDir: entrypoint.workspaceRoot.dir
-        );
-      case (final PackageConfig packageConfig, final String rootDir):
-        log.fine('Package Config up to date.');
-        return (packageConfig: packageConfig, rootDir: rootDir);
+    if (isResolutionUpToDate()
+        case (final PackageConfig packageConfig, final String rootDir)) {
+      log.fine('Package Config up to date.');
+      return (packageConfig: packageConfig, rootDir: rootDir);
     }
+    final entrypoint = Entrypoint(
+      dir, cache,
+      // [ensureUpToDate] is also used for entries in 'global_packages/'
+      checkInCache: false,
+    );
+    if (onlyOutputWhenTerminal) {
+      await log.errorsOnlyUnlessTerminal(() async {
+        await entrypoint.acquireDependencies(
+          SolveType.get,
+          summaryOnly: summaryOnly,
+        );
+      });
+    } else {
+      await entrypoint.acquireDependencies(
+        SolveType.get,
+        summaryOnly: summaryOnly,
+      );
+    }
+    return (
+      packageConfig: entrypoint.packageConfig,
+      rootDir: entrypoint.workspaceRoot.dir
+    );
   }
 
   /// We require an SDK constraint lower-bound as of Dart 2.12.0

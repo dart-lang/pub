@@ -206,6 +206,7 @@ String? tryReadTextFile(String path) {
   try {
     return readTextFile(path);
   } on FileSystemException {
+    // TODO: Consider handlind file-not-found differently from other exceptions.
     return null;
   }
 }

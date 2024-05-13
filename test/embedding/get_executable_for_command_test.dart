@@ -345,15 +345,12 @@ Future<void> main() async {
     await testGetExecutable(
       'transitive',
       dir,
-      executable: p.relative(
-        p.join(
-          d.sandbox,
-          d.hostedCachePath(port: globalServer.port),
-          'transitive-1.0.0',
-          'bin',
-          'transitive.dart',
-        ),
-        from: dir,
+      executable: p.join(
+        d.sandbox,
+        d.hostedCachePath(port: globalServer.port),
+        'transitive-1.0.0',
+        'bin',
+        'transitive.dart',
       ),
       allowSnapshot: false,
       packageConfig: p.join('.dart_tool', 'package_config.json'),
@@ -379,6 +376,10 @@ Future<void> main() async {
         '1.2.3',
         deps: {
           'a': 'any',
+          'foo': {
+            'hosted': globalServer.url,
+            'version': '^1.0.0',
+          },
         },
         extras: {
           'workspace': ['pkgs/a', 'pkgs/b'],
@@ -436,6 +437,9 @@ Future<void> main() async {
       'a',
       p.join(d.sandbox, appPath, 'pkgs'),
       executable: p.join(
+        d.sandbox,
+        appPath,
+        'pkgs',
         'a',
         'bin',
         'a.dart',
@@ -448,12 +452,41 @@ Future<void> main() async {
       p.join(d.sandbox, appPath),
       allowSnapshot: false,
       executable: p.join(
+        d.sandbox,
+        appPath,
         'pkgs',
         'b',
         'bin',
         'tool.dart',
       ),
       packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      'foo',
+      p.join(d.sandbox, appPath),
+      allowSnapshot: false,
+      executable: p.join(
+        d.sandbox,
+        d.hostedCachePath(),
+        'foo-1.0.0',
+        'bin',
+        'foo.dart',
+      ),
+      packageConfig: p.join('.dart_tool', 'package_config.json'),
+    );
+    await testGetExecutable(
+      ':tool',
+      p.join(d.sandbox, appPath, 'pkgs', 'a'),
+      allowSnapshot: false,
+      executable: p.join(
+        d.sandbox,
+        appPath,
+        'pkgs',
+        'a',
+        'bin',
+        'tool.dart',
+      ),
+      packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
     );
   });
 }
