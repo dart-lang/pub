@@ -318,11 +318,13 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   final PackageConfig packageConfig;
   final String workspaceRootDir;
   try {
-    (packageConfig: packageConfig, rootDir: workspaceRootDir) =
+    final String workspaceRootRelativeToCwd;
+    (packageConfig: packageConfig, rootDir: workspaceRootRelativeToCwd) =
         await Entrypoint.ensureUpToDate(
       rootOrCurrent,
       cache: SystemCache(rootDir: pubCacheDir),
     );
+    workspaceRootDir = p.absolute(workspaceRootRelativeToCwd);
   } on ApplicationException catch (e) {
     throw CommandResolutionFailedException._(
       e.toString(),

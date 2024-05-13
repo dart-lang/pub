@@ -1249,7 +1249,11 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
     return (
       packageConfig: entrypoint.packageConfig,
-      rootDir: entrypoint.workspaceRoot.dir
+      rootDir: relativeIfNeeded(
+        p.normalize(
+          p.absolute(entrypoint.workspaceRoot.dir),
+        ),
+      )
     );
   }
 
