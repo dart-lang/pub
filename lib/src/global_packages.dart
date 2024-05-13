@@ -372,7 +372,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   /// Returns an [Entrypoint] loaded with the active package if found.
   Future<Entrypoint> find(String name) async {
     final lockFilePath = _getLockFilePath(name);
-    late LockFile lockFile;
+    late final LockFile lockFile;
     try {
       lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
@@ -380,11 +380,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       dataError('No active package ${log.bold(name)}.');
     }
 
-    // Remove the package itself from the lockfile. We put it in there so we
-    // could find and load the [Package] object, but normally an entrypoint
-    // doesn't expect to be in its own lockfile.
     final id = lockFile.packages[name]!;
-    lockFile = lockFile.removePackage(name);
 
     Entrypoint entrypoint;
     if (id.source is CachedSource) {
@@ -623,12 +619,12 @@ try:
           binStubScript ==
               p.basenameWithoutExtension(executable.relativePath)) {
         log.fine('Replacing old binstub $file');
-        deleteEntry(file);
         _createBinStub(
-          entrypoint.workspaceRoot,
+          activatedPackage(entrypoint),
           p.basenameWithoutExtension(file),
           binStubScript,
           overwrite: true,
+          isRefreshingBinstub: true,
           snapshot:
               executable.pathOfGlobalSnapshot(entrypoint.workspaceRoot.dir),
         );
@@ -685,6 +681,7 @@ try:
         executable,
         script,
         overwrite: overwriteBinStubs,
+        isRefreshingBinstub: false,
         snapshot: entrypoint.pathOfSnapshot(
           exec.Executable.adaptProgramName(package.name, script),
         ),
@@ -767,14 +764,13 @@ try:
     String script, {
     required bool overwrite,
     required String snapshot,
+    required bool isRefreshingBinstub,
   }) {
     var binStubPath = p.join(_binStubDir, executable);
     if (Platform.isWindows) binStubPath += '.bat';
 
-    // See if the binstub already exists. If so, it's for another package
-    // since we already deleted all of this package's binstubs.
     String? previousPackage;
-    if (fileExists(binStubPath)) {
+    if (!isRefreshingBinstub && fileExists(binStubPath)) {
       final contents = readTextFile(binStubPath);
       previousPackage = _binStubProperty(contents, 'Package');
       if (previousPackage == null) {
@@ -850,7 +846,7 @@ fi
     // it into place afterwards to avoid races.
     final tempDir = cache.createTempDir();
     try {
-      final tmpPath = p.join(tempDir, binStubPath);
+      final tmpPath = p.join(tempDir, p.basename(binStubPath));
 
       // Write this as the system encoding since the system is going to
       // execute it and it might contain non-ASCII characters in the
@@ -946,5 +942,19 @@ fi
     final pattern = RegExp(RegExp.escape(name) + r': ([a-zA-Z0-9_-]+)');
     final match = pattern.firstMatch(source);
     return match == null ? null : match[1];
+  }
+}
+
+/// The package that was activated.
+///
+/// * For path packages this is [Entrypoint.workspaceRoot].
+/// * For cached packages this is the sole dependency of
+///   [Entrypoint.workspaceRoot].
+Package activatedPackage(Entrypoint entrypoint) {
+  if (entrypoint.isCachedGlobal) {
+    final dep = entrypoint.workspaceRoot.dependencies.keys.single;
+    return entrypoint.cache.load(entrypoint.lockFile.packages[dep]!);
+  } else {
+    return entrypoint.workspaceRoot;
   }
 }
