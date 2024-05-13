@@ -1002,7 +1002,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     (PackageConfig, String)? isResolutionUpToDate() {
       FileStat? packageConfigStat;
       late final String packageConfigPath;
-      late String rootDir;
+      late final String rootDir;
       final wasRelative = p.isRelative(dir);
       for (final parent in parentDirs(p.absolute(dir))) {
         final potentialPackageConfigPath =
