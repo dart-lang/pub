@@ -31,27 +31,27 @@ For example:
 
   $topLevelProgram pub unpack foo
 
-Downloads and extracts the latest stable package:foo from pub.dev in a
-directory `foo-<version>`.
+Downloads and extracts the latest stable version of package:foo from pub.dev
+in a directory `foo-<version>`.
 
   $topLevelProgram pub unpack foo:1.2.3-pre --no-resolve
 
 Downloads and extracts package:foo version 1.2.3-pre in a directory
-`foo-1.2.3-pre` without running running implicit `pub get`.
+`foo-1.2.3-pre` without running implicit `pub get`.
 
   $topLevelProgram pub unpack foo --output=archives
 
-Downloads and extracts latest stable version of package:foo in a directory
+Downloads and extracts the latest stable version of package:foo in a directory
 `archives/foo-<version>`.
 
   $topLevelProgram pub unpack 'foo:{hosted:"https://my_repo.org"}'
 
-Downloads and extracts latest stable version of package:foo from my_repo.org
+Downloads and extracts the latest stable version of package:foo from my_repo.org
 in a directory `foo-<version>`.
 ''';
 
   @override
-  String get argumentsDescription => 'package-name[:constraint]';
+  String get argumentsDescription => 'package-name[:descriptor]';
 
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-unpack';
@@ -62,19 +62,19 @@ in a directory `foo-<version>`.
   UnpackCommand() {
     argParser.addFlag(
       'resolve',
-      help: 'Whether to do pub get in the downloaded folder',
+      help: 'Whether to run pub get in the downloaded folder.',
       defaultsTo: true,
       hide: log.verbosity != log.Verbosity.all,
     );
     argParser.addFlag(
       'force',
       abbr: 'f',
-      help: 'overwrites an existing folder if it exists',
+      help: 'Overwrite the target directory if it already exists.',
     );
     argParser.addOption(
       'output',
       abbr: 'o',
-      help: 'Download and extract the package in this dir',
+      help: 'Download and extract the package in the specified directory.',
       defaultsTo: '.',
     );
   }
@@ -87,15 +87,15 @@ in a directory `foo-<version>`.
   @override
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
-      usageException('Provide a package name');
+      usageException('Provide a package name.');
     }
     if (argResults.rest.length > 1) {
-      usageException('Please provide only a single package name');
+      usageException('Provide only a single package name.');
     }
     final arg = argResults.rest[0];
     final match = _argRegExp.firstMatch(arg);
     if (match == null) {
-      usageException('Use the form package:constraint to specify the package.');
+      usageException('Use the form package:descriptor to specify the package.');
     }
     final parseResult = _parseDescriptor(
       match.namedGroup('name')!,
@@ -124,7 +124,7 @@ in a directory `foo-<version>`.
         deleteEntry(destinationDir);
       } else {
         fail(
-          'Target directory `$destinationDir` already exists. Use --force to overwrite',
+          'Target directory `$destinationDir` already exists. Use --force to overwrite.',
         );
       }
     }
