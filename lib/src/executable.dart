@@ -240,19 +240,20 @@ final class DartExecutableWithPackageConfig {
 ///
 /// [descriptor] is resolved as follows:
 /// * If `<descriptor>` is an existing file (resolved relative to root, either
-///   as a path or a file uri):
-///   return that (without snapshotting).
+///   as a path or a file uri): return that file with a `null` packageConfig.
 ///
-/// * Otherwise if [root] contains no `pubspec.yaml`, throws a
-///  [CommandResolutionFailedException].
+/// * Otherwise if it looks like a file name (ends with '.dart' or contains a
+///   '/' or a r'\') throw a [CommandResolutionFailedException]. (This is for
+///   more clear error messages).
 ///
-/// * Otherwise if the current package resolution is outdated do an implicit
-///   `pub get`, if that fails, throw a [CommandResolutionFailedException].
+/// * Otherwise call [Entrypoint.ensureUpToDate] in the current directory to
+///   obtain a package config. If that fails, return a
+///   [CommandResolutionFailedException].
 ///
-/// * Otherwise let  `<current>` be the name of the package at [root], and
-///   interpret [descriptor] as `[<package>][:<command>]`.
+/// * Otherwise let  `<current>` be the name of the innermost package containing
+///   [root], and interpret [descriptor] as `[<package>][:<command>]`.
 ///
-///   * If `<package>` is empty: default to the package at [root].
+///   * If `<package>` is empty: default to the package at [current].
 ///   * If `<command>` is empty, resolve it as `bin/<package>.dart` or
 ///     `bin/main.dart` to the first that exists.
 ///
@@ -270,8 +271,8 @@ final class DartExecutableWithPackageConfig {
 /// the package is an immutable (non-path) dependency of [root].
 ///
 /// If returning the path to a snapshot that doesn't already exist, the script
-/// Will be built. And a message will be printed only if a terminal is
-/// attached to stdout.
+/// Will be built. And a message will be printed only if a terminal is attached
+/// to stdout.
 ///
 /// Throws an [CommandResolutionFailedException] if the command is not found or
 /// if the entrypoint is not up to date (requires `pub get`) and a `pub get`.
@@ -280,8 +281,8 @@ final class DartExecutableWithPackageConfig {
 /// additional source files into compilation even if they are not referenced
 /// from the main library that [descriptor] resolves to.
 ///
-/// The [nativeAssets], if provided, instructs the compiler to include
-/// the native-assets mapping for @Native external functions.
+/// The [nativeAssets], if provided, instructs the compiler to include the
+/// native-assets mapping for @Native external functions.
 Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
@@ -305,42 +306,53 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   final asDirectFile = p.join(rootOrCurrent, asPath);
   if (fileExists(asDirectFile)) {
     return DartExecutableWithPackageConfig(
-      executable: p.relative(asDirectFile, from: rootOrCurrent),
+      executable: p.normalize(p.relative(asDirectFile, from: rootOrCurrent)),
       packageConfig: null,
     );
-  }
-  if (!fileExists(p.join(rootOrCurrent, 'pubspec.yaml'))) {
+  } else if (_looksLikeFile(asPath)) {
     throw CommandResolutionFailedException._(
       'Could not find file `$descriptor`',
       CommandResolutionIssue.fileNotFound,
     );
   }
   final PackageConfig packageConfig;
+  final String workspaceRootDir;
   try {
-    packageConfig = await Entrypoint.ensureUpToDate(
+    final String workspaceRootRelativeToCwd;
+    (packageConfig: packageConfig, rootDir: workspaceRootRelativeToCwd) =
+        await Entrypoint.ensureUpToDate(
       rootOrCurrent,
       cache: SystemCache(rootDir: pubCacheDir),
     );
+    workspaceRootDir = p.absolute(workspaceRootRelativeToCwd);
   } on ApplicationException catch (e) {
     throw CommandResolutionFailedException._(
       e.toString(),
       CommandResolutionIssue.pubGetFailed,
     );
   }
-  // TODO(https://github.com/dart-lang/pub/issues/4127): for workspaces: close
-  // the nearest enclosing package. That is the "current package" the one to
-  // default to.
-  late final rootPackageName = packageConfig.packages
-      .firstWhereOrNull(
-        (package) => p.equals(
-          p.join(rootOrCurrent, '.dart_tool', p.fromUri(package.rootUri)),
-          rootOrCurrent,
-        ),
-      )
-      ?.name;
+  // Find the first directory from [rootOrCurrent] to [workspaceRootDir] (both
+  // inclusive) that contains a package from the package config.
+  final packageConfigDir =
+      p.join(workspaceRootDir, '.dart_tool', 'package_config.json');
+
+  final rootPackageName = maxBy<(String, String), int>(
+    packageConfig.packages.map((package) {
+      final packageRootDir =
+          p.canonicalize(package.resolvedRootDir(packageConfigDir));
+      if (p.equals(packageRootDir, rootOrCurrent) ||
+          p.isWithin(packageRootDir, rootOrCurrent)) {
+        return (package.name, packageRootDir);
+      } else {
+        return null;
+      }
+    }).whereNotNull(),
+    (tuple) => tuple.$2.length,
+  )?.$1;
+
   if (rootPackageName == null) {
     throw CommandResolutionFailedException._(
-      '.dart_tool/package_config did not contain the root package',
+      '${p.join(workspaceRootDir, '.dart_tool', 'package_config.json')} did not contain its own root package',
       CommandResolutionIssue.fileNotFound,
     );
   }
@@ -370,10 +382,13 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     );
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
-
-  final packageConfigPath = p.relative(
-    p.join(rootOrCurrent, '.dart_tool', 'package_config.json'),
-    from: rootOrCurrent,
+  final packageConfigPath = p.normalize(
+    p.join(
+      rootOrCurrent,
+      workspaceRootDir,
+      '.dart_tool',
+      'package_config.json',
+    ),
   );
   final path = executable.resolve(packageConfig, packageConfigPath);
   if (!fileExists(p.join(rootOrCurrent, path))) {
@@ -384,8 +399,8 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   if (!allowSnapshot) {
     return DartExecutableWithPackageConfig(
-      executable: p.relative(path, from: rootOrCurrent),
-      packageConfig: packageConfigPath,
+      executable: p.normalize(path),
+      packageConfig: p.relative(packageConfigPath, from: rootOrCurrent),
     );
   } else {
     // TODO(sigurdm): attempt to decide on package mutability without looking at
@@ -419,10 +434,17 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       }
     }
     return DartExecutableWithPackageConfig(
-      executable: p.relative(snapshotPath, from: rootOrCurrent),
-      packageConfig: packageConfigPath,
+      executable: p.normalize(p.relative(snapshotPath, from: rootOrCurrent)),
+      packageConfig: p.relative(packageConfigPath, from: rootOrCurrent),
     );
   }
+}
+
+bool _looksLikeFile(String candidate) {
+  return candidate.contains('/') ||
+      (Platform.isWindows && candidate.contains(r'\')) ||
+      candidate.endsWith('.dart') ||
+      candidate.endsWith('.snapshot');
 }
 
 /// Information on why no executable is returned.

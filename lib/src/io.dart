@@ -197,8 +197,19 @@ String _resolveLink(String link) {
   return link;
 }
 
-/// Reads the contents of the text file [file].
-String readTextFile(String file) => File(file).readAsStringSync();
+/// Reads the contents of the text file at [path].
+String readTextFile(String path) => File(path).readAsStringSync();
+
+/// Reads the contents of the text file at [path].
+/// Returns `null` if the operation fails.
+String? tryReadTextFile(String path) {
+  try {
+    return readTextFile(path);
+  } on FileSystemException {
+    // TODO: Consider handlind file-not-found differently from other exceptions.
+    return null;
+  }
+}
 
 /// Reads the contents of the text file [file].
 Future<String> readTextFileAsync(String file) {
