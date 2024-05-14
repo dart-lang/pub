@@ -14,6 +14,7 @@ import '../descriptor.dart' as d;
 import '../golden_file.dart';
 import '../test_pub.dart';
 import 'ensure_pubspec_resolved.dart';
+import 'get_executable_for_command.dart';
 
 const _commandRunner = 'tool/test-bin/pub_command_runner.dart';
 
@@ -374,6 +375,7 @@ main() {
   });
 
   testEnsurePubspecResolved();
+  testGetExecutableForCommand();
 }
 
 String _filter(String input) {
