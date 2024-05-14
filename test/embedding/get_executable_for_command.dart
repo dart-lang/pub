@@ -57,7 +57,9 @@ Future<void> testGetExecutable(
     );
     expect(
       output,
-      contains('Package config: ${packageConfig ?? 'No package config'}\n'),
+      contains(
+        'Package config: ${filterUnstableText(packageConfig ?? 'No package config')}\n',
+      ),
     );
   }
   switch (resolution) {
@@ -119,7 +121,7 @@ void testGetExecutableForCommand() {
       await testGetExecutable(
         p.join('bar', 'm.dart'),
         dir,
-        errorMessage: contains('Could not find file `bar${separator}m.dart`'),
+        errorMessage: contains('Could not find file `bar/m.dart`'),
         issue: CommandResolutionIssue.fileNotFound,
         resolution: ResolutionAttempt.noResolution,
       );
