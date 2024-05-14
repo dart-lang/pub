@@ -11,7 +11,6 @@ import 'package:pub/src/io.dart';
 import 'package:stack_trace/stack_trace.dart' show Trace;
 import 'package:test/test.dart';
 
-import 'ascii_tree_test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
@@ -176,6 +175,11 @@ class GoldenTestContext {
     _expectSection(sectionIndex, s.toString());
   }
 
+  /// Removes ansi color codes from [s].
+  String _stripColors(String s) {
+    return s.replaceAll(RegExp('\u001b\\[.*?m'), '');
+  }
+
   /// Log directory tree structure under [directory] to golden file.
   Future<void> tree([String? directory]) async {
     // Create new section index number (before doing anything async)
@@ -194,7 +198,7 @@ class GoldenTestContext {
       baseDir: target,
       showFileSizes: false,
     );
-    s.writeln(colors ? tree : stripColors(tree));
+    s.writeln(colors ? tree : _stripColors(tree));
 
     _expectSection(sectionIndex, s.toString());
   }
