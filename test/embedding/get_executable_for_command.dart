@@ -489,8 +489,7 @@ void testGetExecutableForCommand() {
         ),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
-        // TODO(sigurdm): Should be fast-path
-        resolution: ResolutionAttempt.resolution,
+        resolution: ResolutionAttempt.fastPath,
       );
 
       await testGetExecutable(
@@ -507,8 +506,7 @@ void testGetExecutableForCommand() {
         allowSnapshot: false,
         packageConfig: p.join('..', '.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        // TODO(sigurdm): Should be fast-path
-        resolution: ResolutionAttempt.resolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'b:tool',
@@ -555,8 +553,7 @@ void testGetExecutableForCommand() {
         ),
         packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        // TODO(sigurdm): Should be fast-path
-        resolution: ResolutionAttempt.resolution,
+        resolution: ResolutionAttempt.fastPath,
       );
     });
   });

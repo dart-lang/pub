@@ -1153,6 +1153,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       for (var package in packageConfig.packages) {
         final pubspecPath = p.normalize(
           p.join(
+            rootDir,
             '.dart_tool',
             package.rootUri
                 // Important to use `toFilePath()` here rather than `path`, as it handles Url-decoding.
