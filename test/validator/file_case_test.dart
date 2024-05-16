@@ -24,8 +24,6 @@ Future<void> expectValidation(Matcher error, int exitCode) async {
   );
 }
 
-late d.DirectoryDescriptor fakeFlutterRoot;
-
 void main() {
   test('Recognizes files that only differ in capitalization.', () async {
     await d.validPackage().create();

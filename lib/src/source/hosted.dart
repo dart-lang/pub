@@ -109,6 +109,11 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
     log.fine('Using https://pub.dev instead of https://pub.dartlang.org.');
     u = Uri.parse('https://pub.dev');
   }
+  if (runningFromTest &&
+      u == Uri.parse('https://pub.dev') &&
+      Platform.environment.containsKey('_PUB_TEST_DEFAULT_HOSTED_URL')) {
+    u = Uri.parse(Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL']!);
+  }
   return u;
 }
 

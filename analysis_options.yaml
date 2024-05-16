@@ -46,4 +46,5 @@ linter:
     - unnecessary_library_directive
     - unnecessary_parenthesis
     - unnecessary_statements
+    - unreachable_from_main
     - use_enums
