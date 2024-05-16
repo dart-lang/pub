@@ -63,9 +63,9 @@ Future<void> testGetExecutable(
   }
   switch (resolution) {
     case ResolutionAttempt.fastPath:
-      expect(output, contains('[e] FINE: Package Config up to date.'));
+      expect(output, contains('[E] FINE: Package Config up to date.'));
     case ResolutionAttempt.noResolution:
-      expect(output, isNot(contains('[e] FINE: Package Config up to date.')));
+      expect(output, isNot(contains('[E] FINE: Package Config up to date.')));
       expect(output, isNot(contains('MSG : Resolving dependencies')));
     case ResolutionAttempt.resolution:
       expect(output, contains('MSG : Resolving dependencies'));
@@ -522,7 +522,7 @@ void testGetExecutableForCommand() {
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'foo',
@@ -537,7 +537,7 @@ void testGetExecutableForCommand() {
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         ':tool',
