@@ -289,7 +289,7 @@ void testGetExecutableForCommand() {
           'myapp.dart-3.1.2+3.snapshot',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         ':myapp',
@@ -302,7 +302,7 @@ void testGetExecutableForCommand() {
           'myapp.dart-3.1.2+3.snapshot',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         ':tool',
@@ -315,7 +315,7 @@ void testGetExecutableForCommand() {
           'tool.dart-3.1.2+3.snapshot',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'foo',
@@ -329,7 +329,7 @@ void testGetExecutableForCommand() {
           'foo.dart',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'foo',
@@ -342,7 +342,7 @@ void testGetExecutableForCommand() {
           'foo.dart-3.1.2+3.snapshot',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'foo:tool',
@@ -356,7 +356,7 @@ void testGetExecutableForCommand() {
           'tool.dart',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'foo:tool',
@@ -369,7 +369,7 @@ void testGetExecutableForCommand() {
           'tool.dart-3.1.2+3.snapshot',
         ),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'unknown:tool',
@@ -378,7 +378,7 @@ void testGetExecutableForCommand() {
           'Could not find package `unknown` or file `unknown:tool`',
         ),
         issue: CommandResolutionIssue.packageNotFound,
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'foo:unknown',
@@ -387,7 +387,7 @@ void testGetExecutableForCommand() {
           'Could not find `bin/unknown.dart` in package `foo`.',
         ),
         issue: CommandResolutionIssue.noBinaryFound,
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'unknownTool',
@@ -396,7 +396,7 @@ void testGetExecutableForCommand() {
           'Could not find package `unknownTool` or file `unknownTool`',
         ),
         issue: CommandResolutionIssue.packageNotFound,
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
       await testGetExecutable(
         'transitive',
@@ -410,7 +410,7 @@ void testGetExecutableForCommand() {
         ),
         allowSnapshot: false,
         packageConfig: p.join('.dart_tool', 'package_config.json'),
-        resolution: ResolutionAttempt.noResolution,
+        resolution: ResolutionAttempt.fastPath,
       );
     });
 
