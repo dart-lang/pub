@@ -4,7 +4,6 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' show separator;
 import 'package:path/path.dart' as p;
 import 'package:pub/pub.dart';
 import 'package:test/test.dart';
@@ -151,7 +150,7 @@ void testGetExecutableForCommand() {
         dir,
         errorMessage: allOf(
           contains(
-            'Error on line 1, column 9 of ..${p.separator}foo${p.separator}pubspec.yaml: "name" field must be a valid Dart identifier.',
+            'Error on line 1, column 9 of ../foo/pubspec.yaml: "name" field must be a valid Dart identifier.',
           ),
           contains(
             '{"name":"broken name","environment":{"sdk":"$defaultSdkConstraint"}}',
@@ -385,7 +384,7 @@ void testGetExecutableForCommand() {
         'foo:unknown',
         dir,
         errorMessage: contains(
-          'Could not find `bin${separator}unknown.dart` in package `foo`.',
+          'Could not find `bin/unknown.dart` in package `foo`.',
         ),
         issue: CommandResolutionIssue.noBinaryFound,
         resolution: ResolutionAttempt.noResolution,
