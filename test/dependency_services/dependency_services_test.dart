@@ -331,8 +331,8 @@ Future<void> main() async {
 
   testWithGolden('Preserves pub.dartlang.org as hosted url', (context) async {
     final server = (await servePackages())
-      ..serve('foo', '1.2.3')
-      ..serve('bar', '1.2.3')
+      ..serve(r'foo', '1.2.3')
+      ..serve(r'bar', '1.2.3')
       ..serveContentHashes = true;
 
     await d.dir(appPath, [
