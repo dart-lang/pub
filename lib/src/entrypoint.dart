@@ -1013,7 +1013,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return null;
       }
       if (packageConfig.additionalProperties['flutterVersion'] !=
-          (flutter.isAvailable ? null : flutter.version)) {
+          (flutter.isAvailable ? flutter.version.toString() : null)) {
         log.fine('Flutter has updated since last invocation.');
         return null;
       }

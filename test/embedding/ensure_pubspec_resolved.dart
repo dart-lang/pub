@@ -297,7 +297,9 @@ void testEnsurePubspecResolved() {
         await pubGet(
           environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
         );
-
+        await _noImplicitPubGet(
+          environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
+        );
         await d.dir('flutter', [d.flutterVersion('0.9.0')]).create();
 
         server.serve(
