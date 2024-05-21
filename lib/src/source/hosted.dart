@@ -138,6 +138,7 @@ class HostedSource extends CachedSource {
       return false;
     }
     final origin = parsedUrl.origin;
+
     // Allow the defaultHostedUrl to be overriden when running from tests
     if (runningFromTest &&
         io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
@@ -589,9 +590,21 @@ class HostedSource extends CachedSource {
       result = _extractAdvisoryDetailsForPackage(decoded, ref.name);
     } on FormatException catch (error, stackTrace) {
       log.warning(
-          'Failed to fetch advisories for $packageName from $hostedUrl.\n'
+          'Failed to decode advisories for $packageName from $hostedUrl.\n'
           '$error\n'
           '${Chain.forTrace(stackTrace)}');
+      return null;
+    } on PubHttpResponseException catch (error, stackTrace) {
+      if (isPubDevUrl(hostedUrl)) {
+        fail(
+            'Failed to fetch advisories for "$packageName" from "$hostedUrl".\n'
+            '$error\n'
+            '${Chain.forTrace(stackTrace)}');
+      } else {
+        log.warning(
+          'Warning: Unable to fetch advisories for "$packageName" from "$hostedUrl".\n',
+        );
+      }
       return null;
     }
 
