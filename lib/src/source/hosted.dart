@@ -596,9 +596,10 @@ class HostedSource extends CachedSource {
     } on PubHttpResponseException catch (error, stackTrace) {
       if (isPubDevUrl(hostedUrl)) {
         fail(
-            'Failed to fetch advisories for "$packageName" from "$hostedUrl".\n'
-            '$error\n'
-            '${Chain.forTrace(stackTrace)}');
+          'Failed to fetch advisories for "$packageName" from "$hostedUrl".\n',
+          error,
+          stackTrace,
+        );
       } else {
         log.warning(
           'Warning: Unable to fetch advisories for "$packageName" from "$hostedUrl".\n',

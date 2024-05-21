@@ -5,52 +5,5 @@ $ pub get
 Resolving dependencies...
 Downloading packages...
 [STDERR] Failed to fetch advisories for "no_advisory_pkg" from "http://localhost:$PORT".
-[STDERR] PubHttpResponseException: HTTP error 404 Not Found
-[STDERR] package:pub/src/http.dart 416:7                     Throwing.throwIfNotOk
-[STDERR] package:pub/src/http.dart 438:16                    RequestSending.fetch
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/source/hosted.dart 581:28           HostedSource._fetchAdvisories.<fn>.<fn>
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/http.dart 365:58                    retryForHttp.<fn>.<fn>
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pool/pool.dart 127:14                       Pool.withResource
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/http.dart 365:17                    retryForHttp.<fn>
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/utils.dart 749:14                   retry
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/http.dart 364:10                    retryForHttp
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/source/hosted.dart 576:16           HostedSource._fetchAdvisories.<fn>
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/authentication/client.dart 127:12   withAuthenticatedClient
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/source/hosted.dart 574:18           HostedSource._fetchAdvisories
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/source/hosted.dart 792:9            HostedSource._getAdvisories
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/source/hosted.dart 1079:24          HostedSource.getAdvisoriesForPackageVersion
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/solver/report.dart 414:26           SolveReport._reportPackage
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/solver/report.dart 218:18           SolveReport._reportChanges
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/solver/report.dart 73:21            SolveReport.show
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/entrypoint.dart 574:5               Entrypoint.acquireDependencies
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/command/get.dart 76:5               GetCommand.runProtected
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] dart:async/future_impl.dart 41:3                    _AsyncCompleter.complete
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/command.dart 196:7                  PubCommand.run
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:args/command_runner.dart 212:13             CommandRunner.runCommand
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/command_runner.dart 180:12          PubCommandRunner.runCommand
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] package:pub/src/command_runner.dart 165:14          PubCommandRunner.run
-[STDERR] ===== asynchronous gap ===========================
-[STDERR] /usr/local/google/home/zarah/pub/bin/pub.dart 9:23  main
-[EXIT CODE] 1
+[EXIT CODE] 69
 
