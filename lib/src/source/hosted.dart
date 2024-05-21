@@ -138,7 +138,6 @@ class HostedSource extends CachedSource {
       return false;
     }
     final origin = parsedUrl.origin;
-
     // Allow the defaultHostedUrl to be overriden when running from tests
     if (runningFromTest &&
         io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
