@@ -316,8 +316,10 @@ Future<void> main() async {
       (request) => Response.notFound(null),
     );
 
-    await ctx.run(['get'],
-        environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': globalServer.url});
+    await ctx.run(
+      ['get'],
+      environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': globalServer.url},
+    );
   });
 
   testWithGolden('no advisory available', (ctx) async {
