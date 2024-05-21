@@ -502,6 +502,10 @@ void testEnsurePubspecResolved() {
 
         await _noImplicitPubGet();
       });
+      // ignore: prefer_single_quotes
+      test("things are ok, even inside workspaces", () async {
+        await _noImplicitPubGet();
+      });
     });
   });
 }

@@ -1040,7 +1040,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
                   p.absolute(
                     p.join(
                       p.dirname(potentialWorkspaceRefPath),
-                      workspaceRefText,
                       path,
                       '.dart_tool',
                       'package_config.json',
@@ -1048,6 +1047,21 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
                   ),
                 ),
               );
+              // print(
+              //   p.dirname(potentialWorkspaceRefPath),
+              // );
+              // print(p.join(
+              //     p.dirname(potentialWorkspaceRefPath), workspaceRefText));
+              // print(p.join(p.dirname(potentialWorkspaceRefPath),
+              //     workspaceRefText, path));
+              // print(p.join(
+              //   p.dirname(potentialWorkspaceRefPath),
+              //   workspaceRefText,
+              //   path,
+              //   '.dart_tool',
+              // ));
+              // print(p.join(p.dirname(potentialWorkspaceRefPath),
+              //     workspaceRefText, path, '.dart_tool', 'package_config.json'));
               packageConfigStat = tryStatFile(potentialPackageConfigPath2);
               if (packageConfigStat == null) {
                 log.fine(
@@ -1061,7 +1075,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
                     p.absolute(
                       p.join(
                         p.dirname(potentialWorkspaceRefPath),
-                        workspaceRefText,
                         path,
                       ),
                     ),
@@ -1225,7 +1238,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     if (isResolutionUpToDate()
         case (final PackageConfig packageConfig, final String rootDir)) {
-      log.fine('Package Config up to date.');
+      log.fine('Package Config up to date. ${StackTrace.current}');
       return (packageConfig: packageConfig, rootDir: rootDir);
     }
     final entrypoint = Entrypoint(
