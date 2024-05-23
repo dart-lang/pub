@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:shelf/shelf.dart';
+
 import '../../descriptor.dart' as d;
 import '../../golden_file.dart';
 import '../../package_server.dart';
@@ -279,6 +281,75 @@ Future<void> main() async {
         AffectedPackage(name: 'foo', versions: ['1.0.0']),
         AffectedPackage(name: 'foo', versions: ['1.2.3']),
       ],
+    );
+
+    await ctx.run(['get']);
+  });
+
+  testWithGolden('no advisory available from pub.dev', (ctx) async {
+    final server = await servePackages();
+    server
+      ..serve('foo', '1.0.0')
+      ..serve('no_advisory_pkg', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'no_advisory_pkg': '^1.0.0',
+        },
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: '123',
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'no_advisory_pkg', versions: ['1.0.0']),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
+      ],
+    );
+
+    server.handle(
+      '/api/packages/no_advisory_pkg/advisories',
+      (request) => Response.notFound(null),
+    );
+
+    await ctx.run(
+      ['get'],
+      environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': globalServer.url},
+    );
+  });
+
+  testWithGolden('no advisory available', (ctx) async {
+    final server = await servePackages();
+    server
+      ..serve('foo', '1.0.0')
+      ..serve('no_advisory_pkg', '1.0.0');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {
+          'foo': '^1.0.0',
+          'no_advisory_pkg': '^1.0.0',
+        },
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: '123',
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'no_advisory_pkg', versions: ['1.0.0']),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
+      ],
+    );
+
+    server.handle(
+      '/api/packages/no_advisory_pkg/advisories',
+      (request) => Response.notFound(null),
     );
 
     await ctx.run(['get']);
