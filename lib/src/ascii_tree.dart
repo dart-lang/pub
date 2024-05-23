@@ -72,9 +72,12 @@ String fromFiles(
         baseDir == null ? file : p.relative(file, from: baseDir);
     final parts = p.split(relativeFile);
     if (showFileSizes) {
-      final size = File(p.normalize(file)).statSync().size;
-      final sizeString = _readableFileSize(size);
-      parts.last = '${parts.last} $sizeString';
+      final stat = File(p.normalize(file)).statSync();
+      if (stat.type != FileSystemEntityType.directory) {
+        final size = stat.size;
+        final sizeString = _readableFileSize(size);
+        parts.last = '${parts.last} $sizeString';
+      }
     }
     var directory = root;
     for (var part in parts) {

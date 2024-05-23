@@ -14,6 +14,7 @@ import 'dart:typed_data';
 import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
     show EnvironmentNotFoundException, applicationConfigHome;
+import 'package:collection/collection.dart';
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
@@ -97,6 +98,10 @@ FileStat? tryStatFile(String path) {
     return stat;
   }
   return null;
+}
+
+FileStat statPath(String path) {
+  return File(path).statSync();
 }
 
 /// Returns the canonical path for [pathString].
@@ -1139,9 +1144,8 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
 
 /// Create a .tar.gz archive from a list of entries.
 ///
-/// Each entry can be a [String], [Directory], or [File] object. The root of
-/// the archive is considered to be [baseDir], which defaults to the current
-/// working directory.
+/// Each entry is the path to a directory or file. The root of the archive is
+/// considered to be [baseDir], which defaults to the current working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
 ByteStream createTarGz(
@@ -1168,25 +1172,33 @@ ByteStream createTarGz(
       final file = File(p.normalize(entry));
       final stat = file.statSync();
 
+      // Ensure paths in tar files use forward slashes
+      final name = p.url.joinAll(p.split(relative));
+
       if (stat.type == FileSystemEntityType.link) {
         log.message('$entry is a link locally, but will be uploaded as a '
             'duplicate file.');
       }
-
-      return TarEntry(
-        TarHeader(
-          // Ensure paths in tar files use forward slashes
-          name: p.url.joinAll(p.split(relative)),
-          // We want to keep executable bits, but otherwise use the default
-          // file mode
-          mode: _defaultMode | (stat.mode & _executableMask),
-          size: stat.size,
-          modified: stat.changed,
-          userName: 'pub',
-          groupName: 'pub',
-        ),
-        file.openRead(),
-      );
+      if (stat.type == FileSystemEntityType.directory) {
+        return TarEntry(
+          TarHeader(name: name, typeFlag: TypeFlag.dir),
+          Stream.fromIterable([]),
+        );
+      } else {
+        return TarEntry(
+          TarHeader(
+            name: name,
+            // We want to keep executable bits, but otherwise use the default
+            // file mode
+            mode: _defaultMode | (stat.mode & _executableMask),
+            size: stat.size,
+            modified: stat.changed,
+            userName: 'pub',
+            groupName: 'pub',
+          ),
+          file.openRead(),
+        );
+      }
     }),
   );
 
