@@ -146,7 +146,15 @@ retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0
 dev_dependencies:
 builder       *1.2.3              *1.3.0              2.0.0               2.0.0   
 
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
+transitive dependencies:
+transitive    *1.2.3              *1.3.0              *1.3.0              2.0.0   
+transitive2   -                   -                   1.0.0               1.0.0   
+
+transitive dev_dependencies:
+dev_trans     *1.0.0              -                   *1.0.0              2.0.0   
+transitive3   -                   -                   1.0.0               1.0.0   
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.
@@ -198,7 +206,15 @@ retracted      *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0
 dev_dependencies:
 builder        *1.2.3              *1.3.0              2.0.0               2.0.0         
 
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
+transitive dependencies:
+transitive     *1.2.3              *1.3.0              *1.3.0              2.0.0         
+transitive2    -                   -                   1.0.0               1.0.0         
+
+transitive dev_dependencies:
+dev_trans      *1.0.0              -                   *1.0.0              2.0.0         
+transitive3    -                   -                   1.0.0               1.0.0         
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.
@@ -223,7 +239,15 @@ retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0
 dev_dependencies:
 builder       *1.2.3              *1.3.0              *2.0.0              3.0.0-alpha  
 
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
+transitive dependencies:
+transitive    *1.2.3              *1.3.0              *1.3.0              2.0.0        
+transitive2   -                   -                   1.0.0               1.0.0        
+
+transitive dev_dependencies:
+dev_trans     *1.0.0              -                   *1.0.0              2.0.0        
+transitive3   -                   -                   1.0.0               1.0.0        
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.
@@ -245,8 +269,11 @@ direct dependencies:
 foo           *1.2.3              *1.3.0              3.0.0               3.0.0   
 retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0   
 
-1 upgradable dependency is locked (in pubspec.lock) to an older version.
-To update it, use `dart pub upgrade`.
+transitive dependencies:
+transitive    *1.2.3              2.0.0               2.0.0               2.0.0   
+
+2 upgradable dependencies are locked (in pubspec.lock) to older versions.
+To update these dependencies, use `dart pub upgrade`.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
@@ -270,7 +297,15 @@ retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0
 dev_dependencies:
 builder       *1.2.3              *1.3.0              2.0.0               2.0.0   
 
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
+transitive dependencies:
+transitive    *1.2.3              *1.3.0              *1.3.0              2.0.0   
+transitive2   -                   -                   1.0.0               1.0.0   
+
+transitive dev_dependencies:
+dev_trans     *1.0.0              -                   *1.0.0              2.0.0   
+transitive3   -                   -                   1.0.0               1.0.0   
+
+3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.

@@ -37,6 +37,9 @@ direct dependencies:
 bar           1.0.0    1.0.0       1.0.0       1.0.0   
 baz           1.0.0    1.0.0       1.0.0       1.0.0   (discontinued)  
 foo           1.2.3    1.2.3       1.2.3       1.2.3   (discontinued)  
+
+transitive dependencies:
+transitive    1.2.3    1.2.3       1.2.3       1.2.3   
 You are already using the newest resolvable versions listed in the 'Resolvable' column.
 Newer versions, listed in 'Latest', may not be mutually compatible.
 
