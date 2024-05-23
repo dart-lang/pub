@@ -102,6 +102,9 @@ direct dependencies:
 bar           *1.0.0 (retracted)  *1.0.0 (retracted)  *1.0.0 (retracted)  -       (discontinued)  
 foo           *1.0.0 (retracted)  1.2.0               1.2.0               1.2.0   (discontinued)  
 
+transitive dependencies:
+transitive    1.2.3               1.2.3               1.2.3               1.2.3   
+
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
 

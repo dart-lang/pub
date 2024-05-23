@@ -103,6 +103,7 @@ class OutdatedCommand extends PubCommand {
     argParser.addFlag(
       'transitive',
       help: 'Show transitive dependencies.',
+      defaultsTo: true,
     );
     argParser.addOption(
       'directory',

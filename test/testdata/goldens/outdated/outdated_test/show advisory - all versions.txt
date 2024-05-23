@@ -82,6 +82,9 @@ Package Name  Current            Upgradable        Resolvable        Latest
 direct dependencies:
 foo           *1.0.0 (advisory)  1.2.0 (advisory)  1.2.0 (advisory)  1.2.0 (advisory)  
 
+transitive dependencies:
+transitive    1.2.3              -                 -                 1.2.3             
+
 1 upgradable dependency is locked (in pubspec.lock) to an older version.
 To update it, use `dart pub upgrade`.
 

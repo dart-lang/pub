@@ -15,6 +15,7 @@ $ pub outdated random_argument
 [STDERR]     --[no-]show-all                Include dependencies that are already
 [STDERR]                                    fulfilling --mode.
 [STDERR]     --[no-]transitive              Show transitive dependencies.
+[STDERR]                                    (defaults to on)
 [STDERR] -C, --directory=<dir>              Run this in the directory <dir>.
 [STDERR] 
 [STDERR] Run "pub help" to see global options.
@@ -38,6 +39,7 @@ $ pub outdated --bad_flag
 [STDERR]     --[no-]show-all                Include dependencies that are already
 [STDERR]                                    fulfilling --mode.
 [STDERR]     --[no-]transitive              Show transitive dependencies.
+[STDERR]                                    (defaults to on)
 [STDERR] -C, --directory=<dir>              Run this in the directory <dir>.
 [STDERR] 
 [STDERR] Run "pub help" to see global options.

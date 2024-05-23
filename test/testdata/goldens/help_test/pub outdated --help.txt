@@ -14,6 +14,7 @@ Usage: pub outdated [options]
     --[no-]prereleases             Include prereleases in latest version.
     --[no-]show-all                Include dependencies that are already fulfilling --mode.
     --[no-]transitive              Show transitive dependencies.
+                                   (defaults to on)
 -C, --directory=<dir>              Run this in the directory <dir>.
 
 Run "pub help" to see global options.
