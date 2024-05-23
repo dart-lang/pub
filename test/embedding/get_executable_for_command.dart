@@ -453,10 +453,20 @@ void testGetExecutableForCommand() {
               'a',
               '1.0.0',
               resolutionWorkspace: true,
+              extras: {
+                'workspace': ['sub'],
+              },
             ),
             d.dir('bin', [
               d.file('a.dart', 'main() {print(42);}'),
               d.file('tool.dart', 'main() {print(42);}'),
+            ]),
+            d.dir('sub', [
+              d.libPubspec(
+                'sub',
+                '1.0.0',
+                resolutionWorkspace: true,
+              ),
             ]),
           ]),
           d.dir('b', [
@@ -489,6 +499,24 @@ void testGetExecutableForCommand() {
         ),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
+        resolution: ResolutionAttempt.fastPath,
+      );
+      await testGetExecutable(
+        'myapp',
+        p.join(d.sandbox, appPath, 'pkgs', 'a', 'sub'),
+        executable: p.join(
+          '..',
+          '..',
+          '..',
+          '.dart_tool',
+          'pub',
+          'bin',
+          'myapp',
+          'myapp.dart-3.5.0.snapshot',
+        ),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        packageConfig:
+            p.join('..', '..', '..', '.dart_tool', 'package_config.json'),
         resolution: ResolutionAttempt.fastPath,
       );
 

@@ -1040,7 +1040,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
                   p.absolute(
                     p.join(
                       p.dirname(potentialWorkspaceRefPath),
-                      workspaceRefText,
                       path,
                       '.dart_tool',
                       'package_config.json',
@@ -1061,7 +1060,6 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
                     p.absolute(
                       p.join(
                         p.dirname(potentialWorkspaceRefPath),
-                        workspaceRefText,
                         path,
                       ),
                     ),
