@@ -1223,7 +1223,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
     if (isResolutionUpToDate()
         case (final PackageConfig packageConfig, final String rootDir)) {
-      log.fine('Package Config up to date. ${StackTrace.current}');
+      log.fine('Package Config up to date.');
       return (packageConfig: packageConfig, rootDir: rootDir);
     }
     final entrypoint = Entrypoint(
