@@ -1348,6 +1348,31 @@ Consider removing one of the overrides.''',
     handleUploadForm(server);
     handleUpload(server);
   });
+
+  test(
+      'published packages with `resolution: workspace` and `workspace` sections can be consumed out of context.',
+      () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'environment': {'sdk': '^3.5.0'},
+        'resolution': 'workspace',
+        'workspace': ['example'],
+      },
+      contents: [
+        dir('bin', [file('foo.dart', 'main() => print("FOO");')]),
+      ],
+    );
+    await appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    await runPub(
+      args: ['run', 'foo'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('FOO'),
+    );
+  });
 }
 
 final s = p.separator;
