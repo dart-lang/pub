@@ -1324,6 +1324,20 @@ Consider removing one of the overrides.''',
       ),
     ]).create();
 
+    await runPub(
+      args: ['publish', '--to-archive=archive.tar.gz'],
+      workingDirectory: p.join(sandbox, 'workspace', appPath),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('''
+├── CHANGELOG.md (<1 KB)
+├── LICENSE (<1 KB)
+├── README.md (<1 KB)
+├── lib
+│   └── test_pkg.dart (<1 KB)
+└── pubspec.yaml (<1 KB)
+'''),
+    );
+
     final pub = await startPublish(
       server,
       workingDirectory: p.join(sandbox, 'workspace', appPath),
