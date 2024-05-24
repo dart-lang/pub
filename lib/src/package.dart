@@ -255,7 +255,11 @@ See $workspacesDocUrl for more information.
   /// directory) or absolute id [dir] is absolute.
   ///
   /// To convert them to paths relative to the package root, use [p.relative].
-  List<String> listFiles({String? beneath, bool recursive = true}) {
+  List<String> listFiles({
+    String? beneath,
+    bool recursive = true,
+    bool includeDirs = false,
+  }) {
     final packageDir = dir;
     final root = git.repoRoot(packageDir) ?? packageDir;
     beneath = p
@@ -359,6 +363,7 @@ See $workspacesDocUrl for more information.
               );
       },
       isDir: (dir) => dirExists(resolve(dir)),
+      includeDirs: includeDirs,
     ).map(resolve).toList();
   }
 
