@@ -44,16 +44,14 @@ void main() {
         File(p.join(d.sandbox, appPath, 'archive.tar.gz')).openRead(),
       ),
     );
-    var found = false;
+    final dirs = <String>[];
     while (await tarReader.moveNext()) {
       final entry = tarReader.current;
-      if (entry.name == 'lib/empty') {
-        found = true;
-        expect(entry.type, TypeFlag.dir);
+      if (entry.type == TypeFlag.dir) {
+        dirs.add(entry.name);
       }
     }
-    expect(found, isTrue);
-
+    expect(dirs, ['.', 'lib', 'lib/empty']);
     await d.credentialsFile(globalServer, 'access-token').create();
     final pub = await startPublish(globalServer);
 

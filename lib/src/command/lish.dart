@@ -303,9 +303,10 @@ the \$PUB_HOSTED_URL environment variable.''',
       await entrypoint.acquireDependencies(SolveType.get);
     }
 
-    // We want to preserve empty directories in the published archive, so
-    // first we list all files and directories, and then filter any non-empty
-    // directories away.
+    // For displaying the layout we only want to explicitly mention non-empty
+    // directories, so first we list all files and directories, and then filter
+    // any non-empty directories away.
+    // For validation it is practical to also maintain the list of files.
     final filesAndDirs = entrypoint.workPackage.listFiles(includeDirs: true);
 
     final files = <String>[];
@@ -333,7 +334,7 @@ the \$PUB_HOSTED_URL environment variable.''',
     );
 
     final packageBytes = await createTarGz(
-      filesAndEmptyDirs,
+      filesAndDirs,
       baseDir: entrypoint.workPackage.dir,
     ).toBytes();
 

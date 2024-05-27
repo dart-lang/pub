@@ -1163,7 +1163,7 @@ ByteStream createTarGz(
   final tarContents = Stream.fromIterable(
     contents.map((entry) {
       entry = p.normalize(p.absolute(entry));
-      if (!p.isWithin(baseDir, entry)) {
+      if (!p.equals(baseDir, entry) && !p.isWithin(baseDir, entry)) {
         throw ArgumentError('Entry $entry is not inside $baseDir.');
       }
 
