@@ -346,11 +346,15 @@ void main() {
         ]),
       ]),
     ]).create();
+    final absoluteAppPath = p.join(sandbox, appPath);
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       workingDirectory: p.join(sandbox, appPath, 'pkgs'),
-      output: contains(
-        'Resolving dependencies in `${p.join(sandbox, appPath)}`...',
+      output: allOf(
+        contains(
+          'Resolving dependencies in `$absoluteAppPath`...',
+        ),
+        contains('Got dependencies in `$absoluteAppPath`'),
       ),
     );
     await pubGet(

@@ -565,7 +565,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
 
     final report = SolveReport(
       type,
-      workspaceRoot.dir,
+      workspaceRoot.presentationDir,
       workspaceRoot.pubspec,
       workspaceRoot.allOverridesInWorkspace,
       lockFile,
