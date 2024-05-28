@@ -1347,6 +1347,7 @@ Consider removing one of the overrides.''',
     await confirmPublish(pub);
     handleUploadForm(server);
     handleUpload(server);
+    await pub.shouldExit(SUCCESS);
   });
 
   test(
