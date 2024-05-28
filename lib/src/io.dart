@@ -562,18 +562,26 @@ void renameFile(String from, String to) {
 bool _isDirectoryNotEmptyException(FileSystemException e) {
   final errorCode = e.osError?.errorCode;
   return
-      // On Linux rename will fail with ENOTEMPTY if directory exists:
-      // https://man7.org/linux/man-pages/man2/rename.2.html
-      // #define	ENOTEMPTY	39	/* Directory not empty */
+      // On Linux rename will fail with either ENOTEMPTY or EEXISTS if directory
+      // exists: https://man7.org/linux/man-pages/man2/rename.2.html
+      // ```
+      // #define  ENOTEMPTY 39  /* Directory not empty */
+      // #define  EEXIST    17  /* File exists */
+      // ```
+      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno-base.h#n21
       // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
-      (Platform.isLinux && errorCode == 39) ||
+      (Platform.isLinux && (errorCode == 39 || errorCode == 17)) ||
           // On Windows this may fail with ERROR_DIR_NOT_EMPTY or ERROR_ALREADY_EXISTS
           // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
           (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
           // On MacOS rename will fail with ENOTEMPTY if directory exists.
+          // We also catch EEXIST - perhaps that could also be thrown...
+          // ```
           // #define ENOTEMPTY       66              /* Directory not empty */
+          // #define	EEXIST		17	/* File exists */
+          // ```
           // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
-          (Platform.isMacOS && errorCode == 66);
+          (Platform.isMacOS && (errorCode == 66 || errorCode == 17));
 }
 
 /// Creates a new symlink at path [symlink] that points to [target].
