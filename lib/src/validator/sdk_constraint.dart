@@ -11,7 +11,6 @@ import '../validator.dart';
 /// A validator of the SDK constraint.
 ///
 /// Validates that a package's SDK constraint:
-/// * doesn't use the "^" syntax.
 /// * has an upper bound.
 /// * is not depending on a prerelease, unless the package itself is a
 /// prerelease.
