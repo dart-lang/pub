@@ -43,7 +43,7 @@ $ echo '' | dependency_services list
       "name": "transitive",
       "version": "1.0.0",
       "kind": "transitive",
-      "constraint": "null",
+      "constraint": null,
       "source": {
         "type": "hosted",
         "description": {

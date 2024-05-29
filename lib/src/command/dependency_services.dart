@@ -247,7 +247,7 @@ class DependencyServicesListCommand extends PubCommand {
         'name': package.name,
         'version': package.versionOrHash(),
         'kind': _kindString(pubspec, package.name),
-        'constraint': _constraintOf(pubspec, package.name).toString(),
+        'constraint': _constraintOf(pubspec, package.name)?.toString(),
         'source': _source(package, containingDir: directory),
       });
     }
