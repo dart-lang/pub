@@ -18,24 +18,24 @@ import '../descriptor.dart';
 import '../golden_file.dart';
 import '../test_pub.dart';
 
-void manifestAndLockfile(GoldenTestContext context) {
+void manifestAndLockfile(GoldenTestContext context, List<String> workspace) {
   String catFile(String filename) {
     final path = p.join(d.sandbox, appPath, filename);
     if (File(path).existsSync()) {
       final contents = File(path).readAsLinesSync().map(filterUnstableText);
 
       return '''
-\$ cat $filename
+\$ cat ${p.normalize(filename)}
 ${contents.join('\n')}''';
     } else {
       return '''
-\$ cat $filename
-No such file $filename.''';
+\$ cat ${p.normalize(filename)}
+No such file ${p.normalize(filename)}.''';
     }
   }
 
   context.expectNextSection('''
-${catFile('pubspec.yaml')}
+${workspace.map((path) => catFile(p.join(path, 'pubspec.yaml'))).join('\n')}
 ${catFile('pubspec.lock')}
 ''');
 }
@@ -47,6 +47,7 @@ extension on GoldenTestContext {
   Future<String> runDependencyServices(
     List<String> args, {
     String stdin = '',
+    Map<String, String>? environment,
   }) async {
     final buffer = StringBuffer();
     buffer.writeln('## Section ${args.join(' ')}');
@@ -61,6 +62,7 @@ extension on GoldenTestContext {
       environment: {
         ...getPubTestEnvironment(),
         '_PUB_TEST_DEFAULT_HOSTED_URL': globalServer.url,
+        ...?environment,
       },
       workingDirectory: p.join(d.sandbox, appPath),
     );
@@ -96,11 +98,14 @@ Future<Iterable<String>> outputLines(Stream<List<int>> stream) async {
 Future<void> _listReportApply(
   GoldenTestContext context,
   List<_PackageVersion> upgrades, {
+  List<String> workspace = const ['.'],
   void Function(Map)? reportAssertions,
+  Map<String, String>? environment,
 }) async {
-  manifestAndLockfile(context);
-  await context.runDependencyServices(['list']);
-  final report = await context.runDependencyServices(['report']);
+  manifestAndLockfile(context, workspace);
+  await context.runDependencyServices(['list'], environment: environment);
+  final report =
+      await context.runDependencyServices(['report'], environment: environment);
   if (reportAssertions != null) {
     reportAssertions(json.decode(report) as Map);
   }
@@ -108,8 +113,12 @@ Future<void> _listReportApply(
     'dependencyChanges': upgrades,
   });
 
-  await context.runDependencyServices(['apply'], stdin: input);
-  manifestAndLockfile(context);
+  await context.runDependencyServices(
+    ['apply'],
+    stdin: input,
+    environment: environment,
+  );
+  manifestAndLockfile(context, workspace);
 }
 
 Future<void> _reportWithForbidden(
@@ -118,7 +127,7 @@ Future<void> _reportWithForbidden(
   void Function(Map)? resultAssertions,
   String? targetPackage,
 }) async {
-  manifestAndLockfile(context);
+  manifestAndLockfile(context, ['.']);
   final input = json.encode({
     'target': targetPackage,
     'disallowed': [
@@ -136,7 +145,7 @@ Future<void> _reportWithForbidden(
   }
 
   // await context.runDependencyServices(['apply'], stdin: input);
-  manifestAndLockfile(context);
+  manifestAndLockfile(context, ['.']);
 }
 
 Future<void> main() async {
@@ -626,6 +635,65 @@ Future<void> main() async {
         expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
         expect(findChangeVersion(r, 'smallestUpdate', 'bar'), '2.2.0');
       },
+    );
+  });
+
+  testWithGolden('can upgrade workspaces', (context) async {
+    (await servePackages())
+      ..serve('foo', '1.2.3')
+      ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
+      ..serve('bar', '1.2.3')
+      ..serve('bar', '2.2.3')
+      ..serve('dev', '1.0.0')
+      ..serve('dev', '2.0.0')
+      ..serve('transitive', '1.0.0')
+      ..serveContentHashes = true;
+
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        deps: {
+          'foo': '^1.0.0',
+          'bar': '^1.0.0',
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'bar': '>=1.2.0 <1.5.0'},
+            devDeps: {
+              'foo': '^1.2.0',
+              'dev': '^1.0.0',
+            },
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+
+    await _listReportApply(
+      context,
+      [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', '1.0.0')],
+      workspace: ['.', p.join('pkgs', 'a')],
+      reportAssertions: (report) {
+        // expect(
+        //   findChangeVersion(report, 'singleBreaking', 'foo'),
+        //   '2.2.3',
+        // );
+        // expect(
+        //   findChangeVersion(report, 'singleBreaking', 'transitive'),
+        //   '1.0.0',
+        // );
+      },
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
 }
