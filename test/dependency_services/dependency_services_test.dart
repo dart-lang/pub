@@ -21,16 +21,17 @@ import '../test_pub.dart';
 void manifestAndLockfile(GoldenTestContext context, List<String> workspace) {
   String catFile(String filename) {
     final path = p.join(d.sandbox, appPath, filename);
+    final normalizedFilename = p.posix.joinAll(p.split(p.normalize(filename)));
     if (File(path).existsSync()) {
       final contents = File(path).readAsLinesSync().map(filterUnstableText);
 
       return '''
-\$ cat ${p.normalize(filename)}
+\$ cat $normalizedFilename
 ${contents.join('\n')}''';
     } else {
       return '''
-\$ cat ${p.normalize(filename)}
-No such file ${p.normalize(filename)}.''';
+\$ cat $normalizedFilename
+No such file $normalizedFilename.''';
     }
   }
 
