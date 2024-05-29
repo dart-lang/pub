@@ -57,6 +57,7 @@ class DependencyServicesReportCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    _checkAtRoot(entrypoint);
     final stdinString = await utf8.decodeStream(stdin);
     final input = json.decode(stdinString.isEmpty ? '{}' : stdinString)
         as Map<String, Object?>;
@@ -215,6 +216,7 @@ class DependencyServicesListCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
+    _checkAtRoot(entrypoint);
     final currentPackages = fileExists(entrypoint.lockFilePath)
         ? entrypoint.lockFile.packages.values.toList()
         : (await _tryResolve(
@@ -303,6 +305,7 @@ class DependencyServicesApplyCommand extends PubCommand {
       );
     }
     final updatedPubspecs = <String, YamlEditor>{};
+    _checkAtRoot(entrypoint);
     for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
       final pubspec = package.pubspec;
       final pubspecEditor = YamlEditor(readTextFile(package.pubspecPath));
@@ -523,6 +526,12 @@ class DependencyServicesApplyCommand extends PubCommand {
     );
     // Dummy message.
     log.message(json.encode({'dependencies': <Object>[]}));
+  }
+}
+
+void _checkAtRoot(Entrypoint entrypoint) {
+  if (entrypoint.workspaceRoot != entrypoint.workPackage) {
+    fail('Only apply dependency_services to the root of the workspace.');
   }
 }
 

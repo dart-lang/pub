@@ -679,19 +679,37 @@ Future<void> main() async {
     ]).create();
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
 
+    final result = await Process.run(
+      Platform.resolvedExecutable,
+      [snapshot, 'list'],
+      environment: {
+        ...getPubTestEnvironment(),
+        '_PUB_TEST_SDK_VERSION': '3.5.0',
+      },
+      workingDirectory: p.join(d.sandbox, appPath, 'pkgs', 'a'),
+    );
+
+    expect(
+      result.stderr,
+      contains(
+        'Only apply dependency_services to the root of the workspace.',
+      ),
+    );
+    expect(result.exitCode, 1);
+
     await _listReportApply(
       context,
       [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', '1.0.0')],
       workspace: ['.', p.join('pkgs', 'a')],
       reportAssertions: (report) {
-        // expect(
-        //   findChangeVersion(report, 'singleBreaking', 'foo'),
-        //   '2.2.3',
-        // );
-        // expect(
-        //   findChangeVersion(report, 'singleBreaking', 'transitive'),
-        //   '1.0.0',
-        // );
+        expect(
+          findChangeVersion(report, 'singleBreaking', 'foo'),
+          '2.2.3',
+        );
+        expect(
+          findChangeVersion(report, 'singleBreaking', 'transitive'),
+          '1.0.0',
+        );
       },
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
