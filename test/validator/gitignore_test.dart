@@ -51,6 +51,13 @@ void main() {
       ]),
       exit_codes.DATA,
     );
+
+    // Check that you can unignore certain files too.
+    await d.dir('myapp', [
+      d.file('.gitignore', '*.txt\n!foo.txt'),
+    ]).create();
+
+    await expectValidation(contains('Package has 0 warnings.'), 0);
   });
 
   test('should not fail on non-ascii unicode character', () async {
@@ -119,6 +126,17 @@ void main() {
         ),
       ]),
       exit_codes.DATA,
+      workingDirectory: packageRoot,
+    );
+
+    // Check that you can unignore certain dirs from a higher level gitignore.
+    await d.dir('reporoot', [
+      d.file('.gitignore', '*.txt\n!myapp/'),
+    ]).create();
+
+    await expectValidation(
+      contains('Package has 0 warnings.'),
+      0,
       workingDirectory: packageRoot,
     );
   });
