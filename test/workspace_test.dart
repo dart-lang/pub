@@ -1378,6 +1378,35 @@ Consider removing one of the overrides.''',
       output: contains('FOO'),
     );
   });
+
+  test('Cannot override workspace packages', () async {
+    await servePackages();
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+          'dependency_overrides': {
+            'a': {'path': 'pkgs/a'},
+          },
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec('a', '1.1.1', resolutionWorkspace: true),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: allOf(
+        contains('Cannot override workspace packages'),
+        contains('Package `a` at `./pkgs/a` is overridden in `pubspec.yaml`.'),
+      ),
+    );
+  });
 }
 
 final s = p.separator;
