@@ -1403,7 +1403,9 @@ Consider removing one of the overrides.''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: allOf(
         contains('Cannot override workspace packages'),
-        contains('Package `a` at `./pkgs/a` is overridden in `pubspec.yaml`.'),
+        contains(
+          'Package `a` at `.${s}pkgs/a` is overridden in `pubspec.yaml`.',
+        ),
       ),
     );
   });
