@@ -393,6 +393,7 @@ See $workspacesDocUrl for more information.
 /// * The graph of the workspace rooted at [root] is not a tree.
 /// * If a package name occurs twice.
 /// * If two packages in the workspace override the same package name.
+/// * A workspace package is overridden.
 void validateWorkspace(Package root) {
   if (root.workspaceChildren.isEmpty) return;
 
@@ -430,6 +431,7 @@ Workspace members must have unique names.
   }
 
   // Check that the workspace doesn't contain two overrides of the same package.
+  // Also check that workspace packages are not overridden.
   final overridesSeen = <String, Package>{};
   for (final package in root.transitiveWorkspace) {
     for (final override in package.pubspec.dependencyOverrides.keys) {
@@ -443,6 +445,14 @@ Consider removing one of the overrides.
 ''');
       }
       overridesSeen[override] = package;
+
+      if (namesSeen[override] case final Package overriddenWorkspacePackage) {
+        fail('''
+Cannot override workspace packages.
+
+Package `$override` at `${overriddenWorkspacePackage.presentationDir}` is overridden in `${package.pubspecPath}`.
+''');
+      }
     }
   }
 }
