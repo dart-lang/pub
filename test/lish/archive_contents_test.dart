@@ -15,12 +15,28 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'utils.dart';
 
+/// The assumed default file mode on Linux and macOS
+const _defaultMode = 420; // 644₈
+
+/// Mask for executable bits in file modes.
+const _executableMask = 0x49; // 001 001 001
+
 void main() {
-  test('archives and uploads empty directories in package', () async {
+  test(
+      'archives and uploads empty directories in package. Maintains the executable bit',
+      () async {
     await d.validPackage().create();
     await d.dir(appPath, [
+      d.dir('tool', [d.file('tool.sh', 'commands...')]),
       d.dir('lib', [d.dir('empty')]),
     ]).create();
+
+    if (!Platform.isWindows) {
+      Process.runSync(
+        'chmod',
+        ['+x', p.join(d.sandbox, appPath, 'tool', 'tool.sh')],
+      );
+    }
 
     await servePackages();
     await runPub(
@@ -32,7 +48,9 @@ void main() {
 ├── lib
 │   ├── empty
 │   └── test_pkg.dart (<1 KB)
-└── pubspec.yaml (<1 KB)
+├── pubspec.yaml (<1 KB)
+└── tool
+    └── tool.sh (<1 KB)
 '''),
     );
     expect(
@@ -48,10 +66,27 @@ void main() {
     while (await tarReader.moveNext()) {
       final entry = tarReader.current;
       if (entry.type == TypeFlag.dir) {
+        if (!Platform.isWindows) {
+          expect(entry.header.mode, _defaultMode | _executableMask);
+        }
         dirs.add(entry.name);
+      } else {
+        if (!Platform.isWindows) {
+          if (entry.name.endsWith('tool.sh')) {
+            expect(
+              entry.header.mode
+                  // chmod +x doesn't sets the executable bit for other users on some platforms only.
+                  |
+                  1,
+              _defaultMode | _executableMask,
+            );
+          } else {
+            expect(entry.header.mode, _defaultMode);
+          }
+        }
       }
     }
-    expect(dirs, ['.', 'lib', 'lib/empty']);
+    expect(dirs, ['tool', 'lib', 'lib/empty']);
     await d.credentialsFile(globalServer, 'access-token').create();
     final pub = await startPublish(globalServer);
 

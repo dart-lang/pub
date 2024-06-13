@@ -1072,12 +1072,14 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
       throw FormatException('Tar file contained duplicate path ${entry.name}');
     }
 
-    if (!p.isWithin(destination, filePath)) {
+    if (!(p.isWithin(destination, filePath) ||
+        // allow including '.' as an entry in the tar.gz archive.
+        (entry.type == TypeFlag.dir && p.equals(destination, filePath)))) {
       // The tar contains entries that would be written outside of the
       // destination. That doesn't happen by accident, assume that the tar file
       // is malicious.
       await reader.cancel();
-      throw FormatException('Invalid tar entry: ${entry.name}');
+      throw FormatException('Invalid tar entry: `${entry.name}`');
     }
 
     final parentDirectory = p.dirname(filePath);
@@ -1171,7 +1173,10 @@ ByteStream createTarGz(
   final tarContents = Stream.fromIterable(
     contents.map((entry) {
       entry = p.normalize(p.absolute(entry));
-      if (!p.equals(baseDir, entry) && !p.isWithin(baseDir, entry)) {
+      if (p.equals(baseDir, entry)) {
+        return null;
+      }
+      if (!p.isWithin(baseDir, entry)) {
         throw ArgumentError('Entry $entry is not inside $baseDir.');
       }
 
@@ -1189,7 +1194,13 @@ ByteStream createTarGz(
       }
       if (stat.type == FileSystemEntityType.directory) {
         return TarEntry(
-          TarHeader(name: name, typeFlag: TypeFlag.dir),
+          TarHeader(
+            name: name,
+            mode: _defaultMode | _executableMask,
+            typeFlag: TypeFlag.dir,
+            userName: 'pub',
+            groupName: 'pub',
+          ),
           Stream.fromIterable([]),
         );
       } else {
@@ -1207,7 +1218,7 @@ ByteStream createTarGz(
           file.openRead(),
         );
       }
-    }),
+    }).whereNotNull(),
   );
 
   return ByteStream(
