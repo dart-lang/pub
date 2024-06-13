@@ -1194,7 +1194,13 @@ ByteStream createTarGz(
       }
       if (stat.type == FileSystemEntityType.directory) {
         return TarEntry(
-          TarHeader(name: name, typeFlag: TypeFlag.dir),
+          TarHeader(
+            name: name,
+            mode: _defaultMode | _executableMask,
+            typeFlag: TypeFlag.dir,
+            userName: 'pub',
+            groupName: 'pub',
+          ),
           Stream.fromIterable([]),
         );
       } else {
