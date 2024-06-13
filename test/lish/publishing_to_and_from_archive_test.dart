@@ -55,4 +55,17 @@ void main() {
     );
     await pub.shouldExit(SUCCESS);
   });
+
+  test('Can extract self-published archive', () async {
+    await d.validPackage().create();
+
+    await runPub(
+      args: ['lish', '--to-archive', p.join('..', 'archive.tar.gz')],
+      output: contains(
+        'Wrote package archive at ${p.join('..', 'archive.tar.gz')}',
+      ),
+    );
+    expect(File(d.path('archive.tar.gz')).existsSync(), isTrue);
+    await runPub(args: ['cache', 'preload', p.join('..', 'archive.tar.gz')]);
+  });
 }

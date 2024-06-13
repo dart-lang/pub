@@ -51,7 +51,7 @@ void main() {
         dirs.add(entry.name);
       }
     }
-    expect(dirs, ['.', 'lib', 'lib/empty']);
+    expect(dirs, ['lib', 'lib/empty']);
     await d.credentialsFile(globalServer, 'access-token').create();
     final pub = await startPublish(globalServer);
 
