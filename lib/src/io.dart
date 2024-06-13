@@ -1074,7 +1074,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
 
     if (!(p.isWithin(destination, filePath) ||
         // allow including '.' as an entry in the tar.gz archive.
-        p.equals(destination, filePath))) {
+        (entry.type == TypeFlag.dir && p.equals(destination, filePath)))) {
       // The tar contains entries that would be written outside of the
       // destination. That doesn't happen by accident, assume that the tar file
       // is malicious.
