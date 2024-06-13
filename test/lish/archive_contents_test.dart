@@ -76,8 +76,8 @@ void main() {
             expect(
               entry.header.mode
                   // chmod +x doesn't sets the executable bit for other users on some platforms only.
-                  &
-                  (~1),
+                  |
+                  1,
               _defaultMode | _executableMask,
             );
           } else {
