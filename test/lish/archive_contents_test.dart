@@ -74,11 +74,11 @@ void main() {
         if (!Platform.isWindows) {
           if (entry.name.endsWith('tool.sh')) {
             expect(
-              entry.header.mode,
-              _defaultMode |
-                  (_executableMask &
-                      // chmod +x sets the executable for owner and group, not other users.
-                      (~1)),
+              entry.header.mode
+                  // chmod +x doesn't sets the executable bit for other users on some platforms only.
+                  &
+                  (~1),
+              _defaultMode | _executableMask,
             );
           } else {
             expect(entry.header.mode, _defaultMode);
