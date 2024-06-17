@@ -1048,6 +1048,9 @@ Map<String, String> extendedPathEnv() {
   };
 }
 
+const _defaultMode = 420; // 644₈
+const _executableMask = 0x49; // 001 001 001
+
 Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
   final entries = <TarEntry>[];
   void addDescriptor(d.Descriptor descriptor, String path) {
@@ -1058,6 +1061,7 @@ Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
             TarHeader(
               name: p.posix.join(path, descriptor.name),
               typeFlag: TypeFlag.dir,
+              mode: _defaultMode | _executableMask,
             ),
             Stream.fromIterable([]),
           ),
