@@ -15,6 +15,9 @@ import 'package:test/test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
+const _defaultMode = 420; // 644₈
+const _executableMask = 0x49; // 001 001 001
+
 void main() {
   group('process', () {
     final nonExisting = p.join(p.dirname(Platform.resolvedExecutable), 'gone');
@@ -424,7 +427,11 @@ void main() {
       return withTempDir((tempDir) async {
         final entries = Stream<TarEntry>.fromIterable([
           TarEntry.data(
-            TarHeader(name: 'lib/main.txt', typeFlag: TypeFlag.reg),
+            TarHeader(
+              name: 'lib/main.txt',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
             utf8.encode('text content'),
           ),
           TarEntry.data(
@@ -432,6 +439,7 @@ void main() {
               name: 'bin/main.txt',
               typeFlag: TypeFlag.symlink,
               linkName: '../lib/main.txt',
+              mode: _defaultMode,
             ),
             const [],
           ),
@@ -441,6 +449,7 @@ void main() {
               typeFlag: TypeFlag.link,
               // TypeFlag.link is resolved against the root of the tar file
               linkName: 'lib/main.txt',
+              mode: _defaultMode,
             ),
             const [],
           ),
@@ -469,6 +478,7 @@ void main() {
             TarHeader(
               name: 'bin/',
               typeFlag: TypeFlag.dir,
+              mode: _defaultMode | _executableMask,
             ),
             const [],
           ),
@@ -496,6 +506,7 @@ void main() {
             TarHeader(
               name: '../other_package-1.2.3/lib/file.dart',
               typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
             ),
             const [],
           ),
@@ -521,6 +532,7 @@ void main() {
               name: 'nested/bad_link',
               typeFlag: TypeFlag.symlink,
               linkName: '../../outside.txt',
+              mode: _defaultMode,
             ),
             const [],
           ),
@@ -543,6 +555,7 @@ void main() {
               name: 'nested/bad_link',
               typeFlag: TypeFlag.link,
               linkName: '../outside.txt',
+              mode: _defaultMode,
             ),
             const [],
           ),
