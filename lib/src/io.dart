@@ -1218,7 +1218,7 @@ ByteStream createTarGz(
           file.openRead(),
         );
       }
-    }).whereNotNull(),
+    }).nonNulls,
   );
 
   return ByteStream(

@@ -687,7 +687,7 @@ VersionConstraint? _constraintIntersection(
 ) {
   final constraints = workspace.transitiveWorkspace
       .map((p) => _constraintOf(p.pubspec, packageName))
-      .whereNotNull();
+      .nonNulls;
   if (constraints.isEmpty) {
     return null;
   }
