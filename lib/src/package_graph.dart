@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:collection/collection.dart' hide mapMap;
+import 'package:graphs/graphs.dart';
 import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
@@ -60,12 +60,11 @@ class PackageGraph {
     }
 
     if (_transitiveDependencies == null) {
-      final closure = transitiveClosure(
-        mapMap<String, Package, String, Iterable<String>>(
-          packages,
-          value: (_, package) => package.dependencies.keys,
-        ),
+      final graph = mapMap<String, Package, String, Iterable<String>>(
+        packages,
+        value: (_, package) => package.dependencies.keys,
       );
+      final closure = transitiveClosure(graph.keys, (n) => graph[n]!);
       _transitiveDependencies =
           mapMap<String, Set<String>, String, Set<Package>>(
         closure,

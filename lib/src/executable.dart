@@ -346,7 +346,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       } else {
         return null;
       }
-    }).whereNotNull(),
+    }).nonNulls,
     (tuple) => tuple.$2.length,
   )?.$1;
 
