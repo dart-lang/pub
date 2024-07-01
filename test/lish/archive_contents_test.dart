@@ -86,7 +86,8 @@ void main() {
         }
       }
     }
-    expect(dirs, ['tool', 'lib', 'lib/empty']);
+    dirs.sort();
+    expect(dirs, ['lib', 'lib/empty', 'tool']);
     await d.credentialsFile(globalServer, 'access-token').create();
     final pub = await startPublish(globalServer);
 
