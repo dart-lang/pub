@@ -103,11 +103,13 @@ class PathSource extends Source {
           '"$description" is an absolute path, it can\'t be referenced from a git pubspec.',
         );
       }
-      final resolvedPath = p.url.joinAll([
-        containingDescription.path,
-        ...p.posix.split(dir),
-      ]);
-      if (!p.isWithin('.', resolvedPath)) {
+      final resolvedPath = p.url.normalize(
+        p.url.joinAll([
+          containingDescription.path,
+          ...p.posix.split(dir),
+        ]),
+      );
+      if (!(p.isWithin('.', resolvedPath) || p.equals('.', resolvedPath))) {
         throw FormatException(
           'the path "$description" cannot refer outside the git repository $resolvedPath.',
         );
@@ -118,12 +120,7 @@ class PathSource extends Source {
           url: containingDescription.url,
           relative: containingDescription.relative,
           ref: containingDescription.ref,
-          path: p.normalize(
-            p.join(
-              containingDescription.path,
-              dir,
-            ),
-          ),
+          path: resolvedPath,
         ),
       );
     } else if (containingDescription is HostedDescription) {
