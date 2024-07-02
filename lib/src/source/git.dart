@@ -682,7 +682,7 @@ class GitSource extends CachedSource {
     // Git on Windows does not seem to automatically create the destination
     // directory.
     ensureDir(to);
-    final args = ['clone', if (mirror) '--mirror', from, to];
+    final args = ['clone', if (mirror) '--mirror', '--recurse-submodules', from, to];
 
     await git.run(args);
   }
