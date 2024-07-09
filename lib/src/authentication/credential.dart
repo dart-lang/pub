@@ -46,7 +46,7 @@ class Credential {
   /// Throws [FormatException] if [json] is not a valid [Credential].
   factory Credential.fromJson(Map<String, dynamic> json) {
     if (json['url'] is! String) {
-      throw FormatException('Url is not provided for the credential');
+      throw const FormatException('Url is not provided for the credential');
     }
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);

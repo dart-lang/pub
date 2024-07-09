@@ -20,7 +20,7 @@ void main() {
         .credentialsFile(
           globalServer,
           'access-token',
-          expiration: DateTime.now().subtract(Duration(hours: 1)),
+          expiration: DateTime.now().subtract(const Duration(hours: 1)),
         )
         .create();
 

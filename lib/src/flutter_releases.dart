@@ -22,10 +22,12 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
     () => globalHttpClient.fetch(Request('GET', Uri.parse(flutterReleasesUrl))),
   );
   final decoded = jsonDecode(response.body);
-  if (decoded is! Map) throw FormatException('Bad response - should be a Map');
+  if (decoded is! Map) {
+    throw const FormatException('Bad response - should be a Map');
+  }
   final releases = decoded['releases'];
   if (releases is! List) {
-    throw FormatException('Bad response - releases should be a list.');
+    throw const FormatException('Bad response - releases should be a list.');
   }
   final result = <FlutterRelease>[];
   for (final release in releases) {
@@ -34,12 +36,14 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
       'stable': Channel.stable,
       'dev': Channel.dev,
     }[release['channel']];
-    if (channel == null) throw FormatException('Release with bad channel');
+    if (channel == null) {
+      throw const FormatException('Release with bad channel');
+    }
     final dartVersion = release['dart_sdk_version'];
     // Some releases don't have an associated dart version, ignore.
     if (dartVersion is! String) continue;
     final flutterVersion = release['version'];
-    if (flutterVersion is! String) throw FormatException('Not a string');
+    if (flutterVersion is! String) throw const FormatException('Not a string');
     result.add(
       FlutterRelease(
         flutterVersion: Version.parse(flutterVersion),

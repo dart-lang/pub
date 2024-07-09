@@ -58,7 +58,7 @@ Future<void> main() async {
   void writeStatus() {
     writeTextFile(
       statusFilename,
-      JsonEncoder.withIndent('  ').convert({
+      const JsonEncoder.withIndent('  ').convert({
         'packages': [...alreadyDonePackages],
         'failures': [...failures],
       }),

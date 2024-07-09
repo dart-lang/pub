@@ -346,7 +346,8 @@ Consider setting the `PUB_CACHE` variable manually.
         p.join(legacyCacheLocation, 'DEPRECATED.md');
     final stat = tryStatFile(legacyCacheDeprecatedFile);
     if ((stat == null ||
-            DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
+            DateTime.now().difference(stat.changed) >
+                const Duration(days: 7)) &&
         dirExists(legacyCacheLocation)) {
       log.warning('''
 Found a legacy Pub cache at $legacyCacheLocation. Pub is using $defaultDir.

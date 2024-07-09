@@ -415,7 +415,7 @@ See $workspacesDocUrl for more information.''',
             p.relative(workspaceRoot.dir, from: workspaceRefDir);
         writeTextFile(
           workspaceRefPath,
-          '${JsonEncoder.withIndent('  ').convert({
+          '${const JsonEncoder.withIndent('  ').convert({
                 'workspaceRoot': relativeRootPath,
               })}\n',
         );
@@ -483,7 +483,7 @@ See $workspacesDocUrl for more information.''',
       },
     );
 
-    return '${JsonEncoder.withIndent('  ').convert(packageConfig.toJson())}\n';
+    return '${const JsonEncoder.withIndent('  ').convert(packageConfig.toJson())}\n';
   }
 
   /// Gets all dependencies of the [workspaceRoot] package.

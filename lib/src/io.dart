@@ -471,7 +471,7 @@ void _attempt(
       if (i < maxRetries - 1) {
         log.io('Pub failed to $description because $reason. '
             'Retrying in 50ms.');
-        sleep(Duration(milliseconds: 50));
+        sleep(const Duration(milliseconds: 50));
       } else {
         fail('Pub failed to $description because $reason.\n'
             'This may be caused by a virus scanner or having a file\n'

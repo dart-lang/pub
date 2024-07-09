@@ -46,12 +46,12 @@ class GitSource extends CachedSource {
     if (description is String) {
       url = description;
     } else if (description is! Map) {
-      throw FormatException('The description must be a Git URL or a map '
+      throw const FormatException('The description must be a Git URL or a map '
           "with a 'url' key.");
     } else {
       final descriptionUrl = description['url'];
       if (descriptionUrl is! String) {
-        throw FormatException(
+        throw const FormatException(
           "The 'url' field of a description must be a string.",
         );
       }
@@ -59,14 +59,16 @@ class GitSource extends CachedSource {
 
       final descriptionRef = description['ref'];
       if (descriptionRef is! String?) {
-        throw FormatException("The 'ref' field of the description must be a "
+        throw const FormatException(
+            "The 'ref' field of the description must be a "
             'string.');
       }
       ref = descriptionRef;
 
       final descriptionPath = description['path'];
       if (descriptionPath is! String?) {
-        throw FormatException("The 'path' field of the description must be a "
+        throw const FormatException(
+            "The 'path' field of the description must be a "
             'string.');
       }
       path = descriptionPath;
@@ -97,25 +99,26 @@ class GitSource extends CachedSource {
     String? containingDir,
   }) {
     if (description is! Map) {
-      throw FormatException("The description must be a map with a 'url' "
+      throw const FormatException("The description must be a map with a 'url' "
           'key.');
     }
 
     final ref = description['ref'];
     if (ref is! String?) {
-      throw FormatException("The 'ref' field of the description must be a "
+      throw const FormatException(
+          "The 'ref' field of the description must be a "
           'string.');
     }
 
     final resolvedRef = description['resolved-ref'];
     if (resolvedRef is! String) {
-      throw FormatException("The 'resolved-ref' field of the description "
+      throw const FormatException("The 'resolved-ref' field of the description "
           'must be a string.');
     }
 
     final url = description['url'];
     if (url is! String) {
-      throw FormatException("The 'url' field of the description "
+      throw const FormatException("The 'url' field of the description "
           'must be a string.');
     }
     return PackageId(
@@ -177,7 +180,8 @@ class GitSource extends CachedSource {
   String _validatedPath(dynamic path) {
     path ??= '.';
     if (path is! String) {
-      throw FormatException("The 'path' field of the description must be a "
+      throw const FormatException(
+          "The 'path' field of the description must be a "
           'string.');
     }
 
@@ -188,12 +192,12 @@ class GitSource extends CachedSource {
         parsed.hasAuthority ||
         parsed.hasFragment ||
         parsed.hasQuery) {
-      throw FormatException(
+      throw const FormatException(
         "The 'path' field of the description must be a relative path URL.",
       );
     }
     if (!p.url.isWithin('.', path) && !p.url.equals('.', path)) {
-      throw FormatException(
+      throw const FormatException(
           "The 'path' field of the description must not reach outside the "
           'repository.');
     }

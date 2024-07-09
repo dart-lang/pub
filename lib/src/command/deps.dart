@@ -141,7 +141,7 @@ class DepsCommand extends PubCommand {
       ];
 
       buffer.writeln(
-        JsonEncoder.withIndent('  ').convert(
+        const JsonEncoder.withIndent('  ').convert(
           {
             'root': entrypoint.workspaceRoot.name,
             'packages': packagesJson,
@@ -404,7 +404,7 @@ class DepsCommand extends PubCommand {
   /// available.
   ///
   /// It's very unlikely that the lockfile won't be up-to-date with the pubspec,
-  /// but it's possible, since [Entrypoint.assertUpToDate]'s modification time
+  /// but it's possible, since [Entrypoint.ensureUpToDate]'s modification time
   /// check can return a false negative. This fails gracefully if that happens.
   Future<Package> _getPackage(String name) async {
     final package = (await entrypoint.packageGraph).packages[name];

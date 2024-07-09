@@ -80,7 +80,7 @@ class FlutterSdk extends Sdk {
       }
       final flutterVersion = versionJson['flutterVersion'];
       if (flutterVersion is! String) {
-        throw FormatException('flutter-version is not a string');
+        throw const FormatException('flutter-version is not a string');
       }
       return Version.parse(flutterVersion);
     } on IOException catch (e) {

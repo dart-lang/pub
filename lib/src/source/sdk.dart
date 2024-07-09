@@ -33,7 +33,7 @@ class SdkSource extends Source {
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
-      throw FormatException('The description must be an SDK name.');
+      throw const FormatException('The description must be an SDK name.');
     }
 
     return PackageRef(name, SdkDescription(description));
@@ -47,7 +47,7 @@ class SdkSource extends Source {
     String? containingDir,
   }) {
     if (description is! String) {
-      throw FormatException('The description must be an SDK name.');
+      throw const FormatException('The description must be an SDK name.');
     }
 
     return PackageId(

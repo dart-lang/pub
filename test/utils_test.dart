@@ -103,17 +103,17 @@ b: {}'''),
   group('niceDuration()', () {
     test('formats duration longer than a minute correctly', () {
       expect(
-        niceDuration(Duration(minutes: 3, seconds: 1, milliseconds: 337)),
+        niceDuration(const Duration(minutes: 3, seconds: 1, milliseconds: 337)),
         equals('3:01.3s'),
       );
     });
 
     test('does not display extra zero when duration is less than a minute', () {
-      expect(niceDuration(Duration(milliseconds: 400)), equals('0.4s'));
+      expect(niceDuration(const Duration(milliseconds: 400)), equals('0.4s'));
     });
 
     test('has reasonable output on minute boundary', () {
-      expect(niceDuration(Duration(minutes: 1)), equals('1:00.0s'));
+      expect(niceDuration(const Duration(minutes: 1)), equals('1:00.0s'));
     });
   });
 

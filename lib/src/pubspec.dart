@@ -11,6 +11,7 @@ import 'package:yaml/yaml.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'language_version.dart';
+import 'package.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
@@ -56,8 +57,6 @@ class Pubspec extends PubspecBase {
 
   /// The registry of sources to use when parsing [dependencies] and
   /// [devDependencies].
-  ///
-  /// This will be null if this was created using [Pubspec] or [Pubspec.empty].
   final SourceRegistry sources;
 
   /// It is used to resolve relative paths. And to resolve path-descriptions
@@ -194,7 +193,7 @@ class Pubspec extends PubspecBase {
 
   final Map<String, SdkConstraint>? _givenSdkConstraints;
 
-  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
+  /// Whether or not to apply the [_defaultUpperBoundSdkConstraint] to this
   /// pubspec.
   final bool _includeDefaultSdkConstraint;
 

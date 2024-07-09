@@ -9,8 +9,11 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
 import 'language_version.dart';
+import 'lock_file.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'source.dart' as src;
+import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
 import 'system_cache.dart';
@@ -212,7 +215,7 @@ abstract class Description {
 /// to lock down a specific version.
 ///
 /// This is currently only relevant for the [GitSource] that resolves the
-/// [Description.ref] to a specific commit id in [GitSource.doGetVersions].
+/// [src.Description.ref] to a specific commit id in [GitSource.doGetVersions].
 ///
 /// This is the information that goes into a `pubspec.lock` file together with
 /// a version number (that is represented by a [PackageId].

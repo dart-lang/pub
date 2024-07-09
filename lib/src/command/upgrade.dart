@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:args/command_runner.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';

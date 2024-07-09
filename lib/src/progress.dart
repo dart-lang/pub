@@ -50,7 +50,7 @@ class Progress {
       return;
     }
 
-    _timer = Timer.periodic(Duration(milliseconds: 100), (_) {
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       _update();
     });
 

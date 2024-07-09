@@ -13,6 +13,7 @@ import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
 import 'http.dart';
+import 'source.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
 ///

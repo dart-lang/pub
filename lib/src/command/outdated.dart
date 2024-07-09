@@ -266,7 +266,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       final id = current ?? upgradable ?? resolvable ?? latest;
       var packageAdvisories = await id?.source
-              .getAdvisoriesForPackage(id, cache, Duration(days: 3)) ??
+              .getAdvisoriesForPackage(id, cache, const Duration(days: 3)) ??
           [];
 
       final discontinued =
@@ -507,7 +507,7 @@ Future<void> _outputJson(
   }
 
   log.message(
-    JsonEncoder.withIndent('  ').convert(
+    const JsonEncoder.withIndent('  ').convert(
       {
         'packages': [
           ...(rows..sort((a, b) => a.name.compareTo(b.name))).map(

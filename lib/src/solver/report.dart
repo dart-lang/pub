@@ -241,8 +241,12 @@ $contentHashesDocumentationUrl
     var numDiscontinued = 0;
     for (var id in _newLockFile.packages.values) {
       if (id.description is RootDescription) continue;
-      final status = await id.source
-          .status(id.toRef(), id.version, _cache, maxAge: Duration(days: 3));
+      final status = await id.source.status(
+        id.toRef(),
+        id.version,
+        _cache,
+        maxAge: const Duration(days: 3),
+      );
       if (status.isDiscontinued &&
           (_rootPubspec.dependencyType(id.name) == DependencyType.direct ||
               _rootPubspec.dependencyType(id.name) == DependencyType.dev)) {
@@ -408,7 +412,7 @@ $contentHashesDocumentationUrl
         id.toRef(),
         id.version,
         _cache,
-        maxAge: Duration(days: 3),
+        maxAge: const Duration(days: 3),
       );
 
       final notes = <String>[];
@@ -416,7 +420,7 @@ $contentHashesDocumentationUrl
       final advisories = await id.source.getAdvisoriesForPackageVersion(
         id,
         _cache,
-        Duration(days: 3),
+        const Duration(days: 3),
       );
 
       if (advisories != null && advisories.isNotEmpty) {

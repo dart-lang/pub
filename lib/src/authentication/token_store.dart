@@ -43,30 +43,34 @@ class TokenStore {
       }
 
       if (json is! Map<String, dynamic>) {
-        throw FormatException('JSON contents is corrupted or not supported');
+        throw const FormatException(
+          'JSON contents is corrupted or not supported',
+        );
       }
       if (json['version'] != 1) {
-        throw FormatException('Version is not supported');
+        throw const FormatException('Version is not supported');
       }
 
       if (json.containsKey('hosted')) {
         final hosted = json['hosted'];
 
         if (hosted is! List) {
-          throw FormatException('Invalid or not supported format');
+          throw const FormatException('Invalid or not supported format');
         }
 
         for (final element in hosted) {
           try {
             if (element is! Map<String, dynamic>) {
-              throw FormatException('Invalid or not supported format');
+              throw const FormatException('Invalid or not supported format');
             }
 
             final credential = Credential.fromJson(element);
             result.add(credential);
 
             if (!credential.isValid()) {
-              throw FormatException('Invalid or not supported credential');
+              throw const FormatException(
+                'Invalid or not supported credential',
+              );
             }
           } on FormatException catch (e) {
             if (element['url'] is String) {
