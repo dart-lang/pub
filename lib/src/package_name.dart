@@ -177,7 +177,7 @@ class PackageRange {
     return description.source.hasMultipleVersions;
   }
 
-  /// Returns a copy of [this] with the same semantics, but with a `^`-style
+  /// Returns a copy of `this` with the same semantics, but with a `^`-style
   /// constraint if possible.
   PackageRange withTerseConstraint() {
     if (constraint is! VersionRange) return this;
@@ -197,7 +197,7 @@ class PackageRange {
 
   /// Whether [id] satisfies this dependency.
   ///
-  /// Specifically, whether [id] refers to the same package as [this] *and*
+  /// Specifically, whether [id] refers to the same package as `this` *and*
   /// [constraint] allows `id.version`.
   bool allows(PackageId id) =>
       name == id.name &&
@@ -245,7 +245,7 @@ class PackageDetail {
   })  : showSource = showDescription == true ? true : showSource,
         showDescription = showDescription ?? false;
 
-  /// Returns a [PackageDetail] with the maximum amount of detail between [this]
+  /// Returns a [PackageDetail] with the maximum amount of detail between `this`
   /// and [other].
   PackageDetail max(PackageDetail other) => PackageDetail(
         showVersion: showVersion! || other.showVersion!,

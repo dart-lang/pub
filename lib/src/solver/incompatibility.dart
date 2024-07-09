@@ -90,7 +90,7 @@ class Incompatibility {
 
   Incompatibility._(this.terms, this.cause);
 
-  /// Returns a string representation of [this].
+  /// Returns a string representation of `this`.
   ///
   /// If [details] is passed, it controls the amount of detail that's written
   /// for packages with the given names.
@@ -212,7 +212,7 @@ class Incompatibility {
   /// for packages with the given names.
   ///
   /// If [thisLine] and/or [otherLine] are passed, they indicate line numbers
-  /// that should be associated with [this] and [other], respectively.
+  /// that should be associated with `this` and [other], respectively.
   String andToString(
     Incompatibility other, [
     Map<String, PackageDetail>? details,
@@ -237,7 +237,7 @@ class Incompatibility {
     return buffer.toString();
   }
 
-  /// If "[this] and [other]" can be expressed as "some package requires both X
+  /// If "`this` and [other]" can be expressed as "some package requires both X
   /// and Y", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
@@ -276,7 +276,7 @@ class Incompatibility {
     return buffer.toString();
   }
 
-  /// If "[this] and [other]" can be expressed as "X requires Y which requires
+  /// If "`this` and [other]" can be expressed as "X requires Y which requires
   /// Z", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
@@ -359,7 +359,7 @@ class Incompatibility {
     return buffer.toString();
   }
 
-  /// If "[this] and [other]" can be expressed as "X requires Y which is
+  /// If "`this` and [other]" can be expressed as "X requires Y which is
   /// forbidden", this returns that expression.
   ///
   /// Otherwise, this returns `null`.

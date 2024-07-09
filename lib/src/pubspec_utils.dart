@@ -24,7 +24,8 @@ Pubspec stripDependencyOverrides(Pubspec original) {
 /// Returns new pubspec with the same dependencies as [original] but with the
 /// the bounds of the constraints removed.
 ///
-/// If [stripLower] is `false` (the default) only the upper bound is removed.
+/// If [stripLowerBound] is `false` (the default) only the upper bound is
+/// removed.
 ///
 /// If [stripOnly] is provided, only the packages whose names are in [stripOnly]
 /// will have their bounds removed. If [stripOnly] is not specified or empty,

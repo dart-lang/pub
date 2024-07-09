@@ -22,7 +22,7 @@ import '../utils.dart';
 /// }
 /// ```
 class Credential {
-  /// Internal constructor that's only used by [fromJson].
+  /// Internal constructor that's only used by [Credential.fromJson].
   Credential._internal({
     required this.url,
     required this.unknownFields,

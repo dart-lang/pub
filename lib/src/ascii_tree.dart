@@ -15,7 +15,7 @@ import 'utils.dart';
 
 /// Draws a tree for the given list of files
 ///
-/// Shows each file with the file size if [showFileSize] is `true`.
+/// Shows each file with the file size if [showFileSizes] is `true`.
 /// This will stats each file in the list for finding the size.
 ///
 /// Given files like:

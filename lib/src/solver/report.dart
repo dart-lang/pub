@@ -140,10 +140,10 @@ $contentHashesDocumentationUrl
   /// If [_dryRun] or [_enforceLockfile] is true, describes it in terms of what
   /// would be done.
   ///
-  /// [type] is the type of version resolution that was run.
+  /// [_type] is the type of version resolution that was run.
 
-  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages that
-  /// are not at the latest available version and the number of outdated
+  /// If [_type] is `SolveType.UPGRADE` it also shows the number of packages
+  /// that are not at the latest available version and the number of outdated
   /// packages.
   Future<void> summarize(int changes) async {
     // Count how many dependencies actually changed.

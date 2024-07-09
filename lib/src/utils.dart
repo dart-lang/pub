@@ -19,6 +19,7 @@ import 'package:stack_trace/stack_trace.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
+import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
 import 'log.dart' as log;
 import 'pubspec_parse.dart';
@@ -662,7 +663,7 @@ final _exceptionPrefix = RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
 /// Get a string description of an exception.
 ///
 /// Many exceptions include the exception class name at the beginning of their
-/// [toString], so we remove that if it exists.
+/// [Object.toString], so we remove that if it exists.
 String getErrorMessage(Object error) =>
     error.toString().replaceFirst(_exceptionPrefix, '');
 
@@ -819,7 +820,7 @@ extension ExpectField on YamlMap {
 }
 
 extension ExpectEntries on YamlList {
-  /// Expects each entry in [this] to have a value of type [T],
+  /// Expects each entry in `this` to have a value of type [T],
   /// and returns a `List<T>`.
   ///
   /// Throws a [SourceSpanApplicationException] for the first entry that does

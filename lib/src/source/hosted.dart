@@ -1754,8 +1754,8 @@ See $contentHashesDocumentationUrl.
   static const _prefetchingKey = #_prefetch;
 }
 
-/// The [PackageName.description] for a [HostedSource], storing the package name
-/// and resolved URI of the package server.
+/// The [PackageName.description] for a [HostedSource], storing the
+/// [packageName] and resolved [url] of the package server.
 class HostedDescription extends Description {
   final String packageName;
   final String url;

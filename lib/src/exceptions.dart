@@ -13,6 +13,7 @@ import 'package:yaml/yaml.dart';
 
 import 'dart.dart';
 import 'http.dart';
+import 'log.dart' as log;
 import 'source.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
@@ -51,7 +52,7 @@ class FileException implements ApplicationException {
 
 /// A class for exceptions that wrap other exceptions.
 class WrappedException extends ApplicationException {
-  /// The underlying exception that [this] is wrapping, if any.
+  /// The underlying exception that `this` is wrapping, if any.
   final Object? innerError;
 
   /// The stack chain for [innerError] if it exists.

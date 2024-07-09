@@ -505,8 +505,8 @@ class GitSource extends CachedSource {
     return result;
   }
 
-  /// Ensures that the canonical clone of the repository referred to by [ref]
-  /// contains the given Git [revision].
+  /// Ensures that the canonical clone of the repository referred to by
+  /// [description] contains the given Git [revision].
   Future<bool> _ensureRevision(
     GitDescription description,
     String revision,
@@ -530,8 +530,8 @@ class GitSource extends CachedSource {
     return false;
   }
 
-  /// Ensures that the canonical clone of the repository referred to by [ref]
-  /// exists and is up-to-date.
+  /// Ensures that the canonical clone of the repository referred to by
+  /// [description] exists and is up-to-date.
   ///
   /// Returns `true` if it had to update anything.
   Future<bool> _ensureRepoCache(
@@ -551,7 +551,8 @@ class GitSource extends CachedSource {
     }
   }
 
-  /// Creates the canonical clone of the repository referred to by [ref].
+  /// Creates the canonical clone of the repository referred to by
+  /// [description].
   ///
   /// This assumes that the canonical clone doesn't yet exist.
   Future<void> _createRepoCache(
@@ -570,7 +571,7 @@ class GitSource extends CachedSource {
   }
 
   /// Runs "git fetch" in the canonical clone of the repository referred to by
-  /// [ref].
+  /// [description].
   ///
   /// This assumes that the canonical clone already exists.
   ///
@@ -727,13 +728,14 @@ class GitSource extends CachedSource {
       );
 
   /// Returns the path to the canonical clone of the repository referred to by
-  /// [id] (the one in `<system cache>/git/cache`).
+  /// [description] (the one in `<system cache>/git/cache`).
   String _repoCachePath(GitDescription description, SystemCache cache) {
     final repoCacheName = '${_repoName(description)}-${sha1(description.url)}';
     return p.join(cache.rootDirForSource(this), 'cache', repoCacheName);
   }
 
-  /// Returns a short, human-readable name for the repository URL in [ref].
+  /// Returns a short, human-readable name for the repository URL in
+  /// [description].
   ///
   /// This name is not guaranteed to be unique.
   String _repoName(GitDescription description) {

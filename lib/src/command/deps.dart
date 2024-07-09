@@ -9,6 +9,7 @@ import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../command_runner.dart';
 import '../entrypoint.dart';
+import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../pubspec.dart';
@@ -400,7 +401,7 @@ class DepsCommand extends PubCommand {
         .toSet();
   }
 
-  /// Get the package named [name], or throw a [DataError] if it's not
+  /// Get the package named [name], or throw a [DataException] if it's not
   /// available.
   ///
   /// It's very unlikely that the lockfile won't be up-to-date with the pubspec,

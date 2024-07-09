@@ -14,8 +14,6 @@ import 'dart:isolate';
 ///
 /// If the isolate produces an unhandled exception, it's printed to stderr and
 /// the [exitCode] variable is set to 255.
-///
-/// If [buffered] is `true`, this uses [spawnBufferedUri] to spawn the isolate.
 Future<int> runUri(
   Uri url,
   List<String> args,
