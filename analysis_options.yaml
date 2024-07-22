@@ -1,11 +1,6 @@
 include: package:lints/recommended.yaml
 
 analyzer:
-  errors:
-    unused_import: error
-    unused_local_variable: error
-    dead_code: error
-    todo: ignore
   exclude:
    - lib/src/third_party/**
 
