@@ -28,7 +28,8 @@ class LoginCommand extends PubCommand {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Could not retrieve your user-details.\n'
-            'You might have to run `$topLevelProgram pub logout` to delete your credentials and try again.');
+            'You might have to run `$topLevelProgram pub logout` '
+            'to delete your credentials and try again.');
       } else {
         log.message('You are now logged in as $userInfo');
       }
@@ -36,7 +37,8 @@ class LoginCommand extends PubCommand {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Your credentials seems broken.\n'
-            'Run `$topLevelProgram pub logout` to delete your credentials and try again.');
+            'Run `$topLevelProgram pub logout` '
+            'to delete your credentials and try again.');
       }
       log.warning('You are already logged in as $userInfo\n'
           'Run `$topLevelProgram pub logout` to log out and try again.');

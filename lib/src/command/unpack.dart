@@ -124,7 +124,8 @@ in a directory `foo-<version>`.
         deleteEntry(destinationDir);
       } else {
         fail(
-          'Target directory `$destinationDir` already exists. Use --force to overwrite.',
+          'Target directory `$destinationDir` already exists. '
+          'Use --force to overwrite.',
         );
       }
     }
@@ -183,7 +184,8 @@ in a directory `foo-<version>`.
             'environment': {'sdk': sdk.version.toString()},
           },
           cache.sources,
-          // Resolve relative paths relative to current, not where the pubspec.yaml is.
+          // Resolve relative paths relative to current, not where the
+          // pubspec.yaml is.
           location: p.toUri(p.join(p.current, 'descriptor')),
           containingDescription: RootDescription('.'),
         );

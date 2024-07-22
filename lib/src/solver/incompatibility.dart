@@ -435,8 +435,10 @@ class Incompatibility {
     } else if (latter.cause is NoVersionsIncompatibilityCause) {
       buffer.write("which doesn't match any versions");
     } else if (latter.cause is PackageNotFoundIncompatibilityCause) {
-      buffer.write("which doesn't exist "
-          '(${(latter.cause as PackageNotFoundIncompatibilityCause).exception.message})');
+      final cause = (latter.cause as PackageNotFoundIncompatibilityCause)
+          .exception
+          .message;
+      buffer.write("which doesn't exist ($cause)");
     } else {
       buffer.write('which is forbidden');
     }

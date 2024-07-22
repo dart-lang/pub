@@ -169,8 +169,8 @@ final class Ignore {
   /// Represents paths normalized  using '/' as directory separator. The empty
   /// relative path is '.', no '..' are allowed.
   ///
-  /// [beneath] must start with [root] and even if it is a directory it should not
-  /// end with '/', if [beneath] is not provided, everything under root is
+  /// [beneath] must start with [root] and even if it is a directory it should
+  /// not end with '/', if [beneath] is not provided, everything under root is
   /// included.
   ///
   /// [listDir] should enumerate the immediate contents of a given directory,

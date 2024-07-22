@@ -236,9 +236,11 @@ and attaching the relevant parts of that log file.
         } on ApplicationException {
           e = null;
         }
+        final protectedArguments =
+            _topCommand.argResults!.arguments.map(protectArgument).join(' ');
         log.dumpTranscriptToFile(
           transcriptPath,
-          'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
+          'dart pub $protectedArguments',
           e,
         );
 

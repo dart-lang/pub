@@ -94,8 +94,8 @@ class LishCommand extends PubCommand {
     argParser.addFlag(
       'skip-validation',
       negatable: false,
-      help:
-          'Publish without validation and resolution (this will ignore errors).',
+      help: 'Publish without validation and resolution '
+          '(this will ignore errors).',
     );
     argParser.addOption(
       'server',
@@ -110,8 +110,8 @@ class LishCommand extends PubCommand {
     );
     argParser.addOption(
       'from-archive',
-      help:
-          'Publish from a .tar.gz archive instead of current folder. Implies `--skip-validation`.',
+      help: 'Publish from a .tar.gz archive instead of current folder. '
+          'Implies `--skip-validation`.',
       valueHelp: '[archive.tar.gz]',
       hide: true,
     );
@@ -328,9 +328,14 @@ the \$PUB_HOSTED_URL environment variable.''',
     // Show the package contents so the user can verify they look OK.
     final package = entrypoint.workPackage;
     final host = computeHost(package.pubspec);
+    final fileTree = tree.fromFiles(
+      filesAndEmptyDirs,
+      baseDir: entrypoint.workPackage.dir,
+      showFileSizes: true,
+    );
     log.message(
       'Publishing ${package.name} ${package.version} to $host:\n'
-      '${tree.fromFiles(filesAndEmptyDirs, baseDir: entrypoint.workPackage.dir, showFileSizes: true)}',
+      '$fileTree',
     );
 
     final packageBytes = await createTarGz(
@@ -338,8 +343,9 @@ the \$PUB_HOSTED_URL environment variable.''',
       baseDir: entrypoint.workPackage.dir,
     ).toBytes();
 
+    final totalSize = _readableFileSize(packageBytes.length);
     log.message(
-      '\nTotal compressed archive size: ${_readableFileSize(packageBytes.length)}.\n',
+      '\nTotal compressed archive size: $totalSize.\n',
     );
 
     final validationResult =
@@ -402,7 +408,8 @@ the \$PUB_HOSTED_URL environment variable.''',
   /// Throws if there are errors and the upload should not
   /// proceed.
   ///
-  /// Returns a summary of warnings and hints if there are any, otherwise `null`.
+  /// Returns a summary of warnings and hints if there are any, otherwise
+  /// `null`.
   Future<({int warningsCount, int hintsCount})> _validate(
     Uint8List packageBytes,
     List<String> files,
@@ -444,8 +451,8 @@ the \$PUB_HOSTED_URL environment variable.''',
     log.message('\nPublishing is forever; packages cannot be unpublished.'
         '\nPolicy details are available at https://pub.dev/policy\n');
 
-    var message =
-        'Do you want to publish ${package.pubspec.name} ${package.pubspec.version} to $host';
+    var message = 'Do you want to publish '
+        '${package.pubspec.name} ${package.pubspec.version} to $host';
     if (package.hintCount != 0 || package.warningCount != 0) {
       message = '${package.warningsCountMessage}. $message';
     }

@@ -77,12 +77,14 @@ class DepsCommand extends PubCommand {
     if (argResults.flag('json')) {
       if (argResults.wasParsed('dev')) {
         usageException(
-          'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.',
+          'Cannot combine --json and --dev.\n'
+          'The json output contains the dependency type in the output.',
         );
       }
       if (argResults.wasParsed('executables')) {
         usageException(
-          'Cannot combine --json and --executables.\nThe json output always lists available executables.',
+          'Cannot combine --json and --executables.\n'
+          'The json output always lists available executables.',
         );
       }
       if (argResults.wasParsed('style')) {
@@ -368,7 +370,8 @@ class DepsCommand extends PubCommand {
   String _labelPackage(Package package) =>
       '${log.bold(package.name)} ${package.version}';
 
-  /// Gets the names of the non-immediate dependencies of the workspace packages.
+  /// Gets the names of the non-immediate dependencies of the workspace
+  /// packages.
   Future<Set<String>> _getTransitiveDependencies() async {
     final transitive = await _getAllDependencies();
     for (final root in entrypoint.workspaceRoot.transitiveWorkspace) {

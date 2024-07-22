@@ -38,15 +38,17 @@ class CacheRepairCommand extends PubCommand {
 
     if (successes.isNotEmpty) {
       final packages = pluralize('package', successes.length);
+      final count = log.green(successes.length.toString());
       log.message(
-        'Reinstalled ${log.green(successes.length.toString())} $packages.',
+        'Reinstalled $count $packages.',
       );
     }
 
     if (failures.isNotEmpty) {
       final packages = pluralize('package', failures.length);
+      final count = log.red(failures.length.toString());
       final buffer = StringBuffer(
-        'Failed to reinstall ${log.red(failures.length.toString())} $packages:\n',
+        'Failed to reinstall $count $packages:\n',
       );
 
       for (var failure in failures) {
@@ -64,15 +66,17 @@ class CacheRepairCommand extends PubCommand {
         await globals.repairActivatedPackages();
     if (repairSuccesses.isNotEmpty) {
       final packages = pluralize('package', repairSuccesses.length);
+      final count = log.green(repairSuccesses.length.toString());
       log.message(
-        'Reactivated ${log.green(repairSuccesses.length.toString())} $packages.',
+        'Reactivated $count $packages.',
       );
     }
 
     if (repairFailures.isNotEmpty) {
       final packages = pluralize('package', repairFailures.length);
+      final count = log.red(repairFailures.length.toString());
       log.message(
-        'Failed to reactivate ${log.red(repairFailures.length.toString())} $packages:',
+        'Failed to reactivate $count $packages:',
       );
       log.message(
         repairFailures.map((name) => '- ${log.bold(name)}').join('\n'),

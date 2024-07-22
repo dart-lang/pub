@@ -166,7 +166,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 
   /// Return names of packages to be upgraded, and throws [UsageException] if
-  /// any package names not in the direct dependencies or dev_dependencies are given.
+  /// any package names not in the direct dependencies or dev_dependencies are
+  /// given.
   ///
   /// This assumes that `--major-versions` was passed.
   List<String> _directDependenciesToUpgrade() {

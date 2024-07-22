@@ -25,6 +25,7 @@ linter:
     - cancel_subscriptions
     - directives_ordering
     - library_annotations
+    - lines_longer_than_80_chars
     - missing_whitespace_between_adjacent_strings
     - no_adjacent_strings_in_list
     - no_runtimeType_toString

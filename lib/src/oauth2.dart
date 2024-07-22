@@ -440,8 +440,8 @@ class _AuthorizationCodeGrant {
   /// be specified via [scopes]. The scope strings are specific to the
   /// authorization server and may be found in its documentation. Note that you
   /// may not be granted access to every scope you request; you may check the
-  /// [Credentials.scopes] field of [_Client.credentials] to see which scopes you
-  /// were granted.
+  /// [Credentials.scopes] field of [_Client.credentials] to see which scopes
+  /// you were granted.
   ///
   /// An opaque [state] string may also be passed that will be present in the
   /// query parameters provided to the redirect URL.
@@ -682,7 +682,8 @@ class _AuthorizationException implements Exception {
 /// This means that any request may throw an [_AuthorizationException] if the
 /// refresh is not authorized for some reason, a [FormatException] if the
 /// authorization server provides ill-formatted responses, or an
-/// [_ExpirationException] if the credentials are expired and can't be refreshed.
+/// [_ExpirationException] if the credentials are expired and can't be
+/// refreshed.
 ///
 /// The client will also throw an [_AuthorizationException] if the resource
 /// server returns a 401 response with a WWW-Authenticate header indicating that
@@ -1208,7 +1209,8 @@ Credentials _handleAccessTokenResponse(
           expiresIn = double.parse(expiresIn).toInt();
         } on FormatException {
           throw FormatException(
-            'parameter "expires_in" could not be parsed as in, was: "$expiresIn"',
+            'parameter "expires_in" could not be parsed as int, '
+            'was: "$expiresIn"',
           );
         }
       } else if (expiresIn is! int) {

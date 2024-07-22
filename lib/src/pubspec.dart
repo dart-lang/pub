@@ -37,8 +37,9 @@ class Pubspec extends PubspecBase {
   // initialization can throw a [PubspecException], that error should also be
   // exposed through [allErrors].
 
-  /// The fields of [pubspecOverridesFilename]. `null` if no such file exists or has
-  /// to be considered.
+  /// The fields of [pubspecOverridesFilename].
+  ///
+  /// `null` if no such file exists or has to be considered.
   final YamlMap? _overridesFileFields;
 
   String? get _packageName => fields['name'] != null ? name : null;
@@ -70,7 +71,8 @@ class Pubspec extends PubspecBase {
     final r = fields.nodes['workspace'];
     if (r != null && !languageVersion.supportsWorkspaces) {
       _error(
-        '`workspace` and `resolution` requires at least language version ${LanguageVersion.firstVersionWithWorkspaces}',
+        '`workspace` and `resolution` requires at least language version '
+        '${LanguageVersion.firstVersionWithWorkspaces}',
         r.span,
       );
     }
@@ -100,7 +102,8 @@ class Pubspec extends PubspecBase {
     final r = fields.nodes['resolution'];
     if (r != null && !languageVersion.supportsWorkspaces) {
       _error(
-        '`workspace` and `resolution` requires at least language version ${LanguageVersion.firstVersionWithWorkspaces}',
+        '`workspace` and `resolution` requires at least language version '
+        '${LanguageVersion.firstVersionWithWorkspaces}',
         r.span,
       );
     }
@@ -148,7 +151,8 @@ class Pubspec extends PubspecBase {
   /// Dependencies here will replace any dependency on a package with the same
   /// name anywhere in the dependency graph.
   ///
-  /// These can occur both in the pubspec.yaml file and the [pubspecOverridesFilename].
+  /// These can occur both in the pubspec.yaml file and the
+  /// [pubspecOverridesFilename].
   Map<String, PackageRange> get dependencyOverrides {
     if (_dependencyOverrides != null) return _dependencyOverrides!;
     final pubspecOverridesFields = _overridesFileFields;
@@ -157,7 +161,8 @@ class Pubspec extends PubspecBase {
         final keyNode = key as YamlNode;
         if (!const {'dependency_overrides'}.contains(keyNode.value)) {
           throw SourceSpanApplicationException(
-            'pubspec_overrides.yaml only supports the `dependency_overrides` field.',
+            'pubspec_overrides.yaml only supports the '
+            '`dependency_overrides` field.',
             keyNode.span,
           );
         }
@@ -346,7 +351,8 @@ class Pubspec extends PubspecBase {
             ((String? name) => throw StateError('No source registry given')),
         _overridesFileFields = null,
         // This is a dummy value.
-        // Dependencies should already be resolved, so we never need to do relative resolutions.
+        // Dependencies should already be resolved, so we never need to do
+        // relative resolutions.
         _containingDescription = RootDescription('.'),
         super(
           fields == null ? YamlMap() : YamlMap.wrap(fields),
@@ -488,7 +494,8 @@ class Pubspec extends PubspecBase {
     return errors;
   }
 
-  /// Returns a list of errors relevant to consuming this pubspec as a dependency
+  /// Returns a list of errors relevant to consuming this pubspec as a
+  /// dependency.
   ///
   /// This will return at most one error for each field.
   List<SourceSpanApplicationException> get dependencyErrors =>

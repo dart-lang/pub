@@ -98,7 +98,8 @@ class PartialSolution {
       if (removed.isDecision) _decisions.remove(removed.package.name);
     }
 
-    // Re-compute [_positive] and [_negative] for the packages that were removed.
+    // Re-compute [_positive] and [_negative] for the packages that were
+    // removed.
     for (var package in packages) {
       _positive.remove(package);
       _negative.remove(package);

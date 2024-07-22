@@ -648,8 +648,8 @@ try:
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
   ///
-  /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user if
-  /// the bin directory isn't on their path.
+  /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user
+  /// if the bin directory isn't on their path.
   void _updateBinStubs(
     Entrypoint entrypoint,
     Package package,

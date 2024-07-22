@@ -215,9 +215,15 @@ class _Writer {
       final conflictLine = _lineNumbers[conflictClause.conflict];
       final otherLine = _lineNumbers[conflictClause.other];
       if (conflictLine != null && otherLine != null) {
+        final reason = conflictClause.conflict.andToString(
+          conflictClause.other,
+          detailsForCause,
+          conflictLine,
+          otherLine,
+        );
         _write(
           incompatibility,
-          'Because ${conflictClause.conflict.andToString(conflictClause.other, detailsForCause, conflictLine, otherLine)}, $incompatibilityString.',
+          'Because $reason, $incompatibilityString.',
           numbered: numbered,
         );
       } else if (conflictLine != null || otherLine != null) {
@@ -281,9 +287,11 @@ class _Writer {
 
       final derivedLine = _lineNumbers[derived];
       if (derivedLine != null) {
+        final reason =
+            ext.andToString(derived, detailsForCause, null, derivedLine);
         _write(
           incompatibility,
-          'Because ${ext.andToString(derived, detailsForCause, null, derivedLine)}, $incompatibilityString.',
+          'Because $reason, $incompatibilityString.',
           numbered: numbered,
         );
       } else if (_isCollapsible(derived)) {
@@ -319,11 +327,11 @@ class _Writer {
         );
       }
     } else {
+      final reason = conflictClause.conflict
+          .andToString(conflictClause.other, detailsForCause);
       _write(
         incompatibility,
-        'Because '
-        '${conflictClause.conflict.andToString(conflictClause.other, detailsForCause)}, '
-        '$incompatibilityString.',
+        'Because $reason, $incompatibilityString.',
         numbered: numbered,
       );
     }
