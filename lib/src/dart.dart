@@ -8,8 +8,7 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:analyzer/dart/analysis/context_builder.dart';
-import 'package:analyzer/dart/analysis/context_locator.dart';
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -33,17 +32,9 @@ class AnalysisContextManager {
       );
 
   AnalysisContextManager._(this.packagePath)
-      : _session = ContextBuilder()
-            .createContext(
-              contextRoot: ContextLocator().locateRoots(
-                includedPaths: [p.absolute(p.normalize(packagePath))],
-                optionsFile:
-                    // We don't want to take 'analysis_options.yaml' files into
-                    // account. So we replace it with an empty file.
-                    Platform.isWindows ? r'C:\NUL' : '/dev/null',
-              ).first,
-            )
-            .currentSession;
+      : _session = AnalysisContextCollection(
+          includedPaths: [packagePath],
+        ).contextFor(packagePath).currentSession;
 
   /// Parse the file with the given [path] into AST.
   ///
