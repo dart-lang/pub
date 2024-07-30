@@ -39,7 +39,7 @@ class YamlDescriptor extends FileDescriptor {
     final actual = loadYaml(actualContentsText);
     final expected = loadYaml(_contents);
 
-    if (!DeepCollectionEquality().equals(expected, actual)) {
+    if (!const DeepCollectionEquality().equals(expected, actual)) {
       fail('Expected $expected, found: $actual');
     }
   }

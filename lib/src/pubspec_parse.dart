@@ -7,7 +7,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
-import 'utils.dart' show identifierRegExp, ExpectField;
+import 'utils.dart' show ExpectField, identifierRegExp;
 
 /// A regular expression matching allowed package names.
 ///
@@ -97,7 +97,7 @@ abstract class PubspecBase {
         _wrapFormatException('"publish_to" field', span, () {
           final url = Uri.parse(publishTo);
           if (url.scheme.isEmpty) {
-            throw FormatException('must be an absolute URL.');
+            throw const FormatException('must be an absolute URL.');
           }
         });
       }

@@ -22,7 +22,7 @@ void main() {
           globalServer,
           'access-token',
           refreshToken: 'refresh token',
-          expiration: DateTime.now().subtract(Duration(hours: 1)),
+          expiration: DateTime.now().subtract(const Duration(hours: 1)),
         )
         .create();
 

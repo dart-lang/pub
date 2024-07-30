@@ -4,7 +4,7 @@
 
 import 'package:yaml/yaml.dart';
 
-import '../utils.dart' show ExpectField, ExpectEntries;
+import '../utils.dart' show ExpectEntries, ExpectField;
 
 /// The top level structure of an `sdk_packages.yaml` file.
 ///

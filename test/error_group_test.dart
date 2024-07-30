@@ -24,14 +24,14 @@ void main() {
 
     test('should pass signaled errors to .done', () {
       expect(errorGroup.done, throwsFormatException);
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
     });
 
     test(
         "shouldn't allow additional futures or streams once an error has been "
         'signaled', () {
       expect(errorGroup.done, throwsFormatException);
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
 
       expect(
         () => errorGroup.registerFuture(Future<void>.value()),
@@ -85,7 +85,7 @@ void main() {
         'listener', () {
       expect(future, throwsFormatException);
       // errorGroup shouldn't top-level the exception
-      completer.completeError(FormatException());
+      completer.completeError(const FormatException());
     });
 
     test(
@@ -93,7 +93,7 @@ void main() {
         'if it has a listener', () {
       expect(future, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
-      completer.completeError(FormatException());
+      completer.completeError(const FormatException());
     });
 
     test(
@@ -101,7 +101,7 @@ void main() {
         'and should ignore a subsequent value from that future', () {
       expect(future, throwsFormatException);
       // errorGroup shouldn't top-level the exception
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
       completer.complete('value');
     });
 
@@ -110,7 +110,7 @@ void main() {
         'and should ignore a subsequent exception from that future', () {
       expect(future, throwsFormatException);
       // errorGroup shouldn't top-level the exception
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
       completer.completeError(ArgumentError());
     });
 
@@ -119,7 +119,7 @@ void main() {
         'future has a listener', () {
       expect(future, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
     });
 
     test(
@@ -136,7 +136,7 @@ void main() {
         'should pipe an exception from the future to .done if the future '
         "doesn't have a listener", () {
       expect(errorGroup.done, throwsFormatException);
-      completer.completeError(FormatException());
+      completer.completeError(const FormatException());
 
       // A listener added afterwards should receive the exception
       expect(
@@ -151,7 +151,7 @@ void main() {
         "should pass a signaled exception to .done if the future doesn't have "
         'a listener', () {
       expect(errorGroup.done, throwsFormatException);
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
 
       // A listener added afterwards should receive the exception
       expect(
@@ -185,7 +185,7 @@ void main() {
       expect(future2, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
 
-      completer1.completeError(FormatException());
+      completer1.completeError(const FormatException());
     });
 
     test(
@@ -208,7 +208,7 @@ void main() {
       expect(
         future1.then((_) {
           // shouldn't cause a top-level exception
-          completer2.completeError(FormatException());
+          completer2.completeError(const FormatException());
         }),
         completes,
       );
@@ -223,7 +223,7 @@ void main() {
       expect(
         future1.then((_) {
           // shouldn't cause a top-level exception
-          errorGroup.signalError(FormatException());
+          errorGroup.signalError(const FormatException());
         }),
         completes,
       );
@@ -264,7 +264,7 @@ void main() {
         'listener', () {
       expect(stream.first, throwsFormatException);
       // errorGroup shouldn't top-level the exception
-      controller.addError(FormatException());
+      controller.addError(const FormatException());
     });
 
     test(
@@ -272,7 +272,7 @@ void main() {
         'if it has a listener', () {
       expect(stream.first, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
-      controller.addError(FormatException());
+      controller.addError(const FormatException());
     });
 
     test(
@@ -280,7 +280,7 @@ void main() {
         'and should unsubscribe that stream', () {
       // errorGroup shouldn't top-level the exception
       expect(stream.first, throwsFormatException);
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
 
       expect(() => controller.add('value'), returnsNormally);
     });
@@ -290,7 +290,7 @@ void main() {
         'stream has a listener', () {
       expect(stream.first, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
     });
 
     test(
@@ -337,7 +337,7 @@ void main() {
         'should pipe an exception from the stream to .done if the stream '
         "doesn't have a listener", () {
       expect(errorGroup.done, throwsFormatException);
-      controller.addError(FormatException());
+      controller.addError(const FormatException());
 
       // A listener added afterwards should receive the exception
       expect(
@@ -353,7 +353,7 @@ void main() {
         "should pass a signaled exception to .done if the stream doesn't "
         'have a listener', () {
       expect(errorGroup.done, throwsFormatException);
-      errorGroup.signalError(FormatException());
+      errorGroup.signalError(const FormatException());
 
       // A listener added afterwards should receive the exception
       expect(
@@ -386,7 +386,7 @@ void main() {
       expect(stream2.first, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
 
-      controller1.addError(FormatException());
+      controller1.addError(const FormatException());
     });
 
     test('each future should be able to emit values independently', () {
@@ -420,7 +420,7 @@ void main() {
       expect(
         signal.future.then((_) {
           // shouldn't cause a top-level exception
-          controller2.addError(FormatException());
+          controller2.addError(const FormatException());
         }),
         completes,
       );
@@ -442,7 +442,7 @@ void main() {
       expect(
         signal.future.then((_) {
           // shouldn't cause a top-level exception
-          errorGroup.signalError(FormatException());
+          errorGroup.signalError(const FormatException());
         }),
         completes,
       );
@@ -468,7 +468,7 @@ void main() {
       expect(future, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
 
-      controller.addError(FormatException());
+      controller.addError(const FormatException());
     });
 
     test('should pipe exceptions from the future to the stream', () {
@@ -476,7 +476,7 @@ void main() {
       expect(future, throwsFormatException);
       expect(errorGroup.done, throwsFormatException);
 
-      completer.completeError(FormatException());
+      completer.completeError(const FormatException());
     });
 
     test(
@@ -502,7 +502,7 @@ void main() {
       expect(
         future.then((_) {
           // shouldn't cause a top-level exception
-          controller.addError(FormatException());
+          controller.addError(const FormatException());
         }),
         completes,
       );
@@ -524,7 +524,7 @@ void main() {
       expect(
         signal.future.then((_) {
           // shouldn't cause a top-level exception
-          completer.completeError(FormatException());
+          completer.completeError(const FormatException());
         }),
         completes,
       );

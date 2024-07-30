@@ -140,10 +140,10 @@ $contentHashesDocumentationUrl
   /// If [_dryRun] or [_enforceLockfile] is true, describes it in terms of what
   /// would be done.
   ///
-  /// [type] is the type of version resolution that was run.
+  /// [_type] is the type of version resolution that was run.
 
-  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages that
-  /// are not at the latest available version and the number of outdated
+  /// If [_type] is `SolveType.UPGRADE` it also shows the number of packages
+  /// that are not at the latest available version and the number of outdated
   /// packages.
   Future<void> summarize(int changes) async {
     // Count how many dependencies actually changed.
@@ -241,8 +241,12 @@ $contentHashesDocumentationUrl
     var numDiscontinued = 0;
     for (var id in _newLockFile.packages.values) {
       if (id.description is RootDescription) continue;
-      final status = await id.source
-          .status(id.toRef(), id.version, _cache, maxAge: Duration(days: 3));
+      final status = await id.source.status(
+        id.toRef(),
+        id.version,
+        _cache,
+        maxAge: const Duration(days: 3),
+      );
       if (status.isDiscontinued &&
           (_rootPubspec.dependencyType(id.name) == DependencyType.direct ||
               _rootPubspec.dependencyType(id.name) == DependencyType.dev)) {
@@ -408,7 +412,7 @@ $contentHashesDocumentationUrl
         id.toRef(),
         id.version,
         _cache,
-        maxAge: Duration(days: 3),
+        maxAge: const Duration(days: 3),
       );
 
       final notes = <String>[];
@@ -416,7 +420,7 @@ $contentHashesDocumentationUrl
       final advisories = await id.source.getAdvisoriesForPackageVersion(
         id,
         _cache,
-        Duration(days: 3),
+        const Duration(days: 3),
       );
 
       if (advisories != null && advisories.isNotEmpty) {

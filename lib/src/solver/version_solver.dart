@@ -509,7 +509,7 @@ class VersionSolver {
         ids = package.source is HostedSource
             ? await _systemCache.getVersions(
                 package.toRef(),
-                maxAge: Duration(days: 3),
+                maxAge: const Duration(days: 3),
               )
             : [package];
       } on Exception {

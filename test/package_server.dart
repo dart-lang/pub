@@ -22,7 +22,7 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 class PackageServer {
-  /// The inner [IOServer] that this uses to serve its descriptors.
+  /// The inner [shelf_io.IOServer] that this uses to serve its descriptors.
   final shelf_io.IOServer _inner;
 
   /// Handlers of requests. Last matching handler will be used.
@@ -34,7 +34,7 @@ class PackageServer {
   // Setting this to false will disable automatic calculation of content-hashes.
   bool serveContentHashes = true;
 
-  /// Whether the [IOServer] should compress the content, if possible.
+  /// Whether the [shelf_io.IOServer] should compress the content, if possible.
   /// The default value is `false` (compression disabled).
   /// See [HttpServer.autoCompress] for details.
   bool get autoCompress => _inner.server.autoCompress;

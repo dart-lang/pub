@@ -137,7 +137,7 @@ class PartialSolution {
   /// Returns the first [Assignment] in this solution such that the sublist of
   /// assignments up to and including that entry collectively satisfies [term].
   ///
-  /// Throws a [StateError] if [term] isn't satisfied by [this].
+  /// Throws a [StateError] if [term] isn't satisfied by `this`.
   Assignment satisfier(Term term) {
     Term? assignedTerm;
     for (var assignment in _assignments) {
@@ -164,14 +164,14 @@ class PartialSolution {
     throw StateError('[BUG] $term is not satisfied.');
   }
 
-  /// Returns whether [this] satisfies [other].
+  /// Returns whether `this` satisfies [other].
   ///
   /// That is, whether [other] must be true given the assignments in this
   /// partial solution.
   bool satisfies(Term term) => relation(term) == SetRelation.subset;
 
   /// Returns the relationship between the package versions allowed by all
-  /// assignments in [this] and those allowed by [term].
+  /// assignments in `this` and those allowed by [term].
   SetRelation relation(Term term) {
     final positive = _positive[term.package.name];
     if (positive != null) return positive.relation(term);

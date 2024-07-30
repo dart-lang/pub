@@ -48,7 +48,7 @@ Got dependencies!
     final c = json.decode(readTextFile(fooVersionsCache));
     // Make the cache artificially old.
     c['_fetchedAt'] =
-        DateTime.now().subtract(Duration(days: 5)).toIso8601String();
+        DateTime.now().subtract(const Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
 
     server.discontinue('foo', replacementText: 'bar');
@@ -148,7 +148,7 @@ Got dependencies!
     final c = json.decode(readTextFile(fooVersionsCache));
     // Make the cache artificially old.
     c['_fetchedAt'] =
-        DateTime.now().subtract(Duration(days: 5)).toIso8601String();
+        DateTime.now().subtract(const Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
     builder.discontinue('foo', replacementText: 'bar');
     await pubGet(

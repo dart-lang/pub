@@ -250,7 +250,9 @@ class HostedSource extends CachedSource {
     // Old pub versions only wrote `description: <pkg>` into the lock file.
     if (description is String) {
       if (description != name) {
-        throw FormatException('The description should be the same as the name');
+        throw const FormatException(
+          'The description should be the same as the name',
+        );
       }
       return PackageId(
         name,
@@ -262,19 +264,21 @@ class HostedSource extends CachedSource {
       );
     }
     if (description is! Map) {
-      throw FormatException('The description should be a string or a map.');
+      throw const FormatException(
+        'The description should be a string or a map.',
+      );
     }
     final url = description['url'];
     if (url is! String) {
-      throw FormatException('The url should be a string.');
+      throw const FormatException('The url should be a string.');
     }
     final sha256 = description['sha256'];
     if (sha256 != null && sha256 is! String) {
-      throw FormatException('The sha256 should be a string.');
+      throw const FormatException('The sha256 should be a string.');
     }
     final foundName = description['name'];
     if (foundName is! String) {
-      throw FormatException('The name should be a string.');
+      throw const FormatException('The name should be a string.');
     }
     if (foundName != name) {
       throw FormatException('The name should be $name');
@@ -296,7 +300,7 @@ class HostedSource extends CachedSource {
   Uint8List? _parseContentHash(String? encoded) {
     if (encoded == null) return null;
     if (encoded.length != 64) {
-      throw FormatException('Content-hash has incorrect length');
+      throw const FormatException('Content-hash has incorrect length');
     }
     try {
       return hexDecode(encoded);
@@ -350,7 +354,9 @@ class HostedSource extends CachedSource {
     }
 
     if (description is! Map) {
-      throw FormatException('The description must be a package name or map.');
+      throw const FormatException(
+        'The description must be a package name or map.',
+      );
     }
 
     var name = description['name'];
@@ -363,7 +369,7 @@ class HostedSource extends CachedSource {
 
     final u = description['url'];
     if (u != null && u is! String) {
-      throw FormatException("The 'url' key must be a string value.");
+      throw const FormatException("The 'url' key must be a string value.");
     }
     final url = u ?? defaultUrl;
 
@@ -391,15 +397,15 @@ class HostedSource extends CachedSource {
     }
     final versions = body['versions'];
     if (versions is! List) {
-      throw FormatException('versions must be a list');
+      throw const FormatException('versions must be a list');
     }
     return versions.map((map) {
       if (map is! Map) {
-        throw FormatException('versions list element must be a map');
+        throw const FormatException('versions list element must be a map');
       }
       final pubspecData = map['pubspec'];
       if (pubspecData is! Map) {
-        throw FormatException('pubspec must be a map');
+        throw const FormatException('pubspec must be a map');
       }
       final pubspec = Pubspec.fromMap(
         pubspecData,
@@ -410,29 +416,29 @@ class HostedSource extends CachedSource {
       );
       final archiveSha256 = map['archive_sha256'];
       if (archiveSha256 != null && archiveSha256 is! String) {
-        throw FormatException('archive_sha256 must be a String');
+        throw const FormatException('archive_sha256 must be a String');
       }
       final archiveUrl = map['archive_url'];
       if (archiveUrl is! String) {
-        throw FormatException('archive_url must be a String');
+        throw const FormatException('archive_url must be a String');
       }
       final isDiscontinued = body['isDiscontinued'] ?? false;
       if (isDiscontinued is! bool) {
-        throw FormatException('isDiscontinued must be a bool');
+        throw const FormatException('isDiscontinued must be a bool');
       }
       final replacedBy = body['replacedBy'];
       if (replacedBy is! String?) {
-        throw FormatException('replacedBy must be a String');
+        throw const FormatException('replacedBy must be a String');
       }
       final retracted = map['retracted'] ?? false;
       if (retracted is! bool) {
-        throw FormatException('retracted must be a bool');
+        throw const FormatException('retracted must be a bool');
       }
       DateTime? advisoriesDate;
       final advisoriesUpdated = body['advisoriesUpdated'];
       if (advisoriesUpdated != null) {
         if (advisoriesUpdated is! String) {
-          throw FormatException('advisoriesUpdated must be a String');
+          throw const FormatException('advisoriesUpdated must be a String');
         }
         advisoriesDate = DateTime.parse(advisoriesUpdated);
       }
@@ -486,7 +492,7 @@ class HostedSource extends CachedSource {
       });
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
-        throw FormatException('version listing must be a mapping');
+        throw const FormatException('version listing must be a mapping');
       }
       body = decoded;
       result = _versionInfoFromPackageListing(
@@ -588,7 +594,7 @@ class HostedSource extends CachedSource {
       });
       final decoded = jsonDecode(bodyText);
       if (decoded is! Map<String, dynamic>) {
-        throw FormatException('security advisories must be a mapping');
+        throw const FormatException('security advisories must be a mapping');
       }
       body = decoded;
       result = _extractAdvisoryDetailsForPackage(decoded, ref.name);
@@ -632,55 +638,55 @@ class HostedSource extends CachedSource {
 
     final advisories = body['advisories'];
     if (advisories is! List) {
-      throw FormatException('advisories must be a list');
+      throw const FormatException('advisories must be a list');
     }
 
     final advisoriesUpdated = body['advisoriesUpdated'];
     if (advisoriesUpdated is! String) {
-      throw FormatException('advisoriesUpdated must be a String');
+      throw const FormatException('advisoriesUpdated must be a String');
     }
 
     for (final advisory in advisories) {
       if (advisory is! Map) {
-        throw FormatException('advisory must be a map');
+        throw const FormatException('advisory must be a map');
       }
 
       final databaseSpecific = advisory['database_specific'];
       if (databaseSpecific is! Map?) {
-        throw FormatException('database_specific must be a map or null');
+        throw const FormatException('database_specific must be a map or null');
       }
 
       final pubDisplayUrl = databaseSpecific?['pub_display_url'];
       if (pubDisplayUrl is! String?) {
-        throw FormatException('pub_display_url must be a String or null');
+        throw const FormatException('pub_display_url must be a String or null');
       }
 
       final id = advisory['id'];
       if (id is! String) {
-        throw FormatException('id must be a String');
+        throw const FormatException('id must be a String');
       }
 
       final summary = advisory['summary'];
       if (summary is! String) {
-        throw FormatException('summary must be a String');
+        throw const FormatException('summary must be a String');
       }
 
       final aliasIDs = <String>[];
       final aliases = advisory['aliases'];
       if (aliases is! List) {
-        throw FormatException('aliases must be a list');
+        throw const FormatException('aliases must be a list');
       }
 
       for (final id in aliases) {
         if (id is! String) {
-          throw FormatException('alias IDs must be a string');
+          throw const FormatException('alias IDs must be a string');
         }
         aliasIDs.add(id);
       }
 
       final affectedPackages = advisory['affected'];
       if (affectedPackages is! List) {
-        throw FormatException('affectedPackages must be a list');
+        throw const FormatException('affectedPackages must be a list');
       }
 
       bool matchesNameAndEcosystem(
@@ -689,20 +695,20 @@ class HostedSource extends CachedSource {
         String ecosystem,
       ) {
         if (affectedPackage is! Map) {
-          throw FormatException('affectedPackage must be a map');
+          throw const FormatException('affectedPackage must be a map');
         }
         final package = affectedPackage['package'];
         if (package is! Map) {
-          throw FormatException('package must be a map');
+          throw const FormatException('package must be a map');
         }
         final affectedName = package['name'];
         if (affectedName is! String) {
-          throw FormatException('package name must be a String');
+          throw const FormatException('package name must be a String');
         }
         if (affectedName == name) {
           final affectedEcosystem = package['ecosystem'];
           if (affectedEcosystem is! String) {
-            throw FormatException('ecosystem must be a String');
+            throw const FormatException('ecosystem must be a String');
           }
           return affectedEcosystem.toLowerCase() == ecosystem;
         }
@@ -714,12 +720,12 @@ class HostedSource extends CachedSource {
           final affectedVersions = <String>{};
           final versions = affectedPackage['versions'];
           if (versions is! List) {
-            throw FormatException('package versions must be a list');
+            throw const FormatException('package versions must be a list');
           }
 
           for (final v in versions) {
             if (v is! String) {
-              throw FormatException(
+              throw const FormatException(
                 'package version elements must be a string',
               );
             }
@@ -765,12 +771,12 @@ class HostedSource extends CachedSource {
         try {
           final doc = jsonDecode(readTextFile(advisoriesCachePath));
           if (doc is! Map) {
-            throw FormatException('Broken cached advisories response');
+            throw const FormatException('Broken cached advisories response');
           }
 
           final cachedAdvisoriesUpdated = doc['advisoriesUpdated'];
           if (cachedAdvisoriesUpdated is! String) {
-            throw FormatException('Broken cached advisories response');
+            throw const FormatException('Broken cached advisories response');
           }
           final parsedCacheAdvisoriesUpdated =
               DateTime.parse(cachedAdvisoriesUpdated);
@@ -834,11 +840,15 @@ class HostedSource extends CachedSource {
         try {
           final cachedDoc = jsonDecode(readTextFile(cachePath));
           if (cachedDoc is! Map) {
-            throw FormatException('Broken cached version listing response');
+            throw const FormatException(
+              'Broken cached version listing response',
+            );
           }
           final timestamp = cachedDoc['_fetchedAt'];
           if (timestamp is! String) {
-            throw FormatException('Broken cached version listing response');
+            throw const FormatException(
+              'Broken cached version listing response',
+            );
           }
           final parsedTimestamp = DateTime.parse(timestamp);
           final cacheAge = DateTime.now().difference(parsedTimestamp);
@@ -1163,7 +1173,7 @@ class HostedSource extends CachedSource {
       id.toRef(),
       id.version,
       cache,
-      maxAge: Duration(days: 3),
+      maxAge: const Duration(days: 3),
     );
 
     final expectedContentHash = versionInfo?.archiveSha256 ??
@@ -1744,8 +1754,8 @@ See $contentHashesDocumentationUrl.
   static const _prefetchingKey = #_prefetch;
 }
 
-/// The [PackageName.description] for a [HostedSource], storing the package name
-/// and resolved URI of the package server.
+/// The [PackageName.description] for a [HostedSource], storing the
+/// [packageName] and resolved [url] of the package server.
 class HostedDescription extends Description {
   final String packageName;
   final String url;

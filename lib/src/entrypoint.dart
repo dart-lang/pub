@@ -227,7 +227,7 @@ See $workspacesDocUrl for more information.''',
 
   /// The `.dart_tool/package_config.json` package-config of this entrypoint.
   ///
-  /// Lazily initialized. Will throw [DataError] when initializing if the
+  /// Lazily initialized. Will throw [DataException] when initializing if the
   /// `.dart_tool/packageConfig.json` file doesn't exist or has a bad format .
   PackageConfig get packageConfig =>
       _packageConfig ??= _loadPackageConfig(packageConfigPath);
@@ -268,8 +268,8 @@ See $workspacesDocUrl for more information.''',
   /// The package graph for the application and all of its transitive
   /// dependencies.
   ///
-  /// Throws a [DataError] if the `.dart_tool/package_config.json` file isn't
-  /// up-to-date relative to the pubspec and the lockfile.
+  /// Throws a [DataException] if the `.dart_tool/package_config.json` file
+  /// isn't up-to-date relative to the pubspec and the lockfile.
   Future<PackageGraph> get packageGraph =>
       _packageGraph ??= _createPackageGraph();
 
@@ -415,7 +415,7 @@ See $workspacesDocUrl for more information.''',
             p.relative(workspaceRoot.dir, from: workspaceRefDir);
         writeTextFile(
           workspaceRefPath,
-          '${JsonEncoder.withIndent('  ').convert({
+          '${const JsonEncoder.withIndent('  ').convert({
                 'workspaceRoot': relativeRootPath,
               })}\n',
         );
@@ -483,7 +483,7 @@ See $workspacesDocUrl for more information.''',
       },
     );
 
-    return '${JsonEncoder.withIndent('  ').convert(packageConfig.toJson())}\n';
+    return '${const JsonEncoder.withIndent('  ').convert(packageConfig.toJson())}\n';
   }
 
   /// Gets all dependencies of the [workspaceRoot] package.
@@ -618,7 +618,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// All executables that should be snapshotted from this entrypoint.
   ///
   /// This is all executables in direct dependencies.
-  /// that don't transitively depend on [this] or on a mutable dependency.
+  /// that don't transitively depend on `this` or on a mutable dependency.
   ///
   /// Except globally activated packages they should precompile executables from
   /// the package itself if they are immutable.

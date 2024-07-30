@@ -52,7 +52,7 @@ Future<String?> suggestResolutionAlternatives(
 
   for (final externalIncompatibility
       in incompatibility.externalIncompatibilities) {
-    if (stopwatch.elapsed > Duration(seconds: 3)) {
+    if (stopwatch.elapsed > const Duration(seconds: 3)) {
       // Never spend more than 3 seconds computing suggestions.
       break;
     }

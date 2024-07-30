@@ -31,7 +31,7 @@ void main() {
     expect(
       description.serializeForPubspec(
         containingDir: null,
-        languageVersion: LanguageVersion(2, 16),
+        languageVersion: const LanguageVersion(2, 16),
       ),
       {
         'url': 'git@github.com:dart-lang/pub.git',

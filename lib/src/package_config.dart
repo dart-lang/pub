@@ -68,7 +68,7 @@ class PackageConfig {
   /// contents only that the format is correct.
   factory PackageConfig.fromJson(Object? data) {
     if (data is! Map<String, dynamic>) {
-      throw FormatException('package_config.json must be a JSON object');
+      throw const FormatException('package_config.json must be a JSON object');
     }
     final root = data;
 
@@ -111,7 +111,7 @@ class PackageConfig {
     // Read the 'generator' property
     final generator = root['generator'];
     if (generator is! String?) {
-      throw FormatException(
+      throw const FormatException(
         '"generator" in package_config.json must be a string, if given',
       );
     }
@@ -220,7 +220,7 @@ class PackageConfigEntry {
   /// contents only that the format is correct.
   factory PackageConfigEntry.fromJson(Object data) {
     if (data is! Map<String, dynamic>) {
-      throw FormatException(
+      throw const FormatException(
         'packages[] entries in package_config.json must be JSON objects',
       );
     }
@@ -297,7 +297,7 @@ class PackageConfigEntry {
 
   @override
   String toString() {
-    return JsonEncoder.withIndent('  ').convert(toJson());
+    return const JsonEncoder.withIndent('  ').convert(toJson());
   }
 
   String resolvedRootDir(String packageConfigPath) {

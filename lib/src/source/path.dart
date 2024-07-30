@@ -67,7 +67,7 @@ class PathSource extends Source {
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
-      throw FormatException('The description must be a path string.');
+      throw const FormatException('The description must be a path string.');
     }
     final dir = description;
     // Resolve the path relative to the containing file path, and remember
@@ -143,16 +143,16 @@ class PathSource extends Source {
     String? containingDir,
   }) {
     if (description is! Map) {
-      throw FormatException('The description must be a map.');
+      throw const FormatException('The description must be a map.');
     }
     var path = description['path'];
     if (path is! String) {
-      throw FormatException("The 'path' field of the description must "
+      throw const FormatException("The 'path' field of the description must "
           'be a string.');
     }
     final relative = description['relative'];
     if (relative is! bool) {
-      throw FormatException("The 'relative' field of the description "
+      throw const FormatException("The 'relative' field of the description "
           'must be a boolean.');
     }
 

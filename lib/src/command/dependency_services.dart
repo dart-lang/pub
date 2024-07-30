@@ -64,7 +64,7 @@ class DependencyServicesReportCommand extends PubCommand {
     final additionalConstraints = _parseDisallowed(input, cache);
     final targetPackageName = input['target'];
     if (targetPackageName is! String?) {
-      throw FormatException('"target" should be a String.');
+      throw const FormatException('"target" should be a String.');
     }
 
     final compatibleWorkspace = entrypoint.workspaceRoot
@@ -190,7 +190,7 @@ class DependencyServicesReportCommand extends PubCommand {
           ),
       });
     }
-    log.message(JsonEncoder.withIndent('  ').convert(result));
+    log.message(const JsonEncoder.withIndent('  ').convert(result));
   }
 }
 
@@ -239,7 +239,7 @@ class DependencyServicesListCommand extends PubCommand {
         'source': _source(package, containingDir: directory),
       });
     }
-    log.message(JsonEncoder.withIndent('  ').convert(result));
+    log.message(const JsonEncoder.withIndent('  ').convert(result));
   }
 }
 
@@ -858,20 +858,20 @@ List<ConstraintAndCause> _parseDisallowed(
     return [];
   }
   if (disallowedList is! List<Object?>) {
-    throw FormatException('Disallowed should be a list of maps');
+    throw const FormatException('Disallowed should be a list of maps');
   }
   final result = <ConstraintAndCause>[];
   for (final disallowed in disallowedList) {
     if (disallowed is! Map) {
-      throw FormatException('Disallowed should be a list of maps');
+      throw const FormatException('Disallowed should be a list of maps');
     }
     final name = disallowed['name'];
     if (name is! String) {
-      throw FormatException('"name" should be a string.');
+      throw const FormatException('"name" should be a string.');
     }
     final url = disallowed['url'] ?? cache.hosted.defaultUrl;
     if (url is! String) {
-      throw FormatException('"url" should be a string.');
+      throw const FormatException('"url" should be a string.');
     }
     final ref = PackageRef(
       name,
@@ -882,21 +882,21 @@ List<ConstraintAndCause> _parseDisallowed(
     );
     final constraints = disallowed['versions'];
     if (constraints is! List) {
-      throw FormatException('"versions" should be a list.');
+      throw const FormatException('"versions" should be a list.');
     }
     final reason = disallowed['reason'];
     if (reason is! String?) {
-      throw FormatException('"reason", if present, should be a string.');
+      throw const FormatException('"reason", if present, should be a string.');
     }
     for (final entry in constraints) {
       if (entry is! Map) {
-        throw FormatException(
+        throw const FormatException(
           'Each element of "versions" should be an object.',
         );
       }
       final rangeString = entry['range'];
       if (rangeString is! String) {
-        throw FormatException('"range" should be a string');
+        throw const FormatException('"range" should be a string');
       }
       final range = VersionConstraint.parse(rangeString);
       result.add(

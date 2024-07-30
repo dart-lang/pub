@@ -34,7 +34,7 @@ class GitignoreValidator extends Validator {
             '--recurse-submodules',
           ],
           workingDir: package.dir,
-          stdoutEncoding: Utf8Codec(),
+          stdoutEncoding: const Utf8Codec(),
         );
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
