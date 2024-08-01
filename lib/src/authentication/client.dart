@@ -22,8 +22,8 @@ class _AuthenticatedClient extends http.BaseClient {
   /// Constructs Http client wrapper that injects `authorization` header to
   /// requests and handles authentication errors.
   ///
-  /// [_credential] might be `null`. In that case `authorization` header will not
-  /// be injected to requests.
+  /// [_credential] might be `null`. In that case `authorization` header will
+  /// not be injected to requests.
   _AuthenticatedClient(this._inner, this._credential);
 
   final http.BaseClient _inner;

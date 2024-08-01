@@ -351,8 +351,10 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   )?.$1;
 
   if (rootPackageName == null) {
+    final configPath =
+        p.join(workspaceRootDir, '.dart_tool', 'package_config.json');
     throw CommandResolutionFailedException._(
-      '${p.join(workspaceRootDir, '.dart_tool', 'package_config.json')} did not contain its own root package',
+      '$configPath did not contain its own root package',
       CommandResolutionIssue.fileNotFound,
     );
   }

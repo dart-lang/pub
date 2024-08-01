@@ -18,8 +18,8 @@ class TokenListCommand extends PubCommand {
   Future<void> runProtected() async {
     if (cache.tokenStore.credentials.isNotEmpty) {
       log.message(
-        'You have secret tokens for ${cache.tokenStore.credentials.length} package '
-        'repositories:',
+        'You have secret tokens for ${cache.tokenStore.credentials.length} '
+        'package repositories:',
       );
       for (final token in cache.tokenStore.credentials) {
         log.message(token.url.toString());

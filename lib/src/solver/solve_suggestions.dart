@@ -82,11 +82,14 @@ Future<String?> suggestResolutionAlternatives(
   if (suggestions.isEmpty) return null;
   final tryOne = suggestions.length == 1
       ? 'You can try the following suggestion to make the pubspec resolve:'
-      : 'You can try one of the following suggestions to make the pubspec resolve:';
+      : 'You can try one of the following suggestions '
+          'to make the pubspec resolve:';
 
   suggestions.sort((a, b) => a.priority.compareTo(b.priority));
+  final topSuggestions =
+      suggestions.take(5).map((e) => e.suggestion).join('\n');
 
-  return '\n$tryOne\n${suggestions.take(5).map((e) => e.suggestion).join('\n')}';
+  return '\n$tryOne\n$topSuggestions';
 }
 
 class _ResolutionSuggestion {
@@ -164,11 +167,13 @@ class _ResolutionContext {
     }
     return _ResolutionSuggestion(
       runningFromFlutter
-          ? '* Try using the Flutter SDK version: ${bestRelease.flutterVersion}. '
+          ? '* Try using the Flutter SDK version: '
+              '${bestRelease.flutterVersion}.'
           :
           // Here we assume that any Dart version included in a Flutter
           // release can also be found as a released Dart SDK.
-          '* Try using the Dart SDK version: ${bestRelease.dartVersion}. See https://dart.dev/get-dart.',
+          '* Try using the Dart SDK version: ${bestRelease.dartVersion}. '
+              'See https://dart.dev/get-dart.',
     );
   }
 
@@ -206,19 +211,19 @@ class _ResolutionContext {
     final addDescription = packageAddDescription(entrypoint, resolvingPackage);
 
     var priority = 1;
-    var suggestion =
-        '* Try updating your constraint on $name: $topLevelProgram pub add $addDescription';
+    var suggestion = '* Try updating your constraint on $name: '
+        '$topLevelProgram pub add $addDescription';
     if (originalConstraint is VersionRange) {
       final min = originalConstraint.min;
       if (min != null) {
         if (resolvingPackage.version < min) {
           priority = 3;
-          suggestion =
-              '* Consider downgrading your constraint on $name: $topLevelProgram pub add $addDescription';
+          suggestion = '* Consider downgrading your constraint on $name: '
+              '$topLevelProgram pub add $addDescription';
         } else {
           priority = 2;
-          suggestion =
-              '* Try upgrading your constraint on $name: $topLevelProgram pub add $addDescription';
+          suggestion = '* Try upgrading your constraint on $name: '
+              '$topLevelProgram pub add $addDescription';
         }
       }
     }
@@ -264,12 +269,14 @@ class _ResolutionContext {
           .map((e) => packageAddDescription(entrypoint, e))
           .join(' ');
       return _ResolutionSuggestion(
-        '* Try updating the following constraints: $topLevelProgram pub add $formattedConstraints',
+        '* Try updating the following constraints: '
+        '$topLevelProgram pub add $formattedConstraints',
         priority: 4,
       );
     } else {
       return _ResolutionSuggestion(
-        '* Try an upgrade of your constraints: $topLevelProgram pub upgrade --major-versions',
+        '* Try an upgrade of your constraints: '
+        '$topLevelProgram pub upgrade --major-versions',
         priority: 4,
       );
     }

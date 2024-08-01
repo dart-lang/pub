@@ -38,8 +38,8 @@ class DependencyServicesReportCommand extends PubCommand {
   @override
   String get name => 'report';
   @override
-  String get description =>
-      'Output a machine-digestible report of the upgrade options for each dependency.';
+  String get description => 'Output a machine-digestible report of '
+      'the upgrade options for each dependency.';
   @override
   String get argumentsDescription => '[options]';
 
@@ -329,7 +329,8 @@ class DependencyServicesApplyCommand extends PubCommand {
             );
           } else {
             fail(
-              'The dependency $targetPackage does not have a map or string as a description',
+              'The dependency $targetPackage does not have '
+              'a map or string as a description',
             );
           }
         } else if (targetVersion != null) {
@@ -389,7 +390,8 @@ class DependencyServicesApplyCommand extends PubCommand {
           final versions = await cache.getVersions(updatedRef);
           if (versions.isEmpty) {
             dataError(
-              'Found no versions of $targetPackage with git revision `$targetRevision`.',
+              'Found no versions of $targetPackage with '
+              'git revision `$targetRevision`.',
             );
           }
           // GitSource can only return a single version.
@@ -407,7 +409,8 @@ class DependencyServicesApplyCommand extends PubCommand {
             targetRevision == null &&
             !(lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           dataError(
-            'Trying to remove non-existing transitive dependency $targetPackage.',
+            'Trying to remove non-existing '
+            'transitive dependency $targetPackage.',
           );
         }
       }
@@ -452,7 +455,8 @@ class DependencyServicesApplyCommand extends PubCommand {
             );
           }
         }
-        // Only if we originally had a lock-file we write the resulting lockfile back.
+        // Only if we originally had a lock-file we write the resulting lockfile
+        // back.
         if (updatedLockfile != null) {
           final updatedPackages = <PackageId>[];
           for (var package in solveResult.packages) {
@@ -575,7 +579,8 @@ Map<String, PackageRange>? _dependencySetOfPackage(
 
 /// Return a constraint compatible with [newVersion].
 ///
-/// By convention if the original constraint is pinned we return [newVersion]. Otherwise use [VersionConstraint.compatibleWith].
+/// By convention if the original constraint is pinned we return [newVersion].
+/// Otherwise use [VersionConstraint.compatibleWith].
 VersionConstraint _bumpConstraint(
   VersionConstraint original,
   Version newVersion,
@@ -594,9 +599,11 @@ VersionConstraint _bumpConstraint(
   );
 }
 
-/// Return a constraint compatible with [newVersion], but including [original] as well.
+/// Return a constraint compatible with [newVersion], but including [original]
+/// as well.
 ///
-/// By convention if the original constraint is pinned, we don't widen the constraint but return [newVersion] instead.
+/// By convention if the original constraint is pinned, we don't widen the
+/// constraint but return [newVersion] instead.
 VersionConstraint _widenConstraint(
   VersionConstraint original,
   Version newVersion,
