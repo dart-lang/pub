@@ -780,10 +780,14 @@ class HostedSource extends CachedSource {
           }
           final parsedCacheAdvisoriesUpdated =
               DateTime.parse(cachedAdvisoriesUpdated);
-          if ((await status(id.toRef(), id.version, cache))
-              .advisoriesUpdated!
-              .isAfter(parsedCacheAdvisoriesUpdated)) {
-            // too old
+          final advisoriesUpdated =
+              (await status(id.toRef(), id.version, cache)).advisoriesUpdated;
+
+          if (
+              // We could not obtain the timestamp of latest advisory update.
+              advisoriesUpdated == null ||
+                  // The cached entry is too old.
+                  advisoriesUpdated.isAfter(parsedCacheAdvisoriesUpdated)) {
             tryDeleteEntry(advisoriesCachePath);
           } else {
             return _extractAdvisoryDetailsForPackage(doc, id.toRef().name);
