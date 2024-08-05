@@ -315,30 +315,36 @@ class DependencyServicesApplyCommand extends PubCommand {
         final targetVersion = p.version;
         late final section = pubspec.dependencies[targetPackage] != null
             ? 'dependencies'
-            : 'dev_dependencies';
-        if (targetConstraint != null) {
-          final packageConfig =
-              pubspecEditor.parseAt([section, targetPackage]).value;
-          if (packageConfig == null || packageConfig is String) {
-            pubspecEditor
-                .update([section, targetPackage], targetConstraint.toString());
-          } else if (packageConfig is Map) {
-            pubspecEditor.update(
-              [section, targetPackage, 'version'],
-              targetConstraint.toString(),
-            );
-          } else {
-            fail(
-              'The dependency $targetPackage does not have a map or string as a description',
-            );
-          }
-        } else if (targetVersion != null) {
-          final constraint = _constraintOf(pubspec, targetPackage);
-          if (constraint != null && !constraint.allows(targetVersion)) {
-            pubspecEditor.update(
-              [section, targetPackage],
-              VersionConstraint.compatibleWith(targetVersion).toString(),
-            );
+            : pubspec.devDependencies[targetPackage] != null
+                ? 'dev_dependencies'
+                : null;
+        if (section != null) {
+          if (targetConstraint != null) {
+            final packageConfig =
+                pubspecEditor.parseAt([section, targetPackage]).value;
+            if (packageConfig == null || packageConfig is String) {
+              pubspecEditor.update(
+                [section, targetPackage],
+                targetConstraint.toString(),
+              );
+            } else if (packageConfig is Map) {
+              pubspecEditor.update(
+                [section, targetPackage, 'version'],
+                targetConstraint.toString(),
+              );
+            } else {
+              fail(
+                'The dependency $targetPackage does not have a map or string as a description',
+              );
+            }
+          } else if (targetVersion != null) {
+            final constraint = _constraintOf(pubspec, targetPackage);
+            if (constraint != null && !constraint.allows(targetVersion)) {
+              pubspecEditor.update(
+                [section, targetPackage],
+                VersionConstraint.compatibleWith(targetVersion).toString(),
+              );
+            }
           }
         }
         updatedPubspecs[package.dir] = pubspecEditor;
