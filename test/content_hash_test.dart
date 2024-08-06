@@ -153,7 +153,8 @@ Future<void> main() async {
     final lockfile = loadYaml(
       File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
-    final originalHash = dig<String>(lockfile, ['packages', 'foo', 'description', 'sha256']);
+    final originalHash =
+        dig<String>(lockfile, ['packages', 'foo', 'description', 'sha256']);
     // Create wrong hash on disk.
     await hostedHashesCache([
       file(
@@ -180,7 +181,8 @@ Future<void> main() async {
     final lockfile = loadYaml(
       File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
-    final originalHash = dig<String>(lockfile, ['packages', 'foo', 'description', 'sha256']);
+    final originalHash =
+        dig<String>(lockfile, ['packages', 'foo', 'description', 'sha256']);
     await hostedHashesCache([
       file(
         'foo-1.0.0.sha256',
