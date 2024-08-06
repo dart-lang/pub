@@ -43,7 +43,7 @@ void main() {
         await File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsString(),
       );
 
-      expect(lockFile['packages']['foo'], {
+      expect(dig<Map>(lockFile, ['packages', 'foo']), {
         'dependency': 'direct main',
         'source': 'hosted',
         'description': {
@@ -84,7 +84,7 @@ void main() {
       );
 
       expect(
-        lockFile['packages']['foo']['description']['url'],
+        dig<String>(lockFile, ['packages', 'foo', 'description', 'url']),
         globalServer.url,
       );
     });

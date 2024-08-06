@@ -215,16 +215,14 @@ extension AttachHeaders on http.Request {
 /// "some message"}}`. If the format is correct, the message will be printed;
 /// otherwise an error will be raised.
 void handleJsonSuccess(http.Response response) {
-  final parsed = parseJsonResponse(response);
-  final success = parsed['success'];
-  if (success is! Map ||
-      !(parsed['success'] as Map).containsKey('message') ||
-      parsed['success']['message'] is! String) {
-    invalidServerResponse(response);
+  switch (parseJsonResponse(response)) {
+    case {'success': {'message': final String message}}:
+      log.message(
+        'Message from server: ${log.green(sanitizeForTerminal(message))}',
+      );
+    default:
+      invalidServerResponse(response);
   }
-  log.message(
-    'Message from server: ${log.green(sanitizeForTerminal(parsed['success']['message'] as String))}',
-  );
 }
 
 /// Handles an unsuccessful JSON-formatted response from pub.dev.
