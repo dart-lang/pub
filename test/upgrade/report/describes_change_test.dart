@@ -99,10 +99,13 @@ void main() {
       output: allOf([
         contains('Resolving dependencies...'),
         contains(
-          '* description_changed 1.0.0 from path ..${separator}description_changed_2 (was 1.0.0 from path ..${separator}description_changed_1)',
+          '* description_changed 1.0.0 from path '
+          '..${separator}description_changed_2 (was 1.0.0 from path '
+          '..${separator}description_changed_1)',
         ),
         contains(
-          '* source_changed 2.0.0 from path ..${separator}source_changed (was 1.0.0)',
+          '* source_changed 2.0.0 from path '
+          '..${separator}source_changed (was 1.0.0)',
         ),
         contains('> version_upgraded 2.0.0 (was 1.0.0'),
         contains('< version_downgraded 1.0.0 (was 2.0.0'),

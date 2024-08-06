@@ -25,7 +25,8 @@ void main() {
 
     await pubGet(
       error: 'Because myapp depends on foo from path which doesn\'t exist '
-          '(No pubspec.yaml found for package foo in $fooPath.), version solving failed.',
+          '(No pubspec.yaml found for package foo in $fooPath.), '
+          'version solving failed.',
       exitCode: exit_codes.NO_INPUT,
     );
   });

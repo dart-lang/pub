@@ -48,7 +48,8 @@ void main() {
       allOf([
         contains('Package validation found the following potential issue:'),
         contains(
-          '* Your dependency on "foo" should have a version constraint. For example:',
+          '* Your dependency on "foo" should have a version constraint. '
+          'For example:',
         ),
       ]),
     );

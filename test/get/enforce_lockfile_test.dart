@@ -88,10 +88,11 @@ Try running `dart pub get` to create `pubspec.lock`.
       ),
       error: allOf(
         contains(
-          'Unable to satisfy `$examplePubspec` using `$examplePubspecLock` in `$example`.',
+          'Unable to satisfy `$examplePubspec` '
+          'using `$examplePubspecLock` in `$example`.',
         ),
-        contains(
-            'To update `$examplePubspecLock` run `dart pub get` in `$example` without\n'
+        contains('To update `$examplePubspecLock` run '
+            '`dart pub get` in `$example` without\n'
             '`--enforce-lockfile`.'),
       ),
       exitCode: DATA,
@@ -162,7 +163,8 @@ Try running `dart pub get` to create `pubspec.lock`.
       error: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
-          'The existing content-hash from pubspec.lock doesn\'t match contents for:',
+          'The existing content-hash from pubspec.lock '
+          'doesn\'t match contents for:',
         ),
         contains(
           ' * foo-1.0.0 from "${server.url}"',
@@ -176,8 +178,8 @@ Try running `dart pub get` to create `pubspec.lock`.
   });
 
   test(
-      'Refuses to get if archive on legacy server doesn\'t have hash corresponding to lockfile',
-      () async {
+      'Refuses to get if archive on legacy server '
+      'doesn\'t have hash corresponding to lockfile', () async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');

@@ -76,9 +76,10 @@ extension on GoldenTestContext {
     final exitCode = await process.exitCode;
 
     final pipe = ' echo ${filterUnstableText(escapeShellArgument(stdin))} |';
+    final argString = args.map(escapeShellArgument).join(' ');
     buffer.writeln(
       [
-        '\$$pipe dependency_services ${args.map(escapeShellArgument).join(' ')}',
+        '\$$pipe dependency_services $argString',
         ...await outLines,
         ...(await errLines).map((e) => '[STDERR] $e'),
         if (exitCode != 0) '[EXIT CODE] $exitCode',

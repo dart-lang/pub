@@ -37,8 +37,8 @@ void main() {
   });
 
   test(
-      'the binstubs of hosted package runs pub global run if there is no snapshot',
-      () async {
+      'the binstubs of hosted package runs pub global run '
+      'if there is no snapshot', () async {
     final server = await servePackages();
     server.serve(
       'foo',

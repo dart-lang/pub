@@ -38,7 +38,8 @@ void main() {
     expect(
       pub.stderr,
       emits(
-        'Server message: Your proposed upload is larger than the maximum object size specified in your Policy Document.',
+        'Server message: Your proposed upload is larger than '
+        'the maximum object size specified in your Policy Document.',
       ),
     );
     expect(

@@ -89,8 +89,8 @@ void main() {
     });
 
     test(
-        'does not remove empty dev_dependencies while adding to normal dependencies',
-        () async {
+        'does not remove empty dev_dependencies '
+        'while adding to normal dependencies', () async {
       await servePackages()
         ..serve('foo', '1.2.3')
         ..serve('foo', '1.2.2');
@@ -145,8 +145,8 @@ void main() {
     });
 
     test(
-        'adds a package from a pub server even when dependencies key does not exist',
-        () async {
+        'adds a package from a pub server '
+        'even when dependencies key does not exist', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
 
@@ -217,7 +217,8 @@ environment:
         await pubAdd(
           args: ['foo'],
           output: contains(
-            '"foo" is already in "dependencies". Will try to update the constraint.',
+            '"foo" is already in "dependencies". '
+            'Will try to update the constraint.',
           ),
         );
 
@@ -234,7 +235,8 @@ environment:
         await pubAdd(
           args: ['foo:1.2.3'],
           output: contains(
-            '"foo" is already in "dependencies". Will try to update the constraint.',
+            '"foo" is already in "dependencies". '
+            'Will try to update the constraint.',
           ),
         );
 
@@ -251,7 +253,8 @@ environment:
         await pubAdd(
           args: ['foo:>=1.2.2'],
           output: contains(
-            '"foo" is already in "dependencies". Will try to update the constraint.',
+            '"foo" is already in "dependencies". '
+            'Will try to update the constraint.',
           ),
         );
 
@@ -282,7 +285,8 @@ environment:
           contains('"foo" was found in dev_dependencies. Removing "foo" and '
               'adding it to dependencies instead.'),
           contains(
-            '> foo 1.2.3 (was 1.2.2) (from dev dependency to direct dependency)',
+            '> foo 1.2.3 (was 1.2.2) '
+            '(from dev dependency to direct dependency)',
           ),
         ),
       );
@@ -576,7 +580,8 @@ environment:
     await pubAdd(
       args: ['foo:{"path":"../foo"}', '--path=../foo'],
       error: contains(
-        '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined',
+        '--dev, --path, --sdk, --git-url, --git-path and --git-ref '
+        'cannot be combined',
       ),
       exitCode: exit_codes.USAGE,
     );
@@ -615,7 +620,8 @@ environment:
       await pubAdd(
         args: ['--dev', 'foo:{"path":../foo}'],
         error: contains(
-          '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined',
+          '--dev, --path, --sdk, --git-url, --git-path and --git-ref '
+          'cannot be combined',
         ),
         exitCode: exit_codes.USAGE,
       );
@@ -699,7 +705,8 @@ environment:
         await pubAdd(
           args: ['foo', '--dev'],
           output: contains(
-            '"foo" is already in "dev_dependencies". Will try to update the constraint.',
+            '"foo" is already in "dev_dependencies". '
+            'Will try to update the constraint.',
           ),
         );
 
@@ -726,7 +733,8 @@ environment:
         await pubAdd(
           args: ['foo:1.2.3', '--dev'],
           output: contains(
-            '"foo" is already in "dev_dependencies". Will try to update the constraint.',
+            '"foo" is already in "dev_dependencies". '
+            'Will try to update the constraint.',
           ),
         );
 
@@ -753,7 +761,8 @@ environment:
         await pubAdd(
           args: ['foo:>=1.2.2', '--dev'],
           output: contains(
-            '"foo" is already in "dev_dependencies". Will try to update the constraint.',
+            '"foo" is already in "dev_dependencies". '
+            'Will try to update the constraint.',
           ),
         );
 

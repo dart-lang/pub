@@ -179,9 +179,10 @@ class Package {
             withPubspecOverrides: withPubspecOverrides,
           );
         } on FileException catch (e) {
+          final pubspecPath = p.join(dir, 'pubspec.yaml');
           throw FileException(
             '${e.message}\n'
-            'That was included in the workspace of ${p.join(dir, 'pubspec.yaml')}.',
+            'That was included in the workspace of $pubspecPath.',
             e.path,
           );
         }
@@ -322,7 +323,8 @@ See $workspacesDocUrl for more information.
                 rules,
                 onInvalidPattern: (pattern, exception) {
                   log.warning(
-                    '$ignoreFile had invalid pattern $pattern. ${exception.message}',
+                    '$ignoreFile had invalid pattern $pattern. '
+                    '${exception.message}',
                   );
                 },
                 // Ignore case on macOS and Windows, because `git clone` and

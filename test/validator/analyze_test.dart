@@ -34,8 +34,8 @@ void main() {
   });
 
   test(
-      'follows analysis_options.yaml and should not warn if package contains only infos',
-      () async {
+      'follows analysis_options.yaml '
+      'and should not warn if package contains only infos', () async {
     await d.dir(appPath, [
       d.libPubspec(
         'test_pkg', '1.0.0',
@@ -57,8 +57,8 @@ linter:
   });
 
   test(
-      'follows analysis_options.yaml and should warn if package contains warnings in pubspec.yaml',
-      () async {
+      'follows analysis_options.yaml and '
+      'should warn if package contains warnings in pubspec.yaml', () async {
     await d.dir(appPath, [
       d.libPubspec(
         'test_pkg', '1.0.0',
@@ -82,7 +82,8 @@ analyzer:
     await expectValidation(
       error: allOf([
         contains(
-          "The 'http' protocol shouldn't be used because it isn't secure. Try using a secure protocol, such as 'https'.",
+          "The 'http' protocol shouldn't be used because it isn't secure. "
+          "Try using a secure protocol, such as 'https'.",
         ),
         contains('Package has 1 warning.'),
       ]),

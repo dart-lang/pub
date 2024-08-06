@@ -36,7 +36,8 @@ void main() {
     await pubGet(
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       error: contains(
-        'Note: tool is pinned to version 1.0.0 by flutter_foo from the flutter SDK.',
+        'Note: tool is pinned to version 1.0.0 by '
+        'flutter_foo from the flutter SDK.',
       ),
     );
   });
@@ -67,7 +68,8 @@ void main() {
     await pubGet(
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       error: contains(
-        'Note: tool is pinned to version 1.0.0 by flutter_foo from the flutter SDK.',
+        'Note: tool is pinned to version 1.0.0 by '
+        'flutter_foo from the flutter SDK.',
       ),
     );
   });

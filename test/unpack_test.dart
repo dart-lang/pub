@@ -21,15 +21,16 @@ void main() {
     await runPub(
       args: ['unpack', 'foo:1:2:3'],
       error: contains(
-        'Error on line 1, column 1 of descriptor: Invalid version constraint: Could not parse version "1:2:3". Unknown text at "1:2:3".',
+        'Error on line 1, column 1 of descriptor: Invalid version constraint: '
+        'Could not parse version "1:2:3". Unknown text at "1:2:3".',
       ),
       exitCode: DATA,
     );
 
     await runPub(
       args: ['unpack', 'foo:1.0'],
-      error:
-          'Error on line 1, column 1 of descriptor: A dependency specification must be a string or a mapping.',
+      error: 'Error on line 1, column 1 of descriptor: '
+          'A dependency specification must be a string or a mapping.',
       exitCode: DATA,
     );
 
@@ -38,8 +39,8 @@ void main() {
     );
     await runPub(
       args: ['unpack', 'foo'],
-      error:
-          'Target directory `.${s}foo-1.2.3` already exists. Use --force to overwrite.',
+      error: 'Target directory `.${s}foo-1.2.3` already exists. '
+          'Use --force to overwrite.',
       exitCode: 1,
     );
     await runPub(args: ['unpack', 'foo', '--force']);

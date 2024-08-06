@@ -284,8 +284,8 @@ void main() {
 
         final process = await pubRun(args: ['foo:hello']);
 
-        // In the real world this would just print "hello!", but since we collect
-        // all output we see the precompilation messages as well.
+        // In the real world this would just print "hello!", but since we
+        // collect all output we see the precompilation messages as well.
         expect(process.stdout, emits('Building package executable...'));
         expect(process.stdout, emitsThrough('hello!'));
         await process.shouldExit();

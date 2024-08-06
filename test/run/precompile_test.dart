@@ -46,8 +46,8 @@ void main() {
   });
 
   test(
-      "`pub run` doesn't write about precompilation when a terminal is not attached",
-      () async {
+      "`pub run` doesn't write about precompilation "
+      'when a terminal is not attached', () async {
     await setupForPubRunToPrecompile();
 
     final pub = await pubRun(args: ['test'], verbose: false);

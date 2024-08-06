@@ -340,7 +340,8 @@ Because myapp depends on foo from sdk which doesn't exist (unknown SDK "unknown"
           environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
           error: contains(
               'Unsupported operation: Only SDK packages are allowed as regular '
-              'dependencies for packages vendored by the dart SDK, but the `foo` '
+              'dependencies for packages vendored '
+              'by the dart SDK, but the `foo` '
               'package has a hosted dependency on `bar`.'),
         );
       });

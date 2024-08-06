@@ -129,8 +129,9 @@ void main() {
       expect(
         ret.exitCode,
         equals(0),
-        reason:
-            'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}',
+        reason: 'Running "git init" failed. '
+            'StdErr: ${ret.stderr} '
+            'StdOut: ${ret.stdout}',
       );
     });
 

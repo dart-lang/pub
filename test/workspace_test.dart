@@ -198,14 +198,15 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Because myapp depends on a which depends on myapp ^0.2.3, myapp ^0.2.3 is required',
+        'Because myapp depends on a '
+        'which depends on myapp ^0.2.3, myapp ^0.2.3 is required',
       ),
     );
   });
 
   test(
-      'ignores the source of dependencies on root packages. (Uses the local version instead)',
-      () async {
+      'ignores the source of dependencies on root packages. '
+      '(Uses the local version instead)', () async {
     await dir(appPath, [
       libPubspec(
         'myapp',
@@ -258,7 +259,8 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Error on line 1, column 118 of pkgs${s}a${s}pubspec.yaml: A dependency specification must be a string or a mapping.',
+        'Error on line 1, column 118 of pkgs${s}a${s}pubspec.yaml: '
+        'A dependency specification must be a string or a mapping.',
       ),
       exitCode: DATA,
     );
@@ -290,7 +292,8 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Because a depends on foo from unknown source "posted", version solving failed.',
+        'Because a depends on foo from unknown source "posted", '
+        'version solving failed.',
       ),
     );
   });
@@ -318,7 +321,8 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'pkgs${s}a${s}pubspec.yaml is included in the workspace from .${s}pubspec.yaml, but does not have `resolution: workspace`.',
+        'pkgs${s}a${s}pubspec.yaml is included in the workspace from '
+        '.${s}pubspec.yaml, but does not have `resolution: workspace`.',
       ),
     );
   });
@@ -407,12 +411,15 @@ void main() {
         ),
       ]),
     ]).create();
+    final appABPath = p.join(sandbox, appPath, 'a', 'b');
+    final aPubspecPath = p.join('.', 'a', 'pubspec.yaml');
+    final pubspecPath = p.join('.', 'pubspec.yaml');
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Could not find a file named "pubspec.yaml" in "${p.join(sandbox, appPath, 'a', 'b')}".\n'
-        'That was included in the workspace of ${p.join('.', 'a', 'pubspec.yaml')}.\n'
-        'That was included in the workspace of ${p.join('.', 'pubspec.yaml')}.',
+        'Could not find a file named "pubspec.yaml" in "$appABPath".\n'
+        'That was included in the workspace of $aPubspecPath.\n'
+        'That was included in the workspace of $pubspecPath.',
       ),
       exitCode: NO_INPUT,
     );
@@ -790,8 +797,8 @@ Packages can only be included in the workspace once.
   });
 
   test(
-      'Reports a failure if a workspace pubspec is not nested inside the parent dir',
-      () async {
+      'Reports a failure if a workspace pubspec is not nested '
+      'inside the parent dir', () async {
     await dir(appPath, [
       libPubspec(
         'myapp',
@@ -1190,8 +1197,8 @@ Changed 1 constraint in b${s}pubspec.yaml:
     ]).create();
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error:
-          'Because myapp depends on both a 2.0.0 and a, version solving failed.',
+      error: 'Because myapp depends on both a 2.0.0 and a, '
+          'version solving failed.',
     );
   });
 
@@ -1355,8 +1362,8 @@ Consider removing one of the overrides.''',
   });
 
   test(
-      'published packages with `resolution: workspace` and `workspace` sections can be consumed out of context.',
-      () async {
+      'published packages with `resolution: workspace` '
+      'and `workspace` sections can be consumed out of context.', () async {
     final server = await servePackages();
     server.serve(
       'foo',

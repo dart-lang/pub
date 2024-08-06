@@ -83,7 +83,8 @@ class PackageConfigFileDescriptor extends Descriptor {
                 .having(
                   (p0) => p0.languageVersion,
                   'languageVersion',
-                  // If the expected entry has no language-version we don't check it.
+                  // If the expected entry has no language-version we don't
+                  // check it.
                   p.languageVersion ?? anything,
                 )
                 .having((p0) => p0.rootUri, 'rootUri', p.rootUri)

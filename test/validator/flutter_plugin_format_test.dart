@@ -158,8 +158,8 @@ void main() {
     });
 
     test(
-        'is a flutter plugin with only implicit flutter sdk version constraint and the new format',
-        () async {
+        'is a flutter plugin with only implicit flutter sdk version constraint '
+        'and the new format', () async {
       final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {

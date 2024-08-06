@@ -473,7 +473,8 @@ Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
 final String _pubRoot = (() {
   if (!fileExists(p.join('bin', 'pub.dart'))) {
     throw StateError(
-      "Current working directory (${p.current} is not pub's root. Run tests from pub's root.",
+      "Current working directory (${p.current} is not pub's root. "
+      "Run tests from pub's root.",
     );
   }
   return p.current;
@@ -679,8 +680,8 @@ void ensureGit() {
 
 /// Creates a lock file for [package] without running `pub get`.
 ///
-/// [dependenciesInSandBox] is a list of path dependencies to be found in the sandbox
-/// directory.
+/// [dependenciesInSandBox] is a list of path dependencies to be found in the
+/// sandbox directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
@@ -979,8 +980,10 @@ Future<void> runPubIntoBuffer(
   //       .join('\n'));
   // }
   final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
+  final joinedArgs =
+      args.map(filterUnstableText).map(escapeShellArgument).join(' ');
   buffer.writeln(
-    '\$$pipe pub ${args.map(filterUnstableText).map(escapeShellArgument).join(' ')}',
+    '\$$pipe pub $joinedArgs',
   );
   for (final line in await process.stdout.rest.toList()) {
     buffer.writeln(filterUnstableText(line));

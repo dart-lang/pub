@@ -80,8 +80,8 @@ void main() {
     });
 
     test(
-        '--major-versions updates dependency constraints lower bounds and shows summary report',
-        () async {
+        '--major-versions updates dependency constraints lower bounds '
+        'and shows summary report', () async {
       final server = await servePackages();
 
       server.serve('foo', '1.0.0');

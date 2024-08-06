@@ -749,8 +749,8 @@ Future<void> main() async {
   });
 
   testWithGolden(
-      'latest version reported while locked on a prerelease can be a prerelease',
-      (ctx) async {
+      'latest version reported while locked on a prerelease '
+      'can be a prerelease', (ctx) async {
     await servePackages()
       ..serve('foo', '0.9.0')
       ..serve('foo', '1.0.0-dev.1')

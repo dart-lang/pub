@@ -95,14 +95,14 @@ class DependencyValidator extends Validator {
             '  ${dep.name}: ^${locked.version}\n';
       }
       warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support ${log.bold("all")} '
-          'future versions of "${dep.name}".');
+          'Without a constraint, you\'re promising to support '
+          '${log.bold("all")} future versions of "${dep.name}".');
     }
 
     /// Warn that dependencies should allow more than a single version.
     void warnAboutSingleVersionConstraint(PackageRange dep) {
-      warnings.add(
-          'Your dependency on "${dep.name}" should allow more than one version. '
+      warnings.add('Your dependency on "${dep.name}" '
+          'should allow more than one version. '
           'For example:\n'
           '\n'
           'dependencies:\n'
@@ -132,8 +132,8 @@ class DependencyValidator extends Validator {
             '  ${dep.name}: $constraint\n';
       }
       warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support ${log.bold("all")} '
-          'previous versions of "${dep.name}".');
+          'Without a constraint, you\'re promising to support '
+          '${log.bold("all")} previous versions of "${dep.name}".');
     }
 
     /// Warn that dependencies should have upper bounds on their constraints.

@@ -57,8 +57,8 @@ void main() {
       environment: getEnvironment(),
     );
 
-    // We don't get `Building package executable...` because we are running through
-    // the binstub.
+    // We don't get `Building package executable...` because we are running
+    // through the binstub.
     expect(process.stdout, emitsThrough('ok [arg1, arg2]'));
     await process.shouldExit();
 
@@ -69,7 +69,8 @@ void main() {
     //     d.file(
     //         'script.dart-$versionSuffix.snapshot',
     //         isNot(equals(
-    //             readBinaryFile(testAssetPath('out-of-date-$versionSuffix.snapshot')))))
+    //             readBinaryFile(testAssetPath(
+    //                 'out-of-date-$versionSuffix.snapshot')))))
     //   ])
     // ]).validate();
   });

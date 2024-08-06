@@ -342,7 +342,8 @@ linter:
             strictDeps,
             warnings: [
               matches(
-                'does not have silly_monkey in the `dependencies` or `dev_dependencies` section',
+                'does not have silly_monkey in the '
+                '`dependencies` or `dev_dependencies` section',
               ),
             ],
           );

@@ -32,8 +32,8 @@ Future<void> main() async {
   });
 
   test(
-      'archive_sha256 is stored in lockfile upon download on legacy server without content hashes',
-      () async {
+      'archive_sha256 is stored in lockfile upon download on legacy server '
+      'without content hashes', () async {
     final server = await servePackages();
     server.serveContentHashes = false;
     server.serve('foo', '1.0.0');
@@ -81,7 +81,8 @@ Future<void> main() async {
       '1.0.0',
       contents: [file('new_file.txt', 'This file could be malicious.')],
     );
-    // Pub get will not revisit the file-listing if everything resolves, and only compare with a cached value.
+    // Pub get will not revisit the file-listing if everything resolves, and
+    // only compare with a cached value.
     await pubGet();
     // Deleting the version-listing cache will cause it to be refetched, and the
     // warning will happen.
@@ -91,7 +92,8 @@ Future<void> main() async {
       warning: allOf(
         contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
         contains(
-          'The existing content-hash from pubspec.lock doesn\'t match contents for:',
+          'The existing content-hash '
+          'from pubspec.lock doesn\'t match contents for:',
         ),
         contains('* foo-1.0.0 from "${server.url}"\n'),
       ),
@@ -105,7 +107,8 @@ Future<void> main() async {
   });
 
   test(
-      'If content is updated on legacy server, and the download needs refreshing we warn and update the lockfile',
+      'If content is updated on legacy server, '
+      'and the download needs refreshing we warn and update the lockfile',
       () async {
     final server = await servePackages();
     server.serveContentHashes = false;
@@ -125,7 +128,8 @@ Future<void> main() async {
     await pubGet(
       warning: allOf([
         contains(
-          'The existing content-hash from pubspec.lock doesn\'t match contents for:',
+          'The existing content-hash from pubspec.lock '
+          'doesn\'t match contents for:',
         ),
         contains('* foo-1.0.0 from "${globalServer.url}"'),
       ]),
@@ -139,7 +143,8 @@ Future<void> main() async {
   });
 
   test(
-      'sha256 in cache is checked on pub get - warning and redownload on legacy server without content-hashes',
+      'sha256 in cache is checked on pub get '
+      '- warning and redownload on legacy server without content-hashes',
       () async {
     final server = await servePackages();
     server.serveContentHashes = false;
@@ -193,7 +198,8 @@ Future<void> main() async {
   });
 
   test(
-      'Legacy lockfile without content-hashes is updated with the hash on pub get on legacy server without content-hashes',
+      'Legacy lockfile without content-hashes is updated '
+      'with the hash on pub get on legacy server without content-hashes',
       () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
@@ -220,8 +226,8 @@ Future<void> main() async {
   });
 
   test(
-      'Legacy lockfile without content-hashes is updated with the hash on pub get',
-      () async {
+      'Legacy lockfile without content-hashes '
+      'is updated with the hash on pub get', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
     server.serveContentHashes = true;

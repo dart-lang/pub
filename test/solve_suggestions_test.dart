@@ -84,10 +84,12 @@ void main() {
       error: allOf(
         [
           contains(
-            '* Consider downgrading your constraint on foo: dart pub add foo:^0.9.0',
+            '* Consider downgrading your constraint on foo: '
+            'dart pub add foo:^0.9.0',
           ),
           contains(
-            '* Try upgrading your constraint on bar: dart pub add dev:bar:^2.0.0',
+            '* Try upgrading your constraint on bar: '
+            'dart pub add dev:bar:^2.0.0',
           ),
         ],
       ),
@@ -133,7 +135,8 @@ void main() {
     ]).create();
     await pubGet(
       error: contains(
-        '* Try updating the following constraints: dart pub add dev:bar:^2.0.0 foo:^2.0.0',
+        '* Try updating the following constraints: '
+        'dart pub add dev:bar:^2.0.0 foo:^2.0.0',
       ),
     );
   });
@@ -170,7 +173,8 @@ void main() {
     ]).create();
     await pubGet(
       error: contains(
-        '* Try an upgrade of your constraints: dart pub upgrade --major-versions',
+        '* Try an upgrade of your constraints: '
+        'dart pub upgrade --major-versions',
       ),
     );
   });

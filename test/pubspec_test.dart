@@ -470,7 +470,8 @@ dependencies:
         (pubspec) => pubspec.dependencies,
         expectedContains:
             'Invalid description in the "pkg" pubspec on the "from_path" '
-            'dependency: "non_local_path" is a relative path, but this isn\'t a '
+            'dependency: "non_local_path" is a relative path, '
+            'but this isn\'t a '
             'local pubspec.',
       );
     });
@@ -651,8 +652,8 @@ dependencies:
       url: https://example.org/pub/
 ''',
             (pubspec) => pubspec.dependencies,
-            expectedContains:
-                "The 'name' key must have a string value without a minimum Dart "
+            expectedContains: "The 'name' key must have a "
+                'string value without a minimum Dart '
                 'SDK constraint of 2.15.',
           );
         });
@@ -668,8 +669,8 @@ dependencies:
     hosted: http://pub.example.org
 ''',
               (pubspec) => pubspec.dependencies,
-              expectedContains:
-                  'Using `hosted: <url>` is only supported with a minimum SDK constraint of 2.15.',
+              expectedContains: 'Using `hosted: <url>` is only supported '
+                  'with a minimum SDK constraint of 2.15.',
             );
           },
         );
@@ -1080,7 +1081,8 @@ dependency_overrides:
       url: '::'
 ''',
           (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
-          'Error on line 4, column 7 of ${Platform.pathSeparator}pubspec_overrides.yaml',
+          'Error on line 4, column 7 of '
+              '${Platform.pathSeparator}pubspec_overrides.yaml',
         );
       });
 

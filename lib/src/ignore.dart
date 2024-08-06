@@ -169,8 +169,8 @@ final class Ignore {
   /// Represents paths normalized  using '/' as directory separator. The empty
   /// relative path is '.', no '..' are allowed.
   ///
-  /// [beneath] must start with [root] and even if it is a directory it should not
-  /// end with '/', if [beneath] is not provided, everything under root is
+  /// [beneath] must start with [root] and even if it is a directory it should
+  /// not end with '/', if [beneath] is not provided, everything under root is
   /// included.
   ///
   /// [listDir] should enumerate the immediate contents of a given directory,
@@ -179,14 +179,14 @@ final class Ignore {
   /// [isDir] should return true if the argument is a directory. It will only be
   /// queried with file-names under (and including) [beneath]
   ///
-  /// [ignoreForDir] should retrieve the ignore rules for a single directory
-  /// or return `null` if there is no ignore rules.
+  /// [ignoreForDir] should retrieve the ignore rules for a single directory or
+  /// return `null` if there is no ignore rules.
   ///
   /// If [includeDirs] is true non-ignored directories will be included in the
   /// result (including beneath).
   ///
-  /// This example program lists all files under second argument that are
-  /// not ignored by .gitignore files from first argument and below:
+  /// This example program lists all files under second argument that are not
+  /// ignored by .gitignore files from first argument and below:
   ///
   /// ```dart
   /// import 'dart:io';

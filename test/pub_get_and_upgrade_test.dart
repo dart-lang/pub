@@ -18,7 +18,8 @@ void main() {
         await pubCommand(
           command,
           error: contains(
-            'Found no `pubspec.yaml` file in `${d.path(appPath)}` or parent directories',
+            'Found no `pubspec.yaml` file in `${d.path(appPath)}` '
+            'or parent directories',
           ),
           exitCode: exit_codes.NO_INPUT,
         );

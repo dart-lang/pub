@@ -16,8 +16,8 @@ import 'utils.dart';
 
 void main() {
   test(
-      'with --skip-validation dependency resolution and validations are skipped.',
-      () async {
+      'with --skip-validation dependency resolution '
+      'and validations are skipped.', () async {
     await servePackages();
     await d.validPackage().create();
     await d.dir(appPath, [

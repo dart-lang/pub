@@ -312,17 +312,15 @@ Consider setting the `PUB_CACHE` variable manually.
   ///
   /// If DEPRECATED.md is less than 7 days old, we don't repeat the warning.
   void _checkOldCacheLocation() {
-    // Background:
-    // Prior to Dart 2.8 the default location for the PUB_CACHE on Windows was:
-    //   %APPDATA%\Pub\Cache
+    // Background: Prior to Dart 2.8 the default location for the PUB_CACHE on
+    // Windows was: %APPDATA%\Pub\Cache
     //
     // Start Dart 2.8 pub started migrating the default PUB_CACHE location to:
-    //   %LOCALAPPDATA%\Pub\Cache
-    // That is:
-    //  * If a pub-cache existed in `%LOCALAPPDATA%\Pub\Cache` then it
-    //    would be used.
-    //  * If a pub-cache existed in `%APPDATA%\Pub\Cache` then it would be
-    //    used, unless a pub-cache in `%LOCALAPPDATA%\Pub\Cache` had been found.
+    //   %LOCALAPPDATA%\Pub\Cache That is:
+    //  * If a pub-cache existed in `%LOCALAPPDATA%\Pub\Cache` then it would be
+    //    used.
+    //  * If a pub-cache existed in `%APPDATA%\Pub\Cache` then it would be used,
+    //    unless a pub-cache in `%LOCALAPPDATA%\Pub\Cache` had been found.
     //  * If no pub-cache was found, a new empty pub-cache was created in
     //    `%LOCALAPPDATA%\Pub\Cache`.
     //
@@ -330,13 +328,14 @@ Consider setting the `PUB_CACHE` variable manually.
     // `%APPDATA%\Pub\Cache`. Instead it will always use the new location,
     // `%LOCALAPPDATA%\Pub\Cache`, as default PUB_CACHE location.
     //
-    // Using `%APPDATA%` caused the pub-cache to be copied with the user-profile,
-    // when using a networked Windows setup where users can login on multiple
-    // machines. This is undesirable because you are moving a lot of bytes over
-    // the network and onto whatever servers are storing the user profiles.
+    // Using `%APPDATA%` caused the pub-cache to be copied with the
+    // user-profile, when using a networked Windows setup where users can login
+    // on multiple machines. This is undesirable because you are moving a lot of
+    // bytes over the network and onto whatever servers are storing the user
+    // profiles.
     //
-    // Thus, we migrated to storing the pub-cache in `%LOCALAPPDATA%`.
-    // And finished the migration in Dart 3 to keep things simple.
+    // Thus, we migrated to storing the pub-cache in `%LOCALAPPDATA%`. And
+    // finished the migration in Dart 3 to keep things simple.
     if (!Platform.isWindows) return;
 
     final appData = Platform.environment['APPDATA'];

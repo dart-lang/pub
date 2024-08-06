@@ -222,8 +222,10 @@ void handleJsonSuccess(http.Response response) {
       parsed['success']['message'] is! String) {
     invalidServerResponse(response);
   }
+  final formattedMessage =
+      log.green(sanitizeForTerminal(parsed['success']['message'] as String));
   log.message(
-    'Message from server: ${log.green(sanitizeForTerminal(parsed['success']['message'] as String))}',
+    'Message from server: $formattedMessage',
   );
 }
 
@@ -245,8 +247,10 @@ void handleJsonError(http.BaseResponse response) {
       error['message'] is! String) {
     invalidServerResponse(response);
   }
+  final formattedMessage =
+      log.red(sanitizeForTerminal(error['message'] as String));
   fail(
-    'Message from server: ${log.red(sanitizeForTerminal(error['message'] as String))}',
+    'Message from server: $formattedMessage',
   );
 }
 
@@ -270,7 +274,8 @@ void handleGCSError(http.BaseResponse response) {
       final code = getTagText('Code');
       // TODO(sigurdm): we could hard-code nice error messages for known codes.
       final message = getTagText('Message');
-      // `Details` are not specified in the doc above, but have been observed in actual responses.
+      // `Details` are not specified in the doc above, but have been observed in
+      // actual responses.
       final details = getTagText('Details');
       if (code != null) {
         log.error('Server error code: ${sanitizeForTerminal(code)}');
