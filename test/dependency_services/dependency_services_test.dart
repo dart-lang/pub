@@ -359,8 +359,7 @@ Future<void> main() async {
     final lockFileYaml = YamlEditor(
       lockFile.readAsStringSync(),
     );
-    for (final p
-        in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
+    for (final p in (lockFileYaml.parseAt(['packages']).value as Map).entries) {
       lockFileYaml.update(
         ['packages', p.key, 'description', 'url'],
         'https://pub.dartlang.org',
@@ -717,12 +716,11 @@ Future<void> main() async {
   });
 }
 
-dynamic findChangeVersion(dynamic json, String updateType, String name) {
-  final dep =
-      json['dependencies'].firstWhere((dynamic p) => p['name'] == 'foo');
-  if (dep == null) return null;
-  return dep[updateType]
-      .firstWhere((dynamic p) => p['name'] == name)['version'];
+String? findChangeVersion(dynamic json, String updateType, String name) {
+  return dig<String?>(
+    json,
+    ['dependencies', ('name', 'foo'), updateType, ('name', name), 'version'],
+  );
 }
 
 class _PackageVersion {

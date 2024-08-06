@@ -45,7 +45,7 @@ Got dependencies!
 ''',
     );
     expect(fileExists(fooVersionsCache), isTrue);
-    final c = json.decode(readTextFile(fooVersionsCache));
+    final c = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make the cache artificially old.
     c['_fetchedAt'] =
         DateTime.now().subtract(const Duration(days: 5)).toIso8601String();
@@ -61,7 +61,7 @@ Downloading packages...
 Got dependencies!
 1 package is discontinued.''',
     );
-    final c2 = json.decode(readTextFile(fooVersionsCache));
+    final c2 = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make a bad cached value to test that responses are actually from cache.
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));
@@ -145,7 +145,7 @@ Got dependencies!
 ''',
     );
     expect(fileExists(fooVersionsCache), isTrue);
-    final c = json.decode(readTextFile(fooVersionsCache));
+    final c = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make the cache artificially old.
     c['_fetchedAt'] =
         DateTime.now().subtract(const Duration(days: 5)).toIso8601String();
@@ -159,7 +159,7 @@ Downloading packages...
 Got dependencies!
 1 package is discontinued.''',
     );
-    final c2 = json.decode(readTextFile(fooVersionsCache));
+    final c2 = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make a bad cached value to test that responses are actually from cache.
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));

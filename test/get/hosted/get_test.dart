@@ -312,9 +312,12 @@ void main() {
 
       await pubGet();
 
-      final packages = loadYaml(
-        readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
-      )['packages'];
+      final packages = dig<Map>(
+        loadYaml(
+          readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
+        ),
+        ['packages'],
+      );
       expect(
         packages,
         containsPair('foo', containsPair('dependency', 'direct main')),
@@ -353,9 +356,12 @@ void main() {
 
       await pubGet();
 
-      final packages = loadYaml(
-        readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
-      )['packages'];
+      final packages = dig<Map>(
+        loadYaml(
+          readTextFile(p.join(d.sandbox, appPath, 'pubspec.lock')),
+        ),
+        ['packages'],
+      );
       expect(
         packages,
         containsPair('foo', containsPair('dependency', 'direct main')),

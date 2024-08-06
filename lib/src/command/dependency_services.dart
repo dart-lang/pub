@@ -293,7 +293,17 @@ class DependencyServicesApplyCommand extends PubCommand {
   Future<void> runProtected() async {
     final toApply = <_PackageVersion>[];
     final input = json.decode(await utf8.decodeStream(stdin));
-    for (final change in input['dependencyChanges'] as Iterable) {
+    if (input is! Map<String, dynamic>) {
+      fail('Bad input, must be json map');
+    }
+    final dependencyChanges = input['dependencyChanges'];
+    if (dependencyChanges is! List) {
+      fail('Bad input. `dependencyChanges` must be a list');
+    }
+    for (final change in dependencyChanges) {
+      if (change is! Map<String, dynamic>) {
+        fail('Bad input. Each element of `dependencyChanges` must be a map.');
+      }
       toApply.add(
         _PackageVersion(
           change['name'] as String,
@@ -348,6 +358,7 @@ class DependencyServicesApplyCommand extends PubCommand {
         ? readTextFile(entrypoint.lockFilePath)
         : null;
     final lockFileYaml = lockFile == null ? null : loadYaml(lockFile);
+
     final lockFileEditor = lockFile == null ? null : YamlEditor(lockFile);
     final hasContentHashes = _lockFileHasContentHashes(lockFileYaml);
     final usesPubDev = _lockFileUsesPubDev(lockFileYaml);
@@ -357,6 +368,9 @@ class DependencyServicesApplyCommand extends PubCommand {
       final targetRevision = p.gitRevision;
 
       if (lockFileEditor != null) {
+        if (lockFileYaml is! Map) {
+          fail('Malformed pubspec.lock. Must be a map');
+        }
         if (targetVersion != null &&
             (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           lockFileEditor.update(

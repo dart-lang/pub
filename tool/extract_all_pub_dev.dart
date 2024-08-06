@@ -25,7 +25,7 @@ Future<List<String>> allPackageNames() async {
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
-  return List<String>.from(result['packages'] as List);
+  return List<String>.from((result as Map)['packages'] as List);
 }
 
 Future<List<String>> versionArchiveUrls(String packageName) async {
@@ -33,9 +33,9 @@ Future<List<String>> versionArchiveUrls(String packageName) async {
   final request = http.Request('GET', url);
   request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
-  final result = json.decode(response.body);
+  final result = json.decode(response.body) as Map;
   return (result['versions'] as List)
-      .map((v) => v['archive_url'] as String)
+      .map((v) => (v as Map)['archive_url'] as String)
       .toList();
 }
 
@@ -43,7 +43,7 @@ Future<void> main() async {
   final alreadyDonePackages = <String>{};
   final failures = <Map<String, dynamic>?>[];
   if (fileExists(statusFilename)) {
-    final json = jsonDecode(readTextFile(statusFilename));
+    final json = jsonDecode(readTextFile(statusFilename)) as Map;
     for (final packageName in json['packages'] as Iterable? ?? []) {
       alreadyDonePackages.add(packageName as String);
     }

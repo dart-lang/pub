@@ -55,8 +55,9 @@ void testEnsurePubspecResolved() {
 
       final packageConfig =
           p.join(d.sandbox, 'myapp', '.dart_tool', 'package_config.json');
-      final contents = json.decode(File(packageConfig).readAsStringSync());
-      contents['packages'].add({
+      final contents =
+          json.decode(File(packageConfig).readAsStringSync()) as Map;
+      (contents['packages'] as List).add({
         'name': 'flutter_gen',
         'rootUri': 'flutter_gen',
         'languageVersion': '2.8',

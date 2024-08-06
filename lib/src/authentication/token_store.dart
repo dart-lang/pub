@@ -73,7 +73,7 @@ class TokenStore {
               );
             }
           } on FormatException catch (e) {
-            if (element['url'] is String) {
+            if (element is Map<String, dynamic> && element['url'] is String) {
               log.warning(
                 'Failed to load credentials for ${element['url']}: '
                 '${e.message}',

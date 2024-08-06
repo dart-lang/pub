@@ -695,11 +695,11 @@ class HostedSource extends CachedSource {
         String ecosystem,
       ) {
         if (affectedPackage is! Map) {
-          throw const FormatException('affectedPackage must be a map');
+          throw const FormatException('`affected` must be a map');
         }
         final package = affectedPackage['package'];
         if (package is! Map) {
-          throw const FormatException('package must be a map');
+          throw const FormatException('`package` must be a map');
         }
         final affectedName = package['name'];
         if (affectedName is! String) {
@@ -716,6 +716,9 @@ class HostedSource extends CachedSource {
       }
 
       for (final affectedPackage in affectedPackages) {
+        if (affectedPackage is! Map) {
+          throw const FormatException('`affected` must be a list of maps');
+        }
         if (matchesNameAndEcosystem(affectedPackage, packageName, 'pub')) {
           final affectedVersions = <String>{};
           final versions = affectedPackage['versions'];
