@@ -46,7 +46,8 @@ class CacheRepairCommand extends PubCommand {
     if (failures.isNotEmpty) {
       final packages = pluralize('package', failures.length);
       final buffer = StringBuffer(
-        'Failed to reinstall ${log.red(failures.length.toString())} $packages:\n',
+        'Failed to reinstall '
+        '${log.red(failures.length.toString())} $packages:\n',
       );
 
       for (var failure in failures) {
@@ -65,14 +66,16 @@ class CacheRepairCommand extends PubCommand {
     if (repairSuccesses.isNotEmpty) {
       final packages = pluralize('package', repairSuccesses.length);
       log.message(
-        'Reactivated ${log.green(repairSuccesses.length.toString())} $packages.',
+        'Reactivated '
+        '${log.green(repairSuccesses.length.toString())} $packages.',
       );
     }
 
     if (repairFailures.isNotEmpty) {
       final packages = pluralize('package', repairFailures.length);
       log.message(
-        'Failed to reactivate ${log.red(repairFailures.length.toString())} $packages:',
+        'Failed to reactivate '
+        '${log.red(repairFailures.length.toString())} $packages:',
       );
       log.message(
         repairFailures.map((name) => '- ${log.bold(name)}').join('\n'),

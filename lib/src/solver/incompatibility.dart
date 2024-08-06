@@ -419,7 +419,8 @@ class Incompatibility {
     buffer.write('${_terse(latter.terms.first, details)} ');
     if (priorLine != null) buffer.write('($priorLine) ');
 
-    if (latter.cause is SdkIncompatibilityCause) {
+    final latterCause = latter.cause;
+    if (latterCause is SdkIncompatibilityCause) {
       final cause = latter.cause as SdkIncompatibilityCause;
       if (cause.noNullSafetyCause) {
         buffer.write('which doesn\'t support null safety');
@@ -432,11 +433,12 @@ class Incompatibility {
           buffer.write('SDK version ${cause.constraint}');
         }
       }
-    } else if (latter.cause is NoVersionsIncompatibilityCause) {
+    } else if (latterCause is NoVersionsIncompatibilityCause) {
       buffer.write("which doesn't match any versions");
-    } else if (latter.cause is PackageNotFoundIncompatibilityCause) {
+    } else if (latterCause is PackageNotFoundIncompatibilityCause) {
+      final exceptionMessage = latterCause.exception.message;
       buffer.write("which doesn't exist "
-          '(${(latter.cause as PackageNotFoundIncompatibilityCause).exception.message})');
+          '($exceptionMessage)');
     } else {
       buffer.write('which is forbidden');
     }

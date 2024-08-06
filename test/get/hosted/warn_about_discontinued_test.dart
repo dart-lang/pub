@@ -217,7 +217,8 @@ Got dependencies!
       (shelf.Request request) => shelf.Response.notFound('Not found'),
     );
 
-    /// Even if we fail to get status we still report success if versions don't unlock.
+    /// Even if we fail to get status we still report success if versions don't
+    /// unlock.
     await pubGet();
   });
 }

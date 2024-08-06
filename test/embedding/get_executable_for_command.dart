@@ -54,10 +54,11 @@ Future<void> testGetExecutable(
       true,
       reason: '${p.join(root, executable)} should exist',
     );
+    final filtered = filterUnstableText(packageConfig ?? 'No package config');
     expect(
       output,
       contains(
-        'Package config: ${filterUnstableText(packageConfig ?? 'No package config')}\n',
+        'Package config: $filtered\n',
       ),
     );
   }
@@ -153,6 +154,7 @@ void testGetExecutableForCommand() {
             'Error on line 1, column 9 of ../foo/pubspec.yaml: "name" field must be a valid Dart identifier.',
           ),
           contains(
+            // ignore: lines_longer_than_80_chars
             '{"name":"broken name","environment":{"sdk":"$defaultSdkConstraint"}}',
           ),
         ),

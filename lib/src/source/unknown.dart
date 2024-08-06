@@ -100,7 +100,8 @@ class UnknownDescription extends Description {
     required LanguageVersion languageVersion,
   }) {
     throw UnsupportedError(
-      "Cannot serialize a package description from an unknown source '${source.name}'.",
+      'Cannot serialize a package description '
+      "from an unknown source '${source.name}'.",
     );
   }
 
@@ -120,7 +121,8 @@ class ResolvedUnknownDescription extends ResolvedDescription {
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     throw UnsupportedError(
-      "Cannot serialize a package description from an unknown source '${description.source.name}'.",
+      'Cannot serialize a package description '
+      "from an unknown source '${description.source.name}'.",
     );
   }
 

@@ -20,8 +20,8 @@ void main() {
     server.serve('foo', '2.0.0');
 
     await appDir(dependencies: {'foo': '^2.0.0'}).create();
-    // Do a `pub get` here to create a lock file in order to validate we later can
-    // `pub get --offline` with packages installed by `preload`.
+    // Do a `pub get` here to create a lock file in order to validate we later
+    // can `pub get --offline` with packages installed by `preload`.
     await pubGet();
 
     await runPub(args: ['cache', 'clean', '-f']);
@@ -64,8 +64,8 @@ void main() {
   });
 
   test(
-      'installs package according to PUB_HOSTED_URL even on non-official server',
-      () async {
+      'installs package according to PUB_HOSTED_URL '
+      'even on non-official server', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
@@ -165,7 +165,8 @@ void main() {
     await runPub(
       args: ['cache', 'preload', archivePath],
       error: contains(
-        'Found no `pubspec.yaml` in $archivePath. Is it a valid pub package archive?',
+        'Found no `pubspec.yaml` in $archivePath. '
+        'Is it a valid pub package archive?',
       ),
       exitCode: 1,
     );
@@ -183,7 +184,8 @@ void main() {
     await runPub(
       args: ['cache', 'preload', archivePath],
       error: contains(
-        'Failed to load `pubspec.yaml` from `$archivePath`: Error on line 1, column 1',
+        'Failed to load `pubspec.yaml` from `$archivePath`: '
+        'Error on line 1, column 1',
       ),
       exitCode: 1,
     );

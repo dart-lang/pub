@@ -30,7 +30,8 @@ void main() {
       args: ['global', 'activate', 'foo'],
       output: allOf([
         contains(
-          'Package foo is currently active from Git repository "..${separator}foo.git".',
+          'Package foo is currently active from Git repository '
+          '"..${separator}foo.git".',
         ),
         contains('* foo 2.0.0 (was 1.0.0 from git ..${separator}foo.git at'),
         contains('Activated foo 2.0.0.'),

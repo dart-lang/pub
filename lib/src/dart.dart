@@ -153,7 +153,8 @@ Future<void> precompile({
     // This should make this slightly easier to recognize in error reports.
     if (!fileExists(temporaryIncrementalDill)) {
       log.error(
-        'Compilation did not produce any result. Expected file at `$temporaryIncrementalDill`',
+        'Compilation did not produce any result. '
+        'Expected file at `$temporaryIncrementalDill`',
         result.dillOutput,
       );
     }

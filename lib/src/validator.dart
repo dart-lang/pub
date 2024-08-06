@@ -111,7 +111,8 @@ abstract class Validator {
         '  sdk: "${newSdkConstraint.asCompatibleWithIfPossible()}"');
   }
 
-  /// Returns whether [version1] and [version2] are pre-releases of the same version.
+  /// Returns whether [version1] and [version2] are pre-releases of the same
+  /// version.
   bool _isSamePreRelease(Version version1, Version version2) =>
       version1.isPreRelease &&
       version2.isPreRelease &&

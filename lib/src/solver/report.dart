@@ -285,7 +285,8 @@ $contentHashesDocumentationUrl
         packageCountString = '$outdatedPackagesCount packages have';
       }
       message('$packageCountString newer versions incompatible with '
-          'dependency constraints.\nTry `$topLevelProgram pub outdated` for more information.');
+          'dependency constraints.\n'
+          'Try `$topLevelProgram pub outdated` for more information.');
     }
   }
 

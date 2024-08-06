@@ -238,7 +238,8 @@ and attaching the relevant parts of that log file.
         }
         log.dumpTranscriptToFile(
           transcriptPath,
-          'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
+          'dart pub '
+          '${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
           e,
         );
 

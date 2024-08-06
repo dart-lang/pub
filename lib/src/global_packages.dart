@@ -644,12 +644,12 @@ try:
   /// If `null`, all executables in the package will get binstubs. If empty, no
   /// binstubs will be created.
   ///
-  /// If [overwriteBinStubs] is `true`, any binstubs that collide with
-  /// existing binstubs in other packages will be overwritten by this one's.
-  /// Otherwise, the previous ones will be preserved.
+  /// If [overwriteBinStubs] is `true`, any binstubs that collide with existing
+  /// binstubs in other packages will be overwritten by this one's. Otherwise,
+  /// the previous ones will be preserved.
   ///
-  /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user if
-  /// the bin directory isn't on their path.
+  /// If [suggestIfNotOnPath] is `true` (the default), this will warn the user
+  /// if the bin directory isn't on their path.
   void _updateBinStubs(
     Entrypoint entrypoint,
     Package package,

@@ -37,8 +37,8 @@ void main() {
     expect(
       lockfile['packages']['foo']['description']['url'],
       '../foo.git',
-      reason:
-          'The relative path should be preserved, and be a url (forward slashes on all platforms)',
+      reason: 'The relative path should be preserved, '
+          'and be a url (forward slashes on all platforms)',
     );
 
     await d.dir(cachePath, [

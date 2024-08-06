@@ -383,15 +383,15 @@ List<String> listDir(
         if (entity is Link) return false;
         if (includeHidden) return true;
 
-        // Using substring here is generally problematic in cases where dir has one
-        // or more trailing slashes. If you do listDir("foo"), you'll get back
-        // paths like "foo/bar". If you do listDir("foo/"), you'll get "foo/bar"
-        // (note the trailing slash was dropped. If you do listDir("foo//"), you'll
-        // get "foo//bar".
+        // Using substring here is generally problematic in cases where dir has
+        // one or more trailing slashes. If you do listDir("foo"), you'll get
+        // back paths like "foo/bar". If you do listDir("foo/"), you'll get
+        // "foo/bar" (note the trailing slash was dropped. If you do
+        // listDir("foo//"), you'll get "foo//bar".
         //
-        // This means if you strip off the prefix, the resulting string may have a
-        // leading separator (if the prefix did not have a trailing one) or it may
-        // not. However, since we are only using the results of that to call
+        // This means if you strip off the prefix, the resulting string may have
+        // a leading separator (if the prefix did not have a trailing one) or it
+        // may not. However, since we are only using the results of that to call
         // contains() on, the leading separator is harmless.
         assert(entity.path.startsWith(dir));
         var pathInDir = entity.path.substring(dir.length);
@@ -571,7 +571,8 @@ bool _isDirectoryNotEmptyException(FileSystemException e) {
       // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno-base.h#n21
       // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
       (Platform.isLinux && (errorCode == 39 || errorCode == 17)) ||
-          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or ERROR_ALREADY_EXISTS
+          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or
+          // ERROR_ALREADY_EXISTS
           // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
           (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
           // On MacOS rename will fail with ENOTEMPTY if directory exists.
@@ -739,7 +740,8 @@ bool get terminalOutputForStdout {
     return true;
   } else {
     throw DataException(
-      'Environment variable ${EnvironmentKeys.forceTerminalOutput} has unsupported value: $environmentValue.',
+      'Environment variable ${EnvironmentKeys.forceTerminalOutput} has '
+      'unsupported value: $environmentValue.',
     );
   }
 }

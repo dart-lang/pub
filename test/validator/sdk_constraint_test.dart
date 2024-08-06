@@ -112,8 +112,8 @@ void main() {
     });
 
     test(
-        'Gives a hint if package has a <3.0.0 constraint that is interpreted as <4.0.0',
-        () async {
+        'Gives a hint if package has a <3.0.0 constraint '
+        'that is interpreted as <4.0.0', () async {
       await d.dir(appPath, [
         d.rawPubspec({
           'name': 'test_pkg',

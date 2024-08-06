@@ -602,11 +602,16 @@ String createUuid([List<int>? bytes]) {
       .join()
       .toUpperCase();
 
-  return '${chars.substring(0, 8)}-${chars.substring(8, 12)}-'
-      '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
+  return ''
+      '${chars.substring(0, 8)}-'
+      '${chars.substring(8, 12)}-'
+      '${chars.substring(12, 16)}-'
+      '${chars.substring(16, 20)}-'
+      '${chars.substring(20, 32)}';
 }
 
-/// Wraps [text] so that it fits within [_lineLength], if there is a line length.
+/// Wraps [text] so that it fits within [_lineLength], if there is a line
+/// length.
 ///
 /// This preserves existing newlines and doesn't consider terminal color escapes
 /// part of a word's length. It only splits words on spaces, not on other sorts

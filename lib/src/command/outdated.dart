@@ -67,9 +67,11 @@ class OutdatedCommand extends PubCommand {
 
     argParser.addOption(
       'mode',
-      help: 'Highlight versions with PROPERTY.\n'
-          'Only packages currently missing that PROPERTY will be included unless '
-          '--show-all.',
+      help: '''
+Highlight versions with PROPERTY.
+Only packages currently missing that PROPERTY will be included unless 
+--show-all.
+''',
       valueHelp: 'PROPERTY',
       allowed: ['outdated', 'null-safety'],
       defaultsTo: 'outdated',
@@ -299,7 +301,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
 
       var isCurrentAffectedByAdvisory = false;
       if (currentVersionDetails != null) {
-        // Filter out advisories added to `ignored_advisores` in the root pubspec.
+        // Filter out advisories added to `ignored_advisores` in the root
+        // pubspec.
         packageAdvisories = packageAdvisories
             .where(
               (adv) => entrypoint.workspaceRoot.pubspec.ignoredAdvisories
@@ -672,9 +675,10 @@ Future<void> _outputHuman(
             'To update it, use `$topLevelProgram pub upgrade`.');
       } else {
         log.message(
-            '\n$upgradable upgradable dependencies are locked (in pubspec.lock) '
-            'to older versions.\n'
-            'To update these dependencies, use `$topLevelProgram pub upgrade`.');
+          '\n$upgradable upgradable dependencies are locked '
+          '(in pubspec.lock) to older versions.\n'
+          'To update these dependencies, use `$topLevelProgram pub upgrade`.',
+        );
       }
     }
 
@@ -683,14 +687,17 @@ Future<void> _outputHuman(
         rows.isNotEmpty &&
         (directRows.isNotEmpty || devRows.isNotEmpty)) {
       log.message(
-          "You are already using the newest resolvable versions listed in the 'Resolvable' column.\n"
-          "Newer versions, listed in 'Latest', may not be mutually compatible.");
+        'You are already using the newest resolvable versions listed in the '
+        "'Resolvable' column.\n"
+        "Newer versions, listed in 'Latest', may not be mutually compatible.",
+      );
     } else if (directRows.isEmpty && devRows.isEmpty) {
       log.message(mode.allSafe);
     }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
-        'Run `$topLevelProgram pub get` to create a pubspec.lock with versions matching your '
+        'Run `$topLevelProgram pub get` to create a pubspec.lock '
+        'with versions matching your '
         'pubspec.yaml.');
   }
   if (notAtResolvable != 0) {
@@ -815,8 +822,8 @@ Showing outdated packages$directoryDescription.
       '''No resolution was found. Try running `$topLevelProgram pub upgrade --dry-run` to explore why.''';
 
   @override
-  String get upgradeConstrained =>
-      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --major-versions`';
+  String get upgradeConstrained => 'edit pubspec.yaml, or run '
+      '`$topLevelProgram pub upgrade --major-versions`';
 
   @override
   String get allSafe => 'all dependencies are up-to-date.';
@@ -1117,8 +1124,8 @@ bool hasDependency(Package workspaceRoot, String name) {
       .any((p) => p.dependencies.containsKey(name));
 }
 
-/// Whether the package [name] is dev-depended on directly anywhere in the workspace
-/// rooted at [workspaceRoot].
+/// Whether the package [name] is dev-depended on directly anywhere in the
+/// workspace rooted at [workspaceRoot].
 bool hasDevDependency(Package workspaceRoot, String name) {
   return workspaceRoot.transitiveWorkspace
       .any((p) => p.devDependencies.containsKey(name));

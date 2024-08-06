@@ -18,7 +18,8 @@ void main() {
 
     await pubGet(
       error: contains(
-        "Error on line 1, column 32 of pubspec.yaml: pubspec.yaml refers to an unknown sdk 'foo'.",
+        'Error on line 1, column 32 of pubspec.yaml: '
+        "pubspec.yaml refers to an unknown sdk 'foo'.",
       ),
       exitCode: exit_codes.DATA,
     );

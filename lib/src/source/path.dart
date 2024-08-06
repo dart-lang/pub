@@ -26,15 +26,6 @@ class PathSource extends Source {
   @override
   final name = 'path';
 
-  // /// Returns a reference to a path package named [name] at [path].
-  // PackageRef<PathDescription> refFor(String name, String path) {
-  //   if (p.isRelative(path)) {
-  //     PackageRef(name, {'path':p.absolute(path), 'relative': p.isRelative(path)});
-  //   }
-  //   return PackageRef(name, {'path': path, 'relative': p.isRelative(path)});
-  // }
-//{name: myapp, dev_dependencies: {foo: 1.2.2}, dependency_overrides: {foo: {path: ../foo}}, environment: {sdk: >=0.1.2 <1.0.0}}
-//{name: myapp, dev_dependencies: {foo: ^1.2.2}, dependency_overrides: {foo: {path: ../foo}}, environment: {sdk: >=0.1.2 <1.0.0}}
   /// Returns an ID for a path package with the given [name] and [version] at
   /// [path].
   ///
@@ -100,7 +91,8 @@ class PathSource extends Source {
     } else if (containingDescription is GitDescription) {
       if (!isRelative) {
         throw FormatException(
-          '"$description" is an absolute path, it can\'t be referenced from a git pubspec.',
+          '"$description" is an absolute path, '
+          'it can\'t be referenced from a git pubspec.',
         );
       }
       final resolvedPath = p.url.normalize(
@@ -111,7 +103,8 @@ class PathSource extends Source {
       );
       if (!(p.isWithin('.', resolvedPath) || p.equals('.', resolvedPath))) {
         throw FormatException(
-          'the path "$description" cannot refer outside the git repository $resolvedPath.',
+          'the path "$description" '
+          'cannot refer outside the git repository $resolvedPath.',
         );
       }
       return PackageRef(
