@@ -105,7 +105,7 @@ class TokenStore {
   void _saveCredentials(List<Credential> credentials) {
     final tokensFile = this.tokensFile;
     if (tokensFile == null) {
-      missingConfigDir();
+      throw AssertionError('Bad state');
     }
     ensureDir(p.dirname(tokensFile));
     writeTextFile(
@@ -119,6 +119,9 @@ class TokenStore {
 
   /// Adds [token] into store and writes into disk.
   void addCredential(Credential token) {
+    if (tokensFile == null) {
+      missingConfigDir();
+    }
     final credentials = _loadCredentials();
 
     // Remove duplicate tokens
@@ -130,6 +133,9 @@ class TokenStore {
   /// Removes tokens with matching [hostedUrl] from store. Returns whether or
   /// not there's a stored token with matching url.
   bool removeCredential(Uri hostedUrl) {
+    if (tokensFile == null) {
+      missingConfigDir();
+    }
     var i = 0;
     var found = false;
     while (i < _credentials.length) {
