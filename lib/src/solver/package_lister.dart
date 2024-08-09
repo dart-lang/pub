@@ -388,7 +388,7 @@ class PackageLister {
   /// Returns the first and last indices in [_versions] of the contiguous set of
   /// versions whose pubspecs match [match].
   ///
-  /// Assumes [match] returns true for the pubspec whose version is at [index].
+  /// Assumes [match] returns true for the pubspec whose version is at [start].
   Future<(int firstIndex, int lastIndex)> _findBounds(
     int start,
     bool Function(Pubspec) match,

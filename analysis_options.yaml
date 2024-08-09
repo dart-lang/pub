@@ -4,7 +4,6 @@ analyzer:
   errors:
     avoid_dynamic_calls: ignore # TODO(mosum): fix the offending lines
     lines_longer_than_80_chars: ignore # TODO(mosum): fix the offending lines
-    comment_references: ignore # TODO(mosum): fix the offending lines
   exclude:
    - lib/src/third_party/**
 

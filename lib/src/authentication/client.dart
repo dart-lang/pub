@@ -17,7 +17,7 @@ import 'credential.dart';
 /// This client authenticates requests by injecting `Authentication` header to
 /// requests.
 ///
-/// Requests to URLs not under [serverBaseUrl] will not be authenticated.
+/// Requests to URLs not under [_credential]'s url will not be authenticated.
 class _AuthenticatedClient extends http.BaseClient {
   /// Constructs Http client wrapper that injects `authorization` header to
   /// requests and handles authentication errors.

@@ -357,7 +357,7 @@ class Pubspec extends PubspecBase {
   /// contents.
   ///
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
-  /// field, this will throw a [PubspecError].
+  /// field, this will throw an [ApplicationException].
   ///
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(
@@ -652,9 +652,9 @@ Map<String, PackageRange> _parseDependencies(
 
 /// Parses [node] to a [VersionConstraint].
 ///
-/// If or [defaultUpperBoundConstraint] is specified then it will be set as the
-/// max constraint if the original constraint doesn't have an upper bound and it
-/// is compatible with [defaultUpperBoundConstraint].
+/// `null` is interpreted as [VersionConstraint.any].
+///
+/// A String is parsed with [VersionConstraint.parse].
 VersionConstraint _parseVersionConstraint(
   YamlNode? node,
   String? packageName,

@@ -232,12 +232,13 @@ class VersionSolver {
     return unsatisfied.package.name;
   }
 
-  /// Given an [incompatibility] that's satisfied by [_solution], [conflict
-  /// resolution][] constructs a new incompatibility that encapsulates the root
-  /// cause of the conflict and backtracks [_solution] until the new
+  /// Given an [incompatibility] that's satisfied by [_solution],
+  /// [conflict resolution][] constructs a new incompatibility that encapsulates
+  /// the root cause of the conflict and backtracks [_solution] until the new
   /// incompatibility will allow [_propagate] to deduce new assignments.
   ///
-  /// [conflict resolution]: https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
+  /// [conflict resolution]:
+  /// https://github.com/dart-lang/pub/tree/master/doc/solver.md#conflict-resolution
   ///
   /// Adds the new incompatibility to [_incompatibilities] and returns it.
   Incompatibility _resolveConflict(Incompatibility incompatibility) {

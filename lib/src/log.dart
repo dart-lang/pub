@@ -43,8 +43,6 @@ const _maxTranscript = 10000;
 final Transcript<_Entry> _transcript = Transcript(_maxTranscript);
 
 /// The currently-animated progress indicator, if any.
-///
-/// This will also be in [_progresses].
 Progress? _animatedProgress;
 
 final _cyan = getAnsi('\u001b[36m');

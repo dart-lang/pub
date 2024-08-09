@@ -81,8 +81,6 @@ class GlobalPackages {
   /// If `null`, all executables in the package will get binstubs. If empty, no
   /// binstubs will be created.
   ///
-  /// The [features] map controls which features of the package to activate.
-  ///
   /// If [overwriteBinStubs] is `true`, any binstubs that collide with
   /// existing binstubs in other packages will be overwritten by this one's.
   /// Otherwise, the previous ones will be preserved.
@@ -138,16 +136,16 @@ class GlobalPackages {
     );
   }
 
-  /// Finds the latest version of the hosted package with [name] that matches
-  /// [constraint] and makes it the active global version.
+  /// Finds the latest version of the hosted package  that matches [range] and
+  /// makes it the active global version.
   ///
   /// [executables] is the names of the executables that should have binstubs.
   /// If `null`, all executables in the package will get binstubs. If empty, no
   /// binstubs will be created.
   ///
-  /// if [overwriteBinStubs] is `true`, any binstubs that collide with
-  /// existing binstubs in other packages will be overwritten by this one's.
-  /// Otherwise, the previous ones will be preserved.
+  /// if [overwriteBinStubs] is `true`, any binstubs that collide with existing
+  /// binstubs in other packages will be overwritten by this one's. Otherwise,
+  /// the previous ones will be preserved.
   ///
   /// [url] is an optional custom pub server URL. If not null, the package to be
   /// activated will be fetched from this URL instead of the default pub URL.
@@ -425,7 +423,7 @@ try:
     return entrypoint;
   }
 
-  /// Runs [package]'s [executable] with [args].
+  /// Runs [executable] with [args].
   ///
   /// If [executable] is available in its built form, that will be
   /// recompiled if the SDK has been upgraded since it was first compiled and
