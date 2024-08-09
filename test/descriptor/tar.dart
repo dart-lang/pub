@@ -19,7 +19,7 @@ class TarFileDescriptor extends FileDescriptor {
         super.protected();
 
   /// Creates the files and directories within this tar file, then archives
-  /// them, compresses them, and saves the result to [parentDir].
+  /// them, compresses them, and saves the result to [parent].
   @override
   Future create([String? parent]) {
     return withTempDir((tempDir) async {

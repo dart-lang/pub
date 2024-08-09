@@ -333,8 +333,7 @@ class PackageServer {
   static final defaultAdvisoriesUpdated =
       DateTime.fromMicrosecondsSinceEpoch(0);
 
-  /// Add a security advisory which affects [affectedVersions] versions of
-  /// package [packageName].
+  /// Add a security advisory which affects versions in [affectedPackages].
   void addAdvisory({
     required String advisoryId,
     String? displayUrl,
