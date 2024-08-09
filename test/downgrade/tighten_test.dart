@@ -30,4 +30,35 @@ void main() {
       ),
     );
   });
+
+  test('--tighten works for workspace with internal dependencies', () async {
+    await servePackages();
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      d.dir('pkgs', [
+        d.dir('a', [
+          d.libPubspec(
+            'a',
+            '1.1.1',
+            deps: {'myapp': '^1.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+
+    await pubDowngrade(
+      args: ['--tighten'],
+      output: contains('myapp: ^1.0.0 -> ^1.2.3'),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+  });
 }
