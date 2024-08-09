@@ -5,6 +5,7 @@ analyzer:
     avoid_dynamic_calls: ignore # TODO(mosum): fix the offending lines
     lines_longer_than_80_chars: ignore # TODO(mosum): fix the offending lines
     comment_references: ignore # TODO(mosum): fix the offending lines
+    unintended_html_in_doc_comment: ignore # TODO(sigurdm): fix these
   exclude:
    - lib/src/third_party/**
 
