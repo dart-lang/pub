@@ -136,7 +136,7 @@ class GlobalPackages {
     );
   }
 
-  /// Finds the latest version of the hosted package  that matches [range] and
+  /// Finds the latest version of the hosted package that matches [range] and
   /// makes it the active global version.
   ///
   /// [executables] is the names of the executables that should have binstubs.

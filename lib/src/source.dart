@@ -88,7 +88,7 @@ abstract class Source {
 
   /// Parses a [PackageId] from a name and a serialized description.
   ///
-  /// This is should accept descriptions serialized using
+  /// This should accept descriptions serialized using
   /// [ResolvedDescription.serializeForLockfile].
   ///
   /// [containingDir] is the path to the directory lockfile where this

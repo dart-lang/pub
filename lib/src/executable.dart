@@ -39,8 +39,8 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 ///
 /// If [enableAsserts] is true, the program is run with assertions enabled.
 ///
-/// If the executable is in an immutable package and we pass no [vmArgs], it run
-/// from snapshot (and built if the snapshot doesn't already exist).
+/// If the executable is in an immutable package and we pass no [vmArgs], it
+/// runs from snapshot (and built if the snapshot doesn't already exist).
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
