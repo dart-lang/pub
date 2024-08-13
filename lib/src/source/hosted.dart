@@ -1812,11 +1812,11 @@ class ResolvedHostedDescription extends ResolvedDescription {
   /// PackageId described by this.
   ///
   /// This can be obtained in several ways:
-  /// * Reported from a server in the archive_sha256 field.
-  ///   (will be null if the server does not report this.)
-  /// * Obtained from a pubspec.lock
-  ///   (will be null for legacy lock-files).
-  /// * Read from the <PUB_CACHE>/hosted-hashes/<server>/<package>-<version>.sha256 file.
+  /// * Reported from a server in the archive_sha256 field. (will be null if the
+  ///   server does not report this.)
+  /// * Obtained from a pubspec.lock (will be null for legacy lock-files).
+  /// * Read from the
+  ///   `<PUB_CACHE>/hosted-hashes/<server>/<package>-<version>.sha256` file.
   ///   (will be null if the file doesn't exist for corrupt or legacy caches).
   final Uint8List? sha256;
 

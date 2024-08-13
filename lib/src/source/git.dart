@@ -358,9 +358,10 @@ class GitSource extends CachedSource {
   /// Clones a Git repo to the local filesystem.
   ///
   /// The Git cache directory is a little idiosyncratic. At the top level, it
-  /// contains a directory for each commit of each repository, named `<package
-  /// name>-<commit hash>`. These are the canonical package directories that are
-  /// linked to from the `.dart_tool/package_config.json` file.
+  /// contains a directory for each commit of each repository, named
+  /// `<package name>-<commit hash>`. These are the canonical package
+  /// directories that are linked to from the `.dart_tool/package_config.json`
+  /// file.
   ///
   /// In addition, the Git system cache contains a subdirectory named `cache/`
   /// which contains a directory for each separate repository URL, named
