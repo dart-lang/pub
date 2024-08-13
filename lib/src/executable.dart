@@ -260,7 +260,7 @@ final class DartExecutableWithPackageConfig {
 /// For example:
 /// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart`.
 /// * `:foo` will resolve to `<current>:bin/foo.dart`.
-/// * The empty string and `":` both resolves to `<current>:bin/<current>.dart` or
+/// * The empty string and `":"` both resolves to `<current>:bin/<current>.dart` or
 ///   `bin/<current>:main.dart`.
 ///
 /// If that doesn't resolve as an existing file, throw an exception.
