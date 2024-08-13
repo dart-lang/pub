@@ -97,15 +97,13 @@ Consider one of:
       hints.add('''
 You're about to publish a package that opts into null safety.
 The previous version ($previousVersion) isn't opted in.
-See $nullSafetyGuideUrl for best practices.
-''');
+See $nullSafetyGuideUrl for best practices.''');
     } else if (!currentOptedIn && previousOptedIn) {
       hints.add('''
 You're about to publish a package that doesn't opt into null safety,
 but the previous version ($previousVersion) was opted in.
 This change is likely to be backwards incompatible.
-See $semverUrl for information about versioning.
-''');
+See $semverUrl for information about versioning.''');
     }
   }
 }
