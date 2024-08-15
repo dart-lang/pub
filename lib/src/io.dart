@@ -21,7 +21,6 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
-// ignore: prefer_relative_imports
 import 'package:tar/tar.dart';
 
 import 'error_group.dart';
@@ -1239,11 +1238,7 @@ class PubProcessResult {
         stderr = _toLines(stderr);
 
   // TODO(rnystrom): Remove this and change to returning one string.
-  static List<String> _toLines(String output) {
-    final lines = splitLines(output);
-    if (lines.isNotEmpty && lines.last == '') lines.removeLast();
-    return lines;
-  }
+  static List<String> _toLines(String output) => splitLines(output);
 
   bool get success => exitCode == exit_codes.SUCCESS;
 }
