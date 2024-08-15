@@ -644,6 +644,8 @@ Future<void> main() async {
       ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.2.3')
       ..serve('bar', '2.2.3')
+      ..serve('only_a', '1.0.0')
+      ..serve('only_a', '2.0.0')
       ..serve('dev', '1.0.0')
       ..serve('dev', '2.0.0')
       ..serve('transitive', '1.0.0')
@@ -667,7 +669,7 @@ Future<void> main() async {
           libPubspec(
             'a',
             '1.1.1',
-            deps: {'bar': '>=1.2.0 <1.5.0'},
+            deps: {'bar': '>=1.2.0 <1.5.0', 'only_a': '^1.0.0'},
             devDeps: {
               'foo': '^1.2.0',
               'dev': '^1.0.0',
@@ -699,7 +701,15 @@ Future<void> main() async {
 
     await _listReportApply(
       context,
-      [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', '1.0.0')],
+      [
+        _PackageVersion('foo', '2.2.3'),
+        _PackageVersion('transitive', '1.0.0'),
+        _PackageVersion(
+          'only_a',
+          '2.0.0',
+          constraint: VersionConstraint.parse('^2.0.0'),
+        ),
+      ],
       workspace: ['.', p.join('pkgs', 'a')],
       reportAssertions: (report) {
         expect(
