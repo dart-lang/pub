@@ -1130,7 +1130,7 @@ Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
 /// of maps, one of them having the property `k` with value `v`, recurse into
 /// that map.
 ///
-/// Cast the result as a <T>.
+/// Cast the result as a [T].
 T dig<T>(dynamic json, List<dynamic> path) {
   for (var i = 0; i < path.length; i++) {
     switch (path[i]) {
