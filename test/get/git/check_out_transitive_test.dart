@@ -135,7 +135,7 @@ void main() {
       File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
     expect(
-      lockFile['packages']['bar']['description']['path'],
+      dig<String>(lockFile, ['packages', 'bar', 'description', 'path']),
       'pkgs/bar',
       reason: 'Use forward slashes for path',
     );

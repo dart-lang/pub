@@ -118,7 +118,7 @@ void main() {
     final lockfilePath = p.join(d.sandbox, appPath, 'pubspec.lock');
     final lockfileJson = loadYaml(File(lockfilePath).readAsStringSync());
     expect(
-      lockfileJson['packages']['foo']['description']['path'],
+      dig<String>(lockfileJson, ['packages', 'foo', 'description', 'path']),
       '../foo',
       reason: 'Should use `/` as separator on all platforms',
     );
