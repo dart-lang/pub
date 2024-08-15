@@ -1238,7 +1238,15 @@ class PubProcessResult {
         stderr = _toLines(stderr);
 
   // TODO(rnystrom): Remove this and change to returning one string.
-  static List<String> _toLines(String output) => splitLines(output);
+  static List<String> _toLines(String output) {
+    final lines = const LineSplitter().convert(output);
+
+    if (lines.isNotEmpty && lines.last == '') {
+      lines.removeLast();
+    }
+
+    return lines;
+  }
 
   bool get success => exitCode == exit_codes.SUCCESS;
 }

@@ -381,18 +381,6 @@ String hexEncode(List<int> bytes) => hex.encode(bytes);
 
 Uint8List hexDecode(String string) => hex.decode(string) as Uint8List;
 
-/// Splits [text] on its line breaks in a Windows-line-break-friendly way.
-List<String> splitLines(String text, {bool discardTrailingNewline = true}) {
-  final lines = const LineSplitter().convert(text);
-
-  // Discard a trailing newline. This is useful since StringBuffers often end
-  // up with an extra newline at the end from using [writeln].
-  if (discardTrailingNewline && lines.lastOrNull == '') {
-    lines.removeLast();
-  }
-  return lines;
-}
-
 /// Like [String.split], but only splits on the first occurrence of the pattern.
 ///
 /// This always returns an array of two elements or fewer.

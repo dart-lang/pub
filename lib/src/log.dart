@@ -232,7 +232,7 @@ void fine(String message) => write(Level.fine, message);
 
 /// Logs [message] at [level].
 void write(Level level, String message) {
-  final lines = splitLines(message);
+  final lines = const LineSplitter().convert(message);
   final entry = _Entry(level, lines);
 
   final logFn = verbosity._loggers[level];
