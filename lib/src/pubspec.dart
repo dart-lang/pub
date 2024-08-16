@@ -602,7 +602,7 @@ Map<String, PackageRange> _parseDependencies(
           fileType,
         );
         final otherEntries = specNode.nodes.entries
-            .where((entry) => entry.key.value != 'version')
+            .where((entry) => (entry.key as YamlNode).value != 'version')
             .toList();
         if (otherEntries.length > 1) {
           _error('A dependency may only have one source.', specNode.span);

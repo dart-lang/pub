@@ -360,8 +360,7 @@ Future<void> main() async {
     final lockFileYaml = YamlEditor(
       lockFile.readAsStringSync(),
     );
-    for (final p
-        in lockFileYaml.parseAt(['packages']).value.entries as Iterable) {
+    for (final p in (lockFileYaml.parseAt(['packages']).value as Map).entries) {
       lockFileYaml.update(
         ['packages', p.key, 'description', 'url'],
         'https://pub.dartlang.org',
@@ -646,6 +645,8 @@ Future<void> main() async {
       ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
       ..serve('bar', '1.2.3')
       ..serve('bar', '2.2.3')
+      ..serve('only_a', '1.0.0')
+      ..serve('only_a', '2.0.0')
       ..serve('dev', '1.0.0')
       ..serve('dev', '2.0.0')
       ..serve('transitive', '1.0.0')
@@ -669,7 +670,7 @@ Future<void> main() async {
           libPubspec(
             'a',
             '1.1.1',
-            deps: {'bar': '>=1.2.0 <1.5.0'},
+            deps: {'bar': '>=1.2.0 <1.5.0', 'only_a': '^1.0.0'},
             devDeps: {
               'foo': '^1.2.0',
               'dev': '^1.0.0',
@@ -701,7 +702,15 @@ Future<void> main() async {
 
     await _listReportApply(
       context,
-      [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', '1.0.0')],
+      [
+        _PackageVersion('foo', '2.2.3'),
+        _PackageVersion('transitive', '1.0.0'),
+        _PackageVersion(
+          'only_a',
+          '2.0.0',
+          constraint: VersionConstraint.parse('^2.0.0'),
+        ),
+      ],
       workspace: ['.', p.join('pkgs', 'a')],
       reportAssertions: (report) {
         expect(
@@ -718,12 +727,11 @@ Future<void> main() async {
   });
 }
 
-dynamic findChangeVersion(dynamic json, String updateType, String name) {
-  final dep =
-      json['dependencies'].firstWhere((dynamic p) => p['name'] == 'foo');
-  if (dep == null) return null;
-  return dep[updateType]
-      .firstWhere((dynamic p) => p['name'] == name)['version'];
+String? findChangeVersion(dynamic json, String updateType, String name) {
+  return dig<String?>(
+    json,
+    ['dependencies', ('name', 'foo'), updateType, ('name', name), 'version'],
+  );
 }
 
 class _PackageVersion {

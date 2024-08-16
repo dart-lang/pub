@@ -58,16 +58,14 @@ class LoginCommand extends PubCommand {
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
-        final userInfo = json.decode(userInfoRequest.body);
-        final name = userInfo['name'] as String?;
-        final email = userInfo['email'];
-        if (email is String) {
-          return _UserInfo(name, email);
-        } else {
-          log.fine(
-            'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
-          );
-          return null;
+        switch (json.decode(userInfoRequest.body)) {
+          case {'name': final String? name, 'email': final String email}:
+            return _UserInfo(name, email);
+          default:
+            log.fine(
+              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
+            );
+            return null;
         }
       } on FormatException catch (e) {
         log.fine(

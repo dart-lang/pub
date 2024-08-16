@@ -35,7 +35,7 @@ void main() {
       File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
     expect(
-      lockfile['packages']['foo']['description']['url'],
+      dig<String>(lockfile, ['packages', 'foo', 'description', 'url']),
       '../foo.git',
       reason: 'The relative path should be preserved, '
           'and be a url (forward slashes on all platforms)',

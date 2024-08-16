@@ -46,7 +46,7 @@ void main() {
     final lockfile = loadYaml(
       File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
-    expect(lockfile['packages'].keys, <String>{'dev_dep'});
+    expect(dig<Map>(lockfile, ['packages']).keys, <String>{'dev_dep'});
     await appPackageConfigFile(
       [
         packageConfigEntry(name: 'dev_dep', version: '1.0.0'),
@@ -113,7 +113,7 @@ void main() {
     final lockfile = loadYaml(
       File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
-    expect(lockfile['packages'].keys, <String>{});
+    expect(dig<Map>(lockfile, ['packages']).keys, <String>{});
     await appPackageConfigFile(
       [
         packageConfigEntry(name: 'a', path: './pkgs/a'),
@@ -162,7 +162,7 @@ void main() {
     final lockfile = loadYaml(
       File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
-    expect(lockfile['packages'].keys, <String>{});
+    expect(dig<Map>(lockfile, ['packages']).keys, <String>{});
 
     await appPackageConfigFile(
       [
