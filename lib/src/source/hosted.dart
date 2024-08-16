@@ -695,11 +695,11 @@ class HostedSource extends CachedSource {
         String ecosystem,
       ) {
         if (affectedPackage is! Map) {
-          throw const FormatException('affectedPackage must be a map');
+          throw const FormatException('`affected` must be a map');
         }
         final package = affectedPackage['package'];
         if (package is! Map) {
-          throw const FormatException('package must be a map');
+          throw const FormatException('`package` must be a map');
         }
         final affectedName = package['name'];
         if (affectedName is! String) {
@@ -716,6 +716,9 @@ class HostedSource extends CachedSource {
       }
 
       for (final affectedPackage in affectedPackages) {
+        if (affectedPackage is! Map) {
+          throw const FormatException('`affected` must be a list of maps');
+        }
         if (matchesNameAndEcosystem(affectedPackage, packageName, 'pub')) {
           final affectedVersions = <String>{};
           final versions = affectedPackage['versions'];
@@ -780,10 +783,14 @@ class HostedSource extends CachedSource {
           }
           final parsedCacheAdvisoriesUpdated =
               DateTime.parse(cachedAdvisoriesUpdated);
-          if ((await status(id.toRef(), id.version, cache))
-              .advisoriesUpdated!
-              .isAfter(parsedCacheAdvisoriesUpdated)) {
-            // too old
+          final advisoriesUpdated =
+              (await status(id.toRef(), id.version, cache)).advisoriesUpdated;
+
+          if (
+              // We could not obtain the timestamp of latest advisory update.
+              advisoriesUpdated == null ||
+                  // The cached entry is too old.
+                  advisoriesUpdated.isAfter(parsedCacheAdvisoriesUpdated)) {
             tryDeleteEntry(advisoriesCachePath);
           } else {
             return _extractAdvisoryDetailsForPackage(doc, id.toRef().name);
@@ -1812,11 +1819,11 @@ class ResolvedHostedDescription extends ResolvedDescription {
   /// PackageId described by this.
   ///
   /// This can be obtained in several ways:
-  /// * Reported from a server in the archive_sha256 field.
-  ///   (will be null if the server does not report this.)
-  /// * Obtained from a pubspec.lock
-  ///   (will be null for legacy lock-files).
-  /// * Read from the <PUB_CACHE>/hosted-hashes/<server>/<package>-<version>.sha256 file.
+  /// * Reported from a server in the archive_sha256 field. (will be null if the
+  ///   server does not report this.)
+  /// * Obtained from a pubspec.lock (will be null for legacy lock-files).
+  /// * Read from the
+  ///   `<PUB_CACHE>/hosted-hashes/<server>/<package>-<version>.sha256` file.
   ///   (will be null if the file doesn't exist for corrupt or legacy caches).
   final Uint8List? sha256;
 

@@ -45,7 +45,7 @@ import 'utils.dart';
 /// For a cached source, the package is physically in the user's pub cache and
 /// we don't want to mess with it by putting a lockfile in there. Instead, when
 /// we activate the package, we create a full lockfile and put it in the
-/// "global_packages" directory. It's named "<package>.lock". Unlike a normal
+/// "global_packages" directory. It's named `"<package>.lock"`. Unlike a normal
 /// lockfile, it also contains an entry for the root package itself, so that we
 /// know the version and description that was activated.
 ///
