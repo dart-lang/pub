@@ -1378,7 +1378,12 @@ See https://dart.dev/go/sdk-constraint
 
     final toTighten = <(Package, PackageRange)>[];
 
+    // Keep track of the versions of workspace packages - these are not included
+    // in the lockfile.
+    final workspaceVersions = <String, Version>{};
+
     for (final package in workspaceRoot.transitiveWorkspace) {
+      workspaceVersions[package.name] = package.version;
       if (packagesToUpgrade.isEmpty) {
         for (final range in [
           ...package.dependencies.values,
@@ -1400,10 +1405,12 @@ See https://dart.dev/go/sdk-constraint
     for (final (package, range) in toTighten) {
       final changesForPackage = result[package] ??= {};
       final constraint = (changesForPackage[range] ?? range).constraint;
+
       final resolvedVersion =
           (packageVersions?.firstWhere((p) => p.name == range.name) ??
-                  lockFile.packages[range.name])!
-              .version;
+                      lockFile.packages[range.name])
+                  ?.version ??
+              workspaceVersions[range.name]!;
       if (range.source is HostedSource && constraint.isAny) {
         changesForPackage[range] = range
             .toRef()
