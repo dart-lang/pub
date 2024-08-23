@@ -381,15 +381,6 @@ String hexEncode(List<int> bytes) => hex.encode(bytes);
 
 Uint8List hexDecode(String string) => hex.decode(string) as Uint8List;
 
-/// A regular expression matching a trailing CR character.
-final _trailingCR = RegExp(r'\r$');
-
-// TODO(nweiz): Use `text.split(new RegExp("\r\n?|\n\r?"))` when issue 9360 is
-// fixed.
-/// Splits [text] on its line breaks in a Windows-line-break-friendly way.
-List<String> splitLines(String text) =>
-    text.split('\n').map((line) => line.replaceFirst(_trailingCR, '')).toList();
-
 /// Like [String.split], but only splits on the first occurrence of the pattern.
 ///
 /// This always returns an array of two elements or fewer.
