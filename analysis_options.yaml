@@ -2,8 +2,8 @@ include: package:dart_flutter_team_lints/analysis_options.yaml
 
 analyzer:
   errors:
-    avoid_dynamic_calls: ignore # TODO(mosum): fix the offending lines
     lines_longer_than_80_chars: ignore # TODO(mosum): fix the offending lines
+    todo: ignore
   exclude:
    - lib/src/third_party/**
 

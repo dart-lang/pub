@@ -39,7 +39,7 @@ Future<int> runUri(
 
   final subscription = errorPort.listen((list) {
     stderr.writeln('Unhandled exception:');
-    stderr.writeln(list[0]);
+    stderr.writeln((list as List)[0]);
     stderr.write(list[1]);
     exitCode = 255;
   });

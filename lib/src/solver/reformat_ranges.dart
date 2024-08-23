@@ -16,6 +16,7 @@ import 'term.dart';
 /// human-readable (but less technically-accurate) ranges.
 ///
 /// We use a lot of ranges in the solver that explicitly allow pre-release
+// ignore: unintended_html_in_doc_comment https://github.com/dart-lang/linter/issues/5055
 /// versions, such as `>=1.0.0-0 <2.0.0` or `>=1.0.0 <2.0.0-∞`. These ensure
 /// that adjacent ranges can be merged together, which makes the solver's job
 /// much easier. However, they're not super human-friendly, and in practice most

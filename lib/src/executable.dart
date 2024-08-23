@@ -219,7 +219,7 @@ final class DartExecutableWithPackageConfig {
   /// Can be a .dart file or an incremental snapshot.
   final String executable;
 
-  /// The package_config.json to run [executable] with. Or <null> if the VM
+  /// The package_config.json to run [executable] with. Or `<null>` if the VM
   /// should find it according to the standard rules.
   final String? packageConfig;
 
@@ -250,7 +250,7 @@ final class DartExecutableWithPackageConfig {
 ///   obtain a package config. If that fails, return a
 ///   [CommandResolutionFailedException].
 ///
-/// * Otherwise let  `<current>` be the name of the innermost package containing
+/// * Otherwise let `<current>` be the name of the innermost package containing
 ///   [root], and interpret [descriptor] as `[<package>][:<command>]`.
 ///
 ///   * If `<package>` is empty: default to the current package.
@@ -260,7 +260,7 @@ final class DartExecutableWithPackageConfig {
 /// For example:
 /// * `foo` will resolve to `foo:bin/foo.dart` or `foo:bin/main.dart`.
 /// * `:foo` will resolve to `<current>:bin/foo.dart`.
-/// * `` and `:` both resolves to `<current>:bin/<current>.dart` or
+/// * The empty string and `":"` both resolves to `<current>:bin/<current>.dart` or
 ///   `bin/<current>:main.dart`.
 ///
 /// If that doesn't resolve as an existing file, throw an exception.
@@ -453,11 +453,11 @@ enum CommandResolutionIssue {
   /// such file exists.
   fileNotFound,
 
-  /// The command-string was '<package>:<binary>' or '<package>', and <package>
-  /// was not in dependencies.
+  /// The command-string was `<package>:<binary>` or `<package>`, and
+  /// `<package>` was not in dependencies.
   packageNotFound,
 
-  /// The command string was '<package>:<binary>' or ':<binary>' and <binary>
+  /// The command string was `<package>:<binary>` or `:<binary>` and `<binary>`
   /// was not found.
   noBinaryFound,
 
