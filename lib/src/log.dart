@@ -232,15 +232,7 @@ void fine(String message) => write(Level.fine, message);
 
 /// Logs [message] at [level].
 void write(Level level, String message) {
-  message = message.toString();
-  final lines = splitLines(message);
-
-  // Discard a trailing newline. This is useful since StringBuffers often end
-  // up with an extra newline at the end from using [writeln].
-  if (lines.isNotEmpty && lines.last == '') {
-    lines.removeLast();
-  }
-
+  final lines = const LineSplitter().convert(message);
   final entry = _Entry(level, lines);
 
   final logFn = verbosity._loggers[level];
