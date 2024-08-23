@@ -5,9 +5,9 @@
 import 'dart:async';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/entrypoint.dart';
 
 import '../command.dart';
+import '../entrypoint.dart';
 import '../executable.dart';
 import '../log.dart' as log;
 import '../utils.dart';
