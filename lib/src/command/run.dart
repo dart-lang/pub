@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../entrypoint.dart';
 import '../executable.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -62,6 +63,7 @@ class RunCommand extends PubCommand {
         log.message('Deprecated. Use `dart run` instead.');
       });
     }
+    await Entrypoint.ensureUpToDate(entrypoint.workspaceRoot.dir, cache: cache);
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
