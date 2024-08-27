@@ -425,7 +425,7 @@ extension RequestSending on http.Client {
   /// when you need to send a request object but want a regular response object.
   ///
   /// If false is passed for [throwIfNotOk], the response will not be validated.
-  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  /// See [http.BaseResponse] extension for validation details.
   Future<http.Response> fetch(
     http.BaseRequest request, {
     bool throwIfNotOk = true,
@@ -442,7 +442,7 @@ extension RequestSending on http.Client {
   /// is successful, returns a [http.StreamedResponse].
   ///
   /// If false is passed for [throwIfNotOk], the response will not be validated.
-  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  /// See [Throwing.throwIfNotOk] extension for validation details.
   Future<http.StreamedResponse> fetchAsStream(
     http.BaseRequest request, {
     bool throwIfNotOk = true,

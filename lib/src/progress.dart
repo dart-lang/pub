@@ -30,8 +30,8 @@ class Progress {
 
   /// Creates a new progress indicator.
   ///
-  /// If [fine] is passed, this will log progress messages on [log.Level.FINE]
-  /// as opposed to [log.Level.MESSAGE].
+  /// If [fine] is passed, this will log progress messages on [log.Level.fine]
+  /// as opposed to [log.Level.message].
   Progress(this._message, {bool fine = false}) {
     _stopwatch.start();
 
