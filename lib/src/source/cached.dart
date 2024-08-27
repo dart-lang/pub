@@ -14,13 +14,12 @@ import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
 
-/// Base class for a [BoundSource] that installs packages into pub's
-/// [SystemCache].
+/// Base class for a [Source] that installs packages into pub's [SystemCache].
 ///
-/// A source should be cached if it requires network access to retrieve
-/// packages or the package needs to be "frozen" at the point in time that it's
-/// installed. (For example, Git packages are cached because installing from
-/// the same repo over time may yield different commits.)
+/// A source should be cached if it requires network access to retrieve packages
+/// or the package needs to be "frozen" at the point in time that it's
+/// installed. (For example, Git packages are cached because installing from the
+/// same repo over time may yield different commits.)
 abstract class CachedSource extends Source {
   /// If [id] is already in the system cache, just loads it from there.
   ///
@@ -76,7 +75,7 @@ abstract class CachedSource extends Source {
 
 /// The result of repairing a single cache entry.
 class RepairResult {
-  /// `true` if [package] was repaired successfully.
+  /// `true` if [packageName] was repaired successfully.
   /// `false` if something failed during the repair.
   ///
   /// When something goes wrong the package is attempted removed from

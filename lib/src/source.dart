@@ -12,7 +12,6 @@ import 'language_version.dart';
 import 'lock_file.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
-import 'source.dart' as src;
 import 'source/cached.dart';
 import 'source/git.dart';
 import 'source/hosted.dart';
@@ -88,8 +87,8 @@ abstract class Source {
 
   /// Parses a [PackageId] from a name and a serialized description.
   ///
-  /// This only accepts descriptions serialized using [serializeDescription]. It
-  /// should not be used with user-authored descriptions.
+  /// This should accept descriptions serialized using
+  /// [ResolvedDescription.serializeForLockfile].
   ///
   /// [containingDir] is the path to the directory lockfile where this
   /// description appears. It may be `null` if the description is coming from
@@ -115,7 +114,7 @@ abstract class Source {
   /// downloaded).
   ///
   /// By default, this assumes that each description has a single version and
-  /// uses [describe] to get that version.
+  /// uses [SystemCache.describe] to get that version.
   Future<List<PackageId>> doGetVersions(
     PackageRef ref,
     Duration? maxAge,
@@ -143,7 +142,7 @@ abstract class Source {
   ///
   /// For sources that have only one version for a given [PackageRef], this may
   /// return a pubspec with a different version than that specified by [id]. If
-  /// they do, [describe] will throw a [PackageNotFoundException].
+  /// they do, [SystemCache.describe] will throw a [PackageNotFoundException].
   ///
   /// This may be called for packages that have not yet been downloaded during
   /// the version resolution process.
@@ -215,7 +214,7 @@ abstract class Description {
 /// to lock down a specific version.
 ///
 /// This is currently only relevant for the [GitSource] that resolves the
-/// [src.Description.ref] to a specific commit id in [GitSource.doGetVersions].
+/// [GitDescription.ref] to a specific commit id in [GitSource.doGetVersions].
 ///
 /// This is the information that goes into a `pubspec.lock` file together with
 /// a version number (that is represented by a [PackageId].
@@ -226,7 +225,7 @@ abstract class ResolvedDescription {
   /// When a [LockFile] is serialized, it uses this method to get the
   /// [description] in the right format.
   ///
-  /// [containingPath] is the containing directory of the root package.
+  /// [containingDir] is the containing directory of the root package.
   Object? serializeForLockfile({required String? containingDir});
 
   /// Converts `this` into a human-friendly form to show the user.

@@ -30,17 +30,17 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
   ];
 }
 
-/// Runs [executable] from [package] reachable from [entrypoint].
+/// Runs [executable] reachable from [entrypoint].
 ///
-/// The [executable] is a relative path to a Dart file within [package], which
-/// should either be the entrypoint package or an immediate dependency of it.
+/// The [executable] references Dart file, which should either be the entrypoint
+/// package or an immediate dependency of it.
 ///
 /// Arguments from [args] will be passed to the spawned Dart application.
 ///
 /// If [enableAsserts] is true, the program is run with assertions enabled.
 ///
 /// If the executable is in an immutable package and we pass no [vmArgs], it
-/// run from snapshot (and built if the snapshot doesn't already exist).
+/// runs from snapshot (and built if the snapshot doesn't already exist).
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
@@ -253,7 +253,7 @@ final class DartExecutableWithPackageConfig {
 /// * Otherwise let `<current>` be the name of the innermost package containing
 ///   [root], and interpret [descriptor] as `[<package>][:<command>]`.
 ///
-///   * If `<package>` is empty: default to the package at [current].
+///   * If `<package>` is empty: default to the current package.
 ///   * If `<command>` is empty, resolve it as `bin/<package>.dart` or
 ///     `bin/main.dart` to the first that exists.
 ///
@@ -531,13 +531,11 @@ class Executable {
     );
   }
 
-  /// The location of the snapshot of the dart program at [path] in [package]
-  /// will be stored here.
+  /// The location of the snapshot of the dart program at [relativePath] in
+  /// [package] will be stored here.
   ///
   /// We use the sdk version to make sure we don't run snapshots from a
   /// different sdk.
-  ///
-  /// [path] must be relative.
   String pathOfSnapshot(String rootDir) {
     assert(p.isRelative(relativePath));
     final versionSuffix = sdk.version;

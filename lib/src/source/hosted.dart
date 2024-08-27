@@ -1154,11 +1154,6 @@ class HostedSource extends CachedSource {
   ///
   /// Validates that the content hash of [id] corresponds to what is already in
   /// cache, if not the file is redownloaded.
-  ///
-  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
-  /// response if present instead of probing the server. Not probing allows for
-  /// `pub get` with a filled cache to be a fast case that doesn't require any
-  /// new version-listings.
   @override
   Future<DownloadPackageResult> downloadToSystemCache(
     PackageId id,
@@ -1446,8 +1441,8 @@ class HostedSource extends CachedSource {
   ) =>
       _download(id, destPath, cache);
 
-  /// Downloads package [package] at [version] from the archive_url and unpacks
-  /// it into [destPath].
+  /// Downloads package [id] from the archive_url and unpacks it into
+  /// [destPath].
   ///
   /// If there is no archive_url, try to fetch it from
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
@@ -1747,7 +1742,7 @@ See $contentHashesDocumentationUrl.
   }
 
   /// Enables speculative prefetching of dependencies of packages queried with
-  /// [getVersions].
+  /// [doGetVersions].
   Future<T> withPrefetching<T>(Future<T> Function() callback) async {
     return await _scheduler.withPrescheduling((preschedule) async {
       return await runZoned(
@@ -1761,7 +1756,7 @@ See $contentHashesDocumentationUrl.
   static const _prefetchingKey = #_prefetch;
 }
 
-/// The [PackageName.description] for a [HostedSource], storing the
+/// The [PackageRef.description] for a [HostedSource], storing the
 /// [packageName] and resolved [url] of the package server.
 class HostedDescription extends Description {
   final String packageName;

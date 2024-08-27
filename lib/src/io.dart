@@ -105,8 +105,8 @@ FileStat statPath(String path) {
 
 /// Returns the canonical path for [pathString].
 ///
-/// This is the normalized, absolute path, with symlinks resolved. As in
-/// [transitiveTarget], broken or recursive symlinks will not be fully resolved.
+/// This is the normalized, absolute path, with symlinks resolved. Broken or
+/// recursive symlinks will not be fully resolved.
 ///
 /// This doesn't require [pathString] to point to a path that exists on the
 /// filesystem; nonexistent or unreadable path entries are treated as normal
@@ -319,7 +319,7 @@ String ensureDir(String dir) {
   return dir;
 }
 
-/// Creates a temp directory in [dir], whose name will be [prefix] with
+/// Creates a temp directory in [base], whose name will be [prefix] with
 /// characters appended to it to make a unique name.
 ///
 /// Returns the path of the created directory.

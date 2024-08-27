@@ -129,10 +129,10 @@ VersionConstraint stripUpperBound(VersionConstraint constraint) {
 ///
 /// Will use just the constraint for dependencies hosted at the default host.
 ///
-/// Relative paths will be relative to [relativeEntrypoint].
+/// Relative paths will be relative to the directory of [receivingPackage].
 ///
 /// The syntax used for hosted will depend on the language version of
-/// [relativeEntrypoint]
+/// [receivingPackage].
 Object pubspecDescription(
   PackageRange range,
   SystemCache cache,

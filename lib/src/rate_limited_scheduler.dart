@@ -20,7 +20,7 @@ import 'package:pool/pool.dart';
 ///
 /// The operation will run in the [Zone] that the task was in when enqueued.
 ///
-/// If a task if [preschedule]d and later [schedule]d before the operation is
+/// If a task if `preschedule`d and later [schedule]d before the operation is
 /// started, the task will go in front of the queue with the zone of the
 /// [schedule] operation.
 ///
