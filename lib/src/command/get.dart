@@ -37,8 +37,8 @@ class GetCommand extends PubCommand {
     argParser.addFlag(
       'enforce-lockfile',
       negatable: false,
-      help:
-          'Enforce pubspec.lock. Fail resolution if pubspec.lock does not satisfy pubspec.yaml',
+      help: 'Enforce pubspec.lock. '
+          'Fail resolution if pubspec.lock does not satisfy pubspec.yaml',
     );
 
     argParser.addFlag(

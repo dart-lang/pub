@@ -97,11 +97,12 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
   // Changing this to pub.dev raises the following concerns:
   //
   //  1. It would blow through users caches.
-  //  2. It would cause conflicts for users checking pubspec.lock into git, if using
-  //     different versions of the dart-sdk / pub client.
-  //  3. It might cause other problems (investigation needed) for pubspec.lock across
-  //     different versions of the dart-sdk / pub client.
-  //  4. It would expand the API surface we're committed to supporting long-term.
+  //  2. It would cause conflicts for users checking pubspec.lock into git, if
+  //     using different versions of the dart-sdk / pub client.
+  //  3. It might cause other problems (investigation needed) for pubspec.lock
+  //     across different versions of the dart-sdk / pub client.
+  //  4. It would expand the API surface we're committed to supporting
+  //     long-term.
   //
   // Clearly, a bit of investigation is necessary before we update this to
   // pub.dev, it might be attractive to do next time we change the server API.
@@ -161,11 +162,12 @@ class HostedSource extends CachedSource {
     // Changing this to pub.dev raises the following concerns:
     //
     //  1. It would blow through users caches.
-    //  2. It would cause conflicts for users checking pubspec.lock into git, if using
-    //     different versions of the dart-sdk / pub client.
-    //  3. It might cause other problems (investigation needed) for pubspec.lock across
-    //     different versions of the dart-sdk / pub client.
-    //  4. It would expand the API surface we're committed to supporting long-term.
+    //  2. It would cause conflicts for users checking pubspec.lock into git, if
+    //     using different versions of the dart-sdk / pub client.
+    //  3. It might cause other problems (investigation needed) for pubspec.lock
+    //     across different versions of the dart-sdk / pub client.
+    //  4. It would expand the API surface we're committed to supporting
+    //     long-term.
     //
     // Clearly, a bit of investigation is necessary before we update this to
     // pub.dev, it might be attractive to do next time we change the server API.
@@ -345,9 +347,11 @@ class HostedSource extends CachedSource {
           // environment.
           return HostedDescription(description, defaultUrl);
         } else {
+          const shorterSyntaxVersion =
+              LanguageVersion.firstVersionWithShorterHostedSyntax;
           throw FormatException(
             'Using `hosted: <url>` is only supported with a minimum SDK '
-            'constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.',
+            'constraint of $shorterSyntaxVersion.',
           );
         }
       }
@@ -363,8 +367,12 @@ class HostedSource extends CachedSource {
     if (canUseShorthandSyntax) name ??= packageName;
 
     if (name is! String) {
-      throw FormatException("The 'name' key must have a string value without "
-          'a minimum Dart SDK constraint of ${LanguageVersion.firstVersionWithShorterHostedSyntax}.0 or higher.');
+      const shorterSyntaxVersion =
+          LanguageVersion.firstVersionWithShorterHostedSyntax;
+      throw FormatException(
+        "The 'name' key must have a string value without "
+        'a minimum Dart SDK constraint of $shorterSyntaxVersion.0 or higher.',
+      );
     }
 
     final u = description['url'];
@@ -613,7 +621,8 @@ class HostedSource extends CachedSource {
         );
       } else {
         log.warning(
-          'Warning: Unable to fetch advisories for "$packageName" from "$hostedUrl".\n',
+          'Warning: Unable to fetch advisories for "$packageName" '
+          'from "$hostedUrl".\n',
         );
       }
       return null;
@@ -1186,7 +1195,8 @@ class HostedSource extends CachedSource {
     if (!fileExists(hashPath(id, cache))) {
       if (dirExists(packageDir) && !cache.isOffline) {
         log.fine(
-          'Cache entry for ${id.name}-${id.version} has no content-hash - redownloading.',
+          'Cache entry for ${id.name}-${id.version} has no content-hash '
+          '- redownloading.',
         );
         deleteEntry(packageDir);
       }
@@ -1199,7 +1209,8 @@ class HostedSource extends CachedSource {
       final hashFromCache = sha256FromCache(id, cache);
       if (!fixedTimeBytesEquals(hashFromCache, expectedContentHash)) {
         log.warning(
-          'Cached version of ${id.name}-${id.version} has wrong hash - redownloading.',
+          'Cached version of ${id.name}-${id.version} has wrong hash '
+          '- redownloading.',
         );
         if (cache.isOffline) {
           fail('Cannot redownload while offline. Try again without --offline.');
@@ -1215,7 +1226,8 @@ class HostedSource extends CachedSource {
       didUpdate = true;
       if (cache.isOffline) {
         fail(
-          'Missing package ${id.name}-${id.version}. Try again without --offline.',
+          'Missing package ${id.name}-${id.version}. '
+          'Try again without --offline.',
         );
       }
       contentHash = await _download(id, packageDir, cache);
@@ -1502,7 +1514,8 @@ class HostedSource extends CachedSource {
         final actualHash = output.value;
         if (expectedHash != null && output.value != expectedHash) {
           log.fine(
-            'Expected content-hash for ${id.name}-${id.version} $expectedHash actual: ${output.value}.',
+            'Expected content-hash for ${id.name}-${id.version} $expectedHash '
+            'actual: ${output.value}.',
           );
           throw PackageIntegrityException('''
 Downloaded archive for ${id.name}-${id.version} had wrong content-hash.
@@ -1550,9 +1563,9 @@ See $contentHashesDocumentationUrl.
 
             // We download the archive to disk instead of streaming it directly
             // into the tar unpacking. This simplifies stream handling.
-            // Package:tar cancels the stream when it reaches end-of-archive, and
-            // cancelling a http stream makes it not reusable.
-            // There are ways around this, and we might revisit this later.
+            // Package:tar cancels the stream when it reaches end-of-archive,
+            // and cancelling a http stream makes it not reusable. There are
+            // ways around this, and we might revisit this later.
             await createFileFromStream(stream, archivePath);
           });
         });
@@ -1624,7 +1637,8 @@ See $contentHashesDocumentationUrl.
       }
       if (!fileExists(p.join(tempDir, 'pubspec.yaml'))) {
         fail(
-          'Found no `pubspec.yaml` in $archivePath. Is it a valid pub package archive?',
+          'Found no `pubspec.yaml` in $archivePath. '
+          'Is it a valid pub package archive?',
         );
       }
       final Pubspec pubspec;
@@ -1633,8 +1647,8 @@ See $contentHashesDocumentationUrl.
           tempDir,
           cache.sources,
           containingDescription:
-              // Dummy description.
-              // As we never use the dependencies, they don't need to be resolved.
+              // Dummy description. As we never use the dependencies, they don't
+              // need to be resolved.
               RootDescription('.'),
         );
         final errors = pubspec.dependencyErrors;
@@ -1669,8 +1683,9 @@ See $contentHashesDocumentationUrl.
     return id;
   }
 
-  /// When an error occurs trying to read something about [package] from [hostedUrl],
-  /// this tries to translate into a more user friendly error message.
+  /// When an error occurs trying to read something about [package] from
+  /// [hostedUrl], this tries to translate into a more user friendly error
+  /// message.
   ///
   /// Always throws an error, either the original one or a better one.
   static Never _throwFriendlyError(
@@ -1730,7 +1745,8 @@ See $contentHashesDocumentationUrl.
       throw PackageNotFoundException(message, hint: hint);
     } else if (error is FormatException) {
       throw PackageNotFoundException(
-        'Got badly formatted response trying to find package $package at $hostedUrl',
+        'Got badly formatted response trying to find '
+        'package $package at $hostedUrl',
         innerError: error,
         innerTrace: stackTrace,
         hint: 'Check that "$hostedUrl" is a valid package repository.',

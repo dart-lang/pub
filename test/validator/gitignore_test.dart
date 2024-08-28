@@ -28,8 +28,8 @@ Future<void> expectValidation(
 
 void main() {
   test(
-      'should consider a package valid if it contains no checked in otherwise ignored files',
-      () async {
+      'should consider a package valid '
+      'if it contains no checked in otherwise ignored files', () async {
     await d.git('myapp', [
       ...d.validPackage().contents,
       d.file('foo.txt'),
@@ -46,7 +46,8 @@ void main() {
         contains('Package has 1 warning.'),
         contains('foo.txt'),
         contains(
-          'Consider adjusting your `.gitignore` files to not ignore those files',
+          'Consider adjusting your `.gitignore` files '
+          'to not ignore those files',
         ),
       ]),
       exit_codes.DATA,
@@ -115,7 +116,8 @@ void main() {
         contains('Package has 1 warning.'),
         contains('foo.txt'),
         contains(
-          'Consider adjusting your `.gitignore` files to not ignore those files',
+          'Consider adjusting your `.gitignore` files '
+          'to not ignore those files',
         ),
       ]),
       exit_codes.DATA,

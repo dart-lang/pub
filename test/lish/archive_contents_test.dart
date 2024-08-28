@@ -23,8 +23,8 @@ const _executableMask = 0x49; // 001 001 001
 
 void main() {
   test(
-      'archives and uploads empty directories in package. Maintains the executable bit',
-      () async {
+      'archives and uploads empty directories in package. '
+      'Maintains the executable bit', () async {
     await d.validPackage().create();
     await d.dir(appPath, [
       d.dir('tool', [d.file('tool.sh', 'commands...')]),
@@ -75,7 +75,8 @@ void main() {
           if (entry.name.endsWith('tool.sh')) {
             expect(
               entry.header.mode
-                  // chmod +x doesn't sets the executable bit for other users on some platforms only.
+                  // chmod +x doesn't sets the executable bit for other users on
+                  // some platforms only.
                   |
                   1,
               _defaultMode | _executableMask,

@@ -79,8 +79,8 @@ void main() {
     );
   });
   test(
-      "An empty pubspec_overrides.yaml doesn't shadow overrides from pubspec.yaml",
-      () async {
+      "An empty pubspec_overrides.yaml doesn't shadow overrides "
+      'from pubspec.yaml', () async {
     await servePackages()
       ..serve('lib', '1.0.0')
       ..serve('lib', '2.0.0');

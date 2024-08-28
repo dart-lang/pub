@@ -201,8 +201,8 @@ void withLockFile() {
 
   // Issue 1853
   test(
-      "produces a nice message for a locked dependency that's the only version of its package",
-      () async {
+      'produces a nice message for a locked dependency '
+      "that's the only version of its package", () async {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'})
       ..serve('bar', '1.0.0')
@@ -374,7 +374,8 @@ So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
 
       await expectResolves(
         error: contains(
-          'Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version solving failed.',
+          'Because myapp depends on both '
+          'foo ^1.0.0 and foo ^2.0.0, version solving failed.',
         ),
       );
     });
@@ -1634,7 +1635,8 @@ void prerelease() {
     ).create();
     await expectResolves(
       error: contains(
-        'So, because myapp depends on both a 0.12.0 and b any, version solving failed.',
+        'So, because myapp depends on both '
+        'a 0.12.0 and b any, version solving failed.',
       ),
       tries: 2,
     );

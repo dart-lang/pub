@@ -98,9 +98,12 @@ For example:
       hide: true,
     );
 
-    // Following options are hidden/deprecated in favor of the new syntax: [dev:]<package>[:descriptor] ...
-    // To avoid breaking changes we keep supporting them, but hide them from --help to discourage
-    // further use. Combining these with new syntax will fail.
+    // Following options are hidden/deprecated in favor of the new syntax:
+    // [dev:]<package>[:descriptor] ...
+    //
+    // To avoid breaking changes we keep supporting them, but hide them from
+    // --help to discourage further use. Combining these with new syntax will
+    // fail.
     argParser.addOption(
       'git-url',
       help: 'Git URL of the package',
@@ -229,7 +232,8 @@ Specify multiple sdk packages with descriptors.''');
       final resultPackage = solveResult.packages
           .firstWhere((packageId) => packageId.name == name);
 
-      /// Assert that [resultPackage] is within the original user's expectations.
+      /// Assert that [resultPackage] is within the original user's
+      /// expectations.
       final constraint = update.constraint;
       if (constraint != null && !constraint.allows(resultPackage.version)) {
         final dependencyOverrides = resolutionPubspec.dependencyOverrides;
@@ -333,7 +337,8 @@ Specify multiple sdk packages with descriptors.''');
     } else {
       if (dependencyNames.contains(name)) {
         log.message(
-          '"$name" is already in "dependencies". Will try to update the constraint.',
+          '"$name" is already in "dependencies". '
+          'Will try to update the constraint.',
         );
         dependencies.removeWhere((element) => element.name == name);
       }
@@ -503,7 +508,8 @@ Specify multiple sdk packages with descriptors.''');
       }
       if (couldParseAsNewStyle) {
         usageException(
-          '--dev, --path, --sdk, --git-url, --git-path and --git-ref cannot be combined with a descriptor.',
+          '--dev, --path, --sdk, --git-url, --git-path and --git-ref '
+          'cannot be combined with a descriptor.',
         );
       } else {
         usageException('Invalid version constraint: ${e.message}');
@@ -630,7 +636,8 @@ Specify multiple sdk packages with descriptors.''');
               },
             },
             cache.sources,
-            // Resolve relative paths relative to current, not where the pubspec.yaml is.
+            // Resolve relative paths relative to current, not where the
+            // pubspec.yaml is.
             containingDescription: RootDescription(p.current),
           );
         } on FormatException catch (e) {
@@ -717,7 +724,8 @@ Specify multiple sdk packages with descriptors.''');
       }
 
       /// Remove the package from dev_dependencies if we are adding it to
-      /// dependencies. Refer to [_addPackageToPubspec] for additional discussion.
+      /// dependencies. Refer to [_addPackageToPubspec] for additional
+      /// discussion.
       if (!update.isDev && !update.isOverride) {
         final devDependenciesNode = yamlEditor
             .parseAt(['dev_dependencies'], orElse: () => YamlScalar.wrap(null));

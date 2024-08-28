@@ -160,8 +160,9 @@ To remove a dependency override of a package prefix the package name with
         }
       }
       if (!found) {
+        final pubspecPath = entrypoint.workPackage.pubspecPath;
         log.warning(
-          'Package "$name" was not found in ${entrypoint.workPackage.pubspecPath}!',
+          'Package "$name" was not found in $pubspecPath!',
         );
       }
     }

@@ -38,7 +38,8 @@ void testEnsurePubspecResolved() {
     });
 
     test(
-        'does not require a pub get if a `flutter_gen` package is injected into package_config.json',
+        'does not require a pub get '
+        'if a `flutter_gen` package is injected into package_config.json',
         () async {
       await d.dir('bar', [
         d.pubspec({'name': 'bar'}),
@@ -341,7 +342,8 @@ void testEnsurePubspecResolved() {
           d.libPubspec('bar', '1.0.0', deps: {'foo': '2.0.0'}),
         ]).create();
 
-        // To ensure the timestamp is strictly later we need to touch again here.
+        // To ensure the timestamp is strictly later we need to touch again
+        // here.
         await _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
 
         await _implicitPubGet('../bar/pubspec.yaml has changed '
@@ -349,8 +351,8 @@ void testEnsurePubspecResolved() {
       });
 
       test(
-          "a path dependency's language version doesn't match the package_config.json",
-          () async {
+          "a path dependency's language version "
+          "doesn't match the package_config.json", () async {
         await d.dir('bar', [
           d.libPubspec(
             'bar',
@@ -381,7 +383,8 @@ void testEnsurePubspecResolved() {
             sdk: '>= 2.100.0 <=4.0.0', // tests runs with '3.1.2+3'
           ),
         ]).create();
-        // To ensure the timestamp is strictly later we need to touch again here.
+        // To ensure the timestamp is strictly later we need to touch again
+        // here.
         await _touch(p.join(d.sandbox, 'bar', 'pubspec.yaml'));
 
         await _implicitPubGet('../bar/pubspec.yaml has changed '

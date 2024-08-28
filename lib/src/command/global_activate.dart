@@ -73,8 +73,8 @@ class GlobalActivateCommand extends PubCommand {
     argParser.addOption(
       'hosted-url',
       abbr: 'u',
-      help:
-          'A custom pub server URL for the package. Only applies when using the `hosted` source.',
+      help: 'A custom pub server URL for the package. '
+          'Only applies when using the `hosted` source.',
     );
   }
 
@@ -115,7 +115,8 @@ class GlobalActivateCommand extends PubCommand {
         (argResults.option('git-path') != null ||
             argResults.option('git-ref') != null)) {
       usageException(
-        'Options `--git-path` and `--git-ref` can only be used with --source=git.',
+        'Options `--git-path` and `--git-ref` '
+        'can only be used with --source=git.',
       );
     }
 
@@ -156,7 +157,8 @@ class GlobalActivateCommand extends PubCommand {
 
         if (!packageNameRegExp.hasMatch(package)) {
           final suggestion = dirExists(package)
-              ? '\n\nDid you mean `$topLevelProgram pub global activate --source path ${escapeShellArgument(package)}`?'
+              ? '\n\nDid you mean `$topLevelProgram pub global activate '
+                  '--source path ${escapeShellArgument(package)}`?'
               : '';
 
           usageException('Not a valid package name: "$package"$suggestion');

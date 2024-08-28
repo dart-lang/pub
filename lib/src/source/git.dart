@@ -498,7 +498,8 @@ class GitSource extends CachedSource {
           RepairResult(package.name, package.version, this, success: false),
         );
 
-        // Delete the revision cache path, not the subdirectory that contains the package.
+        // Delete the revision cache path, not the subdirectory that contains
+        // the package.
         final repoRoot = git.repoRoot(package.dir);
         if (repoRoot != null) tryDeleteEntry(repoRoot);
       }
@@ -691,8 +692,8 @@ class GitSource extends CachedSource {
     await git.run(args);
   }
 
-  /// Like [_clone], but clones to a temporary directory (inside the [cache]) and
-  /// moves
+  /// Like [_clone], but clones to a temporary directory (inside the [cache])
+  /// and moves
   Future<void> _cloneViaTemp(
     String from,
     String to,
@@ -723,7 +724,8 @@ class GitSource extends CachedSource {
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
         cache.rootDirForSource(this),
-        '${_repoName(id.description.description as GitDescription)}-${(id.description as ResolvedGitDescription).resolvedRef}',
+        '${_repoName(id.description.description as GitDescription)}-'
+        '${(id.description as ResolvedGitDescription).resolvedRef}',
       );
 
   /// Returns the path to the canonical clone of the repository referred to by
@@ -758,8 +760,8 @@ class GitDescription extends Description {
   /// to the pubspec location, and stored here as an absolute file url, and
   /// [relative] will be true.
   ///
-  /// This will not always parse as a [Uri] due the fact that `Uri.parse` does not allow strings of
-  /// the form: 'git@github.com:dart-lang/pub.git'.
+  /// This will not always parse as a [Uri] due the fact that `Uri.parse` does
+  /// not allow strings of the form: 'git@github.com:dart-lang/pub.git'.
   final String url;
 
   /// `true` if [url] was parsed from a relative url.

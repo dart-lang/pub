@@ -27,7 +27,8 @@ void main() {
           (e) =>
               e is ApplicationException &&
               e.message.contains(
-                'Pub failed to run subprocess `$nonExisting`: ProcessException:',
+                'Pub failed to run subprocess `$nonExisting`: '
+                'ProcessException:',
               ),
         ),
       );
@@ -338,10 +339,12 @@ void main() {
         await extractTarGz(
           Stream.fromIterable(
             [
-              base64Decode(
-                  'H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7maViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
-                  'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZyYvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
-                  '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qob+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
+              base64Decode('H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7m'
+                  'aViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
+                  'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZy'
+                  'YvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
+                  '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qo'
+                  'b+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
                   'AAAAAAAAAAAAgM9dALkoaRMAKAAA'),
             ],
           ),

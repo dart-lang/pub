@@ -71,7 +71,8 @@ void main() {
         libraryLanguageVersion: nextLanguageVersion,
       );
       await expectValidationWarning(
-        'The language version override can\'t specify a version greater than the latest known language version',
+        'The language version override can\'t specify a version '
+        'greater than the latest known language version',
       );
     });
     test('opts in to a newer version, with non-range constraint.', () async {
@@ -80,7 +81,8 @@ void main() {
         libraryLanguageVersion: nextLanguageVersion,
       );
       await expectValidationWarning(
-        'The language version override can\'t specify a version greater than the latest known language version',
+        'The language version override can\'t specify a version '
+        'greater than the latest known language version',
       );
     });
   });

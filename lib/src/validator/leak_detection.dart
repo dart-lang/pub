@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// ignore_for_file: lines_longer_than_80_chars
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -121,7 +123,9 @@ final class LeakMatch {
   String describe() {
     if (content.length > 10000) {
       // Large files are probably binary files. Don't show line numbers.
-      return 'Potential leak of ${pattern.kind} in `$url` at offset $start:$end.\n\n'
+      return 'Potential leak of ${pattern.kind} '
+          'in `$url` '
+          'at offset $start:$end.\n\n'
           '```\n${content.substring(start, end)}\n```\n';
     }
     return SourceFile.fromString(content, url: url)
@@ -242,8 +246,12 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
     //
     // Maximum length of an access key is specified as 128 here:
     // https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html#API_AccessKey_Contents
-    pattern:
-        r'[^A-Z0-9]((?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{12,128})[^A-Z0-9]',
+    pattern: r'[^A-Z0-9]'
+        r'('
+        r'(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)'
+        r'[A-Z0-9]{12,128}'
+        r')'
+        r'[^A-Z0-9]',
     allowed: [
       // Commonly used in AWS documentation and code samples as an example key.
       'AKIAIOSFODNN7EXAMPLE',

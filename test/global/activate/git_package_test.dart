@@ -26,7 +26,8 @@ void main() {
         // Specific revision number goes here.
         endsWith('Building package executables...\n'
             'Built foo:foo.\n'
-            'Activated foo 1.0.0 from Git repository "..${p.separator}foo.git".'),
+            'Activated foo 1.0.0 from Git repository '
+            '"..${p.separator}foo.git".'),
       ),
     );
   });
@@ -84,7 +85,8 @@ void main() {
         contains('in sub'),
         endsWith('Building package executables...\n'
             'Built sub:sub.\n'
-            'Activated sub 2.0.0 from Git repository "..${p.separator}foo.git".'),
+            'Activated sub 2.0.0 from Git repository '
+            '"..${p.separator}foo.git".'),
       ),
     );
     await runPub(

@@ -154,8 +154,8 @@ void main() {
   });
 
   test(
-      'with non-secure localhost url creates pub-tokens.json that contains token',
-      () async {
+      'with non-secure localhost url creates pub-tokens.json '
+      'that contains token', () async {
     await d.dir(configPath).create();
 
     await runPub(

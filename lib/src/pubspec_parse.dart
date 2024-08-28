@@ -18,10 +18,12 @@ final packageNameRegExp =
     RegExp('^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$');
 
 /// Helper class for pubspec parsing to:
-/// - extract the fields and methods that are reusable outside of `pub` client, and
+/// - extract the fields and methods that are reusable outside of `pub` client,
+///   and
 /// - help null-safety migration a bit.
 ///
-/// This class should be eventually extracted to a separate library, or re-merged with `Pubspec`.
+/// This class should be eventually extracted to a separate library, or
+/// re-merged with `Pubspec`.
 abstract class PubspecBase {
   /// All pubspec fields.
   ///

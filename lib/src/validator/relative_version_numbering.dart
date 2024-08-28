@@ -94,16 +94,16 @@ Consider one of:
     final previousOptedIn = previousPubspec.languageVersion.supportsNullSafety;
 
     if (currentOptedIn && !previousOptedIn) {
-      hints.add(
-          'You\'re about to publish a package that opts into null safety.\n'
-          'The previous version ($previousVersion) isn\'t opted in.\n'
-          'See $nullSafetyGuideUrl for best practices.');
+      hints.add('''
+You're about to publish a package that opts into null safety.
+The previous version ($previousVersion) isn't opted in.
+See $nullSafetyGuideUrl for best practices.''');
     } else if (!currentOptedIn && previousOptedIn) {
-      hints.add(
-          'You\'re about to publish a package that doesn\'t opt into null safety,\n'
-          'but the previous version ($previousVersion) was opted in.\n'
-          'This change is likely to be backwards incompatible.\n'
-          'See $semverUrl for information about versioning.');
+      hints.add('''
+You're about to publish a package that doesn't opt into null safety,
+but the previous version ($previousVersion) was opted in.
+This change is likely to be backwards incompatible.
+See $semverUrl for information about versioning.''');
     }
   }
 }

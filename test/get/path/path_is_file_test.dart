@@ -27,7 +27,8 @@ void main() {
 
     await pubGet(
       error: 'Because myapp depends on foo from path which doesn\'t exist '
-          '(Path dependency for package foo must refer to a directory, not a file. Was "$dummyPath".), version solving failed.',
+          '(Path dependency for package foo must refer to a directory, '
+          'not a file. Was "$dummyPath".), version solving failed.',
       exitCode: exit_codes.NO_INPUT,
     );
   });

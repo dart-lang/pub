@@ -21,7 +21,8 @@ import 'package:pub/src/exceptions.dart';
 Future<void> main(List<String> args) async {
   if (Platform.environment['FLUTTER_ROOT'] != null) {
     stderr.writeln(
-      'WARNING: The tests will not run correctly with dart from a flutter checkout!',
+      'WARNING: '
+      'The tests will not run correctly with dart from a flutter checkout!',
     );
   }
   Process? testProcess;
