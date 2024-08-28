@@ -411,7 +411,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     return false;
   }();
 
-  /// Retrieves the pubspec of package [name] in [version] from [source].
+  /// Retrieves the pubspec of package [id] from its [PackageId.source].
   ///
   /// Returns `null`, if given `null` as a convinience.
   Future<_VersionDetails?> _describeVersion(
@@ -465,8 +465,8 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   }
 }
 
-/// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
-/// resolution was found.
+/// Try to resolve the pubspec of [package] return [PackageId]s in the
+/// resolution or `null` if no resolution was found.
 Future<List<PackageId>?> _tryResolve(
   Package package,
   SystemCache cache, {

@@ -213,11 +213,6 @@ Consider setting the `PUB_CACHE` variable manually.
   ///
   /// [id] must refer to a cached package.
   ///
-  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
-  /// response if present instead of probing the server. Not probing allows for
-  /// `pub get` with a filled cache to be a fast case that doesn't require any
-  /// new version-listings.
-  ///
   /// Returns [id] with an updated [ResolvedDescription], this can be different
   /// if the content-hash changed while downloading.
   Future<DownloadPackageResult> downloadPackage(PackageId id) async {

@@ -374,7 +374,7 @@ Specify multiple sdk packages with descriptors.''');
     r'(?::(?<descriptor>.*))?$',
   );
 
-  /// Split [arg] on ':' and interpret it with the flags in [argResult] either
+  /// Split [arg] on ':' and interpret it with the flags in [argResults] either
   /// as an old-style or a new-style descriptor to produce a PackageRef].
   _ParseResult _parsePackage(String arg, ArgResults argResults) {
     var isDev = argResults.flag('dev');
@@ -563,9 +563,9 @@ Specify multiple sdk packages with descriptors.''');
     return _PartialParseResult(ref, constraint);
   }
 
-  /// Parse [package] to return the corresponding [_ParseResult].
+  /// Parse [packageName] to return the corresponding [_ParseResult].
   ///
-  /// [package] must be written in the format
+  /// [packageName] must be written in the format
   /// `<package-name>[:descriptor>]`, where quotations should be used if
   /// necessary.
   ///
@@ -595,16 +595,16 @@ Specify multiple sdk packages with descriptors.''');
   /// non-string descriptor.
   ///
   /// If a version constraint is provided when the `--path` or any of the
-  /// `--git-<option>` options are used, a [PackageParseError] will be thrown.
+  /// `--git-<option>` options are used, a [usageException] will be thrown.
   ///
   /// Packages must either be a git, hosted, sdk, or path package. Mixing of
-  /// options is not allowed and will cause a [PackageParseError] to be thrown.
+  /// options is not allowed and will cause a [usageException] to be thrown.
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
   ///
-  /// Returns a `ref` of `null` if the descriptor did not specify a source.
-  /// Then the source will be determined by the old-style arguments.
+  /// Returns a `ref` of `null` if the descriptor did not specify a source. Then
+  /// the source will be determined by the old-style arguments.
   _PartialParseResult _parseDescriptorNewStyle(
     String packageName,
     String? descriptor,

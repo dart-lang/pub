@@ -251,7 +251,8 @@ class GitSource extends CachedSource {
     });
   }
 
-  /// Lists the file as it is represented at the revision of [description].
+  /// Lists the file as it is represented at the revision of
+  /// [resolvedDescription].
   ///
   /// Assumes that revision is present in the cache already (can be done with
   /// [_ensureRevision]).
@@ -678,9 +679,6 @@ class GitSource extends CachedSource {
   /// out the working tree, but instead makes the repository a local mirror of
   /// the remote repository. See the manpage for `git clone` for more
   /// information.
-  ///
-  /// If [shallow] is true, creates a shallow clone that contains no history
-  /// for the repository.
   Future<void> _clone(
     String from,
     String to, {

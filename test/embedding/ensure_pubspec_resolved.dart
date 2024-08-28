@@ -529,10 +529,6 @@ Future<void> _implicitPubGet(
 }
 
 /// Ensures that pub doesn't require "dart pub get" for the current package.
-///
-/// If [runDeps] is false, `pub deps` isn't included in the test. This is
-/// sometimes not desirable, since it uses slightly stronger checks for pubspec
-/// and lockfile consistency.
 Future<void> _noImplicitPubGet({
   Map<String, String?>? environment,
 }) async {

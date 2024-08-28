@@ -701,7 +701,7 @@ Future<void> createLockFile(
   ]).create();
 }
 
-/// Creates a lock file for [sources] without running `pub get`.
+/// Creates a lock file without running `pub get`.
 ///
 /// [sandbox] is a list of path dependencies to be found in the sandbox
 /// directory.
@@ -1020,7 +1020,7 @@ Future<PackageServer> startPackageServer() async {
   return server;
 }
 
-/// Create temporary folder 'bin/' containing a 'git' script in [sandbox]
+/// Create temporary folder 'bin/' containing a 'git' script in [d.sandbox]
 /// By adding the bin/ folder to the search `$PATH` we can prevent `pub` from
 /// detecting the installed 'git' binary and we can test that it prints
 /// a useful error message.

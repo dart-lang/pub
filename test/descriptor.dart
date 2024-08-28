@@ -185,13 +185,13 @@ Descriptor gitPackageRepoCacheDir(String name) =>
 /// versions are expected to be downloaded.
 ///
 /// If [port] is passed, it's used as the port number of the local hosted server
-/// that this cache represents. It defaults to [globalServer.port].
+/// that this cache represents. It defaults to `globalServer.port`.
 ///
 /// If [includePubspecs] is `true`, then pubspecs will be created for each
 /// package. Defaults to `false` so that the contents of pubspecs are not
 /// validated since they will often lack the dependencies section that the
 /// real pubspec being compared against has. You usually only need to pass
-/// `true` for this if you plan to call [create] on the resulting descriptor.
+/// `true` for this if you plan to call `create()` on the resulting descriptor.
 Descriptor cacheDir(
   Map<String, dynamic> packages, {
   int? port,
@@ -216,7 +216,7 @@ Descriptor cacheDir(
 /// downloaded from the mock package server.
 ///
 /// If [port] is passed, it's used as the port number of the local hosted server
-/// that this cache represents. It defaults to [globalServer.port].
+/// that this cache represents. It defaults to `globalServer.port`.
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(hostedCachePath(port: port), contents);
 }
@@ -225,7 +225,7 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
 /// packages downloaded from the mock package server.
 ///
 /// If [port] is passed, it's used as the port number of the local hosted server
-/// that this cache represents. It defaults to [globalServer.port].
+/// that this cache represents. It defaults to `globalServer.port`.
 Descriptor hostedHashesCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(cachePath, [
     dir(
@@ -314,10 +314,10 @@ DirectoryDescriptor appDir({Map? dependencies, Map<String, Object>? pubspec}) =>
 
 /// Describes a `.dart_tools/package_config.json` file.
 ///
-/// [dependencies] is a list of packages included in the file.
+/// [packages] is a list of packages included in the file.
 ///
 /// Validation checks that the `.dart_tools/package_config.json` file exists,
-/// has the expected entries (one per key in [dependencies]), each with a path
+/// has the expected entries (one per key in [packages]), each with a path
 /// that matches the `rootUri` of that package.
 Descriptor packageConfigFile(
   List<PackageConfigEntry> packages, {

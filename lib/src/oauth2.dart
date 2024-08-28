@@ -739,7 +739,7 @@ class _Client extends http.BaseClient {
   /// Creates a new client from a pre-existing set of credentials.
   ///
   /// When authorizing a client for the first time, you should use
-  /// [_AuthorizationCodeGrant] or [_resourceOwnerPasswordGrant] instead of
+  /// [_AuthorizationCodeGrant] instead of
   /// constructing a [_Client] directly.
   ///
   /// [httpClient] is the underlying client that this forwards requests to after

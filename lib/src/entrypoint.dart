@@ -326,7 +326,7 @@ See $workspacesDocUrl for more information.''',
   /// An entrypoint for the workspace containing [workingDir]/
   ///
   /// If [checkInCache] is `true` (the default) an error will be thrown if
-  /// [rootDir] is located inside [cache.rootDir].
+  /// [workingDir] is located inside [cache]`.rootDir`.
 
   Entrypoint(
     this.workingDir,
@@ -508,7 +508,7 @@ See $workspacesDocUrl for more information.''',
   /// if [summaryOnly] is `true` only success or failure will be
   /// shown --- in case of failure, a reproduction command is shown.
   ///
-  /// Updates [lockFile] and [packageRoot] accordingly.
+  /// Updates [lockFile] and [packageGraph] accordingly.
   ///
   /// If [enforceLockfile] is true no changes to the current lockfile are
   /// allowed. Instead the existing lockfile is loaded, verified against
@@ -663,7 +663,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     });
   }
 
-  /// Precompiles executable .dart file at [path] to a snapshot.
+  /// Precompiles [executable] to a snapshot.
   ///
   /// The [additionalSources], if provided, instruct the compiler to include
   /// additional source files into compilation even if they are not referenced
@@ -706,13 +706,11 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     cache.maintainCache();
   }
 
-  /// The location of the snapshot of the dart program at [path] in [package]
+  /// The location of the snapshot of the dart program at [executable]
   /// will be stored here.
   ///
   /// We use the sdk version to make sure we don't run snapshots from a
   /// different sdk.
-  ///
-  /// [path] must be relative.
   String pathOfSnapshot(Executable executable) {
     return isCachedGlobal
         ? executable.pathOfGlobalSnapshot(workspaceRoot.dir)
@@ -736,8 +734,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
   }
 
-  /// Does a fast-pass check to see if the resolution is up-to-date
-  /// ([_isUpToDate]). If not, run a resolution with `pub get` semantics.
+  /// Does a fast-pass check to see if the resolution is up-to-date. If not, run
+  /// a resolution with `pub get` semantics.
   ///
   /// If [summaryOnly] is `true` (the default) only a short summary is shown of
   /// the solve.
@@ -1445,7 +1443,7 @@ See https://dart.dev/go/sdk-constraint
     return result;
   }
 
-  /// Unless [dryRun], loads `pubspec.yaml` of each [package] in [changeSet] and
+  /// Unless [dryRun], loads `pubspec.yaml` of each [Package] in [changeSet] and
   /// applies the changes to its (dev)-dependencies using yaml_edit to preserve
   /// textual structure.
   ///

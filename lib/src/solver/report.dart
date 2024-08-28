@@ -333,8 +333,7 @@ $contentHashesDocumentationUrl
   /// Reports the results of the upgrade on the package named [name].
   ///
   /// If [alwaysShow] is true, the package is reported even if it didn't change,
-  /// regardless of [_type]. If [highlightOverride] is true (or absent), writes
-  /// "(override)" next to overridden packages.
+  /// regardless of [_type].
   ///
   /// Returns true if the package had changed.
   Future<bool> _reportPackage(

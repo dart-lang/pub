@@ -165,9 +165,9 @@ class PartialSolution {
     throw StateError('[BUG] $term is not satisfied.');
   }
 
-  /// Returns whether `this` satisfies [other].
+  /// Returns whether `this` satisfies [term].
   ///
-  /// That is, whether [other] must be true given the assignments in this
+  /// That is, whether [term] must be true given the assignments in this
   /// partial solution.
   bool satisfies(Term term) => relation(term) == SetRelation.subset;
 
