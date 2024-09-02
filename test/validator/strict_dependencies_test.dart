@@ -282,6 +282,20 @@ linter:
       );
     });
 
+    test('hook does not declare an "import" as a dependency', () async {
+      await d.dir(p.join(appPath, 'hook')).create();
+      await d.file(p.join(appPath, 'hook', 'build.dart'), r'''
+        import 'package:silly_monkey/silly_monkey.dart';
+      ''').create();
+
+      await expectValidationDeprecated(
+        strictDeps,
+        errors: [
+          matches('does not have silly_monkey in the `dependencies` section'),
+        ],
+      );
+    });
+
     test('does not declare an "export" as a dependency', () async {
       await d.file(p.join(appPath, 'lib', 'library.dart'), r'''
         export 'package:silly_monkey/silly_monkey.dart';
