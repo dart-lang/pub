@@ -75,7 +75,12 @@ class StrictDependenciesValidator extends Validator {
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
   void _validateLibBin(Set<String> deps, Set<String> devDeps) {
-    for (var usage in _usagesBeneath(['lib', 'bin', 'hook'])) {
+    for (var usage in _usagesBeneath([
+      'bin',
+      'hook/build.dart',
+      'hook/link.dart',
+      'lib',
+    ])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
           errors.add(usage.dependencyMisplaceMessage());

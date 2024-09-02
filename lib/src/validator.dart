@@ -224,7 +224,9 @@ abstract class Validator {
     return files
         .where(
           recursive
-              ? (file) => p.isWithin(base, p.canonicalize(file))
+              ? (file) =>
+                  p.isWithin(base, p.canonicalize(file)) ||
+                  p.canonicalize(file) == base
               : (file) => p.canonicalize(p.dirname(file)) == base,
         )
         .toList();
