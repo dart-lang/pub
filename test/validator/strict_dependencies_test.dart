@@ -283,15 +283,51 @@ linter:
     });
 
     test('hook does not declare an "import" as a dependency', () async {
-      await d.dir(p.join(appPath, 'hook')).create();
-      await d.file(p.join(appPath, 'hook', 'build.dart'), r'''
+      await d.dir(
+        p.join(appPath, 'hook'),
+        [
+          d.file('build.dart', r'''
         import 'package:silly_monkey/silly_monkey.dart';
-      ''').create();
+      '''),
+        ],
+      ).create();
 
       await expectValidationDeprecated(
         strictDeps,
         errors: [
           matches('does not have silly_monkey in the `dependencies` section'),
+        ],
+      );
+    });
+
+    test('hook declares an import as a devDependency for', () async {
+      await d.dir(
+        appPath,
+        [
+          d.libPubspec(
+            'test_pkg',
+            '1.0.0',
+            devDeps: {'silly_monkey': '^1.2.3'},
+            sdk: '>=1.8.0 <2.0.0',
+          ),
+          d.dir(
+            'hook',
+            [
+              d.file('build.dart', r'''
+        import 'package:silly_monkey/silly_monkey.dart';
+      '''),
+            ],
+          ),
+        ],
+      ).create();
+
+      await expectValidationDeprecated(
+        strictDeps,
+        errors: [
+          matches(
+            'silly_monkey is in the `dev_dependencies` section of '
+            '`pubspec.yaml`',
+          ),
         ],
       );
     });
