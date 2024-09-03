@@ -216,15 +216,17 @@ abstract class Validator {
     });
   }
 
-  /// Returns the [files] that are inside [dir] (relative to the package
-  /// entrypoint).
+  /// Returns the [files] that are [path] or inside [path] (relative to the
+  /// package entrypoint).
   // TODO(sigurdm): Consider moving this to a more central location.
-  List<String> filesBeneath(String dir, {required bool recursive}) {
-    final base = p.canonicalize(p.join(package.dir, dir));
+  List<String> filesBeneath(String path, {required bool recursive}) {
+    final base = p.canonicalize(p.join(package.dir, path));
     return files
         .where(
           recursive
-              ? (file) => p.isWithin(base, p.canonicalize(file))
+              ? (file) =>
+                  p.isWithin(base, p.canonicalize(file)) ||
+                  p.canonicalize(file) == base
               : (file) => p.canonicalize(p.dirname(file)) == base,
         )
         .toList();

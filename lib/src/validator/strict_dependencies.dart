@@ -65,17 +65,22 @@ class StrictDependenciesValidator extends Validator {
   Future validate() async {
     final dependencies = package.dependencies.keys.toSet()..add(package.name);
     final devDependencies = MapKeySet(package.devDependencies);
-    _validateLibBin(dependencies, devDependencies);
+    _validateLibBinHook(dependencies, devDependencies);
     _validateBenchmarkTestTool(dependencies, devDependencies);
   }
 
-  /// Validates that no Dart files in `lib/` or `bin/` have dependencies that
-  /// aren't in [deps].
+  /// Validates that no Dart files in `lib/`, `bin/`, `hook/build.dart`, or
+  /// `hook/link.dart` have dependencies that aren't in [deps].
   ///
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
-  void _validateLibBin(Set<String> deps, Set<String> devDeps) {
-    for (var usage in _usagesBeneath(['lib', 'bin'])) {
+  void _validateLibBinHook(Set<String> deps, Set<String> devDeps) {
+    for (var usage in _usagesBeneath([
+      'bin',
+      'hook/build.dart',
+      'hook/link.dart',
+      'lib',
+    ])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
           errors.add(usage.dependencyMisplaceMessage());
