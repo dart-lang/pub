@@ -24,7 +24,7 @@ class GitignoreValidator extends Validator {
     if (package.inGitRepo) {
       final List<int> output;
       try {
-        output = git.runSync(
+        output = git.runSyncBytes(
           [
             '-c',
             'core.quotePath=false',
@@ -35,8 +35,7 @@ class GitignoreValidator extends Validator {
             '--recurse-submodules',
           ],
           workingDir: package.dir,
-          stdoutEncoding: null,
-        ) as List<int>;
+        );
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
         // This validation is only a warning.

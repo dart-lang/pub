@@ -53,12 +53,12 @@ bool get isInstalled => command != null;
 ///
 /// Returns the stdout if it succeeded. Completes to an
 /// exception if it failed.
-Future<dynamic> run(
+Future<String> run(
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
-  Encoding? stdoutEncoding = systemEncoding,
-  Encoding? stderrEncoding = systemEncoding,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) async {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
@@ -90,12 +90,12 @@ Future<dynamic> run(
 }
 
 /// Like [run], but synchronous.
-dynamic runSync(
+String runSync(
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
-  Encoding? stdoutEncoding = systemEncoding,
-  Encoding? stderrEncoding = systemEncoding,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
@@ -122,6 +122,37 @@ dynamic runSync(
   return result.stdout;
 }
 
+/// Like [run], but synchronous. Returns raw stdout as `List<int>`.
+List<int> runSyncBytes(
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  Encoding stderrEncoding = systemEncoding,
+}) {
+  if (!isInstalled) {
+    fail('Cannot find a Git executable.\n'
+        'Please ensure Git is correctly installed.');
+  }
+
+  final result = runProcessSyncBytes(
+    command!,
+    args,
+    workingDir: workingDir,
+    environment: environment,
+    stderrEncoding: stderrEncoding,
+  );
+  if (!result.success) {
+    throw GitException(
+      args,
+      result.stdout,
+      result.stderr,
+      result.exitCode,
+    );
+  }
+
+  return result.stdout;
+}
+
 /// The name of the git command-line app, or `null` if Git could not be found on
 /// the user's PATH.
 final String? command = ['git', 'git.cmd'].firstWhereOrNull(_tryGitCommand);
@@ -132,8 +163,7 @@ String? repoRoot(String dir) {
   if (isInstalled) {
     try {
       return p.normalize(
-        (runSync(['rev-parse', '--show-toplevel'], workingDir: dir) as String)
-            .trim(),
+        runSync(['rev-parse', '--show-toplevel'], workingDir: dir).trim(),
       );
     } on GitException {
       // Not in a git folder.
@@ -152,7 +182,7 @@ bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
     final result = runProcessSync(command, ['--version']);
-    final output = result.stdout as String;
+    final output = result.stdout;
 
     // Some users may have configured commands such as autorun, which may
     // produce additional output, so we need to look for "git version"

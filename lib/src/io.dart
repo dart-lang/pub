@@ -775,14 +775,14 @@ Future flushThenExit(int status) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<ProcessResult> runProcess(
+Future<StringProcessResult> runProcess(
   String executable,
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
-  Encoding? stdoutEncoding = systemEncoding,
-  Encoding? stderrEncoding = systemEncoding,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
 
@@ -807,7 +807,11 @@ Future<ProcessResult> runProcess(
     }
 
     log.processResult(executable, result);
-    return result;
+    return StringProcessResult(
+      result.stdout as String,
+      result.stderr as String,
+      result.exitCode,
+    );
   });
 }
 
@@ -852,14 +856,14 @@ Future<PubProcess> startProcess(
 }
 
 /// Like [runProcess], but synchronous.
-ProcessResult runProcessSync(
+StringProcessResult runProcessSync(
   String executable,
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
-  Encoding? stdoutEncoding = systemEncoding,
-  Encoding? stderrEncoding = systemEncoding,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
@@ -879,7 +883,59 @@ ProcessResult runProcessSync(
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
   log.processResult(executable, result);
-  return result;
+  return StringProcessResult(
+    result.stdout as String,
+    result.stderr as String,
+    result.exitCode,
+  );
+}
+
+/// Like [runProcess], but synchronous.
+/// Always outputs stdout as `List<int>`.
+BytesProcessResult runProcessSyncBytes(
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+  Encoding stderrEncoding = systemEncoding,
+}) {
+  ProcessResult result;
+  try {
+    (executable, args) =
+        _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+    result = Process.runSync(
+      executable,
+      args,
+      workingDirectory: workingDir,
+      environment: environment,
+      runInShell: runInShell,
+      stdoutEncoding: null,
+      stderrEncoding: stderrEncoding,
+    );
+  } on IOException catch (e) {
+    throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
+  }
+  log.processResult(executable, result);
+  return BytesProcessResult(stdout as List<int>, stderr as String, exitCode);
+}
+
+/// Adaptation of ProcessResult when stdout is a `List<String>`.
+class StringProcessResult {
+  final String stdout;
+  final String stderr;
+  final int exitCode;
+  StringProcessResult(this.stdout, this.stderr, this.exitCode);
+  bool get success => exitCode == exit_codes.SUCCESS;
+}
+
+/// Adaptation of ProcessResult when stdout is a `List<bytes>`.
+class BytesProcessResult {
+  final List<int> stdout;
+  final String stderr;
+  final int exitCode;
+  BytesProcessResult(this.stdout, this.stderr, this.exitCode);
+  bool get success => exitCode == exit_codes.SUCCESS;
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
@@ -1217,24 +1273,6 @@ ByteStream createTarGz(
         .transform(tarWriterWith(format: OutputFormat.gnuLongName))
         .transform(gzip.encoder),
   );
-}
-
-/// Contains the results of invoking a [Process] and waiting for it to complete.
-extension PubProcessResult on ProcessResult {
-  List<String> get stdoutLines => _toLines(this.stdout as String);
-  List<String> get stderrLines => _toLines(this.stderr as String);
-
-  static List<String> _toLines(String output) {
-    final lines = const LineSplitter().convert(output);
-
-    if (lines.isNotEmpty && lines.last == '') {
-      lines.removeLast();
-    }
-
-    return lines;
-  }
-
-  bool get success => this.exitCode == exit_codes.SUCCESS;
 }
 
 /// The location for dart-specific configuration.

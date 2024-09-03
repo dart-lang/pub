@@ -274,10 +274,10 @@ class GitSource extends CachedSource {
     final revision = resolvedDescription.resolvedRef;
 
     try {
-      return (await git.run(
+      return await git.run(
         [_gitDirArg(repoPath), 'show', '$revision:$pathInCache'],
         workingDir: repoPath,
-      )) as String;
+      );
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pathInCache" in '
           '${GitDescription.prettyUri(description.url)} $revision.');
@@ -600,7 +600,7 @@ class GitSource extends CachedSource {
       final result = await git.run(
         [_gitDirArg(dirPath), 'rev-parse', '--is-inside-git-dir'],
         workingDir: dirPath,
-      ) as String;
+      );
       if (result.trim() != 'true') {
         isValid = false;
       }
@@ -653,10 +653,10 @@ class GitSource extends CachedSource {
   Future<String> _firstRevision(String path, String reference) async {
     final String output;
     try {
-      output = ((await git.run(
+      output = (await git.run(
         [_gitDirArg(path), 'rev-list', '--max-count=1', reference],
         workingDir: path,
-      )) as String)
+      ))
           .trim();
     } on git.GitException catch (e) {
       throw PackageNotFoundException(
