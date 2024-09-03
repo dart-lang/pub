@@ -917,7 +917,11 @@ BytesProcessResult runProcessSyncBytes(
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
   log.processResult(executable, result);
-  return BytesProcessResult(stdout as List<int>, stderr as String, exitCode);
+  return BytesProcessResult(
+    result.stdout as List<int>,
+    result.stderr as String,
+    result.exitCode,
+  );
 }
 
 /// Adaptation of ProcessResult when stdout is a `List<String>`.
@@ -931,10 +935,13 @@ class StringProcessResult {
 
 /// Adaptation of ProcessResult when stdout is a `List<bytes>`.
 class BytesProcessResult {
-  final List<int> stdout;
+  final Uint8List stdout;
   final String stderr;
   final int exitCode;
-  BytesProcessResult(this.stdout, this.stderr, this.exitCode);
+  BytesProcessResult(List<int> stdout, this.stderr, this.exitCode)
+      :
+        // Not clear that we need to do this, but seems harmless.
+        stdout = stdout is Uint8List ? stdout : Uint8List.fromList(stdout);
   bool get success => exitCode == exit_codes.SUCCESS;
 }
 

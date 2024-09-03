@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -122,8 +123,8 @@ String runSync(
   return result.stdout;
 }
 
-/// Like [run], but synchronous. Returns raw stdout as `List<int>`.
-List<int> runSyncBytes(
+/// Like [run], but synchronous. Returns raw stdout as `Uint8List`.
+Uint8List runSyncBytes(
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
