@@ -32,7 +32,7 @@ class AnalyzeValidator extends Validator {
       ['analyze', ...entries, p.join(package.dir, 'pubspec.yaml')],
     );
     if (result.exitCode != 0) {
-      final limitedOutput = limitLength(result.stdout.join('\n'), 1000);
+      final limitedOutput = limitLength(result.stdout as String, 1000);
       warnings
           .add('`dart analyze` found the following issue(s):\n$limitedOutput');
     }

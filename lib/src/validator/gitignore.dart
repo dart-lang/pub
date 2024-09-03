@@ -22,26 +22,36 @@ class GitignoreValidator extends Validator {
   @override
   Future<void> validate() async {
     if (package.inGitRepo) {
-      late final List<String> checkedIntoGit;
+      final List<int> output;
       try {
-        checkedIntoGit = git.runSync(
+        output = git.runSync(
           [
             '-c',
             'core.quotePath=false',
             'ls-files',
+            '-z',
             '--cached',
             '--exclude-standard',
             '--recurse-submodules',
           ],
           workingDir: package.dir,
-          stdoutEncoding: const Utf8Codec(),
-        );
+          stdoutEncoding: null,
+        ) as List<int>;
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
         // This validation is only a warning.
         // If git is not supported on the platform, or too old to support
         // --recurse-submodules we just continue silently.
         return;
+      }
+      final checkedIntoGit = <String>[];
+      // Split at \0.
+      var start = 0;
+      for (var i = 0; i < output.length; i++) {
+        if (output[i] == 0) {
+          checkedIntoGit.add(utf8.decode(output.sublist(start, i)));
+          start = i + 1;
+        }
       }
       final root = git.repoRoot(package.dir) ?? package.dir;
       var beneath = p.posix.joinAll(

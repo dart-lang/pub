@@ -273,19 +273,15 @@ class GitSource extends CachedSource {
     final repoPath = _repoCachePath(description, cache);
     final revision = resolvedDescription.resolvedRef;
 
-    late List<String> lines;
     try {
-      // TODO(sigurdm): We should have a `git.run` alternative that gives back
-      // a stream of stdout instead of the lines.
-      lines = await git.run(
+      return (await git.run(
         [_gitDirArg(repoPath), 'show', '$revision:$pathInCache'],
         workingDir: repoPath,
-      );
+      )) as String;
     } on git.GitException catch (_) {
       fail('Could not find a file named "$pathInCache" in '
           '${GitDescription.prettyUri(description.url)} $revision.');
     }
-    return lines.join('\n');
   }
 
   @override
@@ -604,8 +600,8 @@ class GitSource extends CachedSource {
       final result = await git.run(
         [_gitDirArg(dirPath), 'rev-parse', '--is-inside-git-dir'],
         workingDir: dirPath,
-      );
-      if (result.join('\n') != 'true') {
+      ) as String;
+      if (result.trim() != 'true') {
         isValid = false;
       }
     } on git.GitException {
@@ -655,21 +651,22 @@ class GitSource extends CachedSource {
   ///
   /// This assumes that the canonical clone already exists.
   Future<String> _firstRevision(String path, String reference) async {
-    final List<String> lines;
+    final String output;
     try {
-      lines = await git.run(
+      output = ((await git.run(
         [_gitDirArg(path), 'rev-list', '--max-count=1', reference],
         workingDir: path,
-      );
+      )) as String)
+          .trim();
     } on git.GitException catch (e) {
       throw PackageNotFoundException(
         "Could not find git ref '$reference' (${e.stderr})",
       );
     }
-    if (lines.isEmpty) {
+    if (output.isEmpty) {
       throw PackageNotFoundException("Could not find git ref '$reference'.");
     }
-    return lines.first;
+    return output;
   }
 
   /// Clones the repo at the URI [from] to the path [to] on the local

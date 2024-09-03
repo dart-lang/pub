@@ -775,7 +775,7 @@ Future flushThenExit(int status) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<PubProcessResult> runProcess(
+Future<ProcessResult> runProcess(
   String executable,
   List<String> args, {
   String? workingDir,
@@ -806,13 +806,8 @@ Future<PubProcessResult> runProcess(
       );
     }
 
-    final pubResult = PubProcessResult(
-      result.stdout as String,
-      result.stderr as String,
-      result.exitCode,
-    );
-    log.processResult(executable, pubResult);
-    return pubResult;
+    log.processResult(executable, result);
+    return result;
   });
 }
 
@@ -857,7 +852,7 @@ Future<PubProcess> startProcess(
 }
 
 /// Like [runProcess], but synchronous.
-PubProcessResult runProcessSync(
+ProcessResult runProcessSync(
   String executable,
   List<String> args, {
   String? workingDir,
@@ -883,13 +878,8 @@ PubProcessResult runProcessSync(
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
-  final pubResult = PubProcessResult(
-    result.stdout as String,
-    result.stderr as String,
-    result.exitCode,
-  );
-  log.processResult(executable, pubResult);
-  return pubResult;
+  log.processResult(executable, result);
+  return result;
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
@@ -1230,16 +1220,10 @@ ByteStream createTarGz(
 }
 
 /// Contains the results of invoking a [Process] and waiting for it to complete.
-class PubProcessResult {
-  final List<String> stdout;
-  final List<String> stderr;
-  final int exitCode;
+extension PubProcessResult on ProcessResult {
+  List<String> get stdoutLines => _toLines(this.stdout as String);
+  List<String> get stderrLines => _toLines(this.stderr as String);
 
-  PubProcessResult(String stdout, String stderr, this.exitCode)
-      : stdout = _toLines(stdout),
-        stderr = _toLines(stderr);
-
-  // TODO(rnystrom): Remove this and change to returning one string.
   static List<String> _toLines(String output) {
     final lines = const LineSplitter().convert(output);
 
@@ -1250,7 +1234,7 @@ class PubProcessResult {
     return lines;
   }
 
-  bool get success => exitCode == exit_codes.SUCCESS;
+  bool get success => this.exitCode == exit_codes.SUCCESS;
 }
 
 /// The location for dart-specific configuration.
