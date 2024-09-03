@@ -160,7 +160,7 @@ bool _tryGitCommand(String command) {
     final match = RegExp(r'^git version (\d+)\.(\d+)\..*$', multiLine: true)
         .matchAsPrefix(output);
     if (match == null) return false;
-    final versionString = output.substring(match.start + 'git version '.length);
+    final versionString = match[0]!.substring('git version '.length);
     // Git seems to use many parts in the version number. We just check the
     // first two.
     final major = int.parse(match[1]!);
