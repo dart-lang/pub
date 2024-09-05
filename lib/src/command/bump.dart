@@ -10,12 +10,13 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 
 class BumpSubcommand extends PubCommand {
+  @override
   final String name;
+  @override
   final String description;
 
   final Version Function(Version) updateVersion;
@@ -28,7 +29,7 @@ class BumpSubcommand extends PubCommand {
     );
   }
 
-  String? _versionLines(YamlMap map, String text, prefix) {
+  String? _versionLines(YamlMap map, String text, String prefix) {
     final entry = map.nodes.entries
         .firstWhereOrNull((e) => (e.key as YamlNode).value == 'version');
     if (entry == null) return null;
