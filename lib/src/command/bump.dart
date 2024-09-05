@@ -4,12 +4,89 @@
 
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
+import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
+
+class BumpSubcommand extends PubCommand {
+  final String name;
+  final String description;
+
+  final Version Function(Version) updateVersion;
+  BumpSubcommand(this.name, this.description, this.updateVersion) {
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: "Report what would change but don't change anything.",
+    );
+  }
+
+  String? _versionLines(YamlMap map, String text, prefix) {
+    final entry = map.nodes.entries
+        .firstWhereOrNull((e) => (e.key as YamlNode).value == 'version');
+    if (entry == null) return null;
+
+    final firstLine = (entry.key as YamlNode).span.start.line;
+    final lastLine = entry.value.span.end.line;
+    final lines = text.split('\n');
+    return lines
+        .sublist(firstLine, lastLine + 1)
+        .map((x) => '$prefix$x')
+        .join('\n');
+  }
+
+  @override
+  Future<void> runProtected() async {
+    final pubspec = entrypoint.workPackage.pubspec;
+    final currentVersion = pubspec.version;
+
+    final newVersion = updateVersion(currentVersion);
+
+    final originalPubspecText =
+        readTextFile(entrypoint.workPackage.pubspecPath);
+    final yamlEditor = YamlEditor(originalPubspecText);
+    yamlEditor.update(['version'], newVersion.toString());
+    final updatedPubspecText = yamlEditor.toString();
+    final beforeText = _versionLines(pubspec.fields, originalPubspecText, '- ');
+    final afterText = _versionLines(
+      yamlEditor.parseAt([]) as YamlMap,
+      updatedPubspecText,
+      '+ ',
+    );
+    if (argResults.flag('dry-run')) {
+      log.message('Would update version from $currentVersion to $newVersion.');
+      log.message('Diff:');
+      if (beforeText != null) {
+        log.message(beforeText);
+      }
+      if (afterText != null) {
+        log.message(afterText);
+      }
+    } else {
+      log.message('Updating version from $currentVersion to $newVersion.');
+      log.message('Diff:');
+
+      if (beforeText != null) {
+        log.message(beforeText);
+      }
+      if (afterText != null) {
+        log.message(afterText);
+        log.message('\nRemember to update `CHANGELOG.md` before publishing.');
+      }
+      writeTextFile(
+        entrypoint.workPackage.pubspecPath,
+        yamlEditor.toString(),
+      );
+    }
+  }
+}
 
 class BumpCommand extends PubCommand {
   @override
@@ -20,71 +97,34 @@ Increases the version number of the current package.
 ''';
 
   BumpCommand() {
-    argParser.addFlag(
-      'major',
-      negatable: false,
-      help: 'Increment the major version number (eg. 3.1.2 -> 4.0.0)',
+    addSubcommand(
+      BumpSubcommand(
+        'major',
+        'Increment the major version number (eg. 3.1.2 -> 4.0.0)',
+        (v) => v.nextMajor,
+      ),
     );
-    argParser.addFlag(
-      'minor',
-      negatable: false,
-      help: 'Increment the minor version number (eg. 3.1.2 -> 3.2.0)',
+    addSubcommand(
+      BumpSubcommand(
+        'minor',
+        'Increment the minor version number (eg. 3.1.2 -> 3.2.0)',
+        (v) => v.nextMinor,
+      ),
     );
-    argParser.addFlag(
-      'patch',
-      negatable: false,
-      help: 'Increment the patch version number (eg. 3.1.2 -> 3.1.3)',
+    addSubcommand(
+      BumpSubcommand(
+        'patch',
+        'Increment the patch version number (eg. 3.1.2 -> 3.1.3)',
+        (v) => v.nextPatch,
+      ),
     );
-    argParser.addFlag(
-      'breaking',
-      negatable: false,
-      help: 'Increment to the next breaking version (eg. 0.1.2 -> 0.2.0)',
+
+    addSubcommand(
+      BumpSubcommand(
+        'breaking',
+        'Increment to the next breaking version (eg. 0.1.2 -> 0.2.0)',
+        (v) => v.nextBreaking,
+      ),
     );
-    argParser.addFlag(
-      'dry-run',
-      abbr: 'n',
-      negatable: false,
-      help: "Report what would change but don't change anything.",
-    );
-  }
-
-  @override
-  Future<void> runProtected() async {
-    final currentVersion = entrypoint.workPackage.pubspec.version;
-    final Version newVersion;
-
-    final breaking = argResults.flag('breaking');
-    final major = argResults.flag('major');
-    final minor = argResults.flag('minor');
-    final patch = argResults.flag('patch');
-    final optionCount =
-        [breaking, major, minor, patch].fold(0, (p, v) => p + (v ? 1 : 0));
-    if (optionCount != 1) {
-      usageException('Provide exactly one of the options '
-          '`--breaking`, `--major`, `--minor` or `--patch`.');
-    }
-
-    if (breaking) {
-      newVersion = currentVersion.nextBreaking;
-    } else if (major) {
-      newVersion = currentVersion.nextMajor;
-    } else if (minor) {
-      newVersion = currentVersion.nextMinor;
-    } else if (patch) {
-      newVersion = currentVersion.nextPatch;
-    } else {
-      throw StateError('Should not be possible');
-    }
-
-    if (argResults.flag('dry-run')) {
-      log.message('Would update version from $currentVersion to $newVersion.');
-    } else {
-      log.message('Updating version from $currentVersion to $newVersion.');
-      final yamlEditor =
-          YamlEditor(readTextFile(entrypoint.workPackage.pubspecPath));
-
-      yamlEditor.update(['version'], newVersion.toString());
-      writeTextFile(entrypoint.workPackage.pubspecPath, yamlEditor.toString());
-    }
   }
 }

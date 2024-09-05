@@ -10,28 +10,50 @@ import 'test_pub.dart';
 void main() {
   void testBump(String part, String from, String to) {
     test('Bumps the $part version from $from to $to', () async {
-      await appDir(pubspec: {'version': from}).create();
+      await dir(appPath, [
+        file(
+          'pubspec.yaml',
+          '''
+name: myapp
+version: $from # comment
+environment:
+  sdk: $defaultSdkConstraint
+''',
+        ),
+      ]).create();
       await runPub(
         args: ['bump', part, '--dry-run'],
-        output: contains('Would update version from $from to $to.'),
+        output: '''
+Would update version from $from to $to.
+Diff:
+- version: $from # comment
++ version: $to # comment
+''',
       );
       await runPub(
         args: ['bump', part],
-        output: contains('Updating version from $from to $to.'),
+        output: '''
+Updating version from $from to $to.
+Diff:
+- version: $from # comment
++ version: $to # comment
+
+Remember to update `CHANGELOG.md` before publishing.
+        ''',
       );
       await appDir(pubspec: {'version': to}).validate();
     });
   }
 
-  testBump('--major', '0.0.0', '1.0.0');
-  testBump('--major', '1.2.3', '2.0.0');
-  testBump('--minor', '0.1.1-dev+2', '0.2.0');
-  testBump('--minor', '1.2.3', '1.3.0');
-  testBump('--patch', '0.1.1-dev+2', '0.1.1');
-  testBump('--patch', '0.1.1+2', '0.1.2');
-  testBump('--patch', '1.2.3', '1.2.4');
-  testBump('--breaking', '0.2.0', '0.3.0');
-  testBump('--breaking', '1.2.3', '2.0.0');
+  testBump('major', '0.0.0', '1.0.0');
+  testBump('major', '1.2.3', '2.0.0');
+  testBump('minor', '0.1.1-dev+2', '0.2.0');
+  testBump('minor', '1.2.3', '1.3.0');
+  testBump('patch', '0.1.1-dev+2', '0.1.1');
+  testBump('patch', '0.1.1+2', '0.1.2');
+  testBump('patch', '1.2.3', '1.2.4');
+  testBump('breaking', '0.2.0', '0.3.0');
+  testBump('breaking', '1.2.3', '2.0.0');
 
   test('Creates top-level version field if missing', () async {
     await dir(appPath, [
@@ -40,7 +62,7 @@ name: my_app
 '''),
     ]).create();
     await runPub(
-      args: ['bump', '--breaking'],
+      args: ['bump', 'breaking'],
       output: contains('Updating version from 0.0.0 to 0.1.0'),
     );
     await dir(appPath, [
@@ -48,6 +70,34 @@ name: my_app
 name: my_app
 version: 0.1.0
 '''),
+    ]).validate();
+  });
+
+  test('Writes all lines of diff', () async {
+    await dir(appPath, [
+      file('pubspec.yaml', '''
+name: my_app
+version: >-
+  1.0.0
+'''),
     ]).create();
+    await runPub(
+      args: ['bump', 'minor'],
+      output: allOf(
+        contains('Updating version from 1.0.0 to 1.1.0'),
+        contains('''
+Diff:
+- version: >-
+-   1.0.0
++ version: 1.1.0
+'''),
+      ),
+    );
+    await dir(appPath, [
+      file('pubspec.yaml', '''
+name: my_app
+version: 1.1.0
+'''),
+    ]).validate();
   });
 }

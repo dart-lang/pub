@@ -5,13 +5,14 @@ $ pub bump --help
 Increases the version number of the current package.
 
 
-Usage: pub bump <subcommand> [arguments...]
--h, --help        Print this usage information.
-    --major       Increment the major version number (eg. 3.1.2 -> 4.0.0)
-    --minor       Increment the minor version number (eg. 3.1.2 -> 3.2.0)
-    --patch       Increment the patch version number (eg. 3.1.2 -> 3.1.3)
-    --breaking    Increment to the next breaking version (eg. 0.1.2 -> 0.2.0)
--n, --dry-run     Report what would change but don't change anything.
+Usage: pub bump [arguments...]
+-h, --help    Print this usage information.
+
+Available subcommands:
+  breaking   Increment to the next breaking version (eg. 0.1.2 -> 0.2.0)
+  major      Increment the major version number (eg. 3.1.2 -> 4.0.0)
+  minor      Increment the minor version number (eg. 3.1.2 -> 3.2.0)
+  patch      Increment the patch version number (eg. 3.1.2 -> 3.1.3)
 
 Run "pub help" to see global options.
 
