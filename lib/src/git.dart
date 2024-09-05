@@ -52,8 +52,7 @@ bool get isInstalled => command != null;
 
 /// Run a git process with [args] from [workingDir].
 ///
-/// Returns the stdout if it succeeded. Completes to an
-/// exception if it failed.
+/// Returns the stdout if it succeeded. Completes to ans exception if it failed.
 Future<String> run(
   List<String> args, {
   String? workingDir,
