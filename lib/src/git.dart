@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -25,18 +26,18 @@ class GitException implements ApplicationException {
   final List<String> args;
 
   /// The standard error emitted by git.
-  final String stderr;
+  final dynamic stderr;
 
   /// The standard out emitted by git.
-  final String stdout;
+  final dynamic stdout;
 
   /// The error code
   final int exitCode;
 
   @override
   String get message => 'Git error. Command: `git ${args.join(' ')}`\n'
-      'stdout: $stdout\n'
-      'stderr: $stderr\n'
+      'stdout: ${stdout is String ? stdout : '<binary>'}\n'
+      'stderr: ${stderr is String ? stderr : '<binary>'}\n'
       'exit code: $exitCode';
 
   GitException(Iterable<String> args, this.stdout, this.stderr, this.exitCode)
@@ -51,12 +52,13 @@ bool get isInstalled => command != null;
 
 /// Run a git process with [args] from [workingDir].
 ///
-/// Returns the stdout as a list of strings if it succeeded. Completes to an
-/// exception if it failed.
-Future<List<String>> run(
+/// Returns the stdout if it succeeded. Completes to ans exception if it failed.
+Future<String> run(
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) async {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
@@ -70,12 +72,14 @@ Future<List<String>> run(
       args,
       workingDir: workingDir,
       environment: {...?environment, 'LANG': 'en_GB'},
+      stdoutEncoding: stdoutEncoding,
+      stderrEncoding: stderrEncoding,
     );
     if (!result.success) {
       throw GitException(
         args,
-        result.stdout.join('\n'),
-        result.stderr.join('\n'),
+        result.stdout,
+        result.stderr,
         result.exitCode,
       );
     }
@@ -86,12 +90,12 @@ Future<List<String>> run(
 }
 
 /// Like [run], but synchronous.
-List<String> runSync(
+String runSync(
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
-  Encoding? stdoutEncoding = systemEncoding,
-  Encoding? stderrEncoding = systemEncoding,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
@@ -109,8 +113,39 @@ List<String> runSync(
   if (!result.success) {
     throw GitException(
       args,
-      result.stdout.join('\n'),
-      result.stderr.join('\n'),
+      result.stdout,
+      result.stderr,
+      result.exitCode,
+    );
+  }
+
+  return result.stdout;
+}
+
+/// Like [run], but synchronous. Returns raw stdout as `Uint8List`.
+Uint8List runSyncBytes(
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  Encoding stderrEncoding = systemEncoding,
+}) {
+  if (!isInstalled) {
+    fail('Cannot find a Git executable.\n'
+        'Please ensure Git is correctly installed.');
+  }
+
+  final result = runProcessSyncBytes(
+    command!,
+    args,
+    workingDir: workingDir,
+    environment: environment,
+    stderrEncoding: stderrEncoding,
+  );
+  if (!result.success) {
+    throw GitException(
+      args,
+      result.stdout,
+      result.stderr,
       result.exitCode,
     );
   }
@@ -128,7 +163,7 @@ String? repoRoot(String dir) {
   if (isInstalled) {
     try {
       return p.normalize(
-        runSync(['rev-parse', '--show-toplevel'], workingDir: dir).first,
+        runSync(['rev-parse', '--show-toplevel'], workingDir: dir).trim(),
       );
     } on GitException {
       // Not in a git folder.
@@ -152,17 +187,10 @@ bool _tryGitCommand(String command) {
     // Some users may have configured commands such as autorun, which may
     // produce additional output, so we need to look for "git version"
     // in every line of the output.
-    Match? match;
-    String? versionString;
-    for (var line in output) {
-      match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(line);
-      if (match != null) {
-        versionString = line.substring('git version '.length);
-        break;
-      }
-    }
+    final match = RegExp(r'^git version (\d+)\.(\d+)\..*$', multiLine: true)
+        .matchAsPrefix(output);
     if (match == null) return false;
-
+    final versionString = match[0]!.substring('git version '.length);
     // Git seems to use many parts in the version number. We just check the
     // first two.
     final major = int.parse(match[1]!);

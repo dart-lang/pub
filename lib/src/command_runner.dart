@@ -203,7 +203,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     final pubRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));
     try {
       actualRev =
-          git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).single;
+          git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).trim();
     } on git.GitException catch (_) {
       // When building for Debian, pub isn't checked out via git.
       return;

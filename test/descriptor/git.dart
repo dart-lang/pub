@@ -46,15 +46,16 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// [parent] defaults to [sandbox].
   Future<String> revParse(String ref, [String? parent]) async {
     final output = await _runGit(['rev-parse', ref], parent);
-    return output[0];
+    return (output as String).trim();
   }
 
   /// Runs a Git command in this repository.
   ///
   /// [parent] defaults to [sandbox].
-  Future runGit(List<String> args, [String? parent]) => _runGit(args, parent);
+  Future<void> runGit(List<String> args, [String? parent]) =>
+      _runGit(args, parent);
 
-  Future<List<String>> _runGit(List<String> args, String? parent) {
+  Future<dynamic> _runGit(List<String> args, String? parent) {
     // Explicitly specify the committer information. Git needs this to commit
     // and we don't want to rely on the buildbots having this already set up.
     final environment = {

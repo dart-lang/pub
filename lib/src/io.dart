@@ -775,14 +775,14 @@ Future flushThenExit(int status) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<PubProcessResult> runProcess(
+Future<StringProcessResult> runProcess(
   String executable,
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
-  Encoding? stdoutEncoding = systemEncoding,
-  Encoding? stderrEncoding = systemEncoding,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
 
@@ -806,13 +806,12 @@ Future<PubProcessResult> runProcess(
       );
     }
 
-    final pubResult = PubProcessResult(
+    log.processResult(executable, result);
+    return StringProcessResult(
       result.stdout as String,
       result.stderr as String,
       result.exitCode,
     );
-    log.processResult(executable, pubResult);
-    return pubResult;
   });
 }
 
@@ -857,14 +856,14 @@ Future<PubProcess> startProcess(
 }
 
 /// Like [runProcess], but synchronous.
-PubProcessResult runProcessSync(
+StringProcessResult runProcessSync(
   String executable,
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
-  Encoding? stdoutEncoding = systemEncoding,
-  Encoding? stderrEncoding = systemEncoding,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
@@ -883,13 +882,67 @@ PubProcessResult runProcessSync(
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
-  final pubResult = PubProcessResult(
+  log.processResult(executable, result);
+  return StringProcessResult(
     result.stdout as String,
     result.stderr as String,
     result.exitCode,
   );
-  log.processResult(executable, pubResult);
-  return pubResult;
+}
+
+/// Like [runProcess], but synchronous.
+/// Always outputs stdout as `List<int>`.
+BytesProcessResult runProcessSyncBytes(
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+  Encoding stderrEncoding = systemEncoding,
+}) {
+  ProcessResult result;
+  try {
+    (executable, args) =
+        _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+    result = Process.runSync(
+      executable,
+      args,
+      workingDirectory: workingDir,
+      environment: environment,
+      runInShell: runInShell,
+      stdoutEncoding: null,
+      stderrEncoding: stderrEncoding,
+    );
+  } on IOException catch (e) {
+    throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
+  }
+  log.processResult(executable, result);
+  return BytesProcessResult(
+    result.stdout as List<int>,
+    result.stderr as String,
+    result.exitCode,
+  );
+}
+
+/// Adaptation of ProcessResult when stdout is a `List<String>`.
+class StringProcessResult {
+  final String stdout;
+  final String stderr;
+  final int exitCode;
+  StringProcessResult(this.stdout, this.stderr, this.exitCode);
+  bool get success => exitCode == exit_codes.SUCCESS;
+}
+
+/// Adaptation of ProcessResult when stdout is a `List<bytes>`.
+class BytesProcessResult {
+  final Uint8List stdout;
+  final String stderr;
+  final int exitCode;
+  BytesProcessResult(List<int> stdout, this.stderr, this.exitCode)
+      :
+        // Not clear that we need to do this, but seems harmless.
+        stdout = stdout is Uint8List ? stdout : Uint8List.fromList(stdout);
+  bool get success => exitCode == exit_codes.SUCCESS;
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
@@ -1227,30 +1280,6 @@ ByteStream createTarGz(
         .transform(tarWriterWith(format: OutputFormat.gnuLongName))
         .transform(gzip.encoder),
   );
-}
-
-/// Contains the results of invoking a [Process] and waiting for it to complete.
-class PubProcessResult {
-  final List<String> stdout;
-  final List<String> stderr;
-  final int exitCode;
-
-  PubProcessResult(String stdout, String stderr, this.exitCode)
-      : stdout = _toLines(stdout),
-        stderr = _toLines(stderr);
-
-  // TODO(rnystrom): Remove this and change to returning one string.
-  static List<String> _toLines(String output) {
-    final lines = const LineSplitter().convert(output);
-
-    if (lines.isNotEmpty && lines.last == '') {
-      lines.removeLast();
-    }
-
-    return lines;
-  }
-
-  bool get success => exitCode == exit_codes.SUCCESS;
 }
 
 /// The location for dart-specific configuration.

@@ -251,18 +251,22 @@ void process(
 }
 
 /// Logs the results of running [executable].
-void processResult(String executable, PubProcessResult result) {
+void processResult(String executable, ProcessResult result) {
   // Log it all as one message so that it shows up as a single unit in the logs.
   final buffer = StringBuffer();
   buffer.writeln('Finished $executable. Exit code ${result.exitCode}.');
 
-  void dumpOutput(String name, List<String> output) {
+  void dumpOutput(String name, dynamic output) {
+    if (output is! String) {
+      buffer.writeln('Binary output on $name.');
+      return;
+    }
     if (output.isEmpty) {
       buffer.writeln('Nothing output on $name.');
     } else {
       buffer.writeln('$name:');
       var numLines = 0;
-      for (var line in output) {
+      for (var line in output.split('\n')) {
         if (++numLines > 1000) {
           buffer.writeln('[${output.length - 1000}] more lines of output '
               'truncated...]');

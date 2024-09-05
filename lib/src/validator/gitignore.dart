@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 
@@ -22,19 +23,19 @@ class GitignoreValidator extends Validator {
   @override
   Future<void> validate() async {
     if (package.inGitRepo) {
-      late final List<String> checkedIntoGit;
+      final Uint8List output;
       try {
-        checkedIntoGit = git.runSync(
+        output = git.runSyncBytes(
           [
             '-c',
             'core.quotePath=false',
             'ls-files',
+            '-z',
             '--cached',
             '--exclude-standard',
             '--recurse-submodules',
           ],
           workingDir: package.dir,
-          stdoutEncoding: const Utf8Codec(),
         );
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
@@ -42,6 +43,17 @@ class GitignoreValidator extends Validator {
         // If git is not supported on the platform, or too old to support
         // --recurse-submodules we just continue silently.
         return;
+      }
+      final checkedIntoGit = <String>[];
+      // Split at \0.
+      var start = 0;
+      for (var i = 0; i < output.length; i++) {
+        if (output[i] == 0) {
+          checkedIntoGit.add(
+            utf8.decode(Uint8List.sublistView(output, start, i)),
+          );
+          start = i + 1;
+        }
       }
       final root = git.repoRoot(package.dir) ?? package.dir;
       var beneath = p.posix.joinAll(
