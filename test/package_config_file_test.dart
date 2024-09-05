@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-
+import 'package:pub/src/package_config.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -57,6 +58,38 @@ void main() {
             languageVersion: '3.0',
           ),
         ]),
+      ]).validate();
+    });
+
+    test('package_config.json uses relative paths if PUB_CACHE is relative',
+        () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
+
+      await d.dir(appPath, [
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
+      ]).create();
+
+      await pubCommand(command, environment: {'PUB_CACHE': './pub_cache'});
+
+      await d.dir(appPath, [
+        d.packageConfigFile(
+          [
+            PackageConfigEntry(
+              name: 'foo',
+              rootUri: p.toUri(
+                '../pub_cache/hosted/localhost%58${globalServer.port}/foo-1.2.3',
+              ),
+              packageUri: Uri.parse('lib/'),
+            ),
+            d.packageConfigEntry(
+              name: 'myapp',
+              path: '.',
+              languageVersion: '3.0',
+            ),
+          ],
+          pubCache: p.join(d.sandbox, appPath, 'pub_cache'),
+        ),
       ]).validate();
     });
 

@@ -44,8 +44,13 @@ abstract class CachedSource extends Source {
     PackageId id,
     SystemCache cache, {
     String? relativeFrom,
-  }) =>
-      getDirectoryInCache(id, cache);
+  }) {
+    final dir = getDirectoryInCache(id, cache);
+    if (p.isRelative(dir)) {
+      return p.relative(dir, from: relativeFrom);
+    }
+    return dir;
+  }
 
   String getDirectoryInCache(PackageId id, SystemCache cache);
 
