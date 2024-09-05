@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -49,7 +50,7 @@ class GitignoreValidator extends Validator {
       for (var i = 0; i < output.length; i++) {
         if (output[i] == 0) {
           checkedIntoGit.add(
-            systemEncoding.decode(Uint8List.sublistView(output, start, i)),
+            utf8.decode(Uint8List.sublistView(output, start, i)),
           );
           start = i + 1;
         }
