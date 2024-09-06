@@ -14,6 +14,7 @@ Usage: pub_command_runner pub [arguments...]
 
 Available subcommands:
   add   Add dependencies to `pubspec.yaml`.
+  bump   Increases the version number of the current package.
   cache   Work with the system cache.
   deps   Print package dependencies.
   downgrade   Downgrade the current package's dependencies to oldest versions.
