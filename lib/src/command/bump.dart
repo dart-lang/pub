@@ -25,7 +25,7 @@ class BumpSubcommand extends PubCommand {
       'dry-run',
       abbr: 'n',
       negatable: false,
-      help: "Report what would change but don't change anything.",
+      help: "Report what would change, but don't change anything.",
     );
   }
 
