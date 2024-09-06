@@ -50,6 +50,37 @@ class GitException implements ApplicationException {
 /// Tests whether or not the git command-line app is available for use.
 bool get isInstalled => command != null;
 
+/// Splits the [output] of a git -z command at \0.
+///
+/// The first [skipPrefix] bytes of each substring will be ignored (useful for
+/// `git status -z`). If there are not enough bytes to skip, throws a
+/// [FormatException].
+List<Uint8List> splitZeroTerminated(Uint8List output, {int skipPrefix = 0}) {
+  final result = <Uint8List>[];
+  var start = 0;
+
+  for (var i = 0; i < output.length; i++) {
+    if (output[i] != 0) {
+      continue;
+    }
+    if (start + skipPrefix > i) {
+      throw FormatException('Substring too short for prefix at $start');
+    }
+    result.add(
+      Uint8List.sublistView(
+        output,
+        // The first 3 bytes are the modification status.
+        // Skip those.
+        start + skipPrefix,
+        i,
+      ),
+    );
+
+    start = i + 1;
+  }
+  return result;
+}
+
 /// Run a git process with [args] from [workingDir].
 ///
 /// Returns the stdout if it succeeded. Completes to ans exception if it failed.

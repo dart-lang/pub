@@ -44,16 +44,15 @@ class GitignoreValidator extends Validator {
         // --recurse-submodules we just continue silently.
         return;
       }
-      final checkedIntoGit = <String>[];
-      // Split at \0.
-      var start = 0;
-      for (var i = 0; i < output.length; i++) {
-        if (output[i] == 0) {
-          checkedIntoGit.add(
-            utf8.decode(Uint8List.sublistView(output, start, i)),
-          );
-          start = i + 1;
-        }
+
+      final List<String> checkedIntoGit;
+      try {
+        checkedIntoGit = git.splitZeroTerminated(output).map((b) {
+          return utf8.decode(b);
+        }).toList();
+      } on FormatException catch (e) {
+        log.fine('Failed decoding git output. Skipping validation. $e.');
+        return;
       }
       final root = git.repoRoot(package.dir) ?? package.dir;
       var beneath = p.posix.joinAll(
