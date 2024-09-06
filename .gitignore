@@ -6,5 +6,4 @@
 .settings/
 /build/
 packages
-pubspec.lock
 /bin/pub.dart.snapshot
