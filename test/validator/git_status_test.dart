@@ -196,7 +196,7 @@ void main() {
   
   Modified files:
   
-  a/non_ascii_и.txt
+  a${p.separator}non_ascii_и.txt
   
   Run `git status` for more information.''',
         ),
