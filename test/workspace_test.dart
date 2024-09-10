@@ -1416,6 +1416,79 @@ Consider removing one of the overrides.''',
       ),
     );
   });
+
+  test('workspace list', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.1.1',
+            resolutionWorkspace: true,
+            extras: {
+              'workspace': ['b'],
+            },
+          ),
+          dir('b', [
+            libPubspec(
+              'b',
+              '1.2.2',
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]),
+      ]),
+    ]).create();
+    await runPub(
+      args: ['workspace', 'list'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: '''
+myapp: .
+a: pkgs/a
+b: pkgs/a/b
+''',
+    );
+    await runPub(
+      args: ['workspace', 'list'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      workingDirectory: p.join(sandbox, appPath, 'pkgs'),
+      output: '''
+myapp: ..
+a: a
+b: a/b
+''',
+    );
+    await runPub(
+      args: ['workspace', 'list', '--json'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: '''
+{
+  "packages": [
+      {
+      "name": "myapp",
+      "path": "${p.join(sandbox, appPath)}"
+    },
+    {
+      "name": "a",
+      "path": "${p.join(sandbox, appPath, 'pkgs', 'a')}"
+    },
+    {
+      "name": "b",
+      "path": "${p.join(sandbox, appPath, 'pkgs', 'a', 'b')}"
+    }
+  ]
+}
+''',
+    );
+  });
 }
 
 final s = p.separator;
