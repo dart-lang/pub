@@ -91,7 +91,13 @@ class RunCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final executable = await getExecutableForCommand(argResults!.rest.first);
+    final DartExecutableWithPackageConfig executable;
+    try {
+      executable = await getExecutableForCommand(argResults!.rest.first);
+    } on CommandResolutionFailedException catch (e) {
+      log.error(e.message);
+      return -1;
+    }
     final packageConfig = executable.packageConfig;
     final process = await Process.start(
       Platform.executable,
