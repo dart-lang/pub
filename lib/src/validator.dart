@@ -25,6 +25,7 @@ import 'validator/executable.dart';
 import 'validator/file_case.dart';
 import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
+import 'validator/git_status.dart';
 import 'validator/gitignore.dart';
 import 'validator/leak_detection.dart';
 import 'validator/license.dart';
@@ -143,6 +144,7 @@ abstract class Validator {
       FileCaseValidator(),
       AnalyzeValidator(),
       GitignoreValidator(),
+      GitStatusValidator(),
       PubspecValidator(),
       LicenseValidator(),
       NameValidator(),
