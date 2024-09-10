@@ -8,11 +8,4 @@ $ tool/test-bin/pub_command_runner.dart run :syntax_error
 [E] bin/syntax_error.dart:1:22: Error: Unexpected token ''.
 [E] main() => print("hi")
 [E]    ^...
-[E] Failed to build myapp:syntax_error:
-[E] bin/syntax_error.dart:1:21: Error: Expected ';' after this.
-[E] main() => print("hi")
-[E]    ^
-[E] bin/syntax_error.dart:1:22: Error: Unexpected token ''.
-[E] main() => print("hi")
-[E]    ^...
 
