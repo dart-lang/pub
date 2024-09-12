@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as p;
