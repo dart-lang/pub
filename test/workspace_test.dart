@@ -1469,6 +1469,17 @@ a        a$s
 b        a${s}b$s
 ''',
     );
+    String jsonPath(
+      String part1, [
+      String? part2,
+      String? part3,
+      String? part4,
+      String? part5,
+    ]) {
+      return json
+          .encode(p.canonicalize(p.join(part1, part2, part3, part4, part5)));
+    }
+
     await runPub(
       args: ['workspace', 'list', '--json'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
@@ -1477,15 +1488,15 @@ b        a${s}b$s
   "packages": [
     {
       "name": "myapp",
-      "path": ${json.encode(p.join(sandbox, appPath))}
+      "path": ${jsonPath(sandbox, appPath)}
     },
     {
       "name": "a",
-      "path": ${json.encode(p.join(sandbox, appPath, 'pkgs', 'a'))}
+      "path": ${jsonPath(sandbox, appPath, 'pkgs', 'a')}
     },
     {
       "name": "b",
-      "path": ${json.encode(p.join(sandbox, appPath, 'pkgs', 'a', 'b'))}
+      "path": ${jsonPath(sandbox, appPath, 'pkgs', 'a', 'b')}
     }
   ]
 }
