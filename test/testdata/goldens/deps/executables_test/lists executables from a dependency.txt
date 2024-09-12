@@ -36,7 +36,8 @@ $ pub deps --json
       "source": "root",
       "dependencies": [
         "foo"
-      ]
+      ],
+      "dev_dependencies": []
     },
     {
       "name": "foo",
