@@ -222,6 +222,20 @@ main() {
     );
   });
 
+  testWithGolden('Compilation errors are only printed once', (context) async {
+    await servePackages();
+    await d.dir(appPath, [
+      d.appPubspec(),
+      d.dir('bin', [d.file('syntax_error.dart', 'main() => print("hi")')]),
+    ]).create();
+    await context.runEmbedding(
+      ['run', ':syntax_error'],
+      environment: getPubTestEnvironment(),
+      workingDirectory: d.path(appPath),
+      exitCode: isNot(0),
+    );
+  });
+
   test('`embedding run` does `pub get` if sdk updated', () async {
     await d.dir(appPath, [
       d.pubspec({

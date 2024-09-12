@@ -678,13 +678,11 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   }) async {
     await log.progress('Building package executable', () async {
       ensureDir(p.dirname(pathOfSnapshot(executable)));
-      return waitAndPrintErrors([
-        _precompileExecutable(
-          executable,
-          additionalSources: additionalSources,
-          nativeAssets: nativeAssets,
-        ),
-      ]);
+      return await _precompileExecutable(
+        executable,
+        additionalSources: additionalSources,
+        nativeAssets: nativeAssets,
+      );
     });
   }
 
