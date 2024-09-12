@@ -828,7 +828,7 @@ Packages can only be included in the workspace once.
       error: '''
 Packages can only be included in the workspace once.
 
-`.${s}pkgs${s}a${s}pubspec.yaml` is included twice into the workspace of `.${s}pubspec.yaml`''',
+`.${s}pkgs/a/pubspec.yaml` is included twice into the workspace of `.${s}pubspec.yaml`''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
