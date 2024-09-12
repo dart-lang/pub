@@ -791,7 +791,44 @@ Packages can only be included in the workspace once.
 
 `.${s}pkgs${s}a${s}pubspec.yaml` is included in the workspace, both from:
 * `.${s}pkgs${s}pubspec.yaml` and
-* .${s}pubspec.yaml.''',
+* `.${s}pubspec.yaml`.''',
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+  });
+
+  test('Reports error if workspace has repeat item', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.5.0',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/a/'],
+        },
+      ),
+      dir('pkgs', [
+        libPubspec(
+          'a',
+          '1.1.1',
+          resolutionWorkspace: true,
+          extras: {
+            'workspace': ['a'],
+          },
+        ),
+        dir(
+          'a',
+          [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+          ],
+        ),
+      ]),
+    ]).create();
+    final s = p.separator;
+    await pubGet(
+      error: '''
+Packages can only be included in the workspace once.
+
+`.${s}pkgs/a/pubspec.yaml` is included twice into the workspace of `.${s}pubspec.yaml`''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
