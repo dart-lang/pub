@@ -1447,14 +1447,15 @@ Consider removing one of the overrides.''',
         ]),
       ]),
     ]).create();
+    final s = p.separator;
     await runPub(
       args: ['workspace', 'list'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: '''
 Package  Path
-myapp    ./
-a        pkgs/a/
-b        pkgs/a/b/
+myapp    .$s
+a        pkgs${s}a$s
+b        pkgs${s}a${s}b$s
 ''',
     );
     await runPub(
@@ -1463,9 +1464,9 @@ b        pkgs/a/b/
       workingDirectory: p.join(sandbox, appPath, 'pkgs'),
       output: '''
 Package  Path
-myapp    ../
-a        a/
-b        a/b/
+myapp    ..$s
+a        a$s
+b        a${s}b$s
 ''',
     );
     await runPub(

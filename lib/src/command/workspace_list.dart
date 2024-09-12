@@ -48,7 +48,10 @@ class WorkspaceListCommand extends PubCommand {
           for (final package in entrypoint.workspaceRoot.transitiveWorkspace)
             [
               format(package.name, (x) => x),
-              format('${p.relative(p.absolute(package.dir))}/', (x) => x),
+              format(
+                '${p.relative(p.absolute(package.dir))}${p.separator}',
+                (x) => x,
+              ),
             ],
         ],
         canUseAnsiCodes,
