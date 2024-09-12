@@ -35,7 +35,7 @@ $ pub deps --json
       "kind": "root",
       "source": "root",
       "dependencies": [],
-      "dev_dependencies": []
+      "devDependencies": []
     }
   ],
   "sdks": [

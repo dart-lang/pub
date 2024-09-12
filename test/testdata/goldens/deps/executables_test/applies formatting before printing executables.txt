@@ -49,7 +49,7 @@ $ pub deps --json
         "foo",
         "bar"
       ],
-      "dev_dependencies": []
+      "devDependencies": []
     },
     {
       "name": "bar",

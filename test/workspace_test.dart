@@ -556,7 +556,7 @@ transitive dependencies:
         "myapp",
         "both"
       ],
-      "dev_dependencies": []
+      "devDependencies": []
     },
     {
       "name": "both",

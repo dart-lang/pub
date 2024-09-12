@@ -160,7 +160,7 @@ void main() {
         "overridden",
         "from_path"
       ],
-      "dev_dependencies": [
+      "devDependencies": [
         "unittest"
       ]
     },
