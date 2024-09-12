@@ -29,6 +29,7 @@ Available subcommands:
   token   Manage authentication tokens for hosted pub repositories.
   unpack   Downloads a package and unpacks it in place.
   upgrade   Upgrade the current package's dependencies to latest versions.
+  workspace   Work with the pub workspace.
 
 Run "pub_command_runner help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-global for detailed documentation.

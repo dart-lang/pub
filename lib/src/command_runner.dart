@@ -28,6 +28,7 @@ import 'command/unpack.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/version.dart';
+import 'command/workspace.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
 import 'io.dart';
@@ -156,6 +157,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(LoginCommand());
     addCommand(LogoutCommand());
     addCommand(VersionCommand());
+    addCommand(WorkspaceCommand());
     addCommand(TokenCommand());
   }
 
