@@ -15,6 +15,7 @@ import '../entrypoint.dart';
 import '../io.dart';
 import '../lock_file.dart';
 import '../log.dart' as log;
+import '../log.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -552,8 +553,8 @@ Future<void> _outputHuman(
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
-  List<_FormattedString> formatted(_PackageDetails package) => [
-        _FormattedString(package.name),
+  List<FormattedString> formatted(_PackageDetails package) => [
+        FormattedString(package.name),
         ...markedRows[package]!.map((m) => m.toHuman()),
       ];
 
@@ -575,64 +576,42 @@ Future<void> _outputHuman(
   final devTransitiveRows =
       rows.where(hasKind(_DependencyKind.devTransitive)).map(formatted);
 
-  final formattedRows = <List<_FormattedString>>[
+  final formattedRows = <List<FormattedString>>[
     ['Package Name', 'Current', 'Upgradable', 'Resolvable', 'Latest']
-        .map((s) => _format(s, log.bold))
+        .map((s) => format(s, log.bold))
         .toList(),
     if (hasDirectDependencies) ...[
       [
         if (directRows.isEmpty)
-          _format('\ndirect dependencies: ${mode.allGood}', log.bold)
+          format('\ndirect dependencies: ${mode.allGood}', log.bold)
         else
-          _format('\ndirect dependencies:', log.bold),
+          format('\ndirect dependencies:', log.bold),
       ],
       ...directRows,
     ],
     if (includeDevDependencies && hasDevDependencies) ...[
       [
         if (devRows.isEmpty)
-          _format('\ndev_dependencies: ${mode.allGood}', log.bold)
+          format('\ndev_dependencies: ${mode.allGood}', log.bold)
         else
-          _format('\ndev_dependencies:', log.bold),
+          format('\ndev_dependencies:', log.bold),
       ],
       ...devRows,
     ],
     if (showTransitiveDependencies) ...[
       if (transitiveRows.isNotEmpty)
-        [_format('\ntransitive dependencies:', log.bold)],
+        [format('\ntransitive dependencies:', log.bold)],
       ...transitiveRows,
       if (includeDevDependencies) ...[
         if (devTransitiveRows.isNotEmpty)
-          [_format('\ntransitive dev_dependencies:', log.bold)],
+          [format('\ntransitive dev_dependencies:', log.bold)],
         ...devTransitiveRows,
       ],
     ],
   ];
 
-  final columnWidths = <int, int>{};
-  for (var i = 0; i < formattedRows.length; i++) {
-    if (formattedRows[i].length > 1) {
-      for (var j = 0; j < formattedRows[i].length; j++) {
-        final currentMaxWidth = columnWidths[j] ?? 0;
-        columnWidths[j] = max(
-          formattedRows[i][j].computeLength(useColors: useColors),
-          currentMaxWidth,
-        );
-      }
-    }
-  }
-
-  for (final row in formattedRows) {
-    final b = StringBuffer();
-    for (var j = 0; j < row.length; j++) {
-      b.write(row[j].formatted(useColors: useColors));
-      b.write(
-        ' ' *
-            ((columnWidths[j]! + 2) -
-                row[j].computeLength(useColors: useColors)),
-      );
-    }
-    log.message(b.toString());
+  for (final line in log.renderTable(formattedRows, useColors)) {
+    log.message(line);
   }
 
   final upgradable = rows.where(
@@ -1016,16 +995,8 @@ enum _DependencyKind {
   devTransitive,
 }
 
-_FormattedString _format(
-  String value,
-  String Function(String) format, {
-  String? prefix = '',
-}) {
-  return _FormattedString(value, format: format, prefix: prefix);
-}
-
 abstract class _Details {
-  _FormattedString toHuman();
+  FormattedString toHuman();
   Object? toJson();
 }
 
@@ -1035,7 +1006,7 @@ class _SimpleDetails implements _Details {
   _SimpleDetails(this.details);
 
   @override
-  _FormattedString toHuman() => _FormattedString(details);
+  FormattedString toHuman() => FormattedString(details);
 
   @override
   Object? toJson() => null;
@@ -1060,7 +1031,7 @@ class _MarkedVersionDetails implements _Details {
         _jsonExplanation = jsonExplanation;
 
   @override
-  _FormattedString toHuman() => _FormattedString(
+  FormattedString toHuman() => FormattedString(
         _versionDetails?.describe ?? '-',
         format: _format,
         prefix: _prefix,
@@ -1076,39 +1047,6 @@ class _MarkedVersionDetails implements _Details {
         ? _versionDetails.toJson()
         : (_versionDetails.toJson()..addEntries([jsonExplanation]));
   }
-}
-
-class _FormattedString {
-  final String value;
-
-  /// Should apply the ansi codes to present this string.
-  final String Function(String) _format;
-
-  /// A prefix for marking this string if colors are not used.
-  final String _prefix;
-
-  final String _suffix;
-
-  _FormattedString(
-    this.value, {
-    String Function(String)? format,
-    String? prefix,
-    String? suffix,
-  })  : _format = format ?? _noFormat,
-        _prefix = prefix ?? '',
-        _suffix = suffix ?? '';
-
-  String formatted({required bool useColors}) {
-    return useColors
-        ? _format(_prefix + value + _suffix)
-        : _prefix + value + _suffix;
-  }
-
-  int computeLength({required bool? useColors}) {
-    return _prefix.length + value.length + _suffix.length;
-  }
-
-  static String _noFormat(String x) => x;
 }
 
 /// Whether the package [name] is overridden anywhere in the workspace rooted at

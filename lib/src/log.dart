@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
@@ -634,4 +635,81 @@ class _JsonLogger {
 
     stdout.writeln(jsonEncode(message));
   }
+}
+
+/// Represents a string and its highlighting separately, such that we can
+/// compute the displayed length.
+class FormattedString {
+  final String value;
+
+  /// Should apply the ansi codes to present this string.
+  final String Function(String) _format;
+
+  /// A prefix for marking this string if colors are not used.
+  final String _prefix;
+
+  final String _suffix;
+
+  FormattedString(
+    this.value, {
+    String Function(String)? format,
+    String? prefix,
+    String? suffix,
+  })  : _format = format ?? _noFormat,
+        _prefix = prefix ?? '',
+        _suffix = suffix ?? '';
+
+  String formatted({required bool useColors}) {
+    return useColors
+        ? _format(_prefix + value + _suffix)
+        : _prefix + value + _suffix;
+  }
+
+  int computeLength({required bool? useColors}) {
+    return _prefix.length + value.length + _suffix.length;
+  }
+
+  static String _noFormat(String x) => x;
+}
+
+FormattedString format(
+  String value,
+  String Function(String) format, {
+  String? prefix = '',
+}) =>
+    FormattedString(value, format: format, prefix: prefix);
+
+/// Formats a table of [rows], inserting enough spaces to make columns line up.
+List<String> renderTable(
+  List<List<FormattedString>> rows,
+  bool useColors,
+) {
+  // Compute the width of each column by taking the max across all rows.
+  final columnWidths = <int, int>{};
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].length > 1) {
+      for (var j = 0; j < rows[i].length; j++) {
+        final currentMaxWidth = columnWidths[j] ?? 0;
+        columnWidths[j] = max(
+          rows[i][j].computeLength(useColors: useColors),
+          currentMaxWidth,
+        );
+      }
+    }
+  }
+
+  final result = <String>[];
+  for (final row in rows) {
+    final b = StringBuffer();
+    for (var j = 0; j < row.length; j++) {
+      b.write(row[j].formatted(useColors: useColors));
+      b.write(
+        ' ' *
+            ((columnWidths[j]! + 2) -
+                row[j].computeLength(useColors: useColors)),
+      );
+    }
+    result.add(b.toString());
+  }
+  return result;
 }

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../command.dart';
 import '../log.dart';
+import '../utils.dart';
 
 class WorkspaceListCommand extends PubCommand {
   @override
@@ -41,8 +42,18 @@ class WorkspaceListCommand extends PubCommand {
         }),
       );
     } else {
-      for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
-        message('${package.name}: ${p.relative(p.absolute(package.dir))}');
+      for (final line in renderTable(
+        [
+          [format('Package', bold), format('Path', bold)],
+          for (final package in entrypoint.workspaceRoot.transitiveWorkspace)
+            [
+              format(package.name, (x) => x),
+              format('${p.relative(p.absolute(package.dir))}/', (x) => x),
+            ],
+        ],
+        canUseAnsiCodes,
+      )) {
+        message(line);
       }
     }
   }

@@ -1451,9 +1451,10 @@ Consider removing one of the overrides.''',
       args: ['workspace', 'list'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: '''
-myapp: .
-a: pkgs/a
-b: pkgs/a/b
+Package  Path
+myapp    ./
+a        pkgs/a/
+b        pkgs/a/b/
 ''',
     );
     await runPub(
@@ -1461,9 +1462,10 @@ b: pkgs/a/b
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       workingDirectory: p.join(sandbox, appPath, 'pkgs'),
       output: '''
-myapp: ..
-a: a
-b: a/b
+Package  Path
+myapp    ../
+a        a/
+b        a/b/
 ''',
     );
     await runPub(
