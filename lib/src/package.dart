@@ -407,12 +407,20 @@ void validateWorkspace(Package root) {
     for (final child in current.workspaceChildren) {
       final previous = includedFrom[p.canonicalize(child.dir)];
       if (previous != null) {
+        if (previous == current.dir) {
+          fail(
+            '''
+Packages can only be included in the workspace once.
+
+`${p.join(child.dir, 'pubspec.yaml')}` is included twice into the workspace of `${p.join(current.dir, 'pubspec.yaml')}`''',
+          );
+        }
         fail('''
 Packages can only be included in the workspace once.
 
 `${p.join(child.dir, 'pubspec.yaml')}` is included in the workspace, both from:
 * `${p.join(current.dir, 'pubspec.yaml')}` and
-* ${p.join(previous, 'pubspec.yaml')}.''');
+* `${p.join(previous, 'pubspec.yaml')}`.''');
       }
       includedFrom[p.canonicalize(child.dir)] = current.dir;
     }
