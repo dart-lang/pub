@@ -1475,17 +1475,17 @@ b        a${s}b$s
       output: '''
 {
   "packages": [
-      {
+    {
       "name": "myapp",
-      "path": "${p.join(sandbox, appPath)}"
+      "path": ${json.encode(p.join(sandbox, appPath))}
     },
     {
       "name": "a",
-      "path": "${p.join(sandbox, appPath, 'pkgs', 'a')}"
+      "path": ${json.encode(p.join(sandbox, appPath, 'pkgs', 'a'))}
     },
     {
       "name": "b",
-      "path": "${p.join(sandbox, appPath, 'pkgs', 'a', 'b')}"
+      "path": ${json.encode(p.join(sandbox, appPath, 'pkgs', 'a', 'b'))}
     }
   ]
 }
