@@ -126,7 +126,9 @@ class DepsCommand extends PubCommand {
           'version': currentPackage.version.toString(),
           'kind': kind,
           'source': source,
-          'dependencies': next,
+          'dependencies': currentPackage.dependencies.keys.toList(),
+          if (isRoot)
+            'dev_dependencies': currentPackage.devDependencies.keys.toList(),
         });
         toVisit.addAll(next);
       }

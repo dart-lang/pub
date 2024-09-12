@@ -158,9 +158,10 @@ void main() {
       "dependencies": [
         "normal",
         "overridden",
-        "from_path",
-        "unittest",
-        "override_only"
+        "from_path"
+      ],
+      "dev_dependencies": [
+        "unittest"
       ]
     },
     {
