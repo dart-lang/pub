@@ -24,6 +24,7 @@ void main() {
       String contents,
       void Function(Pubspec) fn, {
       String? expectedContains,
+      String? hintContains,
       Description? containingDescription,
     }) {
       var expectation = const TypeMatcher<SourceSpanApplicationException>();
@@ -32,6 +33,13 @@ void main() {
           (error) => error.message,
           'message',
           contains(expectedContains),
+        );
+      }
+      if (hintContains != null) {
+        expectation = expectation.having(
+          (error) => error.hint,
+          'hint',
+          contains(hintContains),
         );
       }
 
@@ -384,6 +392,14 @@ environment:
 workspace: ['a', 'b', 'c']
 ''',
         (p) => p.workspace,
+        expectedContains: '`workspace` and `resolution` '
+            'requires at least language version 3.5',
+        hintContains: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${Platform.version.split(' ').first}'
+''',
       );
       // but no error if you don't look at it.
       expect(
@@ -406,9 +422,17 @@ resolution: workspace
         '''
 environment:
   sdk: ^1.2.3
-resolution: local
+resolution: workspace
 ''',
         (p) => p.resolution,
+        expectedContains: '`workspace` and `resolution` '
+            'requires at least language version 3.5',
+        hintContains: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${Platform.version.split(' ').first}'
+''',
       );
     });
 
