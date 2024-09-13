@@ -585,7 +585,7 @@ transitive dependencies:
         "myapp",
         "foo"
       ],
-      "dev_dependencies": [
+      "devDependencies": [
         "both"
       ]
     },
