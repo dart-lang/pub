@@ -574,7 +574,7 @@ transitive dependencies:
         "both",
         "b"
       ],
-      "dev_dependencies": []
+      "devDependencies": []
     },
     {
       "name": "a",
