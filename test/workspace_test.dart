@@ -539,7 +539,6 @@ dependencies:
 transitive dependencies:
 - transitive 1.0.0''',
     );
-
     await runPub(
       args: ['deps', '--json'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
@@ -556,6 +555,10 @@ transitive dependencies:
         "myapp",
         "both"
       ],
+      "directDependencies": [
+        "myapp",
+        "both"
+      ],
       "devDependencies": []
     },
     {
@@ -563,7 +566,8 @@ transitive dependencies:
       "version": "1.0.0",
       "kind": "direct",
       "source": "hosted",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     },
     {
       "name": "myapp",
@@ -571,6 +575,10 @@ transitive dependencies:
       "kind": "root",
       "source": "root",
       "dependencies": [
+        "both",
+        "b"
+      ],
+      "directDependencies": [
         "both",
         "b"
       ],
@@ -585,6 +593,10 @@ transitive dependencies:
         "myapp",
         "foo"
       ],
+      "directDependencies": [
+        "myapp",
+        "foo"
+      ],
       "devDependencies": [
         "both"
       ]
@@ -596,6 +608,9 @@ transitive dependencies:
       "source": "hosted",
       "dependencies": [
         "transitive"
+      ],
+      "directDependencies": [
+        "transitive"
       ]
     },
     {
@@ -603,7 +618,8 @@ transitive dependencies:
       "version": "1.0.0",
       "kind": "transitive",
       "source": "hosted",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     }
   ],
   "sdks": [

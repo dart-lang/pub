@@ -32,6 +32,7 @@ $ pub deps --json
       "kind": "root",
       "source": "root",
       "dependencies": [],
+      "directDependencies": [],
       "devDependencies": []
     }
   ],

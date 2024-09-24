@@ -41,6 +41,9 @@ $ pub deps --json
       "dependencies": [
         "foo"
       ],
+      "directDependencies": [
+        "foo"
+      ],
       "devDependencies": []
     },
     {
@@ -50,6 +53,9 @@ $ pub deps --json
       "source": "path",
       "dependencies": [
         "baz"
+      ],
+      "directDependencies": [
+        "baz"
       ]
     },
     {
@@ -57,7 +63,8 @@ $ pub deps --json
       "version": "1.0.0",
       "kind": "transitive",
       "source": "path",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     }
   ],
   "sdks": [
