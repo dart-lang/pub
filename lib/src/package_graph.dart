@@ -3,11 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:graphs/graphs.dart';
-import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
 import 'package.dart';
 import 'solver.dart';
+import 'source/cached.dart';
+import 'source/sdk.dart';
 import 'utils.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
@@ -78,12 +79,12 @@ class PackageGraph {
     return _transitiveDependencies![package]!;
   }
 
-  bool _isPackageCached(String package) {
-    // The root package is not included in the lock file, so we instead ask
-    // the entrypoint.
-    // TODO(sigurdm): there should be a way to get the id of any package
-    // including the root.
-    return p.isWithin(entrypoint.cache.rootDir, packages[package]!.dir);
+  bool _isPackageFromImmutableSource(String package) {
+    final id = entrypoint.lockFile.packages[package];
+    if (id == null) {
+      return false; // This is a root package.
+    }
+    return id.source is CachedSource || id.source is SdkSource;
   }
 
   /// Returns whether [package] is mutable.
@@ -93,9 +94,9 @@ class PackageGraph {
   /// without modifying the pub cache. Information generated from mutable
   /// packages is generally not safe to cache, since it may change frequently.
   bool isPackageMutable(String package) {
-    if (!_isPackageCached(package)) return true;
+    if (!_isPackageFromImmutableSource(package)) return true;
 
     return transitiveDependencies(package)
-        .any((dep) => !_isPackageCached(dep.name));
+        .any((dep) => !_isPackageFromImmutableSource(dep.name));
   }
 }
