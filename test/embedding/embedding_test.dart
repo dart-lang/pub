@@ -367,6 +367,83 @@ main() {
     );
   });
 
+  test(
+      '`embedding run` does not recompile executables '
+      'from packages depending on sdk packages', () async {
+    final server = await servePackages();
+    server.serve(
+      'hosted',
+      '1.0.0',
+      deps: {
+        'foo': {'sdk': 'flutter'},
+      },
+      contents: [
+        d.dir('bin', [d.file('hosted.dart', 'main() {print(42);}')]),
+      ],
+    );
+    await d.dir('flutter', [
+      d.dir('bin', [
+        d.dir('cache', [
+          d.file(
+            'flutter.version.json',
+            '{"flutterVersion": "1.2.3"}',
+          ),
+        ]),
+      ]),
+      d.dir('packages', [
+        d.dir('foo', [
+          d.libPubspec('foo', '1.2.3'),
+        ]),
+      ]),
+    ]).create();
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'dependencies': {
+          'hosted': '^1.0.0',
+        },
+      }),
+    ]).create();
+
+    final buffer = StringBuffer();
+    await runEmbeddingToBuffer(
+      ['run', 'hosted'],
+      buffer,
+      workingDirectory: d.path(appPath),
+      environment: {
+        'FLUTTER_ROOT': p.join(d.sandbox, 'flutter'),
+        EnvironmentKeys.forceTerminalOutput: '1',
+      },
+    );
+
+    expect(
+      buffer.toString(),
+      allOf(
+        contains('Built hosted:hosted'),
+        contains('42'),
+      ),
+    );
+
+    final buffer2 = StringBuffer();
+    await runEmbeddingToBuffer(
+      ['run', 'hosted'],
+      buffer2,
+      workingDirectory: d.path(appPath),
+      environment: {
+        'FLUTTER_ROOT': p.join(d.sandbox, 'flutter'),
+        EnvironmentKeys.forceTerminalOutput: '1',
+      },
+    );
+    expect(
+      buffer2.toString(),
+      allOf(
+        isNot(contains('Built hosted:hosted')),
+        contains('42'),
+      ),
+    );
+  });
+
   test('"pkg" and "packages" will trigger a suggestion of "pub"', () async {
     await servePackages();
     await d.appDir().create();
