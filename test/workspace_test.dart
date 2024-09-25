@@ -539,6 +539,103 @@ dependencies:
 transitive dependencies:
 - transitive 1.0.0''',
     );
+    await runPub(
+      args: ['deps', '--json'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: '''
+{
+  "root": "myapp",
+  "packages": [
+    {
+      "name": "b",
+      "version": "1.1.1",
+      "kind": "root",
+      "source": "root",
+      "dependencies": [
+        "myapp",
+        "both"
+      ],
+      "directDependencies": [
+        "myapp",
+        "both"
+      ],
+      "devDependencies": []
+    },
+    {
+      "name": "both",
+      "version": "1.0.0",
+      "kind": "direct",
+      "source": "hosted",
+      "dependencies": [],
+      "directDependencies": []
+    },
+    {
+      "name": "myapp",
+      "version": "1.2.3",
+      "kind": "root",
+      "source": "root",
+      "dependencies": [
+        "both",
+        "b"
+      ],
+      "directDependencies": [
+        "both",
+        "b"
+      ],
+      "devDependencies": []
+    },
+    {
+      "name": "a",
+      "version": "1.1.1",
+      "kind": "root",
+      "source": "root",
+      "dependencies": [
+        "myapp",
+        "foo"
+      ],
+      "directDependencies": [
+        "myapp",
+        "foo"
+      ],
+      "devDependencies": [
+        "both"
+      ]
+    },
+    {
+      "name": "foo",
+      "version": "1.0.0",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": [
+        "transitive"
+      ],
+      "directDependencies": [
+        "transitive"
+      ]
+    },
+    {
+      "name": "transitive",
+      "version": "1.0.0",
+      "kind": "transitive",
+      "source": "hosted",
+      "dependencies": [],
+      "directDependencies": []
+    }
+  ],
+  "sdks": [
+    {
+      "name": "Dart",
+      "version": "3.5.0"
+    }
+  ],
+  "executables": [
+    ":myappmain",
+    "both:bothmain",
+    "b:bmain"
+  ]
+}
+''',
+    );
 
     await runPub(
       args: ['deps', '--style=list', '--no-dev'],

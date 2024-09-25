@@ -158,9 +158,15 @@ void main() {
       "dependencies": [
         "normal",
         "overridden",
-        "from_path",
-        "unittest",
-        "override_only"
+        "from_path"
+      ],
+      "directDependencies": [
+        "normal",
+        "overridden",
+        "from_path"
+      ],
+      "devDependencies": [
+        "unittest"
       ]
     },
     {
@@ -168,7 +174,8 @@ void main() {
       "version": "1.2.3",
       "kind": "transitive",
       "source": "hosted",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     },
     {
       "name": "unittest",
@@ -178,6 +185,10 @@ void main() {
       "dependencies": [
         "shared",
         "dev_only"
+      ],
+      "directDependencies": [
+        "shared",
+        "dev_only"
       ]
     },
     {
@@ -185,7 +196,8 @@ void main() {
       "version": "1.2.3",
       "kind": "transitive",
       "source": "hosted",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     },
     {
       "name": "shared",
@@ -193,6 +205,9 @@ void main() {
       "kind": "transitive",
       "source": "hosted",
       "dependencies": [
+        "other"
+      ],
+      "directDependencies": [
         "other"
       ]
     },
@@ -203,6 +218,9 @@ void main() {
       "source": "hosted",
       "dependencies": [
         "myapp"
+      ],
+      "directDependencies": [
+        "myapp"
       ]
     },
     {
@@ -210,14 +228,16 @@ void main() {
       "version": "1.2.3",
       "kind": "direct",
       "source": "path",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     },
     {
       "name": "overridden",
       "version": "2.0.0",
       "kind": "direct",
       "source": "hosted",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     },
     {
       "name": "normal",
@@ -225,6 +245,10 @@ void main() {
       "kind": "direct",
       "source": "hosted",
       "dependencies": [
+        "transitive",
+        "circular_a"
+      ],
+      "directDependencies": [
         "transitive",
         "circular_a"
       ]
@@ -236,6 +260,9 @@ void main() {
       "source": "hosted",
       "dependencies": [
         "circular_b"
+      ],
+      "directDependencies": [
+        "circular_b"
       ]
     },
     {
@@ -245,6 +272,9 @@ void main() {
       "source": "hosted",
       "dependencies": [
         "circular_a"
+      ],
+      "directDependencies": [
+        "circular_a"
       ]
     },
     {
@@ -253,6 +283,9 @@ void main() {
       "kind": "transitive",
       "source": "hosted",
       "dependencies": [
+        "shared"
+      ],
+      "directDependencies": [
         "shared"
       ]
     }

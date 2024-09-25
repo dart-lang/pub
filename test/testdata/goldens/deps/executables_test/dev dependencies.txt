@@ -34,7 +34,9 @@ $ pub deps --json
       "version": "0.0.0",
       "kind": "root",
       "source": "root",
-      "dependencies": [
+      "dependencies": [],
+      "directDependencies": [],
+      "devDependencies": [
         "foo"
       ]
     },
@@ -43,7 +45,8 @@ $ pub deps --json
       "version": "1.0.0",
       "kind": "dev",
       "source": "path",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     }
   ],
   "sdks": [

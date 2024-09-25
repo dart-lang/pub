@@ -126,7 +126,17 @@ class DepsCommand extends PubCommand {
           'version': currentPackage.version.toString(),
           'kind': kind,
           'source': source,
-          'dependencies': next,
+          // This field is kept for backwards compatibility with dart 3.5 and
+          // before. Clients should opt to consume directDependencies and
+          // devDependencies separately instead.
+          'dependencies': (isRoot
+                  ? currentPackage.dependencies
+                  : currentPackage.immediateDependencies)
+              .keys
+              .toList(),
+          'directDependencies': currentPackage.dependencies.keys.toList(),
+          if (isRoot)
+            'devDependencies': currentPackage.devDependencies.keys.toList(),
         });
         toVisit.addAll(next);
       }
