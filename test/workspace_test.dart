@@ -591,7 +591,8 @@ transitive dependencies:
       "source": "root",
       "dependencies": [
         "myapp",
-        "foo"
+        "foo",
+        "both"
       ],
       "directDependencies": [
         "myapp",
