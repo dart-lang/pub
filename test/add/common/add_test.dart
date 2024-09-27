@@ -1148,4 +1148,14 @@ dependency_overrides:
 
     await pubAdd(args: ['foo'], output: contains('+ foo 1.0.0'));
   });
+
+  test('`--offline` works', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    await runPub(args: ['cache', 'add', 'foo', '--version', '1.0.0']);
+
+    await d.appDir().create();
+    server.serve('foo', '2.0.0');
+    await pubAdd(args: ['foo', '--offline']);
+  });
 }
