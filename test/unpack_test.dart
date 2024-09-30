@@ -125,4 +125,41 @@ Resolving dependencies in `../foo-1.2.3-pre`...
       output: contains('Downloading foo 1.0.0 to `.${s}foo-1.0.0`...'),
     );
   });
+
+  test('unpacks and resolve workspace project', () async {
+    await d.dir(appPath).create();
+
+    final server = await servePackages();
+    server.serve('bar', '1.0.0');
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'environment': {'sdk': '^3.5.0'},
+        'resolution': 'workspace',
+        'workspace': ['example'],
+      },
+      contents: [
+        d.dir('example', [
+          d.libPubspec(
+            'example',
+            '1.0.0',
+            sdk: '^3.5.0',
+            deps: {'foo': null, 'bar': '^1.0.0'},
+            extras: {'resolution': 'workspace'},
+          ),
+        ]),
+      ],
+    );
+    await runPub(
+      args: ['unpack', 'foo:1.0.0'],
+      output: allOf(
+        contains('Downloading foo 1.0.0 to `.${s}foo-1.0.0`...'),
+        contains(
+          '+ bar',
+        ),
+      ),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+  });
 }

@@ -1637,6 +1637,55 @@ b        a${s}b$s
 ''',
     );
   });
+
+  test(
+    '"workspace" and "resolution" fields can be overridden by '
+    '`pubspec_overrides`',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+      server.serve('bar', '1.0.0');
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('pkgs', [
+          dir('a', [
+            libPubspec('a', '1.1.1', sdk: '^3.5.0', deps: {'foo': '^1.0.0'}),
+            file('pubspec_overrides.yaml', 'resolution: workspace'),
+          ]),
+          dir(
+            'b',
+            [
+              libPubspec(
+                'b',
+                '1.0.0',
+                deps: {'bar': '^1.0.0'},
+                resolutionWorkspace: true,
+              ),
+            ],
+          ),
+        ]),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        output: contains('+ foo'),
+      );
+      await dir(
+        appPath,
+        [file('pubspec_overrides.yaml', 'workspace: ["pkgs/b/"]')],
+      ).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        output: contains('+ bar'),
+      );
+    },
+  );
 }
 
 final s = p.separator;

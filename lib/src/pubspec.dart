@@ -66,20 +66,21 @@ class Pubspec extends PubspecBase {
   /// Directories of packages that should resolve together with this package.
   late List<String> workspace = () {
     final result = <String>[];
-    final r = fields.nodes['workspace'];
-    if (r != null && !languageVersion.supportsWorkspaces) {
+    final workspaceNode =
+        _overridesFileFields?.nodes['workspace'] ?? fields.nodes['workspace'];
+    if (workspaceNode != null && !languageVersion.supportsWorkspaces) {
       _error(
         '`workspace` and `resolution` requires at least language version '
         '${LanguageVersion.firstVersionWithWorkspaces}',
-        r.span,
+        workspaceNode.span,
       );
     }
-    if (r == null || r.value == null) return <String>[];
+    if (workspaceNode == null || workspaceNode.value == null) return <String>[];
 
-    if (r is! YamlList) {
-      _error('"workspace" must be a list of strings', r.span);
+    if (workspaceNode is! YamlList) {
+      _error('"workspace" must be a list of strings', workspaceNode.span);
     }
-    for (final t in r.nodes) {
+    for (final t in workspaceNode.nodes) {
       final value = t.value;
       if (value is! String) {
         _error('"workspace" must be a list of strings', t.span);
@@ -97,22 +98,24 @@ class Pubspec extends PubspecBase {
 
   /// The resolution mode.
   late Resolution resolution = () {
-    final r = fields.nodes['resolution'];
-    if (r != null && !languageVersion.supportsWorkspaces) {
+    final resolutionNode =
+        _overridesFileFields?.nodes['resolution'] ?? fields.nodes['resolution'];
+
+    if (resolutionNode != null && !languageVersion.supportsWorkspaces) {
       _error(
         '`workspace` and `resolution` requires at least language version '
         '${LanguageVersion.firstVersionWithWorkspaces}',
-        r.span,
+        resolutionNode.span,
       );
     }
-    return switch (r?.value) {
+    return switch (resolutionNode?.value) {
       null => Resolution.none,
       'local' => Resolution.local,
       'workspace' => Resolution.workspace,
       'external' => Resolution.external,
       _ => _error(
           '"resolution" must be one of `workspace`, `local`, `external`',
-          r!.span,
+          resolutionNode!.span,
         )
     };
   }();
@@ -155,16 +158,6 @@ class Pubspec extends PubspecBase {
     if (_dependencyOverrides != null) return _dependencyOverrides!;
     final pubspecOverridesFields = _overridesFileFields;
     if (pubspecOverridesFields != null) {
-      pubspecOverridesFields.nodes.forEach((key, _) {
-        final keyNode = key as YamlNode;
-        if (!const {'dependency_overrides'}.contains(keyNode.value)) {
-          throw SourceSpanApplicationException(
-            'pubspec_overrides.yaml only supports the '
-            '`dependency_overrides` field.',
-            keyNode.span,
-          );
-        }
-      });
       if (pubspecOverridesFields.containsKey('dependency_overrides')) {
         _dependencyOverrides = _parseDependencies(
           'dependency_overrides',
@@ -382,6 +375,19 @@ class Pubspec extends PubspecBase {
               ? fields
               : YamlMap.wrap(fields, sourceUrl: location),
         ) {
+    if (overridesFields != null) {
+      overridesFields.nodes.forEach((key, _) {
+        final keyNode = key as YamlNode;
+        if (!const {'dependency_overrides', 'resolution', 'workspace'}
+            .contains(keyNode.value)) {
+          throw SourceSpanApplicationException(
+            'pubspec_overrides.yaml only supports the '
+            '`dependency_overrides`, `resolution` and `workspace` fields.',
+            keyNode.span,
+          );
+        }
+      });
+    }
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -833,8 +839,13 @@ class SdkConstraint {
 }
 
 enum Resolution {
+  // Still unused.
   external,
+  // This package is a member of a workspace, and should be resolved with a
+  // pubspec.yaml located higher.
   workspace,
+  // Still unused.
   local,
+  // This package is at the root of a workspace.
   none,
 }

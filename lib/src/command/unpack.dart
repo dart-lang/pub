@@ -135,18 +135,50 @@ in a directory `foo-<version>`.
         await cache.hosted.downloadInto(id, destinationDir, cache);
       },
     );
-    final e = Entrypoint(
-      destinationDir,
-      cache,
-    );
+
     if (argResults.flag('resolve')) {
       try {
+        final pubspec = Pubspec.load(
+          destinationDir,
+          cache.sources,
+          containingDescription: RootDescription(destinationDir),
+        );
+        final buffer = StringBuffer();
+        if (pubspec.resolution != Resolution.none) {
+          log.message(
+            '''
+This package was developed as part of a workspace.
+
+Creating `pubspec_overrides.yaml` to resolve it alone.''',
+          );
+          buffer.writeln('resolution:');
+        }
+        if (pubspec.dependencyOverrides.isNotEmpty) {
+          log.message(
+            '''
+This package was developed with dependency_overrides.
+
+Creating `pubspec_overrides.yaml` to resolve it without those overrides.''',
+          );
+          buffer.writeln('dependency_overrides:');
+        }
+        if (buffer.isNotEmpty) {
+          writeTextFile(
+            p.join(destinationDir, 'pubspec_overrides.yaml'),
+            buffer.toString(),
+          );
+        }
+        final e = Entrypoint(
+          destinationDir,
+          cache,
+        );
         await e.acquireDependencies(SolveType.get);
       } finally {
         log.message('To explore type: cd $destinationDir');
-        if (e.example != null) {
+        final exampleDir = p.join(destinationDir, 'example');
+        if (dirExists(exampleDir)) {
           log.message(
-            'To explore the example type: cd ${e.example!.workspaceRoot.dir}',
+            'To explore the example type: cd $exampleDir',
           );
         }
       }
