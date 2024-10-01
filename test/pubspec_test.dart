@@ -1036,8 +1036,13 @@ dependency_overrides:
           );
         }
 
-        final pubspec = parsePubspecOverrides(contents);
-        expect(() => fn(pubspec), throwsA(expectation));
+        expect(
+          () {
+            final pubspec = parsePubspecOverrides(contents);
+            fn(pubspec);
+          },
+          throwsA(expectation),
+        );
       }
 
       test('allows empty overrides file', () {
