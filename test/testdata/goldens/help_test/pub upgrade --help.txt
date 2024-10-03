@@ -10,6 +10,7 @@ Usage: pub upgrade [dependencies...]
 -n, --dry-run            Report what dependencies would change but don't change any.
     --[no-]precompile    Precompile executables in immediate dependencies.
     --tighten            Updates lower bounds in pubspec.yaml to match the resolved version.
+    --[no-]transitive    Also upgrades the transitive dependencies of the listed [dependencies]
     --major-versions     Upgrades packages to their latest resolvable versions, and updates pubspec.yaml.
 -C, --directory=<dir>    Run this in the directory <dir>.
 
