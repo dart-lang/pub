@@ -8,7 +8,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('without --transitive, the transitive dependencies stay locked',
+  test('without --unlock-transitive, the transitive dependencies stay locked',
       () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
@@ -34,7 +34,7 @@ void main() {
     );
   });
 
-  test('`--transitive` dependencies gets unlocked', () async {
+  test('`--unlock-transitive` dependencies gets unlocked', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
     server.serve('bar', '1.0.0');
@@ -54,7 +54,7 @@ void main() {
     server.serve('baz', '1.5.0');
 
     await pubUpgrade(
-      args: ['--transitive', 'foo'],
+      args: ['--unlock-transitive', 'foo'],
       output: allOf(
         contains('> foo 1.5.0'),
         contains('> bar 1.5.0'),
@@ -66,8 +66,9 @@ void main() {
   });
 
   test(
-      '`--major-versions` without `--transitive` does not allow transitive '
-      'dependencies to be upgraded along with the named packages', () async {
+      '`--major-versions` without `--unlock-transitive` does not allow '
+      'transitive dependencies to be upgraded along with the named packages',
+      () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
     server.serve('bar', '1.0.0');
@@ -93,7 +94,7 @@ void main() {
   });
 
   test(
-      '`--transitive --major-versions` allows transitive dependencies '
+      '`--unlock-transitive --major-versions` allows transitive dependencies '
       'be upgraded along with the named packages', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
@@ -114,7 +115,7 @@ void main() {
     server.serve('baz', '1.5.0');
 
     await pubUpgrade(
-      args: ['--major-versions', '--transitive', 'foo'],
+      args: ['--major-versions', '--unlock-transitive', 'foo'],
       output: allOf(
         contains('> foo 2.0.0'),
         contains('> bar 1.5.0'),

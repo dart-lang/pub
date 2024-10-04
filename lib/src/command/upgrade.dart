@@ -71,7 +71,7 @@ class UpgradeCommand extends PubCommand {
     );
 
     argParser.addFlag(
-      'transitive',
+      'unlock-transitive',
       help: 'Also upgrades the transitive dependencies '
           'of the listed [dependencies]',
     );
@@ -115,7 +115,7 @@ class UpgradeCommand extends PubCommand {
   /// This allows the user to specify list of names that they want the
   /// upgrade command to affect.
   Future<List<String>> _computePackagesToUpgrade() async {
-    if (argResults.flag('transitive')) {
+    if (argResults.flag('unlock-transitive')) {
       final graph = await entrypoint.packageGraph;
       return argResults.rest
           .expand(
