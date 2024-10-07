@@ -515,7 +515,7 @@ See $workspacesDocUrl for more information.''',
   /// pubspec.yaml and all dependencies downloaded.
   Future<void> acquireDependencies(
     SolveType type, {
-    Iterable<String>? unlock,
+    Iterable<String> unlock = const [],
     bool dryRun = false,
     bool precompile = false,
     bool summaryOnly = false,
@@ -547,7 +547,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
           cache,
           workspaceRoot,
           lockFile: lockFile,
-          unlock: unlock ?? [],
+          unlock: unlock,
         );
       });
     } on SolveFailure catch (e) {
@@ -557,7 +557,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
           this,
           type,
           e.incompatibility,
-          unlock ?? [],
+          unlock,
           cache,
         ),
       );

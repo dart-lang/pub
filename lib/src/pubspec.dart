@@ -73,6 +73,12 @@ class Pubspec extends PubspecBase {
         '`workspace` and `resolution` requires at least language version '
         '${LanguageVersion.firstVersionWithWorkspaces}',
         workspaceNode.span,
+        hint: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${sdk.version}'
+''',
       );
     }
     if (workspaceNode == null || workspaceNode.value == null) return <String>[];
@@ -106,6 +112,12 @@ class Pubspec extends PubspecBase {
         '`workspace` and `resolution` requires at least language version '
         '${LanguageVersion.firstVersionWithWorkspaces}',
         resolutionNode.span,
+        hint: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${sdk.version}'
+''',
       );
     }
     return switch (resolutionNode?.value) {
@@ -726,8 +738,8 @@ T _wrapFormatException<T>(
 }
 
 /// Throws a [SourceSpanApplicationException] with the given message.
-Never _error(String message, SourceSpan? span) {
-  throw SourceSpanApplicationException(message, span);
+Never _error(String message, SourceSpan? span, {String? hint}) {
+  throw SourceSpanApplicationException(message, span, hint: hint);
 }
 
 enum _FileType {

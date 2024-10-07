@@ -130,8 +130,8 @@ class DepsCommand extends PubCommand {
           // before. Clients should opt to consume directDependencies and
           // devDependencies separately instead.
           'dependencies': (isRoot
-                  ? currentPackage.dependencies
-                  : currentPackage.immediateDependencies)
+                  ? currentPackage.immediateDependencies
+                  : currentPackage.dependencies)
               .keys
               .toList(),
           'directDependencies': currentPackage.dependencies.keys.toList(),

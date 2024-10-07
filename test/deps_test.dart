@@ -158,7 +158,9 @@ void main() {
       "dependencies": [
         "normal",
         "overridden",
-        "from_path"
+        "from_path",
+        "unittest",
+        "override_only"
       ],
       "directDependencies": [
         "normal",

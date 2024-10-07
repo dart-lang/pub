@@ -88,6 +88,8 @@ For example:
 
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
+  @override
+  bool get isOffline => argResults.flag('offline');
 
   AddCommand() {
     argParser.addFlag(

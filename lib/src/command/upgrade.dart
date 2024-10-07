@@ -71,6 +71,13 @@ class UpgradeCommand extends PubCommand {
     );
 
     argParser.addFlag(
+      'unlock-transitive',
+      help: 'Also upgrades the transitive dependencies '
+          'of the listed [dependencies]',
+      negatable: false,
+    );
+
+    argParser.addFlag(
       'major-versions',
       help: 'Upgrades packages to their latest resolvable versions, '
           'and updates pubspec.yaml.',
@@ -101,11 +108,27 @@ class UpgradeCommand extends PubCommand {
 
   bool get _precompile => argResults.flag('precompile');
 
+  late final Future<List<String>> _packagesToUpgrade =
+      _computePackagesToUpgrade();
+
   /// List of package names to upgrade, if empty then upgrade all packages.
   ///
   /// This allows the user to specify list of names that they want the
   /// upgrade command to affect.
-  List<String> get _packagesToUpgrade => argResults.rest;
+  Future<List<String>> _computePackagesToUpgrade() async {
+    if (argResults.flag('unlock-transitive')) {
+      final graph = await entrypoint.packageGraph;
+      return argResults.rest
+          .expand(
+            (package) =>
+                graph.transitiveDependencies(package).map((p) => p.name),
+          )
+          .toSet()
+          .toList();
+    } else {
+      return argResults.rest;
+    }
+  }
 
   bool get _upgradeNullSafety =>
       argResults.flag('nullsafety') || argResults.flag('null-safety');
@@ -142,7 +165,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           );
         }
         final changes =
-            entrypoint.tighten(packagesToUpgrade: _packagesToUpgrade);
+            entrypoint.tighten(packagesToUpgrade: await _packagesToUpgrade);
         entrypoint.applyChanges(changes, _dryRun);
       }
     }
@@ -157,7 +180,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   Future<void> _runUpgrade(Entrypoint e, {bool onlySummary = false}) async {
     await e.acquireDependencies(
       SolveType.upgrade,
-      unlock: _packagesToUpgrade,
+      unlock: await _packagesToUpgrade,
       dryRun: _dryRun,
       precompile: _precompile,
       summaryOnly: onlySummary,
@@ -171,7 +194,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
   /// given.
   ///
   /// This assumes that `--major-versions` was passed.
-  List<String> _directDependenciesToUpgrade() {
+  Future<List<String>> _directDependenciesToUpgrade() async {
     assert(_upgradeMajorVersions);
 
     final directDeps = {
@@ -180,12 +203,13 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         ...package.devDependencies.keys,
       ],
     }.toList();
+    final packagesToUpgrade = await _packagesToUpgrade;
     final toUpgrade =
-        _packagesToUpgrade.isEmpty ? directDeps : _packagesToUpgrade;
+        packagesToUpgrade.isEmpty ? directDeps : packagesToUpgrade;
 
     // Check that all package names in upgradeOnly are direct-dependencies
     final notInDeps = toUpgrade.where((n) => !directDeps.contains(n));
-    if (toUpgrade.any(notInDeps.contains)) {
+    if (argResults.rest.any(notInDeps.contains)) {
       usageException('''
 Dependencies specified in `$topLevelProgram pub upgrade --major-versions <dependencies>` must
 be direct 'dependencies' or 'dev_dependencies', following packages are not:
@@ -198,7 +222,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
   }
 
   Future<void> _runUpgradeMajorVersions() async {
-    final toUpgrade = _directDependenciesToUpgrade();
+    final toUpgrade = await _directDependenciesToUpgrade();
     // Solve [resolvablePubspec] in-memory and consolidate the resolved
     // versions of the packages into a map for quick searching.
     final resolvedPackages = <String, PackageId>{};
@@ -267,7 +291,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
         }),
       );
       changes = entrypoint.tighten(
-        packagesToUpgrade: _packagesToUpgrade,
+        packagesToUpgrade: await _packagesToUpgrade,
         existingChanges: changes,
         packageVersions: solveResult.packages,
       );
@@ -279,7 +303,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // But without a specific package we want to get as many non-major updates
     // as possible (SolveType.upgrade).
     final solveType =
-        _packagesToUpgrade.isEmpty ? SolveType.upgrade : SolveType.get;
+        (await _packagesToUpgrade).isEmpty ? SolveType.upgrade : SolveType.get;
 
     entrypoint.applyChanges(changes, _dryRun);
     await entrypoint.withUpdatedRootPubspecs({
@@ -290,6 +314,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       solveType,
       dryRun: _dryRun,
       precompile: !_dryRun && _precompile,
+      unlock: await _packagesToUpgrade,
     );
 
     // If any of the packages to upgrade are dependency overrides, then we
