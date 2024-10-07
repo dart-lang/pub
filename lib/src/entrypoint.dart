@@ -111,16 +111,15 @@ class Entrypoint {
             path, {
             expectedName,
             required withPubspecOverrides,
-          }) {
-            return pubspecsMet[p.canonicalize(path)] ??
-                Pubspec.load(
-                  path,
-                  cache.sources,
-                  expectedName: expectedName,
-                  allowOverridesFile: withPubspecOverrides,
-                  containingDescription: RootDescription(path),
-                );
-          },
+          }) =>
+              pubspecsMet[p.canonicalize(path)] ??
+              Pubspec.load(
+                path,
+                cache.sources,
+                expectedName: expectedName,
+                allowOverridesFile: withPubspecOverrides,
+                containingDescription: RootDescription(path),
+              ),
           withPubspecOverrides: true,
         );
         for (final package in root.transitiveWorkspace) {

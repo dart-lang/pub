@@ -161,5 +161,8 @@ Resolving dependencies in `../foo-1.2.3-pre`...
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
+    await d.dir(appPath, [
+      d.dir('foo-1.0.0', [d.file('pubspec_overrides.yaml', 'resolution:\n')]),
+    ]).validate();
   });
 }
