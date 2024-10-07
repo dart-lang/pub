@@ -74,6 +74,7 @@ class UpgradeCommand extends PubCommand {
       'unlock-transitive',
       help: 'Also upgrades the transitive dependencies '
           'of the listed [dependencies]',
+      negatable: false,
     );
 
     argParser.addFlag(

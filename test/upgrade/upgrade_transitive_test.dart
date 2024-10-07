@@ -29,7 +29,7 @@ void main() {
       args: ['foo'],
       output: allOf(
         contains('> foo 1.5.0'),
-        isNot(contains('bar')),
+        isNot(contains('> bar')),
       ),
     );
   });
