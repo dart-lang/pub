@@ -448,7 +448,8 @@ Specify multiple sdk packages with descriptors.''');
   /// description is issued.
   ///
   /// Examples:
-  /// ```
+  ///
+  /// ```none
   /// retry
   /// retry:2.0.0
   /// retry:^2.0.0
@@ -579,7 +580,8 @@ Specify multiple sdk packages with descriptors.''');
   ///
   ///
   /// Examples:
-  /// ```
+  ///
+  /// ```none
   /// retry
   /// retry:2.0.0
   /// dev:retry:^2.0.0
@@ -593,14 +595,14 @@ Specify multiple sdk packages with descriptors.''');
   /// 'retry:{"hosted":"mypub.dev"}'
   /// ```
   ///
-  /// The --path --sdk and --git-<option> arguments cannot be combined with a
-  /// non-string descriptor.
+  /// The `--path`, `--sdk`, and `--git-<option>` arguments can't be
+  /// combined with a non-string descriptor.
   ///
   /// If a version constraint is provided when the `--path` or any of the
-  /// `--git-<option>` options are used, a [usageException] will be thrown.
+  /// `--git-<option>` options are used, a [UsageException] will be thrown.
   ///
   /// Packages must either be a git, hosted, sdk, or path package. Mixing of
-  /// options is not allowed and will cause a [usageException] to be thrown.
+  /// options is not allowed and will cause a [UsageException] to be thrown.
   ///
   /// If any of the other git options are defined when `--git-url` is not
   /// defined, an error will be thrown.
