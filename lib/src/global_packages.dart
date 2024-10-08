@@ -397,7 +397,19 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         cache,
       );
     }
+    final generatorVersion = entrypoint.packageConfig.generatorVersion;
+    if (generatorVersion != null &&
+        (generatorVersion.major != sdk.version.major ||
+            generatorVersion.minor != sdk.version.minor)) {
+      dataError('''
+${log.bold(name)} was globally activated by Dart $generatorVersion.
 
+You are using ${sdk.version}. Please reactivate.
+
+run:
+`$topLevelProgram pub global activate $name` to reactivate.
+''');
+    }
     // Check that the SDK constraints the lockFile says we have are honored.
     lockFile.sdkConstraints.forEach((sdkName, constraint) {
       final sdk = sdks[sdkName];
