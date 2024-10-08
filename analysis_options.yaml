@@ -12,36 +12,20 @@ analyzer:
 
 linter:
   rules:
-    - always_declare_return_types
-    - avoid_catching_errors
     - avoid_print
     - avoid_private_typedef_functions
     - avoid_redundant_argument_values
     - avoid_unused_constructor_parameters
     - avoid_void_async
     - cancel_subscriptions
-    - directives_ordering
-    - library_annotations
+    - missing_code_block_language_in_doc_comment
     - missing_whitespace_between_adjacent_strings
     - no_adjacent_strings_in_list
     - no_runtimeType_toString
-    - omit_local_variable_types
-    - only_throw_errors
     - package_api_docs
-    - prefer_asserts_in_initializer_lists
     - prefer_const_declarations
     - prefer_final_locals
-    - prefer_relative_imports
-    - prefer_single_quotes
     - require_trailing_commas
-    - sort_pub_dependencies
-    - test_types_in_equals
-    - throw_in_finally
-    - type_annotate_public_apis
     - unawaited_futures
-    - unnecessary_lambdas
-    - unnecessary_library_directive
-    - unnecessary_parenthesis
-    - unnecessary_statements
     - unreachable_from_main
     - use_enums
