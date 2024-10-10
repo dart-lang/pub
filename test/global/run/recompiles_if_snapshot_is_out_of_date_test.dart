@@ -46,6 +46,8 @@ void main() {
     final pub = await pubRun(global: true, args: ['foo:script']);
     // In the real world this would just print "hello!", but since we collect
     // all output we see the precompilation messages as well.
+    expect(pub.stdout, emits('Resolving dependencies...'));
+    expect(pub.stdout, emits('Downloading packages...'));
     expect(pub.stdout, emits('Building package executable...'));
     expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
