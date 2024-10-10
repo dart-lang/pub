@@ -92,13 +92,6 @@ Future<int> runExecutable(
   }
 
   if (useSnapshot) {
-    // Since we don't access the package graph, this doesn't happen
-    // automatically.
-    await Entrypoint.ensureUpToDate(
-      entrypoint.workspaceRoot.dir,
-      cache: entrypoint.cache,
-    );
-
     if (!fileExists(snapshotPath) ||
         (await entrypoint.packageGraph).isPackageMutable(package)) {
       await recompile(executable);

@@ -130,6 +130,12 @@ class GlobalPackages {
         'pub global activate',
         dependencies: [dep],
         sources: cache.sources,
+        sdkConstraints: {
+          'dart': SdkConstraint.interpretDartSdkConstraint(
+            VersionConstraint.parse('>=2.12.0'),
+            defaultUpperBoundConstraint: null,
+          ),
+        },
       ),
       dir,
       [],
@@ -447,6 +453,36 @@ try:
       args,
       enableAsserts: enableAsserts,
       recompile: (exectuable) async {
+        final root = entrypoint.workspaceRoot;
+        final name = exectuable.package;
+        // Resolve it and download its dependencies.
+        SolveResult result;
+        try {
+          result = await log.spinner(
+            'Resolving dependencies',
+            () => resolveVersions(SolveType.get, cache, root),
+          );
+        } on SolveFailure catch (e) {
+          log.error(e.message);
+          fail('''The package `$name` as currently activated cannot resolve.
+
+Try reactivating the package.
+`$topLevelProgram pub global activate $name`          
+''');
+        }
+        // We want the entrypoint to be rooted at 'dep' not the dummy-package.
+        result.packages.removeWhere((id) => id.name == 'pub global activate');
+
+        final newLockFile = await result.downloadCachedPackages(cache);
+        final sameVersions = entrypoint.lockFile.samePackageIds(newLockFile);
+        if (!sameVersions) {
+          dataError('''
+The package `$name` as currently activated cannot resolve to the same packages.
+
+Try reactivating the package.
+`$topLevelProgram pub global activate $name`
+''');
+        }
         await recompile(exectuable);
         _refreshBinStubs(entrypoint, executable);
       },
