@@ -415,15 +415,21 @@ ${yamlToString(data)}
     return _transitive;
   }
 
-  /// `true` if [other] has the same packages as `this` in the same versions
-  /// from the same sources.
+  /// Returns true if the packages in `this` and [other] are
+  /// all the same, meaning:
+  ///  * same set of package-names
+  ///  * for each package
+  ///    * same version number
+  ///    * same resolved description (same content-hash, git hash, path)
   bool samePackageIds(LockFile other) {
-    if (packages.length != other.packages.length) {
+    if (other.packages.length != packages.length) {
       return false;
     }
-    for (final id in packages.values) {
-      final otherId = other.packages[id.name];
-      if (id != otherId) return false;
+    for (final package in packages.values) {
+      final oldPackage = other.packages[package.name];
+      if (oldPackage == null) return false; // Package added to resolution.
+      if (oldPackage.version != package.version) return false;
+      if (oldPackage.description != package.description) return false;
     }
     return true;
   }
