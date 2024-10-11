@@ -27,7 +27,7 @@ import '../utils.dart';
 ///
 /// or
 ///
-/// /// ```json
+/// ```json
 /// {
 ///   "url": "https://example.com/",
 ///   "env": "TOKEN_ENV_VAR"
