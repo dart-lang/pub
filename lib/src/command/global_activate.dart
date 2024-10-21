@@ -7,7 +7,10 @@ import 'dart:async';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
-import '../source/hosted.dart';
+import '../command_runner.dart';
+import '../io.dart';
+import '../package_name.dart';
+import '../pubspec.dart';
 import '../utils.dart';
 
 /// Handles the `global activate` pub command.
@@ -20,37 +23,59 @@ class GlobalActivateCommand extends PubCommand {
   String get argumentsDescription => '<package> [version-constraint]';
 
   GlobalActivateCommand() {
-    argParser.addOption('source',
-        abbr: 's',
-        help: 'The source used to find the package.',
-        allowed: ['git', 'hosted', 'path'],
-        defaultsTo: 'hosted');
+    argParser.addOption(
+      'source',
+      abbr: 's',
+      help: 'The source used to find the package.',
+      allowed: ['git', 'hosted', 'path'],
+      defaultsTo: 'hosted',
+    );
 
     argParser.addOption('git-path', help: 'Path of git package in repository');
 
-    argParser.addOption('git-ref',
-        help: 'Git branch or commit to be retrieved');
+    argParser.addOption(
+      'git-ref',
+      help: 'Git branch or commit to be retrieved',
+    );
 
-    argParser.addMultiOption('features',
-        abbr: 'f', help: 'Feature(s) to enable.', hide: true);
+    argParser.addMultiOption(
+      'features',
+      abbr: 'f',
+      help: 'Feature(s) to enable.',
+      hide: true,
+    );
 
-    argParser.addMultiOption('omit-features',
-        abbr: 'F', help: 'Feature(s) to disable.', hide: true);
+    argParser.addMultiOption(
+      'omit-features',
+      abbr: 'F',
+      help: 'Feature(s) to disable.',
+      hide: true,
+    );
 
-    argParser.addFlag('no-executables',
-        negatable: false, help: 'Do not put executables on PATH.');
+    argParser.addFlag(
+      'no-executables',
+      negatable: false,
+      help: 'Do not put executables on PATH.',
+    );
 
-    argParser.addMultiOption('executable',
-        abbr: 'x', help: 'Executable(s) to place on PATH.');
+    argParser.addMultiOption(
+      'executable',
+      abbr: 'x',
+      help: 'Executable(s) to place on PATH.',
+    );
 
-    argParser.addFlag('overwrite',
-        negatable: false,
-        help: 'Overwrite executables from other packages with the same name.');
+    argParser.addFlag(
+      'overwrite',
+      negatable: false,
+      help: 'Overwrite executables from other packages with the same name.',
+    );
 
-    argParser.addOption('hosted-url',
-        abbr: 'u',
-        help:
-            'A custom pub server URL for the package. Only applies when using the `hosted` source.');
+    argParser.addOption(
+      'hosted-url',
+      abbr: 'u',
+      help: 'A custom pub server URL for the package. '
+          'Only applies when using the `hosted` source.',
+    );
   }
 
   @override
@@ -62,58 +87,61 @@ class GlobalActivateCommand extends PubCommand {
         usageException('Cannot pass both --no-executables and --executable.');
       }
 
-      executables = argResults['executable'];
-    } else if (argResults['no-executables']) {
+      executables = argResults.multiOption('executable');
+    } else if (argResults.flag('no-executables')) {
       // An empty list means no executables.
       executables = [];
     }
 
-    final overwrite = argResults['overwrite'] as bool;
-    Uri? hostedUrl;
-    if (argResults.wasParsed('hosted-url')) {
-      try {
-        hostedUrl = validateAndNormalizeHostedUrl(argResults['hosted-url']);
-      } on FormatException catch (e) {
-        usageException('Invalid hosted-url: $e');
-      }
-    }
+    final overwrite = argResults.flag('overwrite');
 
     Iterable<String> args = argResults.rest;
 
     String readArg([String error = '']) {
       if (args.isEmpty) usageException(error);
-      var arg = args.first;
+      final arg = args.first;
       args = args.skip(1);
       return arg;
     }
 
     void validateNoExtraArgs() {
       if (args.isEmpty) return;
-      var unexpected = args.map((arg) => '"$arg"');
-      var arguments = pluralize('argument', unexpected.length);
+      final unexpected = args.map((arg) => '"$arg"');
+      final arguments = pluralize('argument', unexpected.length);
       usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 
-    if (argResults['source'] != 'git' &&
-        (argResults['git-path'] != null || argResults['git-ref'] != null)) {
+    if (argResults.optionWithDefault('source') != 'git' &&
+        (argResults.option('git-path') != null ||
+            argResults.option('git-ref') != null)) {
       usageException(
-          'Options `--git-path` and `--git-ref` can only be used with --source=git.');
+        'Options `--git-path` and `--git-ref` '
+        'can only be used with --source=git.',
+      );
     }
 
-    switch (argResults['source']) {
+    switch (argResults.optionWithDefault('source')) {
       case 'git':
-        var repo = readArg('No Git repository given.');
+        final repo = readArg('No Git repository given.');
         validateNoExtraArgs();
         return globals.activateGit(
           repo,
           executables,
           overwriteBinStubs: overwrite,
-          path: argResults['git-path'],
-          ref: argResults['git-ref'],
+          path: argResults.option('git-path'),
+          ref: argResults.option('git-ref'),
         );
 
       case 'hosted':
-        var package = readArg('No package to activate given.');
+        final package = readArg('No package to activate given.');
+
+        PackageRef ref;
+        try {
+          ref = cache.hosted
+              .refFor(package, url: argResults.option('hosted-url'));
+        } on FormatException catch (e) {
+          usageException('Invalid hosted-url: $e');
+        }
 
         // Parse the version constraint, if there is one.
         var constraint = VersionConstraint.any;
@@ -126,22 +154,28 @@ class GlobalActivateCommand extends PubCommand {
         }
 
         validateNoExtraArgs();
+
+        if (!packageNameRegExp.hasMatch(package)) {
+          final suggestion = dirExists(package)
+              ? '\n\nDid you mean `$topLevelProgram pub global activate '
+                  '--source path ${escapeShellArgument(package)}`?'
+              : '';
+
+          usageException('Not a valid package name: "$package"$suggestion');
+        }
         return globals.activateHosted(
-          package,
-          constraint,
+          ref.withConstraint(constraint),
           executables,
           overwriteBinStubs: overwrite,
-          url: hostedUrl?.toString(),
         );
 
       case 'path':
-        var path = readArg('No package to activate given.');
+        final path = readArg('No package to activate given.');
         validateNoExtraArgs();
         return globals.activatePath(
           path,
           executables,
           overwriteBinStubs: overwrite,
-          analytics: analytics,
         );
     }
 

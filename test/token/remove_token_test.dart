@@ -13,21 +13,23 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': 'https://server.demo', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server.demo', 'token': 'auth-token'},
+      ],
     }).create();
 
     await runPub(args: ['token', 'remove', 'https://server.demo']);
 
-    await d.tokensFile({'version': 1, 'hosted': []}).validate();
+    await d.tokensFile(
+      {'version': 1, 'hosted': <Map<String, String>>[]},
+    ).validate();
   });
 
   test('without any matching schemes, does nothing', () async {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': 'https://server.demo', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server.demo', 'token': 'auth-token'},
+      ],
     }).create();
 
     await runPub(
@@ -41,8 +43,8 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': 'https://server.demo', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server.demo', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 
@@ -51,13 +53,13 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': 'https://server.dev', 'token': 'auth-token'},
-        {'url': 'https://server2.com', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server2.com', 'token': 'auth-token'},
+      ],
     }).create();
 
     await runPub(args: ['token', 'remove', '--all']);
 
-    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
+    await configDir([d.nothing('pub-tokens.json')]).validate();
   });
 
   test('with empty environment gives error message', () async {

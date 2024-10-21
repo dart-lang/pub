@@ -9,7 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('Complains nicely about invalid PUB_HOSTED_URL', () async {
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Get once so it gets cached.
     await pubGet(
@@ -34,7 +34,7 @@ void main() {
   test('Allows PUB_HOSTED_URL to end with a slash', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(
       environment: {'PUB_HOSTED_URL': '${globalServer.url}/'},

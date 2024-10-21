@@ -25,7 +25,7 @@
 /// [Ignore.listFiles].
 ///
 /// [1]: https://git-scm.com/docs/gitignore
-import 'package:meta/meta.dart';
+library;
 
 /// A set of ignore rules representing a single ignore file.
 ///
@@ -46,28 +46,27 @@ import 'package:meta/meta.dart';
 /// ```
 ///
 /// [1]: https://git-scm.com/docs/gitignore
-@sealed
-class Ignore {
+final class Ignore {
   final List<_IgnoreRule> _rules;
 
   /// Create an [Ignore] instance with a set of [`.gitignore` compatible][1]
   /// patterns.
   ///
-  /// Each value in [patterns] will be interpreted as one or more lines from
-  /// a `.gitignore` file, in compliance with the [`.gitignore` manual page][1].
+  /// Each value in [patterns] will be interpreted as one or more lines from a
+  /// `.gitignore` file, in compliance with the [`.gitignore` manual page][1].
   ///
-  /// The keys of 'pattern' are the directories to intpret the rules relative
+  /// The keys of 'pattern' are the directories to interpret the rules relative
   /// to. The root should be the empty string, and sub-directories are separated
   /// by '/' (but no final '/').
   ///
   /// If [ignoreCase] is `true`, patterns will be case-insensitive. By default
   /// `git` is case-sensitive. But case insensitivity can be enabled when a
-  /// repository is created, or by configuration option, see
-  /// [`core.ignoreCase` documentation][2] for details.
+  /// repository is created, or by configuration option, see [`core.ignoreCase`
+  /// documentation][2] for details.
   ///
   /// If [onInvalidPattern] is passed, it will be called with a
-  /// [FormatException] describing the problem. The exception will have [source]
-  /// as source.
+  /// [FormatException] describing the problem. The exception will have the
+  /// pattern as source.
   ///
   /// **Example**:
   /// ```dart
@@ -90,8 +89,8 @@ class Ignore {
   /// }
   /// ```
   ///
-  /// [1]: https://git-scm.com/docs/gitignore
-  /// [2]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase
+  /// [1]: https://git-scm.com/docs/gitignore [2]:
+  /// https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase
   Ignore(
     List<String> patterns, {
     bool ignoreCase = false,
@@ -165,29 +164,30 @@ class Ignore {
   }
 
   /// Returns all the files in the tree under (and including) [beneath] not
-  /// ignored by ignore-files from [root] and down.
+  /// ignored by ignore-files from the "root" path '.' and down.
   ///
   /// Represents paths normalized  using '/' as directory separator. The empty
   /// relative path is '.', no '..' are allowed.
   ///
-  /// [beneath] must start with [root] and even if it is a directory it should not
-  /// end with '/', if [beneath] is not provided, everything under root is
-  /// included.
+  /// [beneath] must be relative to the root and even if it is a directory it
+  /// should not end with '/', if [beneath] is not provided, everything under
+  /// the root '.' is included.
   ///
   /// [listDir] should enumerate the immediate contents of a given directory,
-  /// returning paths including [root].
+  /// returning paths including the root '.'. This function can be used to list
+  /// directories relative to any root.
   ///
   /// [isDir] should return true if the argument is a directory. It will only be
   /// queried with file-names under (and including) [beneath]
   ///
-  /// [ignoreForDir] should retrieve the ignore rules for a single directory
-  /// or return `null` if there is no ignore rules.
+  /// [ignoreForDir] should retrieve the ignore rules for a single directory or
+  /// return `null` if there is no ignore rules.
   ///
   /// If [includeDirs] is true non-ignored directories will be included in the
   /// result (including beneath).
   ///
-  /// This example program lists all files under second argument that are
-  /// not ignored by .gitignore files from first argument and below:
+  /// This example program lists all files under second argument that are not
+  /// ignored by .gitignore files from first argument and below:
   ///
   /// ```dart
   /// import 'dart:io';
@@ -228,7 +228,10 @@ class Ignore {
         beneath.startsWith('./') ||
         beneath.startsWith('../')) {
       throw ArgumentError.value(
-          'must be relative and normalized', 'beneath', beneath);
+        'must be relative and normalized',
+        'beneath',
+        beneath,
+      );
     }
     if (beneath.endsWith('/')) {
       throw ArgumentError.value('must not end with /', beneath);
@@ -256,14 +259,15 @@ class Ignore {
         return <String>[];
       }
       final ignore = ignoreForDir(
-          partial == '/' ? '.' : partial.substring(1, partial.length - 1));
+        partial == '/' ? '.' : partial.substring(1, partial.length - 1),
+      );
       ignoreStack
           .add(ignore == null ? null : _IgnorePrefixPair(ignore, partial));
     }
     // Do a depth first tree-search starting at [beneath].
     // toVisit is a stack containing all items that are waiting to be processed.
     final toVisit = [
-      [beneath]
+      [beneath],
     ];
     while (toVisit.isNotEmpty) {
       final topOfStack = toVisit.last;
@@ -285,10 +289,14 @@ class Ignore {
       }
       if (currentIsDir) {
         final ignore = ignoreForDir(normalizedCurrent);
-        ignoreStack.add(ignore == null
-            ? null
-            : _IgnorePrefixPair(
-                ignore, current == '/' ? current : '$current/'));
+        ignoreStack.add(
+          ignore == null
+              ? null
+              : _IgnorePrefixPair(
+                  ignore,
+                  current == '/' ? current : '$current/',
+                ),
+        );
         // Put all entities in current on the stack to be processed.
         toVisit.add(listDir(normalizedCurrent).map((x) => '/$x').toList());
         if (includeDirs) {
@@ -486,9 +494,10 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         return _IgnoreParseResult.invalid(
           pattern,
           FormatException(
-              'Pattern "$pattern" had an invalid `[a-b]` style character range',
-              pattern,
-              current),
+            'Pattern "$pattern" had an invalid `[a-b]` style character range',
+            pattern,
+            current,
+          ),
         );
       }
       expr += '[$characterRange]';
@@ -499,9 +508,10 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         return _IgnoreParseResult.invalid(
           pattern,
           FormatException(
-              'Pattern "$pattern" end of pattern inside character escape.',
-              pattern,
-              current),
+            'Pattern "$pattern" end of pattern inside character escape.',
+            pattern,
+            current,
+          ),
         );
       }
       expr += RegExp.escape(escaped);
@@ -531,12 +541,17 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
   }
   try {
     return _IgnoreParseResult(
+      pattern,
+      _IgnoreRule(
+        RegExp(expr, caseSensitive: !ignoreCase),
+        negative,
         pattern,
-        _IgnoreRule(
-            RegExp(expr, caseSensitive: !ignoreCase), negative, pattern));
+      ),
+    );
   } on FormatException catch (e) {
     throw AssertionError(
-        'Created broken expression "$expr" from ignore pattern "$pattern" -> $e');
+      'Created broken expression "$expr" from ignore pattern "$pattern" -> $e',
+    );
   }
 }
 

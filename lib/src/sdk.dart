@@ -13,6 +13,9 @@ import 'sdk/fuchsia.dart';
 /// An SDK that can provide packages and on which pubspecs can express version
 /// constraints.
 abstract class Sdk {
+  /// Is this the Dart sdk?
+  bool get isDartSdk => identifier == 'dart';
+
   /// This SDK's human-readable name.
   String get name;
 
@@ -28,14 +31,15 @@ abstract class Sdk {
   /// The SDK's version number, or `null` if the SDK is unavailable.
   Version? get version;
 
-  /// The version of pub that added support for this SDK.
-  Version get firstPubVersion;
-
   /// A message to indicate to the user how to make this SDK available.
   ///
   /// This is printed after a version solve where the SDK wasn't found. It may
   /// be `null`, indicating that no such message should be printed.
   String? get installMessage;
+
+  /// Whether or not non-SDK dependencies are allowed in the regular
+  /// dependencies section for packages vendored by this SDK.
+  bool get allowsNonSdkDepsInSdkPackages;
 
   /// Returns the path to the package [name] within this SDK.
   ///
@@ -50,7 +54,21 @@ abstract class Sdk {
 /// A map from SDK identifiers that appear in pubspecs to the implementations of
 /// those SDKs.
 final sdks = UnmodifiableMapView<String, Sdk>(
-    {'dart': sdk, 'flutter': FlutterSdk(), 'fuchsia': FuchsiaSdk()});
+  {'dart': sdk, 'flutter': FlutterSdk(), 'fuchsia': FuchsiaSdk()},
+);
 
 /// The core Dart SDK.
 final sdk = DartSdk();
+
+extension AsCompatibleWithIfPossible on VersionConstraint {
+  // Returns `this` expressed as [VersionConstraint.compatibleWith] if possible.
+  VersionConstraint asCompatibleWithIfPossible() {
+    final range = this;
+    if (range is! VersionRange) return this;
+    final min = range.min;
+    if (min == null) return this;
+    final asCompatibleWith = VersionConstraint.compatibleWith(min);
+    if (asCompatibleWith == this) return asCompatibleWith;
+    return this;
+  }
+}

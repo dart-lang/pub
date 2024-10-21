@@ -14,7 +14,7 @@ void main() {
     // Run the server so that we know what URL to use in the system cache.
     (await servePackages()).serveErrors();
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(
       args: ['--offline'],
@@ -33,7 +33,7 @@ void main() {
           'name': 'foo',
           'version': '1.2.3',
           'environment': {
-            'flutter': 'any', // generates hint -> flutter pub get
+            'flutter': 'any', // generates hint -> flutter pub
           },
         }),
       ]),
@@ -48,14 +48,14 @@ void main() {
       ]),
     ]).create();
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(
       args: ['--offline'],
       exitCode: exit_codes.UNAVAILABLE,
       error: allOf(
         contains('Try again without --offline!'),
-        contains('flutter pub get'), // hint that
+        contains('flutter pub'), // hint that
       ),
     );
 

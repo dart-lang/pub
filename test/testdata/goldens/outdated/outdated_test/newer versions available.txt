@@ -6,7 +6,10 @@ $ pub outdated --json
   "packages": [
     {
       "package": "builder",
+      "kind": "dev",
       "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -22,7 +25,10 @@ $ pub outdated --json
     },
     {
       "package": "dev_trans",
+      "kind": "transitive",
       "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.0.0"
       },
@@ -36,7 +42,10 @@ $ pub outdated --json
     },
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -51,8 +60,30 @@ $ pub outdated --json
       }
     },
     {
-      "package": "transitive",
+      "package": "retracted",
+      "kind": "direct",
       "isDiscontinued": false,
+      "isCurrentRetracted": true,
+      "isCurrentAffectedByAdvisory": false,
+      "current": {
+        "version": "1.0.1"
+      },
+      "upgradable": {
+        "version": "1.0.1"
+      },
+      "resolvable": {
+        "version": "1.0.1"
+      },
+      "latest": {
+        "version": "1.0.0"
+      }
+    },
+    {
+      "package": "transitive",
+      "kind": "transitive",
+      "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -68,7 +99,10 @@ $ pub outdated --json
     },
     {
       "package": "transitive2",
+      "kind": "transitive",
       "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -80,7 +114,10 @@ $ pub outdated --json
     },
     {
       "package": "transitive3",
+      "kind": "transitive",
       "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": null,
       "upgradable": null,
       "resolvable": {
@@ -100,27 +137,31 @@ $ pub outdated --no-color
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.3.0      *2.0.0      3.0.0   
+foo           *1.2.3              *1.3.0              *2.0.0              3.0.0   
+retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0   
 
 dev_dependencies:
-builder       *1.2.3   *1.3.0      2.0.0       2.0.0   
+builder       *1.2.3              *1.3.0              2.0.0               2.0.0   
 
 transitive dependencies:
-transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0   
-transitive2   -        -           1.0.0       1.0.0   
+transitive    *1.2.3              *1.3.0              *1.3.0              2.0.0   
+transitive2   -                   -                   1.0.0               1.0.0   
 
 transitive dev_dependencies:
-dev_trans     *1.0.0   -           *1.0.0      2.0.0   
-transitive3   -        -           1.0.0       1.0.0   
+dev_trans     *1.0.0              -                   *1.0.0              2.0.0   
+transitive3   -                   -                   1.0.0               1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
+
+retracted
+    Version 1.0.1 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -129,19 +170,23 @@ $ pub outdated --no-color --no-transitive
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.3.0      *2.0.0      3.0.0   
+foo           *1.2.3              *1.3.0              *2.0.0              3.0.0   
+retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0   
 
 dev_dependencies:
-builder       *1.2.3   *1.3.0      2.0.0       2.0.0   
+builder       *1.2.3              *1.3.0              2.0.0               2.0.0   
 
 2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
+
+retracted
+    Version 1.0.1 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -150,29 +195,33 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name   Current       Upgradable    Resolvable    Latest        
+Package Name   Current             Upgradable          Resolvable          Latest        
 
 direct dependencies:
-bar            1.0.0         1.0.0         1.0.0         1.0.0         
-foo            *1.2.3        *1.3.0        *2.0.0        3.0.0         
-local_package  0.0.1 (path)  0.0.1 (path)  0.0.1 (path)  0.0.1 (path)  
+bar            1.0.0               1.0.0               1.0.0               1.0.0         
+foo            *1.2.3              *1.3.0              *2.0.0              3.0.0         
+local_package  0.0.1 (path)        0.0.1 (path)        0.0.1 (path)        0.0.1 (path)  
+retracted      *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0         
 
 dev_dependencies:
-builder        *1.2.3        *1.3.0        2.0.0         2.0.0         
+builder        *1.2.3              *1.3.0              2.0.0               2.0.0         
 
 transitive dependencies:
-transitive     *1.2.3        *1.3.0        *1.3.0        2.0.0         
-transitive2    -             -             1.0.0         1.0.0         
+transitive     *1.2.3              *1.3.0              *1.3.0              2.0.0         
+transitive2    -                   -                   1.0.0               1.0.0         
 
 transitive dev_dependencies:
-dev_trans      *1.0.0        -             *1.0.0        2.0.0         
-transitive3    -             -             1.0.0         1.0.0         
+dev_trans      *1.0.0              -                   *1.0.0              2.0.0         
+transitive3    -                   -                   1.0.0               1.0.0         
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
+
+retracted
+    Version 1.0.1 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -181,27 +230,31 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest       
+Package Name  Current             Upgradable          Resolvable          Latest       
 
 direct dependencies:
-foo           *1.2.3   *1.3.0      *2.0.0      3.0.0        
+foo           *1.2.3              *1.3.0              *2.0.0              3.0.0        
+retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0        
 
 dev_dependencies:
-builder       *1.2.3   *1.3.0      *2.0.0      3.0.0-alpha  
+builder       *1.2.3              *1.3.0              *2.0.0              3.0.0-alpha  
 
 transitive dependencies:
-transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0        
-transitive2   -        -           1.0.0       1.0.0        
+transitive    *1.2.3              *1.3.0              *1.3.0              2.0.0        
+transitive2   -                   -                   1.0.0               1.0.0        
 
 transitive dev_dependencies:
-dev_trans     *1.0.0   -           *1.0.0      2.0.0        
-transitive3   -        -           1.0.0       1.0.0        
+dev_trans     *1.0.0              -                   *1.0.0              2.0.0        
+transitive3   -                   -                   1.0.0               1.0.0        
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
+
+retracted
+    Version 1.0.1 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -210,19 +263,23 @@ $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.3.0      3.0.0       3.0.0   
+foo           *1.2.3              *1.3.0              3.0.0               3.0.0   
+retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0   
 
 transitive dependencies:
-transitive    *1.2.3   2.0.0       2.0.0       2.0.0   
+transitive    *1.2.3              2.0.0               2.0.0               2.0.0   
 
 2 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
 1 dependency is constrained to a version that is older than a resolvable version.
 To update it, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
+
+retracted
+    Version 1.0.1 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -231,271 +288,44 @@ $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current  Upgradable  Resolvable  Latest  
+Package Name  Current             Upgradable          Resolvable          Latest  
 
 direct dependencies:
-foo           *1.2.3   *1.3.0      *2.0.0      3.0.0   
+foo           *1.2.3              *1.3.0              *2.0.0              3.0.0   
+retracted     *1.0.1 (retracted)  *1.0.1 (retracted)  *1.0.1 (retracted)  1.0.0   
 
 dev_dependencies:
-builder       *1.2.3   *1.3.0      2.0.0       2.0.0   
+builder       *1.2.3              *1.3.0              2.0.0               2.0.0   
 
 transitive dependencies:
-transitive    *1.2.3   *1.3.0      *1.3.0      2.0.0   
-transitive2   -        -           1.0.0       1.0.0   
+transitive    *1.2.3              *1.3.0              *1.3.0              2.0.0   
+transitive2   -                   -                   1.0.0               1.0.0   
 
 transitive dev_dependencies:
-dev_trans     *1.0.0   -           *1.0.0      2.0.0   
-transitive3   -        -           1.0.0       1.0.0   
+dev_trans     *1.0.0              -                   *1.0.0              2.0.0   
+transitive3   -                   -                   1.0.0               1.0.0   
 
 3 upgradable dependencies are locked (in pubspec.lock) to older versions.
 To update these dependencies, use `dart pub upgrade`.
 
-3  dependencies are constrained to versions that are older than a resolvable version.
+2  dependencies are constrained to versions that are older than a resolvable version.
 To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --major-versions`.
+
+retracted
+    Version 1.0.1 is retracted. See https://dart.dev/go/package-retraction
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section 7
-$ pub outdated --no-color --mode=null-safety
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-Package Name   Current        Upgradable     Resolvable     Latest         
-
-direct dependencies:
-bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
-foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
-local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
-
-dev_dependencies:
-builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0-alpha   
-
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
-
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 8
-$ pub outdated --no-color --mode=null-safety --transitive
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-Package Name   Current        Upgradable     Resolvable     Latest         
-
-direct dependencies:
-bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
-foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
-local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
-
-dev_dependencies:
-builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0-alpha   
-
-transitive dependencies:
-transitive     ✗1.2.3         ✗1.3.0         ✗1.3.0         ✗2.0.0         
-transitive2    -              -              ✗1.0.0         ✗1.0.0         
-
-transitive dev_dependencies:
-dev_trans      ✗1.0.0         -              ✗1.0.0         ✗2.0.0         
-transitive3    -              -              ✗1.0.0         ✗1.0.0         
-
-3 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
-
-3  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 9
-$ pub outdated --no-color --mode=null-safety --no-prereleases
-Showing dependencies that are currently not opted in to null-safety.
-[✗] indicates versions without null safety support.
-[✓] indicates versions opting in to null safety.
-
-Package Name   Current        Upgradable     Resolvable     Latest         
-
-direct dependencies:
-bar            ✗1.0.0         ✗1.0.0         ✗1.0.0         ✗1.0.0         
-foo            ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗3.0.0         
-local_package  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  ✗0.0.1 (path)  
-
-dev_dependencies:
-builder        ✗1.2.3         ✗1.3.0         ✗2.0.0         ✗2.0.0         
-
-2 upgradable dependencies are locked (in pubspec.lock) to older versions.
-To update these dependencies, use `dart pub upgrade`.
-
-2  dependencies are constrained to versions that are older than a resolvable version.
-To update these dependencies, edit pubspec.yaml, or run `dart pub upgrade --null-safety`.
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 10
-$ pub outdated --json --mode=null-safety
-{
-  "packages": [
-    {
-      "package": "bar",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "builder",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.2.3",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "3.0.0-alpha",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "dev_trans",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "upgradable": null,
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "foo",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.2.3",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "2.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "3.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "local_package",
-      "isDiscontinued": false,
-      "current": {
-        "version": "0.0.1",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "0.0.1",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "0.0.1",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "0.0.1",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "transitive",
-      "isDiscontinued": false,
-      "current": {
-        "version": "1.2.3",
-        "nullSafety": false
-      },
-      "upgradable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "resolvable": {
-        "version": "1.3.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "2.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "transitive2",
-      "isDiscontinued": false,
-      "current": null,
-      "upgradable": null,
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": false
-      }
-    },
-    {
-      "package": "transitive3",
-      "isDiscontinued": false,
-      "current": null,
-      "upgradable": null,
-      "resolvable": {
-        "version": "1.0.0",
-        "nullSafety": false
-      },
-      "latest": {
-        "version": "1.0.0",
-        "nullSafety": false
-      }
-    }
-  ]
-}
-
--------------------------------- END OF OUTPUT ---------------------------------
-
-## Section 11
 $ pub outdated --json --no-dev-dependencies
 {
   "packages": [
     {
       "package": "foo",
+      "kind": "direct",
       "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },
@@ -510,8 +340,30 @@ $ pub outdated --json --no-dev-dependencies
       }
     },
     {
-      "package": "transitive",
+      "package": "retracted",
+      "kind": "direct",
       "isDiscontinued": false,
+      "isCurrentRetracted": true,
+      "isCurrentAffectedByAdvisory": false,
+      "current": {
+        "version": "1.0.1"
+      },
+      "upgradable": {
+        "version": "1.0.1"
+      },
+      "resolvable": {
+        "version": "1.0.1"
+      },
+      "latest": {
+        "version": "1.0.0"
+      }
+    },
+    {
+      "package": "transitive",
+      "kind": "transitive",
+      "isDiscontinued": false,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
       "current": {
         "version": "1.2.3"
       },

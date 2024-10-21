@@ -13,7 +13,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 Future<void> expectValidation(
-  error,
+  Matcher error,
   int exitCode, {
   Map<String, String> environment = const {},
   String? workingDirectory,
@@ -21,7 +21,7 @@ Future<void> expectValidation(
   await runPub(
     error: error,
     args: ['publish', '--dry-run'],
-    environment: {'_PUB_TEST_SDK_VERSION': '2.12.0', ...environment},
+    environment: environment,
     workingDirectory: workingDirectory ?? d.path(appPath),
     exitCode: exitCode,
   );
@@ -29,14 +29,12 @@ Future<void> expectValidation(
 
 void main() {
   test(
-      'should consider a package valid if it contains no checked in otherwise ignored files',
-      () async {
+      'should consider a package valid '
+      'if it contains no checked in otherwise ignored files', () async {
     await d.git('myapp', [
-      ...d.validPackage.contents,
+      ...d.validPackage().contents,
       d.file('foo.txt'),
     ]).create();
-
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
 
     await expectValidation(contains('Package has 0 warnings.'), 0);
 
@@ -45,27 +43,50 @@ void main() {
     ]).create();
 
     await expectValidation(
-        allOf([
-          contains('Package has 1 warning.'),
-          contains('foo.txt'),
-          contains(
-              'Consider adjusting your `.gitignore` files to not ignore those files'),
-        ]),
-        exit_codes.DATA);
+      allOf([
+        contains('Package has 1 warning.'),
+        contains('foo.txt'),
+        contains(
+          'Consider adjusting your `.gitignore` files '
+          'to not ignore those files',
+        ),
+      ]),
+      exit_codes.DATA,
+    );
+  });
+
+  test('should not fail on non-ascii unicode character', () async {
+    await d.git('myapp', [
+      ...d.validPackage().contents,
+      d.file('non_ascii_и.txt'),
+    ]).create();
+
+    await expectValidation(contains('Package has 0 warnings.'), 0);
+  });
+
+  test('should not fail on space character', () async {
+    await d.git('myapp', [
+      ...d.validPackage().contents,
+      d.file('space file.txt'),
+    ]).create();
+
+    await expectValidation(contains('Package has 0 warnings.'), 0);
   });
 
   test('should not fail on missing git', () async {
     await d.git('myapp', [
-      ...d.validPackage.contents,
+      ...d.validPackage().contents,
       d.file('.gitignore', '*.txt'),
       d.file('foo.txt'),
     ]).create();
 
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'});
+    await pubGet();
     await setUpFakeGitScript(bash: 'echo "Not git"', batch: 'echo "Not git"');
     await expectValidation(
-        allOf([contains('Package has 0 warnings.')]), exit_codes.SUCCESS,
-        environment: extendedPathEnv());
+      allOf([contains('Package has 0 warnings.')]),
+      exit_codes.SUCCESS,
+      environment: extendedPathEnv(),
+    );
   });
 
   test('Should also consider gitignores from above the package root', () async {
@@ -74,49 +95,54 @@ void main() {
         'myapp',
         [
           d.file('foo.txt'),
-          ...d.validPackage.contents,
+          ...d.validPackage().contents,
         ],
       ),
     ]).create();
     final packageRoot = p.join(d.sandbox, 'reporoot', 'myapp');
-    await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
-        workingDirectory: packageRoot);
+    await pubGet(workingDirectory: packageRoot);
 
-    await expectValidation(contains('Package has 0 warnings.'), 0,
-        workingDirectory: packageRoot);
+    await expectValidation(
+      contains('Package has 0 warnings.'),
+      0,
+      workingDirectory: packageRoot,
+    );
 
     await d.dir('reporoot', [
       d.file('.gitignore', '*.txt'),
     ]).create();
 
     await expectValidation(
-        allOf([
-          contains('Package has 1 warning.'),
-          contains('foo.txt'),
-          contains(
-              'Consider adjusting your `.gitignore` files to not ignore those files'),
-        ]),
-        exit_codes.DATA,
-        workingDirectory: packageRoot);
+      allOf([
+        contains('Package has 1 warning.'),
+        contains('foo.txt'),
+        contains(
+          'Consider adjusting your `.gitignore` files '
+          'to not ignore those files',
+        ),
+      ]),
+      exit_codes.DATA,
+      workingDirectory: packageRoot,
+    );
   });
 
   test('Should not follow symlinks', () async {
     await d.git('myapp', [
-      ...d.validPackage.contents,
+      ...d.validPackage().contents,
     ]).create();
     final packageRoot = p.join(d.sandbox, 'myapp');
-    await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
-        workingDirectory: packageRoot);
+    await pubGet(workingDirectory: packageRoot);
 
     Link(p.join(packageRoot, '.abc', 'itself')).createSync(
       packageRoot,
       recursive: true,
     );
 
-    await expectValidation(contains('Package has 0 warnings.'), 0,
-        workingDirectory: packageRoot);
+    await expectValidation(
+      contains('Package has 0 warnings.'),
+      0,
+      workingDirectory: packageRoot,
+    );
   });
 
   test(

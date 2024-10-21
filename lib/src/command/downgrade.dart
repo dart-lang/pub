@@ -5,10 +5,10 @@
 import 'dart:async';
 
 import '../command.dart';
+import '../command_runner.dart';
 import '../log.dart' as log;
 import '../solver.dart';
 
-/// Handles the `downgrade` pub command.
 class DowngradeCommand extends PubCommand {
   @override
   String get name => 'downgrade';
@@ -21,56 +21,84 @@ class DowngradeCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-downgrade';
 
   @override
-  bool get isOffline => argResults['offline'];
+  bool get isOffline => argResults.flag('offline');
+
+  bool get _dryRun => argResults.flag('dry-run');
+
+  bool get _tighten => argResults.flag('tighten');
+
+  bool get _example => argResults.flag('example');
 
   DowngradeCommand() {
-    argParser.addFlag('offline',
-        help: 'Use cached packages instead of accessing the network.');
+    argParser.addFlag(
+      'offline',
+      help: 'Use cached packages instead of accessing the network.',
+    );
 
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: "Report what dependencies would change but don't change any.");
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: "Report what dependencies would change but don't change any.",
+    );
 
     argParser.addFlag('packages-dir', hide: true);
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also run in `example/` (if it exists).',
       hide: true,
     );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
-    argParser.addFlag('legacy-packages-file',
-        help: 'Generate the legacy ".packages" file', negatable: false);
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
+
+    argParser.addFlag(
+      'tighten',
+      help:
+          'Updates lower bounds in pubspec.yaml to match the resolved version.',
+      negatable: false,
+    );
   }
 
   @override
   Future<void> runProtected() async {
     if (argResults.wasParsed('packages-dir')) {
-      log.warning(log.yellow(
-          'The --packages-dir flag is no longer used and does nothing.'));
+      log.warning(
+        log.yellow(
+          'The --packages-dir flag is no longer used and does nothing.',
+        ),
+      );
     }
-    var dryRun = argResults['dry-run'];
 
     await entrypoint.acquireDependencies(
       SolveType.downgrade,
       unlock: argResults.rest,
-      dryRun: dryRun,
-      analytics: analytics,
-      generateDotPackages: argResults['legacy-packages-file'],
+      dryRun: _dryRun,
     );
-    var example = entrypoint.example;
-    if (argResults['example'] && example != null) {
+    final example = entrypoint.example;
+    if (argResults.flag('example') && example != null) {
       await example.acquireDependencies(
         SolveType.get,
         unlock: argResults.rest,
-        dryRun: dryRun,
-        onlyReportSuccessOrFailure: true,
-        analytics: analytics,
-        generateDotPackages: argResults['legacy-packages-file'],
+        dryRun: _dryRun,
+        summaryOnly: true,
       );
+    }
+
+    if (_tighten) {
+      if (_example && entrypoint.example != null) {
+        log.warning(
+          'Running `downgrade --tighten` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
+        );
+      }
+      final changes = entrypoint.tighten();
+      entrypoint.applyChanges(changes, _dryRun);
     }
 
     if (isOffline) {

@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:pub_semver/pub_semver.dart';
-
 import '../package_name.dart';
 import 'incompatibility_cause.dart';
 import 'term.dart';
@@ -27,7 +25,7 @@ class Incompatibility {
   /// derivation graph.
   Iterable<Incompatibility> get externalIncompatibilities sync* {
     if (cause is ConflictCause) {
-      var cause = this.cause as ConflictCause;
+      final cause = this.cause as ConflictCause;
       yield* cause.conflict.externalIncompatibilities;
       yield* cause.other.externalIncompatibilities;
     } else {
@@ -60,10 +58,10 @@ class Incompatibility {
     }
 
     // Coalesce multiple terms about the same package if possible.
-    var byName = <String, Map<PackageRef, Term>>{};
+    final byName = <String, Map<PackageRef, Term>>{};
     for (var term in terms) {
-      var byRef = byName.putIfAbsent(term.package.name, () => {});
-      var ref = term.package.toRef();
+      final byRef = byName.putIfAbsent(term.package.name, () => {});
+      final ref = term.package.toRef();
       if (byRef.containsKey(ref)) {
         // If we have two terms that refer to the same package but have a null
         // intersection, they're mutually exclusive, making this incompatibility
@@ -77,78 +75,75 @@ class Incompatibility {
     }
 
     return Incompatibility._(
-        byName.values.expand((byRef) {
-          // If there are any positive terms for a given package, we can discard
-          // any negative terms.
-          var positiveTerms =
-              byRef.values.where((term) => term.isPositive).toList();
-          if (positiveTerms.isNotEmpty) return positiveTerms;
+      byName.values.expand((byRef) {
+        // If there are any positive terms for a given package, we can discard
+        // any negative terms.
+        final positiveTerms =
+            byRef.values.where((term) => term.isPositive).toList();
+        if (positiveTerms.isNotEmpty) return positiveTerms;
 
-          return byRef.values;
-        }).toList(),
-        cause);
+        return byRef.values;
+      }).toList(),
+      cause,
+    );
   }
 
   Incompatibility._(this.terms, this.cause);
 
-  /// Returns a string representation of [this].
+  /// Returns a string representation of `this`.
   ///
   /// If [details] is passed, it controls the amount of detail that's written
   /// for packages with the given names.
   @override
   String toString([Map<String, PackageDetail>? details]) {
-    if (cause == IncompatibilityCause.dependency) {
+    if (cause is DependencyIncompatibilityCause) {
       assert(terms.length == 2);
 
-      var depender = terms.first;
-      var dependee = terms.last;
+      final depender = terms.first;
+      final dependee = terms.last;
       assert(depender.isPositive);
       assert(!dependee.isPositive);
 
       return '${_terse(depender, details, allowEvery: true)} depends on '
           '${_terse(dependee, details)}';
-    } else if (cause == IncompatibilityCause.useLatest) {
-      assert(terms.length == 1);
-
-      var forbidden = terms.last;
-      assert(forbidden.isPositive);
-
-      return 'the latest version of ${_terseRef(forbidden, details)} '
-          '(${VersionConstraint.any.difference(forbidden.constraint)}) '
-          'is required';
-    } else if (cause is SdkCause) {
+    } else if (cause is SdkIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
-      var cause = this.cause as SdkCause;
-      var buffer = StringBuffer(
-          '${_terse(terms.first, details, allowEvery: true)} requires ');
-      if (!cause.sdk.isAvailable) {
-        buffer.write('the ${cause.sdk.name} SDK');
+      final cause = this.cause as SdkIncompatibilityCause;
+      final buffer =
+          StringBuffer(_terse(terms.first, details, allowEvery: true));
+      if (cause.noNullSafetyCause) {
+        buffer.write(' doesn\'t support null safety');
       } else {
-        if (cause.sdk.name != 'Dart') buffer.write(cause.sdk.name + ' ');
-        buffer.write('SDK version ${cause.constraint}');
+        buffer.write(' requires ');
+        if (!cause.sdk.isAvailable) {
+          buffer.write('the ${cause.sdk.name} SDK');
+        } else {
+          if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
+          buffer.write('SDK version ${cause.constraint}');
+        }
       }
       return buffer.toString();
-    } else if (cause == IncompatibilityCause.noVersions) {
+    } else if (cause is NoVersionsIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
       return 'no versions of ${_terseRef(terms.first, details)} '
           'match ${terms.first.constraint}';
-    } else if (cause is PackageNotFoundCause) {
+    } else if (cause is PackageNotFoundIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
-      var cause = this.cause as PackageNotFoundCause;
+      final cause = this.cause as PackageNotFoundIncompatibilityCause;
       return "${_terseRef(terms.first, details)} doesn't exist "
           '(${cause.exception.message})';
-    } else if (cause == IncompatibilityCause.unknownSource) {
+    } else if (cause is UnknownSourceIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
       return '${terms.first.package.name} comes from unknown source '
           '"${terms.first.package.source}"';
-    } else if (cause == IncompatibilityCause.root) {
-      // [IncompatibilityCause.root] is only used when a package depends on the
+    } else if (cause is RootIncompatibilityCause) {
+      // [RootIncompatibilityCause] is only used when a package depends on the
       // entrypoint with an incompatible version, so we want to print the
       // entrypoint's actual version to make it clear why this failed.
       assert(terms.length == 1);
@@ -160,7 +155,7 @@ class Incompatibility {
     }
 
     if (terms.length == 1) {
-      var term = terms.single;
+      final term = terms.single;
       if (term.constraint.isAny) {
         return '${_terseRef(term, details)} is '
             "${term.isPositive ? 'forbidden' : 'required'}";
@@ -171,14 +166,14 @@ class Incompatibility {
     }
 
     if (terms.length == 2) {
-      var term1 = terms.first;
-      var term2 = terms.last;
+      final term1 = terms.first;
+      final term2 = terms.last;
       if (term1.isPositive == term2.isPositive) {
         if (term1.isPositive) {
-          var package1 = term1.constraint.isAny
+          final package1 = term1.constraint.isAny
               ? _terseRef(term1, details)
               : _terse(term1, details);
-          var package2 = term2.constraint.isAny
+          final package2 = term2.constraint.isAny
               ? _terseRef(term2, details)
               : _terse(term2, details);
           return '$package1 is incompatible with $package2';
@@ -189,15 +184,15 @@ class Incompatibility {
       }
     }
 
-    var positive = <String>[];
-    var negative = <String>[];
+    final positive = <String>[];
+    final negative = <String>[];
     for (var term in terms) {
       (term.isPositive ? positive : negative).add(_terse(term, details));
     }
 
     if (positive.isNotEmpty && negative.isNotEmpty) {
       if (positive.length == 1) {
-        var positiveTerm = terms.firstWhere((term) => term.isPositive);
+        final positiveTerm = terms.firstWhere((term) => term.isPositive);
         return '${_terse(positiveTerm, details, allowEvery: true)} requires '
             "${negative.join(' or ')}";
       } else {
@@ -217,54 +212,62 @@ class Incompatibility {
   /// for packages with the given names.
   ///
   /// If [thisLine] and/or [otherLine] are passed, they indicate line numbers
-  /// that should be associated with [this] and [other], respectively.
-  String andToString(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
-    var requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
+  /// that should be associated with `this` and [other], respectively.
+  String andToString(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
+    final requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
     if (requiresBoth != null) return requiresBoth;
 
-    var requiresThrough =
+    final requiresThrough =
         _tryRequiresThrough(other, details, thisLine, otherLine);
     if (requiresThrough != null) return requiresThrough;
 
-    var requiresForbidden =
+    final requiresForbidden =
         _tryRequiresForbidden(other, details, thisLine, otherLine);
     if (requiresForbidden != null) return requiresForbidden;
 
-    var buffer = StringBuffer(toString(details));
+    final buffer = StringBuffer(toString(details));
     if (thisLine != null) buffer.write(' $thisLine');
     buffer.write(' and ${other.toString(details)}');
     if (otherLine != null) buffer.write(' $thisLine');
     return buffer.toString();
   }
 
-  /// If "[this] and [other]" can be expressed as "some package requires both X
+  /// If "`this` and [other]" can be expressed as "some package requires both X
   /// and Y", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String? _tryRequiresBoth(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
+  String? _tryRequiresBoth(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
-    var thisPositive = _singleTermWhere((term) => term.isPositive);
+    final thisPositive = _singleTermWhere((term) => term.isPositive);
     if (thisPositive == null) return null;
-    var otherPositive = other._singleTermWhere((term) => term.isPositive);
+    final otherPositive = other._singleTermWhere((term) => term.isPositive);
     if (otherPositive == null) return null;
     if (thisPositive.package != otherPositive.package) return null;
 
-    var thisNegatives = terms
+    final thisNegatives = terms
         .where((term) => !term.isPositive)
         .map((term) => _terse(term, details))
         .join(' or ');
-    var otherNegatives = other.terms
+    final otherNegatives = other.terms
         .where((term) => !term.isPositive)
         .map((term) => _terse(term, details))
         .join(' or ');
 
-    var buffer =
-        StringBuffer(_terse(thisPositive, details, allowEvery: true) + ' ');
-    var isDependency = cause == IncompatibilityCause.dependency &&
-        other.cause == IncompatibilityCause.dependency;
+    final buffer =
+        StringBuffer('${_terse(thisPositive, details, allowEvery: true)} ');
+    final isDependency = cause is DependencyIncompatibilityCause &&
+        other.cause is DependencyIncompatibilityCause;
     buffer.write(isDependency ? 'depends on' : 'requires');
     buffer.write(' both $thisNegatives');
     if (thisLine != null) buffer.write(' ($thisLine)');
@@ -273,20 +276,24 @@ class Incompatibility {
     return buffer.toString();
   }
 
-  /// If "[this] and [other]" can be expressed as "X requires Y which requires
+  /// If "`this` and [other]" can be expressed as "X requires Y which requires
   /// Z", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String? _tryRequiresThrough(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
+  String? _tryRequiresThrough(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
     if (terms.length == 1 || other.terms.length == 1) return null;
 
-    var thisNegative = _singleTermWhere((term) => !term.isPositive);
-    var otherNegative = other._singleTermWhere((term) => !term.isPositive);
+    final thisNegative = _singleTermWhere((term) => !term.isPositive);
+    final otherNegative = other._singleTermWhere((term) => !term.isPositive);
     if (thisNegative == null && otherNegative == null) return null;
 
-    var thisPositive = _singleTermWhere((term) => term.isPositive);
-    var otherPositive = other._singleTermWhere((term) => term.isPositive);
+    final thisPositive = _singleTermWhere((term) => term.isPositive);
+    final otherPositive = other._singleTermWhere((term) => term.isPositive);
 
     Incompatibility prior;
     Term priorNegative;
@@ -315,15 +322,15 @@ class Incompatibility {
       return null;
     }
 
-    var priorPositives = prior.terms.where((term) => term.isPositive);
+    final priorPositives = prior.terms.where((term) => term.isPositive);
 
-    var buffer = StringBuffer();
+    final buffer = StringBuffer();
     if (priorPositives.length > 1) {
-      var priorString =
+      final priorString =
           priorPositives.map((term) => _terse(term, details)).join(' or ');
       buffer.write('if $priorString then ');
     } else {
-      var verb = prior.cause == IncompatibilityCause.dependency
+      final verb = prior.cause is DependencyIncompatibilityCause
           ? 'depends on'
           : 'requires';
       buffer.write('${_terse(priorPositives.first, details, allowEvery: true)} '
@@ -334,28 +341,34 @@ class Incompatibility {
     if (priorLine != null) buffer.write(' ($priorLine)');
     buffer.write(' which ');
 
-    if (latter.cause == IncompatibilityCause.dependency) {
+    if (latter.cause is DependencyIncompatibilityCause) {
       buffer.write('depends on ');
     } else {
       buffer.write('requires ');
     }
 
-    buffer.write(latter.terms
-        .where((term) => !term.isPositive)
-        .map((term) => _terse(term, details))
-        .join(' or '));
+    buffer.write(
+      latter.terms
+          .where((term) => !term.isPositive)
+          .map((term) => _terse(term, details))
+          .join(' or '),
+    );
 
     if (latterLine != null) buffer.write(' ($latterLine)');
 
     return buffer.toString();
   }
 
-  /// If "[this] and [other]" can be expressed as "X requires Y which is
+  /// If "`this` and [other]" can be expressed as "X requires Y which is
   /// forbidden", this returns that expression.
   ///
   /// Otherwise, this returns `null`.
-  String? _tryRequiresForbidden(Incompatibility other,
-      [Map<String, PackageDetail>? details, int? thisLine, int? otherLine]) {
+  String? _tryRequiresForbidden(
+    Incompatibility other, [
+    Map<String, PackageDetail>? details,
+    int? thisLine,
+    int? otherLine,
+  ]) {
     if (terms.length != 1 && other.terms.length != 1) return null;
 
     Incompatibility prior;
@@ -374,26 +387,28 @@ class Incompatibility {
       latterLine = otherLine;
     }
 
-    var negative = prior._singleTermWhere((term) => !term.isPositive);
+    final negative = prior._singleTermWhere((term) => !term.isPositive);
     if (negative == null) return null;
     if (!negative.inverse.satisfies(latter.terms.first)) return null;
 
-    var positives = prior.terms.where((term) => term.isPositive);
+    final positives = prior.terms.where((term) => term.isPositive);
 
-    var buffer = StringBuffer();
+    final buffer = StringBuffer();
     if (positives.length > 1) {
-      var priorString =
+      final priorString =
           positives.map((term) => _terse(term, details)).join(' or ');
       buffer.write('if $priorString then ');
     } else {
       buffer.write(_terse(positives.first, details, allowEvery: true));
-      buffer.write(prior.cause == IncompatibilityCause.dependency
-          ? ' depends on '
-          : ' requires ');
+      buffer.write(
+        prior.cause is DependencyIncompatibilityCause
+            ? ' depends on '
+            : ' requires ',
+      );
     }
 
-    if (latter.cause == IncompatibilityCause.unknownSource) {
-      var package = latter.terms.first.package;
+    if (latter.cause is UnknownSourceIncompatibilityCause) {
+      final package = latter.terms.first.package;
       buffer.write('${package.name} ');
       if (priorLine != null) buffer.write('($priorLine) ');
       buffer.write('from unknown source "${package.source}"');
@@ -404,24 +419,26 @@ class Incompatibility {
     buffer.write('${_terse(latter.terms.first, details)} ');
     if (priorLine != null) buffer.write('($priorLine) ');
 
-    if (latter.cause == IncompatibilityCause.useLatest) {
-      var latest =
-          VersionConstraint.any.difference(latter.terms.single.constraint);
-      buffer.write('but the latest version ($latest) is required');
-    } else if (latter.cause is SdkCause) {
-      var cause = latter.cause as SdkCause;
-      buffer.write('which requires ');
-      if (!cause.sdk.isAvailable) {
-        buffer.write('the ${cause.sdk.name} SDK');
+    final latterCause = latter.cause;
+    if (latterCause is SdkIncompatibilityCause) {
+      final cause = latter.cause as SdkIncompatibilityCause;
+      if (cause.noNullSafetyCause) {
+        buffer.write('which doesn\'t support null safety');
       } else {
-        if (cause.sdk.name != 'Dart') buffer.write(cause.sdk.name + ' ');
-        buffer.write('SDK version ${cause.constraint}');
+        buffer.write('which requires ');
+        if (!cause.sdk.isAvailable) {
+          buffer.write('the ${cause.sdk.name} SDK');
+        } else {
+          if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
+          buffer.write('SDK version ${cause.constraint}');
+        }
       }
-    } else if (latter.cause == IncompatibilityCause.noVersions) {
+    } else if (latterCause is NoVersionsIncompatibilityCause) {
       buffer.write("which doesn't match any versions");
-    } else if (cause is PackageNotFoundCause) {
+    } else if (latterCause is PackageNotFoundIncompatibilityCause) {
+      final exceptionMessage = latterCause.exception.message;
       buffer.write("which doesn't exist "
-          '(${(cause as PackageNotFoundCause).exception.message})');
+          '($exceptionMessage)');
     } else {
       buffer.write('which is forbidden');
     }
@@ -455,8 +472,11 @@ class Incompatibility {
   ///
   /// If [allowEvery] is `true`, this will return "every version of foo" instead
   /// of "foo any".
-  String _terse(Term? term, Map<String, PackageDetail>? details,
-      {bool allowEvery = false}) {
+  String _terse(
+    Term? term,
+    Map<String, PackageDetail>? details, {
+    bool allowEvery = false,
+  }) {
     if (allowEvery && term!.constraint.isAny) {
       return 'every version of ${_terseRef(term, details)}';
     } else {

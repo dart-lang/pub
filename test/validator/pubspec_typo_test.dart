@@ -14,9 +14,9 @@ Validator pubspecTypo() => PubspecTypoValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
-    test('looks normal', () => expectValidation(pubspecTypo));
+    test('looks normal', () => expectValidationDeprecated(pubspecTypo));
 
     test('has no typos', () async {
       await d.dir(appPath, [
@@ -34,11 +34,11 @@ void main() {
           'environment': {},
           'executables': '',
           'publish_to': '',
-          'flutter': {}
-        })
+          'flutter': {},
+        }),
       ]).create();
 
-      await expectValidation(pubspecTypo);
+      await expectValidationDeprecated(pubspecTypo);
     });
 
     test('has different keys which are likely not typos', () async {
@@ -48,26 +48,26 @@ void main() {
           'version': '1.0.0',
           'email': 'my@email.com',
           'maintainer': 'Garett Tok',
-          'assets': '../relative/path'
-        })
+          'assets': '../relative/path',
+        }),
       ]).create();
 
-      await expectValidation(pubspecTypo);
+      await expectValidationDeprecated(pubspecTypo);
     });
   });
 
   group('should has warnings if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('contains typos', () async {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
           'dependecies': {},
-        })
+        }),
       ]).create();
 
-      await expectValidation(pubspecTypo, warnings: isNotEmpty);
+      await expectValidationDeprecated(pubspecTypo, warnings: isNotEmpty);
     });
 
     test('contains typos but does not issue too many warnings', () async {
@@ -78,12 +78,14 @@ void main() {
           'avthor': 'Garett Tok',
           'descripton': 'This is a package',
           'homepagd': 'https://pub.dev/packages/myapp',
-          'documentat1on': 'here'
-        })
+          'documentat1on': 'here',
+        }),
       ]).create();
 
-      await expectValidation(pubspecTypo,
-          warnings: hasLength(lessThanOrEqualTo(3)));
+      await expectValidationDeprecated(
+        pubspecTypo,
+        warnings: hasLength(lessThanOrEqualTo(3)),
+      );
     });
   });
 }

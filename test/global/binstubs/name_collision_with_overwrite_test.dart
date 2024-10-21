@@ -12,29 +12,36 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'foo': 'foo', 'collide1': 'foo', 'collide2': 'foo'}
+        'executables': {'foo': 'foo', 'collide1': 'foo', 'collide2': 'foo'},
       }),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await d.dir('bar', [
       d.pubspec({
         'name': 'bar',
-        'executables': {'bar': 'bar', 'collide1': 'bar', 'collide2': 'bar'}
+        'executables': {'bar': 'bar', 'collide1': 'bar', 'collide2': 'bar'},
       }),
-      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var pub = await startPub(
-        args: ['global', 'activate', '-spath', '../bar', '--overwrite']);
-    expect(pub.stdout,
-        emitsThrough('Installed executables bar, collide1 and collide2.'));
+    final pub = await startPub(
+      args: ['global', 'activate', '-spath', '../bar', '--overwrite'],
+    );
     expect(
-        pub.stderr, emits('Replaced collide1 previously installed from foo.'));
+      pub.stdout,
+      emitsThrough('Installed executables bar, collide1 and collide2.'),
+    );
     expect(
-        pub.stderr, emits('Replaced collide2 previously installed from foo.'));
+      pub.stderr,
+      emits('Replaced collide1 previously installed from foo.'),
+    );
+    expect(
+      pub.stderr,
+      emits('Replaced collide2 previously installed from foo.'),
+    );
     await pub.shouldExit();
 
     await d.dir(cachePath, [
@@ -42,8 +49,8 @@ void main() {
         d.file(binStubName('foo'), contains('foo:foo')),
         d.file(binStubName('bar'), contains('bar:bar')),
         d.file(binStubName('collide1'), contains('bar:bar')),
-        d.file(binStubName('collide2'), contains('bar:bar'))
-      ])
+        d.file(binStubName('collide2'), contains('bar:bar')),
+      ]),
     ]).validate();
   });
 }

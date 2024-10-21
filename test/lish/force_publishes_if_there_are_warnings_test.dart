@@ -13,37 +13,49 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('--force publishes if there are warnings', () async {
-    var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
+    await d.validPackage().create();
+    final pkg = packageMap(
+      'test_pkg',
+      '1.0.0',
+      null,
+      null,
+      {'sdk': defaultSdkConstraint},
+    );
     pkg['dependencies'] = {'foo': 'any'};
     await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-    await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer, args: ['--force']);
+    (await servePackages()).serve('foo', '1.0.0');
+
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer, args: ['--force']);
 
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
+        }),
+      );
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
+    final stderrLines = await pub.stderr.rest.toList();
     expect(
-      pub.stderr,
-      emitsThrough('Package validation found the following potential issue:'),
+      stderrLines,
+      allOf([
+        contains('Package validation found the following potential issue:'),
+        contains(
+          '* Your dependency on "foo" should have a version constraint. '
+          'For example:',
+        ),
+      ]),
     );
     expect(
-        pub.stderr,
-        emitsLines(
-            '* Your dependency on "foo" should have a version constraint.\n'
-            '  Without a constraint, you\'re promising to support all future versions of "foo".'));
-    expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
+      pub.stdout,
+      emitsThrough('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
   });
 }

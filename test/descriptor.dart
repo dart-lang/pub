@@ -3,16 +3,19 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Pub-specific test descriptors.
+library;
+
 import 'dart:convert';
 
-import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
+import 'package:pub/src/oauth2.dart';
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/sdk/sdk_package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor/git.dart';
-import 'descriptor/packages.dart';
+import 'descriptor/package_config.dart';
 import 'descriptor/tar.dart';
 import 'descriptor/yaml.dart';
 import 'test_pub.dart';
@@ -20,7 +23,7 @@ import 'test_pub.dart';
 export 'package:test_descriptor/test_descriptor.dart';
 
 export 'descriptor/git.dart';
-export 'descriptor/packages.dart';
+export 'descriptor/package_config.dart';
 export 'descriptor/tar.dart';
 
 /// Creates a new [GitRepoDescriptor] with [name] and [contents].
@@ -31,13 +34,20 @@ GitRepoDescriptor git(String name, [List<Descriptor>? contents]) =>
 TarFileDescriptor tar(String name, [List<Descriptor>? contents]) =>
     TarFileDescriptor(name, contents ?? <Descriptor>[]);
 
+FileDescriptor validPubspec({Map<String, Object?>? extras}) =>
+    libPubspec('test_pkg', '1.0.0', sdk: '>=3.1.2 <=3.2.0', extras: extras);
+
 /// Describes a package that passes all validation.
-DirectoryDescriptor get validPackage => dir(appPath, [
-      libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+DirectoryDescriptor validPackage({
+  String version = '1.0.0',
+  Map<String, Object?>? pubspecExtras,
+}) =>
+    dir(appPath, [
+      validPubspec(extras: {'version': version, ...?pubspecExtras}),
       file('LICENSE', 'Eh, do what you want.'),
       file('README.md', "This package isn't real."),
-      file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      dir('lib', [file('test_pkg.dart', 'int i = 1;')])
+      file('CHANGELOG.md', '# $version\nFirst version\n'),
+      dir('lib', [file('test_pkg.dart', 'int i = 1;')]),
     ]);
 
 /// Returns a descriptor of a snapshot that can't be run by the current VM.
@@ -64,13 +74,13 @@ FileDescriptor outOfDateSnapshot(String name) => file(
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-Descriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
+FileDescriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
       'pubspec.yaml',
       yaml({
         ...contents,
         // TODO: Copy-pasting this into all call-sites, or use d.libPubspec
         'environment': {
-          'sdk': '>=0.1.2 <1.0.0',
+          'sdk': defaultSdkConstraint,
           ...(contents['environment'] ?? {}) as Map,
         },
       }),
@@ -81,12 +91,10 @@ Descriptor rawPubspec(Map<String, Object> contents) =>
 
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
-Descriptor appPubspec([Map? dependencies]) {
-  var map = <String, Object>{
+Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
+  final map = <String, Object>{
     'name': 'myapp',
-    'environment': {
-      'sdk': '>=0.1.2 <1.0.0',
-    },
+    ...?extras,
   };
   if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);
@@ -96,15 +104,31 @@ Descriptor appPubspec([Map? dependencies]) {
 /// [name], [version], and [deps]. If "sdk" is given, then it adds an SDK
 /// constraint on that version, otherwise it adds an SDK constraint allowing
 /// the current SDK version.
-Descriptor libPubspec(String name, String version,
-    {Map? deps, Map? devDeps, String? sdk}) {
-  var map = packageMap(name, version, deps, devDeps);
+///
+/// [extras] is additional fields of the pubspec.
+FileDescriptor libPubspec(
+  String name,
+  String version, {
+  Map<String, Object?>? deps,
+  Map<String, Object?>? devDeps,
+  String? sdk,
+  Map<String, Object?>? extras,
+  bool resolutionWorkspace = false,
+}) {
+  final map = packageMap(name, version, deps, devDeps);
+  if (resolutionWorkspace && sdk == null) {
+    sdk = '^3.5.0-0';
+  }
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
-  } else {
-    map['environment'] = {'sdk': '>=0.1.2 <1.0.0'};
   }
-  return pubspec(map);
+  return pubspec(
+    {
+      ...map,
+      if (resolutionWorkspace) 'resolution': 'workspace',
+      ...extras ?? {},
+    },
+  );
 }
 
 /// Describes a file named `pubspec_overrides.yaml` by default, with the given
@@ -128,7 +152,9 @@ Descriptor libDir(String name, [String? code]) {
 /// Describes a directory whose name ends with a hyphen followed by an
 /// alphanumeric hash.
 Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
-    RegExp("$name${r'-[a-f0-9]+'}"), (dirName) => dir(dirName, contents));
+      RegExp("$name${r'-[a-f0-9]+'}"),
+      (dirName) => dir(dirName, contents),
+    );
 
 /// Describes a directory for a Git repo with a dart package.
 /// This directory is of the form found in the revision cache of the global
@@ -159,21 +185,25 @@ Descriptor gitPackageRepoCacheDir(String name) =>
 /// versions are expected to be downloaded.
 ///
 /// If [port] is passed, it's used as the port number of the local hosted server
-/// that this cache represents. It defaults to [globalServer.port].
+/// that this cache represents. It defaults to `globalServer.port`.
 ///
 /// If [includePubspecs] is `true`, then pubspecs will be created for each
 /// package. Defaults to `false` so that the contents of pubspecs are not
 /// validated since they will often lack the dependencies section that the
 /// real pubspec being compared against has. You usually only need to pass
-/// `true` for this if you plan to call [create] on the resulting descriptor.
-Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
-  var contents = <Descriptor>[];
+/// `true` for this if you plan to call `create()` on the resulting descriptor.
+Descriptor cacheDir(
+  Map<String, dynamic> packages, {
+  int? port,
+  bool includePubspecs = false,
+}) {
+  final contents = <Descriptor>[];
   packages.forEach((name, versions) {
     if (versions is! List) versions = [versions];
     for (var version in versions) {
-      var packageContents = [libDir(name, '$name $version')];
+      final packageContents = [libDir(name, '$name $version')];
       if (includePubspecs) {
-        packageContents.add(libPubspec(name, version));
+        packageContents.add(libPubspec(name, version as String));
       }
       contents.add(dir('$name-$version', packageContents));
     }
@@ -186,20 +216,38 @@ Descriptor cacheDir(Map packages, {int? port, bool includePubspecs = false}) {
 /// downloaded from the mock package server.
 ///
 /// If [port] is passed, it's used as the port number of the local hosted server
-/// that this cache represents. It defaults to [globalServer.port].
+/// that this cache represents. It defaults to `globalServer.port`.
 Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
+  return dir(hostedCachePath(port: port), contents);
+}
+
+/// Describes the hosted-hashes cache directory containing hashes of the hosted
+/// packages downloaded from the mock package server.
+///
+/// If [port] is passed, it's used as the port number of the local hosted server
+/// that this cache represents. It defaults to `globalServer.port`.
+Descriptor hostedHashesCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(cachePath, [
-    dir('hosted', [dir('localhost%58${port ?? globalServer.port}', contents)])
+    dir(
+      'hosted-hashes',
+      [dir('localhost%58${port ?? globalServer.port}', contents)],
+    ),
   ]);
 }
+
+String hostedCachePath({int? port}) =>
+    p.join(cachePath, 'hosted', 'localhost%58${port ?? globalServer.port}');
 
 /// Describes the file that contains the client's OAuth2
 /// credentials. The URL "/token" on [server] will be used as the token
 /// endpoint for refreshing the access token.
-Descriptor credentialsFile(PackageServer server, String accessToken,
-    {String? refreshToken, DateTime? expiration}) {
-  return dir(
-    configPath,
+Descriptor credentialsFile(
+  PackageServer server,
+  String accessToken, {
+  String? refreshToken,
+  DateTime? expiration,
+}) {
+  return configDir(
     [
       file(
         'pub-credentials.json',
@@ -214,8 +262,12 @@ Descriptor credentialsFile(PackageServer server, String accessToken,
   );
 }
 
-Descriptor legacyCredentialsFile(PackageServer server, String accessToken,
-    {String? refreshToken, DateTime? expiration}) {
+Descriptor legacyCredentialsFile(
+  PackageServer server,
+  String accessToken, {
+  String? refreshToken,
+  DateTime? expiration,
+}) {
   return dir(
     cachePath,
     [
@@ -238,7 +290,7 @@ String _credentialsFileContent(
   String? refreshToken,
   DateTime? expiration,
 }) =>
-    oauth2.Credentials(
+    Credentials(
       accessToken,
       refreshToken: refreshToken,
       tokenEndpoint: Uri.parse(server.url).resolve('/token'),
@@ -252,44 +304,45 @@ String _credentialsFileContent(
 /// Describes the file in the system cache that contains credentials for
 /// third party hosted pub servers.
 Descriptor tokensFile([Map<String, dynamic> contents = const {}]) {
-  return dir(configPath, [file('pub-tokens.json', jsonEncode(contents))]);
+  return configDir([file('pub-tokens.json', jsonEncode(contents))]);
 }
 
 /// Describes the application directory, containing only a pubspec specifying
 /// the given [dependencies].
-DirectoryDescriptor appDir([Map? dependencies]) =>
-    dir(appPath, [appPubspec(dependencies)]);
-
-/// Describes a `.packages` file.
-///
-/// [dependencies] maps package names to strings describing where the packages
-/// are located on disk. If the strings are semantic versions, then the packages
-/// are located in the system cache; otherwise, the strings are interpreted as
-/// relative `file:` URLs.
-///
-/// Validation checks that the `.packages` file exists, has the expected
-/// entries (one per key in [dependencies]), each with a path that contains
-/// either the version string (for a reference to the pub cache) or a
-/// path to a path dependency, relative to the application directory.
-Descriptor packagesFile(Map<String, String> dependencies) =>
-    PackagesFileDescriptor(dependencies);
+DirectoryDescriptor appDir({Map? dependencies, Map<String, Object>? pubspec}) =>
+    dir(appPath, [appPubspec(dependencies: dependencies, extras: pubspec)]);
 
 /// Describes a `.dart_tools/package_config.json` file.
 ///
-/// [dependencies] is a list of packages included in the file.
+/// [packages] is a list of packages included in the file.
 ///
 /// Validation checks that the `.dart_tools/package_config.json` file exists,
-/// has the expected entries (one per key in [dependencies]), each with a path
+/// has the expected entries (one per key in [packages]), each with a path
 /// that matches the `rootUri` of that package.
 Descriptor packageConfigFile(
   List<PackageConfigEntry> packages, {
-  String generatorVersion = '0.1.2+3',
+  String generatorVersion = '3.1.2+3',
+  String? pubCache,
+  String? flutterVersion,
+  String? flutterRoot,
 }) =>
-    PackageConfigFileDescriptor(packages, generatorVersion);
+    PackageConfigFileDescriptor(
+      packages,
+      generatorVersion,
+      pubCache ??
+          p.join(
+            sandbox,
+            cachePath,
+          ),
+      flutterRoot,
+      flutterVersion,
+    );
 
 Descriptor appPackageConfigFile(
   List<PackageConfigEntry> packages, {
-  String generatorVersion = '0.1.2+3',
+  String generatorVersion = '3.1.2+3',
+  String? flutterRoot,
+  String? flutterVersion,
 }) =>
     dir(
       appPath,
@@ -300,6 +353,8 @@ Descriptor appPackageConfigFile(
             ...packages,
           ],
           generatorVersion: generatorVersion,
+          flutterRoot: flutterRoot,
+          flutterVersion: flutterVersion,
         ),
       ],
     );
@@ -313,16 +368,15 @@ PackageConfigEntry packageConfigEntry({
   String? languageVersion,
   PackageServer? server,
 }) {
-  if (version != null && path != null) {
-    throw ArgumentError.value(
-        path, 'path', 'Only one of "version" and "path" can be provided');
-  }
   if (version == null && path == null) {
     throw ArgumentError.value(
-        version, 'version', 'Either "version" or "path" must be given');
+      version,
+      'version',
+      'Either "version" or "path" must be given',
+    );
   }
   Uri rootUri;
-  if (version != null) {
+  if (path == null && version != null) {
     rootUri = p.toUri((server ?? globalServer).pathInCache(name, version));
   } else {
     rootUri = p.toUri(p.join('..', path));
@@ -336,10 +390,16 @@ PackageConfigEntry packageConfigEntry({
   );
 }
 
-/// Describes a `.packages` file in the application directory, including the
-/// implicit entry for the app itself.
-Descriptor appPackagesFile(Map<String, String> dependencies) {
-  var copied = Map<String, String>.from(dependencies);
-  copied['myapp'] = '.';
-  return dir(appPath, [packagesFile(copied)]);
+Descriptor flutterVersion(String version) {
+  return dir('bin', [
+    dir(
+      'cache',
+      [file('flutter.version.json', '{"flutterVersion":"$version"}')],
+    ),
+  ]);
+}
+
+/// Describes a file named `sdk_packages.yaml` at the root of the current SDK.
+FileDescriptor sdkPackagesConfig(SdkPackageConfig sdkPackageConfig) {
+  return YamlDescriptor('sdk_packages.yaml', yaml(sdkPackageConfig.toMap()));
 }

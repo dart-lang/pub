@@ -12,27 +12,32 @@ import '../../test_pub.dart';
 void main() {
   test('activating a path package deactivates the hosted one', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")]),
+      ],
+    );
 
     await d.dir('foo', [
       d.libPubspec('foo', '2.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('path');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('path');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
+    final path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(
-        args: ['global', 'activate', '-spath', '../foo'],
-        output: allOf([
-          contains('Package foo is currently active at version 1.0.0.'),
-          contains('Activated foo 2.0.0 at path "$path".')
-        ]));
+      args: ['global', 'activate', '-spath', '../foo'],
+      output: allOf([
+        contains('Package foo is currently active at version 1.0.0.'),
+        contains('Activated foo 2.0.0 at path "$path".'),
+      ]),
+    );
 
     // Should now run the path one.
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emitsThrough('path'));
     await pub.shouldExit();
   });

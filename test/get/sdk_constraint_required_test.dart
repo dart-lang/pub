@@ -17,8 +17,45 @@ void main() {
     ]).create();
 
     await pubGet(
-        error: contains('pubspec.yaml has no lower-bound SDK constraint.'),
-        exitCode: exit_codes.DATA);
+      error: allOf(
+        contains('pubspec.yaml has no lower-bound SDK constraint.'),
+        contains("sdk: '^2.19.0'"),
+      ),
+      exitCode: exit_codes.DATA,
+      environment: {'_PUB_TEST_SDK_VERSION': '2.19.1'},
+    );
+
+    await d.dir(appPath, [
+      // The lockfile should not be created.
+      d.nothing('pubspec.lock'),
+      // The "packages" directory should not have been generated.
+      d.nothing('packages'),
+      // The package config file should not have been created.
+      d.nothing('.dart_tool/package_config.json'),
+    ]).validate();
+  });
+
+  test('pub get fails with an non-null-safety SDK constraint', () async {
+    await d.dir(appPath, [
+      d.rawPubspec(
+        {
+          'name': 'myapp',
+          'environment': {'sdk': '>=2.9.0 <4.0.0'},
+        },
+      ),
+    ]).create();
+
+    await pubGet(
+      error: '''
+The lower bound of "sdk: '>=2.9.0 <4.0.0'" must be 2.12.0'
+or higher to enable null safety.
+
+The current Dart SDK (3.1.2+3) only supports null safety.
+
+For details, see https://dart.dev/null-safety
+''',
+      exitCode: exit_codes.DATA,
+    );
 
     await d.dir(appPath, [
       // The lockfile should not be created.

@@ -26,20 +26,28 @@ class SdkSource extends Source {
 
   /// Parses an SDK dependency.
   @override
-  PackageRef parseRef(String name, description,
-      {String? containingDir, LanguageVersion? languageVersion}) {
+  PackageRef parseRef(
+    String name,
+    Object? description, {
+    required Description containingDescription,
+    LanguageVersion? languageVersion,
+  }) {
     if (description is! String) {
-      throw FormatException('The description must be an SDK name.');
+      throw const FormatException('The description must be an SDK name.');
     }
 
     return PackageRef(name, SdkDescription(description));
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir}) {
+  PackageId parseId(
+    String name,
+    Version version,
+    Object? description, {
+    String? containingDir,
+  }) {
     if (description is! String) {
-      throw FormatException('The description must be an SDK name.');
+      throw const FormatException('The description must be an SDK name.');
     }
 
     return PackageId(
@@ -51,13 +59,16 @@ class SdkSource extends Source {
 
   @override
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache) async {
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  ) async {
     final description = ref.description;
     if (description is! SdkDescription) {
       throw ArgumentError('Wrong source');
     }
-    var pubspec = _loadPubspec(ref, cache);
-    var id = PackageId(
+    final pubspec = _loadPubspec(ref, cache);
+    final id = PackageId(
       ref.name,
       pubspec.version,
       ResolvedSdkDescription(description),
@@ -78,9 +89,33 @@ class SdkSource extends Source {
   ///
   /// Throws a [PackageNotFoundException] if [ref]'s SDK is unavailable or
   /// doesn't contain the package.
-  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) =>
-      Pubspec.load(_verifiedPackagePath(ref), cache.sources,
-          expectedName: ref.name);
+  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) {
+    final pubspec = Pubspec.load(
+      _verifiedPackagePath(ref),
+      cache.sources,
+      expectedName: ref.name,
+      containingDescription: ref.description,
+    );
+
+    /// Validate that there are no non-sdk dependencies if the SDK does not
+    /// allow them.
+    if (ref.description case final SdkDescription description) {
+      if (sdks[description.sdk]
+          case Sdk(allowsNonSdkDepsInSdkPackages: false)) {
+        for (var dep in pubspec.dependencies.entries) {
+          if (dep.value.source is! SdkSource) {
+            throw UnsupportedError(
+              'Only SDK packages are allowed as regular dependencies for '
+              'packages vendored by the ${sdk.identifier} SDK, but the '
+              '`${ref.name}` package has a ${dep.value.source.name} dependency '
+              'on `${dep.key}`.',
+            );
+          }
+        }
+      }
+    }
+    return pubspec;
+  }
 
   /// Returns the path for the given [ref].
   ///
@@ -91,8 +126,8 @@ class SdkSource extends Source {
     if (description is! SdkDescription) {
       throw ArgumentError('Wrong source');
     }
-    var sdkName = description.sdk;
-    var sdk = sdks[sdkName];
+    final sdkName = description.sdk;
+    final sdk = sdks[sdkName];
     if (sdk == null) {
       throw PackageNotFoundException('unknown SDK "$sdkName"');
     } else if (!sdk.isAvailable) {
@@ -102,23 +137,27 @@ class SdkSource extends Source {
       );
     }
 
-    var path = sdk.packagePath(ref.name);
+    final path = sdk.packagePath(ref.name);
     if (path != null) return path;
 
     throw PackageNotFoundException(
-        'could not find package ${ref.name} in the ${sdk.name} SDK');
+      'could not find package ${ref.name} in the ${sdk.name} SDK',
+    );
   }
 
   @override
-  String doGetDirectory(PackageId id, SystemCache cache,
-      {String? relativeFrom}) {
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  }) {
     try {
       return _verifiedPackagePath(id.toRef());
     } on PackageNotFoundException catch (error) {
       // [PackageNotFoundException]s are uncapitalized and unpunctuated because
       // they're used within other sentences by the version solver, but
       // [ApplicationException]s should be full sentences.
-      throw ApplicationException(capitalize(error.message) + '.');
+      throw ApplicationException('${capitalize(error.message)}.');
     }
   }
 }
@@ -155,7 +194,7 @@ class ResolvedSdkDescription extends ResolvedDescription {
   @override
   SdkDescription get description => super.description as SdkDescription;
 
-  ResolvedSdkDescription(SdkDescription description) : super(description);
+  ResolvedSdkDescription(SdkDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

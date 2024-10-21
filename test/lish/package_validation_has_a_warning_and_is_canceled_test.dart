@@ -9,16 +9,22 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package validation has a warning and is canceled', () async {
-    var pkg =
-        packageMap('test_pkg', '1.0.0', null, null, {'sdk': '>=1.8.0 <2.0.0'});
+    await d.validPackage().create();
+    final pkg = packageMap(
+      'test_pkg',
+      '1.0.0',
+      null,
+      null,
+      {'sdk': defaultSdkConstraint},
+    );
     pkg['author'] = 'Natalie Weizenbaum';
-    await d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.dir(appPath, [
+      d.pubspec(pkg),
+    ]).create();
 
     await servePackages();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     pub.stdin.writeln('n');
     await pub.shouldExit(exit_codes.DATA);

@@ -5,7 +5,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../exceptions.dart';
 import '../io.dart';
@@ -19,17 +19,19 @@ class TokenStore {
   /// Cache directory.
   final String? configDir;
 
-  /// List of saved authentication tokens.
+  /// Enumeration of saved authentication tokens.
   ///
-  /// Modifying this field will not write changes to the disk. You have to call
-  /// [flush] to save changes.
-  Iterable<Credential> get credentials => _loadCredentials();
+  /// Call [addCredential] and [removeCredential] to update the credentials
+  /// while saving changes to disk.
+  Iterable<Credential> get credentials => _credentials;
+
+  late final List<Credential> _credentials = _loadCredentials();
 
   /// Reads "pub-tokens.json" and parses / deserializes it into list of
   /// [Credential].
   List<Credential> _loadCredentials() {
     final result = <Credential>[];
-    final path = _tokensFile;
+    final path = tokensFile;
     if (path == null || !fileExists(path)) {
       return result;
     }
@@ -43,33 +45,37 @@ class TokenStore {
       }
 
       if (json is! Map<String, dynamic>) {
-        throw FormatException('JSON contents is corrupted or not supported');
+        throw const FormatException(
+          'JSON contents is corrupted or not supported',
+        );
       }
       if (json['version'] != 1) {
-        throw FormatException('Version is not supported');
+        throw const FormatException('Version is not supported');
       }
 
       if (json.containsKey('hosted')) {
         final hosted = json['hosted'];
 
         if (hosted is! List) {
-          throw FormatException('Invalid or not supported format');
+          throw const FormatException('Invalid or not supported format');
         }
 
         for (final element in hosted) {
           try {
             if (element is! Map<String, dynamic>) {
-              throw FormatException('Invalid or not supported format');
+              throw const FormatException('Invalid or not supported format');
             }
 
             final credential = Credential.fromJson(element);
             result.add(credential);
 
             if (!credential.isValid()) {
-              throw FormatException('Invalid or not supported credential');
+              throw const FormatException(
+                'Invalid or not supported credential',
+              );
             }
           } on FormatException catch (e) {
-            if (element['url'] is String) {
+            if (element is Map<String, dynamic> && element['url'] is String) {
               log.warning(
                 'Failed to load credentials for ${element['url']}: '
                 '${e.message}',
@@ -97,34 +103,39 @@ class TokenStore {
 
   /// Writes [credentials] into "pub-tokens.json".
   void _saveCredentials(List<Credential> credentials) {
-    final tokensFile = _tokensFile;
+    final tokensFile = this.tokensFile;
     if (tokensFile == null) {
-      missingConfigDir();
+      throw AssertionError('Bad state');
     }
-    ensureDir(path.dirname(tokensFile));
+    ensureDir(p.dirname(tokensFile));
     writeTextFile(
-        tokensFile,
-        jsonEncode(<String, dynamic>{
-          'version': 1,
-          'hosted': credentials.map((it) => it.toJson()).toList(),
-        }));
+      tokensFile,
+      jsonEncode(<String, dynamic>{
+        'version': 1,
+        'hosted': credentials.map((it) => it.toJson()).toList(),
+      }),
+    );
   }
 
   /// Adds [token] into store and writes into disk.
   void addCredential(Credential token) {
-    final _credentials = _loadCredentials();
+    if (tokensFile == null) {
+      missingConfigDir();
+    }
+    final credentials = _loadCredentials();
 
     // Remove duplicate tokens
-    _credentials.removeWhere((it) => it.url == token.url);
-    _credentials.add(token);
-    _saveCredentials(_credentials);
+    credentials.removeWhere((it) => it.url == token.url);
+    credentials.add(token);
+    _saveCredentials(credentials);
   }
 
   /// Removes tokens with matching [hostedUrl] from store. Returns whether or
   /// not there's a stored token with matching url.
   bool removeCredential(Uri hostedUrl) {
-    final _credentials = _loadCredentials();
-
+    if (tokensFile == null) {
+      missingConfigDir();
+    }
     var i = 0;
     var found = false;
     while (i < _credentials.length) {
@@ -136,7 +147,9 @@ class TokenStore {
       }
     }
 
-    _saveCredentials(_credentials);
+    if (found) {
+      _saveCredentials(_credentials);
+    }
 
     return found;
   }
@@ -145,7 +158,7 @@ class TokenStore {
   /// matching credential is found.
   Credential? findCredential(Uri hostedUrl) {
     Credential? matchedCredential;
-    for (final credential in credentials) {
+    for (final credential in _credentials) {
       if (credential.url == hostedUrl && credential.isValid()) {
         if (matchedCredential == null) {
           matchedCredential = credential;
@@ -165,12 +178,12 @@ class TokenStore {
   /// Returns whether or not store contains a token that could be used for
   /// authenticating given [url].
   bool hasCredential(Uri url) {
-    return credentials.any((it) => it.url == url && it.isValid());
+    return _credentials.any((it) => it.url == url && it.isValid());
   }
 
   /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {
-    final tokensFile = _tokensFile;
+    final tokensFile = this.tokensFile;
     if (tokensFile == null) {
       missingConfigDir();
     } else if (!fileExists(tokensFile)) {
@@ -184,8 +197,8 @@ class TokenStore {
   /// Full path to the "pub-tokens.json" file.
   ///
   /// `null` if no config directory could be found.
-  String? get _tokensFile {
-    var dir = configDir;
-    return dir == null ? null : path.join(dir, 'pub-tokens.json');
+  String? get tokensFile {
+    final dir = configDir;
+    return dir == null ? null : p.join(dir, 'pub-tokens.json');
   }
 }

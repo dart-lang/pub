@@ -12,24 +12,35 @@ void main() {
       "discards the previous active version if it doesn't match the "
       'constraint', () async {
     await servePackages()
-      ..serve('foo', '1.0.0', contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi");')])
-      ])
-      ..serve('foo', '2.0.0', contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi2");')])
-      ]);
+      ..serve(
+        'foo',
+        '1.0.0',
+        contents: [
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi");')]),
+        ],
+      )
+      ..serve(
+        'foo',
+        '2.0.0',
+        contents: [
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi2");')]),
+        ],
+      );
 
     // Activate 1.0.0.
     await runPub(args: ['global', 'activate', 'foo', '1.0.0']);
 
     // Activating it again with a different constraint changes the version.
-    await runPub(args: ['global', 'activate', 'foo', '>1.0.0'], output: '''
+    await runPub(
+      args: ['global', 'activate', 'foo', '>1.0.0'],
+      output: '''
         Package foo is currently active at version 1.0.0.
         Resolving dependencies...
-        + foo 2.0.0
-        Downloading foo 2.0.0...
+        Downloading packages...
+        > foo 2.0.0 (was 1.0.0)
         Building package executables...
         Built foo:foo.
-        Activated foo 2.0.0.''');
+        Activated foo 2.0.0.''',
+    );
   });
 }

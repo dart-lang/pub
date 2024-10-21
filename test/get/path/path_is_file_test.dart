@@ -2,7 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -14,16 +15,21 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.file('dummy.txt', '').create();
-    var dummyPath = path.join(d.sandbox, 'dummy.txt');
+    final dummyPath = p.join(d.sandbox, 'dummy.txt');
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': dummyPath}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': dummyPath},
+        },
+      ),
     ]).create();
 
     await pubGet(
-        error: 'Path dependency for package foo must refer to a '
-            'directory, not a file. Was "$dummyPath".');
+      error: 'Because myapp depends on foo from path which doesn\'t exist '
+          '(Path dependency for package foo must refer to a directory, '
+          'not a file. Was "$dummyPath".), version solving failed.',
+      exitCode: exit_codes.NO_INPUT,
+    );
   });
 }

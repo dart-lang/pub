@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -16,7 +16,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // This should lock the foo dependency to version 1.0.0.
     await pubGet();
@@ -25,7 +25,7 @@ void main() {
     ]).validate();
 
     // Delete the .dart_tool/package_config.json file to simulate a new checkout of the application.
-    deleteEntry(path.join(d.sandbox, packageConfigFilePath));
+    deleteEntry(p.join(d.sandbox, packageConfigFilePath));
 
     // Start serving a newer package as well.
     server.serve('foo', '1.0.1');

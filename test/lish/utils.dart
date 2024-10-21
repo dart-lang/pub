@@ -12,15 +12,19 @@ import '../test_pub.dart';
 void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
   server.expect('GET', '$path/api/packages/versions/new', (request) {
     expect(
-        request.headers, containsPair('authorization', 'Bearer access token'));
+      request.headers,
+      containsPair('authorization', 'Bearer access-token'),
+    );
 
     body ??= {
       'url': Uri.parse(server.url).resolve('/upload').toString(),
-      'fields': {'field1': 'value1', 'field2': 'value2'}
+      'fields': {'field1': 'value1', 'field2': 'value2'},
     };
 
-    return shelf.Response.ok(jsonEncode(body),
-        headers: {'content-type': 'application/json'});
+    return shelf.Response.ok(
+      jsonEncode(body),
+      headers: {'content-type': 'application/json'},
+    );
   });
 }
 
@@ -30,7 +34,7 @@ void handleUpload(PackageServer server) {
     // that the request body is correctly formatted. See issue 6952.
     return request
         .read()
-        .drain()
+        .drain<void>()
         .then((_) => server.url)
         .then((url) => shelf.Response.found(Uri.parse(url).resolve('/create')));
   });

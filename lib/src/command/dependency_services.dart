@@ -2,8 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-/// This implements support for dependency-bot style automated upgrades.
+/// Implements support for dependency-bot style automated upgrades.
 /// It is still work in progress - do not rely on the current output.
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,6 +16,7 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
+import '../entrypoint.dart';
 import '../exceptions.dart';
 import '../io.dart';
 import '../lock_file.dart';
@@ -22,8 +25,12 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
+import '../sdk.dart';
 import '../solver.dart';
+import '../solver/version_solver.dart';
 import '../source/git.dart';
+import '../source/hosted.dart';
+import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 
@@ -31,8 +38,8 @@ class DependencyServicesReportCommand extends PubCommand {
   @override
   String get name => 'report';
   @override
-  String get description =>
-      'Output a machine-digestible report of the upgrade options for each dependency.';
+  String get description => 'Output a machine-digestible '
+      'report of the upgrade options for each dependency.';
   @override
   String get argumentsDescription => '[options]';
 
@@ -40,159 +47,116 @@ class DependencyServicesReportCommand extends PubCommand {
   bool get takesArguments => false;
 
   DependencyServicesReportCommand() {
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
-    final compatiblePubspec = stripDependencyOverrides(entrypoint.root.pubspec);
-
-    final breakingPubspec = stripVersionUpperBounds(compatiblePubspec);
-
-    final compatiblePackagesResult =
-        await _tryResolve(compatiblePubspec, cache);
-
-    final breakingPackagesResult = await _tryResolve(breakingPubspec, cache);
-
-    // The packages in the current lockfile or resolved from current pubspec.yaml.
-    late Map<String, PackageId> currentPackages;
-
-    if (fileExists(entrypoint.lockFilePath)) {
-      currentPackages =
-          Map<String, PackageId>.from(entrypoint.lockFile.packages);
-    } else {
-      final resolution = await _tryResolve(entrypoint.root.pubspec, cache) ??
-          (throw DataException('Failed to resolve pubspec'));
-      currentPackages =
-          Map<String, PackageId>.fromIterable(resolution, key: (e) => e.name);
+    _checkAtRoot(entrypoint);
+    final stdinString = await utf8.decodeStream(stdin);
+    final input = json.decode(stdinString.isEmpty ? '{}' : stdinString)
+        as Map<String, Object?>;
+    final additionalConstraints = _parseDisallowed(input, cache);
+    final targetPackageName = input['target'];
+    if (targetPackageName is! String?) {
+      throw const FormatException('"target" should be a String.');
     }
-    currentPackages.remove(entrypoint.root.name);
+
+    final compatibleWorkspace = entrypoint.workspaceRoot
+        .transformWorkspace((p) => stripDependencyOverrides(p.pubspec));
+
+    final breakingWorkspace = compatibleWorkspace.transformWorkspace(
+      (p) => stripVersionBounds(p.pubspec),
+    );
+
+    final compatiblePackagesResult = await _tryResolve(
+      compatibleWorkspace,
+      cache,
+      additionalConstraints: additionalConstraints,
+    );
+
+    final breakingPackagesResult = await _tryResolve(
+      breakingWorkspace,
+      cache,
+      additionalConstraints: additionalConstraints,
+    );
+
+    final currentPackages = await _computeCurrentPackages(entrypoint, cache);
 
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
 
-    Future<List<Object>> _computeUpgradeSet(
-      Pubspec rootPubspec,
-      PackageId? package, {
-      required _UpgradeType upgradeType,
-    }) async {
-      if (package == null) return [];
-      final lockFile = entrypoint.lockFile;
-      final pubspec = upgradeType == _UpgradeType.multiBreaking
-          ? stripVersionUpperBounds(rootPubspec)
-          : Pubspec(
-              rootPubspec.name,
-              dependencies: rootPubspec.dependencies.values,
-              devDependencies: rootPubspec.devDependencies.values,
-              sdkConstraints: rootPubspec.sdkConstraints,
-            );
+    final targetPackage =
+        targetPackageName == null ? null : currentPackages[targetPackageName];
 
-      final dependencySet = _dependencySetOfPackage(pubspec, package);
-      if (dependencySet != null) {
-        // Force the version to be the new version.
-        dependencySet[package.name] =
-            package.toRef().withConstraint(package.toRange().constraint);
-      }
-
-      final resolution = await tryResolveVersions(
-        SolveType.get,
-        cache,
-        Package.inMemory(pubspec),
-        lockFile: lockFile,
-      );
-
-      // TODO(sigurdm): improve error messages.
-      if (resolution == null) {
-        throw DataException('Failed resolving');
-      }
-
-      return [
-        ...resolution.packages.where((r) {
-          if (r.name == rootPubspec.name) return false;
-          final originalVersion = currentPackages[r.name];
-          return originalVersion == null || r != originalVersion;
-        }).map((p) {
-          final depset = _dependencySetOfPackage(rootPubspec, p);
-          final originalConstraint = depset?[p.name]?.constraint;
-          final currentPackage = currentPackages[p.name];
-          return {
-            'name': p.name,
-            'version': p.versionOrHash(),
-            'kind': _kindString(pubspec, p.name),
-            'source': _source(p, containingDir: directory),
-            'constraintBumped': originalConstraint == null
-                ? null
-                : upgradeType == _UpgradeType.compatible
-                    ? originalConstraint.toString()
-                    : VersionConstraint.compatibleWith(p.version).toString(),
-            'constraintWidened': originalConstraint == null
-                ? null
-                : upgradeType == _UpgradeType.compatible
-                    ? originalConstraint.toString()
-                    : _widenConstraint(originalConstraint, p.version)
-                        .toString(),
-            'constraintBumpedIfNeeded': originalConstraint == null
-                ? null
-                : upgradeType == _UpgradeType.compatible
-                    ? originalConstraint.toString()
-                    : originalConstraint.allows(p.version)
-                        ? originalConstraint.toString()
-                        : VersionConstraint.compatibleWith(p.version)
-                            .toString(),
-            'previousVersion': currentPackage?.versionOrHash(),
-            'previousConstraint': originalConstraint?.toString(),
-            'previousSource': currentPackage == null
-                ? null
-                : _source(currentPackage, containingDir: directory),
-          };
-        }),
-        // Find packages that were removed by the resolution
-        for (final oldPackageName in lockFile.packages.keys)
-          if (!resolution.packages
-              .any((newPackage) => newPackage.name == oldPackageName))
-            {
-              'name': oldPackageName,
-              'version': null,
-              'kind':
-                  'transitive', // Only transitive constraints can be removed.
-              'constraintBumped': null,
-              'constraintWidened': null,
-              'constraintBumpedIfNeeded': null,
-              'previousVersion':
-                  currentPackages[oldPackageName]?.versionOrHash(),
-              'previousConstraint': null,
-              'previous': _source(currentPackages[oldPackageName]!,
-                  containingDir: directory)
-            },
-      ];
-    }
-
-    for (final package in currentPackages.values) {
+    for (final package in targetPackage == null
+        ? currentPackages.values
+        : <PackageId>[targetPackage]) {
       final compatibleVersion = compatiblePackagesResult
           ?.firstWhereOrNull((element) => element.name == package.name);
       final multiBreakingVersion = breakingPackagesResult
           ?.firstWhereOrNull((element) => element.name == package.name);
-      final singleBreakingPubspec = Pubspec(
-        compatiblePubspec.name,
-        version: compatiblePubspec.version,
-        sdkConstraints: compatiblePubspec.sdkConstraints,
-        dependencies: compatiblePubspec.dependencies.values,
-        devDependencies: compatiblePubspec.devDependencies.values,
-      );
-      final dependencySet =
-          _dependencySetOfPackage(singleBreakingPubspec, package);
-      final kind = _kindString(compatiblePubspec, package.name);
+
+      final kind = _kindString(compatibleWorkspace, package.name);
       PackageId? singleBreakingVersion;
-      if (dependencySet != null) {
-        dependencySet[package.name] = package
-            .toRef()
-            .withConstraint(stripUpperBound(package.toRange().constraint));
-        final singleBreakingPackagesResult =
-            await _tryResolve(singleBreakingPubspec, cache);
+
+      if (kind != 'transitive') {
+        final singleBreakingWorkspace = compatibleWorkspace.transformWorkspace(
+          (p) {
+            final r = stripVersionBounds(p.pubspec, stripOnly: [package.name]);
+            return r;
+          },
+        );
+        final singleBreakingPackagesResult = await _tryResolve(
+          singleBreakingWorkspace,
+          cache,
+        );
         singleBreakingVersion = singleBreakingPackagesResult
             ?.firstWhereOrNull((element) => element.name == package.name);
       }
+      PackageId? smallestUpgrade;
+      if (additionalConstraints.any(
+        (c) => c.range.toRef() == package.toRef() && !c.range.allows(package),
+      )) {
+        // Current version disallowed by restrictions.
+        final atLeastCurrentWorkspace = compatibleWorkspace.transformWorkspace(
+          (p) => atLeastCurrent(
+            p.pubspec,
+            entrypoint.lockFile.packages.values.toList(),
+          ),
+        );
+
+        final smallestUpgradeResult = await _tryResolve(
+          atLeastCurrentWorkspace,
+          cache,
+          solveType: SolveType.downgrade,
+          additionalConstraints: additionalConstraints,
+        );
+
+        smallestUpgrade = smallestUpgradeResult
+            ?.firstWhereOrNull((element) => element.name == package.name);
+      }
+
+      Future<List<Object>> computeUpgradeSet(
+        PackageId? package,
+        _UpgradeType upgradeType,
+      ) async {
+        return await _computeUpgradeSet(
+          compatibleWorkspace,
+          package,
+          entrypoint,
+          cache,
+          currentPackages: currentPackages,
+          upgradeType: upgradeType,
+          additionalConstraints: additionalConstraints,
+        );
+      }
+
       dependencies.add({
         'name': package.name,
         'version': package.versionOrHash(),
@@ -201,57 +165,33 @@ class DependencyServicesReportCommand extends PubCommand {
         'latest':
             (await cache.getLatest(package.toRef(), version: package.version))
                 ?.versionOrHash(),
-        'constraint':
-            _constraintOf(compatiblePubspec, package.name)?.toString(),
-        'compatible': await _computeUpgradeSet(
-            compatiblePubspec, compatibleVersion,
-            upgradeType: _UpgradeType.compatible),
+        'constraint': _constraintIntersection(compatibleWorkspace, package.name)
+            ?.toString(),
+        'compatible': await computeUpgradeSet(
+          compatibleVersion,
+          _UpgradeType.compatible,
+        ),
         'singleBreaking': kind != 'transitive' && singleBreakingVersion == null
-            ? []
-            : await _computeUpgradeSet(compatiblePubspec, singleBreakingVersion,
-                upgradeType: _UpgradeType.singleBreaking),
+            ? <Object>[]
+            : await computeUpgradeSet(
+                singleBreakingVersion,
+                _UpgradeType.singleBreaking,
+              ),
         'multiBreaking': kind != 'transitive' && multiBreakingVersion != null
-            ? await _computeUpgradeSet(compatiblePubspec, multiBreakingVersion,
-                upgradeType: _UpgradeType.multiBreaking)
-            : [],
+            ? await computeUpgradeSet(
+                multiBreakingVersion,
+                _UpgradeType.multiBreaking,
+              )
+            : <Object>[],
+        if (smallestUpgrade != null)
+          'smallestUpdate': await computeUpgradeSet(
+            smallestUpgrade,
+            _UpgradeType.smallestUpdate,
+          ),
       });
     }
-    log.message(JsonEncoder.withIndent('  ').convert(result));
+    log.message(const JsonEncoder.withIndent('  ').convert(result));
   }
-}
-
-VersionConstraint? _constraintOf(Pubspec pubspec, String packageName) {
-  return (pubspec.dependencies[packageName] ??
-          pubspec.devDependencies[packageName])
-      ?.constraint;
-}
-
-String _kindString(Pubspec pubspec, String packageName) {
-  return pubspec.dependencies.containsKey(packageName)
-      ? 'direct'
-      : pubspec.devDependencies.containsKey(packageName)
-          ? 'dev'
-          : 'transitive';
-}
-
-Map<String, Object?> _source(PackageId id, {required String containingDir}) {
-  return {
-    'type': id.source.name,
-    'description':
-        id.description.serializeForLockfile(containingDir: containingDir),
-  };
-}
-
-/// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
-/// resolution was found.
-Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
-  final solveResult = await tryResolveVersions(
-    SolveType.upgrade,
-    cache,
-    Package.inMemory(pubspec),
-  );
-
-  return solveResult?.packages;
 }
 
 class DependencyServicesListCommand extends PubCommand {
@@ -266,17 +206,24 @@ class DependencyServicesListCommand extends PubCommand {
   bool get takesArguments => false;
 
   DependencyServicesListCommand() {
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
-    final pubspec = entrypoint.root.pubspec;
-
+    _checkAtRoot(entrypoint);
     final currentPackages = fileExists(entrypoint.lockFilePath)
         ? entrypoint.lockFile.packages.values.toList()
-        : (await _tryResolve(pubspec, cache) ?? <PackageId>[]);
+        : (await _tryResolve(
+              entrypoint.workspaceRoot,
+              cache,
+            ) ??
+            <PackageId>[]);
 
     final dependencies = <Object>[];
     final result = <String, Object>{'dependencies': dependencies};
@@ -285,19 +232,21 @@ class DependencyServicesListCommand extends PubCommand {
       dependencies.add({
         'name': package.name,
         'version': package.versionOrHash(),
-        'kind': _kindString(pubspec, package.name),
-        'constraint': _constraintOf(pubspec, package.name).toString(),
+        'kind': _kindString(entrypoint.workspaceRoot, package.name),
+        'constraint':
+            _constraintIntersection(entrypoint.workspaceRoot, package.name)
+                ?.toString(),
         'source': _source(package, containingDir: directory),
       });
     }
-    log.message(JsonEncoder.withIndent('  ').convert(result));
+    log.message(const JsonEncoder.withIndent('  ').convert(result));
   }
 }
 
 extension on PackageId {
   String versionOrHash() {
     final description = this.description;
-    if (description is GitResolvedDescription) {
+    if (description is ResolvedGitDescription) {
       return description.resolvedRef;
     } else {
       return version.toString();
@@ -315,6 +264,9 @@ enum _UpgradeType {
   /// Unlock any dependencies in pubspec.yaml needed for getting the
   /// latest resolvable version.
   multiBreaking,
+
+  /// Try to upgrade as little as possible.
+  smallestUpdate,
 }
 
 class DependencyServicesApplyCommand extends PubCommand {
@@ -329,101 +281,156 @@ class DependencyServicesApplyCommand extends PubCommand {
   bool get takesArguments => true;
 
   DependencyServicesApplyCommand() {
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory <dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
-    YamlEditor(readTextFile(entrypoint.pubspecPath));
     final toApply = <_PackageVersion>[];
     final input = json.decode(await utf8.decodeStream(stdin));
-    for (final change in input['dependencyChanges']) {
+    if (input is! Map<String, dynamic>) {
+      fail('Bad input, must be json map');
+    }
+    final dependencyChanges = input['dependencyChanges'];
+    if (dependencyChanges is! List) {
+      fail('Bad input. `dependencyChanges` must be a list');
+    }
+    for (final change in dependencyChanges) {
+      if (change is! Map<String, dynamic>) {
+        fail('Bad input. Each element of `dependencyChanges` must be a map.');
+      }
       toApply.add(
         _PackageVersion(
-          change['name'],
-          change['version'],
+          change['name'] as String,
+          change['version'] as String?,
           change['constraint'] != null
-              ? VersionConstraint.parse(change['constraint'])
+              ? VersionConstraint.parse(change['constraint'] as String)
               : null,
         ),
       );
     }
-
-    final pubspec = entrypoint.root.pubspec;
-    final pubspecEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
+    final updatedPubspecs = <String, YamlEditor>{};
+    _checkAtRoot(entrypoint);
+    for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+      final pubspec = package.pubspec;
+      final pubspecEditor = YamlEditor(readTextFile(package.pubspecPath));
+      for (final p in toApply) {
+        final targetConstraint = p.constraint;
+        final targetPackage = p.name;
+        final targetVersion = p.version;
+        late final section = pubspec.dependencies[targetPackage] != null
+            ? 'dependencies'
+            : pubspec.devDependencies[targetPackage] != null
+                ? 'dev_dependencies'
+                : null;
+        if (section != null) {
+          if (targetConstraint != null) {
+            final packageConfig =
+                pubspecEditor.parseAt([section, targetPackage]).value;
+            if (packageConfig == null || packageConfig is String) {
+              pubspecEditor.update(
+                [section, targetPackage],
+                targetConstraint.toString(),
+              );
+            } else if (packageConfig is Map) {
+              pubspecEditor.update(
+                [section, targetPackage, 'version'],
+                targetConstraint.toString(),
+              );
+            } else {
+              fail(
+                'The dependency $targetPackage does not have a '
+                'map or string as a description',
+              );
+            }
+          } else if (targetVersion != null) {
+            final constraint = _constraintOf(pubspec, targetPackage);
+            if (constraint != null && !constraint.allows(targetVersion)) {
+              pubspecEditor.update(
+                [section, targetPackage],
+                VersionConstraint.compatibleWith(targetVersion).toString(),
+              );
+            }
+          }
+        }
+        updatedPubspecs[package.dir] = pubspecEditor;
+      }
+    }
     final lockFile = fileExists(entrypoint.lockFilePath)
         ? readTextFile(entrypoint.lockFilePath)
         : null;
     final lockFileYaml = lockFile == null ? null : loadYaml(lockFile);
+
     final lockFileEditor = lockFile == null ? null : YamlEditor(lockFile);
+    final hasContentHashes = _lockFileHasContentHashes(lockFileYaml);
+    final usesPubDev = _lockFileUsesPubDev(lockFileYaml);
     for (final p in toApply) {
       final targetPackage = p.name;
       final targetVersion = p.version;
-      final targetConstraint = p.constraint;
       final targetRevision = p.gitRevision;
 
-      if (targetConstraint != null) {
-        final section = pubspec.dependencies[targetPackage] != null
-            ? 'dependencies'
-            : 'dev_dependencies';
-        final packageConfig =
-            pubspecEditor.parseAt([section, targetPackage]).value;
-        if (packageConfig == null || packageConfig is String) {
-          pubspecEditor
-              .update([section, targetPackage], targetConstraint.toString());
-        } else if (packageConfig is Map) {
-          pubspecEditor.update(
-              [section, targetPackage, 'version'], targetConstraint.toString());
-        } else {
-          fail(
-              'The dependency $targetPackage does not have a map or string as a description');
-        }
-      } else if (targetVersion != null) {
-        final constraint = _constraintOf(pubspec, targetPackage);
-        if (constraint != null && !constraint.allows(targetVersion)) {
-          final section = pubspec.dependencies[targetPackage] != null
-              ? 'dependencies'
-              : 'dev_dependencies';
-          pubspecEditor.update([section, targetPackage],
-              VersionConstraint.compatibleWith(targetVersion).toString());
-        }
-      }
       if (lockFileEditor != null) {
+        if (lockFileYaml is! Map) {
+          fail('Malformed pubspec.lock. Must be a map');
+        }
         if (targetVersion != null &&
-            lockFileYaml['packages'].containsKey(targetPackage)) {
+            (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           lockFileEditor.update(
-              ['packages', targetPackage, 'version'], targetVersion.toString());
+            ['packages', targetPackage, 'version'],
+            targetVersion.toString(),
+          );
+          // Remove the now outdated content-hash - it will be restored below
+          // after resolution.
+          final packageMap = lockFileEditor
+              .parseAt(['packages', targetPackage, 'description']).value as Map;
+          final hasSha = packageMap.containsKey('sha256');
+          if (hasSha) {
+            lockFileEditor.remove(
+              ['packages', targetPackage, 'description', 'sha256'],
+            );
+          }
         } else if (targetRevision != null &&
-            lockFileYaml['packages'].containsKey(targetPackage)) {
+            (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
           final currentDescription = ref.description as GitDescription;
           final updatedRef = PackageRef(
-              targetPackage,
-              GitDescription(
-                  url: currentDescription.url,
-                  path: currentDescription.path,
-                  ref: targetRevision,
-                  containingDir: directory));
+            targetPackage,
+            GitDescription(
+              url: currentDescription.url,
+              path: currentDescription.path,
+              ref: targetRevision,
+              containingDir: directory,
+            ),
+          );
           final versions = await cache.getVersions(updatedRef);
           if (versions.isEmpty) {
             dataError(
-                'Found no versions of $targetPackage with git revision `$targetRevision`.');
+              'Found no versions of $targetPackage '
+              'with git revision `$targetRevision`.',
+            );
           }
           // GitSource can only return a single version.
           assert(versions.length == 1);
 
-          lockFileEditor.update(['packages', targetPackage, 'version'],
-              versions.single.version.toString());
+          lockFileEditor.update(
+            ['packages', targetPackage, 'version'],
+            versions.single.version.toString(),
+          );
           lockFileEditor.update(
             ['packages', targetPackage, 'description', 'resolved-ref'],
             targetRevision,
           );
         } else if (targetVersion == null &&
             targetRevision == null &&
-            !lockFileYaml['packages'].containsKey(targetPackage)) {
+            !(lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           dataError(
-            'Trying to remove non-existing transitive dependency $targetPackage.',
+            'Trying to remove non-existing '
+            'transitive dependency $targetPackage.',
           );
         }
       }
@@ -436,9 +443,16 @@ class DependencyServicesApplyCommand extends PubCommand {
             cache.sources,
             filePath: entrypoint.lockFilePath,
           );
-    await log.warningsOnlyUnlessTerminal(
+    await log.errorsOnlyUnlessTerminal(
       () async {
-        final updatedPubspec = pubspecEditor.toString();
+        final updatedWorkspace = entrypoint.workspaceRoot.transformWorkspace(
+          (package) => Pubspec.parse(
+            updatedPubspecs[package.dir].toString(),
+            cache.sources,
+            location: toUri(package.pubspecPath),
+            containingDescription: RootDescription(package.dir),
+          ),
+        );
         // Resolve versions, this will update transitive dependencies that were
         // not passed in the input. And also counts as a validation of the input
         // by ensuring the resolution is valid.
@@ -449,21 +463,99 @@ class DependencyServicesApplyCommand extends PubCommand {
         final solveResult = await resolveVersions(
           SolveType.get,
           cache,
-          Package.inMemory(Pubspec.parse(updatedPubspec, cache.sources,
-              location: toUri(entrypoint.pubspecPath))),
+          updatedWorkspace,
           lockFile: updatedLockfile,
         );
-        if (pubspecEditor.edits.isNotEmpty) {
-          writeTextFile(entrypoint.pubspecPath, updatedPubspec);
+        for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
+          final updatedPubspec = updatedPubspecs[package.dir]!;
+          if (updatedPubspec.edits.isNotEmpty) {
+            writeTextFile(
+              package.pubspecPath,
+              updatedPubspec.toString(),
+            );
+          }
         }
-        // Only if we originally had a lock-file we write the resulting lockfile back.
-        if (lockFileEditor != null) {
-          entrypoint.saveLockFile(solveResult);
+        // Only if we originally had a lock-file we write the resulting lockfile
+        // back.
+        if (updatedLockfile != null) {
+          final updatedPackages = <PackageId>[];
+          for (var package in solveResult.packages) {
+            if (package.isRoot) continue;
+            final description = package.description;
+            // Handle content-hashes of hosted dependencies.
+            if (description is ResolvedHostedDescription) {
+              // Ensure we get content-hashes if the original lock-file had
+              // them.
+              if (hasContentHashes) {
+                if (description.sha256 == null) {
+                  // We removed the hash above before resolution - as we get the
+                  // locked id back we need to find the content-hash from the
+                  // version listing.
+                  //
+                  // `pub get` gets this version-listing from the downloaded
+                  // archive but we don't want to download all archives - so we
+                  // copy it from the version listing.
+                  package = (await cache.getVersions(package.toRef()))
+                      .firstWhere((id) => id == package, orElse: () => package);
+                  if ((package.description as ResolvedHostedDescription)
+                          .sha256 ==
+                      null) {
+                    // This happens when we resolved a package from a legacy
+                    // server not providing archive_sha256. As a side-effect of
+                    // downloading the package we compute and store the sha256.
+                    package = (await cache.downloadPackage(package)).packageId;
+                  }
+                }
+              } else {
+                // The original pubspec.lock did not have content-hashes. Remove
+                // any content hash, so we don't start adding them.
+                package = PackageId(
+                  package.name,
+                  package.version,
+                  description.withSha256(null),
+                );
+              }
+              // Keep using https://pub.dartlang.org if the original lockfile
+              // used it. This is to support lockfiles from old sdks.
+              if (!usesPubDev &&
+                  HostedSource.isPubDevUrl(description.description.url)) {
+                package = PackageId(
+                  package.name,
+                  package.version,
+                  ResolvedHostedDescription(
+                    HostedDescription.raw(
+                      package.name,
+                      HostedSource.pubDartlangUrl,
+                    ),
+                    sha256: (package.description as ResolvedHostedDescription)
+                        .sha256,
+                  ),
+                );
+              }
+            }
+            updatedPackages.add(package);
+          }
+
+          final newLockFile = LockFile(
+            updatedPackages,
+            sdkConstraints: updatedLockfile.sdkConstraints,
+            mainDependencies: entrypoint.lockFile.mainDependencies,
+            devDependencies: entrypoint.lockFile.devDependencies,
+            overriddenDependencies: entrypoint.lockFile.overriddenDependencies,
+          );
+
+          newLockFile.writeToFile(entrypoint.lockFilePath, cache);
         }
       },
     );
     // Dummy message.
-    log.message(json.encode({'dependencies': []}));
+    log.message(json.encode({'dependencies': <Object>[]}));
+  }
+}
+
+void _checkAtRoot(Entrypoint entrypoint) {
+  if (entrypoint.workspaceRoot != entrypoint.workPackage) {
+    fail('Only apply dependency_services to the root of the workspace.');
   }
 }
 
@@ -495,7 +587,9 @@ String? _tryParseHash(String v) {
 }
 
 Map<String, PackageRange>? _dependencySetOfPackage(
-    Pubspec pubspec, PackageId package) {
+  Pubspec pubspec,
+  PackageId package,
+) {
   return pubspec.dependencies.containsKey(package.name)
       ? pubspec.dependencies
       : pubspec.devDependencies.containsKey(package.name)
@@ -503,12 +597,42 @@ Map<String, PackageRange>? _dependencySetOfPackage(
           : null;
 }
 
+/// Return a constraint compatible with [newVersion].
+///
+/// By convention if the original constraint is pinned we return [newVersion].
+/// Otherwise use [VersionConstraint.compatibleWith].
+VersionConstraint _bumpConstraint(
+  VersionConstraint original,
+  Version newVersion,
+) {
+  if (original.isEmpty) return newVersion;
+  if (original is VersionRange) {
+    if (original.min == original.max) return newVersion;
+
+    return VersionConstraint.compatibleWith(newVersion);
+  }
+
+  throw ArgumentError.value(
+    original,
+    'original',
+    'Must be a Version range or empty',
+  );
+}
+
+/// Return a constraint compatible with [newVersion], but including [original]
+/// as well.
+///
+/// By convention if the original constraint is pinned, we don't widen the
+/// constraint but return [newVersion] instead.
 VersionConstraint _widenConstraint(
-    VersionConstraint original, Version newVersion) {
+  VersionConstraint original,
+  Version newVersion,
+) {
   if (original.allows(newVersion)) return original;
   if (original is VersionRange) {
     final min = original.min;
     final max = original.max;
+    if (min == max) return newVersion;
     if (max != null && newVersion >= max) {
       return _compatibleWithIfPossible(
         VersionRange(
@@ -521,17 +645,21 @@ VersionConstraint _widenConstraint(
     if (min != null && newVersion <= min) {
       return _compatibleWithIfPossible(
         VersionRange(
-            min: newVersion,
-            includeMin: true,
-            max: max,
-            includeMax: original.includeMax),
+          min: newVersion,
+          includeMin: true,
+          max: max,
+          includeMax: original.includeMax,
+        ),
       );
     }
   }
 
   if (original.isEmpty) return newVersion;
   throw ArgumentError.value(
-      original, 'original', 'Must be a Version range or empty');
+    original,
+    'original',
+    'Must be a Version range or empty',
+  );
 }
 
 VersionConstraint _compatibleWithIfPossible(VersionRange versionRange) {
@@ -540,4 +668,296 @@ VersionConstraint _compatibleWithIfPossible(VersionRange versionRange) {
     return VersionConstraint.compatibleWith(min);
   }
   return versionRange;
+}
+
+/// `true` iff any of the packages described by the [lockfile] has a
+/// content-hash.
+///
+/// Undefined for invalid lock files, but mostly `true`.
+bool _lockFileHasContentHashes(dynamic lockfile) {
+  if (lockfile is! Map) return true;
+  final packages = lockfile['packages'];
+  if (packages is! Map) return true;
+
+  /// We consider an empty lockfile ready to get content-hashes.
+  if (packages.isEmpty) return true;
+  for (final package in packages.values) {
+    if (package is! Map) return true;
+    final descriptor = package['description'];
+    if (descriptor is! Map) return true;
+    if (descriptor['sha256'] != null) return true;
+  }
+  return false;
+}
+
+/// Try to solve [package] return [PackageId]s in the resolution or `null` if no
+/// resolution was found.
+Future<List<PackageId>?> _tryResolve(
+  Package package,
+  SystemCache cache, {
+  SolveType solveType = SolveType.upgrade,
+  Iterable<ConstraintAndCause>? additionalConstraints,
+}) async {
+  final solveResult = await tryResolveVersions(
+    solveType,
+    cache,
+    package,
+    additionalConstraints: additionalConstraints,
+  );
+
+  return solveResult?.packages;
+}
+
+VersionConstraint? _constraintIntersection(
+  Package workspace,
+  String packageName,
+) {
+  final constraints = workspace.transitiveWorkspace
+      .map((p) => _constraintOf(p.pubspec, packageName))
+      .nonNulls;
+  if (constraints.isEmpty) {
+    return null;
+  }
+  return constraints
+      .reduce((a, b) => a.intersect(b))
+      .asCompatibleWithIfPossible();
+}
+
+VersionConstraint? _constraintOf(Pubspec pubspec, String packageName) {
+  return (pubspec.dependencies[packageName] ??
+          pubspec.devDependencies[packageName])
+      ?.constraint;
+}
+
+String _kindString(Package workspace, String packageName) {
+  return workspace.transitiveWorkspace
+          .any((p) => p.dependencies.containsKey(packageName))
+      ? 'direct'
+      : workspace.transitiveWorkspace
+              .any((p) => p.devDependencies.containsKey(packageName))
+          ? 'dev'
+          : 'transitive';
+}
+
+Map<String, Object?> _source(PackageId id, {required String containingDir}) {
+  return {
+    'type': id.source.name,
+    'description':
+        id.description.serializeForLockfile(containingDir: containingDir),
+  };
+}
+
+/// The packages in the current lockfile or resolved from current pubspec.yaml.
+/// Does not include the root package.
+Future<Map<String, PackageId>> _computeCurrentPackages(
+  Entrypoint entrypoint,
+  SystemCache cache,
+) async {
+  late Map<String, PackageId> currentPackages;
+
+  if (fileExists(entrypoint.lockFilePath)) {
+    currentPackages = Map<String, PackageId>.from(entrypoint.lockFile.packages);
+  } else {
+    final resolution = await _tryResolve(entrypoint.workspaceRoot, cache) ??
+        (throw DataException('Failed to resolve pubspec'));
+    currentPackages = Map<String, PackageId>.fromIterable(
+      resolution,
+      key: (e) => (e as PackageId).name,
+    );
+  }
+  for (final p in entrypoint.workspaceRoot.transitiveWorkspace) {
+    currentPackages.remove(p.name);
+  }
+  return currentPackages;
+}
+
+Future<List<Object>> _computeUpgradeSet(
+  Package workspace,
+  PackageId? package,
+  Entrypoint entrypoint,
+  SystemCache cache, {
+  required Map<String, PackageId> currentPackages,
+  required _UpgradeType upgradeType,
+  required List<ConstraintAndCause> additionalConstraints,
+}) async {
+  if (package == null) return [];
+  final lockFile = entrypoint.lockFile;
+  final upgradedWorkspace = (upgradeType == _UpgradeType.multiBreaking ||
+          upgradeType == _UpgradeType.smallestUpdate)
+      ? workspace.transformWorkspace((p) => stripVersionBounds(p.pubspec))
+      : workspace.transformWorkspace((p) => p.pubspec.copyWith());
+
+  for (final p in upgradedWorkspace.transitiveWorkspace) {
+    final dependencySet = _dependencySetOfPackage(p.pubspec, package);
+    if (dependencySet != null) {
+      // Force the version to be the new version.
+      dependencySet[package.name] =
+          package.toRef().withConstraint(package.toRange().constraint);
+    }
+  }
+
+  final resolution = await tryResolveVersions(
+    upgradeType == _UpgradeType.smallestUpdate
+        ? SolveType.downgrade
+        : SolveType.get,
+    cache,
+    upgradedWorkspace,
+    lockFile: lockFile,
+    additionalConstraints: additionalConstraints,
+  );
+
+  // TODO(sigurdm): improve error messages.
+  if (resolution == null) {
+    return [];
+  }
+  final workspaceNames = {
+    ...workspace.transitiveWorkspace.map((p) => p.name),
+  };
+  return [
+    ...resolution.packages.where((r) {
+      if (workspaceNames.contains(r.name)) return false;
+      final originalVersion = currentPackages[r.name];
+      return originalVersion == null || r != originalVersion;
+    }).map((p) {
+      final constraintIntersection = _constraintIntersection(workspace, p.name);
+      final currentPackage = currentPackages[p.name];
+      return {
+        'name': p.name,
+        'version': p.versionOrHash(),
+        'kind': _kindString(workspace, p.name),
+        'source': _source(p, containingDir: entrypoint.workspaceRoot.dir),
+        'constraintBumped': constraintIntersection == null
+            ? null
+            : upgradeType == _UpgradeType.compatible
+                ? constraintIntersection.toString()
+                : _bumpConstraint(constraintIntersection, p.version).toString(),
+        'constraintWidened': constraintIntersection == null
+            ? null
+            : upgradeType == _UpgradeType.compatible
+                ? constraintIntersection.toString()
+                : _widenConstraint(constraintIntersection, p.version)
+                    .toString(),
+        'constraintBumpedIfNeeded': constraintIntersection == null
+            ? null
+            : upgradeType == _UpgradeType.compatible
+                ? constraintIntersection.toString()
+                : constraintIntersection.allows(p.version)
+                    ? constraintIntersection.toString()
+                    : _bumpConstraint(constraintIntersection, p.version)
+                        .toString(),
+        'previousVersion': currentPackage?.versionOrHash(),
+        'previousConstraint': constraintIntersection?.toString(),
+        'previousSource': currentPackage == null
+            ? null
+            : _source(
+                currentPackage,
+                containingDir: entrypoint.workspaceRoot.dir,
+              ),
+      };
+    }),
+    // Find packages that were removed by the resolution
+    for (final oldPackageName in lockFile.packages.keys)
+      if (!resolution.packages
+          .any((newPackage) => newPackage.name == oldPackageName))
+        {
+          'name': oldPackageName,
+          'version': null,
+          'kind': 'transitive', // Only transitive constraints can be removed.
+          'constraintBumped': null,
+          'constraintWidened': null,
+          'constraintBumpedIfNeeded': null,
+          'previousVersion': currentPackages[oldPackageName]?.versionOrHash(),
+          'previousConstraint': null,
+          'previous': _source(
+            currentPackages[oldPackageName]!,
+            containingDir: entrypoint.workspaceRoot.dir,
+          ),
+        },
+  ];
+}
+
+List<ConstraintAndCause> _parseDisallowed(
+  Map<String, Object?> input,
+  SystemCache cache,
+) {
+  final disallowedList = input['disallowed'];
+  if (disallowedList == null) {
+    return [];
+  }
+  if (disallowedList is! List<Object?>) {
+    throw const FormatException('Disallowed should be a list of maps');
+  }
+  final result = <ConstraintAndCause>[];
+  for (final disallowed in disallowedList) {
+    if (disallowed is! Map) {
+      throw const FormatException('Disallowed should be a list of maps');
+    }
+    final name = disallowed['name'];
+    if (name is! String) {
+      throw const FormatException('"name" should be a string.');
+    }
+    final url = disallowed['url'] ?? cache.hosted.defaultUrl;
+    if (url is! String) {
+      throw const FormatException('"url" should be a string.');
+    }
+    final ref = PackageRef(
+      name,
+      HostedDescription(
+        name,
+        url,
+      ),
+    );
+    final constraints = disallowed['versions'];
+    if (constraints is! List) {
+      throw const FormatException('"versions" should be a list.');
+    }
+    final reason = disallowed['reason'];
+    if (reason is! String?) {
+      throw const FormatException('"reason", if present, should be a string.');
+    }
+    for (final entry in constraints) {
+      if (entry is! Map) {
+        throw const FormatException(
+          'Each element of "versions" should be an object.',
+        );
+      }
+      final rangeString = entry['range'];
+      if (rangeString is! String) {
+        throw const FormatException('"range" should be a string');
+      }
+      final range = VersionConstraint.parse(rangeString);
+      result.add(
+        ConstraintAndCause(
+          PackageRange(ref, VersionConstraint.any.difference(range)),
+          reason,
+        ),
+      );
+    }
+  }
+  return result;
+}
+
+/// `true` iff any of the packages described by the [lockfile] uses
+/// `https://pub.dev` as url.
+///
+/// Undefined for invalid lock files, but mostly `true`.
+bool _lockFileUsesPubDev(dynamic lockfile) {
+  if (lockfile is! Map) return true;
+  final packages = lockfile['packages'];
+  if (packages is! Map) return true;
+
+  /// We consider an empty lockfile ready to get content-hashes.
+  if (packages.isEmpty) return true;
+  for (final package in packages.values) {
+    if (package is! Map) return true;
+    if (package['source'] != 'hosted') continue;
+    final descriptor = package['description'];
+    if (descriptor is! Map) return true;
+    final url = descriptor['url'];
+    if (url is! String) return true;
+    if (HostedSource.isPubDevUrl(url) && url != HostedSource.pubDartlangUrl) {
+      return true;
+    }
+  }
+  return false;
 }

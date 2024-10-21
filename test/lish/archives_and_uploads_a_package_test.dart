@@ -15,66 +15,77 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('archives and uploads a package', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
+        }),
+      );
     });
 
     expect(pub.stdout, emits(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emits('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 
   test('archives and uploads a package using token', () async {
     await servePackages();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url, 'token': 'access token'},
-      ]
+        {'url': globalServer.url, 'token': 'access-token'},
+      ],
     }).create();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
+        }),
+      );
     });
 
     expect(pub.stdout, emits(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emits('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 
   test('publishes to hosted-url with path', () async {
     await servePackages();
+    await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url + '/sub/folder', 'env': 'TOKEN'},
-      ]
+        {'url': '${globalServer.url}/sub/folder', 'env': 'TOKEN'},
+      ],
     }).create();
-    var pub = await startPublish(
+    final pub = await startPublish(
       globalServer,
       path: '/sub/folder',
       overrideDefaultHostedServer: false,
-      environment: {'TOKEN': 'access token'},
+      environment: {'TOKEN': 'access-token'},
     );
 
     await confirmPublish(pub);
@@ -82,13 +93,18 @@ void main() {
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
+        }),
+      );
     });
 
     expect(pub.stdout, emits(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emits('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 
@@ -98,31 +114,46 @@ void main() {
   test('with an empty Git submodule', () async {
     await d.git('empty').create();
 
-    var repo = d.git(appPath);
+    final repo = d.git(appPath, d.validPackage().contents);
     await repo.create();
 
-    await repo.runGit(['submodule', 'add', '../empty', 'empty']);
+    await repo.runGit([
+      // Hack to allow testing with local submodules after CVE-2022-39253.
+      '-c',
+      'protocol.file.allow=always',
+      'submodule',
+      'add',
+      '--',
+      '../empty',
+      'empty',
+    ]);
     await repo.commit();
 
     deleteEntry(p.join(d.sandbox, appPath, 'empty'));
     await d.dir(p.join(appPath, 'empty')).create();
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0\u0000uploaded!'},
+          // The \u0000 should be sanitized to a space.
+        }),
+      );
     });
 
     expect(pub.stdout, emits(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emits('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 

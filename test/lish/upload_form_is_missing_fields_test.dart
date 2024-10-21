@@ -11,16 +11,15 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('upload form is missing fields', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 
-    var body = {'url': 'http://example.com/upload'};
+    final body = {'url': 'http://example.com/upload'};
     handleUploadForm(globalServer, body: body);
     expect(pub.stderr, emits('Invalid server response:'));
     expect(pub.stderr, emits(jsonEncode(body)));

@@ -9,7 +9,7 @@ import '../validator.dart';
 class PubspecTypoValidator extends Validator {
   @override
   Future validate() async {
-    final fields = entrypoint.root.pubspec.fields;
+    final fields = package.pubspec.fields;
 
     /// Limit the number of typo warnings so as not to drown out the other
     /// warnings
@@ -19,6 +19,7 @@ class PubspecTypoValidator extends Validator {
       if (_validPubspecKeys.contains(key)) {
         continue;
       }
+      if (key is! String) continue;
 
       var bestLevenshteinRatio = 100.0;
       var closestKey = '';
@@ -68,4 +69,9 @@ const _validPubspecKeys = [
   'flutter',
   'screenshots',
   'platforms',
+  'funding',
+  'topics',
+  'ignored_advisories',
+  'workspace',
+  'resolution',
 ];

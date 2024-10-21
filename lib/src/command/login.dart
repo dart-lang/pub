@@ -7,7 +7,6 @@ import 'dart:convert';
 
 import '../command.dart';
 import '../command_runner.dart';
-import '../http.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
 
@@ -24,12 +23,13 @@ class LoginCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    final credentials = oauth2.loadCredentials(cache);
+    final credentials = oauth2.loadCredentials();
     if (credentials == null) {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Could not retrieve your user-details.\n'
-            'You might have to run `$topLevelProgram pub logout` to delete your credentials and try again.');
+            'You might have to run `$topLevelProgram pub logout` '
+            'to delete your credentials and try again.');
       } else {
         log.message('You are now logged in as $userInfo');
       }
@@ -37,34 +37,40 @@ class LoginCommand extends PubCommand {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Your credentials seems broken.\n'
-            'Run `$topLevelProgram pub logout` to delete your credentials and try again.');
+            'Run `$topLevelProgram pub logout` '
+            'to delete your credentials and try again.');
       }
       log.warning('You are already logged in as $userInfo\n'
-          'Run `pub logout` to log out and try again.');
+          'Run `$topLevelProgram pub logout` to log out and try again.');
     }
   }
 
   Future<_UserInfo?> _retrieveUserInfo() async {
-    return await oauth2.withClient(cache, (client) async {
-      final discovery = await httpClient.get(Uri.https(
-          'accounts.google.com', '/.well-known/openid-configuration'));
-      final userInfoEndpoint = json.decode(discovery.body)['userinfo_endpoint'];
+    return await oauth2.withClient((client) async {
+      final discovery = await oauth2.fetchOidcDiscoveryDocument();
+      final userInfoEndpoint = discovery['userinfo_endpoint'];
+      if (userInfoEndpoint is! String) {
+        log.fine(
+          'Bad discovery document. userinfo_endpoint not a String',
+        );
+        return null;
+      }
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
-        final userInfo = json.decode(userInfoRequest.body);
-        final name = userInfo['name'];
-        final email = userInfo['email'];
-        if (email is String) {
-          return _UserInfo(name, email);
-        } else {
-          log.fine(
-              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}');
-          return null;
+        switch (json.decode(userInfoRequest.body)) {
+          case {'name': final String? name, 'email': final String email}:
+            return _UserInfo(name, email);
+          default:
+            log.fine(
+              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
+            );
+            return null;
         }
       } on FormatException catch (e) {
         log.fine(
-            'Bad response from $userInfoEndpoint ($e): ${userInfoRequest.body}');
+          'Bad response from $userInfoEndpoint ($e): ${userInfoRequest.body}',
+        );
         return null;
       }
     });

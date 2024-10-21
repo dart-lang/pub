@@ -14,33 +14,42 @@ void main() {
   test(
       'with an expired credentials.json, refreshes and saves the '
       'refreshed access token to credentials.json', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await servePackages();
     await d
-        .credentialsFile(globalServer, 'access token',
-            refreshToken: 'refresh token',
-            expiration: DateTime.now().subtract(Duration(hours: 1)))
+        .credentialsFile(
+          globalServer,
+          'access-token',
+          refreshToken: 'refresh token',
+          expiration: DateTime.now().subtract(const Duration(hours: 1)),
+        )
         .create();
 
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
     await confirmPublish(pub);
 
     globalServer.expect('POST', '/token', (request) {
       return request.readAsString().then((body) {
         expect(
-            body, matches(RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')));
+          body,
+          matches(RegExp(r'(^|&)refresh_token=refresh\+token(&|$)')),
+        );
 
         return shelf.Response.ok(
-            jsonEncode(
-                {'access_token': 'new access token', 'token_type': 'bearer'}),
-            headers: {'content-type': 'application/json'});
+          jsonEncode(
+            {'access_token': 'new access token', 'token_type': 'bearer'},
+          ),
+          headers: {'content-type': 'application/json'},
+        );
       });
     });
 
     globalServer.expect('GET', '/api/packages/versions/new', (request) {
-      expect(request.headers,
-          containsPair('authorization', 'Bearer new access token'));
+      expect(
+        request.headers,
+        containsPair('authorization', 'Bearer new access token'),
+      );
 
       return shelf.Response(200);
     });
@@ -48,8 +57,11 @@ void main() {
     await pub.shouldExit();
 
     await d
-        .credentialsFile(globalServer, 'new access token',
-            refreshToken: 'refresh token')
+        .credentialsFile(
+          globalServer,
+          'new access token',
+          refreshToken: 'refresh token',
+        )
         .validate();
   });
 }

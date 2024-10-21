@@ -12,29 +12,32 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'one': 'script', 'two': 'script', 'three': 'script'}
+        'executables': {'one': 'script', 'two': 'script', 'three': 'script'},
       }),
-      d.dir('bin', [d.file('script.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('script.dart', "main() => print('ok');")]),
     ]).create();
 
-    await runPub(args: [
-      'global',
-      'activate',
-      '--source',
-      'path',
-      '../foo',
-      '-x',
-      'one',
-      '--executable',
-      'three'
-    ], output: contains('Installed executables one and three.'));
+    await runPub(
+      args: [
+        'global',
+        'activate',
+        '--source',
+        'path',
+        '../foo',
+        '-x',
+        'one',
+        '--executable',
+        'three',
+      ],
+      output: contains('Installed executables one and three.'),
+    );
 
     await d.dir(cachePath, [
       d.dir('bin', [
-        d.file(binStubName('one'), contains('pub global run foo:script')),
+        d.file(binStubName('one'), contains('global run foo:script')),
         d.nothing(binStubName('two')),
-        d.file(binStubName('three'), contains('pub global run foo:script'))
-      ])
+        d.file(binStubName('three'), contains('global run foo:script')),
+      ]),
     ]).validate();
   });
 }

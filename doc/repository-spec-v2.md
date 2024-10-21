@@ -4,20 +4,20 @@ This document specifies the REST API that a hosted pub _package repository_ must
 implement.
 
 A package repository is a server from which packages can be downloaded,
-the default package repository is `'https://pub.dartlang.org'`, with public
-interface hosted at [pub.dev](https://pub.dev).
+the default package repository is `'https://pub.dev'`.
+It used to be [pub.dartlang.org](https://pub.dartlang.org).
 
 ## Hosted URL
 A custom package repository is identified by a _hosted-url_, like
-`https://pub.dartlang.org` or `https://some-server.com/prefix/pub/`.
+`https://pub.dev` or `https://some-server.com/prefix/pub/`.
 The _hosted-url_ always includes protocol `http://` or `https://`.
-For the purpose of this specification the _hosted-url_ should always be
+For the purpose of this specification, the _hosted-url_ should always be
 normalized such that it doesn't end with a slash (`/`). As all URL end-points
 described in this specification includes slash prefix.
 
-For the remainder of this specification the placeholder `<hosted-url>` will be
+For the remainder of this specification, the placeholder `<hosted-url>` will be
 used in place of a _hosted-url_ such as:
- * `https://pub.dartlang.org`
+ * `https://pub.dev`
  * `https://some-server.com/prefix/pub`
  * `https://pub.other-server.com/prefix`
  * `http://localhost:8080`
@@ -32,7 +32,7 @@ A _hosted-url_ is **not allowed** to contain:
 
 
 ## Custom Package Repository in `pubspec.yaml`
-A package be published to a custom _package repository_ by overwriting the
+A package can be published to a custom _package repository_ by overwriting the
 `publish_to` key in `pubspec.yaml`, illustrated as follows:
 ```yaml
 name: mypkg
@@ -64,7 +64,7 @@ header which specifies the version of the API being used. This allows future
 versions of the API to change responses.
 
 Clients are strongly encouraged to specify an `Accept` header. But for
-compatiblity will probably want to assume API version `2`,
+compatibility we will probably want to assume API version `2`,
 if no `Accept` header is specified.
 
 
@@ -96,7 +96,7 @@ on servers and network performance.
 
 
 ## Rejecting Requests
-The `dart pub` client will in many cases to display error messages when given a
+The `dart pub` client will in many cases display error messages when given a
 response as follows:
 
 ```http
@@ -110,9 +110,9 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-The `<message>` is intended to be a brief human readable explanation of what
-when wrong and why the request failed. The `<code>` is a text string intended to
-allow clients to handle special cases without using regular expression to
+The `<message>` is intended to be a brief human-readable explanation of what
+went wrong and why the request failed. The `<code>` is a text string intended to
+allow clients to handle special cases without using regular expressions to
 parse the `<message>`.
 
 
@@ -120,7 +120,7 @@ parse the `<message>`.
 The `dart pub` client allows users to save an opaque `<token>` for each
 `<hosted-url>`. When the `dart pub` client makes a request to a `<hosted-url>`
 for which it has a `<token>` stored, it will attach an `Authorization` header
-as follows: 
+as follows:
 
  * `Authorization: Bearer <token>`
 
@@ -129,9 +129,13 @@ Tokens can be added to `dart pub` client using the command:
  * `dart pub token add <hosted-url>`
 
 This command will prompt the user for the `<token>` on stdin, reducing the risk
-that the `<token>` is accidentally stored in shell history. For security reasons
+that the `<token>` is accidentally stored in shell history. For security reasons,
 authentication can only be used when `<hosted-url>` uses HTTPS. For further
 details on token management see: `dart pub token --help`.
+
+The tokens are inserted verbatim in the header, therefore they have to adhere to
+ https://www.rfc-editor.org/rfc/rfc6750#section-2.1. This means they must match
+ the regex: `^[a-zA-Z0-9._~+/=-]+$`.
 
 
 ### Missing Authentication or Invalid Token
@@ -148,7 +152,7 @@ If the `dart pub` client receives a `401` response and the `dart pub` client has
 a token for the given `<hosted-url>`, then the `dart pub` client knows for sure
 that the token it has stored for the given `<hosted-url>` is invalid.
 Hence, the `dart pub` client shall remove the token from local configuration.
-Hence, a server shall not send `401` in case where a token is valid, but does
+Hence, a server shall not send `401` in cases where a token is valid but does
 not have permissions to access the package in question.
 
 When receiving a `401` response the `dart pub` client shall:
@@ -176,7 +180,7 @@ WWW-Authenticate: Bearer realm="pub", message="Obtain a token from https://pub.e
 The `dart pub` will display the `message` in the terminal, so the user can
 discover that they need to navigate to `https://pub.example.com/manage-tokens`. 
 Once the user opens this URL in the browser, the server is then free to ask the
-user to sign-in using any browser-based authentication mechanism. Once signed-in
+user to sign-in using any browser-based authentication mechanism. Once signed in
 the server can allow the user to create a token and tell the user to copy/paste
 this into stdin for `dart pub token add pub.example.com`.
 
@@ -225,10 +229,12 @@ server, this could work in many different ways.
   "name": "<package>",
   "isDiscontinued": true || false, /* optional field, false if omitted */
   "replacedBy": "<package>", /* optional field, if isDiscontinued == true */
+  "advisoriesUpdated": "<date-time>", /* optional field, timestamp of the last time the contents of the advisories API changed for this package */
   "latest": {
     "version": "<version>",
     "retracted": true || false, /* optional field, false if omitted */
     "archive_url": "https://.../archive.tar.gz",
+    "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
     "pubspec": {
       /* pubspec contents as JSON object */
     }
@@ -238,6 +244,7 @@ server, this could work in many different ways.
       "version": "<package>",
       "retracted": true || false, /* optional field, false if omitted */
       "archive_url": "https://.../archive.tar.gz",
+      "archive_sha256": "95cbaad58e2cf32d1aa852f20af1fcda1820ead92a4b1447ea7ba1ba18195d27"
       "pubspec": {
         /* pubspec contents as JSON object */
       }
@@ -252,18 +259,31 @@ be made to the URL given as `archive_url`.
 The response (after following redirects) must be a gzipped TAR archive.
 
 The `archive_url` may be temporary and is allowed to include query-string
-parameters. This allows for the server to return signed-URLs for S3, GCS or
-other blob storage service. If temporary URLs are returned it is wise to not set
+parameters. This allows for the server to return signed URLs for S3, GCS, or
+other blob storage services. If temporary URLs are returned it is wise to not set
 expiration to less than 25 minutes (to allow for retries and clock drift).
+
+The `archive_sha256` should be the hex-encoded sha256 checksum of the file at
+archive_url. It is an optional field that allows the pub client to verify the
+integrity of the downloaded archive.
+
+The `archive_sha256` also provides an easy way for clients to detect if
+something has changed on the server. In the absence of this field, the client can
+still download the archive to obtain a checksum and detect changes to the
+archive.
 
 If `<hosted-url>` for the server returning `archive_url` is a prefix of
 `archive_url`, then the `Authorization: Bearer <token>` is also included when
 `archive_url` is requested. Example: if `https://pub.example.com/path` returns
 an `archive_url = 'https://pub.example.com/path/...'` then the request for
 `https://pub.example.com/path/...` will include `Authorization` header.
-This would however, not be case if the same server returned
+This would however, not be the case if the same server returned
 `archive_url = 'https://pub.example.com/blob/...'`.
 
+The `advisoriesUpdated` property is optional, if specified the client may assume
+that the advisories end-point is supported by the server. If present this must
+be a timestamp of when the result from the advisories end-point for this package
+changed.
 
 ## Publishing Packages
 
@@ -288,7 +308,7 @@ This would however, not be case if the same server returned
 }
 ```
 
-To publish a package a HTTP `GET` request for
+To publish a package an HTTP `GET` request for
 `<hosted-url>/api/packages/versions/new` is made. This request returns an
 `<multipart-upload-url>` and a dictionary of fields. To upload the package
 archive a multi-part `POST` request is made to `<multipart-upload-url>` with
@@ -336,7 +356,7 @@ Location: <finalize-upload-url>
 The client shall then issue a `GET` request to `<finalize-upload-url>`. As with
 `archive_url` the client will only attach an `Authorization` if the
 `<hosted-url>` is a prefix of `<finalize-upload-url>`. If the server wants to
-accepts the uploaded package the server should respond:
+accept the uploaded package the server should respond:
 
 ```http
 HTTP/1.1 200 Ok
@@ -351,7 +371,7 @@ Content-Type: application/vnd.pub.v2+json
 The server is allowed to consider the publishing incomplete until the `GET`
 request for `<finalize-upload-url>` has been issued. Once this request has
 succeeded the package is considered successfully published. If the server has
-caches that need to expire before newly published packages becomes available,
+caches that need to expire before newly published packages become available,
 or it has other out-of-band approvals that need to be given it's reasonable to
 inform the user about this in the `<message>`.
 
@@ -367,16 +387,56 @@ Content-Type: application/vnd.pub.v2+json
 }
 ```
 
-This can be used to forbid git-dependencies in published packages, limit the
-archive size, or enforce any other repository specific constraints.
+This can be used to forbid git dependencies in published packages, limit the
+archive size, or enforce any other repository-specific constraints.
 
 This upload flow allows for archives to be uploaded directly to a signed POST
 URL for [S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html),
 [GCS](https://cloud.google.com/storage/docs/xml-api/post-object-forms) or
 similar blob storage service. Both the
-`<multipart-upload-url>` and `<finalize-upload-url>` is allowed to contain
+`<multipart-upload-url>` and `<finalize-upload-url>` are allowed to contain
 query-string parameters, and both of these URLs need only be temporary.
 
+
+## List security advisories for a package
+
+**GET** `<hosted-url>/api/packages/<package>/advisories`
+
+**Headers:**
+* `Accept: application/vnd.pub.v2+json`
+
+**Response**
+* `Content-Type: application/vnd.pub.v2+json`
+
+```js
+{
+  "advisories" : [
+    {
+      /* Security advisory in OSV format, see https://ossf.github.io/osv-schema/ */
+    },
+    /* additional security advisories */
+  ],
+  "advisoriesUpdated" : "<date-time>"
+}
+```
+
+The  `advisories` property is a list of security advisories in [OSV
+format](https://ossf.github.io/osv-schema/). The list is empty, if
+no security advisory affects this package.
+
+The `affected[].versions` field within a security advisory must be present and
+fully populated by a hosted pub-server that provides advisories. Hence, the
+`dart pub` client will exclusively rely on `affected[].versions`, and disregard
+`affected[].ranges`.
+
+In the `database_specific` field of a security advisory the `dart pub` client
+will lookup the property called `pub_display_url`. This property is optional. It
+is intended to be used by the client to display a reference url when reporting
+security advisories.
+
+The `advisoriesUpdated` property is the most recent timestamp of when the result
+from this end-point for this package changed. This can be used for caching
+purposes.
 
 ------------
 
@@ -420,4 +480,3 @@ Servers should still support this end-point for compatibility with older `pub` c
 
 **Important:** The server MAY redirect the client to a different URL, clients
 MUST support redirects.
-

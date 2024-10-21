@@ -12,35 +12,47 @@ void main() {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
     await d.git(
-        'bar.git', [d.libDir('bar'), d.libPubspec('bar', '1.0.0')]).create();
+      'bar.git',
+      [d.libDir('bar'), d.libPubspec('bar', '1.0.0')],
+    ).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'},
-      'bar': {'git': '../bar.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'},
+        'bar': {'git': '../bar.git'},
+      },
+    ).create();
 
     await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.dir('cache',
-            [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')]),
+        d.dir(
+          'cache',
+          [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')],
+        ),
         d.gitPackageRevisionCacheDir('foo'),
         d.gitPackageRevisionCacheDir('bar'),
-      ])
+      ]),
     ]).validate();
 
-    var originalFooSpec = packageSpec('foo');
-    var originalBarSpec = packageSpec('bar');
+    final originalFooSpec = packageSpec('foo');
+    final originalBarSpec = packageSpec('bar');
 
-    await d.git('foo.git',
-        [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')]).commit();
+    await d.git(
+      'foo.git',
+      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
+    ).commit();
 
-    await d.git('bar.git',
-        [d.libDir('bar', 'bar 2'), d.libPubspec('bar', '1.0.0')]).commit();
+    await d.git(
+      'bar.git',
+      [d.libDir('bar', 'bar 2'), d.libPubspec('bar', '1.0.0')],
+    ).commit();
 
     await pubUpgrade();
 
@@ -48,7 +60,7 @@ void main() {
       d.dir('git', [
         d.gitPackageRevisionCacheDir('foo', modifier: 2),
         d.gitPackageRevisionCacheDir('bar', modifier: 2),
-      ])
+      ]),
     ]).validate();
 
     expect(packageSpec('foo'), isNot(originalFooSpec));

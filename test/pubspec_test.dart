@@ -4,61 +4,105 @@
 
 import 'dart:io';
 
+import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/pubspec.dart';
-import 'package:pub/src/sdk.dart';
+import 'package:pub/src/source.dart';
 import 'package:pub/src/source/hosted.dart';
+import 'package:pub/src/source/root.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:test/test.dart';
+import 'package:test/test.dart' hide Description;
 
 void main() {
   group('parse()', () {
     final sources = SystemCache().sources;
 
-    var throwsPubspecException = throwsA(const TypeMatcher<PubspecException>());
+    final throwsPubspecException =
+        throwsA(const TypeMatcher<SourceSpanApplicationException>());
 
-    void expectPubspecException(String contents, void Function(Pubspec) fn,
-        [String? expectedContains]) {
-      var expectation = const TypeMatcher<PubspecException>();
+    void expectPubspecException(
+      String contents,
+      void Function(Pubspec) fn, {
+      String? expectedContains,
+      String? hintContains,
+      Description? containingDescription,
+    }) {
+      var expectation = const TypeMatcher<SourceSpanApplicationException>();
       if (expectedContains != null) {
         expectation = expectation.having(
-            (error) => error.message, 'message', contains(expectedContains));
+          (error) => error.message,
+          'message',
+          contains(expectedContains),
+        );
+      }
+      if (hintContains != null) {
+        expectation = expectation.having(
+          (error) => error.hint,
+          'hint',
+          contains(hintContains),
+        );
       }
 
-      var pubspec = Pubspec.parse(contents, sources);
+      final pubspec = Pubspec.parse(
+        contents,
+        sources,
+        containingDescription: containingDescription ?? RootDescription('.'),
+      );
       expect(() => fn(pubspec), throwsA(expectation));
     }
 
     test("doesn't eagerly throw an error for an invalid field", () {
       // Shouldn't throw an error.
-      Pubspec.parse('version: not a semver', sources);
+      Pubspec.parse(
+        'version: not a semver',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
     });
 
     test(
         "eagerly throws an error if the pubspec name doesn't match the "
         'expected name', () {
-      expect(() => Pubspec.parse('name: foo', sources, expectedName: 'bar'),
-          throwsPubspecException);
+      expect(
+        () => Pubspec.parse(
+          'name: foo',
+          sources,
+          expectedName: 'bar',
+          containingDescription: RootDescription('.'),
+        ),
+        throwsPubspecException,
+      );
     });
 
     test(
         "eagerly throws an error if the pubspec doesn't have a name and an "
         'expected name is passed', () {
-      expect(() => Pubspec.parse('{}', sources, expectedName: 'bar'),
-          throwsPubspecException);
+      expect(
+        () => Pubspec.parse(
+          '{}',
+          sources,
+          expectedName: 'bar',
+          containingDescription: RootDescription('.'),
+        ),
+        throwsPubspecException,
+      );
     });
 
     test('allows a version constraint for dependencies', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dependencies:
   foo:
     hosted:
       name: foo
       url: https://foo.com
     version: ">=1.2.3 <3.4.5"
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -66,39 +110,51 @@ dependencies:
     });
 
     test('allows empty version constraint', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dependencies:
   foo:
     hosted:
       name: foo
       url: https://foo.com
     version: ">=1.2.3 <0.0.0"
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.isEmpty, isTrue);
     });
 
     test('allows an empty dependencies map', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dependencies:
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
       expect(pubspec.dependencies, isEmpty);
     });
 
     test('allows a version constraint for dev dependencies', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dev_dependencies:
   foo:
     hosted:
       name: foo
       url: https://foo.com
     version: ">=1.2.3 <3.4.5"
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
-      var foo = pubspec.devDependencies['foo']!;
+      final foo = pubspec.devDependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -106,24 +162,32 @@ dev_dependencies:
     });
 
     test('allows an empty dev dependencies map', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dev_dependencies:
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
       expect(pubspec.devDependencies, isEmpty);
     });
 
     test('allows a version constraint for dependency overrides', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dependency_overrides:
   foo:
     hosted:
       name: foo
       url: https://foo.com
     version: ">=1.2.3 <3.4.5"
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
-      var foo = pubspec.dependencyOverrides['foo']!;
+      final foo = pubspec.dependencyOverrides['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.constraint.allows(Version(1, 2, 3)), isTrue);
       expect(foo.constraint.allows(Version(1, 2, 5)), isTrue);
@@ -131,151 +195,314 @@ dependency_overrides:
     });
 
     test('allows an empty dependency overrides map', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dependency_overrides:
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
       expect(pubspec.dependencyOverrides, isEmpty);
     });
 
     test('allows an unknown source', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dependencies:
   foo:
     unknown: blah
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources('unknown')));
     });
 
     test('allows a default source', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 dependencies:
   foo:
     version: 1.2.3
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
 
-      var foo = pubspec.dependencies['foo']!;
+      final foo = pubspec.dependencies['foo']!;
       expect(foo.name, equals('foo'));
       expect(foo.source, equals(sources('hosted')));
     });
 
     test('throws if it depends on itself', () {
-      expectPubspecException('''
+      expectPubspecException(
+        '''
 name: myapp
 dependencies:
   myapp:
     fake: ok
-''', (pubspec) => pubspec.dependencies);
+''',
+        (pubspec) => pubspec.dependencies,
+      );
     });
 
     test('throws if it has a dev dependency on itself', () {
-      expectPubspecException('''
+      expectPubspecException(
+        '''
 name: myapp
 dev_dependencies:
   myapp:
     fake: ok
-''', (pubspec) => pubspec.devDependencies);
+''',
+        (pubspec) => pubspec.devDependencies,
+      );
     });
 
     test('throws if it has an override on itself', () {
-      expectPubspecException('''
+      expectPubspecException(
+        '''
 name: myapp
 dependency_overrides:
   myapp:
     fake: ok
-''', (pubspec) => pubspec.dependencyOverrides);
+''',
+        (pubspec) => pubspec.dependencyOverrides,
+      );
     });
 
     test("throws if the description isn't valid", () {
-      expectPubspecException('''
+      expectPubspecException(
+        '''
 name: myapp
 dependencies:
   foo:
     hosted:
       name: foo
       url: '::'
-''', (pubspec) => pubspec.dependencies);
+''',
+        (pubspec) => pubspec.dependencies,
+      );
     });
 
     test('throws if dependency version is not a string', () {
-      expectPubspecException('''
+      expectPubspecException(
+        '''
 dependencies:
   foo:
     fake: ok
     version: 1.2
-''', (pubspec) => pubspec.dependencies);
+''',
+        (pubspec) => pubspec.dependencies,
+      );
     });
 
     test('throws if version is not a version constraint', () {
-      expectPubspecException('''
+      expectPubspecException(
+        '''
 dependencies:
   foo:
     fake: ok
     version: not constraint
-''', (pubspec) => pubspec.dependencies);
+''',
+        (pubspec) => pubspec.dependencies,
+      );
     });
 
     test("throws if 'name' is not a string", () {
       expectPubspecException(
-          'name: [not, a, string]', (pubspec) => pubspec.name);
+        'name: [not, a, string]',
+        (pubspec) => pubspec.name,
+      );
     });
 
     test('throws if version is not a string', () {
-      expectPubspecException('version: [2, 0, 0]', (pubspec) => pubspec.version,
-          '"version" field must be a string');
+      expectPubspecException(
+        'version: [2, 0, 0]',
+        (pubspec) => pubspec.version,
+        expectedContains: '"version" field must be a string',
+      );
     });
 
     test('throws if version is malformed (looking like a double)', () {
       expectPubspecException(
-          'version: 2.1',
-          (pubspec) => pubspec.version,
-          '"version" field must have three numeric components: major, minor, '
-              'and patch. Instead of "2.1", consider "2.1.0"');
+        'version: 2.1',
+        (pubspec) => pubspec.version,
+        expectedContains:
+            '"version" field must have three numeric components: major, minor, '
+            'and patch. Instead of "2.1", consider "2.1.0"',
+      );
     });
 
     test('throws if version is malformed (looking like an int)', () {
       expectPubspecException(
-          'version: 2',
-          (pubspec) => pubspec.version,
-          '"version" field must have three numeric components: major, minor, '
-              'and patch. Instead of "2", consider "2.0.0"');
+        'version: 2',
+        (pubspec) => pubspec.version,
+        expectedContains:
+            '"version" field must have three numeric components: major, minor, '
+            'and patch. Instead of "2", consider "2.0.0"',
+      );
     });
 
     test('throws if version is not a version', () {
       expectPubspecException(
-          'version: not version', (pubspec) => pubspec.version);
+        'version: not version',
+        (pubspec) => pubspec.version,
+      );
+    });
+
+    test('parses workspace', () {
+      expect(
+        Pubspec.parse(
+          '''
+environment:
+  sdk: ^3.5.0
+workspace: ['a', 'b', 'c']
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        ).workspace,
+        ['a', 'b', 'c'],
+      );
+    });
+
+    test('parses resolution', () {
+      expect(
+        Pubspec.parse(
+          '''
+environment:
+  sdk: ^3.5.0
+resolution: workspace
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        ).resolution,
+        Resolution.workspace,
+      );
+    });
+
+    test('errors on workspace for earlier language versions', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^1.2.3
+workspace: ['a', 'b', 'c']
+''',
+        (p) => p.workspace,
+        expectedContains: '`workspace` and `resolution` '
+            'requires at least language version 3.5',
+        hintContains: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${Platform.version.split(' ').first}'
+''',
+      );
+      // but no error if you don't look at it.
+      expect(
+        Pubspec.parse(
+          '''
+name: foo
+environment:
+  sdk: ^1.2.3
+resolution: workspace
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        ).name,
+        'foo',
+      );
+    });
+
+    test('errors on resolution for earlier language versions', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^1.2.3
+resolution: workspace
+''',
+        (p) => p.resolution,
+        expectedContains: '`workspace` and `resolution` '
+            'requires at least language version 3.5',
+        hintContains: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${Platform.version.split(' ').first}'
+''',
+      );
+    });
+
+    test('throws if workspace is not a list', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.5.0
+workspace: 'a string'
+''',
+        (pubspec) => pubspec.workspace,
+      );
+    });
+
+    test('throws if workspace is a list of not-strings', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.5.0
+workspace: ['a string', 24]
+''',
+        (pubspec) => pubspec.workspace,
+      );
+    });
+
+    test('throws if resolution is not a reasonable string', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: ^3.5.0
+resolution: "sometimes"''',
+        (pubspec) => pubspec.resolution,
+      );
     });
 
     test('allows comment-only files', () {
-      var pubspec = Pubspec.parse('''
+      final pubspec = Pubspec.parse(
+        '''
 # No external dependencies yet
 # Including for completeness
 # ...and hoping the spec expands to include details about author, version, etc
 # See https://dart.dev/tools/pub/cmd for details
-''', sources);
+''',
+        sources,
+        containingDescription: RootDescription('.'),
+      );
       expect(pubspec.version, equals(Version.none));
       expect(pubspec.dependencies, isEmpty);
     });
 
     test('throws a useful error for unresolvable path dependencies', () {
       expectPubspecException(
-          '''
+        '''
 name: pkg
 dependencies:
   from_path: {path: non_local_path}
 ''',
-          (pubspec) => pubspec.dependencies,
-          'Invalid description in the "pkg" pubspec on the "from_path" '
-              'dependency: "non_local_path" is a relative path, but this isn\'t a '
-              'local pubspec.');
+        containingDescription: HostedDescription('foo', 'https://pub.dev'),
+        (pubspec) => pubspec.dependencies,
+        expectedContains:
+            'Invalid description in the "pkg" pubspec on the "from_path" '
+            'dependency: "non_local_path" is a relative path, '
+            'but this isn\'t a '
+            'local pubspec.',
+      );
     });
 
     group('source dependencies', () {
       test('with url and name', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 dependencies:
@@ -285,14 +512,17 @@ dependencies:
       name: bar
 ''',
           sources,
+          containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://example.org/pub/',
               'name': 'bar',
@@ -300,7 +530,7 @@ dependencies:
       });
 
       test('with url only', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 environment:
@@ -311,14 +541,17 @@ dependencies:
       url: https://example.org/pub/
 ''',
           sources,
+          containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://example.org/pub/',
               'name': 'foo',
@@ -326,7 +559,7 @@ dependencies:
       });
 
       test('with url as string', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 environment:
@@ -336,14 +569,17 @@ dependencies:
     hosted: https://example.org/pub/
 ''',
           sources,
+          containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
               'url': 'https://example.org/pub/',
               'name': 'foo',
@@ -351,7 +587,7 @@ dependencies:
       });
 
       test('interprets string description as name for older versions', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 environment:
@@ -361,16 +597,19 @@ dependencies:
     hosted: bar
 ''',
           sources,
+          containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dartlang.org',
+              'url': 'https://pub.dev',
               'name': 'bar',
             });
       });
@@ -378,19 +617,23 @@ dependencies:
       test(
         'reports helpful span when using new syntax with invalid environment',
         () {
-          var pubspec = Pubspec.parse('''
+          final pubspec = Pubspec.parse(
+            '''
 name: pkg
 environment:
   sdk: invalid value
 dependencies:
   foo:
     hosted: https://example.org/pub/
-''', sources);
+''',
+            sources,
+            containingDescription: RootDescription('.'),
+          );
 
           expect(
             () => pubspec.dependencies,
             throwsA(
-              isA<PubspecException>()
+              isA<SourceSpanApplicationException>()
                   .having((e) => e.span!.text, 'span.text', 'invalid value'),
             ),
           );
@@ -398,23 +641,26 @@ dependencies:
       );
 
       test('without a description', () {
-        var pubspec = Pubspec.parse(
+        final pubspec = Pubspec.parse(
           '''
 name: pkg
 dependencies:
   foo:
 ''',
           sources,
+          containingDescription: RootDescription('.'),
         );
 
-        var foo = pubspec.dependencies['foo']!;
+        final foo = pubspec.dependencies['foo']!;
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(foo.description as HostedDescription)
-                .serializeForLockfile(containingDir: null),
+            ResolvedHostedDescription(
+              foo.description as HostedDescription,
+              sha256: null,
+            ).serializeForLockfile(containingDir: null),
             {
-              'url': 'https://pub.dartlang.org',
+              'url': 'https://pub.dev',
               'name': 'foo',
             });
       });
@@ -422,16 +668,18 @@ dependencies:
       group('throws without a min SDK constraint', () {
         test('and without a name', () {
           expectPubspecException(
-              '''
+            '''
 name: pkg
 dependencies:
   foo:
     hosted:
       url: https://example.org/pub/
 ''',
-              (pubspec) => pubspec.dependencies,
-              "The 'name' key must have a string value without a minimum Dart "
-                  'SDK constraint of 2.15.');
+            (pubspec) => pubspec.dependencies,
+            expectedContains: "The 'name' key must have a "
+                'string value without a minimum Dart '
+                'SDK constraint of 2.15.',
+          );
         });
 
         test(
@@ -445,7 +693,8 @@ dependencies:
     hosted: http://pub.example.org
 ''',
               (pubspec) => pubspec.dependencies,
-              'Using `hosted: <url>` is only supported with a minimum SDK constraint of 2.15.',
+              expectedContains: 'Using `hosted: <url>` is only supported '
+                  'with a minimum SDK constraint of 2.15.',
             );
           },
         );
@@ -454,227 +703,328 @@ dependencies:
 
     group('git dependencies', () {
       test('path must be a string', () {
-        expectPubspecException('''
+        expectPubspecException(
+          '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: 12
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies,
+        );
       });
 
       test('path must be relative', () {
-        expectPubspecException('''
+        expectPubspecException(
+          '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: git://github.com/dart-lang/foo/bar
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies,
+        );
 
-        expectPubspecException('''
+        expectPubspecException(
+          '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: /foo
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies,
+        );
       });
 
       test('path must be within the repository', () {
-        expectPubspecException('''
+        expectPubspecException(
+          '''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: foo/../../bar
-''', (pubspec) => pubspec.dependencies);
+''',
+          (pubspec) => pubspec.dependencies,
+        );
       });
     });
 
     group('environment', () {
-      /// Checking for the default SDK constraint based on the current SDK.
-      void expectDefaultSdkConstraint(Pubspec pubspec) {
-        var sdkVersionString = sdk.version.toString();
-        if (sdkVersionString.startsWith('2.0.0') && sdk.version.isPreRelease) {
-          expect(
-              pubspec.sdkConstraints,
-              containsPair(
-                  'dart',
-                  VersionConstraint.parse(
-                      '${pubspec.sdkConstraints["dart"]} <=$sdkVersionString')));
-        } else {
-          expect(
-              pubspec.sdkConstraints,
-              containsPair(
-                  'dart',
-                  VersionConstraint.parse(
-                      "${pubspec.sdkConstraints["dart"]} <2.0.0")));
-        }
-      }
-
       test('allows an omitted environment', () {
-        var pubspec = Pubspec.parse('name: testing', sources);
-        expectDefaultSdkConstraint(pubspec);
+        final pubspec = Pubspec.parse(
+          'name: testing',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
+        expect(
+          pubspec.dartSdkConstraint.effectiveConstraint,
+          VersionConstraint.parse('<2.0.0'),
+        );
+
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test('default SDK constraint can be omitted with empty environment', () {
-        var pubspec = Pubspec.parse('', sources);
-        expectDefaultSdkConstraint(pubspec);
+        final pubspec = Pubspec.parse(
+          '',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
+        expect(
+          pubspec.dartSdkConstraint.effectiveConstraint,
+          VersionConstraint.parse('<2.0.0'),
+        );
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test('defaults the upper constraint for the SDK', () {
-        var pubspec = Pubspec.parse('''
+        final pubspec = Pubspec.parse(
+          '''
   name: test
   environment:
     sdk: ">1.0.0"
-  ''', sources);
-        expectDefaultSdkConstraint(pubspec);
+  ''',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
+        expect(
+          pubspec.dartSdkConstraint.effectiveConstraint,
+          VersionConstraint.parse('>1.0.0 <2.0.0'),
+        );
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test(
-          'default upper constraint for the SDK applies only if compatibile '
+          'default upper constraint for the SDK applies only if compatible '
           'with the lower bound', () {
-        var pubspec = Pubspec.parse('''
+        final pubspec = Pubspec.parse(
+          '''
   environment:
     sdk: ">3.0.0"
-  ''', sources);
-        expect(pubspec.sdkConstraints,
-            containsPair('dart', VersionConstraint.parse('>3.0.0')));
+  ''',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
+        expect(
+          pubspec.sdkConstraints,
+          containsPair(
+            'dart',
+            SdkConstraint(VersionConstraint.parse('>3.0.0')),
+          ),
+        );
         expect(pubspec.sdkConstraints, isNot(contains('flutter')));
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
       test("throws if the environment value isn't a map", () {
         expectPubspecException(
-            'environment: []', (pubspec) => pubspec.sdkConstraints);
+          'environment: []',
+          (pubspec) => pubspec.sdkConstraints,
+        );
       });
 
       test('allows a version constraint for the SDKs', () {
-        var pubspec = Pubspec.parse('''
+        final pubspec = Pubspec.parse(
+          '''
 environment:
   sdk: ">=1.2.3 <2.3.4"
   flutter: ^0.1.2
   fuchsia: ^5.6.7
-''', sources);
-        expect(pubspec.sdkConstraints,
-            containsPair('dart', VersionConstraint.parse('>=1.2.3 <2.3.4')));
-        expect(pubspec.sdkConstraints,
-            containsPair('flutter', VersionConstraint.parse('>=0.1.2')));
-        expect(pubspec.sdkConstraints,
-            containsPair('fuchsia', VersionConstraint.parse('^5.6.7')));
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
+        expect(
+          pubspec.sdkConstraints,
+          containsPair(
+            'dart',
+            SdkConstraint(VersionConstraint.parse('>=1.2.3 <2.3.4')),
+          ),
+        );
+        expect(
+          pubspec.sdkConstraints,
+          containsPair(
+            'flutter',
+            SdkConstraint(
+              VersionConstraint.parse('>=0.1.2'),
+              originalConstraint: VersionConstraint.parse('^0.1.2'),
+            ),
+          ),
+        );
+        expect(
+          pubspec.sdkConstraints,
+          containsPair(
+            'fuchsia',
+            SdkConstraint(VersionConstraint.parse('^5.6.7')),
+          ),
+        );
       });
 
       test("throws if the sdk isn't a string", () {
         expectPubspecException(
-            'environment: {sdk: []}', (pubspec) => pubspec.sdkConstraints);
+          'environment: {sdk: []}',
+          (pubspec) => pubspec.sdkConstraints,
+        );
         expectPubspecException(
-            'environment: {sdk: 1.0}', (pubspec) => pubspec.sdkConstraints);
-        expectPubspecException('environment: {sdk: 1.2.3, flutter: []}',
-            (pubspec) => pubspec.sdkConstraints);
-        expectPubspecException('environment: {sdk: 1.2.3, flutter: 1.0}',
-            (pubspec) => pubspec.sdkConstraints);
+          'environment: {sdk: 1.0}',
+          (pubspec) => pubspec.sdkConstraints,
+        );
+        expectPubspecException(
+          'environment: {sdk: 1.2.3, flutter: []}',
+          (pubspec) => pubspec.sdkConstraints,
+        );
+        expectPubspecException(
+          'environment: {sdk: 1.2.3, flutter: 1.0}',
+          (pubspec) => pubspec.sdkConstraints,
+        );
       });
 
       test("throws if the sdk isn't a valid version constraint", () {
-        expectPubspecException('environment: {sdk: "oopies"}',
-            (pubspec) => pubspec.sdkConstraints);
-        expectPubspecException('environment: {sdk: 1.2.3, flutter: "oopies"}',
-            (pubspec) => pubspec.sdkConstraints);
+        expectPubspecException(
+          'environment: {sdk: "oopsies"}',
+          (pubspec) => pubspec.sdkConstraints,
+        );
+        expectPubspecException(
+          'environment: {sdk: 1.2.3, flutter: "oopsies"}',
+          (pubspec) => pubspec.sdkConstraints,
+        );
       });
     });
 
     group('publishTo', () {
       test('defaults to null if omitted', () {
-        var pubspec = Pubspec.parse('', sources);
+        final pubspec = Pubspec.parse(
+          '',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
         expect(pubspec.publishTo, isNull);
       });
 
       test('throws if not a string', () {
         expectPubspecException(
-            'publish_to: 123', (pubspec) => pubspec.publishTo);
+          'publish_to: 123',
+          (pubspec) => pubspec.publishTo,
+        );
       });
 
       test('allows a URL', () {
-        var pubspec = Pubspec.parse('''
+        final pubspec = Pubspec.parse(
+          '''
 publish_to: http://example.com
-''', sources);
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
         expect(pubspec.publishTo, equals('http://example.com'));
       });
 
       test('allows none', () {
-        var pubspec = Pubspec.parse('''
+        final pubspec = Pubspec.parse(
+          '''
 publish_to: none
-''', sources);
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
         expect(pubspec.publishTo, equals('none'));
       });
 
       test('throws on other strings', () {
-        expectPubspecException('publish_to: http://bad.url:not-port',
-            (pubspec) => pubspec.publishTo);
+        expectPubspecException(
+          'publish_to: http://bad.url:not-port',
+          (pubspec) => pubspec.publishTo,
+        );
       });
 
       test('throws on non-absolute URLs', () {
         expectPubspecException(
-            'publish_to: pub.dartlang.org', (pubspec) => pubspec.publishTo);
+          'publish_to: pub.dev',
+          (pubspec) => pubspec.publishTo,
+        );
       });
     });
 
     group('executables', () {
       test('defaults to an empty map if omitted', () {
-        var pubspec = Pubspec.parse('', sources);
+        final pubspec = Pubspec.parse(
+          '',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
         expect(pubspec.executables, isEmpty);
       });
 
       test('allows simple names for keys and most characters in values', () {
-        var pubspec = Pubspec.parse('''
+        final pubspec = Pubspec.parse(
+          '''
 executables:
   abcDEF-123_: "abc DEF-123._"
-''', sources);
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
         expect(pubspec.executables['abcDEF-123_'], equals('abc DEF-123._'));
       });
 
       test('throws if not a map', () {
         expectPubspecException(
-            'executables: not map', (pubspec) => pubspec.executables);
+          'executables: not map',
+          (pubspec) => pubspec.executables,
+        );
       });
 
       test('throws if key is not a string', () {
         expectPubspecException(
-            'executables: {123: value}', (pubspec) => pubspec.executables);
+          'executables: {123: value}',
+          (pubspec) => pubspec.executables,
+        );
       });
 
       test("throws if a key isn't a simple name", () {
         expectPubspecException(
-            'executables: {funny/name: ok}', (pubspec) => pubspec.executables);
+          'executables: {funny/name: ok}',
+          (pubspec) => pubspec.executables,
+        );
       });
 
       test('throws if a value is not a string', () {
         expectPubspecException(
-            'executables: {command: 123}', (pubspec) => pubspec.executables);
+          'executables: {command: 123}',
+          (pubspec) => pubspec.executables,
+        );
       });
 
       test('throws if a value contains a path separator', () {
-        expectPubspecException('executables: {command: funny_name/part}',
-            (pubspec) => pubspec.executables);
+        expectPubspecException(
+          'executables: {command: funny_name/part}',
+          (pubspec) => pubspec.executables,
+        );
       });
 
       test('throws if a value contains a windows path separator', () {
-        expectPubspecException(r'executables: {command: funny_name\part}',
-            (pubspec) => pubspec.executables);
+        expectPubspecException(
+          r'executables: {command: funny_name\part}',
+          (pubspec) => pubspec.executables,
+        );
       });
 
       test('uses the key if the value is null', () {
-        var pubspec = Pubspec.parse('''
+        final pubspec = Pubspec.parse(
+          '''
 executables:
   command:
-''', sources);
+''',
+          sources,
+          containingDescription: RootDescription('.'),
+        );
         expect(pubspec.executables['command'], equals('command'));
       });
     });
@@ -692,6 +1042,7 @@ dependency_overrides:
           sources,
           overridesFileContents: overridesContents,
           overridesLocation: Uri.parse('file:///pubspec_overrides.yaml'),
+          containingDescription: RootDescription('.'),
         );
       }
 
@@ -700,18 +1051,26 @@ dependency_overrides:
         void Function(Pubspec) fn, [
         String? expectedContains,
       ]) {
-        var expectation = isA<PubspecException>();
+        var expectation = isA<SourceSpanApplicationException>();
         if (expectedContains != null) {
-          expectation = expectation.having((error) => error.toString(),
-              'toString()', contains(expectedContains));
+          expectation = expectation.having(
+            (error) => error.toString(),
+            'toString()',
+            contains(expectedContains),
+          );
         }
 
-        var pubspec = parsePubspecOverrides(contents);
-        expect(() => fn(pubspec), throwsA(expectation));
+        expect(
+          () {
+            final pubspec = parsePubspecOverrides(contents);
+            fn(pubspec);
+          },
+          throwsA(expectation),
+        );
       }
 
       test('allows empty overrides file', () {
-        var pubspec = parsePubspecOverrides('');
+        final pubspec = parsePubspecOverrides('');
         expect(pubspec.dependencyOverrides['foo'], isNull);
         final bar = pubspec.dependencyOverrides['bar']!;
         expect(bar.name, equals('bar'));
@@ -751,20 +1110,27 @@ dependency_overrides:
       url: '::'
 ''',
           (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
-          'Error on line 4, column 7 of ${Platform.pathSeparator}pubspec_overrides.yaml',
+          'Error on line 4, column 7 of '
+              '${Platform.pathSeparator}pubspec_overrides.yaml',
         );
       });
 
       test('throws if overrides contain invalid dependency section', () {
-        expectPubspecOverridesException('''
+        expectPubspecOverridesException(
+          '''
 dependency_overrides: false
-''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
+''',
+          (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
+        );
       });
 
       test('throws if overrides contain an unknown field', () {
-        expectPubspecOverridesException('''
+        expectPubspecOverridesException(
+          '''
 name: 'foo'
-''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
+''',
+          (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
+        );
       });
     });
   });

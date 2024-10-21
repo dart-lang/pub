@@ -15,7 +15,7 @@ void main() {
     server.serve('foo', '2.0.0', deps: {'foo_dep': 'any'});
     server.serve('foo_dep', '2.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet();
 

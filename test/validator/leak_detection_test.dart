@@ -14,7 +14,7 @@ Validator leakDetection() => LeakDetectionValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('contains a source file without secrets', () async {
       await d.dir(appPath, [
@@ -23,9 +23,9 @@ void main() {
           d.file('test_pkg.dart', '''
             void main() => print('nothing secret here');
           '''),
-        ])
+        ]),
       ]).create();
-      await expectValidation(leakDetection);
+      await expectValidationDeprecated(leakDetection);
     });
 
     test('contains a source file listed in false_secrets', () async {
@@ -41,9 +41,9 @@ void main() {
           d.file('test_pkg.dart', '''
             void main() => print('Revoked AWS key: AKIAVBOGPFGGW6HQOSMY');
           '''),
-        ])
+        ]),
       ]).create();
-      await expectValidation(leakDetection, errors: isEmpty);
+      await expectValidationDeprecated(leakDetection, errors: isEmpty);
     });
   });
 
@@ -55,9 +55,9 @@ void main() {
           d.file('test_pkg.dart', '''
             void main() => print('Revoked AWS key: AKIAVBOGPFGGW6HQOSMY');
           '''),
-        ])
+        ]),
       ]).create();
-      await expectValidation(leakDetection, errors: isNotEmpty);
+      await expectValidationDeprecated(leakDetection, errors: isNotEmpty);
     });
   });
 
@@ -80,13 +80,15 @@ void main() {
               'AIzaSyAazCCPl4tWkSuDt9XBWRTpHxroViYhSxg',
             ];
           '''),
-        ])
+        ]),
       ]).create();
-      await expectValidation(leakDetection,
-          errors: allOf(
-            hasLength(lessThanOrEqualTo(3)),
-            contains(contains('10 potential leaks detected in 1 file:')),
-          ));
+      await expectValidationDeprecated(
+        leakDetection,
+        errors: allOf(
+          hasLength(lessThanOrEqualTo(3)),
+          contains(contains('10 potential leaks detected in 1 file:')),
+        ),
+      );
     });
 
     test('at-most 3 warnings when multiple files', () async {
@@ -113,13 +115,15 @@ void main() {
               'AIzaSyAazCCPl4tWkSuDt9XBWRTpHxroViYhSxg',
             ];
           '''),
-        ])
+        ]),
       ]).create();
-      await expectValidation(leakDetection,
-          errors: allOf(
-            hasLength(lessThanOrEqualTo(3)),
-            contains(contains('12 potential leaks detected in 2 files:')),
-          ));
+      await expectValidationDeprecated(
+        leakDetection,
+        errors: allOf(
+          hasLength(lessThanOrEqualTo(3)),
+          contains(contains('12 potential leaks detected in 2 files:')),
+        ),
+      );
     });
   });
 

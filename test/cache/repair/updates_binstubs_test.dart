@@ -20,34 +20,47 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 void main() {
   test('updates an outdated binstub script', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'foo-script': 'script'}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'executables': {'foo-script': 'script'},
+      },
+      contents: [
+        d.dir(
+          'bin',
+          [d.file('script.dart', "main(args) => print('ok \$args');")],
+        ),
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('foo-script'), _outdatedBinstub)])
+      d.dir('bin', [d.file(binStubName('foo-script'), _outdatedBinstub)]),
     ]).create();
 
     // Repair them.
-    await runPub(args: ['cache', 'repair'], output: '''
-          Downloading foo 1.0.0...
+    await runPub(
+      args: ['cache', 'repair'],
+      output: '''
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
+          Downloading packages...
           Building package executables...
           Built foo:script.
           Installed executable foo-script.
-          Reactivated 1 package.''');
+          Reactivated 1 package.''',
+    );
 
     // The broken versions should have been replaced.
     await d.dir(cachePath, [
       d.dir('bin', [
-        d.file(binStubName('foo-script'),
-            contains('This file was created by pub v0.1.2+3'))
-      ])
+        d.file(
+          binStubName('foo-script'),
+          contains('This file was created by pub v3.1.2+3'),
+        ),
+      ]),
     ]).validate();
   });
 }

@@ -26,24 +26,29 @@ class CacheRepairCommand extends PubCommand {
     // Delete any eventual temp-files left in the cache.
     cache.deleteTempDir();
     // Repair every cached source.
-    final repairResults =
-        (await Future.wait(<CachedSource>[cache.hosted, cache.git].map(
-      (source) => source.repairCachedPackages(cache),
-    )))
-            .expand((x) => x);
+    final repairResults = (await Future.wait(
+      <CachedSource>[cache.hosted, cache.git].map(
+        (source) => source.repairCachedPackages(cache),
+      ),
+    ))
+        .expand((x) => x);
 
     final successes = repairResults.where((result) => result.success);
     final failures = repairResults.where((result) => !result.success);
 
     if (successes.isNotEmpty) {
-      var packages = pluralize('package', successes.length);
-      log.message('Reinstalled ${log.green(successes.length)} $packages.');
+      final packages = pluralize('package', successes.length);
+      log.message(
+        'Reinstalled ${log.green(successes.length.toString())} $packages.',
+      );
     }
 
     if (failures.isNotEmpty) {
-      var packages = pluralize('package', failures.length);
-      var buffer = StringBuffer(
-          'Failed to reinstall ${log.red(failures.length)} $packages:\n');
+      final packages = pluralize('package', failures.length);
+      final buffer = StringBuffer(
+        'Failed to reinstall '
+        '${log.red(failures.length.toString())} $packages:\n',
+      );
 
       for (var failure in failures) {
         buffer.write('- ${log.bold(failure.packageName)} ${failure.version}');
@@ -56,27 +61,32 @@ class CacheRepairCommand extends PubCommand {
       log.message(buffer.toString());
     }
 
-    var globalRepairResults = await globals.repairActivatedPackages();
-    if (globalRepairResults.first.isNotEmpty) {
-      var packages = pluralize('package', globalRepairResults.first.length);
+    final (repairSuccesses, repairFailures) =
+        await globals.repairActivatedPackages();
+    if (repairSuccesses.isNotEmpty) {
+      final packages = pluralize('package', repairSuccesses.length);
       log.message(
-          'Reactivated ${log.green(globalRepairResults.first.length)} $packages.');
+        'Reactivated '
+        '${log.green(repairSuccesses.length.toString())} $packages.',
+      );
     }
 
-    if (globalRepairResults.last.isNotEmpty) {
-      var packages = pluralize('package', globalRepairResults.last.length);
+    if (repairFailures.isNotEmpty) {
+      final packages = pluralize('package', repairFailures.length);
       log.message(
-          'Failed to reactivate ${log.red(globalRepairResults.last.length)} $packages:\n' +
-              globalRepairResults.last
-                  .map((name) => '- ${log.bold(name)}')
-                  .join('\n'));
+        'Failed to reactivate '
+        '${log.red(repairFailures.length.toString())} $packages:',
+      );
+      log.message(
+        repairFailures.map((name) => '- ${log.bold(name)}').join('\n'),
+      );
     }
 
     if (successes.isEmpty && failures.isEmpty) {
       log.message('No packages in cache, so nothing to repair.');
     }
 
-    if (failures.isNotEmpty || globalRepairResults.last.isNotEmpty) {
+    if (failures.isNotEmpty || repairFailures.isNotEmpty) {
       overrideExitCode(exit_codes.UNAVAILABLE);
     }
   }

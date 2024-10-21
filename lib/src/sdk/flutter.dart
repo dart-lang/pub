@@ -2,26 +2,31 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
+import '../log.dart';
 import '../sdk.dart';
 
 class FlutterSdk extends Sdk {
+  FlutterSdk._();
+  static final FlutterSdk _instance = FlutterSdk._();
+  factory FlutterSdk() => _instance;
+
   @override
   String get name => 'Flutter';
   @override
-  bool get isAvailable => _isAvailable;
-  @override
-  Version get firstPubVersion => Version.parse('1.19.0');
+  bool get allowsNonSdkDepsInSdkPackages => true;
 
   // We only consider the Flutter SDK to present if we find a root directory
   // and the root directory contains a valid 'version' file.
-  static final bool _isAvailable = _rootDirectory != null && _version != null;
-  static final String? _rootDirectory = () {
+  @override
+  late final bool isAvailable = rootDirectory != null && version != null;
+  late final String? rootDirectory = () {
     // If FLUTTER_ROOT is specified, then this always points to the Flutter SDK
     if (Platform.environment.containsKey('FLUTTER_ROOT')) {
       return Platform.environment['FLUTTER_ROOT'];
@@ -55,29 +60,43 @@ class FlutterSdk extends Sdk {
 
     return null;
   }();
-  static final Version? _version = () {
-    if (_rootDirectory == null) return null;
+  @override
+  late final Version? version = () {
+    final rootDirectory = this.rootDirectory;
+    if (rootDirectory == null) return null;
+    if (!dirExists(rootDirectory)) {
+      // $FLUTTER_ROOT has been set, but doesn't exist.
+      return null;
+    }
+    final flutterVersionPath =
+        p.join(rootDirectory, 'bin', 'cache', 'flutter.version.json');
 
     try {
-      return Version.parse(
-        readTextFile(p.join(_rootDirectory!, 'version')).trim(),
+      final versionJson = jsonDecode(
+        readTextFile(flutterVersionPath),
       );
-    } on IOException {
-      return null; // I guess the file doesn't exist
-    } on FormatException {
+      if (versionJson is! Map) {
+        return null;
+      }
+      final flutterVersion = versionJson['flutterVersion'];
+      if (flutterVersion is! String) {
+        throw const FormatException('flutter-version is not a string');
+      }
+      return Version.parse(flutterVersion);
+    } on IOException catch (e) {
+      fine(
+        'Could not open flutter version file at `$flutterVersionPath`: $e\n',
+      );
+      return null;
+    } on FormatException catch (e) {
+      fine('Bad flutter version file at `$flutterVersionPath` $e');
       return null; // I guess the file has the wrong format
     }
   }();
 
   @override
   String get installMessage =>
-      'Flutter users should run `flutter pub get` instead of `dart pub get`.';
-
-  @override
-  Version? get version {
-    if (!isAvailable) return null;
-    return _version;
-  }
+      'Flutter users should use `flutter pub` instead of `dart pub`.';
 
   @override
   String? packagePath(String name) {
@@ -87,10 +106,10 @@ class FlutterSdk extends Sdk {
     // `$flutter/bin/cache/pkg`. This checks both locations in order. If [name]
     // exists in neither place, it returns the `$flutter/packages` location
     // which is more human-readable for error messages.
-    var packagePath = p.join(_rootDirectory!, 'packages', name);
+    final packagePath = p.join(rootDirectory!, 'packages', name);
     if (dirExists(packagePath)) return packagePath;
 
-    var cachePath = p.join(_rootDirectory!, 'bin', 'cache', 'pkg', name);
+    final cachePath = p.join(rootDirectory!, 'bin', 'cache', 'pkg', name);
     if (dirExists(cachePath)) return cachePath;
 
     return null;

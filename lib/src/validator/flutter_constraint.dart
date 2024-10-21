@@ -15,7 +15,7 @@ class FlutterConstraintValidator extends Validator {
 
   @override
   Future validate() async {
-    final environment = entrypoint.root.pubspec.fields['environment'];
+    final environment = package.pubspec.fields['environment'];
     if (environment is Map) {
       final flutterConstraint = environment['flutter'];
       if (flutterConstraint is String) {
@@ -23,7 +23,8 @@ class FlutterConstraintValidator extends Validator {
         if (constraint is VersionRange && constraint.max != null) {
           final replacement = constraint.min == null
               ? 'You can replace the constraint with `any`.'
-              : 'You can replace that with just the lower bound: `>=${constraint.min}`.';
+              : 'You can replace that with '
+                  'just the lower bound: `>=${constraint.min}`.';
 
           warnings.add('''
 The Flutter constraint should not have an upper bound.

@@ -12,29 +12,33 @@ void main() {
     final server = await servePackages()
       ..serve('foo', '1.2.3', deps: {'transitive': 'any'})
       ..serve('transitive', '1.0.0');
-    await d.appDir({'foo': '1.2.3'}).create();
+    await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
 
     server
       ..discontinue('foo')
       ..discontinue('transitive');
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
-  transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
-''');
+''',
+    );
     server.discontinue('foo', replacementText: 'bar');
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0
-  No dependencies changed.
-  1 package is discontinued.
-''');
+No dependencies changed.
+1 package is discontinued.
+''',
+    );
   });
 
   test('Warns about discontinued dev_dependencies', () async {
@@ -50,8 +54,8 @@ dependencies:
 dev_dependencies:
   foo: 1.2.3
 environment:
-  sdk: '>=0.1.2 <1.0.0'
-''')
+  sdk: '^3.1.2'
+'''),
     ]).create();
     await pubGet();
 
@@ -60,21 +64,25 @@ environment:
       ..discontinue('transitive');
 
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
-    transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
-''');
+''',
+    );
     server.discontinue('foo', replacementText: 'bar');
     // We warn only about the direct dependency here:
-    await pubUpgrade(output: '''
+    await pubUpgrade(
+      output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
-''');
+''',
+    );
   });
 }

@@ -28,12 +28,17 @@ class GlobalRunCommand extends PubCommand {
   GlobalRunCommand({this.alwaysUseSubprocess = false}) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
-    argParser.addMultiOption('enable-experiment',
-        help: 'Runs the executable in a VM with the given experiments enabled. '
-            '(Will disable snapshotting, resulting in slower startup).',
-        valueHelp: 'experiment');
-    argParser.addFlag('sound-null-safety',
-        help: 'Override the default null safety execution mode.');
+    argParser.addMultiOption(
+      'enable-experiment',
+      help: 'Runs the executable in a VM with the given experiments enabled. '
+          '(Will disable snapshotting, resulting in slower startup).',
+      valueHelp: 'experiment',
+    );
+    argParser.addFlag(
+      'sound-null-safety',
+      help: 'Override the default null safety execution mode.',
+      hide: true,
+    );
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
   }
 
@@ -42,11 +47,14 @@ class GlobalRunCommand extends PubCommand {
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
+    if (argResults.wasParsed('sound-null-safety')) {
+      dataError('The --(no-)sound-null-safety flag is no longer supported.');
+    }
 
     String package;
     var executable = argResults.rest[0];
     if (executable.contains(':')) {
-      var parts = split1(executable, ':');
+      final parts = split1(executable, ':');
       package = parts[0];
       executable = parts[1];
     } else {
@@ -54,7 +62,7 @@ class GlobalRunCommand extends PubCommand {
       package = executable;
     }
 
-    var args = argResults.rest.skip(1).toList();
+    final args = argResults.rest.skip(1).toList();
     if (p.split(executable).length > 1) {
       usageException('Cannot run an executable in a subdirectory of a global '
           'package.');
@@ -71,9 +79,11 @@ class GlobalRunCommand extends PubCommand {
       Executable.adaptProgramName(package, executable),
       args,
       vmArgs: vmArgs,
-      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-      recompile: (executable) => log.warningsOnlyUnlessTerminal(
-          () => globalEntrypoint.precompileExecutable(executable)),
+      enableAsserts:
+          argResults.flag('enable-asserts') || argResults.flag('checked'),
+      recompile: (executable) => log.errorsOnlyUnlessTerminal(
+        () => globalEntrypoint.precompileExecutable(executable),
+      ),
       alwaysUseSubprocess: alwaysUseSubprocess,
     );
     overrideExitCode(exitCode);

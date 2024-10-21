@@ -64,10 +64,13 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   /// The language version implied by a Dart sdk version.
   factory LanguageVersion.fromLanguageVersionToken(
-          LanguageVersionToken version) =>
+    LanguageVersionToken version,
+  ) =>
       LanguageVersion(version.major, version.minor);
 
   bool get supportsNullSafety => this >= firstVersionWithNullSafety;
+
+  bool get supportsWorkspaces => this >= firstVersionWithWorkspaces;
 
   /// Minimum language version at which short hosted syntax is supported.
   ///
@@ -105,6 +108,7 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   static const defaultLanguageVersion = LanguageVersion(2, 7);
   static const firstVersionWithNullSafety = LanguageVersion(2, 12);
   static const firstVersionWithShorterHostedSyntax = LanguageVersion(2, 15);
+  static const firstVersionWithWorkspaces = LanguageVersion(3, 5);
 
   /// Transform language version to string that can be parsed with
   /// [LanguageVersion.parse].

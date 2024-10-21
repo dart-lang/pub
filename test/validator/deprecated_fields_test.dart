@@ -13,46 +13,48 @@ import 'utils.dart';
 Validator deprecatedFields() => DeprecatedFieldsValidator();
 
 void main() {
-  setUp(d.validPackage.create);
+  setUp(d.validPackage().create);
 
-  test('should not warn if neither transformers or web is included',
-      () => expectValidation(deprecatedFields));
+  test(
+    'should not warn if neither transformers or web is included',
+    () => expectValidationDeprecated(deprecatedFields),
+  );
 
   test('should warn if pubspec has a transformers section', () async {
     await d.dir(appPath, [
       d.pubspec({
-        'transformers': ['some_transformer']
-      })
+        'transformers': ['some_transformer'],
+      }),
     ]).create();
 
-    await expectValidation(deprecatedFields, warnings: isNotEmpty);
+    await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);
   });
 
   test('should warn if pubspec has a web section', () async {
     await d.dir(appPath, [
       d.pubspec({
-        'web': {'compiler': 'dartdevc'}
-      })
+        'web': {'compiler': 'dartdevc'},
+      }),
     ]).create();
 
-    await expectValidation(deprecatedFields, warnings: isNotEmpty);
+    await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);
   });
 
   test('should warn if pubspec has an author', () async {
     await d.dir(appPath, [
-      d.pubspec({'author': 'Ronald <ronald@example.com>'})
+      d.pubspec({'author': 'Ronald <ronald@example.com>'}),
     ]).create();
 
-    await expectValidation(deprecatedFields, warnings: isNotEmpty);
+    await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);
   });
 
   test('should warn if pubspec has a list of authors', () async {
     await d.dir(appPath, [
       d.pubspec({
-        'authors': ['Ronald <ronald@example.com>', 'Joe <joe@example.com>']
-      })
+        'authors': ['Ronald <ronald@example.com>', 'Joe <joe@example.com>'],
+      }),
     ]).create();
 
-    await expectValidation(deprecatedFields, warnings: isNotEmpty);
+    await expectValidationDeprecated(deprecatedFields, warnings: isNotEmpty);
   });
 }

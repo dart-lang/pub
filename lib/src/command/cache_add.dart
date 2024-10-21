@@ -8,6 +8,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../command.dart';
 import '../log.dart' as log;
+import '../package_name.dart';
 import '../utils.dart';
 
 /// Handles the `cache add` pub command.
@@ -23,8 +24,11 @@ class CacheAddCommand extends PubCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
   CacheAddCommand() {
-    argParser.addFlag('all',
-        help: 'Install all matching versions.', negatable: false);
+    argParser.addFlag(
+      'all',
+      help: 'Install all matching versions.',
+      negatable: false,
+    );
 
     argParser.addOption('version', abbr: 'v', help: 'Version constraint.');
   }
@@ -38,28 +42,29 @@ class CacheAddCommand extends PubCommand {
 
     // Don't allow extra arguments.
     if (argResults.rest.length > 1) {
-      var unexpected = argResults.rest.skip(1).map((arg) => '"$arg"');
-      var arguments = pluralize('argument', unexpected.length);
+      final unexpected = argResults.rest.skip(1).map((arg) => '"$arg"');
+      final arguments = pluralize('argument', unexpected.length);
       usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 
-    var package = argResults.rest.single;
+    final package = argResults.rest.single;
 
     // Parse the version constraint, if there is one.
     var constraint = VersionConstraint.any;
-    if (argResults['version'] != null) {
+    final versionArg = argResults.option('version');
+    if (versionArg != null) {
       try {
-        constraint = VersionConstraint.parse(argResults['version']);
+        constraint = VersionConstraint.parse(versionArg);
       } on FormatException catch (error) {
         usageException(error.message);
       }
     }
 
     // TODO(rnystrom): Support installing from git too.
-    var source = cache.hosted;
+    final source = cache.hosted;
 
     // TODO(rnystrom): Allow specifying the server.
-    var ids = (await cache.getVersions(source.refFor(package)))
+    final ids = (await cache.getVersions(source.refFor(package)))
         .where((id) => constraint.allows(id.version))
         .toList();
 
@@ -68,19 +73,14 @@ class CacheAddCommand extends PubCommand {
       fail('Package $package has no versions that match $constraint.');
     }
 
-    Future<void> downloadVersion(id) async {
-      if (cache.contains(id)) {
-        // TODO(rnystrom): Include source and description if not hosted.
-        // See solve_report.dart for code to harvest.
+    Future<void> downloadVersion(PackageId id) async {
+      final result = await cache.downloadPackage(id);
+      if (!result.didUpdate) {
         log.message('Already cached ${id.name} ${id.version}.');
-        return;
       }
-
-      // Download it.
-      await cache.downloadPackage(id);
     }
 
-    if (argResults['all']) {
+    if (argResults.flag('all')) {
       // Install them in ascending order.
       ids.sort((id1, id2) => id1.version.compareTo(id2.version));
       await Future.forEach(ids, downloadVersion);

@@ -2,25 +2,19 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:collection/collection.dart' hide mapMap;
+import 'package:graphs/graphs.dart';
 
 import 'entrypoint.dart';
-import 'lock_file.dart';
 import 'package.dart';
 import 'solver.dart';
 import 'source/cached.dart';
+import 'source/sdk.dart';
 import 'utils.dart';
 
 /// A holistic view of the entire transitive dependency graph for an entrypoint.
 class PackageGraph {
   /// The entrypoint.
   final Entrypoint entrypoint;
-
-  /// The entrypoint's lockfile.
-  ///
-  /// This describes the sources and resolved descriptions of everything in
-  /// [packages].
-  final LockFile lockFile;
 
   /// The transitive dependencies of the entrypoint (including itself).
   ///
@@ -32,25 +26,28 @@ class PackageGraph {
   /// A map of transitive dependencies for each package.
   Map<String, Set<Package>>? _transitiveDependencies;
 
-  PackageGraph(this.entrypoint, this.lockFile, this.packages);
+  PackageGraph(this.entrypoint, this.packages);
 
   /// Creates a package graph using the data from [result].
   ///
   /// This is generally faster than loading a package graph from scratch, since
   /// the packages' pubspecs are already fully-parsed.
   factory PackageGraph.fromSolveResult(
-      Entrypoint entrypoint, SolveResult result) {
+    Entrypoint entrypoint,
+    SolveResult result,
+  ) {
     final packages = {
       for (final id in result.packages)
-        id.name: id.name == entrypoint.root.name
-            ? entrypoint.root
+        id.name: id.isRoot
+            ? entrypoint.workspaceRoot
             : Package(
                 result.pubspecs[id.name]!,
                 entrypoint.cache.getDirectory(id),
-              )
+                [],
+              ),
     };
 
-    return PackageGraph(entrypoint, result.lockFile, packages);
+    return PackageGraph(entrypoint, packages);
   }
 
   /// Returns all transitive dependencies of [package].
@@ -59,34 +56,35 @@ class PackageGraph {
   /// dev and override. For any other package, it ignores dev and override
   /// dependencies.
   Set<Package> transitiveDependencies(String package) {
-    if (package == entrypoint.root.name) return packages.values.toSet();
+    if (package == entrypoint.workspaceRoot.name) {
+      return packages.values.toSet();
+    }
 
     if (_transitiveDependencies == null) {
-      var closure = transitiveClosure(
-          mapMap<String, Package, String, Iterable<String>>(packages,
-              value: (_, package) => package.dependencies.keys));
+      final graph = mapMap<String, Package, String, Iterable<String>>(
+        packages,
+        value: (_, package) => package.dependencies.keys,
+      );
+      final closure = transitiveClosure(graph.keys, (n) => graph[n]!);
       _transitiveDependencies =
-          mapMap<String, Set<String>, String, Set<Package>>(closure,
-              value: (depender, names) {
-        var set = names.map((name) => packages[name]!).toSet();
-        set.add(packages[depender]!);
-        return set;
-      });
+          mapMap<String, Set<String>, String, Set<Package>>(
+        closure,
+        value: (depender, names) {
+          final set = names.map((name) => packages[name]!).toSet();
+          set.add(packages[depender]!);
+          return set;
+        },
+      );
     }
     return _transitiveDependencies![package]!;
   }
 
-  bool _isPackageCached(String package) {
-    // The root package is not included in the lock file, so we instead ask
-    // the entrypoint.
-    // TODO(sigurdm): there should be a way to get the id of any package
-    // including the root.
-    if (package == entrypoint.root.name) {
-      return entrypoint.isCached;
-    } else {
-      var id = lockFile.packages[package]!;
-      return id.source is CachedSource;
+  bool _isPackageFromImmutableSource(String package) {
+    final id = entrypoint.lockFile.packages[package];
+    if (id == null) {
+      return false; // This is a root package.
     }
+    return id.source is CachedSource || id.source is SdkSource;
   }
 
   /// Returns whether [package] is mutable.
@@ -96,9 +94,9 @@ class PackageGraph {
   /// without modifying the pub cache. Information generated from mutable
   /// packages is generally not safe to cache, since it may change frequently.
   bool isPackageMutable(String package) {
-    if (!_isPackageCached(package)) return true;
+    if (!_isPackageFromImmutableSource(package)) return true;
 
     return transitiveDependencies(package)
-        .any((dep) => !_isPackageCached(dep.name));
+        .any((dep) => !_isPackageFromImmutableSource(dep.name));
   }
 }

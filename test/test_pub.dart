@@ -7,11 +7,14 @@
 /// Unlike typical unit tests, most pub tests are integration tests that stage
 /// some stuff on the file system, run pub, and then validate the results. This
 /// library provides an API to build tests like that.
+library;
+
 import 'dart:convert';
 import 'dart:core';
-import 'dart:io';
+import 'dart:io' hide BytesBuilder;
 import 'dart:isolate';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
@@ -24,10 +27,12 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
+import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:tar/tar.dart';
 import 'package:test/test.dart' hide fail;
 import 'package:test/test.dart' as test show fail;
 import 'package:test_process/test_process.dart';
@@ -48,7 +53,7 @@ Matcher isUnminifiedDart2JSOutput =
     contains('// The code supports the following hooks');
 
 /// Converts [value] into a YAML string.
-String yaml(value) => jsonEncode(value);
+String yaml(Object? value) => jsonEncode(value);
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.
@@ -57,6 +62,9 @@ const String cachePath = 'cache';
 /// The path of the config directory used for tests, relative to the
 /// sandbox directory.
 const String configPath = '.config';
+
+d.DirectoryDescriptor configDir(Iterable<d.Descriptor> contents) =>
+    d.dir(configPath, [d.dir('dart', contents)]);
 
 /// The path of the mock app directory used for tests, relative to the sandbox
 /// directory.
@@ -68,29 +76,42 @@ String packageConfigFilePath =
     p.join(appPath, '.dart_tool', 'package_config.json');
 
 /// The entry from the `.dart_tool/package_config.json` file for [packageName].
-Map<String, dynamic> packageSpec(String packageName) => json
-    .decode(File(d.path(packageConfigFilePath)).readAsStringSync())['packages']
-    .firstWhere((e) => e['name'] == packageName,
-        orElse: () => null) as Map<String, dynamic>;
+Map<String, dynamic> packageSpec(String packageName) => dig(
+      json.decode(File(d.path(packageConfigFilePath)).readAsStringSync()),
+      ['packages', ('name', packageName)],
+    );
 
 /// The suffix appended to a built snapshot.
-final versionSuffix = testVersion;
+const versionSuffix = testVersion;
 
 /// Enum identifying a pub command that can be run with a well-defined success
 /// output.
 class RunCommand {
   static final add = RunCommand(
-      'add', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
+    'add',
+    RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'),
+  );
   static final get = RunCommand(
-      'get', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
-  static final upgrade = RunCommand('upgrade', RegExp(r'''
+    'get',
+    RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'),
+  );
+  static final upgrade = RunCommand(
+    'upgrade',
+    RegExp(r'''
 (No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
 \d+ packages? (has|have) newer versions incompatible with dependency constraints.
-Try `dart pub outdated` for more information.$)'''));
-  static final downgrade = RunCommand('downgrade',
-      RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'));
+Try `dart pub outdated` for more information.$)'''),
+  );
+  static final downgrade = RunCommand(
+    'downgrade',
+    RegExp(r'''(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
+\d+ packages? (has|have) newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.$)'''),
+  );
   static final remove = RunCommand(
-      'remove', RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'));
+    'remove',
+    RegExp(r'Got dependencies!|Changed \d+ dependenc(y|ies)!'),
+  );
 
   final String name;
   final RegExp success;
@@ -130,13 +151,13 @@ Future<void> pubCommand(
   int? exitCode,
   Map<String, String?>? environment,
   String? workingDirectory,
-  includeParentHomeAndPath = true,
+  bool includeParentHomeAndPath = true,
 }) async {
   if (error != null && warning != null) {
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
 
-  var allArgs = [command.name];
+  final allArgs = [command.name];
   if (args != null) allArgs.addAll(args);
 
   output ??= command.success;
@@ -148,14 +169,15 @@ Future<void> pubCommand(
   if (warning != null) error = warning;
 
   await runPub(
-      args: allArgs,
-      output: output,
-      error: error,
-      silent: silent,
-      exitCode: exitCode,
-      environment: environment,
-      workingDirectory: workingDirectory,
-      includeParentHomeAndPath: includeParentHomeAndPath);
+    args: allArgs,
+    output: output,
+    error: error,
+    silent: silent,
+    exitCode: exitCode,
+    environment: environment,
+    workingDirectory: workingDirectory,
+    includeParentHomeAndPath: includeParentHomeAndPath,
+  );
 }
 
 Future<void> pubAdd({
@@ -182,6 +204,7 @@ Future<void> pubGet({
   Iterable<String>? args,
   Object? output,
   Object? error,
+  Object? silent,
   Object? warning,
   int? exitCode,
   Map<String, String?>? environment,
@@ -193,6 +216,7 @@ Future<void> pubGet({
       args: args,
       output: output,
       error: error,
+      silent: silent,
       warning: warning,
       exitCode: exitCode,
       environment: environment,
@@ -200,20 +224,23 @@ Future<void> pubGet({
       includeParentHomeAndPath: includeParentHomeAndPath,
     );
 
-Future<void> pubUpgrade(
-        {Iterable<String>? args,
-        Object? output,
-        Object? error,
-        Object? warning,
-        int? exitCode,
-        Map<String, String>? environment,
-        String? workingDirectory}) async =>
+Future<void> pubUpgrade({
+  Iterable<String>? args,
+  Object? output,
+  Object? error,
+  Object? warning,
+  Object? silent,
+  int? exitCode,
+  Map<String, String>? environment,
+  String? workingDirectory,
+}) async =>
     await pubCommand(
       RunCommand.upgrade,
       args: args,
       output: output,
       error: error,
       warning: warning,
+      silent: silent,
       exitCode: exitCode,
       environment: environment,
       workingDirectory: workingDirectory,
@@ -266,14 +293,15 @@ Future<void> pubRemove({
 /// "pub run".
 ///
 /// Returns the `pub run` process.
-Future<PubProcess> pubRun(
-    {bool global = false,
-    required Iterable<String> args,
-    Map<String, String>? environment,
-    bool verbose = true}) async {
-  var pubArgs = global ? ['global', 'run'] : ['run'];
+Future<PubProcess> pubRun({
+  bool global = false,
+  required Iterable<String> args,
+  Map<String, String>? environment,
+  bool verbose = true,
+}) async {
+  final pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
-  var pub = await startPub(
+  final pub = await startPub(
     args: pubArgs,
     environment: environment,
     verbose: verbose,
@@ -312,22 +340,23 @@ void symlinkInSandbox(String target, String symlink) {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future<void> runPub(
-    {List<String>? args,
-    Object? output,
-    Object? error,
-    Object? outputJson,
-    Object? silent,
-    int? exitCode,
-    String? workingDirectory,
-    Map<String, String?>? environment,
-    List<String>? input,
-    includeParentHomeAndPath = true}) async {
+Future<void> runPub({
+  List<String>? args,
+  Object? output,
+  Object? error,
+  Object? outputJson,
+  Object? silent,
+  int? exitCode,
+  String? workingDirectory,
+  Map<String, String?>? environment,
+  List<String>? input,
+  bool includeParentHomeAndPath = true,
+}) async {
   exitCode ??= exit_codes.SUCCESS;
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
-  var pub = await startPub(
+  final pub = await startPub(
     args: args,
     workingDirectory: workingDirectory,
     environment: environment,
@@ -341,11 +370,11 @@ Future<void> runPub(
 
   await pub.shouldExit(exitCode);
 
-  var actualOutput = (await pub.stdoutStream().toList()).join('\n');
-  var actualError = (await pub.stderrStream().toList()).join('\n');
-  var actualSilent = (await pub.silentStream().toList()).join('\n');
+  final actualOutput = (await pub.stdoutStream().toList()).join('\n');
+  final actualError = (await pub.stderrStream().toList()).join('\n');
+  final actualSilent = (await pub.silentStream().toList()).join('\n');
 
-  var failures = <String>[];
+  final failures = <String>[];
   if (outputJson == null) {
     _validateOutput(failures, 'stdout', output, actualOutput);
   } else {
@@ -371,16 +400,22 @@ Future<PubProcess> startPublish(
   bool overrideDefaultHostedServer = true,
   Map<String, String>? environment,
   String path = '',
+  String? workingDirectory,
 }) async {
-  var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
+  final tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
-  return await startPub(args: args, tokenEndpoint: tokenEndpoint, environment: {
-    if (overrideDefaultHostedServer)
-      '_PUB_TEST_DEFAULT_HOSTED_URL': server.url + path
-    else
-      'PUB_HOSTED_URL': server.url + path,
-    if (environment != null) ...environment,
-  });
+  return await startPub(
+    args: args,
+    tokenEndpoint: tokenEndpoint,
+    environment: {
+      if (overrideDefaultHostedServer)
+        '_PUB_TEST_DEFAULT_HOSTED_URL': server.url + path
+      else
+        'PUB_HOSTED_URL': server.url + path,
+      if (environment != null) ...environment,
+    },
+    workingDirectory: workingDirectory,
+  );
 }
 
 /// Handles the beginning confirmation process for uploading a packages.
@@ -391,12 +426,17 @@ Future<void> confirmPublish(TestProcess pub) async {
   // TODO(rnystrom): This is overly specific and inflexible regarding different
   // test packages. Should validate this a little more loosely.
   await expectLater(
-      pub.stdout, emits(startsWith('Publishing test_pkg 1.0.0 to ')));
+    pub.stdout,
+    emitsThrough(startsWith('Publishing test_pkg 1.0.0 to ')),
+  );
   await expectLater(
-      pub.stdout,
-      emitsThrough(matches(
+    pub.stdout,
+    emitsThrough(
+      matches(
         r'^Do you want to publish [^ ]+ [^ ]+ (y/N)?',
-      )));
+      ),
+    ),
+  );
   pub.stdin.writeln('y');
 }
 
@@ -407,7 +447,10 @@ String pathInCache(String path) => p.join(d.sandbox, cachePath, path);
 /// sandbox.
 String _pathInSandbox(String relPath) => p.join(d.sandbox, relPath);
 
-String testVersion = '0.1.2+3';
+const String testVersion = '3.1.2+3';
+
+/// This constraint is compatible with [testVersion].
+const String defaultSdkConstraint = '^3.0.2';
 
 /// Gets the environment variables used to run pub in a test context.
 Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
@@ -421,14 +464,16 @@ Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
       '_PUB_TEST_SDK_VERSION': testVersion,
       if (tokenEndpoint != null) '_PUB_TEST_TOKEN_ENDPOINT': tokenEndpoint,
       if (_globalServer?.port != null)
-        'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}'
+        'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}',
     };
 
 /// The path to the root of pub's sources in the pub repo.
 final String _pubRoot = (() {
   if (!fileExists(p.join('bin', 'pub.dart'))) {
     throw StateError(
-        "Current working directory (${p.current} is not pub's root. Run tests from pub's root.");
+      "Current working directory (${p.current} is not pub's root. "
+      "Run tests from pub's root.",
+    );
   }
   return p.current;
 })();
@@ -440,13 +485,14 @@ final String _pubRoot = (() {
 ///
 /// If [environment] is given, any keys in it will override the environment
 /// variables passed to the spawned process.
-Future<PubProcess> startPub(
-    {Iterable<String>? args,
-    String? tokenEndpoint,
-    String? workingDirectory,
-    Map<String, String?>? environment,
-    bool verbose = true,
-    includeParentHomeAndPath = true}) async {
+Future<PubProcess> startPub({
+  Iterable<String>? args,
+  String? tokenEndpoint,
+  String? workingDirectory,
+  Map<String, String?>? environment,
+  bool verbose = true,
+  bool includeParentHomeAndPath = true,
+}) async {
   args ??= [];
 
   ensureDir(_pathInSandbox(appPath));
@@ -463,7 +509,7 @@ Future<PubProcess> startPub(
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
-  var dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
+  final dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
   dartArgs
     ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
     ..addAll(args);
@@ -481,10 +527,10 @@ Future<PubProcess> startPub(
       if (systemRoot != null) 'SYSTEMROOT': systemRoot,
       if (tmp != null) 'TMP': tmp,
     },
-    ...getPubTestEnvironment(tokenEndpoint)
+    ...getPubTestEnvironment(tokenEndpoint),
   };
   for (final e in (environment ?? {}).entries) {
-    var value = e.value;
+    final value = e.value;
     if (value == null) {
       mergedEnvironment.remove(e.key);
     } else {
@@ -492,57 +538,74 @@ Future<PubProcess> startPub(
     }
   }
 
-  return await PubProcess.start(Platform.resolvedExecutable, dartArgs,
-      environment: mergedEnvironment,
-      workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
-      description: args.isEmpty ? 'pub' : 'pub ${args.first}',
-      includeParentEnvironment: false);
+  return await PubProcess.start(
+    Platform.resolvedExecutable,
+    dartArgs,
+    environment: mergedEnvironment,
+    workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
+    description: args.isEmpty ? 'pub' : 'pub ${args.join(' ')}',
+    includeParentEnvironment: false,
+  );
 }
 
 /// A subclass of [TestProcess] that parses pub's verbose logging output and
 /// makes [stdout] and [stderr] work as though pub weren't running in verbose
 /// mode.
 class PubProcess extends TestProcess {
-  late final StreamSplitter<Pair<log.Level, String>> _logSplitter =
+  late final StreamSplitter<(log.Level level, String message)> _logSplitter =
       createLogSplitter();
 
-  StreamSplitter<Pair<log.Level, String>> createLogSplitter() {
-    return StreamSplitter(StreamGroup.merge([
-      _outputToLog(super.stdoutStream(), log.Level.message),
-      _outputToLog(super.stderrStream(), log.Level.error)
-    ]));
+  StreamSplitter<(log.Level, String)> createLogSplitter() {
+    return StreamSplitter(
+      StreamGroup.merge([
+        _outputToLog(super.stdoutStream(), log.Level.message),
+        _outputToLog(super.stderrStream(), log.Level.error),
+      ]),
+    );
   }
 
-  static Future<PubProcess> start(String executable, Iterable<String> arguments,
-      {String? workingDirectory,
-      Map<String, String>? environment,
-      bool includeParentEnvironment = true,
-      bool runInShell = false,
-      String? description,
-      Encoding encoding = utf8,
-      bool forwardStdio = false}) async {
-    var process = await Process.start(executable, arguments.toList(),
-        workingDirectory: workingDirectory,
-        environment: environment,
-        includeParentEnvironment: includeParentEnvironment,
-        runInShell: runInShell);
+  static Future<PubProcess> start(
+    String executable,
+    Iterable<String> arguments, {
+    String? workingDirectory,
+    Map<String, String>? environment,
+    bool includeParentEnvironment = true,
+    bool runInShell = false,
+    String? description,
+    Encoding encoding = utf8,
+    bool forwardStdio = false,
+  }) async {
+    final process = await Process.start(
+      executable,
+      arguments.toList(),
+      workingDirectory: workingDirectory,
+      environment: environment,
+      includeParentEnvironment: includeParentEnvironment,
+      runInShell: runInShell,
+    );
 
     if (description == null) {
-      var humanExecutable = p.isWithin(p.current, executable)
+      final humanExecutable = p.isWithin(p.current, executable)
           ? p.relative(executable)
           : executable;
       description = '$humanExecutable ${arguments.join(' ')}';
     }
 
-    return PubProcess(process, description,
-        encoding: encoding, forwardStdio: forwardStdio);
+    return PubProcess(
+      process,
+      description,
+      encoding: encoding,
+      forwardStdio: forwardStdio,
+    );
   }
 
   /// This is protected.
-  PubProcess(process, description,
-      {Encoding encoding = utf8, bool forwardStdio = false})
-      : super(process, description,
-            encoding: encoding, forwardStdio: forwardStdio);
+  PubProcess(
+    super.process,
+    super.description, {
+    super.encoding,
+    super.forwardStdio,
+  });
 
   final _logLineRegExp = RegExp(r'^([A-Z ]{4})[:|] (.*)$');
   final Map<String, log.Level> _logLevels = [
@@ -551,50 +614,55 @@ class PubProcess extends TestProcess {
     log.Level.message,
     log.Level.io,
     log.Level.solver,
-    log.Level.fine
+    log.Level.fine,
   ].fold({}, (levels, level) {
     levels[level.name] = level;
     return levels;
   });
 
-  Stream<Pair<log.Level, String>> _outputToLog(
-      Stream<String> stream, log.Level defaultLevel) {
+  Stream<(log.Level, String message)> _outputToLog(
+    Stream<String> stream,
+    log.Level defaultLevel,
+  ) {
     late log.Level lastLevel;
     return stream.map((line) {
-      var match = _logLineRegExp.firstMatch(line);
-      if (match == null) return Pair<log.Level, String>(defaultLevel, line);
+      final match = _logLineRegExp.firstMatch(line);
+      if (match == null) return (defaultLevel, line);
 
-      var level = _logLevels[match[1]] ?? lastLevel;
+      final level = _logLevels[match[1]] ?? lastLevel;
       lastLevel = level;
-      return Pair<log.Level, String>(level, match[2]!);
+      return (level, match[2]!);
     });
   }
 
   @override
   Stream<String> stdoutStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.message) return [];
-      return [entry.last];
+      final (level, message) = entry;
+      if (level != log.Level.message) return [];
+      return [message];
     });
   }
 
   @override
   Stream<String> stderrStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.error && entry.first != log.Level.warning) {
+      final (level, message) = entry;
+      if (level != log.Level.error && level != log.Level.warning) {
         return [];
       }
-      return [entry.last];
+      return [message];
     });
   }
 
   /// A stream of log messages that are silent by default.
   Stream<String> silentStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first == log.Level.message) return [];
-      if (entry.first == log.Level.error) return [];
-      if (entry.first == log.Level.warning) return [];
-      return [entry.last];
+      final (level, message) = entry;
+      if (level == log.Level.message) return [];
+      if (level == log.Level.error) return [];
+      if (level == log.Level.warning) return [];
+      return [message];
     });
   }
 }
@@ -610,63 +678,42 @@ void ensureGit() {
 
 /// Creates a lock file for [package] without running `pub get`.
 ///
-/// [dependenciesInSandBox] is a list of path dependencies to be found in the sandbox
-/// directory.
+/// [dependenciesInSandBox] is a list of path dependencies to be found in the
+/// sandbox directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-Future<void> createLockFile(String package,
-    {Iterable<String>? dependenciesInSandBox,
-    Map<String, String>? hosted}) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
+Future<void> createLockFile(
+  String package, {
+  Iterable<String>? dependenciesInSandBox,
+  Map<String, String>? hosted,
+}) async {
+  final cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
-  var lockFile =
-      _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
-
-  await d.dir(package, [
-    d.file('pubspec.lock', lockFile.serialize(p.join(d.sandbox, package))),
-    d.file(
-      '.packages',
-      lockFile.packagesFile(
-        cache,
-        entrypoint: package,
-        relativeFrom: p.join(d.sandbox, package),
-      ),
-    )
-  ]).create();
-}
-
-/// Like [createLockFile], but creates only a `.packages` file without a
-/// lockfile.
-Future<void> createPackagesFile(String package,
-    {Iterable<String>? dependenciesInSandBox,
-    Map<String, String>? hosted}) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
-  var lockFile =
+  final lockFile =
       _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
     d.file(
-      '.packages',
-      lockFile.packagesFile(
-        cache,
-        entrypoint: package,
-        relativeFrom: d.sandbox,
-      ),
-    )
+      'pubspec.lock',
+      lockFile.serialize(p.join(d.sandbox, package), cache),
+    ),
   ]).create();
 }
 
-/// Creates a lock file for [sources] without running `pub get`.
+/// Creates a lock file without running `pub get`.
 ///
 /// [sandbox] is a list of path dependencies to be found in the sandbox
 /// directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
-LockFile _createLockFile(SystemCache cache,
-    {Iterable<String>? sandbox, Map<String, String>? hosted}) {
-  var dependencies = {};
+LockFile _createLockFile(
+  SystemCache cache, {
+  Iterable<String>? sandbox,
+  Map<String, String>? hosted,
+}) {
+  final dependencies = <String, dynamic>{};
 
   if (sandbox != null) {
     for (var package in sandbox) {
@@ -675,12 +722,28 @@ LockFile _createLockFile(SystemCache cache,
   }
 
   final packages = <PackageId>[
-    ...dependencies.entries.map((entry) => cache.path.parseId(
-        entry.key, Version(0, 0, 0), {'path': entry.value, 'relative': true},
-        containingDir: p.join(d.sandbox, appPath))),
+    ...dependencies.entries.map(
+      (entry) => cache.path.parseId(
+        entry.key,
+        Version(0, 0, 0),
+        {'path': entry.value, 'relative': true},
+        containingDir: p.join(d.sandbox, appPath),
+      ),
+    ),
     if (hosted != null)
       ...hosted.entries.map(
-          (entry) => cache.hosted.idFor(entry.key, Version.parse(entry.value)))
+        (entry) => PackageId(
+          entry.key,
+          Version.parse(entry.value),
+          ResolvedHostedDescription(
+            HostedDescription(
+              entry.key,
+              'https://pub.dev',
+            ),
+            sha256: null,
+          ),
+        ),
+      ),
   ];
 
   return LockFile(packages);
@@ -691,7 +754,7 @@ LockFile _createLockFile(SystemCache cache,
 /// Note that this will only affect HTTP requests made via http.dart in the
 /// parent process.
 void useMockClient(MockClient client) {
-  var oldInnerClient = innerHttpClient;
+  final oldInnerClient = innerHttpClient;
   innerHttpClient = client;
   addTearDown(() {
     innerHttpClient = oldInnerClient;
@@ -707,49 +770,17 @@ Map<String, Object> packageMap(
   Map? devDependencies,
   Map? environment,
 ]) {
-  var package = <String, Object>{
+  final package = <String, Object>{
     'name': name,
     'version': version,
-    'homepage': 'http://pub.dartlang.org',
-    'description': 'A package, I guess.'
+    'homepage': 'https://pub.dev',
+    'description': 'A package, I guess.',
   };
 
   if (dependencies != null) package['dependencies'] = dependencies;
   if (devDependencies != null) package['dev_dependencies'] = devDependencies;
   if (environment != null) package['environment'] = environment;
   return package;
-}
-
-/// Returns a Map in the format used by the pub.dartlang.org API to represent a
-/// package version.
-///
-/// [pubspec] is the parsed pubspec of the package version. If [full] is true,
-/// this returns the complete map, including metadata that's only included when
-/// requesting the package version directly.
-Map packageVersionApiMap(String hostedUrl, Map pubspec,
-    {bool retracted = false, bool full = false}) {
-  var name = pubspec['name'];
-  var version = pubspec['version'];
-  var map = {
-    'pubspec': pubspec,
-    'version': version,
-    'archive_url': '$hostedUrl/packages/$name/versions/$version.tar.gz',
-  };
-
-  if (retracted) {
-    map['retracted'] = true;
-  }
-
-  if (full) {
-    map.addAll({
-      'downloads': 0,
-      'created': '2012-09-25T18:38:28.685260',
-      'libraries': ['$name.dart'],
-      'uploader': ['nweiz@google.com']
-    });
-  }
-
-  return map;
 }
 
 /// Returns the name of the shell script for a binstub named [name].
@@ -764,7 +795,11 @@ String binStubName(String name) => Platform.isWindows ? '$name.bat' : name;
 ///
 /// If it's a [RegExp] or [Matcher], just reports whether the output matches.
 void _validateOutput(
-    List<String> failures, String pipe, expected, String actual) {
+  List<String> failures,
+  String pipe,
+  Object? expected,
+  String actual,
+) {
   if (expected == null) return;
 
   if (expected is String) {
@@ -776,9 +811,13 @@ void _validateOutput(
 }
 
 void _validateOutputString(
-    List<String> failures, String pipe, String expected, String actual) {
-  var actualLines = actual.split('\n');
-  var expectedLines = expected.split('\n');
+  List<String> failures,
+  String pipe,
+  String expected,
+  String actual,
+) {
+  final actualLines = actual.split('\n');
+  final expectedLines = expected.split('\n');
 
   // Strip off the last line. This lets us have expected multiline strings
   // where the closing ''' is on its own line. It also fixes '' expected output
@@ -787,11 +826,11 @@ void _validateOutputString(
     expectedLines.removeLast();
   }
 
-  var results = <String>[];
+  final results = <String>[];
   var failed = false;
 
   // Compare them line by line to see which ones match.
-  var length = max(expectedLines.length, actualLines.length);
+  final length = max(expectedLines.length, actualLines.length);
   for (var i = 0; i < length; i++) {
     if (i >= actualLines.length) {
       // Missing output.
@@ -802,8 +841,8 @@ void _validateOutputString(
       failed = true;
       results.add('X ${actualLines[i]}');
     } else {
-      var expectedLine = expectedLines[i].trim();
-      var actualLine = actualLines[i].trim();
+      final expectedLine = expectedLines[i].trim();
+      final actualLine = actualLines[i].trim();
 
       if (expectedLine != actualLine) {
         // Mismatched lines.
@@ -828,22 +867,28 @@ void _validateOutputString(
 /// Validates that [actualText] is a string of JSON that matches [expected],
 /// which may be a literal JSON object, or any other [Matcher].
 void _validateOutputJson(
-    List<String> failures, String pipe, expected, String actualText) {
+  List<String> failures,
+  String pipe,
+  Object? expected,
+  String actualText,
+) {
   late Map actual;
   try {
-    actual = jsonDecode(actualText);
+    actual = jsonDecode(actualText) as Map;
   } on FormatException {
     failures.add('Expected $pipe JSON:');
-    failures.add(expected);
+    failures.add(expected.toString());
     failures.add('Got invalid JSON:');
     failures.add(actualText);
   }
 
   // Remove dart2js's timing logs, which would otherwise cause tests to fail
   // flakily when compilation takes a long time.
-  actual['log']?.removeWhere((entry) =>
-      entry['level'] == 'Fine' &&
-      entry['message'].startsWith('Not yet complete after'));
+  (actual['log'] as List?)?.removeWhere(
+    (dynamic entry) =>
+        (entry as Map)['level'] == 'Fine' &&
+        (entry['message'] as String).startsWith('Not yet complete after'),
+  );
 
   // Match against the expectation.
   expect(actual, expected);
@@ -856,48 +901,25 @@ typedef ValidatorCreator = Validator Function();
 ///
 /// Returns a scheduled Future that contains the validator after validation.
 Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
+  final cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   final entrypoint = Entrypoint(_pathInSandbox(appPath), cache);
-  var validator = fn();
+  final validator = fn();
   validator.context = ValidationContext(
     entrypoint,
     await Future.value(size ?? 100),
     _globalServer == null
         ? Uri.parse('https://pub.dev')
         : Uri.parse(globalServer.url),
-    entrypoint.root.listFiles(),
+    entrypoint.workspaceRoot.listFiles(),
   );
   await validator.validate();
   return validator;
 }
 
-/// A matcher that matches a Pair.
-Matcher pairOf(firstMatcher, lastMatcher) =>
-    _PairMatcher(wrapMatcher(firstMatcher), wrapMatcher(lastMatcher));
-
-class _PairMatcher extends Matcher {
-  final Matcher _firstMatcher;
-  final Matcher _lastMatcher;
-
-  _PairMatcher(this._firstMatcher, this._lastMatcher);
-
-  @override
-  bool matches(item, Map matchState) {
-    if (item is! Pair) return false;
-    return _firstMatcher.matches(item.first, matchState) &&
-        _lastMatcher.matches(item.last, matchState);
-  }
-
-  @override
-  Description describe(Description description) {
-    return description.addAll('(', ', ', ')', [_firstMatcher, _lastMatcher]);
-  }
-}
-
 /// Returns a matcher that asserts that a string contains [times] distinct
 /// occurrences of [pattern], which must be a regular expression pattern.
 Matcher matchesMultiple(String pattern, int times) {
-  var buffer = StringBuffer(pattern);
+  final buffer = StringBuffer(pattern);
   for (var i = 1; i < times; i++) {
     buffer.write(r'(.|\n)*');
     buffer.write(pattern);
@@ -908,31 +930,29 @@ Matcher matchesMultiple(String pattern, int times) {
 /// A [StreamMatcher] that matches multiple lines of output.
 StreamMatcher emitsLines(String output) => emitsInOrder(output.split('\n'));
 
-/// Removes output from pub known to be unstable.
-Iterable<String> filterUnstableLines(List<String> input) {
-  return input
-      // Downloading order is not deterministic, so to avoid flakiness we filter
-      // out these lines.
-      .where((line) => !line.startsWith('Downloading '))
-      // Any paths in output should be relative to the sandbox and with forward
-      // slashes to be stable across platforms.
-      .map((line) {
-    line = line
-        .replaceAll(d.sandbox, r'$SANDBOX')
-        .replaceAll(Platform.pathSeparator, '/');
-    var port = _globalServer?.port;
-    if (port != null) {
-      line = line.replaceAll(port.toString(), '\$PORT');
-    }
-    return line;
-  });
+/// Removes output from pub known to be unstable across runs or platforms.
+String filterUnstableText(String input) {
+  // Any paths in output should be relative to the sandbox and with forward
+  // slashes to be stable across platforms.
+  input = input.replaceAll(d.sandbox, r'$SANDBOX');
+  input = input
+      .replaceAllMapped(RegExp(r'\\(\S|\.)'), (match) => '/${match[1]}')
+      .replaceAll(
+        RegExp(r'sha256: "?[0-9a-f]{64}"?', multiLine: true),
+        r'sha256: $SHA256',
+      );
+  final port = _globalServer?.port;
+  if (port != null) {
+    input = input.replaceAll(port.toString(), '\$PORT');
+  }
+  return input;
 }
 
 /// Runs `pub outdated [args]` and appends the output to [buffer].
 Future<void> runPubIntoBuffer(
   List<String> args,
   StringBuffer buffer, {
-  Map<String, String>? environment,
+  Map<String, String?>? environment,
   String? workingDirectory,
   String? stdin,
 }) async {
@@ -958,12 +978,16 @@ Future<void> runPubIntoBuffer(
   //       .join('\n'));
   // }
   final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
-  buffer.writeln(filterUnstableLines([
-    '\$$pipe pub ${args.map(escapeShellArgument).join(' ')}',
-    ...await process.stdout.rest.toList(),
-  ]).join('\n'));
-  for (final line in filterUnstableLines(await process.stderr.rest.toList())) {
-    buffer.writeln('[STDERR] $line');
+  final joinedArgs =
+      args.map(filterUnstableText).map(escapeShellArgument).join(' ');
+  buffer.writeln(
+    '\$$pipe pub $joinedArgs',
+  );
+  for (final line in await process.stdout.rest.toList()) {
+    buffer.writeln(filterUnstableText(line));
+  }
+  for (final line in await process.stderr.rest.toList()) {
+    buffer.writeln('[STDERR] ${filterUnstableText(line)}');
   }
   if (exitCode != 0) {
     buffer.writeln('[EXIT CODE] $exitCode');
@@ -975,8 +999,8 @@ Future<void> runPubIntoBuffer(
 PackageServer get globalServer => _globalServer!;
 PackageServer? _globalServer;
 
-/// Creates an HTTP server that replicates the structure of pub.dartlang.org and
-/// makes it the current [globalServer].
+/// Creates an HTTP server that replicates the structure of pub.dev and makes it
+/// the current [globalServer].
 Future<PackageServer> servePackages() async {
   final server = await startPackageServer();
   _globalServer = server;
@@ -996,12 +1020,14 @@ Future<PackageServer> startPackageServer() async {
   return server;
 }
 
-/// Create temporary folder 'bin/' containing a 'git' script in [sandbox]
+/// Create temporary folder 'bin/' containing a 'git' script in [d.sandbox]
 /// By adding the bin/ folder to the search `$PATH` we can prevent `pub` from
 /// detecting the installed 'git' binary and we can test that it prints
 /// a useful error message.
-Future<void> setUpFakeGitScript(
-    {required String bash, required String batch}) async {
+Future<void> setUpFakeGitScript({
+  required String bash,
+  required String batch,
+}) async {
   await d.dir('bin', [
     if (!Platform.isWindows) d.file('git', bash),
     if (Platform.isWindows) d.file('git.bat', batch),
@@ -1021,4 +1047,106 @@ Map<String, String> extendedPathEnv() {
     // Override 'PATH' to ensure that we can't detect a working "git" binary
     'PATH': '$binFolder$separator${Platform.environment['PATH']}',
   };
+}
+
+const _defaultMode = 420; // 644₈
+const _executableMask = 0x49; // 001 001 001
+
+Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
+  final entries = <TarEntry>[];
+  void addDescriptor(d.Descriptor descriptor, String path) {
+    if (descriptor is d.DirectoryDescriptor) {
+      if (descriptor.contents.isEmpty) {
+        entries.add(
+          TarEntry(
+            TarHeader(
+              name: p.posix.join(path, descriptor.name),
+              typeFlag: TypeFlag.dir,
+              mode: _defaultMode | _executableMask,
+            ),
+            Stream.fromIterable([]),
+          ),
+        );
+      }
+      for (final e in descriptor.contents) {
+        addDescriptor(e, p.posix.join(path, descriptor.name));
+      }
+    } else {
+      entries.add(
+        TarEntry(
+          TarHeader(
+            // Ensure paths in tar files use forward slashes
+            name: p.posix.join(path, descriptor.name),
+            // We want to keep executable bits, but otherwise use the default
+            // file mode
+            mode: 420,
+            // size: 100,
+            modified: DateTime.fromMicrosecondsSinceEpoch(0),
+            userName: 'pub',
+            groupName: 'pub',
+          ),
+          (descriptor as d.FileDescriptor).readAsBytes(),
+        ),
+      );
+    }
+  }
+
+  for (final e in contents) {
+    addDescriptor(e, '');
+  }
+  return _replaceOs(
+    Stream.fromIterable(entries)
+        .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+        .transform(gzip.encoder),
+  );
+}
+
+/// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
+/// entry of a gzip stream, giving us the same stream and this stable testing
+/// on all platforms.
+///
+/// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
+/// about the OS header.
+Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
+  final bytesBuilder = BytesBuilder();
+  await for (final t in stream) {
+    bytesBuilder.add(t);
+  }
+  final result = bytesBuilder.toBytes();
+  result[9] = 0;
+  yield result;
+}
+
+/// Utility for indexing json data structures.
+///
+/// Each element of [path] should be a `String`, `int` or `(String, String)`.
+///
+/// For each element `key` of [path], recurse into [json].
+///
+/// If the `key` is a String, the next json structure should be a Map, and have
+/// `key` as a property. Recurse into that property.
+///
+/// If `key` is an `int`, the next json structure must be a List, with that
+/// index. Recurse into that index.
+///
+/// If `key` in a `(String k, String v)` the next json structure must be a List
+/// of maps, one of them having the property `k` with value `v`, recurse into
+/// that map.
+///
+/// Cast the result as a [T].
+T dig<T>(dynamic json, List<dynamic> path) {
+  for (var i = 0; i < path.length; i++) {
+    switch (path[i]) {
+      case final String key:
+        json = (json as Map)[key];
+      case final int key:
+        json = (json as List)[key];
+      case (final String key, final String value):
+        json = (json as List)
+            .firstWhere((element) => (element as Map)[key] == value);
+      case final key:
+        throw ArgumentError('Bad key $key in', 'path');
+    }
+  }
+  return json as T;
 }

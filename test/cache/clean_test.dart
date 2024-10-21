@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -11,7 +11,7 @@ import '../test_pub.dart';
 
 void main() {
   test('running pub cache clean when there is no cache', () async {
-    final cache = path.join(d.sandbox, cachePath);
+    final cache = p.join(d.sandbox, cachePath);
 
     await runPub(args: ['cache', 'clean'], output: 'No pub cache at $cache.');
   });
@@ -20,14 +20,20 @@ void main() {
     await servePackages()
       ..serve('foo', '1.1.2')
       ..serve('bar', '1.2.3');
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
-    final cache = path.join(d.sandbox, cachePath);
-    expect(listDir(cache, includeHidden: true), isNotEmpty);
+    final cache = p.join(d.sandbox, cachePath);
+    expect(listDir(cache, includeHidden: true), contains(endsWith('hosted')));
     await runPub(
-        args: ['cache', 'clean', '--force'],
-        output: 'Removing pub cache directory $cache.');
-    expect(listDir(cache, includeHidden: true), isEmpty);
+      args: ['cache', 'clean', '--force'],
+      output: 'Removing pub cache directory $cache.',
+    );
+
+    expect(
+      listDir(cache, includeHidden: true),
+      // The README.md will be reconstructed.
+      [pathInCache('README.md')],
+    );
   });
 
   test('running pub cache clean deletes cache only with confirmation',
@@ -35,10 +41,13 @@ void main() {
     await servePackages()
       ..serve('foo', '1.1.2')
       ..serve('bar', '1.2.3');
-    await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
     await pubGet();
-    final cache = path.join(d.sandbox, cachePath);
-    expect(listDir(cache, includeHidden: true), isNotEmpty);
+    final cache = p.join(d.sandbox, cachePath);
+    expect(
+      listDir(cache, includeHidden: true),
+      contains(pathInCache('hosted')),
+    );
     {
       final process = await startPub(
         args: ['cache', 'clean'],
@@ -46,7 +55,10 @@ void main() {
       process.stdin.writeln('n');
       expect(await process.exitCode, 0);
     }
-    expect(listDir(cache, includeHidden: true), isNotEmpty);
+    expect(
+      listDir(cache, includeHidden: true),
+      contains(pathInCache('hosted')),
+    );
 
     {
       final process = await startPub(
@@ -55,6 +67,12 @@ void main() {
       process.stdin.writeln('y');
       expect(await process.exitCode, 0);
     }
-    expect(listDir(cache, includeHidden: true), isEmpty);
+    expect(
+      listDir(
+        cache,
+        includeHidden: true,
+      ), // The README.md will be reconstructed.
+      [pathInCache('README.md')],
+    );
   });
 }

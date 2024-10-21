@@ -9,24 +9,24 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package validation has an error', () async {
     await d.dir(appPath, [
       d.rawPubspec({
         'name': 'test_pkg',
-        'homepage': 'http://pub.dartlang.org',
+        'homepage': 'https://pub.dev',
         'version': '1.0.0',
+        'environment': {'sdk': defaultSdkConstraint},
       }),
     ]).create();
 
     await servePackages();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(
-        pub.stderr,
-        emitsThrough('Sorry, your package is missing some '
-            "requirements and can't be published yet."));
+      pub.stderr,
+      emitsThrough('Sorry, your package is missing some '
+          "requirements and can't be published yet."),
+    );
   });
 }

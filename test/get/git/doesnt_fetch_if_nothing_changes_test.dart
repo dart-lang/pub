@@ -14,17 +14,21 @@ void main() {
     ensureGit();
 
     await d.git(
-        'foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]).create();
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
 
-    await d.appDir({
-      'foo': {
-        'git': {'url': '../foo.git'}
-      }
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {
+          'git': {'url': '../foo.git'},
+        },
+      },
+    ).create();
 
     await pubGet();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     // Delete the repo. This will cause "pub get" to fail if it tries to
     // re-fetch.

@@ -12,25 +12,27 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'one': null}
+        'executables': {'one': null},
       }),
-      d.dir('bin', [d.file('one.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('one.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
-    await runPub(args: [
-      'global',
-      'activate',
-      '--source',
-      'path',
-      '../foo',
-      '--no-executables'
-    ]);
+    await runPub(
+      args: [
+        'global',
+        'activate',
+        '--source',
+        'path',
+        '../foo',
+        '--no-executables',
+      ],
+    );
 
     // Should still delete old one.
     await d.dir(cachePath, [
-      d.dir('bin', [d.nothing(binStubName('one'))])
+      d.dir('bin', [d.nothing(binStubName('one'))]),
     ]).validate();
   });
 }

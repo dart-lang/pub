@@ -2,17 +2,17 @@
 
 ## Section 0
 $ tree
-|-- baz
-|   |-- bin
-|   |   '-- qux.dart
-|   '-- pubspec.yaml
-|-- foo
-|   |-- bin
-|   |   '-- bar.dart
-|   '-- pubspec.yaml
-'-- myapp
-    |-- pubspec.lock
-    '-- pubspec.yaml
+├── baz
+│   ├── bin
+│   │   └── qux.dart
+│   └── pubspec.yaml
+├── foo
+│   ├── bin
+│   │   └── bar.dart
+│   └── pubspec.yaml
+└── myapp
+    ├── pubspec.lock
+    └── pubspec.yaml
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -40,7 +40,11 @@ $ pub deps --json
       "source": "root",
       "dependencies": [
         "foo"
-      ]
+      ],
+      "directDependencies": [
+        "foo"
+      ],
+      "devDependencies": []
     },
     {
       "name": "foo",
@@ -49,6 +53,9 @@ $ pub deps --json
       "source": "path",
       "dependencies": [
         "baz"
+      ],
+      "directDependencies": [
+        "baz"
       ]
     },
     {
@@ -56,13 +63,14 @@ $ pub deps --json
       "version": "1.0.0",
       "kind": "transitive",
       "source": "path",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": []
     }
   ],
   "sdks": [
     {
       "name": "Dart",
-      "version": "0.1.2+3"
+      "version": "3.1.2+3"
     }
   ],
   "executables": [

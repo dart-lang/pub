@@ -4,14 +4,13 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/git.dart' as git;
 import 'package:test_descriptor/test_descriptor.dart';
 
 /// Describes a Git repository and its contents.
 class GitRepoDescriptor extends DirectoryDescriptor {
-  GitRepoDescriptor(String name, List<Descriptor> contents)
-      : super(name, contents);
+  GitRepoDescriptor(super.name, List<Descriptor> super.contents);
 
   /// Creates the Git repository and commits the contents.
   @override
@@ -25,7 +24,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
         '',
       ],
       ['add', '.'],
-      ['commit', '-m', 'initial commit', '--allow-empty']
+      ['commit', '-m', 'initial commit', '--allow-empty'],
     ]);
   }
 
@@ -37,7 +36,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['add', '.'],
-      ['commit', '-m', 'update']
+      ['commit', '-m', 'update'],
     ]);
   }
 
@@ -46,19 +45,20 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   ///
   /// [parent] defaults to [sandbox].
   Future<String> revParse(String ref, [String? parent]) async {
-    var output = await _runGit(['rev-parse', ref], parent);
-    return output[0];
+    final output = await _runGit(['rev-parse', ref], parent);
+    return (output as String).trim();
   }
 
   /// Runs a Git command in this repository.
   ///
   /// [parent] defaults to [sandbox].
-  Future runGit(List<String> args, [String? parent]) => _runGit(args, parent);
+  Future<void> runGit(List<String> args, [String? parent]) =>
+      _runGit(args, parent);
 
-  Future<List<String>> _runGit(List<String> args, String? parent) {
+  Future<dynamic> _runGit(List<String> args, String? parent) {
     // Explicitly specify the committer information. Git needs this to commit
     // and we don't want to rely on the buildbots having this already set up.
-    var environment = {
+    final environment = {
       'GIT_AUTHOR_NAME': 'Pub Test',
       'GIT_AUTHOR_EMAIL': 'pub@dartlang.org',
       'GIT_COMMITTER_NAME': 'Pub Test',
@@ -68,9 +68,11 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       'GIT_AUTHOR_DATE': DateTime(1970).toIso8601String(),
     };
 
-    return git.run(args,
-        workingDir: path.join(parent ?? sandbox, name),
-        environment: environment);
+    return git.run(
+      args,
+      workingDir: p.join(parent ?? sandbox, name),
+      environment: environment,
+    );
   }
 
   Future _runGitCommands(String? parent, List<List<String>> commands) async {

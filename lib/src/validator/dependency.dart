@@ -10,45 +10,34 @@ import '../exceptions.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
 import '../sdk.dart';
-import '../source/git.dart';
 import '../source/hosted.dart';
 import '../source/path.dart';
 import '../source/sdk.dart';
 import '../validator.dart';
-
-/// The first Dart SDK version that supported caret constraints.
-final _firstCaretVersion = Version.parse('1.8.0-dev.3.0');
-
-/// The first Dart SDK version that supported Git path dependencies.
-final _firstGitPathVersion = Version.parse('2.0.0-dev.1.0');
 
 /// A validator that validates a package's dependencies.
 class DependencyValidator extends Validator {
   @override
   Future validate() async {
     /// Whether any dependency has a caret constraint.
-    var _hasCaretDep = false;
+    var hasCaretDep = false;
 
     /// Emit an error for dependencies from unknown SDKs or without appropriate
     /// constraints on the Dart SDK.
-    void _warnAboutSdkSource(PackageRange dep) {
-      var identifier = (dep.description as SdkDescription).sdk;
-      var sdk = sdks[identifier];
+    void warnAboutSdkSource(PackageRange dep) {
+      final identifier = (dep.description as SdkDescription).sdk;
+      final sdk = sdks[identifier];
       if (sdk == null) {
         errors.add('Unknown SDK "$identifier" for dependency "${dep.name}".');
         return;
       }
-
-      validateSdkConstraint(sdk.firstPubVersion,
-          "Older versions of pub don't support the ${sdk.name} SDK.");
     }
 
     /// Warn that dependencies should use the hosted source.
-    Future _warnAboutSource(PackageRange dep) async {
+    Future warnAboutSource(PackageRange dep) async {
       List<Version> versions;
       try {
-        var ids = await entrypoint.cache
-            .getVersions(entrypoint.cache.hosted.refFor(dep.name));
+        final ids = await cache.getVersions(cache.hosted.refFor(dep.name));
         versions = ids.map((id) => id.version).toList();
       } on ApplicationException catch (_) {
         versions = [];
@@ -65,7 +54,7 @@ class DependencyValidator extends Validator {
       }
 
       // Path sources are errors. Other sources are just warnings.
-      var messages = dep.source is PathSource ? errors : warnings;
+      final messages = dep.source is PathSource ? errors : warnings;
 
       messages.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
           'source. Use the hosted source instead. For example:\n'
@@ -78,9 +67,9 @@ class DependencyValidator extends Validator {
     }
 
     /// Warn about improper dependencies on Flutter.
-    void _warnAboutFlutterSdk(PackageRange dep) {
+    void warnAboutFlutterSdk(PackageRange dep) {
       if (dep.source is SdkSource) {
-        _warnAboutSdkSource(dep);
+        warnAboutSdkSource(dep);
         return;
       }
 
@@ -95,10 +84,10 @@ class DependencyValidator extends Validator {
     }
 
     /// Warn that dependencies should have version constraints.
-    void _warnAboutNoConstraint(PackageRange dep) {
+    void warnAboutNoConstraint(PackageRange dep) {
       var message = 'Your dependency on "${dep.name}" should have a version '
           'constraint.';
-      var locked = entrypoint.lockFile.packages[dep.name];
+      final locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         message = '$message For example:\n'
             '\n'
@@ -106,14 +95,14 @@ class DependencyValidator extends Validator {
             '  ${dep.name}: ^${locked.version}\n';
       }
       warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support ${log.bold("all")} '
-          'future versions of "${dep.name}".');
+          'Without a constraint, you\'re promising to support '
+          '${log.bold("all")} future versions of "${dep.name}".');
     }
 
     /// Warn that dependencies should allow more than a single version.
-    void _warnAboutSingleVersionConstraint(PackageRange dep) {
-      warnings.add(
-          'Your dependency on "${dep.name}" should allow more than one version. '
+    void warnAboutSingleVersionConstraint(PackageRange dep) {
+      warnings.add('Your dependency on "${dep.name}" '
+          'should allow more than one version. '
           'For example:\n'
           '\n'
           'dependencies:\n'
@@ -125,10 +114,10 @@ class DependencyValidator extends Validator {
     }
 
     /// Warn that dependencies should have lower bounds on their constraints.
-    void _warnAboutNoConstraintLowerBound(PackageRange dep) {
+    void warnAboutNoConstraintLowerBound(PackageRange dep) {
       var message =
           'Your dependency on "${dep.name}" should have a lower bound.';
-      var locked = entrypoint.lockFile.packages[dep.name];
+      final locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         String constraint;
         if (locked.version == (dep.constraint as VersionRange).max) {
@@ -143,12 +132,12 @@ class DependencyValidator extends Validator {
             '  ${dep.name}: $constraint\n';
       }
       warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support ${log.bold("all")} '
-          'previous versions of "${dep.name}".');
+          'Without a constraint, you\'re promising to support '
+          '${log.bold("all")} previous versions of "${dep.name}".');
     }
 
     /// Warn that dependencies should have upper bounds on their constraints.
-    void _warnAboutNoConstraintUpperBound(PackageRange dep) {
+    void warnAboutNoConstraintUpperBound(PackageRange dep) {
       String constraint;
       if ((dep.constraint as VersionRange).includeMin) {
         constraint = '^${(dep.constraint as VersionRange).min}';
@@ -169,8 +158,8 @@ class DependencyValidator extends Validator {
           '${log.bold("all")} future versions of ${dep.name}.');
     }
 
-    void _warnAboutPrerelease(String dependencyName, VersionRange constraint) {
-      final packageVersion = entrypoint.root.version;
+    void warnAboutPrerelease(String dependencyName, VersionRange constraint) {
+      final packageVersion = package.version;
       if (constraint.min != null &&
           constraint.min!.isPreRelease &&
           !packageVersion.isPreRelease) {
@@ -184,47 +173,35 @@ class DependencyValidator extends Validator {
     }
 
     /// Validates all dependencies in [dependencies].
-    Future _validateDependencies(Iterable<PackageRange> dependencies) async {
+    Future validateDependencies(Iterable<PackageRange> dependencies) async {
       for (var dependency in dependencies) {
-        var constraint = dependency.constraint;
+        final constraint = dependency.constraint;
         if (dependency.name == 'flutter') {
-          _warnAboutFlutterSdk(dependency);
+          warnAboutFlutterSdk(dependency);
         } else if (dependency.source is SdkSource) {
-          _warnAboutSdkSource(dependency);
+          warnAboutSdkSource(dependency);
         } else if (dependency.source is! HostedSource) {
-          await _warnAboutSource(dependency);
-
-          final description = dependency.description;
-          if (description is GitDescription && description.path != '.') {
-            validateSdkConstraint(_firstGitPathVersion,
-                "Older versions of pub don't support Git path dependencies.");
-          }
+          await warnAboutSource(dependency);
         } else {
           if (constraint.isAny) {
-            _warnAboutNoConstraint(dependency);
+            warnAboutNoConstraint(dependency);
           } else if (constraint is VersionRange) {
             if (constraint is Version) {
-              _warnAboutSingleVersionConstraint(dependency);
+              warnAboutSingleVersionConstraint(dependency);
             } else {
-              _warnAboutPrerelease(dependency.name, constraint);
+              warnAboutPrerelease(dependency.name, constraint);
               if (constraint.min == null) {
-                _warnAboutNoConstraintLowerBound(dependency);
+                warnAboutNoConstraintLowerBound(dependency);
               } else if (constraint.max == null) {
-                _warnAboutNoConstraintUpperBound(dependency);
+                warnAboutNoConstraintUpperBound(dependency);
               }
             }
-            _hasCaretDep =
-                _hasCaretDep || constraint.toString().startsWith('^');
+            hasCaretDep = hasCaretDep || constraint.toString().startsWith('^');
           }
         }
       }
     }
 
-    await _validateDependencies(entrypoint.root.pubspec.dependencies.values);
-
-    if (_hasCaretDep) {
-      validateSdkConstraint(_firstCaretVersion,
-          "Older versions of pub don't support ^ version constraints.");
-    }
+    await validateDependencies(package.pubspec.dependencies.values);
   }
 }

@@ -2,10 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:async';
-
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'source/hosted.dart';
@@ -13,102 +13,31 @@ import 'system_cache.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original');
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: [], // explicitly give empty list, to prevent lazy parsing
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
+  return original.copyWith(devDependencies: []);
 }
 
 /// Returns a new [Pubspec] without [original]'s dependency_overrides.
 Pubspec stripDependencyOverrides(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original');
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: original.devDependencies.values,
-    dependencyOverrides: [],
-  );
-}
-
-Future<Pubspec> constrainedToAtLeastNullSafetyPubspec(
-    Pubspec original, SystemCache cache) async {
-  /// Get the first version of [package] opting in to null-safety.
-  Future<VersionConstraint> constrainToFirstWithNullSafety(
-      PackageRange packageRange) async {
-    final ref = packageRange.toRef();
-    final available = await cache.getVersions(ref);
-    if (available.isEmpty) {
-      return stripUpperBound(packageRange.constraint);
-    }
-
-    available.sort((x, y) => x.version.compareTo(y.version));
-
-    for (final p in available) {
-      final pubspec = await cache.describe(p);
-      if (pubspec.languageVersion.supportsNullSafety) {
-        return VersionRange(min: p.version, includeMin: true);
-      }
-    }
-    return stripUpperBound(packageRange.constraint);
-  }
-
-  Future<List<PackageRange>> allConstrainedToAtLeastNullSafety(
-    Map<String, PackageRange> constrained,
-  ) async {
-    final result = await Future.wait(constrained.keys.map((name) async {
-      final packageRange = constrained[name]!;
-      var unconstrainedRange = packageRange;
-
-      /// We only need to remove the upper bound if it is a hosted package.
-      if (packageRange.description is HostedDescription) {
-        unconstrainedRange = PackageRange(
-          packageRange.toRef(),
-          await constrainToFirstWithNullSafety(packageRange),
-        );
-      }
-      return unconstrainedRange;
-    }));
-
-    return result;
-  }
-
-  final constrainedLists = await Future.wait([
-    allConstrainedToAtLeastNullSafety(original.dependencies),
-    allConstrainedToAtLeastNullSafety(original.devDependencies),
-  ]);
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: constrainedLists[0],
-    devDependencies: constrainedLists[1],
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
+  return original.copyWith(dependencyOverrides: []);
 }
 
 /// Returns new pubspec with the same dependencies as [original] but with the
-/// upper bounds of the constraints removed.
+/// the bounds of the constraints removed.
 ///
-/// If [stripOnly] is provided, only the packages whose names are in
-/// [stripOnly] will have their upper bounds removed. If [stripOnly] is
-/// not specified or empty, then all packages will have their upper bounds
+/// If [stripLowerBound] is `false` (the default) only the upper bound is
 /// removed.
-Pubspec stripVersionUpperBounds(Pubspec original,
-    {Iterable<String>? stripOnly}) {
-  ArgumentError.checkNotNull(original, 'original');
+///
+/// If [stripOnly] is provided, only the packages whose names are in [stripOnly]
+/// will have their bounds removed. If [stripOnly] is not specified or empty,
+/// then all packages will have their bounds removed.
+Pubspec stripVersionBounds(
+  Pubspec original, {
+  Iterable<String>? stripOnly,
+  bool stripLowerBound = false,
+}) {
   stripOnly ??= [];
 
-  List<PackageRange> _stripUpperBounds(
+  List<PackageRange> stripBounds(
     Map<String, PackageRange> constrained,
   ) {
     final result = <PackageRange>[];
@@ -120,7 +49,9 @@ Pubspec stripVersionUpperBounds(Pubspec original,
       if (stripOnly!.isEmpty || stripOnly.contains(packageRange.name)) {
         unconstrainedRange = PackageRange(
           packageRange.toRef(),
-          stripUpperBound(packageRange.constraint),
+          stripLowerBound
+              ? VersionConstraint.any
+              : stripUpperBound(packageRange.constraint),
         );
       }
       result.add(unconstrainedRange);
@@ -129,13 +60,41 @@ Pubspec stripVersionUpperBounds(Pubspec original,
     return result;
   }
 
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: _stripUpperBounds(original.dependencies),
-    devDependencies: _stripUpperBounds(original.devDependencies),
-    dependencyOverrides: original.dependencyOverrides.values,
+  return original.copyWith(
+    dependencies: stripBounds(original.dependencies),
+    devDependencies: stripBounds(original.devDependencies),
+  );
+}
+
+/// Returns a pubspec with the same dependencies as [original] but with all
+/// version constraints replaced by `>=c` where `c`, is the member of `current`
+/// that has same name as the dependency.
+Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
+  List<PackageRange> fixBounds(
+    Map<String, PackageRange> constrained,
+  ) {
+    final result = <PackageRange>[];
+
+    for (final name in constrained.keys) {
+      final packageRange = constrained[name]!;
+      final currentVersion = current.firstWhereOrNull((id) => id.name == name);
+      if (currentVersion == null) {
+        result.add(packageRange);
+      } else {
+        result.add(
+          packageRange.toRef().withConstraint(
+                VersionRange(min: currentVersion.version, includeMin: true),
+              ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  return original.copyWith(
+    dependencies: fixBounds(original.dependencies),
+    devDependencies: fixBounds(original.devDependencies),
   );
 }
 
@@ -162,4 +121,36 @@ VersionConstraint stripUpperBound(VersionConstraint constraint) {
   /// If it gets here, [constraint] is the empty version constraint, so we
   /// just return an empty version constraint.
   return VersionConstraint.empty;
+}
+
+/// Returns a somewhat normalized version the description of a dependency with a
+/// version constraint (what comes after the version name in a dependencies
+/// section) as a json-style object.
+///
+/// Will use just the constraint for dependencies hosted at the default host.
+///
+/// Relative paths will be relative to the directory of [receivingPackage].
+///
+/// The syntax used for hosted will depend on the language version of
+/// [receivingPackage].
+Object pubspecDescription(
+  PackageRange range,
+  SystemCache cache,
+  Package receivingPackage,
+) {
+  final description = range.description;
+
+  final constraint = range.constraint;
+  if (description is HostedDescription &&
+      description.url == cache.hosted.defaultUrl) {
+    return constraint.toString();
+  } else {
+    return {
+      range.source.name: description.serializeForPubspec(
+        containingDir: receivingPackage.dir,
+        languageVersion: receivingPackage.pubspec.languageVersion,
+      ),
+      if (!constraint.isAny) 'version': constraint.toString(),
+    };
+  }
 }

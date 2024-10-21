@@ -9,7 +9,9 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 Future<void> populateCache(
-    Map<String, List<String>> versions, PackageServer server) async {
+  Map<String, List<String>> versions,
+  PackageServer server,
+) async {
   for (final entry in versions.entries) {
     for (final version in entry.value) {
       server.serve(entry.key, version);
@@ -17,7 +19,7 @@ Future<void> populateCache(
   }
   for (final entry in versions.entries) {
     for (final version in entry.value) {
-      await d.appDir({entry.key: version}).create();
+      await d.appDir(dependencies: {entry.key: version}).create();
       await pubGet();
     }
   }
@@ -27,15 +29,18 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('upgrades a package using the cache', () async {
       final server = await servePackages();
-      await populateCache({
-        'foo': ['1.2.2', '1.2.3'],
-        'bar': ['1.2.3']
-      }, server);
+      await populateCache(
+        {
+          'foo': ['1.2.2', '1.2.3'],
+          'bar': ['1.2.3'],
+        },
+        server,
+      );
 
       // Now serve only errors - to validate we are truly offline.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any', 'bar': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
 
       String? warning;
       if (command == RunCommand.upgrade) {
@@ -52,13 +57,16 @@ void main() {
 
     test('supports prerelease versions', () async {
       final server = await servePackages();
-      await populateCache({
-        'foo': ['1.2.3-alpha.1']
-      }, server);
+      await populateCache(
+        {
+          'foo': ['1.2.3-alpha.1'],
+        },
+        server,
+      );
       // Now serve only errors - to validate we are truly offline.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       String? warning;
       if (command == RunCommand.upgrade) {
@@ -78,35 +86,41 @@ void main() {
       final server = await servePackages();
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
-      await pubCommand(command,
-          args: ['--offline'],
-          exitCode: exit_codes.UNAVAILABLE,
-          error: equalsIgnoringWhitespace("""
+      await pubCommand(
+        command,
+        args: ['--offline'],
+        exitCode: exit_codes.UNAVAILABLE,
+        error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
 
             Try again without --offline!
-          """));
+          """),
+      );
     });
 
     test('fails gracefully if no cached versions match', () async {
       final server = await servePackages();
-      await populateCache({
-        'foo': ['1.2.2', '1.2.3']
-      }, server);
+      await populateCache(
+        {
+          'foo': ['1.2.2', '1.2.3'],
+        },
+        server,
+      );
 
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
-      await d.appDir({'foo': '>2.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '>2.0.0'}).create();
 
-      await pubCommand(command,
-          args: ['--offline'], error: equalsIgnoringWhitespace("""
-            Because myapp depends on foo >2.0.0 which doesn't match any
-              versions, version solving failed.
-          """));
+      await pubCommand(
+        command,
+        args: ['--offline'],
+        error: contains('''
+Because myapp depends on foo >2.0.0 which doesn't match any versions, version solving failed.'''),
+      );
     });
 
     test(
@@ -117,31 +131,36 @@ void main() {
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.4'});
 
-      await pubCommand(command,
-          args: ['--offline'],
-          exitCode: exit_codes.UNAVAILABLE,
-          error: equalsIgnoringWhitespace("""
+      await pubCommand(
+        command,
+        args: ['--offline'],
+        exitCode: exit_codes.UNAVAILABLE,
+        error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
 
             Try again without --offline!
-          """));
+          """),
+      );
     });
 
     test('downgrades to the version in the cache if necessary', () async {
       final server = await servePackages();
 
-      await populateCache({
-        'foo': ['1.2.2', '1.2.3']
-      }, server);
+      await populateCache(
+        {
+          'foo': ['1.2.2', '1.2.3'],
+        },
+        server,
+      );
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.4'});
 
@@ -155,9 +174,12 @@ void main() {
     test('skips invalid cached versions', () async {
       final server = await servePackages();
 
-      await populateCache({
-        'foo': ['1.2.2', '1.2.3']
-      }, server);
+      await populateCache(
+        {
+          'foo': ['1.2.2', '1.2.3'],
+        },
+        server,
+      );
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
@@ -166,7 +188,7 @@ void main() {
         d.file('random_filename', ''),
       ]).create();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await pubCommand(command, args: ['--offline']);
 
@@ -178,17 +200,20 @@ void main() {
     test('skips invalid locked versions', () async {
       final server = await servePackages();
 
-      await populateCache({
-        'foo': ['1.2.2', '1.2.3']
-      }, server);
+      await populateCache(
+        {
+          'foo': ['1.2.2', '1.2.3'],
+        },
+        server,
+      );
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
       await d.hostedCache([
-        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')])
+        d.dir('foo-1.2.3', [d.file('pubspec.yaml', '{')]),
       ]).create();
 
-      await d.appDir({'foo': 'any'}).create();
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
       await createLockFile('myapp', hosted: {'foo': '1.2.3'});
 

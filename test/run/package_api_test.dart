@@ -12,7 +12,6 @@ const _script = """
   import 'dart:isolate';
 
   main() async {
-    print(await Isolate.packageRoot);
     print(await Isolate.packageConfig);
     print(await Isolate.resolvePackageUri(
         Uri.parse('package:myapp/resource.txt')));
@@ -26,53 +25,69 @@ void main() {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': '../foo'}
-      }),
-      d.dir('bin', [d.file('script.dart', _script)])
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': '../foo'},
+        },
+      ),
+      d.dir('bin', [d.file('script.dart', _script)]),
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
 
-    expect(pub.stdout, emitsThrough('null'));
     expect(
-        pub.stdout,
-        emits(p
+      pub.stdout,
+      emitsThrough(
+        p
             .toUri(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
-            .toString()));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'foo/lib/resource.txt')).toString()));
+            .toString(),
+      ),
+    );
+    expect(
+      pub.stdout,
+      emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()),
+    );
+    expect(
+      pub.stdout,
+      emits(p.toUri(p.join(d.sandbox, 'foo/lib/resource.txt')).toString()),
+    );
     await pub.shouldExit(0);
   });
 
   test('a snapshotted application sees a file: package root', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('script.dart', _script)])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('script.dart', _script)]),
+      ],
+    );
 
     await d.dir(appPath, [
-      d.appPubspec({'foo': 'any'})
+      d.appPubspec(dependencies: {'foo': 'any'}),
     ]).create();
 
     await pubGet();
 
-    var pub = await pubRun(args: ['foo:script']);
+    final pub = await pubRun(args: ['foo:script']);
 
     expect(pub.stdout, emitsThrough('Building package executable...'));
     expect(pub.stdout, emits('Built foo:script.'));
-    expect(pub.stdout, emits('null'));
     expect(
-        pub.stdout,
-        emits(p
+      pub.stdout,
+      emits(
+        p
             .toUri(p.join(d.sandbox, 'myapp/.dart_tool/package_config.json'))
-            .toString()));
-    expect(pub.stdout,
-        emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()));
-    var fooResourcePath =
+            .toString(),
+      ),
+    );
+    expect(
+      pub.stdout,
+      emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()),
+    );
+    final fooResourcePath =
         p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);

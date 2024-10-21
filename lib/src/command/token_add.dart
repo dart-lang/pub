@@ -7,45 +7,64 @@ import 'dart:io';
 
 import '../authentication/credential.dart';
 import '../command.dart';
+import '../command_runner.dart';
 import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../source/hosted.dart';
+import '../utils.dart';
 
 /// Handles the `token add` pub command.
 class TokenAddCommand extends PubCommand {
   @override
   String get name => 'add';
   @override
-  String get description =>
-      'Add authentication tokens for a package repository.';
-  @override
-  String get invocation => 'pub token add';
-  @override
-  String get argumentsDescription => '[hosted-url]';
+  String get description => '''
+Add an authentication token for a package repository.
 
-  String? get envVar => argResults['env-var'];
+The token will be used for authorizing against <hosted-url> both when
+retrieving dependencies and for publishing.
+
+Tokens are stored in ${tokenStore.tokensFile}.
+
+This command will prompt for the secret token over stdin.
+(Unless `--env-var` is used).
+
+For interactive authorization against pub.dev, use `$topLevelProgram pub login`.''';
+  @override
+  String get argumentsDescription => '[options] <hosted-url>';
+
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
+
+  String? get envVar => argResults.option('env-var');
 
   TokenAddCommand() {
-    argParser.addOption('env-var',
-        help: 'Read the secret token from this environment variable when '
-            'making requests.');
+    argParser.addOption(
+      'env-var',
+      help: 'Read the secret token from this environment variable when '
+          'making requests.',
+      valueHelp: 'VARIABLE',
+    );
   }
 
   @override
   Future<void> runProtected() async {
     if (argResults.rest.isEmpty) {
       usageException(
-          'The [hosted-url] for a package repository must be given.');
+        'The [hosted-url] for a package repository must be given.',
+      );
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }
     final rawHostedUrl = argResults.rest.first;
 
     try {
-      var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
-      if (!hostedUrl.isScheme('HTTPS')) {
-        throw FormatException('url must be https://, '
+      final hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
+      final isLocalhost =
+          ['localhost', '127.0.0.1', '::1'].contains(hostedUrl.host);
+      if (!hostedUrl.isScheme('HTTPS') && !isLocalhost) {
+        throw const FormatException('url must be https://, '
             'insecure repositories cannot use authentication.');
       }
 
@@ -64,6 +83,11 @@ class TokenAddCommand extends PubCommand {
     final token = await stdinPrompt('Enter secret token:', echoMode: false);
     if (token.isEmpty) {
       usageException('Token is not provided.');
+    }
+
+    if (!Credential.isValidBearerToken(token)) {
+      dataError('The entered token is not a valid Bearer token. '
+          'A token may only contain `a-zA-Z0-9._~+/=-`');
     }
 
     tokenStore.addCredential(Credential.token(hostedUrl, token));

@@ -29,7 +29,7 @@ const _pathMax = 260 - 1;
 
 void main() {
   testWithGolden('displays all files', (context) async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await d.dir(
       appPath,
       [
@@ -40,28 +40,31 @@ void main() {
       ],
     ).create();
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
     pub.stdin.writeln('y');
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
+        }),
+      );
     });
     await pub.shouldExit(exit_codes.SUCCESS);
     final stdout = await pub.stdout.rest.toList();
 
     context.expectNextSection(
-        stdout.join('\n').replaceAll(globalServer.port.toString(), r'$PORT'));
+      stdout.join('\n').replaceAll(globalServer.port.toString(), r'$PORT'),
+    );
   });
 
   test(
       'archives and uploads a package with more files than can fit on '
       'the command line', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     int argMax;
     if (Platform.isWindows) {
@@ -70,55 +73,60 @@ void main() {
     } else {
       // On POSIX, the maximum argument list length can be retrieved
       // automatically.
-      var result = Process.runSync('getconf', ['ARG_MAX']);
+      final result = Process.runSync('getconf', ['ARG_MAX']);
       if (result.exitCode != 0) {
         fail('getconf failed with exit code ${result.exitCode}:\n'
             '${result.stderr}');
       }
 
-      argMax = int.parse(result.stdout);
+      argMax = int.parse(result.stdout as String);
     }
 
-    var appRoot = p.join(d.sandbox, appPath);
+    final appRoot = p.join(d.sandbox, appPath);
 
     // We'll make the filenames as long as possible to reduce the number of
     // files we have to create to hit the maximum. However, the tar process
     // uses relative paths, which means we can't count the root as part of the
     // length.
-    var lengthPerFile = _pathMax - appRoot.length;
+    final lengthPerFile = _pathMax - appRoot.length;
 
     // Create enough files to hit [argMax]. This may be a slight overestimate,
     // since other options are passed to the tar command line, but we don't
     // know how long those will be.
-    var filesToCreate = (argMax / lengthPerFile).ceil();
+    final filesToCreate = (argMax / lengthPerFile).ceil();
 
     for (var i = 0; i < filesToCreate; i++) {
-      var iString = i.toString();
+      final iString = i.toString();
 
       // The file name contains "x"s to make the path hit [_pathMax],
       // followed by a number to distinguish different files.
-      var fileName =
+      final fileName =
           'x' * (_pathMax - appRoot.length - iString.length - 1) + iString;
 
       File(p.join(appRoot, fileName)).writeAsStringSync('');
     }
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
+        }),
+      );
     });
 
     expect(pub.stdout, emits(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emits('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 }

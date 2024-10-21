@@ -10,18 +10,17 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test("cloud storage upload doesn't redirect", () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
 
     globalServer.expect('POST', '/upload', (request) async {
-      await request.read().drain();
+      await request.read().drain<void>();
       return shelf.Response(200);
     });
 

@@ -6,13 +6,17 @@ import 'dart:io';
 
 import '../exceptions.dart';
 import '../source/hosted.dart';
+import '../utils.dart';
 
-/// Token is a structure for storing authentication credentials for third-party
-/// pub registries. A token holds registry [url], credential [kind] and [token]
-/// itself.
+/// [Credential] is a structure for storing authentication credentials for
+/// third-party pub registries.
 ///
-/// Token could be serialized into and from JSON format structured like
-/// this:
+/// A [Credential] holds a registry [url], and either the [token] itself or the
+/// name of an environment variable [env] for looking up the token when
+/// authenticating.
+///
+/// For storing in the pub-tokens.json configuration, a [Credential] can be
+/// serialized into and from JSON format structured like this:
 ///
 /// ```json
 /// {
@@ -20,8 +24,19 @@ import '../source/hosted.dart';
 ///   "token": "gjrjo7Tm2F0u64cTsECDq4jBNZYhco"
 /// }
 /// ```
+///
+/// or
+///
+/// ```json
+/// {
+///   "url": "https://example.com/",
+///   "env": "TOKEN_ENV_VAR"
+/// }
+/// ```
+///
+/// Unknown JSON properties will be preserved when reencoding.
 class Credential {
-  /// Internal constructor that's only used by [fromJson].
+  /// Internal constructor that's only used by [Credential.fromJson].
   Credential._internal({
     required this.url,
     required this.unknownFields,
@@ -45,20 +60,21 @@ class Credential {
   /// Throws [FormatException] if [json] is not a valid [Credential].
   factory Credential.fromJson(Map<String, dynamic> json) {
     if (json['url'] is! String) {
-      throw FormatException('Url is not provided for the credential');
+      throw const FormatException('Url is not provided for the credential');
     }
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
 
     const knownKeys = {'url', 'token', 'env'};
     final unknownFields = Map.fromEntries(
-        json.entries.where((kv) => !knownKeys.contains(kv.key)));
+      json.entries.where((kv) => !knownKeys.contains(kv.key)),
+    );
 
     /// Returns [String] value from [json] at [key] index or `null` if [json]
     /// doesn't contains [key].
     ///
     /// Throws [FormatException] if value type is not [String].
-    String? _string(String key) {
+    String? string(String key) {
       if (json.containsKey(key)) {
         if (json[key] is! String) {
           throw FormatException('Provided $key value should be string');
@@ -71,8 +87,8 @@ class Credential {
     return Credential._internal(
       url: hostedUrl,
       unknownFields: unknownFields,
-      token: _string('token'),
-      env: _string('env'),
+      token: string('token'),
+      env: string('env'),
     );
   }
 
@@ -85,9 +101,9 @@ class Credential {
   /// Environment variable name that stores token value
   final String? env;
 
-  /// Unknown fields found in pub-tokens.json. The fields might be created by the
-  /// future version of pub tool. We don't want to override them when using the
-  /// old SDK.
+  /// Unknown fields found in pub-tokens.json. The fields might be created by
+  /// the future version of pub tool. We don't want to override them when using
+  /// the old SDK.
   final Map<String, dynamic> unknownFields;
 
   /// Serializes [Credential] into json format.
@@ -115,19 +131,26 @@ class Credential {
       );
     }
 
+    final String tokenValue;
     final environment = env;
     if (environment != null) {
       final value = Platform.environment[environment];
       if (value == null) {
-        throw DataException(
+        dataError(
           'Saved credential for "$url" pub repository requires environment '
           'variable named "$env" but not defined.',
         );
       }
-      return Future.value('Bearer $value');
+      tokenValue = value;
+    } else {
+      tokenValue = token!;
+    }
+    if (!isValidBearerToken(tokenValue)) {
+      dataError('Credential token for $url is not a valid Bearer token. '
+          'It should match `^[a-zA-Z0-9._~+/=-]+\$`');
     }
 
-    return Future.value('Bearer $token');
+    return Future.value('Bearer $tokenValue');
   }
 
   /// Returns whether or not given [url] could be authenticated using this
@@ -142,6 +165,14 @@ class Credential {
   /// future SDK used by pub tool from old SDK.
   // Either [token] or [env] should be defined to be valid.
   bool isValid() => (token == null) ^ (env == null);
+
+  /// Whether [candidate] can be used as a bearer token.
+  ///
+  /// We limit tokens to be valid bearer tokens according to
+  /// https://www.rfc-editor.org/rfc/rfc6750#section-2.1
+  static bool isValidBearerToken(String candidate) {
+    return RegExp(r'^[a-zA-Z0-9._~+/=-]+$').hasMatch(candidate);
+  }
 
   static String _normalizeUrl(String url) {
     return (url.endsWith('/') ? url : '$url/').toLowerCase();

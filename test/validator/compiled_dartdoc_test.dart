@@ -13,10 +13,10 @@ import 'utils.dart';
 Validator compiledDartdoc() => CompiledDartdocValidator();
 
 void main() {
-  setUp(d.validPackage.create);
+  setUp(d.validPackage().create);
 
   group('should consider a package valid if it', () {
-    test('looks normal', () => expectValidation(compiledDartdoc));
+    test('looks normal', () => expectValidationDeprecated(compiledDartdoc));
 
     test('has most but not all files from compiling dartdoc', () async {
       await d.dir(appPath, [
@@ -24,10 +24,10 @@ void main() {
           d.file('nav.json', ''),
           d.file('index.html', ''),
           d.file('styles.css', ''),
-          d.file('dart-logo-small.png', '')
-        ])
+          d.file('dart-logo-small.png', ''),
+        ]),
       ]).create();
-      await expectValidation(compiledDartdoc);
+      await expectValidationDeprecated(compiledDartdoc);
     });
 
     test('contains compiled dartdoc in a hidden directory', () async {
@@ -39,10 +39,10 @@ void main() {
           d.file('index.html', ''),
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
-          d.file('client-live-nav.js', '')
-        ])
+          d.file('client-live-nav.js', ''),
+        ]),
       ]).create();
-      await expectValidation(compiledDartdoc);
+      await expectValidationDeprecated(compiledDartdoc);
     });
 
     test('contains compiled dartdoc in a gitignored directory', () async {
@@ -54,11 +54,11 @@ void main() {
           d.file('index.html', ''),
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
-          d.file('client-live-nav.js', '')
+          d.file('client-live-nav.js', ''),
         ]),
-        d.file('.gitignore', '/doc-out')
+        d.file('.gitignore', '/doc-out'),
       ]).create();
-      await expectValidation(compiledDartdoc);
+      await expectValidationDeprecated(compiledDartdoc);
     });
   });
 
@@ -70,11 +70,11 @@ void main() {
           d.file('index.html', ''),
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
-          d.file('client-live-nav.js', '')
-        ])
+          d.file('client-live-nav.js', ''),
+        ]),
       ]).create();
 
-      await expectValidation(compiledDartdoc, warnings: isNotEmpty);
+      await expectValidationDeprecated(compiledDartdoc, warnings: isNotEmpty);
     });
   });
 }

@@ -18,7 +18,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dev_dependencies': {'bar': '^1.0.0'}
+        'dev_dependencies': {'bar': '^1.0.0'},
       }),
       d.dir('example', [
         d.pubspec({
@@ -26,10 +26,10 @@ void main() {
           'dependencies': {
             'bar': 'any',
             'foo': '^1.0.0',
-            'myapp': {'path': '..'}
-          }
-        })
-      ])
+            'myapp': {'path': '..'},
+          },
+        }),
+      ]),
     ]).create();
 
     await ctx.run(['upgrade', '--major-versions', '--example']);
@@ -40,18 +40,34 @@ void main() {
       'pub upgrade --null-safety does not update null-safety of dependencies in example/',
       (ctx) async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.7.0 <3.0.0'},
-      })
-      ..serve('foo', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 <3.0.0'},
-      })
-      ..serve('bar', '1.0.0', pubspec: {
-        'environment': {'sdk': '>=2.7.0 <3.0.0'},
-      })
-      ..serve('bar', '2.0.0', pubspec: {
-        'environment': {'sdk': '>=2.12.0 <3.0.0'},
-      });
+      ..serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.7.0 <3.0.0'},
+        },
+      )
+      ..serve(
+        'foo',
+        '2.0.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.12.0 <3.0.0'},
+        },
+      )
+      ..serve(
+        'bar',
+        '1.0.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.7.0 <3.0.0'},
+        },
+      )
+      ..serve(
+        'bar',
+        '2.0.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.12.0 <3.0.0'},
+        },
+      );
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
@@ -66,10 +82,10 @@ void main() {
             'foo': '^1.0.0',
             // This will make the implicit upgrade of the example folder fail:
             'bar': '^1.0.0',
-            'myapp': {'path': '..'}
-          }
-        })
-      ])
+            'myapp': {'path': '..'},
+          },
+        }),
+      ]),
     ]).create();
 
     await ctx.run(

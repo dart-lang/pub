@@ -11,13 +11,14 @@ import '../test_pub.dart';
 
 void main() {
   test('uses the publish_to URL', () async {
-    var pkg = packageMap('test_pkg', '1.0.0');
-    pkg['publish_to'] = 'http://example.com';
+    final server = await servePackages();
+    final pkg = packageMap('test_pkg', '1.0.0');
+    pkg['publish_to'] = server.url;
     await d.dir(appPath, [d.pubspec(pkg)]).create();
-
     await runPub(
-        args: ['lish', '--dry-run'],
-        output: contains('Publishing test_pkg 1.0.0 to http://example.com'),
-        exitCode: exit_codes.DATA);
+      args: ['lish', '--dry-run'],
+      output: contains('Publishing test_pkg 1.0.0 to ${server.url}'),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

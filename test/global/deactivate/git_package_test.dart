@@ -14,14 +14,15 @@ void main() {
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-sgit', '../foo.git']);
 
     await runPub(
-        args: ['global', 'deactivate', 'foo'],
-        output:
-            'Deactivated package foo 1.0.0 from Git repository "..${separator}foo.git".');
+      args: ['global', 'deactivate', 'foo'],
+      output: 'Deactivated package foo 1.0.0 from Git repository '
+          '"..${separator}foo.git".',
+    );
   });
 }

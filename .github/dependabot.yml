@@ -4,4 +4,15 @@ updates:
   - package-ecosystem: "pub"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - autosubmit
+    groups:
+      github-actions:
+        patterns:
+          - "*"

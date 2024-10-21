@@ -9,8 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test(
-      'Shows newer versions available for packages that are locked and not being upgraded',
-      () async {
+      'Shows newer versions available for packages that are locked '
+      'and not being upgraded', () async {
     await servePackages()
       ..serve('not_upgraded', '1.0.0')
       ..serve('not_upgraded', '2.0.0')
@@ -20,18 +20,30 @@ void main() {
       ..serve('upgraded', '3.0.0-dev');
 
     // Constraint everything to the first version.
-    await d.appDir({'not_upgraded': '1.0.0', 'upgraded': '1.0.0'}).create();
+    await d.appDir(
+      dependencies: {'not_upgraded': '1.0.0', 'upgraded': '1.0.0'},
+    ).create();
 
     await pubGet();
 
     // Loosen the constraints.
-    await d.appDir({'not_upgraded': 'any', 'upgraded': 'any'}).create();
+    await d.appDir(
+      dependencies: {'not_upgraded': 'any', 'upgraded': 'any'},
+    ).create();
 
     // Only upgrade "upgraded".
-    await pubUpgrade(args: ['upgraded'], output: RegExp(r'''
+    await pubUpgrade(
+      args: ['upgraded'],
+      output: RegExp(
+        r'''
 Resolving dependencies\.\.\..*
+Downloading packages\.\.\..*
   not_upgraded 1\.0\.0 \(2\.0\.0 available\)
 . upgraded 2\.0\.0 \(was 1\.0\.0\)
-''', multiLine: true), environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'});
+''',
+        multiLine: true,
+      ),
+      environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'},
+    );
   });
 }

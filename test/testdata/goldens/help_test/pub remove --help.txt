@@ -2,17 +2,21 @@
 
 ## Section 0
 $ pub remove --help
-Removes a dependency from the current package.
+Removes dependencies from `pubspec.yaml`.
 
-Usage: pub remove <package>
--h, --help                    Print this usage information.
-    --[no-]offline            Use cached packages instead of accessing the
-                              network.
--n, --dry-run                 Report what dependencies would change but don't
-                              change any.
-    --[no-]precompile         Precompile executables in immediate dependencies.
--C, --directory=<dir>         Run this in the directory<dir>.
-    --legacy-packages-file    Generate the legacy ".packages" file
+Invoking `dart pub remove foo bar` will remove `foo` and `bar` from either
+`dependencies` or `dev_dependencies` in `pubspec.yaml`.
+
+To remove a dependency override of a package prefix the package name with
+'override:'.
+
+
+Usage: pub remove <package1> [<package2>...]
+-h, --help               Print this usage information.
+    --[no-]offline       Use cached packages instead of accessing the network.
+-n, --dry-run            Report what dependencies would change but don't change any.
+    --[no-]precompile    Precompile executables in immediate dependencies.
+-C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-remove for detailed documentation.

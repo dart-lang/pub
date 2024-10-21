@@ -10,22 +10,26 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
+import 'package.dart';
 import 'sdk.dart';
+import 'system_cache.dart';
+import 'validator/analyze.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
 import 'validator/dependency_override.dart';
 import 'validator/deprecated_fields.dart';
+import 'validator/devtools_extension.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
+import 'validator/file_case.dart';
 import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
+import 'validator/git_status.dart';
 import 'validator/gitignore.dart';
-import 'validator/language_version.dart';
 import 'validator/leak_detection.dart';
 import 'validator/license.dart';
 import 'validator/name.dart';
-import 'validator/null_safety_mixed_mode.dart';
 import 'validator/pubspec.dart';
 import 'validator/pubspec_field.dart';
 import 'validator/pubspec_typo.dart';
@@ -59,7 +63,8 @@ abstract class Validator {
   final hints = <String>[];
 
   late ValidationContext context;
-  Entrypoint get entrypoint => context.entrypoint;
+  Package get package => context.entrypoint.workPackage;
+  SystemCache get cache => context.entrypoint.cache;
   int get packageSize => context.packageSize;
   Uri get serverUrl => context.serverUrl;
   List<String> get files => context.files;
@@ -74,7 +79,7 @@ abstract class Validator {
   void validateSdkConstraint(Version firstSdkVersion, String message) {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
-    if (entrypoint.root.pubspec.originalDartSdkConstraint
+    if (package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
@@ -88,14 +93,15 @@ abstract class Validator {
       firstSdkVersion = firstSdkVersion.nextPatch;
     }
 
-    var allowedSdks = VersionRange(
-        min: firstSdkVersion,
-        includeMin: true,
-        max: firstSdkVersion.isPreRelease
-            ? firstSdkVersion.nextPatch
-            : firstSdkVersion.nextBreaking);
+    final allowedSdks = VersionRange(
+      min: firstSdkVersion,
+      includeMin: true,
+      max: firstSdkVersion.isPreRelease
+          ? firstSdkVersion.nextPatch
+          : firstSdkVersion.nextBreaking,
+    );
 
-    var newSdkConstraint = entrypoint.root.pubspec.originalDartSdkConstraint
+    var newSdkConstraint = package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
@@ -103,10 +109,11 @@ abstract class Validator {
         'Make sure your SDK constraint excludes old versions:\n'
         '\n'
         'environment:\n'
-        '  sdk: "$newSdkConstraint"');
+        '  sdk: "${newSdkConstraint.asCompatibleWithIfPossible()}"');
   }
 
-  /// Returns whether [version1] and [version2] are pre-releases of the same version.
+  /// Returns whether [version1] and [version2] are pre-releases of the same
+  /// version.
   bool _isSamePreRelease(Version version1, Version version2) =>
       version1.isPreRelease &&
       version2.isPreRelease &&
@@ -124,13 +131,20 @@ abstract class Validator {
   /// [packageSize], if passed, should complete to the size of the tarred
   /// package, in bytes. This is used to validate that it's not too big to
   /// upload to the server.
-  static Future<void> runAll(Entrypoint entrypoint, Future<int> packageSize,
-      Uri serverUrl, List<String> files,
-      {required List<String> hints,
-      required List<String> warnings,
-      required List<String> errors}) async {
-    var validators = [
+  static Future<void> runAll(
+    Entrypoint entrypoint,
+    int packageSize,
+    Uri serverUrl,
+    List<String> files, {
+    required List<String> hints,
+    required List<String> warnings,
+    required List<String> errors,
+  }) async {
+    final validators = [
+      FileCaseValidator(),
+      AnalyzeValidator(),
       GitignoreValidator(),
+      GitStatusValidator(),
       PubspecValidator(),
       LicenseValidator(),
       NameValidator(),
@@ -147,24 +161,25 @@ abstract class Validator {
       StrictDependenciesValidator(),
       FlutterConstraintValidator(),
       FlutterPluginFormatValidator(),
-      LanguageVersionValidator(),
       RelativeVersionNumberingValidator(),
-      NullSafetyMixedModeValidator(),
       PubspecTypoValidator(),
       LeakDetectionValidator(),
       SizeValidator(),
+      DevtoolsExtensionValidator(),
     ];
 
     final context = ValidationContext(
       entrypoint,
-      await packageSize,
+      packageSize,
       serverUrl,
       files,
     );
-    return await Future.wait(validators.map((validator) async {
-      validator.context = context;
-      await validator.validate();
-    })).then((_) {
+    return await Future.wait(
+      validators.map((validator) async {
+        validator.context = context;
+        await validator.validate();
+      }),
+    ).then((_) {
       hints.addAll([for (final validator in validators) ...validator.hints]);
       warnings
           .addAll([for (final validator in validators) ...validator.warnings]);
@@ -203,15 +218,17 @@ abstract class Validator {
     });
   }
 
-  /// Returns the [files] that are inside [dir] (relative to the package
-  /// entrypoint).
+  /// Returns the [files] that are [path] or inside [path] (relative to the
+  /// package entrypoint).
   // TODO(sigurdm): Consider moving this to a more central location.
-  List<String> filesBeneath(String dir, {required bool recursive}) {
-    final base = p.canonicalize(p.join(entrypoint.root.dir, dir));
+  List<String> filesBeneath(String path, {required bool recursive}) {
+    final base = p.canonicalize(p.join(package.dir, path));
     return files
         .where(
           recursive
-              ? (file) => p.canonicalize(file).startsWith(base)
+              ? (file) =>
+                  p.isWithin(base, p.canonicalize(file)) ||
+                  p.canonicalize(file) == base
               : (file) => p.canonicalize(p.dirname(file)) == base,
         )
         .toList();
@@ -225,5 +242,9 @@ class ValidationContext {
   final List<String> files;
 
   ValidationContext(
-      this.entrypoint, this.packageSize, this.serverUrl, this.files);
+    this.entrypoint,
+    this.packageSize,
+    this.serverUrl,
+    this.files,
+  );
 }

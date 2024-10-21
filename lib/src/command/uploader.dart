@@ -13,8 +13,7 @@ class UploaderCommand extends PubCommand {
   @override
   String get name => 'uploader';
   @override
-  String get description =>
-      'Manage uploaders for a package on pub.dartlang.org.';
+  String get description => 'Manage uploaders for a package on pub.dev.';
   @override
   String get argumentsDescription => '[options] {add/remove} <email>';
   @override
@@ -24,26 +23,33 @@ class UploaderCommand extends PubCommand {
   bool get hidden => true;
 
   /// The URL of the package hosting server.
-  Uri get server => Uri.parse(argResults['server']);
+  Uri get server => Uri.parse(argResults.optionWithDefault('server'));
 
   UploaderCommand() {
-    argParser.addOption('server',
-        defaultsTo: Platform.environment['PUB_HOSTED_URL'] ??
-            'https://pub.dartlang.org',
-        help: 'The package server on which the package is hosted.\n',
-        hide: true);
-    argParser.addOption('package',
-        help: 'The package whose uploaders will be modified.\n'
-            '(defaults to the current package)');
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'server',
+      defaultsTo: Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dev',
+      help: 'The package server on which the package is hosted.\n',
+      hide: true,
+    );
+    argParser.addOption(
+      'package',
+      help: 'The package whose uploaders will be modified.\n'
+          '(defaults to the current package)',
+    );
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
-    String packageName = '<packageName>';
+    var packageName = '<packageName>';
     try {
-      packageName = entrypoint.root.name;
+      packageName = entrypoint.workspaceRoot.name;
     } on Exception catch (_) {
       // Probably run without a pubspec.
       // Just print error below without a specific package name.

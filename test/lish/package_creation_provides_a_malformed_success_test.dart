@@ -12,18 +12,17 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package creation provides a malformed success', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
-    var body = {'success': 'Your package was awesome.'};
+    final body = {'success': 'Your package was awesome.'};
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(jsonEncode(body));
     });

@@ -6,10 +6,8 @@ import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
 import '../command.dart';
-import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
-import '../package.dart';
 import '../pubspec.dart';
 import '../solver.dart';
 
@@ -20,39 +18,56 @@ class RemoveCommand extends PubCommand {
   @override
   String get name => 'remove';
   @override
-  String get description => 'Removes a dependency from the current package.';
+  String get description => '''
+Removes dependencies from `pubspec.yaml`.
+
+Invoking `dart pub remove foo bar` will remove `foo` and `bar` from either
+`dependencies` or `dev_dependencies` in `pubspec.yaml`.
+
+To remove a dependency override of a package prefix the package name with
+'override:'.
+''';
+
   @override
-  String get argumentsDescription => '<package>';
+  String get argumentsDescription => '<package1> [<package2>...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-remove';
   @override
-  bool get isOffline => argResults['offline'];
+  bool get isOffline => argResults.flag('offline');
 
-  bool get isDryRun => argResults['dry-run'];
+  bool get isDryRun => argResults.flag('dry-run');
 
   RemoveCommand() {
-    argParser.addFlag('offline',
-        help: 'Use cached packages instead of accessing the network.');
+    argParser.addFlag(
+      'offline',
+      help: 'Use cached packages instead of accessing the network.',
+    );
 
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: "Report what dependencies would change but don't change any.");
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: "Report what dependencies would change but don't change any.",
+    );
 
-    argParser.addFlag('precompile',
-        help: 'Precompile executables in immediate dependencies.');
+    argParser.addFlag(
+      'precompile',
+      help: 'Precompile executables in immediate dependencies.',
+    );
 
     argParser.addFlag(
       'example',
+      defaultsTo: true,
       help: 'Also update dependencies in `example/` (if it exists).',
       hide: true,
     );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
-
-    argParser.addFlag('legacy-packages-file',
-        help: 'Generate the legacy ".packages" file', negatable: false);
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
@@ -61,98 +76,104 @@ class RemoveCommand extends PubCommand {
       usageException('Must specify a package to be removed.');
     }
 
-    final packages = Set<String>.from(argResults.rest);
+    final targets = Set<String>.from(argResults.rest).map((descriptor) {
+      final isOverride = descriptor.startsWith('override:');
+      final name =
+          isOverride ? descriptor.substring('override:'.length) : descriptor;
+      return _PackageRemoval(name, removeFromOverride: isOverride);
+    });
 
-    if (isDryRun) {
-      final rootPubspec = entrypoint.root.pubspec;
-      final newPubspec = _removePackagesFromPubspec(rootPubspec, packages);
-      final newRoot = Package.inMemory(newPubspec);
-
-      await Entrypoint.inMemory(newRoot, cache, lockFile: entrypoint.lockFile)
-          .acquireDependencies(SolveType.get,
-              precompile: argResults['precompile'],
-              dryRun: true,
-              analytics: null,
-              generateDotPackages: false);
-    } else {
+    if (!isDryRun) {
       /// Update the pubspec.
-      _writeRemovalToPubspec(packages);
+      _writeRemovalToPubspec(targets);
+    }
+    final workPubspec = entrypoint.workPackage.pubspec;
+    final newPubspec = _removePackagesFromPubspec(workPubspec, targets);
 
-      /// Create a new [Entrypoint] since we have to reprocess the updated
-      /// pubspec file.
-      final updatedEntrypoint = Entrypoint(directory, cache);
-      await updatedEntrypoint.acquireDependencies(
-        SolveType.get,
-        precompile: argResults['precompile'],
-        analytics: analytics,
-        generateDotPackages: argResults['legacy-packages-file'],
-      );
-
-      var example = entrypoint.example;
-      if (argResults['example'] && example != null) {
-        await example.acquireDependencies(
+    await entrypoint.withWorkPubspec(newPubspec).acquireDependencies(
           SolveType.get,
-          precompile: argResults['precompile'],
-          onlyReportSuccessOrFailure: true,
-          analytics: analytics,
-          generateDotPackages: argResults['legacy-packages-file'],
+          precompile: !isDryRun && argResults.flag('precompile'),
+          dryRun: isDryRun,
         );
-      }
+
+    final example = entrypoint.example;
+    if (!isDryRun && argResults.flag('example') && example != null) {
+      await example.acquireDependencies(
+        SolveType.get,
+        precompile: argResults.flag('precompile'),
+        summaryOnly: true,
+      );
     }
   }
 
-  Pubspec _removePackagesFromPubspec(Pubspec original, Set<String> packages) {
-    final originalDependencies = original.dependencies.values;
-    final originalDevDependencies = original.devDependencies.values;
+  Pubspec _removePackagesFromPubspec(
+    Pubspec original,
+    Iterable<_PackageRemoval> packages,
+  ) {
+    final dependencies = {...original.dependencies};
+    final devDependencies = {...original.devDependencies};
+    final overrides = {...original.dependencyOverrides};
 
-    final newDependencies = originalDependencies
-        .where((dependency) => !packages.contains(dependency.name));
-    final newDevDependencies = originalDevDependencies
-        .where((dependency) => !packages.contains(dependency.name));
-
-    return Pubspec(
-      original.name,
-      version: original.version,
-      sdkConstraints: original.sdkConstraints,
-      dependencies: newDependencies,
-      devDependencies: newDevDependencies,
-      dependencyOverrides: original.dependencyOverrides.values,
+    for (final package in packages) {
+      if (package.removeFromOverride) {
+        overrides.remove(package.name);
+      } else {
+        dependencies.remove(package.name);
+        devDependencies.remove(package.name);
+      }
+    }
+    return original.copyWith(
+      dependencies: dependencies.values,
+      devDependencies: devDependencies.values,
+      dependencyOverrides: overrides.values,
     );
   }
 
   /// Writes the changes to the pubspec file
-  void _writeRemovalToPubspec(Set<String> packages) {
+  void _writeRemovalToPubspec(Iterable<_PackageRemoval> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
-    final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
+    final yamlEditor =
+        YamlEditor(readTextFile(entrypoint.workPackage.pubspecPath));
 
-    for (var package in packages) {
+    for (final package in packages) {
+      final dependencyKeys = package.removeFromOverride
+          ? ['dependency_overrides']
+          : ['dependencies', 'dev_dependencies'];
       var found = false;
+      final name = package.name;
 
       /// There may be packages where the dependency is declared both in
-      /// dependencies and dev_dependencies.
-      for (final dependencyKey in ['dependencies', 'dev_dependencies']) {
+      /// dependencies and dev_dependencies - remove it from both in that case.
+      for (final dependencyKey in dependencyKeys) {
         final dependenciesNode = yamlEditor
             .parseAt([dependencyKey], orElse: () => YamlScalar.wrap(null));
 
-        if (dependenciesNode is YamlMap &&
-            dependenciesNode.containsKey(package)) {
-          if (dependenciesNode.length == 1) {
-            yamlEditor.remove([dependencyKey]);
-          } else {
-            yamlEditor.remove([dependencyKey, package]);
-          }
-
+        if (dependenciesNode is YamlMap && dependenciesNode.containsKey(name)) {
+          yamlEditor.remove([dependencyKey, name]);
           found = true;
+          // Check if the dependencies or dev_dependencies map is now empty
+          // If it is empty, remove the key as well
+          if ((yamlEditor.parseAt([dependencyKey]) as YamlMap).isEmpty) {
+            yamlEditor.remove([dependencyKey]);
+          }
         }
       }
-
       if (!found) {
-        log.warning('Package "$package" was not found in pubspec.yaml!');
+        final pubspecPath = entrypoint.workPackage.pubspecPath;
+        log.warning(
+          'Package "$name" was not found in $pubspecPath!',
+        );
       }
-
-      /// Windows line endings are already handled by [yamlEditor]
-      writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
     }
+
+    /// Windows line endings are already handled by [yamlEditor]
+    writeTextFile(entrypoint.workPackage.pubspecPath, yamlEditor.toString());
   }
+}
+
+class _PackageRemoval {
+  final String name;
+  final bool removeFromOverride;
+  _PackageRemoval(this.name, {required this.removeFromOverride});
 }

@@ -18,21 +18,27 @@ main(List<String> args) {
 void main() {
   Future<void> setupForPubRunToPrecompile() async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin',
-          [d.file('test.dart', 'main(List<String> args) => print("hello");')])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir(
+          'bin',
+          [d.file('test.dart', 'main(List<String> args) => print("hello");')],
+        ),
+      ],
+    );
 
     await pubGet(args: ['--no-precompile']);
   }
 
   test('`pub run` precompiles script', () async {
     await setupForPubRunToPrecompile();
-    var pub = await pubRun(args: ['test']);
+    final pub = await pubRun(args: ['test']);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
     expect(lines, contains('Building package executable...'));
@@ -40,11 +46,11 @@ void main() {
   });
 
   test(
-      "`pub run` doesn't write about precompilation when a terminal is not attached",
-      () async {
+      "`pub run` doesn't write about precompilation "
+      'when a terminal is not attached', () async {
     await setupForPubRunToPrecompile();
 
-    var pub = await pubRun(args: ['test'], verbose: false);
+    final pub = await pubRun(args: ['test'], verbose: false);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
     expect(lines, isNot(contains('Building package executable...')));
@@ -54,18 +60,24 @@ void main() {
   // Regression test of https://github.com/dart-lang/pub/issues/2483
   test('`pub run` precompiles script with relative PUB_CACHE', () async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin', [d.file('test.dart', _script)])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('test.dart', _script)]),
+      ],
+    );
 
     await pubGet(
-        args: ['--no-precompile'], environment: {'PUB_CACHE': '.pub_cache'});
+      args: ['--no-precompile'],
+      environment: {'PUB_CACHE': '.pub_cache'},
+    );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
       environment: {'PUB_CACHE': '.pub_cache'},
     );
@@ -77,19 +89,24 @@ void main() {
 
   test('`get --precompile` precompiles script', () async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin', [d.file('test.dart', _script)])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('test.dart', _script)]),
+      ],
+    );
 
     await pubGet(
-        args: ['--precompile'],
-        output: contains('Building package executables...'));
+      args: ['--precompile'],
+      output: contains('Building package executables...'),
+    );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
     );
     await pub.shouldExit(0);
@@ -101,20 +118,25 @@ void main() {
   test('`get --precompile` precompiles script with relative PUB_CACHE',
       () async {
     await d.dir(appPath, [
-      d.appPubspec({'test': '1.0.0'}),
+      d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();
 
     final server = await servePackages();
-    server.serve('test', '1.0.0', contents: [
-      d.dir('bin', [d.file('test.dart', _script)])
-    ]);
+    server.serve(
+      'test',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('test.dart', _script)]),
+      ],
+    );
 
     await pubGet(
-        args: ['--precompile'],
-        environment: {'PUB_CACHE': '.pub_cache'},
-        output: contains('Building package executables...'));
+      args: ['--precompile'],
+      environment: {'PUB_CACHE': '.pub_cache'},
+      output: contains('Building package executables...'),
+    );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
       environment: {'PUB_CACHE': '.pub_cache'},
     );

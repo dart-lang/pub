@@ -12,29 +12,38 @@ void main() {
   group('creates a snapshot', () {
     test('for an immediate dependency', () async {
       final server = await servePackages();
-      server.serve('foo', '1.2.3', contents: [
-        d.dir('bin', [
-          d.file('hello.dart', "void main() => print('hello!');"),
-          d.file('goodbye.dart', "void main() => print('goodbye!');"),
-          d.file('shell.sh', 'echo shell'),
-          d.dir('subdir', [d.file('sub.dart', "void main() => print('sub!');")])
-        ])
-      ]);
+      server.serve(
+        'foo',
+        '1.2.3',
+        contents: [
+          d.dir('bin', [
+            d.file('hello.dart', "void main() => print('hello!');"),
+            d.file('goodbye.dart', "void main() => print('goodbye!');"),
+            d.file('shell.sh', 'echo shell'),
+            d.dir(
+              'subdir',
+              [d.file('sub.dart', "void main() => print('sub!');")],
+            ),
+          ]),
+        ],
+      );
 
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubGet(
-          args: ['--precompile'],
-          output: allOf(
-              [contains('Built foo:hello.'), contains('Built foo:goodbye.')]));
+        args: ['--precompile'],
+        output: allOf(
+          [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
+        ),
+      );
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.dir('foo', [
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
           d.file('goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
           d.nothing('shell.sh-$versionSuffix.snapshot'),
-          d.nothing('subdir')
-        ])
+          d.nothing('subdir'),
+        ]),
       ]).validate();
 
       var process = await pubRun(args: ['foo:hello']);
@@ -48,31 +57,39 @@ void main() {
 
     test("for an immediate dependency that's also transitive", () async {
       await servePackages()
-        ..serve('foo', '1.2.3', contents: [
-          d.dir('bin', [
-            d.file('hello.dart', "void main() => print('hello!');"),
-            d.file('goodbye.dart', "void main() => print('goodbye!');"),
-            d.file('shell.sh', 'echo shell'),
-            d.dir(
-                'subdir', [d.file('sub.dart', "void main() => print('sub!');")])
-          ])
-        ])
+        ..serve(
+          'foo',
+          '1.2.3',
+          contents: [
+            d.dir('bin', [
+              d.file('hello.dart', "void main() => print('hello!');"),
+              d.file('goodbye.dart', "void main() => print('goodbye!');"),
+              d.file('shell.sh', 'echo shell'),
+              d.dir(
+                'subdir',
+                [d.file('sub.dart', "void main() => print('sub!');")],
+              ),
+            ]),
+          ],
+        )
         ..serve('bar', '1.2.3', deps: {'foo': '1.2.3'});
 
-      await d.appDir({'foo': '1.2.3'}).create();
+      await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
       await pubGet(
-          args: ['--precompile'],
-          output: allOf(
-              [contains('Built foo:hello.'), contains('Built foo:goodbye.')]));
+        args: ['--precompile'],
+        output: allOf(
+          [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
+        ),
+      );
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
         d.dir('foo', [
           d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
           d.file('goodbye.dart-$versionSuffix.snapshot', contains('goodbye!')),
           d.nothing('shell.sh-$versionSuffix.snapshot'),
-          d.nothing('subdir')
-        ])
+          d.nothing('subdir'),
+        ]),
       ]).validate();
 
       var process = await pubRun(args: ['foo:hello']);
@@ -87,33 +104,49 @@ void main() {
     group('again if', () {
       test('its package is updated', () async {
         final server = await servePackages();
-        server.serve('foo', '1.2.3', contents: [
-          d.dir(
-              'bin', [d.file('hello.dart', "void main() => print('hello!');")])
-        ]);
+        server.serve(
+          'foo',
+          '1.2.3',
+          contents: [
+            d.dir(
+              'bin',
+              [d.file('hello.dart', "void main() => print('hello!');")],
+            ),
+          ],
+        );
 
-        await d.appDir({'foo': 'any'}).create();
+        await d.appDir(dependencies: {'foo': 'any'}).create();
 
         await pubGet(
-            args: ['--precompile'], output: contains('Built foo:hello.'));
+          args: ['--precompile'],
+          output: contains('Built foo:hello.'),
+        );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
         ]).validate();
 
-        server.serve('foo', '1.2.4', contents: [
-          d.dir('bin',
-              [d.file('hello.dart', "void main() => print('hello 2!');")])
-        ]);
+        server.serve(
+          'foo',
+          '1.2.4',
+          contents: [
+            d.dir(
+              'bin',
+              [d.file('hello.dart', "void main() => print('hello 2!');")],
+            ),
+          ],
+        );
 
         await pubUpgrade(
-            args: ['--precompile'], output: contains('Built foo:hello.'));
+          args: ['--precompile'],
+          output: contains('Built foo:hello.'),
+        );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!')),
         ]).validate();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
         expect(process.stdout, emits('hello 2!'));
         await process.shouldExit();
       });
@@ -121,42 +154,59 @@ void main() {
       test('a dependency of its package is updated', () async {
         final server = await servePackages();
 
-        server.serve('foo', '1.2.3', pubspec: {
-          'dependencies': {'bar': 'any'}
-        }, contents: [
-          d.dir('bin', [
-            d.file('hello.dart', """
+        server.serve(
+          'foo',
+          '1.2.3',
+          pubspec: {
+            'dependencies': {'bar': 'any'},
+          },
+          contents: [
+            d.dir('bin', [
+              d.file('hello.dart', """
             import 'package:bar/bar.dart';
 
             void main() => print(message);
-          """)
-          ])
-        ]);
-        server.serve('bar', '1.2.3', contents: [
-          d.dir('lib', [d.file('bar.dart', "final message = 'hello!';")])
-        ]);
+          """),
+            ]),
+          ],
+        );
+        server.serve(
+          'bar',
+          '1.2.3',
+          contents: [
+            d.dir('lib', [d.file('bar.dart', "final message = 'hello!';")]),
+          ],
+        );
 
-        await d.appDir({'foo': 'any'}).create();
+        await d.appDir(dependencies: {'foo': 'any'}).create();
 
         await pubGet(
-            args: ['--precompile'], output: contains('Built foo:hello.'));
+          args: ['--precompile'],
+          output: contains('Built foo:hello.'),
+        );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
         ]).validate();
 
-        server.serve('bar', '1.2.4', contents: [
-          d.dir('lib', [d.file('bar.dart', "final message = 'hello 2!';")]),
-        ]);
+        server.serve(
+          'bar',
+          '1.2.4',
+          contents: [
+            d.dir('lib', [d.file('bar.dart', "final message = 'hello 2!';")]),
+          ],
+        );
 
         await pubUpgrade(
-            args: ['--precompile'], output: contains('Built foo:hello.'));
+          args: ['--precompile'],
+          output: contains('Built foo:hello.'),
+        );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('hello 2!')),
         ]).validate();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
         expect(process.stdout, emits('hello 2!'));
         await process.shouldExit();
       });
@@ -167,65 +217,83 @@ void main() {
         await d.git('foo.git', [
           d.pubspec({'name': 'foo', 'version': '0.0.1'}),
           d.dir(
-              'bin', [d.file('hello.dart', "void main() => print('Hello!');")])
+            'bin',
+            [d.file('hello.dart', "void main() => print('Hello!');")],
+          ),
         ]).create();
 
-        await d.appDir({
-          'foo': {'git': '../foo.git'}
-        }).create();
+        await d.appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        ).create();
 
         await pubGet(
-            args: ['--precompile'], output: contains('Built foo:hello.'));
+          args: ['--precompile'],
+          output: contains('Built foo:hello.'),
+        );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('Hello!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('Hello!')),
         ]).validate();
 
         await d.git('foo.git', [
-          d.dir('bin',
-              [d.file('hello.dart', "void main() => print('Goodbye!');")])
+          d.dir(
+            'bin',
+            [d.file('hello.dart', "void main() => print('Goodbye!');")],
+          ),
         ]).commit();
 
         await pubUpgrade(
-            args: ['--precompile'], output: contains('Built foo:hello.'));
+          args: ['--precompile'],
+          output: contains('Built foo:hello.'),
+        );
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin', 'foo'), [
-          d.file('hello.dart-$versionSuffix.snapshot', contains('Goodbye!'))
+          d.file('hello.dart-$versionSuffix.snapshot', contains('Goodbye!')),
         ]).validate();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
         expect(process.stdout, emits('Goodbye!'));
         await process.shouldExit();
       });
 
       test('the SDK is out of date', () async {
         final server = await servePackages();
-        server.serve('foo', '5.6.7', contents: [
-          d.dir(
-              'bin', [d.file('hello.dart', "void main() => print('hello!');")])
-        ]);
+        server.serve(
+          'foo',
+          '5.6.7',
+          contents: [
+            d.dir(
+              'bin',
+              [d.file('hello.dart', "void main() => print('hello!');")],
+            ),
+          ],
+        );
 
-        await d.appDir({'foo': '5.6.7'}).create();
+        await d.appDir(dependencies: {'foo': '5.6.7'}).create();
 
         await pubGet(args: ['--no-precompile']);
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
-          d.dir('foo',
-              [d.outOfDateSnapshot('hello.dart-$versionSuffix.snapshot')])
+          d.dir(
+            'foo',
+            [d.outOfDateSnapshot('hello.dart-$versionSuffix.snapshot')],
+          ),
         ]).create();
 
-        var process = await pubRun(args: ['foo:hello']);
+        final process = await pubRun(args: ['foo:hello']);
 
-        // In the real world this would just print "hello!", but since we collect
-        // all output we see the precompilation messages as well.
+        // In the real world this would just print "hello!", but since we
+        // collect all output we see the precompilation messages as well.
         expect(process.stdout, emits('Building package executable...'));
         expect(process.stdout, emitsThrough('hello!'));
         await process.shouldExit();
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
           d.dir('foo', [
-            d.file('hello.dart-$versionSuffix.snapshot', contains('hello!'))
-          ])
+            d.file('hello.dart-$versionSuffix.snapshot', contains('hello!')),
+          ]),
         ]).validate();
       });
     });

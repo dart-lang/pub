@@ -17,7 +17,7 @@ import '../descriptor.dart';
 class YamlDescriptor extends FileDescriptor {
   final String _contents;
 
-  YamlDescriptor(String name, this._contents) : super.protected(name);
+  YamlDescriptor(super.name, this._contents) : super.protected();
 
   @override
   Future<String> read() async => _contents;
@@ -28,18 +28,18 @@ class YamlDescriptor extends FileDescriptor {
 
   @override
   Future validate([String? parent]) async {
-    var fullPath = p.join(parent ?? sandbox, name);
+    final fullPath = p.join(parent ?? sandbox, name);
     if (!await File(fullPath).exists()) {
       fail("File not found: '$fullPath'.");
     }
 
-    var bytes = await File(fullPath).readAsBytes();
+    final bytes = await File(fullPath).readAsBytes();
 
     final actualContentsText = utf8.decode(bytes);
     final actual = loadYaml(actualContentsText);
     final expected = loadYaml(_contents);
 
-    if (!DeepCollectionEquality().equals(expected, actual)) {
+    if (!const DeepCollectionEquality().equals(expected, actual)) {
       fail('Expected $expected, found: $actual');
     }
   }

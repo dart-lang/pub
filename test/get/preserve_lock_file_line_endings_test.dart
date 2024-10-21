@@ -2,8 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
-import 'package:pub/src/entrypoint.dart';
+import 'package:path/path.dart' as p;
+import 'package:pub/src/lock_file.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -17,8 +17,10 @@ Future<void> main() async {
     await pubGet();
 
     await d
-        .file(path.join(appPath, 'pubspec.lock'),
-            allOf(contains('\n'), isNot(contains('\r\n'))))
+        .file(
+          p.join(appPath, 'pubspec.lock'),
+          allOf(contains('\n'), isNot(contains('\r\n'))),
+        )
         .validate();
   });
 
@@ -27,9 +29,10 @@ Future<void> main() async {
 
     await pubGet();
 
-    final lockFile = d.file(path.join(appPath, 'pubspec.lock')).io;
+    final lockFile = d.file(p.join(appPath, 'pubspec.lock')).io;
     lockFile.writeAsStringSync(
-        lockFile.readAsStringSync().replaceAll('\n', '\r\n'));
+      lockFile.readAsStringSync().replaceAll('\n', '\r\n'),
+    );
     await d.dir(appPath, [d.file('pubspec.lock', contains('\r\n'))]).validate();
 
     await pubGet();
@@ -52,7 +55,8 @@ Future<void> main() async {
     expect(detectWindowsLineEndings('\r\n'), true);
     expect(detectWindowsLineEndings('abcd\r\nefg\n'), false);
     expect(detectWindowsLineEndings('abcd\r\nefg\nhij\r\n'), true);
-    expect(detectWindowsLineEndings('''
+    expect(
+      detectWindowsLineEndings('''
 packages:\r
   bar:\r
     dependency: transitive\r
@@ -60,8 +64,11 @@ packages:\r
     source: fake\r
     version: "1.2.3"\r
 sdks: {}\r
-'''), true);
-    expect(detectWindowsLineEndings('''
+'''),
+      true,
+    );
+    expect(
+      detectWindowsLineEndings('''
 packages:
   bar:
     dependency: transitive
@@ -69,6 +76,8 @@ packages:
     source: fake
     version: "1.2.3"
 sdks: {}
-'''), false);
+'''),
+      false,
+    );
   });
 }

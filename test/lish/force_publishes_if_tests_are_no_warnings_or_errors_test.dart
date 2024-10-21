@@ -13,23 +13,27 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('--force publishes if there are no warnings or errors', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer, args: ['--force']);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer, args: ['--force']);
 
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
     globalServer.expect('GET', '/create', (request) {
-      return shelf.Response.ok(jsonEncode({
-        'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
-      }));
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
+        }),
+      );
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
-    expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emitsThrough('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
   });
 }

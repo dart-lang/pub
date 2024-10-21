@@ -16,12 +16,15 @@ void main() {
 
     await d.git('foo.git', [d.libDir('foo'), d.pubspec({})]).create();
 
-    await d.appDir({
-      'foo': {'git': '../foo.git'}
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'},
+      },
+    ).create();
 
     await pubGet(
-        error: contains('Missing the required "name" field.'),
-        exitCode: exit_codes.DATA);
+      error: contains('Missing the required "name" field.'),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

@@ -15,13 +15,13 @@ import '../../test_pub.dart';
 /// The `pub`/`pub.bat` command on the PATH will be the one in tool/test-bin not
 /// the one from the sdk.
 Map<String, String> getEnvironment() {
-  var binDir = p.dirname(Platform.resolvedExecutable);
-  var separator = Platform.isWindows ? ';' : ':';
-  var pubBin = p.absolute('tool', 'test-bin');
-  var path =
+  final binDir = p.dirname(Platform.resolvedExecutable);
+  final separator = Platform.isWindows ? ';' : ':';
+  final pubBin = p.absolute('tool', 'test-bin');
+  final path =
       "$pubBin$separator${Platform.environment["PATH"]}$separator$binDir";
 
-  var environment = getPubTestEnvironment();
+  final environment = getPubTestEnvironment();
   environment['PATH'] = path;
   return environment;
 }

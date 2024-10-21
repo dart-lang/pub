@@ -5,12 +5,21 @@
 import 'package:pub_semver/pub_semver.dart';
 
 import '../language_version.dart';
-import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
 
+/// A root package is the root of a package dependency graph that seeds a
+/// version resolution.
+///
+/// There is no explicit way to depend on a root package.
+///
+/// A root package is the only package for which dev_dependencies are taken into
+/// account.
+///
+/// A root package is the only package for which dependency_overrides are taken
+/// into account.
 class RootSource extends Source {
   static final RootSource instance = RootSource._();
 
@@ -24,45 +33,54 @@ class RootSource extends Source {
     PackageId id,
     SystemCache cache,
   ) async {
-    final description = id.description.description;
-    if (description is! RootDescription) {
-      throw ArgumentError('Wrong source');
-    }
-    return description.package.pubspec;
+    throw UnsupportedError('Cannot describe the root');
   }
 
   @override
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache) async {
-    final description = ref.description;
-    if (description is! RootDescription) {
-      throw ArgumentError('Wrong source');
-    }
-    return [PackageId.root(description.package)];
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  ) async {
+    throw UnsupportedError('Trying to get versions of the root package');
   }
 
   @override
-  String doGetDirectory(PackageId id, SystemCache cache,
-      {String? relativeFrom}) {
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  }) {
     // TODO(sigurdm): Should we support this.
     throw UnsupportedError('Cannot get the directory of the root package');
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir}) {
+  PackageId parseId(
+    String name,
+    Version version,
+    Object? description, {
+    String? containingDir,
+  }) {
     throw UnsupportedError('Trying to parse a root package description.');
   }
 
   @override
-  PackageRef parseRef(String name, description,
-      {String? containingDir, required LanguageVersion languageVersion}) {
+  PackageRef parseRef(
+    String name,
+    Object? description, {
+    required Description containingDescription,
+    required LanguageVersion languageVersion,
+  }) {
     throw UnsupportedError('Trying to parse a root package description.');
   }
 }
 
 class ResolvedRootDescription extends ResolvedDescription {
-  ResolvedRootDescription(RootDescription description) : super(description);
+  @override
+  RootDescription get description => super.description as RootDescription;
+
+  ResolvedRootDescription(RootDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
@@ -78,9 +96,9 @@ class ResolvedRootDescription extends ResolvedDescription {
 }
 
 class RootDescription extends Description {
-  final Package package;
+  final String path;
 
-  RootDescription(this.package);
+  RootDescription(this.path);
   @override
   String format() {
     throw UnsupportedError('Trying to format a root package description.');
@@ -99,7 +117,7 @@ class RootDescription extends Description {
 
   @override
   bool operator ==(Object other) =>
-      other is RootDescription && other.package == package;
+      other is RootDescription && other.path == path;
 
   @override
   int get hashCode => 'root'.hashCode;

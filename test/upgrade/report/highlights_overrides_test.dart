@@ -15,14 +15,20 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependency_overrides': {'overridden': 'any'}
-      })
+        'dependency_overrides': {'overridden': 'any'},
+      }),
     ]).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r'''
+    await pubUpgrade(
+      output: RegExp(
+        r'''
 Resolving dependencies\.\.\..*
+Downloading packages\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
-''', multiLine: true));
+''',
+        multiLine: true,
+      ),
+    );
   });
 }

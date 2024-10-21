@@ -27,7 +27,8 @@ class UnknownSource extends Source {
 
   /// Two unknown sources are the same if their names are the same.
   @override
-  bool operator ==(other) => other is UnknownSource && other.name == name;
+  bool operator ==(Object other) =>
+      other is UnknownSource && other.name == name;
 
   @override
   int get hashCode => name.hashCode;
@@ -36,27 +37,39 @@ class UnknownSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    String? containingDir,
+    required Description containingDescription,
     LanguageVersion? languageVersion,
   }) =>
       PackageRef(name, UnknownDescription(description, this));
 
   @override
-  PackageId parseId(String name, Version version, Object? description,
-          {String? containingDir}) =>
-      PackageId(name, version,
-          ResolvedUnknownDescription(UnknownDescription(description, this)));
+  PackageId parseId(
+    String name,
+    Version version,
+    Object? description, {
+    String? containingDir,
+  }) =>
+      PackageId(
+        name,
+        version,
+        ResolvedUnknownDescription(UnknownDescription(description, this)),
+      );
 
   @override
   Future<List<PackageId>> doGetVersions(
-          PackageRef ref, Duration? maxAge, SystemCache cache) =>
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  ) =>
       throw UnsupportedError(
-          "Cannot get package versions from unknown source '$name'.");
+        "Cannot get package versions from unknown source '$name'.",
+      );
 
   @override
   Future<Pubspec> doDescribe(PackageId id, SystemCache cache) =>
       throw UnsupportedError(
-          "Cannot describe a package from unknown source '$name'.");
+        "Cannot describe a package from unknown source '$name'.",
+      );
 
   /// Returns the directory where this package can be found locally.
   @override
@@ -66,7 +79,8 @@ class UnknownSource extends Source {
     String? relativeFrom,
   }) =>
       throw UnsupportedError(
-          "Cannot find a package from an unknown source '$name'.");
+        "Cannot find a package from an unknown source '$name'.",
+      );
 }
 
 class UnknownDescription extends Description {
@@ -86,11 +100,13 @@ class UnknownDescription extends Description {
     required LanguageVersion languageVersion,
   }) {
     throw UnsupportedError(
-        "Cannot serialize a package description from an unknown source '${source.name}'.");
+      'Cannot serialize a package description '
+      "from an unknown source '${source.name}'.",
+    );
   }
 
   @override
-  operator ==(Object other) =>
+  bool operator ==(Object other) =>
       other is UnknownDescription &&
       source.name == other.source.name &&
       json.encode(description) == json.encode(other.description);
@@ -100,17 +116,18 @@ class UnknownDescription extends Description {
 }
 
 class ResolvedUnknownDescription extends ResolvedDescription {
-  ResolvedUnknownDescription(UnknownDescription description)
-      : super(description);
+  ResolvedUnknownDescription(UnknownDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
     throw UnsupportedError(
-        "Cannot serialize a package description from an unknown source '${description.source.name}'.");
+      'Cannot serialize a package description '
+      "from an unknown source '${description.source.name}'.",
+    );
   }
 
   @override
-  operator ==(Object other) =>
+  bool operator ==(Object other) =>
       other is ResolvedUnknownDescription && description == other.description;
 
   @override

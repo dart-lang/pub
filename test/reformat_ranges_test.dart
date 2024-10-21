@@ -5,13 +5,13 @@
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/solver/reformat_ranges.dart';
 import 'package:pub/src/source/hosted.dart';
-import 'package:pub/src/utils.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
 void main() {
   final description = ResolvedHostedDescription(
-    HostedDescription('foo', 'https://pub.dartlang.org'),
+    HostedDescription('foo', 'https://pub.dev'),
+    sha256: null,
   );
   test('reformatMax when max has a build identifier', () {
     expect(
@@ -24,7 +24,7 @@ void main() {
         ),
       ),
       equals(
-        Pair(
+        (
           Version.parse('1.2.4-0'),
           false,
         ),
@@ -46,20 +46,21 @@ void main() {
         ),
       ),
       equals(
-        Pair(
+        (
           Version.parse('1.2.4-3'),
           true,
         ),
       ),
     );
     expect(
-        reformatMax(
-          [],
-          VersionRange(
-            max: Version.parse('1.2.4+1'),
-            alwaysIncludeMaxPreRelease: true,
-          ),
+      reformatMax(
+        [],
+        VersionRange(
+          max: Version.parse('1.2.4+1'),
+          alwaysIncludeMaxPreRelease: true,
         ),
-        equals(null));
+      ),
+      equals(null),
+    );
   });
 }

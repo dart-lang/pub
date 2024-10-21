@@ -2,13 +2,13 @@
 
 ## Section 0
 $ tree
-'-- myapp
-    |-- bin
-    |   |-- foo.dart
-    |   '-- sub
-    |       '-- bar.dart
-    |-- pubspec.lock
-    '-- pubspec.yaml
+└── myapp
+    ├── bin
+    │   ├── foo.dart
+    │   └── sub
+    │       └── bar.dart
+    ├── pubspec.lock
+    └── pubspec.yaml
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
@@ -34,13 +34,15 @@ $ pub deps --json
       "version": "0.0.0",
       "kind": "root",
       "source": "root",
-      "dependencies": []
+      "dependencies": [],
+      "directDependencies": [],
+      "devDependencies": []
     }
   ],
   "sdks": [
     {
       "name": "Dart",
-      "version": "0.1.2+3"
+      "version": "3.1.2+3"
     }
   ],
   "executables": [

@@ -9,11 +9,11 @@ import '../test_pub.dart';
 
 void main() {
   test('with a pre-existing credentials.json does not authenticate', () async {
-    await d.validPackage.create();
+    await d.validPackage().create();
 
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 

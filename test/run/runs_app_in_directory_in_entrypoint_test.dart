@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -14,16 +14,16 @@ void main() {
       d.appPubspec(),
       d.dir('tool', [
         d.file('app.dart', "main() => print('tool');"),
-        d.dir('sub', [d.file('app.dart', "main() => print('sub');")])
-      ])
+        d.dir('sub', [d.file('app.dart', "main() => print('sub');")]),
+      ]),
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: [path.join('tool', 'app')]);
+    var pub = await pubRun(args: [p.join('tool', 'app')]);
     expect(pub.stdout, emitsThrough('tool'));
     await pub.shouldExit();
 
-    pub = await pubRun(args: [path.join('tool', 'sub', 'app')]);
+    pub = await pubRun(args: [p.join('tool', 'sub', 'app')]);
     expect(pub.stdout, emitsThrough('sub'));
     await pub.shouldExit();
   });

@@ -5,30 +5,15 @@
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
+import '../language_version.dart';
+import '../package_name.dart';
 import '../sdk.dart';
+import '../source/sdk.dart';
 import 'incompatibility.dart';
 
 /// The reason an [Incompatibility]'s terms are incompatible.
-abstract class IncompatibilityCause {
-  const IncompatibilityCause._();
-
-  /// The incompatibility represents the requirement that the root package
-  /// exists.
-  static const IncompatibilityCause root = _Cause('root');
-
-  /// The incompatibility represents a package's dependency.
-  static const IncompatibilityCause dependency = _Cause('dependency');
-
-  /// The incompatibility represents the user's request that we use the latest
-  /// version of a given package.
-  static const IncompatibilityCause useLatest = _Cause('use latest');
-
-  /// The incompatibility indicates that the package has no versions that match
-  /// the given constraint.
-  static const IncompatibilityCause noVersions = _Cause('no versions');
-
-  /// The incompatibility indicates that the package has an unknown source.
-  static const IncompatibilityCause unknownSource = _Cause('unknown source');
+sealed class IncompatibilityCause {
+  const IncompatibilityCause();
 
   /// Human readable notice / information providing context for this
   /// incompatibility.
@@ -46,6 +31,50 @@ abstract class IncompatibilityCause {
   String? get hint => null;
 }
 
+/// The incompatibility represents the requirement that the root package
+/// exists.
+class RootIncompatibilityCause extends IncompatibilityCause {
+  factory RootIncompatibilityCause() => const RootIncompatibilityCause._();
+  const RootIncompatibilityCause._();
+}
+
+/// The incompatibility represents a package's dependency.
+class DependencyIncompatibilityCause extends IncompatibilityCause {
+  final PackageRange depender;
+  final PackageRange target;
+  DependencyIncompatibilityCause(this.depender, this.target);
+
+  @override
+  String? get notice {
+    final dependerDescription = depender.description;
+    if (dependerDescription is SdkDescription) {
+      final targetConstraint = target.constraint;
+      if (targetConstraint is Version) {
+        return '''
+Note: ${target.name} is pinned to version $targetConstraint by ${depender.name} from the ${dependerDescription.sdk} SDK.
+See https://dart.dev/go/sdk-version-pinning for details.
+''';
+      }
+    }
+    return null;
+  }
+}
+
+/// The incompatibility indicates that the package has no versions that match
+/// the given constraint.
+class NoVersionsIncompatibilityCause extends IncompatibilityCause {
+  factory NoVersionsIncompatibilityCause() =>
+      const NoVersionsIncompatibilityCause._();
+  const NoVersionsIncompatibilityCause._();
+}
+
+/// The incompatibility indicates that the package has an unknown source.
+class UnknownSourceIncompatibilityCause extends IncompatibilityCause {
+  factory UnknownSourceIncompatibilityCause() =>
+      const UnknownSourceIncompatibilityCause._();
+  const UnknownSourceIncompatibilityCause._();
+}
+
 /// The incompatibility was derived from two existing incompatibilities during
 /// conflict resolution.
 class ConflictCause extends IncompatibilityCause {
@@ -57,28 +86,23 @@ class ConflictCause extends IncompatibilityCause {
   /// from which the target incompatibility was derived.
   final Incompatibility other;
 
-  ConflictCause(this.conflict, this.other) : super._();
-}
-
-/// A class for stateless [IncompatibilityCause]s.
-class _Cause extends IncompatibilityCause {
-  final String _name;
-
-  const _Cause(this._name) : super._();
-
-  @override
-  String toString() => _name;
+  ConflictCause(this.conflict, this.other);
 }
 
 /// The incompatibility represents a package's SDK constraint being
 /// incompatible with the current SDK.
-class SdkCause extends IncompatibilityCause {
+class SdkIncompatibilityCause extends IncompatibilityCause {
   /// The union of all the incompatible versions' constraints on the SDK.
   // TODO(zarah): Investigate if this can be non-nullable
   final VersionConstraint? constraint;
 
   /// The SDK with which the package was incompatible.
   final Sdk sdk;
+
+  bool get noNullSafetyCause =>
+      sdk.isDartSdk &&
+      !LanguageVersion.fromSdkConstraint(constraint).supportsNullSafety &&
+      sdk.version! >= Version(3, 0, 0).firstPreRelease;
 
   @override
   String? get notice {
@@ -96,6 +120,11 @@ class SdkCause extends IncompatibilityCause {
 
   @override
   String? get hint {
+    if (noNullSafetyCause) {
+      return 'The lower bound of "sdk: \'$constraint\'" must be 2.12.0'
+          ' or higher to enable null safety.'
+          '\nFor details, see https://dart.dev/null-safety';
+    }
     // If the SDK is available, then installing it won't help
     if (sdk.isAvailable) {
       return null;
@@ -104,17 +133,29 @@ class SdkCause extends IncompatibilityCause {
     return sdk.installMessage;
   }
 
-  SdkCause(this.constraint, this.sdk) : super._();
+  SdkIncompatibilityCause(this.constraint, this.sdk);
 }
 
 /// The incompatibility represents a package that couldn't be found by its
 /// source.
-class PackageNotFoundCause extends IncompatibilityCause {
+class PackageNotFoundIncompatibilityCause extends IncompatibilityCause {
   /// The exception indicating why the package couldn't be found.
   final PackageNotFoundException exception;
 
-  PackageNotFoundCause(this.exception) : super._();
+  PackageNotFoundIncompatibilityCause(this.exception);
 
   @override
   String? get hint => exception.hint;
+}
+
+/// The incompatibility represents a package-version that is not allowed to be
+/// used in the solve for some external reason.
+class PackageVersionForbiddenCause extends IncompatibilityCause {
+  /// The reason this package version was forbidden.
+  final String? reason;
+
+  PackageVersionForbiddenCause({this.reason});
+
+  @override
+  String? get hint => reason;
 }

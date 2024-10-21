@@ -3,18 +3,16 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// A library for compiling Dart code and manipulating analyzer parse trees.
+library;
+
 import 'dart:async';
 import 'dart:io';
 
-import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
-import 'package:analyzer/file_system/overlay_file_system.dart';
-import 'package:analyzer/file_system/physical_file_system.dart';
-import 'package:cli_util/cli_util.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
 import 'package:path/path.dart' as p;
 
@@ -23,64 +21,30 @@ import 'io.dart';
 import 'log.dart' as log;
 
 class AnalysisContextManager {
-  /// The map from a context root directory to to the context.
-  final Map<String, AnalysisContext> _contexts = {};
+  static final sessions = <String, AnalysisContextManager>{};
 
-  /// Ensure that there are analysis contexts for the directory with the
-  /// given [path]. If any previously added root covers the [path], keep
-  /// the previously created analysis context.
-  ///
-  /// This method does not discover analysis roots "up", it only looks down
-  /// the given [path]. It is expected that the client knows analysis roots
-  /// in advance. Pub does know, it is the packages it works with.
-  void createContextsForDirectory(String path) {
-    path = p.normalize(p.absolute(path));
+  final String packagePath;
+  final AnalysisSession _session;
 
-    // We add all contexts below the given directory.
-    // So, children contexts must also have been added.
-    if (_contexts.containsKey(path)) {
-      return;
-    }
+  factory AnalysisContextManager(String packagePath) => sessions.putIfAbsent(
+        packagePath,
+        () => AnalysisContextManager._(packagePath),
+      );
 
-    // Overwrite the analysis_options.yaml to avoid loading the file included
-    // in the package, as this may result in some files not being analyzed.
-    final resourceProvider =
-        OverlayResourceProvider(PhysicalResourceProvider.INSTANCE);
-    resourceProvider.setOverlay(
-      p.join(path, 'analysis_options.yaml'),
-      content: '',
-      modificationStamp: 0,
-    );
-
-    var contextCollection = AnalysisContextCollection(
-      includedPaths: [path],
-      resourceProvider: resourceProvider,
-      sdkPath: getSdkPath(),
-    );
-
-    // Add new contexts for the given path.
-    for (var analysisContext in contextCollection.contexts) {
-      var contextRootPath = analysisContext.contextRoot.root.path;
-
-      // If there is already a context for this context root path, keep it.
-      if (_contexts.containsKey(contextRootPath)) {
-        continue;
-      }
-
-      _contexts[contextRootPath] = analysisContext;
-    }
-  }
+  AnalysisContextManager._(this.packagePath)
+      : _session = AnalysisContextCollection(
+          includedPaths: [packagePath],
+        ).contextFor(packagePath).currentSession;
 
   /// Parse the file with the given [path] into AST.
   ///
-  /// One of the containing directories must be used to create analysis
-  /// contexts using [createContextsForDirectory]. Throws [StateError] if
-  /// this has not been done.
+  /// One of the containing directories must have been used to create `this`.
+  /// Throws [StateError] otherwise.
   ///
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   CompilationUnit parse(String path) {
     path = p.normalize(p.absolute(path));
-    var parseResult = _getExistingSession(path).getParsedUnit(path);
+    final parseResult = _session.getParsedUnit(path);
     if (parseResult is ParsedUnitResult) {
       if (parseResult.errors.isNotEmpty) {
         throw AnalyzerErrorGroup(parseResult.errors);
@@ -93,30 +57,16 @@ class AnalysisContextManager {
 
   /// Return import and export directives in the file with the given [path].
   ///
-  /// One of the containing directories must be used to create analysis
-  /// contexts using [createContextsForDirectory]. Throws [StateError] if
-  /// this has not been done.
-  ///
   /// Throws [AnalyzerErrorGroup] is the file has parsing errors.
   List<UriBasedDirective> parseImportsAndExports(String path) {
-    var unit = parse(path);
-    var uriDirectives = <UriBasedDirective>[];
+    final unit = parse(path);
+    final uriDirectives = <UriBasedDirective>[];
     for (var directive in unit.directives) {
       if (directive is UriBasedDirective) {
         uriDirectives.add(directive);
       }
     }
     return uriDirectives;
-  }
-
-  AnalysisSession _getExistingSession(String path) {
-    for (var context in _contexts.values) {
-      if (context.contextRoot.isAnalyzed(path)) {
-        return context.currentSession;
-      }
-    }
-
-    throw StateError('Unable to find the context to $path');
   }
 }
 
@@ -136,40 +86,50 @@ class AnalyzerErrorGroup implements Exception {
 ///
 /// If the compilation succeeds it is saved to a kernel file at [outputPath].
 ///
-/// If compilation fails, the output is cached at [incrementalDillOutputPath].
+/// If compilation fails, the output is cached at "[outputPath].incremental".
 ///
-/// Whichever of [incrementalDillOutputPath] and [outputPath] already exists is
-/// used to initialize the compiler run.
+/// Whichever of "[outputPath].incremental" and [outputPath] already exists is
+/// used to initialize the compiler run. To avoid the potential for
+/// race-conditions, it is first copied to a temporary location, and atomically
+/// moved to either [outputPath] or "[outputPath].incremental" depending on the
+/// result of compilation.
 ///
 /// The [packageConfigPath] should point at the package config file to be used
 /// for `package:` uri resolution.
 ///
 /// The [name] is used to describe the executable in logs and error messages.
+///
+/// The [additionalSources], if provided, instruct the compiler to include
+/// additional source files into compilation even if they are not referenced
+/// from the main library.
+///
+/// The [nativeAssets], if provided, instruct the compiler include a native
+/// assets map.
 Future<void> precompile({
   required String executablePath,
-  required String incrementalDillPath,
   required String name,
   required String outputPath,
   required String packageConfigPath,
+  List<String> additionalSources = const [],
+  String? nativeAssets,
 }) async {
-  ensureDir(p.dirname(outputPath));
-  ensureDir(p.dirname(incrementalDillPath));
-
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
   final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
   String? tempDir;
   FrontendServerClient? client;
   try {
-    tempDir = createTempDir(p.dirname(incrementalDillPath), 'tmp');
+    ensureDir(p.dirname(outputPath));
+    final incrementalDillPath = '$outputPath.incremental';
+    tempDir = createTempDir(p.dirname(outputPath), 'tmp');
     // To avoid potential races we copy the incremental data to a temporary file
     // for just this compilation.
     final temporaryIncrementalDill =
-        p.join(tempDir, '${p.basename(incrementalDillPath)}.incremental.dill');
+        p.join(tempDir, '${p.basename(incrementalDillPath)}.temp');
     try {
-      if (fileExists(incrementalDillPath)) {
-        copyFile(incrementalDillPath, temporaryIncrementalDill);
-      } else if (fileExists(outputPath)) {
+      if (fileExists(outputPath)) {
         copyFile(outputPath, temporaryIncrementalDill);
+      } else if (fileExists(incrementalDillPath)) {
+        copyFile(incrementalDillPath, temporaryIncrementalDill);
       }
     } on FileSystemException {
       // Not able to copy existing file, compilation will start from scratch.
@@ -181,26 +141,43 @@ Future<void> precompile({
       platformDill,
       sdkRoot: sdkRoot,
       packagesJson: packageConfigPath,
+      additionalSources: additionalSources,
+      nativeAssets: nativeAssets,
       printIncrementalDependencies: false,
     );
     final result = await client.compile();
 
+    // Sanity check. We've had reports of the compilation failing to provide a
+    // result, perhaps due to low-memory conditions.
+    // This should make this slightly easier to recognize in error reports.
+    if (!fileExists(temporaryIncrementalDill)) {
+      log.error(
+        'Compilation did not produce any result. '
+        'Expected file at `$temporaryIncrementalDill`',
+        result.dillOutput,
+      );
+    }
+
     final highlightedName = log.bold(name);
-    if (result?.errorCount == 0) {
+    if (result.errorCount == 0) {
       log.message('Built $highlightedName.');
       // By using rename we ensure atomicity. An external observer will either
       // see the old or the new snapshot.
       renameFile(temporaryIncrementalDill, outputPath);
+      // Any old incremental data is deleted in case we started from a file on
+      // [incrementalDillPath].
+      deleteEntry(incrementalDillPath);
     } else {
       // By using rename we ensure atomicity. An external observer will either
       // see the old or the new snapshot.
       renameFile(temporaryIncrementalDill, incrementalDillPath);
-      // If compilation failed we don't want to leave an incorrect snapshot.
+      // If compilation failed, don't leave an incorrect snapshot.
       tryDeleteEntry(outputPath);
 
       throw ApplicationException(
-          log.yellow('Failed to build $highlightedName:\n') +
-              (result?.compilerOutputLines.join('\n') ?? ''));
+        log.yellow('Failed to build $highlightedName:\n') +
+            result.compilerOutputLines.join('\n'),
+      );
     }
   } finally {
     client?.kill();

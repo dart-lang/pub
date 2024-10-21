@@ -11,18 +11,17 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('upload form fields has a non-string value', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 
-    var body = {
+    final body = {
       'url': 'http://example.com/upload',
-      'fields': {'field': 12}
+      'fields': {'field': 12},
     };
     handleUploadForm(globalServer, body: body);
     expect(pub.stderr, emits('Invalid server response:'));

@@ -1,4 +1,4 @@
-#!/usr/bin/env dart
+#!/usr/bin/env -S dart run -r
 // Copyright (c) 2012, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
@@ -8,18 +8,21 @@
 /// invocation requires the dart compiler to load all the sources. This script
 /// will create a `pub.XXX.dart.snapshot.dart2` which the tests can utilize.
 /// After creating the snapshot this script will forward arguments to
-/// `pub run test`, and ensure that the snapshot is deleted after tests have been
-/// run.
+/// `pub run test`, and ensure that the snapshot is deleted after tests have
+/// been run.
+library;
+
 import 'dart:io';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
 
 Future<void> main(List<String> args) async {
   if (Platform.environment['FLUTTER_ROOT'] != null) {
-    print(
-      'WARNING: The tests will not run correctly with dart from a flutter checkout!',
+    stderr.writeln(
+      'WARNING: '
+      'The tests will not run correctly with dart from a flutter checkout!',
     );
   }
   Process? testProcess;
@@ -27,32 +30,28 @@ Future<void> main(List<String> args) async {
     testProcess?.kill(signal);
   });
   final pubSnapshotFilename =
-      path.absolute(path.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
-  final pubSnapshotIncrementalFilename = '$pubSnapshotFilename.incremental';
+      p.absolute(p.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
   try {
-    print('Building snapshot');
+    final stopwatch = Stopwatch()..start();
+    stderr.write('Building snapshot...');
     await precompile(
-        executablePath: path.join('bin', 'pub.dart'),
-        outputPath: pubSnapshotFilename,
-        incrementalDillPath: pubSnapshotIncrementalFilename,
-        name: 'bin/pub.dart',
-        packageConfigPath: path.join('.dart_tool', 'package_config.json'));
+      executablePath: p.join('bin', 'pub.dart'),
+      outputPath: pubSnapshotFilename,
+      name: 'bin/pub.dart',
+      packageConfigPath: p.join('.dart_tool', 'package_config.json'),
+    );
+    stderr.writeln(' (${stopwatch.elapsed.inMilliseconds}ms)');
     testProcess = await Process.start(
       Platform.resolvedExecutable,
-      ['run', 'test', '--chain-stack-traces', ...args],
+      ['run', 'test', ...args],
       environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename},
       mode: ProcessStartMode.inheritStdio,
     );
     exitCode = await testProcess.exitCode;
   } on ApplicationException catch (e) {
-    print('Failed building snapshot: $e');
+    stderr.writeln('Failed building snapshot: $e');
     exitCode = 1;
   } finally {
-    try {
-      await File(pubSnapshotFilename).delete();
-      await sub.cancel();
-    } on Exception {
-      // snapshot didn't exist.
-    }
+    await sub.cancel();
   }
 }

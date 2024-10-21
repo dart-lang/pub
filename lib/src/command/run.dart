@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../entrypoint.dart';
 import '../executable.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -35,43 +36,56 @@ class RunCommand extends PubCommand {
   }) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
-    argParser.addMultiOption('enable-experiment',
-        help:
-            'Runs the executable in a VM with the given experiments enabled.\n'
-            '(Will disable snapshotting, resulting in slower startup).',
-        valueHelp: 'experiment');
-    argParser.addFlag('sound-null-safety',
-        help: 'Override the default null safety execution mode.');
+    argParser.addMultiOption(
+      'enable-experiment',
+      help: 'Runs the executable in a VM with the given experiments enabled.\n'
+          '(Will disable snapshotting, resulting in slower startup).',
+      valueHelp: 'experiment',
+    );
+    argParser.addFlag(
+      'sound-null-safety',
+      help: 'Override the default null safety execution mode.',
+      hide: true,
+    );
     argParser.addOption('mode', help: 'Deprecated option', hide: true);
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
     if (deprecated) {
-      await log.warningsOnlyUnlessTerminal(() {
+      await log.errorsOnlyUnlessTerminal(() {
         log.message('Deprecated. Use `dart run` instead.');
       });
     }
+    await Entrypoint.ensureUpToDate(entrypoint.workspaceRoot.dir, cache: cache);
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
+    if (argResults.wasParsed('sound-null-safety')) {
+      dataError('The --(no-)sound-null-safety flag is no longer supported.');
+    }
 
-    var package = entrypoint.root.name;
+    var package = entrypoint.workspaceRoot.name;
     var executable = argResults.rest[0];
-    var args = argResults.rest.skip(1).toList();
+    final args = argResults.rest.skip(1).toList();
 
     // A command like "foo:bar" runs the "bar" script from the "foo" package.
     // If there is no colon prefix, default to the root package.
     if (executable.contains(':')) {
-      var components = split1(executable, ':');
+      final components = split1(executable, ':');
       package = components[0];
       executable = components[1];
 
       if (p.split(executable).length > 1) {
         usageException(
-            'Cannot run an executable in a subdirectory of a dependency.');
+          'Cannot run an executable in a subdirectory of a dependency.',
+        );
       }
     } else if (onlyIdentifierRegExp.hasMatch(executable)) {
       // "pub run foo" means the same thing as "pub run foo:foo" as long as
@@ -85,13 +99,15 @@ class RunCommand extends PubCommand {
 
     final vmArgs = vmArgsFromArgResults(argResults);
 
-    var exitCode = await runExecutable(
+    final exitCode = await runExecutable(
       entrypoint,
       Executable.adaptProgramName(package, executable),
       args,
-      enableAsserts: argResults['enable-asserts'] || argResults['checked'],
-      recompile: (executable) => log.warningsOnlyUnlessTerminal(
-          () => entrypoint.precompileExecutable(executable)),
+      enableAsserts:
+          argResults.flag('enable-asserts') || argResults.flag('checked'),
+      recompile: (executable) => log.errorsOnlyUnlessTerminal(
+        () => entrypoint.precompileExecutable(executable),
+      ),
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
     );

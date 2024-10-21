@@ -14,33 +14,51 @@ import 'utils.dart';
 void main() {
   test("a binstub runs 'pub global run' for an outdated snapshot", () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'executables': {'foo-script': 'script'}
-    }, contents: [
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'executables': {'foo-script': 'script'},
+      },
+      contents: [
+        d.dir(
+          'bin',
+          [d.file('script.dart', "main(args) => print('ok \$args');")],
+        ),
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir('bin',
-              [d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1')])
-        ])
-      ])
+          d.dir(
+            'bin',
+            [d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1')],
+          ),
+        ]),
+      ]),
     ]).create();
 
-    deleteEntry(p.join(d.dir(cachePath).io.path, 'global_packages', 'foo',
-        'bin', 'script.dart-$versionSuffix.snapshot'));
+    deleteEntry(
+      p.join(
+        d.dir(cachePath).io.path,
+        'global_packages',
+        'foo',
+        'bin',
+        'script.dart-$versionSuffix.snapshot',
+      ),
+    );
 
-    var process = await TestProcess.start(
-        p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
-        ['arg1', 'arg2'],
-        environment: getEnvironment());
+    final process = await TestProcess.start(
+      p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
+      ['arg1', 'arg2'],
+      environment: getEnvironment(),
+    );
 
-    // We don't get `Building package executable...` because we are running through
-    // the binstub.
+    // We don't get `Building package executable...` because we are running
+    // through the binstub.
     expect(process.stdout, emitsThrough('ok [arg1, arg2]'));
     await process.shouldExit();
 
@@ -51,7 +69,8 @@ void main() {
     //     d.file(
     //         'script.dart-$versionSuffix.snapshot',
     //         isNot(equals(
-    //             readBinaryFile(testAssetPath('out-of-date-$versionSuffix.snapshot')))))
+    //             readBinaryFile(testAssetPath(
+    //                 'out-of-date-$versionSuffix.snapshot')))))
     //   ])
     // ]).validate();
   });

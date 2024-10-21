@@ -11,18 +11,19 @@ import 'package:http_parser/http_parser.dart';
 import '../http.dart';
 import '../log.dart' as log;
 import '../system_cache.dart';
+import '../utils.dart';
 import 'credential.dart';
 
 /// This client authenticates requests by injecting `Authentication` header to
 /// requests.
 ///
-/// Requests to URLs not under [serverBaseUrl] will not be authenticated.
+/// Requests to URLs not under [_credential]'s url will not be authenticated.
 class _AuthenticatedClient extends http.BaseClient {
   /// Constructs Http client wrapper that injects `authorization` header to
   /// requests and handles authentication errors.
   ///
-  /// [_credential] might be `null`. In that case `authorization` header will not
-  /// be injected to requests.
+  /// [_credential] might be `null`. In that case `authorization` header will
+  /// not be injected to requests.
   _AuthenticatedClient(this._inner, this._credential);
 
   final http.BaseClient _inner;
@@ -39,28 +40,23 @@ class _AuthenticatedClient extends http.BaseClient {
     // request.
     //
     // This check ensures that this client will only authenticate requests sent
-    // to given serverBaseUrl. Otherwise credential leaks might ocurr when
+    // to given serverBaseUrl. Otherwise credential leaks might occur when
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
     if (_credential != null &&
-        _credential!.canAuthenticate(request.url.toString())) {
+        _credential.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
-          await _credential!.getAuthorizationHeaderValue();
+          await _credential.getAuthorizationHeaderValue();
     }
 
-    try {
-      final response = await _inner.send(request);
-      if (response.statusCode == 401) {
-        _detectInvalidCredentials = true;
-        _throwAuthException(response);
-      }
-      return response;
-    } on PubHttpException catch (e) {
-      if (e.response.statusCode == 403) {
-        _throwAuthException(e.response);
-      }
-      rethrow;
+    final response = await _inner.send(request);
+    if (response.statusCode == 401) {
+      _detectInvalidCredentials = true;
     }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      _throwAuthException(response);
+    }
+    return response;
   }
 
   /// Throws [AuthenticationException] that includes response status code and
@@ -73,11 +69,13 @@ class _AuthenticatedClient extends http.BaseClient {
     if (response.headers.containsKey(HttpHeaders.wwwAuthenticateHeader)) {
       try {
         final header = response.headers[HttpHeaders.wwwAuthenticateHeader]!;
-        final challenge = AuthenticationChallenge.parseHeader(header)
-            .firstWhereOrNull((challenge) =>
-                challenge.scheme == 'bearer' &&
-                challenge.parameters['realm'] == 'pub' &&
-                challenge.parameters['message'] != null);
+        final challenge =
+            AuthenticationChallenge.parseHeader(header).firstWhereOrNull(
+          (challenge) =>
+              challenge.scheme == 'bearer' &&
+              challenge.parameters['realm'] == 'pub' &&
+              challenge.parameters['message'] != null,
+        );
         if (challenge != null) {
           serverMessage = challenge.parameters['message'];
         }
@@ -86,11 +84,7 @@ class _AuthenticatedClient extends http.BaseClient {
       }
     }
     if (serverMessage != null) {
-      // Only allow printable ASCII, map anything else to whitespace, take
-      // at-most 1024 characters.
-      serverMessage = String.fromCharCodes(serverMessage.runes
-          .map((r) => 32 <= r && r <= 127 ? r : 32)
-          .take(1024));
+      serverMessage = sanitizeForTerminal(serverMessage);
     }
     throw AuthenticationException(response.statusCode, serverMessage);
   }
@@ -127,7 +121,7 @@ Future<T> withAuthenticatedClient<T>(
   Future<T> Function(http.Client) fn,
 ) async {
   final credential = systemCache.tokenStore.findCredential(hostedUrl);
-  final client = _AuthenticatedClient(httpClient, credential);
+  final client = _AuthenticatedClient(globalHttpClient, credential);
 
   try {
     return await fn(client);

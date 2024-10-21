@@ -2,13 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:meta/meta.dart';
-import 'package:usage/usage.dart';
-
 import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
 import 'command/add.dart';
-import 'command/build.dart';
+import 'command/bump.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
@@ -21,50 +18,44 @@ import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/token.dart';
+import 'command/unpack.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
+import 'command/workspace.dart';
 import 'log.dart' as log;
 import 'log.dart';
-
-/// The information needed for the embedded pub command to send analytics.
-@sealed
-class PubAnalytics {
-  /// Name of the custom dimension of the dependency kind.
-  final String dependencyKindCustomDimensionName;
-
-  final Analytics? Function() _analyticsGetter;
-
-  Analytics? get analytics => _analyticsGetter();
-
-  PubAnalytics(
-    this._analyticsGetter, {
-    required this.dependencyKindCustomDimensionName,
-  });
-}
+import 'utils.dart';
 
 /// Exposes the `pub` commands as a command to be embedded in another command
 /// runner such as `dart pub`.
 class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get name => 'pub';
+
+  @override
+  List<String> get suggestionAliases => const ['packages', 'pkg'];
+
   @override
   String get description => 'Work with packages.';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   @override
-  String get directory => argResults['directory'];
-
-  @override
-  final PubAnalytics? analytics;
+  String get directory => argResults.optionWithDefault('directory');
 
   final bool Function() isVerbose;
 
-  PubEmbeddableCommand(this.analytics, this.isVerbose) : super() {
-    argParser.addFlag('trace',
-        help: 'Print debugging information when an error occurs.');
-    argParser.addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Print detailed logging.');
+  PubEmbeddableCommand(this.isVerbose) : super() {
+    // This flag was never honored in the embedding but since it was accepted we
+    // leave it as a hidden flag to avoid breaking clients that pass it.
+    argParser.addFlag('trace', hide: true);
+    argParser.addFlag(
+      'verbose',
+      abbr: 'v',
+      negatable: false,
+      help: 'Print detailed logging.',
+    );
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -80,7 +71,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     //
     // New commands should (most likely) be included in both lists.
     addSubcommand(AddCommand());
-    addSubcommand(BuildCommand());
+    addSubcommand(BumpCommand());
     addSubcommand(CacheCommand());
     addSubcommand(DepsCommand());
     addSubcommand(DowngradeCommand());
@@ -90,11 +81,13 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(OutdatedCommand());
     addSubcommand(RemoveCommand());
     addSubcommand(RunCommand(deprecated: true, alwaysUseSubprocess: true));
+    addSubcommand(UnpackCommand());
     addSubcommand(UpgradeCommand());
     addSubcommand(UploaderCommand());
     addSubcommand(LoginCommand());
     addSubcommand(LogoutCommand());
     addSubcommand(TokenCommand());
+    addSubcommand(WorkspaceCommand());
   }
 
   @override
@@ -112,6 +105,6 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   bool get trace => _isVerbose;
 
   bool get _isVerbose {
-    return argResults['verbose'] || isVerbose();
+    return argResults.flag('verbose') || isVerbose();
   }
 }

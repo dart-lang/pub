@@ -11,15 +11,20 @@ import '../../test_pub.dart';
 void main() {
   test('errors if the script is in a subdirectory.', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('example', [d.file('script.dart', "main(args) => print('ok');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('example', [d.file('script.dart', "main(args) => print('ok');")]),
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
     await runPub(
       args: ['global', 'run', 'foo:example/script'],
       error: contains(
-          'Cannot run an executable in a subdirectory of a global package.'),
+        'Cannot run an executable in a subdirectory of a global package.',
+      ),
       exitCode: exit_codes.USAGE,
     );
   });

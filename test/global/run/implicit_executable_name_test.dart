@@ -10,13 +10,17 @@ import '../../test_pub.dart';
 void main() {
   test('defaults to the package name if the script is omitted', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', contents: [
-      d.dir('bin', [d.file('foo.dart', "main(args) => print('foo');")])
-    ]);
+    server.serve(
+      'foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('foo');")]),
+      ],
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('foo'));
     await pub.shouldExit();
   });

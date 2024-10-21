@@ -12,14 +12,19 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully on a dependency from an unknown source', () async {
-      await d.appDir({
-        'foo': {'bad': 'foo'}
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {'bad': 'foo'},
+        },
+      ).create();
 
-      await pubCommand(command, error: equalsIgnoringWhitespace('''
+      await pubCommand(
+        command,
+        error: equalsIgnoringWhitespace('''
         Because myapp depends on foo from unknown source "bad", version solving
           failed.
-      '''));
+      '''),
+      );
     });
 
     test(
@@ -27,20 +32,29 @@ void main() {
         'source', () async {
       await d.dir('foo', [
         d.libDir('foo', 'foo 0.0.1'),
-        d.libPubspec('foo', '0.0.1', deps: {
-          'bar': {'bad': 'bar'}
-        })
+        d.libPubspec(
+          'foo',
+          '0.0.1',
+          deps: {
+            'bar': {'bad': 'bar'},
+          },
+        ),
       ]).create();
 
-      await d.appDir({
-        'foo': {'path': '../foo'}
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {'path': '../foo'},
+        },
+      ).create();
 
-      await pubCommand(command, error: equalsIgnoringWhitespace('''
+      await pubCommand(
+        command,
+        error: equalsIgnoringWhitespace('''
         Because every version of foo from path depends on bar from unknown
           source "bad", foo from path is forbidden.
         So, because myapp depends on foo from path, version solving failed.
-      '''));
+      '''),
+      );
     });
 
     test('ignores unknown source in lockfile', () async {
@@ -49,24 +63,27 @@ void main() {
 
       // Depend on "foo" from a valid source.
       await d.dir(appPath, [
-        d.appPubspec({
-          'foo': {'path': '../foo'}
-        })
+        d.appPubspec(
+          dependencies: {
+            'foo': {'path': '../foo'},
+          },
+        ),
       ]).create();
 
       // But lock it to a bad one.
       await d.dir(appPath, [
         d.file(
-            'pubspec.lock',
-            jsonEncode({
-              'packages': {
-                'foo': {
-                  'version': '0.0.0',
-                  'source': 'bad',
-                  'description': {'name': 'foo'}
-                }
-              }
-            }))
+          'pubspec.lock',
+          jsonEncode({
+            'packages': {
+              'foo': {
+                'version': '0.0.0',
+                'source': 'bad',
+                'description': {'name': 'foo'},
+              },
+            },
+          }),
+        ),
       ]).create();
 
       await pubCommand(command);

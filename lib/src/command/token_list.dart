@@ -12,17 +12,17 @@ class TokenListCommand extends PubCommand {
   @override
   String get description => 'List servers for which a token exists.';
   @override
-  String get invocation => 'pub token list';
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
   @override
   Future<void> runProtected() async {
     if (cache.tokenStore.credentials.isNotEmpty) {
       log.message(
-        'You have secret tokens for ${cache.tokenStore.credentials.length} package '
-        'repositories:',
+        'You have secret tokens for ${cache.tokenStore.credentials.length} '
+        'package repositories:',
       );
       for (final token in cache.tokenStore.credentials) {
-        log.message(token.url);
+        log.message(token.url.toString());
       }
     } else {
       log.message(

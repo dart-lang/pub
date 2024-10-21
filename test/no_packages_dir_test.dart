@@ -15,7 +15,7 @@ void main() {
         d.dir('packages'),
         d.dir('bin/packages'),
         d.dir('bin/subdir/packages'),
-        d.dir('lib/packages')
+        d.dir('lib/packages'),
       ]).create();
 
       await pubCommand(command);
@@ -24,7 +24,7 @@ void main() {
         d.dir('packages'),
         d.dir('bin/packages'),
         d.dir('bin/subdir/packages'),
-        d.dir('lib/packages')
+        d.dir('lib/packages'),
       ]).validate();
     });
   });

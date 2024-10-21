@@ -20,14 +20,15 @@ dart "/path/to/.pub-cache/global_packages/foo/bin/script.dart.snapshot" "\$@"
 void main() {
   test('handles an orphaned binstub script', () async {
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('script'), _orphanedBinstub)])
+      d.dir('bin', [d.file(binStubName('script'), _orphanedBinstub)]),
     ]).create();
 
     await runPub(
-        args: ['cache', 'repair'],
-        error: allOf([
-          contains('Binstubs exist for non-activated packages:'),
-          contains('From foo: foo-script')
-        ]));
+      args: ['cache', 'repair'],
+      error: allOf([
+        contains('Binstubs exist for non-activated packages:'),
+        contains('From foo: foo-script'),
+      ]),
+    );
   });
 }

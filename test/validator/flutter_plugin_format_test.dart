@@ -15,45 +15,45 @@ Validator flutterPluginFormat() => FlutterPluginFormatValidator();
 void main() {
   group('should consider a package valid if it', () {
     test('is not a plugin', () async {
-      await d.validPackage.create();
-      return expectValidation(flutterPluginFormat);
+      await d.validPackage().create();
+      return expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.9.0 package', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
         'flutter': '>=1.9.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0 package', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
         'flutter': '>=1.10.0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0-0 package', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
         'flutter': '>=1.10.0-0 <2.0.0',
       });
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a flutter 1.10.0 plugin with the new format', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
@@ -70,13 +70,13 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat);
+      await expectValidationDeprecated(flutterPluginFormat);
     });
   });
 
   group('should consider a package invalid if it', () {
     test('is a flutter plugin with old and new format', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
@@ -96,17 +96,18 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
 
     test('is a flutter 1.9.0 plugin with old format', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
@@ -120,14 +121,16 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat,
-          errors: contains(
-            contains('Instead use the flutter.plugin.platforms key'),
-          ));
+      await expectValidationDeprecated(
+        flutterPluginFormat,
+        errors: contains(
+          contains('Instead use the flutter.plugin.platforms key'),
+        ),
+      );
     });
 
     test('is a flutter 1.9.0 plugin with new format', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
@@ -144,19 +147,20 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
 
     test(
-        'is a flutter plugin with only implicit flutter sdk version constraint and the new format',
-        () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+        'is a flutter plugin with only implicit flutter sdk version constraint '
+        'and the new format', () async {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
@@ -172,17 +176,18 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
 
     test('is a non-flutter package with using the new format', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {}, {}, {
+      final pkg = packageMap('test_pkg', '1.0.0', {}, {}, {
         'sdk': '>=2.0.0 <3.0.0',
       });
       pkg['flutter'] = {
@@ -196,17 +201,18 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(
+      await expectValidationDeprecated(
         flutterPluginFormat,
         errors: contains(
           contains(
-              'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
         ),
       );
     });
 
     test('is a flutter 1.8.0 plugin with new format', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
@@ -223,15 +229,18 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat,
-          errors: contains(
-            contains(
-                'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
-          ));
+      await expectValidationDeprecated(
+        flutterPluginFormat,
+        errors: contains(
+          contains(
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
+        ),
+      );
     });
 
     test('is a flutter 1.9.999 plugin with new format', () async {
-      var pkg = packageMap('test_pkg', '1.0.0', {
+      final pkg = packageMap('test_pkg', '1.0.0', {
         'flutter': {'sdk': 'flutter'},
       }, {}, {
         'sdk': '>=2.0.0 <3.0.0',
@@ -248,11 +257,14 @@ void main() {
         },
       };
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
-      await expectValidation(flutterPluginFormat,
-          errors: contains(
-            contains(
-                'Please consider increasing the Flutter SDK requirement to ^1.10.0'),
-          ));
+      await expectValidationDeprecated(
+        flutterPluginFormat,
+        errors: contains(
+          contains(
+            'Please consider increasing the Flutter SDK requirement to ^1.10.0',
+          ),
+        ),
+      );
     });
   });
 }

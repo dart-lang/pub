@@ -15,10 +15,12 @@ void main() {
       server.serve('pkg$i', '1.$i.0');
     }
 
-    await d.appDir({
-      'foo': '1.2.3',
-      for (var i = 0; i < 20; i++) 'pkg$i': '^1.$i.0',
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'foo': '1.2.3',
+        for (var i = 0; i < 20; i++) 'pkg$i': '^1.$i.0',
+      },
+    ).create();
 
     await pubGet();
 
@@ -29,7 +31,7 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3'),
       for (var i = 0; i < 20; i++)
-        d.packageConfigEntry(name: 'pkg$i', version: '1.$i.0')
+        d.packageConfigEntry(name: 'pkg$i', version: '1.$i.0'),
     ]).validate();
   });
 }

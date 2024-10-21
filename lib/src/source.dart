@@ -4,13 +4,17 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
 import 'language_version.dart';
+import 'lock_file.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'source/cached.dart';
 import 'source/git.dart';
+import 'source/hosted.dart';
 import 'system_cache.dart';
 
 /// A source from which to get packages.
@@ -63,10 +67,8 @@ abstract class Source {
   /// hosted dependencies like `foo:` or `foo: ^1.2.3`, the [description] may
   /// also be `null`.
   ///
-  /// [containingDir] is the path to the directory of the pubspec where this
-  /// description appears. It may be `null` if the description is coming from
-  /// some in-memory source (such as pulling down a pubspec from
-  /// pub.dartlang.org).
+  /// [containingDescription] describes the location of the pubspec where this
+  /// description appears.
   ///
   /// [languageVersion] is the minimum Dart version parsed from the pubspec's
   /// `environment` field. Source implementations may use this parameter to only
@@ -78,23 +80,27 @@ abstract class Source {
   /// Throws a [FormatException] if the description is not valid.
   PackageRef parseRef(
     String name,
-    description, {
-    String? containingDir,
+    Object? description, {
+    required Description containingDescription,
     required LanguageVersion languageVersion,
   });
 
   /// Parses a [PackageId] from a name and a serialized description.
   ///
-  /// This only accepts descriptions serialized using [serializeDescription]. It
-  /// should not be used with user-authored descriptions.
+  /// This should accept descriptions serialized using
+  /// [ResolvedDescription.serializeForLockfile].
   ///
   /// [containingDir] is the path to the directory lockfile where this
   /// description appears. It may be `null` if the description is coming from
   /// some in-memory source.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir});
+  PackageId parseId(
+    String name,
+    Version version,
+    Object? description, {
+    String? containingDir,
+  });
 
   /// Returns the source's name.
   @override
@@ -108,16 +114,35 @@ abstract class Source {
   /// downloaded).
   ///
   /// By default, this assumes that each description has a single version and
-  /// uses [describe] to get that version.
+  /// uses [SystemCache.describe] to get that version.
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache);
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  );
+
+  Future<List<Advisory>?>? getAdvisoriesForPackage(
+    PackageId id,
+    SystemCache cache,
+    Duration? maxAge,
+  ) {
+    return null;
+  }
+
+  Future<List<Advisory>?>? getAdvisoriesForPackageVersion(
+    PackageId id,
+    SystemCache cache,
+    Duration? maxAge,
+  ) {
+    return null;
+  }
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
   ///
   /// For sources that have only one version for a given [PackageRef], this may
   /// return a pubspec with a different version than that specified by [id]. If
-  /// they do, [describe] will throw a [PackageNotFoundException].
+  /// they do, [SystemCache.describe] will throw a [PackageNotFoundException].
   ///
   /// This may be called for packages that have not yet been downloaded during
   /// the version resolution process.
@@ -130,10 +155,13 @@ abstract class Source {
   ///
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
-  String doGetDirectory(PackageId id, SystemCache cache,
-      {String? relativeFrom});
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  });
 
-  /// Returns metadata about a given package.
+  /// Returns metadata about a given package-version.
   ///
   /// For remotely hosted packages, the information can be cached for up to
   /// [maxAge]. If [maxAge] is not given, the information is not cached.
@@ -141,7 +169,8 @@ abstract class Source {
   /// In the case of offline sources, [maxAge] is not used, since information is
   /// per definition cached.
   Future<PackageStatus> status(
-    PackageId id,
+    PackageRef ref,
+    Version version,
     SystemCache cache, {
     Duration? maxAge,
   }) async {
@@ -161,9 +190,10 @@ abstract class Source {
 /// with a version constraint.
 abstract class Description {
   Source get source;
-  Object? serializeForPubspec(
-      {required String? containingDir,
-      required LanguageVersion languageVersion});
+  Object? serializeForPubspec({
+    required String? containingDir,
+    required LanguageVersion languageVersion,
+  });
 
   /// Converts `this` into a human-friendly form to show the user.
   ///
@@ -171,10 +201,12 @@ abstract class Description {
   String format();
 
   @override
-  bool operator ==(other) =>
+  @mustBeOverridden
+  bool operator ==(Object other) =>
       throw UnimplementedError('Subclasses must override');
 
   @override
+  @mustBeOverridden
   int get hashCode => throw UnimplementedError('Subclasses must override');
 }
 
@@ -182,7 +214,7 @@ abstract class Description {
 /// to lock down a specific version.
 ///
 /// This is currently only relevant for the [GitSource] that resolves the
-/// [Description.ref] to a specific commit id in [GitSource.doGetVersions].
+/// [GitDescription.ref] to a specific commit id in [GitSource.doGetVersions].
 ///
 /// This is the information that goes into a `pubspec.lock` file together with
 /// a version number (that is represented by a [PackageId].
@@ -193,7 +225,7 @@ abstract class ResolvedDescription {
   /// When a [LockFile] is serialized, it uses this method to get the
   /// [description] in the right format.
   ///
-  /// [containingPath] is the containing directory of the root package.
+  /// [containingDir] is the containing directory of the root package.
   Object? serializeForLockfile({required String? containingDir});
 
   /// Converts `this` into a human-friendly form to show the user.
@@ -202,10 +234,12 @@ abstract class ResolvedDescription {
   String format() => description.format();
 
   @override
-  bool operator ==(other) =>
+  @mustBeOverridden
+  bool operator ==(Object other) =>
       throw UnimplementedError('Subclasses must override');
 
   @override
+  @mustBeOverridden
   int get hashCode => throw UnimplementedError('Subclasses must override');
 }
 
@@ -217,9 +251,15 @@ class PackageStatus {
   final String? discontinuedReplacedBy;
   final bool isDiscontinued;
   final bool isRetracted;
+
+  /// The latest point in time at which a security advisory that affects this
+  /// package has been synchronized into pub, `null` if this package is not
+  /// affected by a security advisory.
+  final DateTime? advisoriesUpdated;
   PackageStatus({
     this.isDiscontinued = false,
     this.discontinuedReplacedBy,
     this.isRetracted = false,
+    this.advisoriesUpdated,
   });
 }

@@ -17,7 +17,7 @@ void main() {
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0')
       ..serve('bar', '1.1.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     server.retractPackageVersion('bar', '1.1.0');
     await pubGet();
@@ -33,18 +33,19 @@ void main() {
     final server = await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     server.retractPackageVersion('bar', '1.0.0');
     await pubGet(
-        error:
-            '''Because every version of foo depends on bar ^1.0.0 which doesn't match any versions, foo is forbidden. 
-            So, because myapp depends on foo 1.0.0, version solving failed.''');
+      error:
+          '''Because every version of foo depends on bar ^1.0.0 which doesn't match any versions, foo is forbidden. 
+            So, because myapp depends on foo 1.0.0, version solving failed.''',
+    );
   });
 
   // Currently retraction does not affect prioritization. I.e., if
   // pubspec.lock already contains a retracted version, which is the newest
-  // satisfying the dependency contstraint we will not choose to downgrade.
+  // satisfying the dependency constraint we will not choose to downgrade.
   // In this case we expect a newer version to be published at some point which
   // will then cause pub upgrade to choose that one.
   test('Allow retracted version when it was already in pubspec.lock', () async {
@@ -52,7 +53,7 @@ void main() {
       ..serve('foo', '1.0.0', deps: {'bar': '^1.0.0'})
       ..serve('bar', '1.0.0')
       ..serve('bar', '1.1.0');
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
@@ -89,14 +90,17 @@ void main() {
   test('Offline versions of pub commands also handle retracted packages',
       () async {
     final server = await servePackages();
-    await populateCache({
-      'foo': ['1.0.0'],
-      'bar': ['1.0.0', '1.1.0']
-    }, server);
+    await populateCache(
+      {
+        'foo': ['1.0.0'],
+        'bar': ['1.0.0', '1.1.0'],
+      },
+      server,
+    );
 
     await d.cacheDir({
       'foo': '1.0.0',
-      'bar': ['1.0.0', '1.1.0']
+      'bar': ['1.0.0', '1.1.0'],
     }).validate();
 
     final barVersionsCache =
@@ -112,7 +116,7 @@ void main() {
     // Now serve only errors - to validate we are truly offline.
     server.serveErrors();
 
-    await d.appDir({'foo': '1.0.0', 'bar': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '^1.0.0'}).create();
 
     await pubUpgrade(args: ['--offline']);
 
@@ -144,8 +148,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': '<3.0.0'},
-        'dependency_overrides': {'foo': '2.0.0'}
-      })
+        'dependency_overrides': {'foo': '2.0.0'},
+      }),
     ]).create();
 
     server.retractPackageVersion('foo', '2.0.0');
@@ -163,7 +167,7 @@ void main() {
       ..serve('foo', '2.0.0')
       ..serve('foo', '3.0.0');
 
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
     await pubGet();
 
     server.retractPackageVersion('foo', '2.0.0');
@@ -178,8 +182,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': '<=3.0.0'},
-        'dependency_overrides': {'foo': '2.0.0'}
-      })
+        'dependency_overrides': {'foo': '2.0.0'},
+      }),
     ]).create();
 
     await pubUpgrade();

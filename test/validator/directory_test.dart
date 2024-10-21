@@ -14,51 +14,51 @@ Validator directory() => DirectoryValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
-    test('looks normal', () => expectValidation(directory));
+    test('looks normal', () => expectValidationDeprecated(directory));
 
     test('has a nested directory named "tools"', () async {
       await d.dir(appPath, [
         d.dir('foo', [
-          d.dir('tools', [d.file('empty')])
-        ])
+          d.dir('tools', [d.file('empty')]),
+        ]),
       ]).create();
-      await expectValidation(directory);
+      await expectValidationDeprecated(directory);
     });
 
     test('is pubignoring the folder', () async {
       await d.dir(appPath, [
         d.file('.pubignore', 'tools/\n'),
         d.dir('foo', [
-          d.dir('tools', [d.file('empty')])
-        ])
+          d.dir('tools', [d.file('empty')]),
+        ]),
       ]).create();
-      await expectValidation(directory);
+      await expectValidationDeprecated(directory);
     });
   });
 
   group(
       'should consider a package invalid if it has a top-level directory '
       'named', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
-    var names = [
+    final names = [
       'benchmarks',
       'docs',
       'examples',
       'sample',
       'samples',
       'tests',
-      'tools'
+      'tools',
     ];
 
     for (var name in names) {
       test('"$name"', () async {
         await d.dir(appPath, [
-          d.dir(name, [d.file('empty')])
+          d.dir(name, [d.file('empty')]),
         ]).create();
-        await expectValidation(directory, warnings: isNotEmpty);
+        await expectValidationDeprecated(directory, warnings: isNotEmpty);
       });
     }
   });

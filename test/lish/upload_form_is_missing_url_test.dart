@@ -11,17 +11,16 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('upload form is missing url', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 
-    var body = {
-      'fields': {'field1': 'value1', 'field2': 'value2'}
+    final body = {
+      'fields': {'field1': 'value1', 'field2': 'value2'},
     };
 
     handleUploadForm(globalServer, body: body);

@@ -11,13 +11,12 @@ import '../test_pub.dart';
 
 void main() {
   test('an explicit --server argument does not override privacy', () async {
-    var pkg = packageMap('test_pkg', '1.0.0');
-    pkg['publish_to'] = 'none';
-    await d.dir(appPath, [d.pubspec(pkg)]).create();
+    await d.validPackage(pubspecExtras: {'publish_to': 'none'}).create();
 
     await runPub(
-        args: ['lish', '--server', 'http://arg.com'],
-        error: startsWith('A private package cannot be published.'),
-        exitCode: exit_codes.DATA);
+      args: ['lish', '--server', 'http://arg.com'],
+      error: contains('A private package cannot be published.'),
+      exitCode: exit_codes.DATA,
+    );
   });
 }

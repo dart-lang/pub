@@ -15,26 +15,26 @@ void main() {
 
     await d.dir('foo', [
       d.libPubspec('foo', '0.0.0', deps: {'bar': 'any'}),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
-    var pub = await startPub(args: ['global', 'activate', '-spath', '../foo']);
-    expect(pub.stdout, emitsThrough('Resolving dependencies in ../foo...'));
-    expect(pub.stdout, emitsThrough('Downloading bar 1.0.0...'));
-    expect(pub.stdout, emitsThrough('Downloading baz 2.0.0...'));
+    final pub =
+        await startPub(args: ['global', 'activate', '-spath', '../foo']);
+    expect(pub.stdout, emitsThrough('Resolving dependencies in `../foo`...'));
     expect(pub.stdout, emitsThrough(startsWith('Activated foo 0.0.0 at path')));
     await pub.shouldExit();
 
     // Puts the lockfile in the linked package itself.
     await d.dir('foo', [
       d.file(
-          'pubspec.lock',
-          allOf([
-            contains('bar'),
-            contains('1.0.0'),
-            contains('baz'),
-            contains('2.0.0')
-          ]))
+        'pubspec.lock',
+        allOf([
+          contains('bar'),
+          contains('1.0.0'),
+          contains('baz'),
+          contains('2.0.0'),
+        ]),
+      ),
     ]).validate();
   });
 }

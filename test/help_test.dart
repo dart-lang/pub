@@ -10,7 +10,8 @@ import 'golden_file.dart';
 /// Extract all commands and subcommands.
 ///
 /// Result will be an iterable of lists, illustrated as follows:
-/// ```
+///
+/// ```none
 /// [
 ///   [pub]
 ///   [pub, get]
@@ -28,10 +29,12 @@ Iterable<List<String>> _extractCommands(
   final names = <String>{};
   yield* cmds
       .where((sub) => !sub.hidden && names.add(sub.name))
-      .map((sub) => _extractCommands(
-            [...parents, sub.name],
-            sub.subcommands.values,
-          ))
+      .map(
+        (sub) => _extractCommands(
+          [...parents, sub.name],
+          sub.subcommands.values,
+        ),
+      )
       .expand((cmds) => cmds);
 }
 
@@ -40,7 +43,15 @@ Future<void> main() async {
   final cmds = _extractCommands([], PubCommandRunner().commands.values);
   for (final c in cmds) {
     testWithGolden('pub ${c.join(' ')} --help', (ctx) async {
-      await ctx.run([...c, '--help']);
+      await ctx.run(
+        [...c, '--help'],
+        environment: {
+          // Use more columns to avoid unintended line breaking.
+          '_PUB_TEST_TERMINAL_COLUMNS': '200',
+          'HOME': null,
+          'PUB_CACHE': null,
+        },
+      );
     });
   }
 }

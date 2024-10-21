@@ -25,7 +25,7 @@ void main() {
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
         d.file('subfile1.txt', 'subcontents'),
-        d.file('subfile2.txt', 'subcontents')
+        d.file('subfile2.txt', 'subcontents'),
       ]),
       d.dir(Uri.encodeComponent('\\/%+-='), [
         d.file(Uri.encodeComponent('\\/%+-=')),
@@ -34,16 +34,20 @@ void main() {
     createEntrypoint();
 
     expect(
-        entrypoint!.root.listFiles(),
-        unorderedEquals([
-          p.join(root, 'pubspec.yaml'),
-          p.join(root, 'file1.txt'),
-          p.join(root, 'file2.txt'),
-          p.join(root, 'subdir', 'subfile1.txt'),
-          p.join(root, 'subdir', 'subfile2.txt'),
-          p.join(root, Uri.encodeComponent('\\/%+-='),
-              Uri.encodeComponent('\\/%+-=')),
-        ]));
+      entrypoint!.workspaceRoot.listFiles(),
+      unorderedEquals([
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'file1.txt'),
+        p.join(root, 'file2.txt'),
+        p.join(root, 'subdir', 'subfile1.txt'),
+        p.join(root, 'subdir', 'subfile2.txt'),
+        p.join(
+          root,
+          Uri.encodeComponent('\\/%+-='),
+          Uri.encodeComponent('\\/%+-='),
+        ),
+      ]),
+    );
   });
 
   group('directory symlinks', () {
@@ -61,7 +65,7 @@ void main() {
 
       createEntrypoint();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file1.txt'),
         p.join(root, 'file2.txt'),
@@ -70,7 +74,7 @@ void main() {
       });
     });
 
-    test('not throws on ignored directory symlinks', () async {
+    test('does not throw on ignored directory symlinks', () async {
       await d.dir(appPath, [
         d.pubspec({'name': 'myapp'}),
         d.file('file1.txt', 'contents'),
@@ -85,7 +89,7 @@ void main() {
 
       createEntrypoint();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file1.txt'),
         p.join(root, 'file2.txt'),
@@ -93,7 +97,7 @@ void main() {
       });
     });
 
-    test('not throws on ignored broken directory symlinks', () async {
+    test('does not throw on ignored broken directory symlinks', () async {
       await d.dir(appPath, [
         d.pubspec({'name': 'myapp'}),
         d.file('file1.txt', 'contents'),
@@ -108,7 +112,7 @@ void main() {
 
       createEntrypoint();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file1.txt'),
         p.join(root, 'file2.txt'),
@@ -132,7 +136,7 @@ void main() {
         createEntrypoint();
 
         expect(
-          () => entrypoint!.root.listFiles(),
+          () => entrypoint!.workspaceRoot.listFiles(),
           throwsA(
             isA<DataException>().having(
               (e) => e.message,
@@ -160,13 +164,15 @@ void main() {
         createEntrypoint();
 
         expect(
-          () => entrypoint!.root.listFiles(),
+          () => entrypoint!.workspaceRoot.listFiles(),
           throwsA(
             isA<DataException>().having(
               (e) => e.message,
               'message',
               contains(
-                'Pub does not support publishing packages with non-resolving symlink:',
+                'Pub does not support publishing packages with '
+                'non-resolving symlink: '
+                '${p.join(d.sandbox, appPath, 'subdir', 'symlink')}',
               ),
             ),
           ),
@@ -202,7 +208,7 @@ void main() {
         createEntrypoint();
 
         expect(
-          () => entrypoint!.root.listFiles(),
+          () => entrypoint!.workspaceRoot.listFiles(),
           throwsA(
             isA<DataException>().having(
               (e) => e.message,
@@ -230,7 +236,7 @@ void main() {
 
         createEntrypoint();
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'file1.txt'),
           p.join(root, 'file2.txt'),
@@ -256,7 +262,7 @@ void main() {
 
         createEntrypoint();
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'file1.txt'),
           p.join(root, 'file2.txt'),
@@ -275,17 +281,19 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
 
     final root = p.join(d.sandbox, 'symlink');
     createDirectorySymlink(root, appPath);
 
-    final entrypoint = Entrypoint(p.join(d.sandbox, 'symlink'),
-        SystemCache(rootDir: p.join(d.sandbox, cachePath)));
+    final entrypoint = Entrypoint(
+      p.join(d.sandbox, 'symlink'),
+      SystemCache(rootDir: p.join(d.sandbox, cachePath)),
+    );
 
-    expect(entrypoint.root.listFiles(), {
+    expect(entrypoint.workspaceRoot.listFiles(), {
       p.join(root, 'pubspec.yaml'),
       p.join(root, 'file1.txt'),
       p.join(root, 'file2.txt'),
@@ -299,7 +307,7 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
     Link(p.join(d.sandbox, appPath, 'subdir', 'symlink'))
@@ -308,13 +316,15 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint!.root.listFiles(),
+      () => entrypoint!.workspaceRoot.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
           'message',
           contains(
-              'Pub does not support publishing packages with non-resolving symlink:'),
+            'Pub does not support publishing packages with '
+            'non-resolving symlink:',
+          ),
         ),
       ),
     );
@@ -334,7 +344,7 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint!.root.listFiles(),
+      () => entrypoint!.workspaceRoot.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
@@ -352,7 +362,7 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
     Link(p.join(d.sandbox, appPath, 'subdir', 'symlink1'))
@@ -362,13 +372,15 @@ void main() {
     createEntrypoint();
 
     expect(
-      () => entrypoint!.root.listFiles(),
+      () => entrypoint!.workspaceRoot.listFiles(),
       throwsA(
         isA<DataException>().having(
           (e) => e.message,
           'message',
           contains(
-              'Pub does not support publishing packages with non-resolving symlink:'),
+            'Pub does not support publishing packages with '
+            'non-resolving symlink:',
+          ),
         ),
       ),
     );
@@ -380,7 +392,7 @@ void main() {
       d.file('.foo', ''),
     ]).create();
     createEntrypoint();
-    expect(entrypoint!.root.listFiles(), {
+    expect(entrypoint!.workspaceRoot.listFiles(), {
       p.join(root, '.foo'),
       p.join(root, 'pubspec.yaml'),
     });
@@ -400,16 +412,16 @@ void main() {
         d.file('file2.txt', 'contents'),
         d.dir('subdir', [
           d.file('subfile1.txt', 'subcontents'),
-          d.file('subfile2.txt', 'subcontents')
-        ])
+          d.file('subfile2.txt', 'subcontents'),
+        ]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file1.txt'),
         p.join(root, 'file2.txt'),
         p.join(root, 'subdir', 'subfile1.txt'),
-        p.join(root, 'subdir', 'subfile2.txt')
+        p.join(root, 'subdir', 'subfile2.txt'),
       });
     });
 
@@ -420,14 +432,14 @@ void main() {
         d.file('file2.text', 'contents'),
         d.dir('subdir', [
           d.file('subfile1.txt', 'subcontents'),
-          d.file('subfile2.text', 'subcontents')
-        ])
+          d.file('subfile2.text', 'subcontents'),
+        ]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'file2.text'),
-        p.join(root, 'subdir', 'subfile2.text')
+        p.join(root, 'subdir', 'subfile2.text'),
       });
     });
 
@@ -450,35 +462,18 @@ void main() {
             d.dir('subdir', [
               d.file('subfile1.txt', 'subcontents'),
               d.file('subfile2.text', 'subcontents'),
-            ])
-          ]),
-        ])
-      ]).create();
-
-      createEntrypoint(p.join(appPath, 'rep', 'sub'));
-
-      expect(entrypoint!.root.listFiles(), {
-        p.join(root, 'pubspec.yaml'),
-        p.join(root, 'file2.text'),
-        p.join(root, 'file4.gak'),
-        p.join(root, 'subdir', 'subfile2.text')
-      });
-    });
-
-    test("Don't ignore packages/ before the package root", () async {
-      await d.dir(appPath, [
-        d.dir('packages', [
-          d.dir('app', [
-            d.appPubspec(),
-            d.dir('packages', [d.file('a.txt')]),
+            ]),
           ]),
         ]),
       ]).create();
 
-      createEntrypoint(p.join(appPath, 'packages', 'app'));
+      createEntrypoint(p.join(appPath, 'rep', 'sub'));
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
+        p.join(root, 'file2.text'),
+        p.join(root, 'file4.gak'),
+        p.join(root, 'subdir', 'subfile2.text'),
       });
     });
 
@@ -486,10 +481,17 @@ void main() {
       setUp(() async {
         await d.git('submodule', [
           d.file('.gitignore', '*.txt'),
-          d.file('file2.text', 'contents')
+          d.file('file2.text', 'contents'),
         ]).create();
 
-        await repo.runGit(['submodule', 'add', '../submodule']);
+        await repo.runGit([
+          // Hack to allow testing with local submodules after CVE-2022-39253.
+          '-c',
+          'protocol.file.allow=always',
+          'submodule',
+          'add',
+          '../submodule',
+        ]);
 
         await d.file('$appPath/submodule/file1.txt', 'contents').create();
 
@@ -497,7 +499,7 @@ void main() {
       });
 
       test('respects its .gitignore with useGitIgnore', () {
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'submodule', 'file2.text'),
         });
@@ -507,33 +509,25 @@ void main() {
     test('ignores pubspec.lock files', () async {
       await d.dir(appPath, [
         d.file('pubspec.lock'),
-        d.dir('subdir', [d.file('pubspec.lock')])
+        d.dir('subdir', [d.file('pubspec.lock')]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
-    });
-
-    test('ignores packages directories', () async {
-      await d.dir(appPath, [
-        d.dir('packages', [d.file('file.txt', 'contents')]),
-        d.dir('subdir', [
-          d.dir('packages', [d.file('subfile.txt', 'subcontents')]),
-        ])
-      ]).create();
-
-      expect(entrypoint!.root.listFiles(), {p.join(root, 'pubspec.yaml')});
+      expect(
+        entrypoint!.workspaceRoot.listFiles(),
+        {p.join(root, 'pubspec.yaml')},
+      );
     });
 
     test('allows pubspec.lock directories', () async {
       await d.dir(appPath, [
         d.dir('pubspec.lock', [
           d.file('file.txt', 'contents'),
-        ])
+        ]),
       ]).create();
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
-        p.join(root, 'pubspec.lock', 'file.txt')
+        p.join(root, 'pubspec.lock', 'file.txt'),
       });
     });
 
@@ -548,21 +542,21 @@ void main() {
             d.dir('subsubdir', [
               d.file('subsubfile1.txt', 'subsubcontents'),
               d.file('subsubfile2.txt', 'subsubcontents'),
-            ])
-          ])
+            ]),
+          ]),
         ]).create();
 
-        expect(entrypoint!.root.listFiles(beneath: 'subdir'), {
+        expect(entrypoint!.workspaceRoot.listFiles(beneath: 'subdir'), {
           p.join(root, 'subdir', 'subfile1.txt'),
           p.join(root, 'subdir', 'subfile2.txt'),
           p.join(root, 'subdir', 'subsubdir', 'subsubfile1.txt'),
-          p.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt')
+          p.join(root, 'subdir', 'subsubdir', 'subsubfile2.txt'),
         });
       });
     });
 
     test('.pubignore', () async {
-      await d.validPackage.create();
+      await d.validPackage().create();
       await d.dir(appPath, [
         d.file('.pubignore', '''
 /lib/ignored.dart
@@ -571,7 +565,7 @@ void main() {
         d.dir('lib', [d.file('not_ignored.dart', 'content')]),
       ]).create();
       createEntrypoint();
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'LICENSE'),
         p.join(root, 'CHANGELOG.md'),
         p.join(root, 'README.md'),
@@ -623,7 +617,7 @@ void main() {
     ]).create();
 
     createEntrypoint();
-    expect(entrypoint!.root.listFiles(), {
+    expect(entrypoint!.workspaceRoot.listFiles(), {
       p.join(root, 'pubspec.yaml'),
       p.join(root, 'not_ignored_by_gitignore.txt'),
       p.join(root, 'ignored_by_gitignore.txt'),
@@ -655,7 +649,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
         });
       });
@@ -673,7 +667,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'bin'),
         });
@@ -694,7 +688,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
         });
       });
@@ -717,7 +711,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'bin', 'nested_again', 'run.dart'),
         });
@@ -742,7 +736,7 @@ void main() {
         await repo.create();
         createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-        expect(entrypoint!.root.listFiles(), {
+        expect(entrypoint!.workspaceRoot.listFiles(), {
           p.join(root, 'pubspec.yaml'),
           p.join(root, 'bin', 'run.dart'),
         });
@@ -769,7 +763,7 @@ void main() {
       await repo.create();
       createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'bin', 'nested_again', 'run.dart'),
       });
@@ -793,7 +787,7 @@ void main() {
       await repo.create();
       createEntrypoint(p.join(appPath, 'packages', 'nested'));
 
-      expect(entrypoint!.root.listFiles(), {
+      expect(entrypoint!.workspaceRoot.listFiles(), {
         p.join(root, 'pubspec.yaml'),
         p.join(root, 'bin', 'run.dart'),
         p.join(root, 'bin', 'nested_again', 'run.dart'),

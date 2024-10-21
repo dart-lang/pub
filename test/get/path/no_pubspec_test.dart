@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
@@ -13,17 +13,21 @@ void main() {
   test('path dependency to non-package directory', () async {
     // Make an empty directory.
     await d.dir('foo').create();
-    var fooPath = path.join(d.sandbox, 'foo');
+    final fooPath = p.join(d.sandbox, 'foo');
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': fooPath}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': fooPath},
+        },
+      ),
     ]).create();
 
     await pubGet(
-        error: RegExp(r'Could not find a file named "pubspec.yaml" '
-            r'in "[^\n]*"\.'),
-        exitCode: exit_codes.NO_INPUT);
+      error: 'Because myapp depends on foo from path which doesn\'t exist '
+          '(No pubspec.yaml found for package foo in $fooPath.), '
+          'version solving failed.',
+      exitCode: exit_codes.NO_INPUT,
+    );
   });
 }

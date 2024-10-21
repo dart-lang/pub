@@ -11,17 +11,23 @@ import '../../test_pub.dart';
 void main() {
   test('errors if the script does not exist.', () async {
     final server = await servePackages();
-    server.serve('foo', '1.0.0', pubspec: {
-      'dev_dependencies': {'bar': '1.0.0'}
-    });
+    server.serve(
+      'foo',
+      '1.0.0',
+      pubspec: {
+        'dev_dependencies': {'bar': '1.0.0'},
+      },
+    );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ['foo:script']);
+    final pub = await pubRun(global: true, args: ['foo:script']);
     expect(
-        pub.stderr,
-        emits(
-            "Could not find ${p.join("bin", "script.dart")} in package foo."));
+      pub.stderr,
+      emits(
+        "Could not find ${p.join("bin", "script.dart")} in package foo.",
+      ),
+    );
     await pub.shouldExit(exit_codes.NO_INPUT);
   });
 }

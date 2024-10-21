@@ -1,10 +1,9 @@
 .buildlog
 .DS_Store
 .idea
+.vscode
 .dart_tool/
 .settings/
 /build/
 packages
-/.packages
-pubspec.lock
 /bin/pub.dart.snapshot

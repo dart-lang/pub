@@ -37,7 +37,17 @@ const pubCommandAliases = {
   'upgrade': ['update'],
 };
 
-final lineLength = stdout.hasTerminal ? stdout.terminalColumns : 80;
+final lineLength = _lineLength();
+
+int _lineLength() {
+  final fromEnv = Platform.environment['_PUB_TEST_TERMINAL_COLUMNS'];
+  if (fromEnv != null) {
+    final parsed = int.tryParse(fromEnv);
+    if (parsed != null && parsed > 0) return parsed;
+  }
+  if (stdout.hasTerminal) return stdout.terminalColumns;
+  return 80;
+}
 
 /// The base class for commands for the pub executable.
 ///
@@ -50,16 +60,18 @@ abstract class PubCommand extends Command<int> {
     final a = super.argResults;
     if (a == null) {
       throw StateError(
-          'argResults cannot be used before Command.run is called.');
+        'argResults cannot be used before Command.run is called.',
+      );
     }
     return a;
   }
 
-  String get directory =>
-      (argResults.options.contains('directory')
-          ? argResults['directory']
-          : null) ??
-      _pubTopLevel.directory;
+  String get directory {
+    return (argResults.options.contains('directory')
+            ? argResults.option('directory')
+            : null) ??
+        _pubTopLevel.directory;
+  }
 
   late final SystemCache cache = SystemCache(isOffline: isOffline);
 
@@ -73,12 +85,7 @@ abstract class PubCommand extends Command<int> {
   ///
   /// This will load the pubspec and fail with an error if the current directory
   /// is not a package.
-  late final Entrypoint entrypoint =
-      Entrypoint(directory, cache, withPubspecOverrides: withPubspecOverrides);
-
-  /// Whether `pubspec_overrides.yaml` is taken into account, when creating
-  /// [entrypoint].
-  bool get withPubspecOverrides => true;
+  late final Entrypoint entrypoint = Entrypoint(directory, cache);
 
   /// The URL for web documentation for this command.
   String? get docUrl => null;
@@ -91,7 +98,9 @@ abstract class PubCommand extends Command<int> {
   // it but we want to initialize it based on [allowTrailingOptions].
   @override
   late final ArgParser argParser = ArgParser(
-      allowTrailingOptions: allowTrailingOptions, usageLineLength: lineLength);
+    allowTrailingOptions: allowTrailingOptions,
+    usageLineLength: lineLength,
+  );
 
   /// Override this to use offline-only sources instead of hitting the network.
   ///
@@ -112,7 +121,7 @@ abstract class PubCommand extends Command<int> {
   Command get _topCommand {
     Command current = this;
     while (true) {
-      var parent = current.parent;
+      final parent = current.parent;
       if (parent == null) return current;
       current = parent;
     }
@@ -133,12 +142,10 @@ abstract class PubCommand extends Command<int> {
   PubTopLevel get _pubTopLevel =>
       _pubEmbeddableCommand ?? runner as PubTopLevel;
 
-  PubAnalytics? get analytics => _pubEmbeddableCommand?.analytics;
-
   @override
   String get invocation {
     PubCommand? command = this;
-    var names = [];
+    final names = <String?>[];
     do {
       names.add(command?.name);
       command = command?.parent as PubCommand?;
@@ -165,7 +172,7 @@ abstract class PubCommand extends Command<int> {
 
   /// Override the exit code that would normally be used when exiting
   /// successfully. Intended to be used by subcommands like `run` that wishes
-  /// to control the top-level exitcode.
+  /// to control the top-level exit code.
   ///
   /// This may only be called once.
   @nonVirtual
@@ -178,22 +185,24 @@ abstract class PubCommand extends Command<int> {
   @override
   @nonVirtual
   FutureOr<int> run() async {
-    computeCommand(_pubTopLevel.argResults);
+    _computeCommand(_pubTopLevel.argResults);
+    _decideOnColors(_pubTopLevel.argResults);
 
     log.verbosity = _pubTopLevel.verbosity;
     log.fine('Pub ${sdk.version}');
 
     var crashed = false;
     try {
-      await captureErrors<void>(() async => runProtected(),
-          captureStackChains: _pubTopLevel.captureStackChains);
+      await captureErrors<void>(
+        () async => runProtected(),
+        captureStackChains: _pubTopLevel.captureStackChains,
+      );
       if (_exitCodeOverride != null) {
         return _exitCodeOverride!;
       }
       return exit_codes.SUCCESS;
     } catch (error, chain) {
       log.exception(error, chain);
-
       if (_pubTopLevel.trace) {
         log.dumpTranscriptToStdErr();
       } else if (!isUserFacingException(error)) {
@@ -229,7 +238,8 @@ and attaching the relevant parts of that log file.
         }
         log.dumpTranscriptToFile(
           transcriptPath,
-          'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
+          'dart pub '
+          '${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
           e,
         );
 
@@ -237,7 +247,7 @@ and attaching the relevant parts of that log file.
           log.message('Logs written to $transcriptPath.');
         }
       }
-      httpClient.close();
+      globalHttpClient.close();
     }
   }
 
@@ -245,14 +255,16 @@ and attaching the relevant parts of that log file.
   /// appropriate exit code could be found.
   int _chooseExitCode(Object exception) {
     if (exception is SolveFailure) {
-      var packageNotFound = exception.packageNotFound;
+      final packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
     while (exception is WrappedException && exception.innerError is Exception) {
       exception = exception.innerError!;
     }
 
-    if (exception is HttpException ||
+    if (exception is PackageIntegrityException) {
+      return exit_codes.TEMP_FAIL;
+    } else if (exception is HttpException ||
         exception is http.ClientException ||
         exception is SocketException ||
         exception is TlsException ||
@@ -298,10 +310,20 @@ and attaching the relevant parts of that log file.
   ///
   /// For top-level commands, if an alias is used, the primary command name is
   /// returned. For instance `install` becomes `get`.
-  static late final String command = _command ?? '';
+  static final String command = _command ?? '';
 
-  static void computeCommand(ArgResults argResults) {
-    var list = <String?>[];
+  static void _decideOnColors(ArgResults argResults) {
+    if (!argResults.wasParsed('color')) {
+      forceColors = ForceColorOption.auto;
+    } else {
+      forceColors = argResults.flag('color')
+          ? ForceColorOption.always
+          : ForceColorOption.never;
+    }
+  }
+
+  static void _computeCommand(ArgResults argResults) {
+    final list = <String?>[];
     for (var command = argResults.command;
         command != null;
         command = command.command) {
@@ -310,7 +332,8 @@ and attaching the relevant parts of that log file.
       if (list.isEmpty) {
         // this is a top-level command
         final rootCommand = pubCommandAliases.entries.singleWhereOrNull(
-            (element) => element.value.contains(command!.name));
+          (element) => element.value.contains(command!.name),
+        );
         if (rootCommand != null) {
           commandName = rootCommand.key;
         }
@@ -329,7 +352,18 @@ abstract class PubTopLevel {
   bool get captureStackChains;
   log.Verbosity get verbosity;
   bool get trace;
-  String? get directory;
+
+  static void addColorFlag(ArgParser argParser) {
+    argParser.addFlag(
+      'color',
+      help: 'Use colors in terminal output.\n'
+          'Defaults to color when connected to a '
+          'terminal, and no-color otherwise.',
+    );
+  }
+
+  /// The directory containing the pubspec.yaml of the project to work on.
+  String get directory;
 
   /// The argResults from the level of parsing of the 'pub' command.
   ArgResults get argResults;

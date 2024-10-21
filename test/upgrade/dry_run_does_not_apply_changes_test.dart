@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -16,7 +16,7 @@ void main() {
       ..serve('foo', '2.0.0');
 
     // Create the first lockfile.
-    await d.appDir({'foo': '1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
     await pubGet();
 
@@ -26,10 +26,10 @@ void main() {
     ]).validate();
 
     // Change the pubspec.
-    await d.appDir({'foo': 'any'}).create();
+    await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Also delete the ".dart_tool" directory.
-    deleteEntry(path.join(d.sandbox, appPath, '.dart_tool'));
+    deleteEntry(p.join(d.sandbox, appPath, '.dart_tool'));
 
     // Do the dry run.
     await pubUpgrade(
@@ -44,7 +44,7 @@ void main() {
       // The lockfile should be unmodified.
       d.file('pubspec.lock', contains('1.0.0')),
       // The ".dart_tool" directory should not have been regenerated.
-      d.nothing('.dart_tool')
+      d.nothing('.dart_tool'),
     ]).validate();
   });
 
@@ -53,7 +53,7 @@ void main() {
       ..serve('foo', '1.0.0')
       ..serve('foo', '2.0.0');
 
-    await d.appDir({'foo': '^1.0.0'}).create();
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
     await pubGet();
 
@@ -63,11 +63,12 @@ void main() {
     ]).validate();
 
     // Also delete the ".dart_tool" directory.
-    deleteEntry(path.join(d.sandbox, appPath, '.dart_tool'));
+    deleteEntry(p.join(d.sandbox, appPath, '.dart_tool'));
 
     // Do the dry run.
     await pubUpgrade(
       args: ['--dry-run', '--major-versions'],
+      silent: contains('Downloading foo 2.0.0...'),
       output: allOf([
         contains('Resolving dependencies...'),
         contains('> foo 2.0.0 (was 1.0.0)'),
@@ -79,11 +80,11 @@ void main() {
 
     await d.dir(appPath, [
       // The pubspec should not be modified.
-      d.appPubspec({'foo': '^1.0.0'}),
+      d.appPubspec(dependencies: {'foo': '^1.0.0'}),
       // The lockfile should not be modified.
       d.file('pubspec.lock', contains('1.0.0')),
       // The ".dart_tool" directory should not have been regenerated.
-      d.nothing('.dart_tool')
+      d.nothing('.dart_tool'),
     ]).validate();
 
     // Try without --dry-run
@@ -92,7 +93,6 @@ void main() {
       output: allOf([
         contains('Resolving dependencies...'),
         contains('> foo 2.0.0 (was 1.0.0)'),
-        contains('Downloading foo 2.0.0...'),
         contains('Changed 1 dependency!'),
         contains('Changed 1 constraint in pubspec.yaml:'),
         contains('foo: ^1.0.0 -> ^2.0.0'),
@@ -100,9 +100,9 @@ void main() {
     );
 
     await d.dir(appPath, [
-      d.appPubspec({'foo': '^2.0.0'}),
+      d.appPubspec(dependencies: {'foo': '^2.0.0'}),
       d.file('pubspec.lock', contains('2.0.0')),
-      d.dir('.dart_tool')
+      d.dir('.dart_tool'),
     ]).validate();
   });
 }

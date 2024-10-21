@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/name.dart';
@@ -16,44 +16,44 @@ Validator name() => NameValidator();
 
 void main() {
   group('should consider a package valid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
-    test('looks normal', () => expectValidation(name));
+    test('looks normal', () => expectValidationDeprecated(name));
 
     test('has dots in potential library names', () async {
       await d.dir(appPath, [
         d.libPubspec('test_pkg', '1.0.0'),
         d.dir('lib', [
           d.file('test_pkg.dart', 'int i = 1;'),
-          d.file('test_pkg.g.dart', 'int j = 2;')
-        ])
+          d.file('test_pkg.g.dart', 'int j = 2;'),
+        ]),
       ]).create();
-      await expectValidation(name);
+      await expectValidationDeprecated(name);
     });
 
     test('has a name that starts with an underscore', () async {
       await d.dir(appPath, [
         d.libPubspec('_test_pkg', '1.0.0'),
-        d.dir('lib', [d.file('_test_pkg.dart', 'int i = 1;')])
+        d.dir('lib', [d.file('_test_pkg.dart', 'int i = 1;')]),
       ]).create();
-      await expectValidation(name);
+      await expectValidationDeprecated(name);
     });
   });
 
   group('should consider a package invalid if it', () {
-    setUp(d.validPackage.create);
+    setUp(d.validPackage().create);
 
     test('has a package name that contains upper-case letters', () async {
       await d.dir(appPath, [d.libPubspec('TestPkg', '1.0.0')]).create();
-      await expectValidation(name, warnings: isNotEmpty);
+      await expectValidationDeprecated(name, warnings: isNotEmpty);
     });
 
     test('has a single library named differently than the package', () async {
-      deleteEntry(path.join(d.sandbox, appPath, 'lib', 'test_pkg.dart'));
+      deleteEntry(p.join(d.sandbox, appPath, 'lib', 'test_pkg.dart'));
       await d.dir(appPath, [
-        d.dir('lib', [d.file('best_pkg.dart', 'int i = 0;')])
+        d.dir('lib', [d.file('best_pkg.dart', 'int i = 0;')]),
       ]).create();
-      await expectValidation(name, warnings: isNotEmpty);
+      await expectValidationDeprecated(name, warnings: isNotEmpty);
     });
   });
 }

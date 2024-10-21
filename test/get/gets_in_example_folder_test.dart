@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -24,13 +25,13 @@ void main() {
           d.pubspec({
             'name': 'app_example',
             'dependencies': {
-              'myapp': {'path': '..'}
-            }
-          })
-        ])
+              'myapp': {'path': '..'},
+            },
+          }),
+        ]),
       ]).create();
 
-      await pubCommand(command, args: []);
+      await pubCommand(command, args: ['--no-example']);
       final lockFile = File(p.join(d.sandbox, appPath, 'pubspec.lock'));
       final exampleLockFile = File(
         p.join(d.sandbox, appPath, 'example', 'pubspec.lock'),
@@ -38,45 +39,53 @@ void main() {
 
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), false);
-      await pubCommand(command,
-          args: ['--example'],
-          output: command.name == 'get'
-              ? '''
-Resolving dependencies... 
+      await pubCommand(
+        command,
+        args: ['--example'],
+        output: command.name == 'get'
+            ? '''
+Resolving dependencies...
+Downloading packages...
 Got dependencies!
-Resolving dependencies in $dotExample...
-Got dependencies in $dotExample.'''
-              : '''
+Resolving dependencies in `$dotExample`...
+Downloading packages...
+Got dependencies in `$dotExample`.'''
+            : '''
 Resolving dependencies... 
+Downloading packages...
 No dependencies changed.
-Resolving dependencies in $dotExample...
-Got dependencies in $dotExample.''');
+Resolving dependencies in `$dotExample`...
+Downloading packages...
+Got dependencies in `$dotExample`.''',
+      );
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), true);
     });
 
-    test('Failures are met with a suggested command', () async {
+    test('Failures are not summarized', () async {
       await d.dir(appPath, [
         d.appPubspec(),
         d.dir('example', [
           d.pubspec({
             'name': 'broken name',
             'dependencies': {
-              'myapp': {'path': '..'}
-            }
-          })
-        ])
+              'myapp': {'path': '..'},
+            },
+          }),
+        ]),
       ]).create();
       await pubGet(
         args: ['--example'],
         error: contains(
-            'Resolving dependencies in $dotExample failed. For details run `dart pub get --directory $dotExample`'),
-        exitCode: 1,
+          'Error on line 1, column 9 of example${p.separator}pubspec.yaml',
+        ),
+        exitCode: DATA,
       );
       await pubGet(
         args: ['--directory', dotExample],
         error: contains(
-            'Error on line 1, column 9 of example${p.separator}pubspec.yaml'),
+          'Error on line 1, column 9 of example${p.separator}pubspec.yaml',
+        ),
         exitCode: exit_codes.DATA,
       );
     });

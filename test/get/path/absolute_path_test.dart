@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -14,15 +14,17 @@ void main() {
         .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
 
     await d.dir(appPath, [
-      d.appPubspec({
-        'foo': {'path': path.join(d.sandbox, 'foo')}
-      })
+      d.appPubspec(
+        dependencies: {
+          'foo': {'path': p.join(d.sandbox, 'foo')},
+        },
+      ),
     ]).create();
 
     await pubGet();
 
     await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: path.join(d.sandbox, 'foo')),
+      d.packageConfigEntry(name: 'foo', path: p.join(d.sandbox, 'foo')),
     ]).validate();
   });
 }

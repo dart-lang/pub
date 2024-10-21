@@ -10,12 +10,11 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('package creation provides invalid JSON', () async {
     await servePackages();
-    await d.credentialsFile(globalServer, 'access token').create();
-    var pub = await startPublish(globalServer);
+    await d.validPackage().create();
+    await d.credentialsFile(globalServer, 'access-token').create();
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
@@ -26,9 +25,10 @@ void main() {
     });
 
     expect(
-        pub.stderr,
-        emitsLines('Invalid server response:\n'
-            '{not json'));
+      pub.stderr,
+      emitsLines('Invalid server response:\n'
+          '{not json'),
+    );
     await pub.shouldExit(1);
   });
 }

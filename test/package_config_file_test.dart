@@ -2,8 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
-
+import 'package:pub/src/package_config.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
@@ -13,15 +14,23 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('package_config.json file is created', () async {
       await servePackages()
-        ..serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
+        ..serve(
+          'foo',
+          '1.2.3',
+          deps: {'baz': '2.2.2'},
+          contents: [d.dir('lib', [])],
+        )
         ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
-        ..serve('baz', '2.2.2',
-            deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
+        ..serve(
+          'baz',
+          '2.2.2',
+          deps: {'bar': '3.2.1'},
+          contents: [d.dir('lib', [])],
+        );
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
-        d.dir('lib')
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);
@@ -31,41 +40,81 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();
     });
 
-    test('package_config.json file is overwritten', () async {
-      await servePackages()
-        ..serve('foo', '1.2.3',
-            deps: {'baz': '2.2.2'}, contents: [d.dir('lib', [])])
-        ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
-        ..serve('baz', '2.2.2',
-            deps: {'bar': '3.2.1'}, contents: [d.dir('lib', [])]);
+    test('package_config.json uses relative paths if PUB_CACHE is relative',
+        () async {
+      final server = await servePackages();
+      server.serve('foo', '1.2.3');
 
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
-        d.dir('lib')
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
       ]).create();
 
-      var oldFile = d.dir(appPath, [
+      await pubCommand(command, environment: {'PUB_CACHE': './pub_cache'});
+
+      await d.dir(appPath, [
+        d.packageConfigFile(
+          [
+            PackageConfigEntry(
+              name: 'foo',
+              rootUri: p.toUri(
+                '../pub_cache/hosted/localhost%58${globalServer.port}/foo-1.2.3',
+              ),
+              packageUri: Uri.parse('lib/'),
+            ),
+            d.packageConfigEntry(
+              name: 'myapp',
+              path: '.',
+              languageVersion: '3.0',
+            ),
+          ],
+          pubCache: p.join(d.sandbox, appPath, 'pub_cache'),
+        ),
+      ]).validate();
+    });
+
+    test('package_config.json file is overwritten', () async {
+      await servePackages()
+        ..serve(
+          'foo',
+          '1.2.3',
+          deps: {'baz': '2.2.2'},
+          contents: [d.dir('lib', [])],
+        )
+        ..serve('bar', '3.2.1', contents: [d.dir('lib', [])])
+        ..serve(
+          'baz',
+          '2.2.2',
+          deps: {'bar': '3.2.1'},
+          contents: [d.dir('lib', [])],
+        );
+
+      await d.dir(appPath, [
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
+        d.dir('lib'),
+      ]).create();
+
+      final oldFile = d.dir(appPath, [
         d.packageConfigFile([
           d.packageConfigEntry(
             name: 'notFoo',
@@ -84,22 +133,22 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'bar',
             version: '3.2.1',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'baz',
             version: '2.2.2',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();
@@ -107,17 +156,21 @@ void main() {
 
     test('package_config.json file is not created if pub fails', () async {
       await d.dir(appPath, [
-        d.appPubspec({'foo': '1.2.3'}),
-        d.dir('lib')
+        d.appPubspec(dependencies: {'foo': '1.2.3'}),
+        d.dir('lib'),
       ]).create();
 
-      await pubCommand(command,
-          args: ['--offline'], error: equalsIgnoringWhitespace("""
+      await pubCommand(
+        command,
+        args: ['--offline'],
+        error: equalsIgnoringWhitespace("""
             Because myapp depends on foo any which doesn't exist (could not find
               package foo in cache), version solving failed.
 
             Try again without --offline!
-          """), exitCode: exit_codes.UNAVAILABLE);
+          """),
+        exitCode: exit_codes.UNAVAILABLE,
+      );
 
       await d.dir(appPath, [
         d.nothing('.dart_tool/package_config.json'),
@@ -128,13 +181,17 @@ void main() {
         '.dart_tool/package_config.json file has relative path to path dependency',
         () async {
       await servePackages()
-        ..serve('foo', '1.2.3',
-            deps: {'baz': 'any'}, contents: [d.dir('lib', [])])
+        ..serve(
+          'foo',
+          '1.2.3',
+          deps: {'baz': 'any'},
+          contents: [d.dir('lib', [])],
+        )
         ..serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
 
       await d.dir('local_baz', [
         d.libDir('baz', 'baz 3.2.1'),
-        d.rawPubspec({
+        d.pubspec({
           'name': 'baz',
           'version': '3.2.1',
         }),
@@ -148,9 +205,9 @@ void main() {
           },
           'dependency_overrides': {
             'baz': {'path': '../local_baz'},
-          }
+          },
         }),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);
@@ -160,17 +217,17 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'baz',
             path: '../local_baz',
-            languageVersion: '2.7',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();
@@ -183,7 +240,7 @@ void main() {
         '1.2.3',
         pubspec: {
           'environment': {
-            'sdk': '>=0.0.1 <=0.2.2+2', // tests runs with '0.1.2+3'
+            'sdk': '>=3.0.1 <=3.2.2+2', // tests runs with '3.1.2+3'
           },
         },
         contents: [d.dir('lib', [])],
@@ -196,10 +253,10 @@ void main() {
             'foo': '^1.2.3',
           },
           'environment': {
-            'sdk': '>=0.1.0 <=0.2.2+2', // tests runs with '0.1.2+3'
+            'sdk': '>=3.1.0 <=3.2.2+2', // tests runs with '3.1.2+3'
           },
         }),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);
@@ -209,25 +266,26 @@ void main() {
           d.packageConfigEntry(
             name: 'foo',
             version: '1.2.3',
-            languageVersion: '0.0',
+            languageVersion: '3.0',
           ),
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.1',
           ),
         ]),
       ]).validate();
     });
 
     test('package_config.json has 2.7 default language version', () async {
+      // TODO(sigurdm): Reconsider the default language version for dart 3.
       final server = await servePackages();
       server.serve(
         'foo',
         '1.2.3',
         pubspec: {
           'environment': {
-            'sdk': 'any',
+            'sdk': '<4.0.0',
           },
         },
         contents: [d.dir('lib', [])],
@@ -240,7 +298,7 @@ void main() {
             'foo': '^1.2.3',
           },
         }),
-        d.dir('lib')
+        d.dir('lib'),
       ]).create();
 
       await pubCommand(command);
@@ -255,7 +313,7 @@ void main() {
           d.packageConfigEntry(
             name: 'myapp',
             path: '.',
-            languageVersion: '0.1',
+            languageVersion: '3.0',
           ),
         ]),
       ]).validate();

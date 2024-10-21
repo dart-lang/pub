@@ -11,20 +11,20 @@ void main() {
   test('runs a shorthand Dart application in a dependency', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('foo');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('foo');")]),
     ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
+          'foo': {'path': '../foo'},
+        },
+      }),
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['foo']);
+    final pub = await pubRun(args: ['foo']);
     expect(pub.stdout, emitsThrough('foo'));
     await pub.shouldExit();
   });

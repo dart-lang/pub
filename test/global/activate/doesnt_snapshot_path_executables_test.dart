@@ -11,18 +11,21 @@ void main() {
   test("doesn't snapshots the executables for a path package", () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('hello.dart', "void main() => print('hello!');")])
+      d.dir('bin', [d.file('hello.dart', "void main() => print('hello!');")]),
     ]).create();
 
     await runPub(
-        args: ['global', 'activate', '-spath', '../foo'],
-        output: isNot(contains('Built foo:hello.')));
+      args: ['global', 'activate', '-spath', '../foo'],
+      output: isNot(contains('Built foo:hello.')),
+    );
 
     await d.dir(cachePath, [
       d.dir('global_packages', [
-        d.dir('foo',
-            [d.file('pubspec.lock', contains('1.0.0')), d.nothing('bin')])
-      ])
+        d.dir(
+          'foo',
+          [d.file('pubspec.lock', contains('1.0.0')), d.nothing('bin')],
+        ),
+      ]),
     ]).validate();
   });
 }

@@ -15,20 +15,22 @@ void main() {
       final server = await servePackages();
       server.serve('foo', '1.0.0');
 
-      await d.appDir({'foo': '1.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
-      await pubCommand(command,
-          silent: allOf([
-            contains('X-Pub-OS: ${Platform.operatingSystem}'),
-            contains('X-Pub-Command: ${command.name}'),
-            contains('X-Pub-Session-ID:'),
-            contains('X-Pub-Environment: test-environment'),
+      await pubCommand(
+        command,
+        silent: allOf([
+          contains('X-Pub-OS: ${Platform.operatingSystem}'),
+          contains('X-Pub-Command: ${command.name}'),
+          contains('X-Pub-Session-ID:'),
+          contains('X-Pub-Environment: test-environment'),
 
-            // We should send the reason when we request the pubspec and when we
-            // request the tarball.
-            matchesMultiple('X-Pub-Reason: direct', 2),
-            isNot(contains('X-Pub-Reason: dev')),
-          ]));
+          // We should send the reason when we request the pubspec and when we
+          // request the tarball.
+          matchesMultiple('X-Pub-Reason: direct', 2),
+          isNot(contains('X-Pub-Reason: dev')),
+        ]),
+      );
     });
 
     test('sends metadata headers for a dev dependency', () async {
@@ -38,56 +40,64 @@ void main() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dev_dependencies': {'foo': '1.0.0'}
-        })
+          'dev_dependencies': {'foo': '1.0.0'},
+        }),
       ]).create();
 
-      await pubCommand(command,
-          silent: allOf([
-            contains('X-Pub-OS: ${Platform.operatingSystem}'),
-            contains('X-Pub-Command: ${command.name}'),
-            contains('X-Pub-Session-ID:'),
-            contains('X-Pub-Environment: test-environment'),
+      await pubCommand(
+        command,
+        silent: allOf([
+          contains('X-Pub-OS: ${Platform.operatingSystem}'),
+          contains('X-Pub-Command: ${command.name}'),
+          contains('X-Pub-Session-ID:'),
+          contains('X-Pub-Environment: test-environment'),
 
-            // We should send the reason when we request the pubspec and when we
-            // request the tarball.
-            matchesMultiple('X-Pub-Reason: dev', 2),
-            isNot(contains('X-Pub-Reason: direct')),
-          ]));
+          // We should send the reason when we request the pubspec and when we
+          // request the tarball.
+          matchesMultiple('X-Pub-Reason: dev', 2),
+          isNot(contains('X-Pub-Reason: direct')),
+        ]),
+      );
     });
 
     test('sends metadata headers for a transitive dependency', () async {
       final server = await servePackages();
       server.serve('bar', '1.0.0');
 
-      await d.appDir({
-        'foo': {'path': '../foo'}
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {'path': '../foo'},
+        },
+      ).create();
 
       await d.dir('foo', [
-        d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'})
+        d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'}),
       ]).create();
 
-      await pubCommand(command,
-          silent: allOf([
-            contains('X-Pub-OS: ${Platform.operatingSystem}'),
-            contains('X-Pub-Command: ${command.name}'),
-            contains('X-Pub-Session-ID:'),
-            contains('X-Pub-Environment: test-environment'),
-            isNot(contains('X-Pub-Reason:')),
-          ]));
+      await pubCommand(
+        command,
+        silent: allOf([
+          contains('X-Pub-OS: ${Platform.operatingSystem}'),
+          contains('X-Pub-Command: ${command.name}'),
+          contains('X-Pub-Session-ID:'),
+          contains('X-Pub-Environment: test-environment'),
+          isNot(contains('X-Pub-Reason:')),
+        ]),
+      );
     });
 
     test("doesn't send metadata headers to a foreign server", () async {
-      var server = await startPackageServer()
+      final server = await startPackageServer()
         ..serve('foo', '1.0.0');
 
-      await d.appDir({
-        'foo': {
-          'version': '1.0.0',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-        }
-      }).create();
+      await d.appDir(
+        dependencies: {
+          'foo': {
+            'version': '1.0.0',
+            'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'},
+          },
+        },
+      ).create();
 
       await pubCommand(command, silent: isNot(contains('X-Pub-')));
     });
@@ -95,13 +105,15 @@ void main() {
     test("doesn't send metadata headers when CI=true", () async {
       (await servePackages()).serve('foo', '1.0.0');
 
-      await d.appDir({'foo': '1.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '1.0.0'}).create();
 
-      await pubCommand(command,
-          silent: isNot(contains('X-Pub-')),
-          environment: {
-            'CI': 'true',
-          });
+      await pubCommand(
+        command,
+        silent: isNot(contains('X-Pub-')),
+        environment: {
+          'CI': 'true',
+        },
+      );
     });
   });
 }

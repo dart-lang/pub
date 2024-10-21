@@ -13,26 +13,32 @@ void main() {
   test(
       'with an expired credentials.json without a refresh token, '
       'authenticates again and saves credentials.json', () async {
-    await d.validPackage.create();
-
     await servePackages();
+    await d.validPackage().create();
+
     await d
-        .credentialsFile(globalServer, 'access token',
-            expiration: DateTime.now().subtract(Duration(hours: 1)))
+        .credentialsFile(
+          globalServer,
+          'access-token',
+          expiration: DateTime.now().subtract(const Duration(hours: 1)),
+        )
         .create();
 
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
     await confirmPublish(pub);
 
     await expectLater(
-        pub.stderr,
-        emits("Pub's authorization to upload packages has expired and "
-            "can't be automatically refreshed."));
+      pub.stderr,
+      emits("Pub's authorization to upload packages has expired and "
+          "can't be automatically refreshed."),
+    );
     await authorizePub(pub, globalServer, 'new access token');
 
     globalServer.expect('GET', '/api/packages/versions/new', (request) {
-      expect(request.headers,
-          containsPair('authorization', 'Bearer new access token'));
+      expect(
+        request.headers,
+        containsPair('authorization', 'Bearer new access token'),
+      );
 
       return shelf.Response(200);
     });

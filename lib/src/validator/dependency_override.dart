@@ -13,13 +13,23 @@ import '../validator.dart';
 class DependencyOverrideValidator extends Validator {
   @override
   Future validate() {
-    var overridden = MapKeySet(entrypoint.root.dependencyOverrides);
-    var dev = MapKeySet(entrypoint.root.devDependencies);
+    final overridden =
+        MapKeySet(context.entrypoint.workspaceRoot.allOverridesInWorkspace);
+    final dev = MapKeySet(package.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {
-      errors.add('Your pubspec.yaml must not override non-dev dependencies.\n'
-          'This ensures you test your package against the same versions of '
-          'its dependencies\n'
-          'that users will have when they use it.');
+      final overridesFile = package.pubspec.dependencyOverridesFromOverridesFile
+          ? package.pubspecOverridesPath
+          : package.pubspecPath;
+
+      hints.add('''
+Non-dev dependencies are overridden in $overridesFile.
+
+This indicates you are not testing your package against the same versions of its
+dependencies that users will have when they use it.
+
+This might be necessary for packages with cyclic dependencies.
+
+Please be extra careful when publishing.''');
     }
     return Future.value();
   }

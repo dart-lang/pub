@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import '../command.dart';
+import '../command_runner.dart';
 import 'token_add.dart';
 import 'token_list.dart';
 import 'token_remove.dart';
@@ -12,8 +13,17 @@ class TokenCommand extends PubCommand {
   @override
   String get name => 'token';
   @override
-  String get description =>
-      'Manage authentication tokens for hosted pub repositories.';
+  String get description => '''
+Manage authentication tokens for hosted pub repositories.
+
+The tokens will be used for authorizing both when retrieving dependencies and
+for publishing.
+
+Tokens are stored in `${tokenStore.tokensFile}`.
+
+For interactive authorization against pub.dev, use `$topLevelProgram pub login`.''';
+  @override
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
   TokenCommand() {
     addSubcommand(TokenListCommand());

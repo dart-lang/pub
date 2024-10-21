@@ -15,7 +15,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': 'https://example.com', 'token': 'abc'},
-      ]
+      ],
     }).create();
 
     await runPub(
@@ -27,8 +27,8 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': 'https://example.com', 'token': 'abc'},
-        {'url': 'https://server.demo', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server.demo', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 
@@ -39,7 +39,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'token': 'abc'},
-        ]
+        ],
       }).create();
 
       await runPub(
@@ -51,7 +51,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'env': 'TOKEN'},
-        ]
+        ],
       }).validate();
     });
 
@@ -60,7 +60,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'token': 'abc'},
-        ]
+        ],
       }).create();
 
       await runPub(
@@ -73,7 +73,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'env': 'TOKEN'},
-        ]
+        ],
       }).validate();
     });
   });
@@ -92,7 +92,7 @@ void main() {
             },
           ],
         }
-      ]
+      ],
     }).create();
 
     await runPub(
@@ -113,31 +113,62 @@ void main() {
             },
           ],
         },
-        {'url': 'https://server.demo', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server.demo', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 
   test('with invalid server url returns error', () async {
-    await d.dir(configPath).create();
+    await configDir([]).create();
     await runPub(
       args: ['token', 'add', 'http:;://invalid-url,.com'],
       error: contains('Invalid [hosted-url]'),
       exitCode: exit_codes.USAGE,
     );
 
-    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
+    await configDir([d.nothing('pub-tokens.json')]).validate();
+  });
+
+  test('with invalid token returns error', () async {
+    await configDir([]).create();
+
+    await runPub(
+      args: ['token', 'add', 'https://pub.dev'],
+      error: contains('The entered token is not a valid Bearer token.'),
+      input: ['auth-token@'], // '@' is not allowed in bearer tokens
+      exitCode: exit_codes.DATA,
+    );
+
+    await configDir([d.nothing('pub-tokens.json')]).validate();
   });
 
   test('with non-secure server url returns error', () async {
-    await d.dir(configPath).create();
+    await configDir([]).create();
     await runPub(
       args: ['token', 'add', 'http://mypub.com'],
       error: contains('insecure repositories cannot use authentication'),
       exitCode: exit_codes.USAGE,
     );
 
-    await d.dir(configPath, [d.nothing('pub-tokens.json')]).validate();
+    await configDir([d.nothing('pub-tokens.json')]).validate();
+  });
+
+  test(
+      'with non-secure localhost url creates pub-tokens.json '
+      'that contains token', () async {
+    await d.dir(configPath).create();
+
+    await runPub(
+      args: ['token', 'add', 'http://localhost/'],
+      input: ['auth-token'],
+    );
+
+    await d.tokensFile({
+      'version': 1,
+      'hosted': [
+        {'url': 'http://localhost', 'token': 'auth-token'},
+      ],
+    }).validate();
   });
 
   test('with empty environment gives error message', () async {
@@ -151,19 +182,20 @@ void main() {
     );
   });
 
-  test('with https://pub.dev rewrites to https://pub.dartlang.org', () async {
+  test('with https://pub.dartlang.org rewrites to https://pub.dev', () async {
     await runPub(
-      args: ['token', 'add', 'https://pub.dev'],
+      args: ['token', 'add', 'https://pub.dartlang.org'],
       input: ['auth-token'],
       silent: contains(
-          'Using https://pub.dartlang.org instead of https://pub.dev.'),
+        'Using https://pub.dev instead of https://pub.dartlang.org.',
+      ),
     );
 
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': 'https://pub.dartlang.org', 'token': 'auth-token'}
-      ]
+        {'url': 'https://pub.dev', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 }

@@ -29,13 +29,13 @@ Future<void> expectPubErrorMessage(dynamic matcher) {
 
 void main() {
   setUp(() async {
-    await d.validPackage.create();
+    await d.validPackage().create();
     await servePackages();
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': globalServer.url, 'token': 'access token'},
-      ]
+        {'url': globalServer.url, 'token': 'access-token'},
+      ],
     }).create();
   });
 
@@ -52,13 +52,15 @@ void main() {
   });
 
   test('trims and prints long www-authenticate message', () async {
-    var message = List.generate(2048, (_) => 'a').join();
+    final message = List.generate(2048, (_) => 'a').join();
 
     respondWithWwwAuthenticate('bearer realm="pub", message="$message"');
-    await expectPubErrorMessage(allOf(
-      isNot(contains(message)),
-      contains(message.substring(0, 1024)),
-    ));
+    await expectPubErrorMessage(
+      allOf(
+        isNot(contains(message)),
+        contains(message.substring(0, 1024)),
+      ),
+    );
   });
 
   test('does not prints message if realm is not equals to pub', () async {

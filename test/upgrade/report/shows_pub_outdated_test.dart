@@ -28,69 +28,102 @@ void main() {
       ..serve('one_newer_stable', '1.0.1');
 
     // Constraint everything to the first version.
-    await d.appDir({
-      'multiple_newer': '1.0.0',
-      'multiple_newer_stable': '1.0.0',
-      'multiple_newer_unstable': '1.0.0',
-      'no_newer': '1.0.0',
-      'one_newer_unstable': '1.0.0',
-      'one_newer_stable': '1.0.0'
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'multiple_newer': '1.0.0',
+        'multiple_newer_stable': '1.0.0',
+        'multiple_newer_unstable': '1.0.0',
+        'no_newer': '1.0.0',
+        'one_newer_unstable': '1.0.0',
+        'one_newer_stable': '1.0.0',
+      },
+    ).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r'''
+    await pubUpgrade(
+      output: RegExp(
+        r'''
 3 packages have newer versions incompatible with dependency constraints.
-Try `dart pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''',
+        multiLine: true,
+      ),
+    );
 
     // Running inside Flutter this will recommend the Flutter variant.
     await pubUpgrade(
-        environment: {'PUB_ENVIRONMENT': 'flutter_cli:get'}, output: RegExp(r'''
+      environment: {'PUB_ENVIRONMENT': 'flutter_cli:get'},
+      output: RegExp(
+        r'''
 3 packages have newer versions incompatible with dependency constraints.
-Try `flutter pub outdated` for more information.$''', multiLine: true));
+Try `flutter pub outdated` for more information.$''',
+        multiLine: true,
+      ),
+    );
 
     // Upgrade `multiple_newer` to `1.0.1`.
-    await d.appDir({
-      'multiple_newer': '1.0.1',
-      'multiple_newer_stable': '1.0.0',
-      'multiple_newer_unstable': '1.0.0',
-      'no_newer': '1.0.0',
-      'one_newer_unstable': '1.0.0',
-      'one_newer_stable': '1.0.0'
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'multiple_newer': '1.0.1',
+        'multiple_newer_stable': '1.0.0',
+        'multiple_newer_unstable': '1.0.0',
+        'no_newer': '1.0.0',
+        'one_newer_unstable': '1.0.0',
+        'one_newer_stable': '1.0.0',
+      },
+    ).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r'''
+    await pubUpgrade(
+      output: RegExp(
+        r'''
 2 packages have newer versions incompatible with dependency constraints.
-Try `dart pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''',
+        multiLine: true,
+      ),
+    );
 
     // Upgrade `multiple_newer` to `1.0.2-unstable.1`.
-    await d.appDir({
-      'multiple_newer': '1.0.2-unstable.1',
-      'multiple_newer_stable': '1.0.0',
-      'multiple_newer_unstable': '1.0.0',
-      'no_newer': '1.0.0',
-      'one_newer_unstable': '1.0.0',
-      'one_newer_stable': '1.0.0'
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'multiple_newer': '1.0.2-unstable.1',
+        'multiple_newer_stable': '1.0.0',
+        'multiple_newer_unstable': '1.0.0',
+        'no_newer': '1.0.0',
+        'one_newer_unstable': '1.0.0',
+        'one_newer_stable': '1.0.0',
+      },
+    ).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r'''
+    await pubUpgrade(
+      output: RegExp(
+        r'''
 3 packages have newer versions incompatible with dependency constraints.
-Try `dart pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''',
+        multiLine: true,
+      ),
+    );
 
     // Upgrade all except `one_newer_stable`.
-    await d.appDir({
-      'multiple_newer': '1.0.2-unstable.2',
-      'multiple_newer_stable': '1.0.2',
-      'multiple_newer_unstable': '1.0.1-unstable.2',
-      'no_newer': '1.0.0',
-      'one_newer_unstable': '1.0.1-unstable.1',
-      'one_newer_stable': '1.0.0'
-    }).create();
+    await d.appDir(
+      dependencies: {
+        'multiple_newer': '1.0.2-unstable.2',
+        'multiple_newer_stable': '1.0.2',
+        'multiple_newer_unstable': '1.0.1-unstable.2',
+        'no_newer': '1.0.0',
+        'one_newer_unstable': '1.0.1-unstable.1',
+        'one_newer_stable': '1.0.0',
+      },
+    ).create();
 
     // Upgrade everything.
-    await pubUpgrade(output: RegExp(r'''
+    await pubUpgrade(
+      output: RegExp(
+        r'''
 1 package has newer versions incompatible with dependency constraints.
-Try `dart pub outdated` for more information.$''', multiLine: true));
+Try `dart pub outdated` for more information.$''',
+        multiLine: true,
+      ),
+    );
   });
 }

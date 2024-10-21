@@ -13,7 +13,7 @@ import 'utils.dart';
 Validator executable() => ExecutableValidator();
 
 void main() {
-  setUp(d.validPackage.create);
+  setUp(d.validPackage().create);
 
   group('should consider a package valid if it', () {
     test('has executables that are present', () async {
@@ -21,14 +21,14 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'executables': {'one': 'one_script', 'two': null}
+          'executables': {'one': 'one_script', 'two': null},
         }),
         d.dir('bin', [
           d.file('one_script.dart', "main() => print('ok');"),
-          d.file('two.dart', "main() => print('ok');")
-        ])
+          d.file('two.dart', "main() => print('ok');"),
+        ]),
       ]).create();
-      await expectValidation(executable);
+      await expectValidationDeprecated(executable);
     });
   });
 
@@ -38,10 +38,10 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'executables': {'nope': 'not_there', 'nada': null}
-        })
+          'executables': {'nope': 'not_there', 'nada': null},
+        }),
       ]).create();
-      await expectValidation(executable, warnings: isNotEmpty);
+      await expectValidationDeprecated(executable, warnings: isNotEmpty);
     });
 
     test('has .gitignored one or more listed executables', () async {
@@ -49,15 +49,15 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'executables': {'one': 'one_script', 'two': null}
+          'executables': {'one': 'one_script', 'two': null},
         }),
         d.dir('bin', [
           d.file('one_script.dart', "main() => print('ok');"),
-          d.file('two.dart', "main() => print('ok');")
+          d.file('two.dart', "main() => print('ok');"),
         ]),
-        d.file('.gitignore', 'bin')
+        d.file('.gitignore', 'bin'),
       ]).create();
-      await expectValidation(executable, warnings: isNotEmpty);
+      await expectValidationDeprecated(executable, warnings: isNotEmpty);
     });
   });
 }

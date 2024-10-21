@@ -9,17 +9,16 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  setUp(d.validPackage.create);
-
   test('when receives 403 response persists saved token', () async {
+    await d.validPackage().create();
     final server = await servePackages();
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': server.url, 'token': 'access token'},
-      ]
+        {'url': server.url, 'token': 'access-token'},
+      ],
     }).create();
-    var pub = await startPublish(server, overrideDefaultHostedServer: false);
+    final pub = await startPublish(server, overrideDefaultHostedServer: false);
     await confirmPublish(pub);
 
     server.expect('GET', '/api/packages/versions/new', (request) {
@@ -31,8 +30,8 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': server.url, 'token': 'access token'},
-      ]
+        {'url': server.url, 'token': 'access-token'},
+      ],
     }).validate();
   });
 }

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 @Skip()
+library;
 
 import 'package:test/test.dart';
 
@@ -11,132 +12,166 @@ import '../../test_pub.dart';
 void main() {
   test('enables default-on features by default', () async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'features': {
-          'stuff': {
-            'dependencies': {'bar': '1.0.0'}
+      ..serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'features': {
+            'stuff': {
+              'dependencies': {'bar': '1.0.0'},
+            },
+            'things': {
+              'default': false,
+              'dependencies': {'baz': '1.0.0'},
+            },
           },
-          'things': {
-            'default': false,
-            'dependencies': {'baz': '1.0.0'}
-          }
-        }
-      })
+        },
+      )
       ..serve('bar', '1.0.0')
       ..serve('baz', '1.0.0');
 
-    await runPub(args: ['global', 'activate', 'foo'], output: contains('''
+    await runPub(
+      args: ['global', 'activate', 'foo'],
+      output: contains('''
 Resolving dependencies...
+Downloading packages...
 + bar 1.0.0
 + foo 1.0.0
-Downloading'''));
+Downloading'''),
+    );
   });
 
   test('can enable default-off features', () async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'features': {
-          'stuff': {
-            'dependencies': {'bar': '1.0.0'}
+      ..serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'features': {
+            'stuff': {
+              'dependencies': {'bar': '1.0.0'},
+            },
+            'things': {
+              'default': false,
+              'dependencies': {'baz': '1.0.0'},
+            },
           },
-          'things': {
-            'default': false,
-            'dependencies': {'baz': '1.0.0'}
-          }
-        }
-      })
+        },
+      )
       ..serve('bar', '1.0.0')
       ..serve('baz', '1.0.0');
 
     await runPub(
-        args: ['global', 'activate', 'foo', '--features', 'things'],
-        output: contains('''
+      args: ['global', 'activate', 'foo', '--features', 'things'],
+      output: contains('''
 Resolving dependencies...
+Downloading packages...
 + bar 1.0.0
 + baz 1.0.0
 + foo 1.0.0
-Downloading'''));
+Downloading'''),
+    );
   });
 
   test('can disable default-on features', () async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'features': {
-          'stuff': {
-            'dependencies': {'bar': '1.0.0'}
+      ..serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'features': {
+            'stuff': {
+              'dependencies': {'bar': '1.0.0'},
+            },
+            'things': {
+              'default': false,
+              'dependencies': {'baz': '1.0.0'},
+            },
           },
-          'things': {
-            'default': false,
-            'dependencies': {'baz': '1.0.0'}
-          }
-        }
-      })
+        },
+      )
       ..serve('bar', '1.0.0')
       ..serve('baz', '1.0.0');
 
     await runPub(
-        args: ['global', 'activate', 'foo', '--omit-features', 'stuff'],
-        output: contains('''
+      args: ['global', 'activate', 'foo', '--omit-features', 'stuff'],
+      output: contains('''
 Resolving dependencies...
+Downloading packages...
 + foo 1.0.0
-Downloading'''));
+Downloading'''),
+    );
   });
 
   test('supports multiple arguments', () async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'features': {
-          'stuff': {
-            'default': false,
-            'dependencies': {'bar': '1.0.0'}
+      ..serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'features': {
+            'stuff': {
+              'default': false,
+              'dependencies': {'bar': '1.0.0'},
+            },
+            'things': {
+              'default': false,
+              'dependencies': {'baz': '1.0.0'},
+            },
           },
-          'things': {
-            'default': false,
-            'dependencies': {'baz': '1.0.0'}
-          }
-        }
-      })
+        },
+      )
       ..serve('bar', '1.0.0')
       ..serve('baz', '1.0.0');
 
     await runPub(
-        args: ['global', 'activate', 'foo', '--features', 'things,stuff'],
-        output: contains('''
+      args: ['global', 'activate', 'foo', '--features', 'things,stuff'],
+      output: contains('''
 Resolving dependencies...
+Downloading packages...
 + bar 1.0.0
 + baz 1.0.0
 + foo 1.0.0
-Downloading'''));
+Downloading'''),
+    );
   });
 
   test('can both enable and disable', () async {
     await servePackages()
-      ..serve('foo', '1.0.0', pubspec: {
-        'features': {
-          'stuff': {
-            'dependencies': {'bar': '1.0.0'}
+      ..serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'features': {
+            'stuff': {
+              'dependencies': {'bar': '1.0.0'},
+            },
+            'things': {
+              'default': false,
+              'dependencies': {'baz': '1.0.0'},
+            },
           },
-          'things': {
-            'default': false,
-            'dependencies': {'baz': '1.0.0'}
-          }
-        }
-      })
+        },
+      )
       ..serve('bar', '1.0.0')
       ..serve('baz', '1.0.0');
 
-    await runPub(args: [
-      'global',
-      'activate',
-      'foo',
-      '--features',
-      'things',
-      '--omit-features',
-      'stuff'
-    ], output: contains('''
+    await runPub(
+      args: [
+        'global',
+        'activate',
+        'foo',
+        '--features',
+        'things',
+        '--omit-features',
+        'stuff',
+      ],
+      output: contains('''
 Resolving dependencies...
+Downloading packages...
 + baz 1.0.0
 + foo 1.0.0
-Downloading'''));
+Downloading'''),
+    );
   });
 }

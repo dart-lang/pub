@@ -8,7 +8,7 @@ import '../../test_pub.dart';
 
 void main() {
   test('activating a package from a custom pub server', () async {
-    // The default pub server (i.e. pub.dartlang.org).
+    // The default pub server (i.e. pub.dev).
     final server = await servePackages();
     server.serve('baz', '1.0.0');
 
@@ -26,12 +26,13 @@ void main() {
     customServer.serve('bar', '1.0.0', deps: {'baz': 'any'});
 
     await runPub(
-        args: ['global', 'activate', 'foo', '-u', customServer.url],
-        output: allOf([
-          contains('Downloading bar 1.0.0...'),
-          contains('Downloading baz 1.0.0...'),
-          contains('Downloading foo 1.0.0...'),
-          contains('Activated foo 1.0.0')
-        ]));
+      args: ['global', 'activate', 'foo', '-u', customServer.url],
+      silent: allOf([
+        contains('Downloading bar 1.0.0...'),
+        contains('Downloading baz 1.0.0...'),
+        contains('Downloading foo 1.0.0...'),
+      ]),
+      output: contains('Activated foo 1.0.0'),
+    );
   });
 }
