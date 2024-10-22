@@ -279,7 +279,7 @@ See $workspacesDocUrl for more information.
     }
 
     /// Throws if [path] is a link that cannot resolve.
-    /// 
+    ///
     /// Circular links will fail to resolve at some depth defined by the os.
     void verifyLink(String path) {
       final link = Link(path);
