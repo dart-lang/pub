@@ -146,10 +146,10 @@ void main() {
   });
 
   test(
-      'Should consider symlinks to be valid files and not list them as gitignored',
-      () async {
+      'Should consider symlinks to be valid files and not list '
+      'them as gitignored', () async {
     final git = d.git(appPath, [
-      ...d.validPackage.contents,
+      ...d.validPackage().contents,
       d.dir('dir_with_symlink', [
         d.file('.pubignore', 'symlink'),
       ]),
@@ -157,13 +157,18 @@ void main() {
     await git.create();
     final packageRoot = p.join(d.sandbox, appPath);
     await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '1.12.0'},
-        workingDirectory: packageRoot);
+      workingDirectory: packageRoot,
+    );
     createDirectorySymlink(
-        p.join(d.sandbox, appPath, 'dir_with_symlink', 'symlink'), '..');
+      p.join(d.sandbox, appPath, 'dir_with_symlink', 'symlink'),
+      '..',
+    );
     await git.commit();
 
-    await expectValidation(contains('Package has 0 warnings.'), 0,
-        workingDirectory: packageRoot);
+    await expectValidation(
+      contains('Package has 0 warnings.'),
+      0,
+      workingDirectory: packageRoot,
+    );
   });
 }

@@ -57,11 +57,13 @@ void main() {
         d.file('file1.txt', 'contents'),
         d.file('file2.txt', 'contents'),
         d.dir('subdir', [
-          d.dir('a', [d.file('file')])
+          d.dir('a', [d.file('file')]),
         ]),
       ]).create();
       createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'a');
+        p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+        'a',
+      );
 
       createEntrypoint();
 
@@ -85,7 +87,9 @@ void main() {
         ]),
       ]).create();
       createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'a');
+        p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+        'a',
+      );
 
       createEntrypoint();
 
@@ -108,7 +112,9 @@ void main() {
         ]),
       ]).create();
       createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'b');
+        p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+        'b',
+      );
 
       createEntrypoint();
 
@@ -131,7 +137,9 @@ void main() {
           ]),
         ]).create();
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'symlink'), '..');
+          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+          '..',
+        );
 
         createEntrypoint();
 
@@ -142,7 +150,7 @@ void main() {
               (e) => e.message,
               'message',
               contains(
-                'Pub does not support publishing packages with symlinks loop:',
+                'Could not resolve symbolic link',
               ),
             ),
           ),
@@ -159,7 +167,9 @@ void main() {
           ]),
         ]).create();
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'symlink');
+          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+          'symlink',
+        );
 
         createEntrypoint();
 
@@ -169,11 +179,7 @@ void main() {
             isA<DataException>().having(
               (e) => e.message,
               'message',
-              contains(
-                'Pub does not support publishing packages with '
-                'non-resolving symlink: '
-                '${p.join(d.sandbox, appPath, 'subdir', 'symlink')}',
-              ),
+              contains('Could not resolve symbolic link'),
             ),
           ),
         );
@@ -191,7 +197,9 @@ void main() {
           ]),
         ]).create();
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'symlink'), 'a');
+          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+          'a',
+        );
         createDirectorySymlink(
           p.join(d.sandbox, appPath, 'subdir', 'a', 'symlink1'),
           p.join('..', 'b'),
@@ -213,9 +221,7 @@ void main() {
             isA<DataException>().having(
               (e) => e.message,
               'message',
-              contains(
-                'Pub does not support publishing packages with symlinks loop:',
-              ),
+              contains('Could not resolve symbolic link'),
             ),
           ),
         );
@@ -232,7 +238,9 @@ void main() {
           ]),
         ]).create();
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'symlink'), '..');
+          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
+          '..',
+        );
 
         createEntrypoint();
 
@@ -254,11 +262,17 @@ void main() {
           ]),
         ]).create();
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'symlink1'), 'a');
+          p.join(d.sandbox, appPath, 'subdir', 'symlink1'),
+          'a',
+        );
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'subdir', 'symlink2'), 'a');
+          p.join(d.sandbox, appPath, 'subdir', 'symlink2'),
+          'a',
+        );
         createDirectorySymlink(
-            p.join(d.sandbox, appPath, 'symlink3'), p.join('subdir', 'a'));
+          p.join(d.sandbox, appPath, 'symlink3'),
+          p.join('subdir', 'a'),
+        );
 
         createEntrypoint();
 
@@ -322,8 +336,7 @@ void main() {
           (e) => e.message,
           'message',
           contains(
-            'Pub does not support publishing packages with '
-            'non-resolving symlink:',
+            'Could not resolve symbolic link',
           ),
         ),
       ),
@@ -336,7 +349,7 @@ void main() {
       d.file('file1.txt', 'contents'),
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
-        d.dir('a', [d.file('file')])
+        d.dir('a', [d.file('file')]),
       ]),
     ]).create();
     Link(p.join(d.sandbox, appPath, 'subdir', 'symlink')).createSync('symlink');
@@ -350,7 +363,8 @@ void main() {
           (e) => e.message,
           'message',
           contains(
-              'Pub does not support publishing packages with non-resolving symlink:'),
+            'Could not resolve symbolic link',
+          ),
         ),
       ),
     );
@@ -377,10 +391,7 @@ void main() {
         isA<DataException>().having(
           (e) => e.message,
           'message',
-          contains(
-            'Pub does not support publishing packages with '
-            'non-resolving symlink:',
-          ),
+          contains('Could not resolve symbolic link'),
         ),
       ),
     );

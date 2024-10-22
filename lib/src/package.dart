@@ -278,50 +278,31 @@ See $workspacesDocUrl for more information.
       return p.join(root, path);
     }
 
-    // Maintain set of visited symlinks for every directory.
-    // If the same symlink is visited twice while moving down the tree,
-    // then we have faced a loop.
-    //
-    // additional complexity:
-    // N - number of directory symlinks
-    // memory and time complexity are roughly the same:
-    //   from O(N) (without nested symlinks):
-    //     single set is created for each symlink and never copied
-    //   up to O(N^2) (each symlink is nested in previous one):
-    //     for each symlink clone set with all visited symlinks.
-    //     i-th set contains i symlinks.
-    final visitedSymlinks = <String>{};
+    /// Throws if [path] is a link that cannot resolve.
+    /// 
+    /// Circular links will fail to resolve at some depth defined by the os.
+    void verifyLink(String path) {
+      final link = Link(path);
+      if (link.existsSync()) {
+        try {
+          link.resolveSymbolicLinksSync();
+        } on FileSystemException catch (e) {
+          throw DataException(
+            'Could not resolve symbolic link $path. $e',
+          );
+        }
+      }
+    }
 
     final result = Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
         final resolvedDir = resolve(dir);
-
-        if (Link(resolvedDir).existsSync()) {
-          final canonicalLink = p.canonicalize(
-            p.join(
-              Directory(p.dirname(resolvedDir)).resolveSymbolicLinksSync(),
-              p.basename(resolvedDir),
-            ),
-          );
-          if (!visitedSymlinks.add(canonicalLink)) {
-            throw DataException(
-              'Pub does not support publishing packages with symlinks loop: '
-              '`$resolvedDir` => `$canonicalLink`. ',
-            );
-          }
-        }
-
+        verifyLink(resolvedDir);
         var contents = Directory(resolvedDir).listSync(followLinks: false);
 
         if (!recursive) {
-          contents = contents
-              .where(
-                (entity) =>
-                    entity is! Directory &&
-                    !(linkExists(entity.path) && dirExists(entity.path)),
-              )
-              .toList();
+          contents = contents.where((entity) => entity is! Directory).toList();
         }
         return contents.map((entity) {
           final relative = p.relative(entity.path, from: root);
@@ -392,17 +373,8 @@ See $workspacesDocUrl for more information.
       isDir: (dir) => dirExists(resolve(dir)),
       includeDirs: includeDirs,
     ).map(resolve).toList();
-
-    // Check that all symlinks in [result] are valid.
-    for (final file in result) {
-      try {
-        File(file).resolveSymbolicLinksSync();
-      } on IOException {
-        throw DataException(
-          'Pub does not support publishing packages with non-resolving symlink: '
-          '`$file`',
-        );
-      }
+    for (final f in result) {
+      verifyLink(f);
     }
     return result;
   }
