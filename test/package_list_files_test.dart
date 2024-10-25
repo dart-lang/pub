@@ -150,7 +150,7 @@ void main() {
               (e) => e.message,
               'message',
               contains(
-                'Could not resolve symbolic link',
+                'Pub does not support symlink cycles.',
               ),
             ),
           ),
@@ -221,7 +221,7 @@ void main() {
             isA<DataException>().having(
               (e) => e.message,
               'message',
-              contains('Could not resolve symbolic link'),
+              contains('Pub does not support symlink cycles.'),
             ),
           ),
         );

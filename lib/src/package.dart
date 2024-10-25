@@ -294,11 +294,35 @@ See $workspacesDocUrl for more information.
       }
     }
 
+    /// We check each directory that it doesn't symlink-resolve to the
+    /// symlink-resolution of any parent directory of itself. This avoids
+    /// cycles.
+    ///
+    /// Cache the symlink resolutions here.
+    final symlinkResolvedDirs = <String, String>{};
+
     final result = Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
-        final resolvedDir = resolve(dir);
+        final resolvedDir = p.normalize(resolve(dir));
         verifyLink(resolvedDir);
+
+        {
+          final symlinkResolvedDir = symlinkResolvedDirs[resolvedDir] ??=
+              Directory(resolvedDir).resolveSymbolicLinksSync();
+
+          for (final parent in parentDirs(p.dirname(resolvedDir))) {
+            final symlinkResolvedParent = symlinkResolvedDirs[parent] ??=
+                Directory(parent).resolveSymbolicLinksSync();
+            if (p.equals(symlinkResolvedDir, symlinkResolvedParent)) {
+              dataError('''
+Pub does not support symlink cycles.
+
+$resolvedDir => ${p.canonicalize(parent)}
+''');
+            }
+          }
+        }
         var contents = Directory(resolvedDir).listSync(followLinks: false);
 
         if (!recursive) {
