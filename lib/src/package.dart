@@ -308,17 +308,17 @@ See $workspacesDocUrl for more information.
         verifyLink(resolvedDir);
 
         {
-          final symlinkResolvedDir = symlinkResolvedDirs[resolvedDir] ??=
-              Directory(resolvedDir).resolveSymbolicLinksSync();
-
-          for (final parent in parentDirs(p.dirname(resolvedDir))) {
+          final canonicalized = p.canonicalize(resolvedDir);
+          final symlinkResolvedDir = symlinkResolvedDirs[canonicalized] ??=
+              Directory(canonicalized).resolveSymbolicLinksSync();
+          for (final parent in parentDirs(p.dirname(canonicalized))) {
             final symlinkResolvedParent = symlinkResolvedDirs[parent] ??=
                 Directory(parent).resolveSymbolicLinksSync();
             if (p.equals(symlinkResolvedDir, symlinkResolvedParent)) {
               dataError('''
 Pub does not support symlink cycles.
 
-$resolvedDir => ${p.canonicalize(parent)}
+$symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
 ''');
             }
           }
