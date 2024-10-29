@@ -126,7 +126,7 @@ void main() {
       });
     });
 
-    group('cycles', () {
+    group('symlink cycles', () {
       test('throws on included link', () async {
         await d.dir(appPath, [
           d.pubspec({'name': 'myapp'}),
