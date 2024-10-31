@@ -8,32 +8,36 @@ import 'package:path/path.dart' as p;
 import 'package:tar/tar.dart';
 import 'package:test/test.dart';
 
-import '../descriptor.dart';
+import '../descriptor.dart' as d;
+import '../link_descriptor.dart';
 import '../test_pub.dart';
 
 Future<void> main() async {
   test('symlink directories are replaced by their targets', () async {
-    await validPackage().create();
-    await dir('a', [file('aa', 'aaa')]).create();
-    await file('t', 'ttt').create();
+    await d.validPackage().create();
+    await d.dir('a', [d.file('aa', 'aaa')]).create();
+    await d.file('t', 'ttt').create();
 
-    await dir(appPath, [
-      dir('b', [file('bb', 'bbb')]),
+    await d.dir(appPath, [
+      d.dir('b', [d.file('bb', 'bbb'), link('l', p.join(d.sandbox, 't'))]),
+      link(
+        'symlink_to_dir_outside_package',
+        p.join(d.sandbox, 'a'),
+        forceDirectory: true,
+      ),
+      link(
+        'symlink_to_dir_outside_package_relative',
+        p.join('..', 'a'),
+        forceDirectory: true,
+      ),
+      link('symlink_to_dir_inside_package', p.join(d.sandbox, appPath, 'b')),
+      link('symlink_to_dir_inside_package_relative', 'b', forceDirectory: true),
     ]).create();
-    Link(p.join(sandbox, appPath, 'symlink_to_dir_outside_package'))
-        .createSync(p.join(sandbox, 'a'));
-    Link(p.join(sandbox, appPath, 'symlink_to_dir_outside_package_relative'))
-        .createSync(p.join('..', 'a'));
-    Link(p.join(sandbox, appPath, 'symlink_to_dir_inside_package'))
-        .createSync(p.join(sandbox, appPath, 'b'));
-    Link(p.join(sandbox, appPath, 'symlink_to_dir_inside_package_relative'))
-        .createSync('b');
-    Link(p.join(sandbox, appPath, 'b', 'l')).createSync(p.join(sandbox, 't'));
 
     await runPub(args: ['publish', '--to-archive=archive.tar.gz']);
 
     final reader = TarReader(
-      File(p.join(sandbox, appPath, 'archive.tar.gz'))
+      File(p.join(d.sandbox, appPath, 'archive.tar.gz'))
           .openRead()
           .transform(GZipCodec().decoder),
     );
@@ -45,25 +49,25 @@ Future<void> main() async {
 
     await runPub(args: ['cache', 'preload', 'archive.tar.gz']);
 
-    await dir('test_pkg-1.0.0', [
-      ...validPackage().contents,
-      dir('symlink_to_dir_outside_package', [
-        file('aa', 'aaa'),
+    await d.dir('test_pkg-1.0.0', [
+      ...d.validPackage().contents,
+      d.dir('symlink_to_dir_outside_package', [
+        d.file('aa', 'aaa'),
       ]),
-      dir('symlink_to_dir_outside_package_relative', [
-        file('aa', 'aaa'),
+      d.dir('symlink_to_dir_outside_package_relative', [
+        d.file('aa', 'aaa'),
       ]),
-      dir('b', [file('bb', 'bbb')]),
-      dir('symlink_to_dir_inside_package', [
-        file('bb', 'bbb'),
-        file('l', 'ttt'),
+      d.dir('b', [d.file('bb', 'bbb')]),
+      d.dir('symlink_to_dir_inside_package', [
+        d.file('bb', 'bbb'),
+        d.file('l', 'ttt'),
       ]),
-      dir('symlink_to_dir_inside_package_relative', [
-        file('bb', 'bbb'),
-        file('l', 'ttt'),
+      d.dir('symlink_to_dir_inside_package_relative', [
+        d.file('bb', 'bbb'),
+        d.file('l', 'ttt'),
       ]),
     ]).validate(
-      p.join(sandbox, cachePath, 'hosted', 'pub.dev'),
+      p.join(d.sandbox, cachePath, 'hosted', 'pub.dev'),
     );
   });
 }
