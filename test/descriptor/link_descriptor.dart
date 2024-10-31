@@ -7,7 +7,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import 'descriptor.dart' as d;
+import '../descriptor.dart' as d;
 
 /// Describes a symlink.
 class LinkDescriptor extends d.Descriptor {

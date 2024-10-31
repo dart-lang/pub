@@ -15,10 +15,10 @@ import 'package:pub/src/sdk/sdk_package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor/git.dart';
+import 'descriptor/link_descriptor.dart';
 import 'descriptor/package_config.dart';
 import 'descriptor/tar.dart';
 import 'descriptor/yaml.dart';
-import 'link_descriptor.dart';
 import 'test_pub.dart';
 
 export 'package:test_descriptor/test_descriptor.dart';
