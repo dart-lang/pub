@@ -22,7 +22,6 @@ linter:
     - missing_whitespace_between_adjacent_strings
     - no_adjacent_strings_in_list
     - no_runtimeType_toString
-    - package_api_docs
     - prefer_const_declarations
     - prefer_final_locals
     - require_trailing_commas
