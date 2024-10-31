@@ -18,6 +18,7 @@ import 'descriptor/git.dart';
 import 'descriptor/package_config.dart';
 import 'descriptor/tar.dart';
 import 'descriptor/yaml.dart';
+import 'link_descriptor.dart';
 import 'test_pub.dart';
 
 export 'package:test_descriptor/test_descriptor.dart';
@@ -402,4 +403,8 @@ Descriptor flutterVersion(String version) {
 /// Describes a file named `sdk_packages.yaml` at the root of the current SDK.
 FileDescriptor sdkPackagesConfig(SdkPackageConfig sdkPackageConfig) {
   return YamlDescriptor('sdk_packages.yaml', yaml(sdkPackageConfig.toMap()));
+}
+
+Descriptor link(String name, String target, {bool forceDirectory = false}) {
+  return LinkDescriptor(name, target, forceDirectory: forceDirectory);
 }

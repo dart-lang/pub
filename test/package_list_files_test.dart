@@ -11,7 +11,6 @@ import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
-import 'link_descriptor.dart';
 import 'test_pub.dart';
 
 late String root;
@@ -58,7 +57,7 @@ void main() {
         d.file('file2.txt', 'contents'),
         d.dir('subdir', [
           d.dir('a', [d.file('file')]),
-          link('symlink', 'a', forceDirectory: true),
+          d.link('symlink', 'a', forceDirectory: true),
         ]),
       ]).create();
 
@@ -81,7 +80,7 @@ void main() {
         d.dir('subdir', [
           d.file('.pubignore', 'symlink'),
           d.dir('a', [d.file('file')]),
-          link('symlink', 'a', forceDirectory: true),
+          d.link('symlink', 'a', forceDirectory: true),
         ]),
       ]).create();
 
@@ -103,7 +102,7 @@ void main() {
         d.dir('subdir', [
           d.file('.pubignore', 'symlink'),
           d.dir('a', [d.file('file')]),
-          link('symlink', 'b', forceDirectory: true),
+          d.link('symlink', 'b', forceDirectory: true),
         ]),
       ]).create();
 
@@ -125,7 +124,7 @@ void main() {
           d.file('file2.txt', 'contents'),
           d.dir('subdir', [
             d.dir('a', [d.file('file')]),
-            link('symlink', '..', forceDirectory: true),
+            d.link('symlink', '..', forceDirectory: true),
           ]),
         ]).create();
 
@@ -152,7 +151,7 @@ void main() {
           d.file('file2.txt', 'contents'),
           d.dir('subdir', [
             d.dir('a', [d.file('file')]),
-            link('symlink', 'symlink', forceDirectory: true),
+            d.link('symlink', 'symlink', forceDirectory: true),
           ]),
         ]).create();
 
@@ -178,15 +177,15 @@ void main() {
           d.dir('subdir', [
             d.dir('a', [
               d.file('file'),
-              link('symlink1', p.join('..', 'b'), forceDirectory: true),
+              d.link('symlink1', p.join('..', 'b'), forceDirectory: true),
             ]),
             d.dir('b', [
-              link('symlink2', p.join('..', 'c'), forceDirectory: true),
+              d.link('symlink2', p.join('..', 'c'), forceDirectory: true),
             ]),
             d.dir('c', [
-              link('symlink3', p.join('..', 'a'), forceDirectory: true),
+              d.link('symlink3', p.join('..', 'a'), forceDirectory: true),
             ]),
-            link('symlink', 'a', forceDirectory: true),
+            d.link('symlink', 'a', forceDirectory: true),
           ]),
         ]).create();
 
@@ -207,9 +206,9 @@ void main() {
       test('throws on link to loop', () async {
         await d.dir(appPath, [
           d.pubspec({'name': 'myapp'}),
-          link('symlink', p.join(d.sandbox, 'loop'), forceDirectory: true),
+          d.link('symlink', p.join(d.sandbox, 'loop'), forceDirectory: true),
         ]).create();
-        await link('loop', 'loop', forceDirectory: true).create();
+        await d.link('loop', 'loop', forceDirectory: true).create();
 
         createEntrypoint();
 
@@ -229,10 +228,15 @@ void main() {
         await d.dir('src', [
           d.dir(appPath, [
             d.pubspec({'name': 'myapp'}),
-            link('symlink', p.join(d.sandbox, 'source'), forceDirectory: true),
+            d.link(
+              'symlink',
+              p.join(d.sandbox, 'source'),
+              forceDirectory: true,
+            ),
           ]),
         ]).create();
-        await link('source', p.join(d.sandbox, 'src'), forceDirectory: true)
+        await d
+            .link('source', p.join(d.sandbox, 'src'), forceDirectory: true)
             .create();
 
         createEntrypoint(p.join('src', appPath));
@@ -254,14 +258,20 @@ void main() {
         await d.dir('src', [
           d.dir(appPath, [
             d.pubspec({'name': 'myapp'}),
-            link('symlink', p.join(d.sandbox, 'source'), forceDirectory: true),
+            d.link(
+              'symlink',
+              p.join(d.sandbox, 'source'),
+              forceDirectory: true,
+            ),
           ]),
         ]).create();
-        await link(
-          'source',
-          p.join(d.sandbox, 'src'),
-          forceDirectory: true,
-        ).create();
+        await d
+            .link(
+              'source',
+              p.join(d.sandbox, 'src'),
+              forceDirectory: true,
+            )
+            .create();
 
         createEntrypoint(p.join('source', appPath));
 
@@ -283,11 +293,13 @@ void main() {
             d.pubspec({'name': 'myapp'}),
           ]),
         ]).create();
-        await link(
-          'source',
-          p.join(d.sandbox, 'src'),
-          forceDirectory: true,
-        ).create();
+        await d
+            .link(
+              'source',
+              p.join(d.sandbox, 'src'),
+              forceDirectory: true,
+            )
+            .create();
 
         createEntrypoint(p.join('source', appPath));
 
@@ -304,7 +316,7 @@ void main() {
           d.dir('subdir', [
             d.file('.pubignore', 'symlink'),
             d.dir('a', [d.file('file')]),
-            link('symlink', '..', forceDirectory: true),
+            d.link('symlink', '..', forceDirectory: true),
           ]),
         ]).create();
 
@@ -325,10 +337,10 @@ void main() {
           d.file('file2.txt', 'contents'),
           d.dir('subdir', [
             d.dir('a', [d.file('file')]),
-            link('symlink1', 'a', forceDirectory: true),
-            link('symlink2', 'a', forceDirectory: true),
+            d.link('symlink1', 'a', forceDirectory: true),
+            d.link('symlink2', 'a', forceDirectory: true),
           ]),
-          link('symlink3', p.join('subdir', 'a'), forceDirectory: true),
+          d.link('symlink3', p.join('subdir', 'a'), forceDirectory: true),
         ]).create();
 
         createEntrypoint();
@@ -356,7 +368,7 @@ void main() {
       ]),
     ]).create();
 
-    await link('symlink', appPath).create();
+    await d.link('symlink', appPath).create();
     root = p.join(d.sandbox, 'symlink');
 
     final entrypoint = Entrypoint(

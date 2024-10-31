@@ -9,7 +9,6 @@ import 'package:tar/tar.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
-import '../link_descriptor.dart';
 import '../test_pub.dart';
 
 Future<void> main() async {
@@ -19,19 +18,23 @@ Future<void> main() async {
     await d.file('t', 'ttt').create();
 
     await d.dir(appPath, [
-      d.dir('b', [d.file('bb', 'bbb'), link('l', p.join(d.sandbox, 't'))]),
-      link(
+      d.dir('b', [d.file('bb', 'bbb'), d.link('l', p.join(d.sandbox, 't'))]),
+      d.link(
         'symlink_to_dir_outside_package',
         p.join(d.sandbox, 'a'),
         forceDirectory: true,
       ),
-      link(
+      d.link(
         'symlink_to_dir_outside_package_relative',
         p.join('..', 'a'),
         forceDirectory: true,
       ),
-      link('symlink_to_dir_inside_package', p.join(d.sandbox, appPath, 'b')),
-      link('symlink_to_dir_inside_package_relative', 'b', forceDirectory: true),
+      d.link('symlink_to_dir_inside_package', p.join(d.sandbox, appPath, 'b')),
+      d.link(
+        'symlink_to_dir_inside_package_relative',
+        'b',
+        forceDirectory: true,
+      ),
     ]).create();
 
     await runPub(args: ['publish', '--to-archive=archive.tar.gz']);

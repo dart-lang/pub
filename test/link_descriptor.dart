@@ -50,7 +50,3 @@ class LinkDescriptor extends d.Descriptor {
     }
   }
 }
-
-d.Descriptor link(String name, String target, {bool forceDirectory = false}) {
-  return LinkDescriptor(name, target, forceDirectory: forceDirectory);
-}
