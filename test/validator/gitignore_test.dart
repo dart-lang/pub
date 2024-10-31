@@ -9,8 +9,8 @@ import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
+import '../link_descriptor.dart';
 import '../test_pub.dart';
-import 'utils.dart';
 
 Future<void> expectValidation(
   Matcher error,
@@ -159,10 +159,11 @@ void main() {
     await pubGet(
       workingDirectory: packageRoot,
     );
-    createDirectorySymlink(
+    await link(
       p.join(d.sandbox, appPath, 'dir_with_symlink', 'symlink'),
       '..',
-    );
+      forceDirectory: true,
+    ).create();
     await git.commit();
 
     await expectValidation(

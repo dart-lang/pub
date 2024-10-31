@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
@@ -24,15 +22,6 @@ Future<void> expectValidationDeprecated(
   expect(validator.errors, errors ?? isEmpty);
   expect(validator.warnings, warnings ?? isEmpty);
   expect(validator.hints, hints ?? isEmpty);
-}
-
-// On windows symlinks to directories are distinct from symlinks to files.
-void createDirectorySymlink(String path, String target) {
-  if (Platform.isWindows) {
-    Process.runSync('cmd', ['/c', 'mklink', '/D', path, target]);
-  } else {
-    Link(path).createSync(target);
-  }
 }
 
 Future<void> expectValidation({

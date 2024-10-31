@@ -11,8 +11,8 @@ import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
+import 'link_descriptor.dart';
 import 'test_pub.dart';
-import 'validator/utils.dart';
 
 late String root;
 Entrypoint? entrypoint;
@@ -58,12 +58,9 @@ void main() {
         d.file('file2.txt', 'contents'),
         d.dir('subdir', [
           d.dir('a', [d.file('file')]),
+          link('symlink', 'a', forceDirectory: true),
         ]),
       ]).create();
-      createDirectorySymlink(
-        p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-        'a',
-      );
 
       createEntrypoint();
 
@@ -84,12 +81,9 @@ void main() {
         d.dir('subdir', [
           d.file('.pubignore', 'symlink'),
           d.dir('a', [d.file('file')]),
+          link('symlink', 'a', forceDirectory: true),
         ]),
       ]).create();
-      createDirectorySymlink(
-        p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-        'a',
-      );
 
       createEntrypoint();
 
@@ -109,12 +103,9 @@ void main() {
         d.dir('subdir', [
           d.file('.pubignore', 'symlink'),
           d.dir('a', [d.file('file')]),
+          link('symlink', 'b', forceDirectory: true),
         ]),
       ]).create();
-      createDirectorySymlink(
-        p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-        'b',
-      );
 
       createEntrypoint();
 
@@ -134,12 +125,9 @@ void main() {
           d.file('file2.txt', 'contents'),
           d.dir('subdir', [
             d.dir('a', [d.file('file')]),
+            link('symlink', '..', forceDirectory: true),
           ]),
         ]).create();
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-          '..',
-        );
 
         createEntrypoint();
 
@@ -164,12 +152,9 @@ void main() {
           d.file('file2.txt', 'contents'),
           d.dir('subdir', [
             d.dir('a', [d.file('file')]),
+            link('symlink', 'symlink', forceDirectory: true),
           ]),
         ]).create();
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-          'symlink',
-        );
 
         createEntrypoint();
 
@@ -191,27 +176,19 @@ void main() {
           d.file('file1.txt', 'contents'),
           d.file('file2.txt', 'contents'),
           d.dir('subdir', [
-            d.dir('a', [d.file('file')]),
-            d.dir('b'),
-            d.dir('c'),
+            d.dir('a', [
+              d.file('file'),
+              link('symlink1', p.join('..', 'b'), forceDirectory: true),
+            ]),
+            d.dir('b', [
+              link('symlink2', p.join('..', 'c'), forceDirectory: true),
+            ]),
+            d.dir('c', [
+              link('symlink3', p.join('..', 'a'), forceDirectory: true),
+            ]),
+            link('symlink', 'a', forceDirectory: true),
           ]),
         ]).create();
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-          'a',
-        );
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'a', 'symlink1'),
-          p.join('..', 'b'),
-        );
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'b', 'symlink2'),
-          p.join('..', 'c'),
-        );
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'c', 'symlink3'),
-          p.join('..', 'a'),
-        );
 
         createEntrypoint();
 
@@ -227,6 +204,98 @@ void main() {
         );
       });
 
+      test('throws on link to loop', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          link('symlink', p.join(d.sandbox, 'loop'), forceDirectory: true),
+        ]).create();
+        await link('loop', 'loop', forceDirectory: true).create();
+
+        createEntrypoint();
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Could not resolve symbolic link'),
+            ),
+          ),
+        );
+      });
+
+      test('throws on link to loop back to parent directory', () async {
+        await d.dir('src', [
+          d.dir(appPath, [
+            d.pubspec({'name': 'myapp'}),
+            link('symlink', p.join(d.sandbox, 'source'), forceDirectory: true),
+          ]),
+        ]).create();
+        await link('source', p.join(d.sandbox, 'src'), forceDirectory: true)
+            .create();
+
+        createEntrypoint(p.join('src', appPath));
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pub does not support symlink cycles.'),
+            ),
+          ),
+        );
+      });
+
+      test('throws on link to subdirectory of loop back to parent directory',
+          () async {
+        await d.dir('src', [
+          d.dir(appPath, [
+            d.pubspec({'name': 'myapp'}),
+            link('symlink', p.join(d.sandbox, 'source'), forceDirectory: true),
+          ]),
+        ]).create();
+        await link(
+          'source',
+          p.join(d.sandbox, 'src'),
+          forceDirectory: true,
+        ).create();
+
+        createEntrypoint(p.join('source', appPath));
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pub does not support symlink cycles.'),
+            ),
+          ),
+        );
+      });
+
+      test('Does not throw when publishing via symlink', () async {
+        await d.dir('src', [
+          d.dir(appPath, [
+            d.pubspec({'name': 'myapp'}),
+          ]),
+        ]).create();
+        await link(
+          'source',
+          p.join(d.sandbox, 'src'),
+          forceDirectory: true,
+        ).create();
+
+        createEntrypoint(p.join('source', appPath));
+
+        expect(entrypoint!.workspaceRoot.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+        });
+      });
+
       test('not throws on ignored link', () async {
         await d.dir(appPath, [
           d.pubspec({'name': 'myapp'}),
@@ -235,12 +304,9 @@ void main() {
           d.dir('subdir', [
             d.file('.pubignore', 'symlink'),
             d.dir('a', [d.file('file')]),
+            link('symlink', '..', forceDirectory: true),
           ]),
         ]).create();
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-          '..',
-        );
 
         createEntrypoint();
 
@@ -259,20 +325,11 @@ void main() {
           d.file('file2.txt', 'contents'),
           d.dir('subdir', [
             d.dir('a', [d.file('file')]),
+            link('symlink1', 'a', forceDirectory: true),
+            link('symlink2', 'a', forceDirectory: true),
           ]),
+          link('symlink3', p.join('subdir', 'a')),
         ]).create();
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink1'),
-          'a',
-        );
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'subdir', 'symlink2'),
-          'a',
-        );
-        createDirectorySymlink(
-          p.join(d.sandbox, appPath, 'symlink3'),
-          p.join('subdir', 'a'),
-        );
 
         createEntrypoint();
 
@@ -299,8 +356,8 @@ void main() {
       ]),
     ]).create();
 
-    final root = p.join(d.sandbox, 'symlink');
-    createDirectorySymlink(root, appPath);
+    await link('symlink', appPath).create();
+    root = p.join(d.sandbox, 'symlink');
 
     final entrypoint = Entrypoint(
       p.join(d.sandbox, 'symlink'),

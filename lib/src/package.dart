@@ -287,6 +287,9 @@ See $workspacesDocUrl for more information.
         try {
           link.resolveSymbolicLinksSync();
         } on FileSystemException catch (e) {
+          if (!link.existsSync()) {
+            return;
+          }
           throw DataException(
             'Could not resolve symbolic link $path. $e',
           );
@@ -300,6 +303,10 @@ See $workspacesDocUrl for more information.
     ///
     /// Cache the symlink resolutions here.
     final symlinkResolvedDirs = <String, String>{};
+    String resolveDirSymlinks(String path) {
+      return symlinkResolvedDirs[path] ??=
+          Directory(path).resolveSymbolicLinksSync();
+    }
 
     final result = Ignore.listFiles(
       beneath: beneath,
@@ -309,11 +316,9 @@ See $workspacesDocUrl for more information.
 
         {
           final canonicalized = p.canonicalize(resolvedDir);
-          final symlinkResolvedDir = symlinkResolvedDirs[canonicalized] ??=
-              Directory(canonicalized).resolveSymbolicLinksSync();
+          final symlinkResolvedDir = resolveDirSymlinks(canonicalized);
           for (final parent in parentDirs(p.dirname(canonicalized))) {
-            final symlinkResolvedParent = symlinkResolvedDirs[parent] ??=
-                Directory(parent).resolveSymbolicLinksSync();
+            final symlinkResolvedParent = resolveDirSymlinks(parent);
             if (p.equals(symlinkResolvedDir, symlinkResolvedParent)) {
               dataError('''
 Pub does not support symlink cycles.
