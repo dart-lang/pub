@@ -328,7 +328,7 @@ void main() {
             link('symlink1', 'a', forceDirectory: true),
             link('symlink2', 'a', forceDirectory: true),
           ]),
-          link('symlink3', p.join('subdir', 'a')),
+          link('symlink3', p.join('subdir', 'a'), forceDirectory: true),
         ]).create();
 
         createEntrypoint();
