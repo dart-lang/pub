@@ -29,7 +29,11 @@ Future<void> main() async {
         p.join('..', 'a'),
         forceDirectory: true,
       ),
-      d.link('symlink_to_dir_inside_package', p.join(d.sandbox, appPath, 'b')),
+      d.link(
+        'symlink_to_dir_inside_package',
+        p.join(d.sandbox, appPath, 'b'),
+        forceDirectory: true,
+      ),
       d.link(
         'symlink_to_dir_inside_package_relative',
         'b',
