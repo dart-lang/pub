@@ -28,6 +28,7 @@ import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
 import 'source/root.dart';
+import 'source/sdk.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -474,14 +475,44 @@ Try reactivating the package.
         result.packages.removeWhere((id) => id.name == 'pub global activate');
 
         final newLockFile = await result.downloadCachedPackages(cache);
+        final report = SolveReport(
+          SolveType.get,
+          entrypoint.workspaceRoot.dir,
+          entrypoint.workspaceRoot.pubspec,
+          entrypoint.workspaceRoot.allOverridesInWorkspace,
+          entrypoint.lockFile,
+          newLockFile,
+          result.availableVersions,
+          cache,
+          dryRun: true,
+          enforceLockfile: true,
+          quiet: false,
+        );
+        await report.show(summary: true);
+
         final sameVersions = entrypoint.lockFile.samePackageIds(newLockFile);
+
         if (!sameVersions) {
-          dataError('''
-The package `$name` as currently activated cannot resolve to the same packages.
+          if (newLockFile.packages.values.any((p) {
+            return p.source is SdkSource &&
+                p.version != entrypoint.lockFile.packages[p.name]?.version;
+          })) {
+            // More specific error message for the case of a version match with
+            // an sdk package.
+            dataError('''
+The current activation of `$name` is not compatible with your current SDK.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`
 ''');
+          } else {
+            dataError('''
+The current activation of `$name` cannot resolve to the same set of dependencies.
+
+Try reactivating the package.
+`$topLevelProgram pub global activate $name`
+''');
+          }
         }
         await recompile(exectuable);
         _refreshBinStubs(entrypoint, executable);
