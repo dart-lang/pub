@@ -28,6 +28,7 @@ import 'source/git.dart';
 import 'source/hosted.dart';
 import 'source/path.dart';
 import 'source/root.dart';
+import 'source/sdk.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -455,7 +456,16 @@ try:
       recompile: (exectuable) async {
         final root = entrypoint.workspaceRoot;
         final name = exectuable.package;
-        // Resolve it and download its dependencies.
+
+        // When recompiling we re-resolve it and download its dependencies. This
+        // is mainly to protect from the case where the sdk was updated, and
+        // that causes some incompatibilities. (could be the new sdk is outside
+        // some package's environment constraint range, or that the sdk came
+        // with incompatible versions of sdk packages).
+        //
+        // We use --enforce-lockfile semantics, because we want upgrading
+        // globally activated packages to be conscious, and not a part of
+        // running them.
         SolveResult result;
         try {
           result = await log.spinner(
@@ -474,14 +484,44 @@ Try reactivating the package.
         result.packages.removeWhere((id) => id.name == 'pub global activate');
 
         final newLockFile = await result.downloadCachedPackages(cache);
+        final report = SolveReport(
+          SolveType.get,
+          entrypoint.workspaceRoot.dir,
+          entrypoint.workspaceRoot.pubspec,
+          entrypoint.workspaceRoot.allOverridesInWorkspace,
+          entrypoint.lockFile,
+          newLockFile,
+          result.availableVersions,
+          cache,
+          dryRun: true,
+          enforceLockfile: true,
+          quiet: false,
+        );
+        await report.show(summary: true);
+
         final sameVersions = entrypoint.lockFile.samePackageIds(newLockFile);
+
         if (!sameVersions) {
-          dataError('''
-The package `$name` as currently activated cannot resolve to the same packages.
+          if (newLockFile.packages.values.any((p) {
+            return p.source is SdkSource &&
+                p.version != entrypoint.lockFile.packages[p.name]?.version;
+          })) {
+            // More specific error message for the case of a version match with
+            // an sdk package.
+            dataError('''
+The current activation of `$name` is not compatible with your current SDK.
 
 Try reactivating the package.
 `$topLevelProgram pub global activate $name`
 ''');
+          } else {
+            dataError('''
+The current activation of `$name` cannot resolve to the same set of dependencies.
+
+Try reactivating the package.
+`$topLevelProgram pub global activate $name`
+''');
+          }
         }
         await recompile(exectuable);
         _refreshBinStubs(entrypoint, executable);

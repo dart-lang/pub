@@ -48,6 +48,7 @@ void main() {
     // all output we see the precompilation messages as well.
     expect(pub.stdout, emits('Resolving dependencies...'));
     expect(pub.stdout, emits('Downloading packages...'));
+    expect(pub.stdout, emits(startsWith('No dependencies would change in ')));
     expect(pub.stdout, emits('Building package executable...'));
     expect(pub.stdout, emitsThrough('ok'));
     await pub.shouldExit();
@@ -65,6 +66,102 @@ void main() {
   });
 
   test('validate resolution before recompilation', () async {
+    final server = await servePackages();
+    server.serve(
+      'foo',
+      '1.0.0',
+      deps: {
+        'bar': 'any',
+      },
+      contents: [
+        d.dir('bin', [
+          d.file('foo.dart', 'import "package:bar/bar.dart"; main() => bar();'),
+        ]),
+      ],
+    );
+
+    server.serve(
+      'bar',
+      '1.0.0',
+      contents: [
+        d.dir('lib', [
+          d.file('bar.dart', 'bar() => print("original");'),
+        ]),
+      ],
+    );
+
+    await runPub(
+      args: ['global', 'activate', 'foo'],
+    );
+
+    await runPub(
+      args: ['global', 'run', 'foo'],
+      output: 'original',
+    );
+
+    server.serve(
+      'bar',
+      '1.0.0',
+      contents: [
+        d.dir('lib', [
+          d.file('foo.dart', 'foo() => print("updated");'),
+        ]),
+      ],
+    );
+
+    await runPub(
+      args: ['global', 'run', 'foo'],
+      environment: {
+        'DART_ROOT': p.join(d.sandbox, 'dart'),
+        // Updated sdk version makes the old snapshot obsolete
+        '_PUB_TEST_SDK_VERSION': '3.2.1+4',
+      },
+      output: contains('~ bar 1.0.0 (was 1.0.0)'),
+      error: allOf(
+        contains(
+          'The current activation of `foo` cannot resolve to the same set of '
+          'dependencies.',
+        ),
+        contains(
+          "The existing content-hash from pubspec.lock doesn't match "
+          'contents for:',
+        ),
+        contains('Try reactivating the package'),
+      ),
+      exitCode: DATA,
+    );
+
+    await d.dir('dart', [
+      d.dir('packages', [
+        d.dir('bar', [
+          // Doesn't fulfill constraint, but doesn't satisfy pubspec.lock.
+          d.libPubspec('bar', '2.0.0', deps: {}),
+        ]),
+      ]),
+    ]).create();
+    await runPub(
+      args: ['global', 'run', 'foo'],
+      environment: {
+        'DART_ROOT': p.join(d.sandbox, 'dart'),
+        '_PUB_TEST_SDK_VERSION': '3.2.1+4',
+      },
+      error: allOf(
+        contains(
+          'The existing content-hash from pubspec.lock doesn\'t match '
+          'contents for:',
+        ),
+        contains(
+          'The current activation of `foo` cannot resolve to the same '
+          'set of dependencies.',
+        ),
+        contains('Try reactivating the package'),
+      ),
+      exitCode: DATA,
+    );
+  });
+
+  test('validate resolution before recompilation - updated sdk package',
+      () async {
     final server = await servePackages();
     server.serve(
       'foo',
@@ -120,9 +217,12 @@ void main() {
         'DART_ROOT': p.join(d.sandbox, 'dart'),
         '_PUB_TEST_SDK_VERSION': '3.2.1+4',
       },
+      output: contains('> bar 1.2.0 from sdk dart (was 1.0.0 from sdk dart)'),
       error: allOf(
-        contains('The package `foo` as currently activated cannot resolve to '
-            'the same packages'),
+        contains(
+          'The current activation of `foo` is not compatible with your '
+          'current SDK.',
+        ),
         contains('Try reactivating the package'),
       ),
       exitCode: DATA,
