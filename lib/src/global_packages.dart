@@ -456,7 +456,16 @@ try:
       recompile: (exectuable) async {
         final root = entrypoint.workspaceRoot;
         final name = exectuable.package;
-        // Resolve it and download its dependencies.
+
+        // When recompiling we re-resolve it and download its dependencies. This
+        // is mainly to protect from the case where the sdk was updated, and
+        // that causes some incompatibilities. (could be the new sdk is outside
+        // some package's environment constraint range, or that the sdk came
+        // with incompatible versions of sdk packages).
+        //
+        // We use --enforce-lockfile semantics, because we want upgrading
+        // globally activated packages to be conscious, and not a part of
+        // running them.
         SolveResult result;
         try {
           result = await log.spinner(
