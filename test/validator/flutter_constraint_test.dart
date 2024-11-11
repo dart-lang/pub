@@ -7,9 +7,9 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-Future<void> expectValidation(Matcher error, int exitCode) async {
+Future<void> expectValidation(Matcher output, int exitCode) async {
   await runPub(
-    error: error,
+    output: output,
     args: ['publish', '--dry-run'],
     environment: {
       'FLUTTER_ROOT': fakeFlutterRoot.io.path,

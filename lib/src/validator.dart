@@ -185,36 +185,26 @@ abstract class Validator {
           .addAll([for (final validator in validators) ...validator.warnings]);
       errors.addAll([for (final validator in validators) ...validator.errors]);
 
-      if (errors.isNotEmpty) {
-        final s = errors.length > 1 ? 's' : '';
-        log.error('Package validation found the following error$s:');
-        for (var error in errors) {
-          log.error("* ${error.split('\n').join('\n  ')}");
-        }
-        log.error('');
-      }
+      String presentDiagnostics(List<String> diagnostics) => diagnostics
+          .map((diagnostic) => "* ${diagnostic.split('\n').join('\n  ')}\n")
+          .join('\n');
+      final sections = <String>[];
 
-      if (warnings.isNotEmpty) {
-        final s = warnings.length > 1 ? 's' : '';
-        log.warning(
-          'Package validation found the following potential issue$s:',
-        );
-        for (var warning in warnings) {
-          log.warning("* ${warning.split('\n').join('\n  ')}");
+      for (final (kind, diagnostics) in [
+        ('error', errors),
+        ('potential issue', warnings),
+        ('hint', hints),
+      ]) {
+        if (diagnostics.isNotEmpty) {
+          final s = diagnostics.length > 1 ? 's' : '';
+          final count = diagnostics.length > 1 ? '${diagnostics.length} ' : '';
+          sections.add(
+            'Package validation found the following $count$kind$s:\n'
+            '${presentDiagnostics(diagnostics)}',
+          );
         }
-        log.warning('');
       }
-
-      if (hints.isNotEmpty) {
-        final s = hints.length > 1 ? 's' : '';
-        log.warning(
-          'Package validation found the following hint$s:',
-        );
-        for (var hint in hints) {
-          log.warning("* ${hint.split('\n').join('\n  ')}");
-        }
-        log.warning('');
-      }
+      log.message(sections.join('\n'));
     });
   }
 

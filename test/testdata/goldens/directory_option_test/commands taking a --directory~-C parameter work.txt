@@ -138,8 +138,8 @@ Publishing test_pkg 1.0.0 to http://localhost:$PORT:
 Total compressed archive size: <1 KB.
 Validating package...
 The server may enforce additional checks.
-[STDERR] 
-[STDERR] Package has 0 warnings.
+
+Package has 0 warnings.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 

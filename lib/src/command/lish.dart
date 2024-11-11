@@ -466,7 +466,7 @@ the \$PUB_HOSTED_URL environment variable.''',
         ? _publicationFromEntrypoint()
         : _publicationFromArchive(_fromArchive));
     if (dryRun) {
-      log.warning(publication.warningsCountMessage);
+      log.message(publication.warningsCountMessage);
       if (publication.warningCount != 0) {
         overrideExitCode(DATA);
       }

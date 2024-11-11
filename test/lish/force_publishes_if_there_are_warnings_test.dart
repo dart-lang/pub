@@ -42,20 +42,17 @@ void main() {
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
-    final stderrLines = await pub.stderr.rest.toList();
+    final stdoutLines = await pub.stdout.rest.toList();
     expect(
-      stderrLines,
+      stdoutLines,
       allOf([
         contains('Package validation found the following potential issue:'),
         contains(
           '* Your dependency on "foo" should have a version constraint. '
           'For example:',
         ),
+        contains('Message from server: Package test_pkg 1.0.0 uploaded!'),
       ]),
-    );
-    expect(
-      pub.stdout,
-      emitsThrough('Message from server: Package test_pkg 1.0.0 uploaded!'),
     );
   });
 }

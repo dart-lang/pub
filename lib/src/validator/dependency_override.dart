@@ -12,7 +12,7 @@ import '../validator.dart';
 /// absence thereof).
 class DependencyOverrideValidator extends Validator {
   @override
-  Future validate() {
+  Future<void> validate() async {
     final overridden =
         MapKeySet(context.entrypoint.workspaceRoot.allOverridesInWorkspace);
     final dev = MapKeySet(package.devDependencies);
@@ -31,6 +31,5 @@ This might be necessary for packages with cyclic dependencies.
 
 Please be extra careful when publishing.''');
     }
-    return Future.value();
   }
 }

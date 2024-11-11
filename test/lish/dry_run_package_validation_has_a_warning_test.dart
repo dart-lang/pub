@@ -28,7 +28,7 @@ void main() {
 
     await pub.shouldExit(exit_codes.DATA);
     expect(
-      pub.stderr,
+      pub.stdout,
       emitsThrough('Package has 1 warning.'),
     );
   });

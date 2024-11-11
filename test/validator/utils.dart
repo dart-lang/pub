@@ -25,14 +25,14 @@ Future<void> expectValidationDeprecated(
 }
 
 Future<void> expectValidation({
-  Object? error,
+  Object? message,
   int exitCode = 0,
   Map<String, String> environment = const {},
   List<String>? extraArgs,
   String? workingDirectory,
 }) async {
   await runPub(
-    error: error ?? contains('Package has 0 warnings.'),
+    output: message ?? contains('Package has 0 warnings.'),
     args: ['publish', '--dry-run', ...?extraArgs],
     // workingDirectory: d.path(appPath),
     exitCode: exitCode,
@@ -48,7 +48,7 @@ Future<void> expectValidationWarning(
 }) async {
   final s = count == 1 ? '' : 's';
   await expectValidation(
-    error: allOf([
+    message: allOf([
       contains(error),
       contains('Package has $count warning$s'),
     ]),
@@ -64,7 +64,7 @@ Future<void> expectValidationHint(
 }) async {
   final s = count == 1 ? '' : 's';
   await expectValidation(
-    error: allOf([
+    message: allOf([
       contains(hint),
       contains('and $count hint$s'),
     ]),
@@ -77,7 +77,7 @@ Future<void> expectValidationError(
   Map<String, String> environment = const {},
 }) async {
   await expectValidation(
-    error: allOf([
+    message: allOf([
       contains(text),
       contains('Package validation found the following error:'),
     ]),
