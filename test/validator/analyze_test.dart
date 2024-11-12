@@ -80,7 +80,7 @@ analyzer:
     ]).create();
 
     await expectValidation(
-      error: allOf([
+      message: allOf([
         contains(
           "The 'http' protocol shouldn't be used because it isn't secure. "
           "Try using a secure protocol, such as 'https'.",
@@ -132,7 +132,7 @@ void main() {
     ]).create();
 
     await expectValidation(
-      error: allOf([
+      message: allOf([
         contains('`dart analyze` found the following issue(s):'),
         contains('Analyzing bin, lib, build.dart, link.dart, pubspec.yaml...'),
         contains('error -'),

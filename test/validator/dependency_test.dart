@@ -33,12 +33,12 @@ d.DirectoryDescriptor package({
 }
 
 Future<void> expectValidation({
-  Object? error,
+  Object? message,
   int exitCode = 0,
   Map<String, String> environment = const {},
 }) async {
   await runPub(
-    error: error ?? contains('Package has 0 warnings.'),
+    output: message ?? contains('Package has 0 warnings.'),
     args: ['publish', '--dry-run'],
     // workingDirectory: d.path(appPath),
     exitCode: exitCode,
@@ -47,25 +47,25 @@ Future<void> expectValidation({
 }
 
 Future<void> expectValidationWarning(
-  Object? error, {
+  Object? message, {
   int count = 1,
   Map<String, String> environment = const {},
 }) async {
-  if (error is String) error = contains(error);
+  if (message is String) message = contains(message);
   await expectValidation(
-    error: allOf([error, contains('Package has $count warning')]),
+    message: allOf([message, contains('Package has $count warning')]),
     exitCode: DATA,
     environment: environment,
   );
 }
 
 Future<void> expectValidationError(
-  String text, {
+  String message, {
   Map<String, String> environment = const {},
 }) async {
   await expectValidation(
-    error: allOf([
-      contains(text),
+    message: allOf([
+      contains(message),
       contains('Package validation found the following error:'),
     ]),
     exitCode: DATA,

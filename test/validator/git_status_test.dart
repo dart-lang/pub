@@ -10,14 +10,14 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 Future<void> expectValidation(
-  Matcher error,
+  Matcher output,
   int exitCode, {
   List<String> extraArgs = const [],
   Map<String, String> environment = const {},
   String? workingDirectory,
 }) async {
   await runPub(
-    error: error,
+    output: output,
     args: ['publish', '--dry-run', ...extraArgs],
     environment: environment,
     workingDirectory: workingDirectory ?? d.path(appPath),
