@@ -278,27 +278,62 @@ See $workspacesDocUrl for more information.
       return p.join(root, path);
     }
 
-    return Ignore.listFiles(
+    /// Throws if [path] is a link that cannot resolve.
+    ///
+    /// Circular links will fail to resolve at some depth defined by the os.
+    void verifyLink(String path) {
+      final link = Link(path);
+      if (link.existsSync()) {
+        try {
+          link.resolveSymbolicLinksSync();
+        } on FileSystemException catch (e) {
+          if (!link.existsSync()) {
+            return;
+          }
+          throw DataException(
+            'Could not resolve symbolic link $path. $e',
+          );
+        }
+      }
+    }
+
+    /// We check each directory that it doesn't symlink-resolve to the
+    /// symlink-resolution of any parent directory of itself. This avoids
+    /// cycles.
+    ///
+    /// Cache the symlink resolutions here.
+    final symlinkResolvedDirs = <String, String>{};
+    String resolveDirSymlinks(String path) {
+      return symlinkResolvedDirs[path] ??=
+          Directory(path).resolveSymbolicLinksSync();
+    }
+
+    final result = Ignore.listFiles(
       beneath: beneath,
       listDir: (dir) {
-        var contents = Directory(resolve(dir)).listSync();
+        final resolvedDir = p.normalize(resolve(dir));
+        verifyLink(resolvedDir);
+
+        {
+          final canonicalized = p.canonicalize(resolvedDir);
+          final symlinkResolvedDir = resolveDirSymlinks(canonicalized);
+          for (final parent in parentDirs(p.dirname(canonicalized))) {
+            final symlinkResolvedParent = resolveDirSymlinks(parent);
+            if (p.equals(symlinkResolvedDir, symlinkResolvedParent)) {
+              dataError('''
+Pub does not support symlink cycles.
+
+$symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
+''');
+            }
+          }
+        }
+        var contents = Directory(resolvedDir).listSync(followLinks: false);
+
         if (!recursive) {
           contents = contents.where((entity) => entity is! Directory).toList();
         }
         return contents.map((entity) {
-          if (linkExists(entity.path)) {
-            final target = Link(entity.path).targetSync();
-            if (dirExists(entity.path)) {
-              throw DataException(
-                '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''',
-              );
-            }
-            if (!fileExists(entity.path)) {
-              throw DataException(
-                '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''',
-              );
-            }
-          }
           final relative = p.relative(entity.path, from: root);
           if (Platform.isWindows) {
             return p.posix.joinAll(p.split(relative));
@@ -367,6 +402,10 @@ See $workspacesDocUrl for more information.
       isDir: (dir) => dirExists(resolve(dir)),
       includeDirs: includeDirs,
     ).map(resolve).toList();
+    for (final f in result) {
+      verifyLink(f);
+    }
+    return result;
   }
 
   /// Applies [transform] to each package in the workspace and returns a derived

@@ -49,43 +49,313 @@ void main() {
     );
   });
 
-  // On windows symlinks to directories are distinct from symlinks to files.
-  void createDirectorySymlink(String path, String target) {
-    if (Platform.isWindows) {
-      Process.runSync('cmd', ['/c', 'mklink', '/D', path, target]);
-    } else {
-      Link(path).createSync(target);
-    }
-  }
+  group('directory symlinks', () {
+    test('not throws on valid directory symlinks', () async {
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp'}),
+        d.file('file1.txt', 'contents'),
+        d.file('file2.txt', 'contents'),
+        d.dir('subdir', [
+          d.dir('a', [d.file('file')]),
+          d.link('symlink', 'a', forceDirectory: true),
+        ]),
+      ]).create();
 
-  test('throws on directory symlinks', () async {
-    await d.dir(appPath, [
-      d.pubspec({'name': 'myapp'}),
-      d.file('file1.txt', 'contents'),
-      d.file('file2.txt', 'contents'),
-      d.dir('subdir', [
-        d.dir('a', [d.file('file')]),
-      ]),
-    ]).create();
-    createDirectorySymlink(
-      p.join(d.sandbox, appPath, 'subdir', 'symlink'),
-      'a',
-    );
+      createEntrypoint();
 
-    createEntrypoint();
+      expect(entrypoint!.workspaceRoot.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'file1.txt'),
+        p.join(root, 'file2.txt'),
+        p.join(root, 'subdir', 'a', 'file'),
+        p.join(root, 'subdir', 'symlink', 'file'),
+      });
+    });
 
-    expect(
-      () => entrypoint!.workspaceRoot.listFiles(),
-      throwsA(
-        isA<DataException>().having(
-          (e) => e.message,
-          'message',
-          contains(
-            'Pub does not support publishing packages with directory symlinks',
+    test('does not throw on ignored directory symlinks', () async {
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp'}),
+        d.file('file1.txt', 'contents'),
+        d.file('file2.txt', 'contents'),
+        d.dir('subdir', [
+          d.file('.pubignore', 'symlink'),
+          d.dir('a', [d.file('file')]),
+          d.link('symlink', 'a', forceDirectory: true),
+        ]),
+      ]).create();
+
+      createEntrypoint();
+
+      expect(entrypoint!.workspaceRoot.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'file1.txt'),
+        p.join(root, 'file2.txt'),
+        p.join(root, 'subdir', 'a', 'file'),
+      });
+    });
+
+    test('does not throw on ignored broken directory symlinks', () async {
+      await d.dir(appPath, [
+        d.pubspec({'name': 'myapp'}),
+        d.file('file1.txt', 'contents'),
+        d.file('file2.txt', 'contents'),
+        d.dir('subdir', [
+          d.file('.pubignore', 'symlink'),
+          d.dir('a', [d.file('file')]),
+          d.link('symlink', 'b', forceDirectory: true),
+        ]),
+      ]).create();
+
+      createEntrypoint();
+
+      expect(entrypoint!.workspaceRoot.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+        p.join(root, 'file1.txt'),
+        p.join(root, 'file2.txt'),
+        p.join(root, 'subdir', 'a', 'file'),
+      });
+    });
+
+    group('symlink cycles', () {
+      test('throws on included link', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.dir('a', [d.file('file')]),
+            d.link('symlink', '..', forceDirectory: true),
+          ]),
+        ]).create();
+
+        createEntrypoint();
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains(
+                'Pub does not support symlink cycles.',
+              ),
+            ),
           ),
-        ),
-      ),
-    );
+        );
+      });
+
+      test('throws on instant loop', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.dir('a', [d.file('file')]),
+            d.link('symlink', 'symlink', forceDirectory: true),
+          ]),
+        ]).create();
+
+        createEntrypoint();
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Could not resolve symbolic link'),
+            ),
+          ),
+        );
+      });
+
+      test('throws on nested loop', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.dir('a', [
+              d.file('file'),
+              d.link('symlink1', p.join('..', 'b'), forceDirectory: true),
+            ]),
+            d.dir('b', [
+              d.link('symlink2', p.join('..', 'c'), forceDirectory: true),
+            ]),
+            d.dir('c', [
+              d.link('symlink3', p.join('..', 'a'), forceDirectory: true),
+            ]),
+            d.link('symlink', 'a', forceDirectory: true),
+          ]),
+        ]).create();
+
+        createEntrypoint();
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pub does not support symlink cycles.'),
+            ),
+          ),
+        );
+      });
+
+      test('throws on link to loop', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.link('symlink', p.join(d.sandbox, 'loop'), forceDirectory: true),
+        ]).create();
+        await d.link('loop', 'loop', forceDirectory: true).create();
+
+        createEntrypoint();
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Could not resolve symbolic link'),
+            ),
+          ),
+        );
+      });
+
+      test('throws on link to loop back to parent directory', () async {
+        await d.dir('src', [
+          d.dir(appPath, [
+            d.pubspec({'name': 'myapp'}),
+            d.link(
+              'symlink',
+              p.join(d.sandbox, 'source'),
+              forceDirectory: true,
+            ),
+          ]),
+        ]).create();
+        await d
+            .link('source', p.join(d.sandbox, 'src'), forceDirectory: true)
+            .create();
+
+        createEntrypoint(p.join('src', appPath));
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pub does not support symlink cycles.'),
+            ),
+          ),
+        );
+      });
+
+      test('throws on link to subdirectory of loop back to parent directory',
+          () async {
+        await d.dir('src', [
+          d.dir(appPath, [
+            d.pubspec({'name': 'myapp'}),
+            d.link(
+              'symlink',
+              p.join(d.sandbox, 'source'),
+              forceDirectory: true,
+            ),
+          ]),
+        ]).create();
+        await d
+            .link(
+              'source',
+              p.join(d.sandbox, 'src'),
+              forceDirectory: true,
+            )
+            .create();
+
+        createEntrypoint(p.join('source', appPath));
+
+        expect(
+          () => entrypoint!.workspaceRoot.listFiles(),
+          throwsA(
+            isA<DataException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pub does not support symlink cycles.'),
+            ),
+          ),
+        );
+      });
+
+      test('Does not throw when publishing via symlink', () async {
+        await d.dir('src', [
+          d.dir(appPath, [
+            d.pubspec({'name': 'myapp'}),
+          ]),
+        ]).create();
+        await d
+            .link(
+              'source',
+              p.join(d.sandbox, 'src'),
+              forceDirectory: true,
+            )
+            .create();
+
+        createEntrypoint(p.join('source', appPath));
+
+        expect(entrypoint!.workspaceRoot.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+        });
+      });
+
+      test('not throws on ignored link', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.file('.pubignore', 'symlink'),
+            d.dir('a', [d.file('file')]),
+            d.link('symlink', '..', forceDirectory: true),
+          ]),
+        ]).create();
+
+        createEntrypoint();
+
+        expect(entrypoint!.workspaceRoot.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.txt'),
+          p.join(root, 'subdir', 'a', 'file'),
+        });
+      });
+
+      test('not throws on valid links to the same directory', () async {
+        await d.dir(appPath, [
+          d.pubspec({'name': 'myapp'}),
+          d.file('file1.txt', 'contents'),
+          d.file('file2.txt', 'contents'),
+          d.dir('subdir', [
+            d.dir('a', [d.file('file')]),
+            d.link('symlink1', 'a', forceDirectory: true),
+            d.link('symlink2', 'a', forceDirectory: true),
+          ]),
+          d.link('symlink3', p.join('subdir', 'a'), forceDirectory: true),
+        ]).create();
+
+        createEntrypoint();
+
+        expect(entrypoint!.workspaceRoot.listFiles(), {
+          p.join(root, 'pubspec.yaml'),
+          p.join(root, 'file1.txt'),
+          p.join(root, 'file2.txt'),
+          p.join(root, 'subdir', 'a', 'file'),
+          p.join(root, 'subdir', 'symlink1', 'file'),
+          p.join(root, 'subdir', 'symlink2', 'file'),
+          p.join(root, 'symlink3', 'file'),
+        });
+      });
+    });
   });
 
   test('can list a package inside a symlinked folder', () async {
@@ -98,8 +368,8 @@ void main() {
       ]),
     ]).create();
 
-    final root = p.join(d.sandbox, 'symlink');
-    createDirectorySymlink(root, appPath);
+    await d.link('symlink', appPath).create();
+    root = p.join(d.sandbox, 'symlink');
 
     final entrypoint = Entrypoint(
       p.join(d.sandbox, 'symlink'),
@@ -121,10 +391,9 @@ void main() {
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
         d.dir('a', [d.file('file')]),
+        d.link('symlink', 'nonexisting'),
       ]),
     ]).create();
-    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink'))
-        .createSync('nonexisting');
 
     createEntrypoint();
 
@@ -135,8 +404,34 @@ void main() {
           (e) => e.message,
           'message',
           contains(
-            'Pub does not support publishing packages with '
-            'non-resolving symlink:',
+            'Could not resolve symbolic link',
+          ),
+        ),
+      ),
+    );
+  });
+
+  test('throws on loop file symlinks', () async {
+    await d.dir(appPath, [
+      d.pubspec({'name': 'myapp'}),
+      d.file('file1.txt', 'contents'),
+      d.file('file2.txt', 'contents'),
+      d.dir('subdir', [
+        d.dir('a', [d.file('file')]),
+      ]),
+    ]).create();
+    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink')).createSync('symlink');
+
+    createEntrypoint();
+
+    expect(
+      () => entrypoint!.workspaceRoot.listFiles(),
+      throwsA(
+        isA<DataException>().having(
+          (e) => e.message,
+          'message',
+          contains(
+            'Could not resolve symbolic link',
           ),
         ),
       ),
@@ -164,10 +459,7 @@ void main() {
         isA<DataException>().having(
           (e) => e.message,
           'message',
-          contains(
-            'Pub does not support publishing packages with '
-            'non-resolving symlink:',
-          ),
+          contains('Could not resolve symbolic link'),
         ),
       ),
     );
