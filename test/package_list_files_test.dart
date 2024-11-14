@@ -391,10 +391,9 @@ void main() {
       d.file('file2.txt', 'contents'),
       d.dir('subdir', [
         d.dir('a', [d.file('file')]),
+        d.link('symlink', 'nonexisting'),
       ]),
     ]).create();
-    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink'))
-        .createSync('nonexisting');
 
     createEntrypoint();
 
