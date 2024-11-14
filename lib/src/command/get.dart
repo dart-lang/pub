@@ -38,7 +38,7 @@ class GetCommand extends PubCommand {
       'enforce-lockfile',
       negatable: false,
       help: 'Enforce pubspec.lock. '
-          'Fail the `pub get` if the current `pubspec.lock` '
+          'Fail `pub get` if the current `pubspec.lock` '
           'does not exactly specify a valid resolution of `pubspec.yaml` '
           'or if any content hash of a hosted package has changed.\n'
           'Useful for CI or deploying to production.',
