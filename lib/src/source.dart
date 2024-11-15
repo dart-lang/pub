@@ -51,12 +51,6 @@ abstract class Source {
   /// all sources.
   String get name;
 
-  /// Whether this source can choose between multiple versions of the same
-  /// package during version solving.
-  ///
-  /// Defaults to `false`.
-  bool get hasMultipleVersions => false;
-
   /// Parses a [PackageRef] from a name and a user-provided [description].
   ///
   /// When a [Pubspec] is parsed, it reads in the description for each
@@ -190,6 +184,11 @@ abstract class Source {
 /// with a version constraint.
 abstract class Description {
   Source get source;
+
+  /// Whether the source can choose between multiple versions of this
+  /// package during version solving.
+  bool get hasMultipleVersions;
+
   Object? serializeForPubspec({
     required String? containingDir,
     required LanguageVersion languageVersion,

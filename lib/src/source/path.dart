@@ -300,6 +300,9 @@ class PathDescription extends Description {
 
   @override
   int get hashCode => canonicalize(path).hashCode;
+
+  @override
+  bool get hasMultipleVersions => false;
 }
 
 class ResolvedPathDescription extends ResolvedDescription {

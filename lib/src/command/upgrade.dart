@@ -249,7 +249,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       final declaredUpgradableDependencies = [
         ...package.dependencies.values,
         ...package.devDependencies.values,
-      ].where((dep) => dep.source.hasMultipleVersions);
+      ].where((dep) => dep.description.hasMultipleVersions);
       for (final dep in declaredUpgradableDependencies) {
         final resolvedPackage = resolvedPackages[dep.name]!;
         if (!toUpgrade.contains(dep.name)) {

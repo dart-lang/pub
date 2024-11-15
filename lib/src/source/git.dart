@@ -32,8 +32,6 @@ class GitSource extends CachedSource {
 
   @override
   final name = 'git';
-  @override
-  final hasMultipleVersions = true;
 
   @override
   PackageRef parseRef(
@@ -343,33 +341,41 @@ class GitSource extends CachedSource {
     return await _pool.withResource(() async {
       await _ensureRepoCache(description, cache);
       final path = _repoCachePath(description, cache);
-      final List<String> revisions;
-      if (description.tagPattern case final String tagPattern) {
-        revisions = await _listRevisionsWithTagPattern(path, tagPattern);
-      } else {
-        revisions = [await _firstRevision(path, description.ref)];
-      }
-
       final result = <PackageId>[];
-      final seenVersions = <Version, String>{};
-      for (final revision in revisions) {
+      if (description.tagPattern case final String tagPattern) {
+        final revisions = await _listRevisionsWithTagPattern(path, tagPattern);
+        final seenVersions = <Version, String>{};
+        for (final revision in revisions) {
+          final Pubspec pubspec;
+          try {
+            pubspec = await _describeUncached(ref, revision, cache);
+            result.add(
+              PackageId(
+                ref.name,
+                pubspec.version,
+                ResolvedGitDescription(description, revision),
+              ),
+            );
+          } on Exception catch (e) {
+            log.fine('No mathcing pubspec at $revision, $e');
+            continue;
+          }
+          final prev = seenVersions[pubspec.version];
+
+          if (prev != null) {
+            log.fine(
+              'Repeated version ${pubspec.version} of ${ref.name} '
+              'at $revision and $prev',
+            );
+          }
+          seenVersions[pubspec.version] = revision;
+        }
+        return result;
+      } else {
+        final revision = await _firstRevision(path, description.ref);
+
         final Pubspec pubspec;
-        try {
-          pubspec = await _describeUncached(ref, revision, cache);
-        } on Exception {
-          log.fine(
-            'Found no valid pubspec of ${ref.name} at $revision, ignoring,',
-          );
-          continue;
-        }
-        final prev = seenVersions[pubspec.version];
-        if (prev != null) {
-          log.fine(
-            'Repeated version ${pubspec.version} of ${ref.name} '
-            'at $revision and $prev',
-          );
-        }
-        seenVersions[pubspec.version] = revision;
+        pubspec = await _describeUncached(ref, revision, cache);
         result.add(
           PackageId(
             ref.name,
@@ -377,8 +383,14 @@ class GitSource extends CachedSource {
             ResolvedGitDescription(description, revision),
           ),
         );
+        return [
+          PackageId(
+            ref.name,
+            pubspec.version,
+            ResolvedGitDescription(description, revision),
+          ),
+        ];
       }
-      return result;
     });
   }
 
@@ -950,6 +962,9 @@ class GitDescription extends Description {
     }
     return p.prettyUri(url);
   }
+
+  @override
+  bool get hasMultipleVersions => tagPattern != null;
 }
 
 class ResolvedGitDescription extends ResolvedDescription {
@@ -979,7 +994,7 @@ class ResolvedGitDescription extends ResolvedDescription {
     return {
       'url': url,
       'ref': description.ref,
-      'tag_pattern': description.tagPattern,
+      if (description.tagPattern != null) 'tag_pattern': description.tagPattern,
       'resolved-ref': resolvedRef,
       'path': description.path,
     };

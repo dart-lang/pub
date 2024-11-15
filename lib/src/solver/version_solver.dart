@@ -578,7 +578,10 @@ class VersionSolver {
     // can't be downgraded.
     if (_type == SolveType.downgrade) {
       final locked = _lockFile.packages[package];
-      if (locked != null && !locked.source.hasMultipleVersions) return locked;
+      if (locked != null &&
+          !locked.description.description.hasMultipleVersions) {
+        return locked;
+      }
     }
 
     if (_unlock.isEmpty || _unlock.contains(package)) return null;

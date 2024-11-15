@@ -188,6 +188,9 @@ class SdkDescription extends Description {
   bool operator ==(Object other) {
     return other is SdkDescription && other.sdk == sdk;
   }
+
+  @override
+  bool get hasMultipleVersions => false;
 }
 
 class ResolvedSdkDescription extends ResolvedDescription {
