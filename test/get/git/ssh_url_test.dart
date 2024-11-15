@@ -23,6 +23,7 @@ void main() {
       ref: 'main',
       path: 'abc/',
       containingDir: null,
+      tagPattern: null,
     );
     expect(
       description.format(),

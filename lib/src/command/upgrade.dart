@@ -17,7 +17,6 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
-import '../source/hosted.dart';
 import '../utils.dart';
 
 /// Handles the `upgrade` pub command.
@@ -247,11 +246,11 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
     // Mapping from original to changed value.
     var changes = <Package, Map<PackageRange, PackageRange>>{};
     for (final package in entrypoint.workspaceRoot.transitiveWorkspace) {
-      final declaredHostedDependencies = [
+      final declaredUpgradableDependencies = [
         ...package.dependencies.values,
         ...package.devDependencies.values,
-      ].where((dep) => dep.source is HostedSource);
-      for (final dep in declaredHostedDependencies) {
+      ].where((dep) => dep.source.hasMultipleVersions);
+      for (final dep in declaredUpgradableDependencies) {
         final resolvedPackage = resolvedPackages[dep.name]!;
         if (!toUpgrade.contains(dep.name)) {
           // If we're not trying to upgrade this package, or it wasn't in the

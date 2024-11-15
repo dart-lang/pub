@@ -538,6 +538,7 @@ Specify multiple sdk packages with descriptors.''');
             containingDir: p.current,
             ref: argResults.gitRef,
             path: argResults.gitPath,
+            tagPattern: argResults.tagPattern,
           ),
         );
       } on FormatException catch (e) {
@@ -775,6 +776,8 @@ extension on ArgResults {
   bool get isDryRun => flag('dry-run');
   String? get gitUrl => this['git-url'] as String?;
   String? get gitPath => this['git-path'] as String?;
+  String? get tagPattern => this['tag-pattern'] as String?;
+
   String? get gitRef => this['git-ref'] as String?;
   String? get hostedUrl => this['hosted-url'] as String?;
   String? get path => this['path'] as String?;

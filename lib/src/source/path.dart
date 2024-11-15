@@ -113,6 +113,7 @@ class PathSource extends Source {
           url: containingDescription.url,
           relative: containingDescription.relative,
           ref: containingDescription.ref,
+          tagPattern: containingDescription.tagPattern,
           path: resolvedPath,
         ),
       );
