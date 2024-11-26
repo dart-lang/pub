@@ -1335,13 +1335,27 @@ See https://dart.dev/go/sdk-constraint
   /// Remove any `pubspec.lock` or `.dart_tool/package_config.json` files in
   /// workspace packages that are not the root package.
   ///
+  /// Also remove from directories between the workspace package and the
+  /// workspace root, to prevent stray package configs from shadowing the shared
+  /// workspace package config.
+  ///
   /// This is to avoid surprises if a package is turned into a workspace member
   /// but still has an old package config or lockfile.
   void _removeStrayLockAndConfigFiles() {
+    final visited = <String>{};
     for (final package in workspaceRoot.transitiveWorkspace) {
       if (package.pubspec.resolution == Resolution.workspace) {
-        deleteEntry(p.join(package.dir, 'pubspec.lock'));
-        deleteEntry(p.join(package.dir, '.dart_tool', 'package_config.json'));
+        for (final dir in parentDirs(package.dir)) {
+          if (p.equals(dir, workspaceRoot.dir)) {
+            break;
+          }
+          if (!visited.add(dir)) {
+            // No reason to delete from the same directory twice.
+            break;
+          }
+          deleteEntry(p.join(dir, 'pubspec.lock'));
+          deleteEntry(p.join(dir, '.dart_tool', 'package_config.json'));
+        }
       }
     }
   }
