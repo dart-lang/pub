@@ -26,7 +26,7 @@ $ pub outdated random_argument
 
 ## Section 1
 $ pub outdated --bad_flag
-[STDERR] Could not find an option named "bad_flag".
+[STDERR] Could not find an option named "--bad_flag".
 [STDERR] 
 [STDERR] Usage: pub outdated [options]
 [STDERR] -h, --help                         Print this usage information.
