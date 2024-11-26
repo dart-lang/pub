@@ -594,15 +594,15 @@ class GitSource extends CachedSource {
     }
   }
 
-  /// Updates the package list file in [revisionCachePath] to include [path], if
+  /// Updates the package list file in [revisionCachePath] to include [package], if
   /// necessary.
   ///
   /// Returns `true` if it had to update anything.
-  bool _updatePackageList(String revisionCachePath, String path) {
+  bool _updatePackageList(String revisionCachePath, String package) {
     var packages = _readPackageList(revisionCachePath);
-    if (packages.contains(path)) return false;
+    if (packages.contains(package)) return false;
 
-    _writePackageList(revisionCachePath, packages..add(path));
+    _writePackageList(revisionCachePath, packages..add(package));
     return true;
   }
 
