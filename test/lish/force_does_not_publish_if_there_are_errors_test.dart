@@ -19,13 +19,14 @@ void main() {
     File(d.path(p.join(appPath, 'LICENSE'))).deleteSync();
 
     await servePackages();
-    var pub = await startPublish(globalServer, args: ['--force']);
+    final pub = await startPublish(globalServer, args: ['--force']);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(
       pub.stderr,
       emitsThrough(
-        "Sorry, your package is missing a requirement and can't be published yet.",
+        'Sorry, your package is missing a requirement '
+        "and can't be published yet.",
       ),
     );
   });

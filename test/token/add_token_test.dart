@@ -15,7 +15,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': 'https://example.com', 'token': 'abc'},
-      ]
+      ],
     }).create();
 
     await runPub(
@@ -27,8 +27,8 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': 'https://example.com', 'token': 'abc'},
-        {'url': 'https://server.demo', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server.demo', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 
@@ -39,7 +39,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'token': 'abc'},
-        ]
+        ],
       }).create();
 
       await runPub(
@@ -51,7 +51,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'env': 'TOKEN'},
-        ]
+        ],
       }).validate();
     });
 
@@ -60,7 +60,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'token': 'abc'},
-        ]
+        ],
       }).create();
 
       await runPub(
@@ -73,7 +73,7 @@ void main() {
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'env': 'TOKEN'},
-        ]
+        ],
       }).validate();
     });
   });
@@ -92,7 +92,7 @@ void main() {
             },
           ],
         }
-      ]
+      ],
     }).create();
 
     await runPub(
@@ -113,8 +113,8 @@ void main() {
             },
           ],
         },
-        {'url': 'https://server.demo', 'token': 'auth-token'}
-      ]
+        {'url': 'https://server.demo', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 
@@ -154,8 +154,8 @@ void main() {
   });
 
   test(
-      'with non-secure localhost url creates pub-tokens.json that contains token',
-      () async {
+      'with non-secure localhost url creates pub-tokens.json '
+      'that contains token', () async {
     await d.dir(configPath).create();
 
     await runPub(
@@ -166,8 +166,8 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': 'http://localhost', 'token': 'auth-token'}
-      ]
+        {'url': 'http://localhost', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 
@@ -194,8 +194,8 @@ void main() {
     await d.tokensFile({
       'version': 1,
       'hosted': [
-        {'url': 'https://pub.dev', 'token': 'auth-token'}
-      ]
+        {'url': 'https://pub.dev', 'token': 'auth-token'},
+      ],
     }).validate();
   });
 }

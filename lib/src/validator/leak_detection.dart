@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// ignore_for_file: lines_longer_than_80_chars
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -15,28 +17,28 @@ import 'package:source_span/source_span.dart';
 import '../ignore.dart';
 import '../validator.dart';
 
-/// [Utf8Codec] which allows malformed strings.
-const _utf8AllowMalformed = Utf8Codec(allowMalformed: true);
+/// All recognized secrets fit in ASCII (first seven bits). So for speed we
+/// decode as ASCII.
+const _asciiAllowInvalid = AsciiCodec(allowInvalid: true);
 
 /// Link to the documentation for the `false_secrets` key in `pubspec.yaml`.
 const _falseSecretsDocumentationLink = 'https://dart.dev/go/false-secrets';
 
 /// A validator that validates attempts to find secrets that are about to be
 /// accidentally leaked.
-@sealed
-class LeakDetectionValidator extends Validator {
+final class LeakDetectionValidator extends Validator {
   @override
   Future<void> validate() async {
     // Load `false_secrets` from `pubspec.yaml`.
     final falseSecrets = Ignore(
-      entrypoint.root.pubspec.falseSecrets,
+      package.pubspec.falseSecrets,
       ignoreCase: Platform.isWindows || Platform.isMacOS,
     );
 
     final pool = Pool(20); // don't read more than 20 files concurrently!
     final leaks = await Future.wait(
       files.map((f) async {
-        final relPath = entrypoint.root.relative(f);
+        final relPath = package.relative(f);
 
         // Skip files matching patterns in `false_secrets`
         final nixPath = p.posix.joinAll(p.split(relPath));
@@ -49,7 +51,7 @@ class LeakDetectionValidator extends Validator {
           // On Windows, we can't open some files without normalizing them
           final file = File(p.normalize(p.absolute(f)));
           text = await pool.withResource(
-            () async => await file.readAsString(encoding: _utf8AllowMalformed),
+            () async => await file.readAsString(encoding: _asciiAllowInvalid),
           );
         } on IOException {
           // Pass, ignore files we can't read, let something else error later!
@@ -69,13 +71,10 @@ class LeakDetectionValidator extends Validator {
     // samples leaks that very concretely demonstrates the strings we're
     // worried about leaking.
     if (leaks.length > 3) {
-      errors.addAll(leaks.take(2).map((leak) => leak.toString()));
+      errors.addAll(leaks.take(2).map((leak) => leak.describe()));
 
-      final files = leaks
-          .map((leak) => leak.span.sourceUrl!.toFilePath(windows: false))
-          .toSet()
-          .toList(growable: false)
-        ..sort();
+      final files =
+          leaks.map((leak) => leak.url).toSet().toList(growable: false)..sort();
       final s = files.length > 1 ? 's' : '';
 
       errors.add(
@@ -85,7 +84,7 @@ class LeakDetectionValidator extends Validator {
           if (files.length > 10) '...',
           '',
           'Add git-ignore style patterns to `false_secrets` in `pubspec.yaml`',
-          'to ignore this. See $_falseSecretsDocumentationLink'
+          'to ignore this. See $_falseSecretsDocumentationLink',
         ].join('\n'),
       );
     } else if (leaks.isNotEmpty) {
@@ -93,9 +92,9 @@ class LeakDetectionValidator extends Validator {
       // about how ignore them in the last warning.
       final lastLeak = leaks.removeLast();
       errors.addAll([
-        ...leaks.take(2).map((leak) => leak.toString()),
+        ...leaks.take(2).map((leak) => leak.describe()),
         [
-          lastLeak.toString(),
+          lastLeak.describe(),
           'Add a git-ignore style pattern to `false_secrets` in `pubspec.yaml`',
           'to ignore this. See $_falseSecretsDocumentationLink',
         ].join('\n'),
@@ -105,22 +104,39 @@ class LeakDetectionValidator extends Validator {
 }
 
 /// Instance of a match against a [LeakPattern].
-@sealed
-class LeakMatch {
+final class LeakMatch {
   final LeakPattern pattern;
-  final SourceSpan span;
 
-  LeakMatch(this.pattern, this.span);
+  final String content;
+  final String url;
+  final int start;
+  final int end;
 
-  @override
-  String toString() =>
-      span.message('Potential leak of ${pattern.kind} detected.');
+  LeakMatch(
+    this.pattern, {
+    required this.url,
+    required this.content,
+    required this.start,
+    required this.end,
+  });
+
+  String describe() {
+    if (content.length > 10000) {
+      // Large files are probably binary files. Don't show line numbers.
+      return 'Potential leak of ${pattern.kind} '
+          'in `$url` '
+          'at offset $start:$end.\n\n'
+          '```\n${content.substring(start, end)}\n```\n';
+    }
+    return SourceFile.fromString(content, url: url)
+        .span(start, end)
+        .message('Potential leak of ${pattern.kind} detected.');
+  }
 }
 
 /// Definition of a pattern for detecting accidentally leaked secrets.
 @visibleForTesting
-@sealed
-class LeakPattern {
+final class LeakPattern {
   /// Human readable name for the kind of secret this pattern matches.
   final String kind;
 
@@ -174,7 +190,6 @@ class LeakPattern {
   ///  * Captured group have a entropy higher than [_entropyThresholds] requires
   ///    for the given _group identifier_, and,
   Iterable<LeakMatch> findPossibleLeaks(String file, String content) sync* {
-    final source = SourceFile.fromString(content, url: file);
     for (final m in _pattern.allMatches(content)) {
       if (_allowed.any((s) => m.group(0)!.contains(s))) {
         continue;
@@ -186,7 +201,10 @@ class LeakPattern {
 
       yield LeakMatch(
         this,
-        source.span(m.start, m.start + m.group(0)!.length),
+        url: file,
+        content: content,
+        start: m.start,
+        end: m.start + m.group(0)!.length,
       );
     }
   }
@@ -226,10 +244,14 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
     // Unique identifiers are documented here:
     // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-unique-ids
     //
-    // Maximum length of a access key is specified as 128 here:
+    // Maximum length of an access key is specified as 128 here:
     // https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html#API_AccessKey_Contents
-    pattern:
-        r'[^A-Z0-9]((?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{12,128})[^A-Z0-9]',
+    pattern: r'[^A-Z0-9]'
+        r'('
+        r'(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)'
+        r'[A-Z0-9]{12,128}'
+        r')'
+        r'[^A-Z0-9]',
     allowed: [
       // Commonly used in AWS documentation and code samples as an example key.
       'AKIAIOSFODNN7EXAMPLE',

@@ -9,8 +9,8 @@ import '../../test_pub.dart';
 
 void main() {
   test(
-      'Shows newer versions available for packages that are locked and not being upgraded',
-      () async {
+      'Shows newer versions available for packages that are locked '
+      'and not being upgraded', () async {
     await servePackages()
       ..serve('not_upgraded', '1.0.0')
       ..serve('not_upgraded', '2.0.0')
@@ -37,6 +37,7 @@ void main() {
       output: RegExp(
         r'''
 Resolving dependencies\.\.\..*
+Downloading packages\.\.\..*
   not_upgraded 1\.0\.0 \(2\.0\.0 available\)
 . upgraded 2\.0\.0 \(was 1\.0\.0\)
 ''',

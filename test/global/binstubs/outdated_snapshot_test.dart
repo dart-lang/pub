@@ -18,13 +18,13 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       },
       contents: [
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 
@@ -36,9 +36,9 @@ void main() {
           d.dir(
             'bin',
             [d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1')],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).create();
 
     deleteEntry(
@@ -51,14 +51,14 @@ void main() {
       ),
     );
 
-    var process = await TestProcess.start(
+    final process = await TestProcess.start(
       p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
       ['arg1', 'arg2'],
       environment: getEnvironment(),
     );
 
-    // We don't get `Building package executable...` because we are running through
-    // the binstub.
+    // We don't get `Building package executable...` because we are running
+    // through the binstub.
     expect(process.stdout, emitsThrough('ok [arg1, arg2]'));
     await process.shouldExit();
 
@@ -69,7 +69,8 @@ void main() {
     //     d.file(
     //         'script.dart-$versionSuffix.snapshot',
     //         isNot(equals(
-    //             readBinaryFile(testAssetPath('out-of-date-$versionSuffix.snapshot')))))
+    //             readBinaryFile(testAssetPath(
+    //                 'out-of-date-$versionSuffix.snapshot')))))
     //   ])
     // ]).validate();
   });

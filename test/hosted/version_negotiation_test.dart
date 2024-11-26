@@ -17,8 +17,8 @@ void main() {
       await d.appDir(
         dependencies: {
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url}
-          }
+            'hosted': {'name': 'foo', 'url': globalServer.url},
+          },
         },
       ).create();
 
@@ -43,12 +43,12 @@ void main() {
       await d.appDir(
         dependencies: {
           'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url}
-          }
+            'hosted': {'name': 'foo', 'url': globalServer.url},
+          },
         },
       ).create();
 
-      var pub = await startPub(args: [command.name]);
+      final pub = await startPub(args: [command.name]);
 
       globalServer.expect(
         'GET',
@@ -60,9 +60,9 @@ void main() {
 
       expect(
         pub.stderr,
-        emitsLines(
-            'Pub 3.1.2+3 is incompatible with the current version of localhost.\n'
-            'Upgrade pub to the latest version and try again.'),
+        emitsLines('''
+Pub 3.1.2+3 is incompatible with the current version of localhost.
+Upgrade pub to the latest version and try again.'''),
       );
     });
   });

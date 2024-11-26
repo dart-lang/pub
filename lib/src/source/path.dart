@@ -14,6 +14,9 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
+import 'git.dart';
+import 'hosted.dart';
+import 'root.dart';
 
 /// A package [Source] that gets packages from a given local file path.
 class PathSource extends Source {
@@ -23,15 +26,6 @@ class PathSource extends Source {
   @override
   final name = 'path';
 
-  // /// Returns a reference to a path package named [name] at [path].
-  // PackageRef<PathDescription> refFor(String name, String path) {
-  //   if (p.isRelative(path)) {
-  //     PackageRef(name, {'path':p.absolute(path), 'relative': p.isRelative(path)});
-  //   }
-  //   return PackageRef(name, {'path': path, 'relative': p.isRelative(path)});
-  // }
-//{name: myapp, dev_dependencies: {foo: 1.2.2}, dependency_overrides: {foo: {path: ../foo}}, environment: {sdk: >=0.1.2 <1.0.0}}
-//{name: myapp, dev_dependencies: {foo: ^1.2.2}, dependency_overrides: {foo: {path: ../foo}}, environment: {sdk: >=0.1.2 <1.0.0}}
   /// Returns an ID for a path package with the given [name] and [version] at
   /// [path].
   ///
@@ -59,51 +53,99 @@ class PathSource extends Source {
   @override
   PackageRef parseRef(
     String name,
-    description, {
-    String? containingDir,
+    Object? description, {
+    required Description containingDescription,
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
-      throw FormatException('The description must be a path string.');
+      throw const FormatException('The description must be a path string.');
     }
-    var dir = description;
+    final dir = description;
     // Resolve the path relative to the containing file path, and remember
     // whether the original path was relative or absolute.
-    var isRelative = p.isRelative(description);
-    if (isRelative) {
-      // Relative paths coming from pubspecs that are not on the local file
-      // system aren't allowed. This can happen if a hosted or git dependency
-      // has a path dependency.
-      if (containingDir == null) {
+    final isRelative = p.isRelative(dir);
+
+    if (containingDescription is PathDescription) {
+      return PackageRef(
+        name,
+        PathDescription(
+          isRelative
+              ? p.join(p.absolute(containingDescription.path), dir)
+              : dir,
+          isRelative,
+        ),
+      );
+    } else if (containingDescription is RootDescription) {
+      return PackageRef(
+        name,
+        PathDescription(
+          p.normalize(
+            p.join(
+              p.absolute(containingDescription.path),
+              description,
+            ),
+          ),
+          isRelative,
+        ),
+      );
+    } else if (containingDescription is GitDescription) {
+      if (!isRelative) {
+        throw FormatException(
+          '"$description" is an absolute path, '
+          'it can\'t be referenced from a git pubspec.',
+        );
+      }
+      final resolvedPath = p.url.normalize(
+        p.url.joinAll([
+          containingDescription.path,
+          ...p.posix.split(dir),
+        ]),
+      );
+      if (!(p.isWithin('.', resolvedPath) || p.equals('.', resolvedPath))) {
+        throw FormatException(
+          'the path "$description" '
+          'cannot refer outside the git repository $resolvedPath.',
+        );
+      }
+      return PackageRef(
+        name,
+        GitDescription.raw(
+          url: containingDescription.url,
+          relative: containingDescription.relative,
+          ref: containingDescription.ref,
+          path: resolvedPath,
+        ),
+      );
+    } else if (containingDescription is HostedDescription) {
+      if (isRelative) {
         throw FormatException('"$description" is a relative path, but this '
             'isn\'t a local pubspec.');
       }
-
-      dir = p.normalize(
-        p.absolute(p.join(containingDir, description)),
-      );
+      return PackageRef(name, PathDescription(dir, false));
+    } else {
+      throw FormatException('"$description" is a path, but this '
+          'isn\'t a local pubspec.');
     }
-    return PackageRef(name, PathDescription(dir, isRelative));
   }
 
   @override
   PackageId parseId(
     String name,
     Version version,
-    description, {
+    Object? description, {
     String? containingDir,
   }) {
     if (description is! Map) {
-      throw FormatException('The description must be a map.');
+      throw const FormatException('The description must be a map.');
     }
     var path = description['path'];
     if (path is! String) {
-      throw FormatException("The 'path' field of the description must "
+      throw const FormatException("The 'path' field of the description must "
           'be a string.');
     }
     final relative = description['relative'];
     if (relative is! bool) {
-      throw FormatException("The 'relative' field of the description "
+      throw const FormatException("The 'relative' field of the description "
           'must be a boolean.');
     }
 
@@ -147,8 +189,8 @@ class PathSource extends Source {
     }
     // There's only one package ID for a given path. We just need to find the
     // version.
-    var pubspec = _loadPubspec(ref, cache);
-    var id = PackageId(
+    final pubspec = _loadPubspec(ref, cache);
+    final id = PackageId(
       ref.name,
       pubspec.version,
       ResolvedPathDescription(description),
@@ -167,8 +209,13 @@ class PathSource extends Source {
     if (description is! PathDescription) {
       throw ArgumentError('Wrong source');
     }
-    var dir = _validatePath(ref.name, description);
-    return Pubspec.load(dir, cache.sources, expectedName: ref.name);
+    final dir = _validatePath(ref.name, description);
+    return Pubspec.load(
+      dir,
+      cache.sources,
+      containingDescription: description,
+      expectedName: ref.name,
+    );
   }
 
   @override
@@ -258,7 +305,7 @@ class ResolvedPathDescription extends ResolvedDescription {
   @override
   PathDescription get description => super.description as PathDescription;
 
-  ResolvedPathDescription(PathDescription description) : super(description);
+  ResolvedPathDescription(PathDescription super.description);
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {
@@ -267,7 +314,7 @@ class ResolvedPathDescription extends ResolvedDescription {
         'path': PathSource.relativePathWithPosixSeparators(
           p.relative(description.path, from: containingDir),
         ),
-        'relative': true
+        'relative': true,
       };
     }
     return {'path': description.path, 'relative': p.relative('false')};

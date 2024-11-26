@@ -6,30 +6,24 @@ import 'package:args/command_runner.dart';
 
 import 'src/entrypoint.dart';
 import 'src/exceptions.dart';
+import 'src/http.dart';
 import 'src/pub_embeddable_command.dart';
 import 'src/system_cache.dart';
 
 export 'src/executable.dart'
     show
-        getExecutableForCommand,
         CommandResolutionFailedException,
         CommandResolutionIssue,
-        DartExecutableWithPackageConfig;
-export 'src/pub_embeddable_command.dart' show PubAnalytics;
+        DartExecutableWithPackageConfig,
+        getExecutableForCommand;
 
 /// Returns a [Command] for pub functionality that can be used by an embedding
 /// CommandRunner.
 ///
-/// If [analytics] is given, pub will use that analytics instance to send
-/// statistics about resolutions.
-///
 /// [isVerbose] should return `true` (after argument resolution) if the
 /// embedding top-level is in verbose mode.
-Command<int> pubCommand({
-  PubAnalytics? analytics,
-  required bool Function() isVerbose,
-}) =>
-    PubEmbeddableCommand(analytics, isVerbose);
+Command<int> pubCommand({required bool Function() isVerbose}) =>
+    PubEmbeddableCommand(isVerbose);
 
 /// Makes sure that [dir]/pubspec.yaml is resolved such that pubspec.lock and
 /// .dart_tool/package_config.json are up-to-date and all packages are
@@ -46,21 +40,24 @@ Command<int> pubCommand({
 /// Throws a [ResolutionFailedException] if resolution fails.
 Future<void> ensurePubspecResolved(
   String dir, {
-  PubAnalytics? analytics,
   bool isOffline = false,
-  bool checkForSdkUpdate = false,
   bool summaryOnly = true,
   bool onlyOutputWhenTerminal = true,
 }) async {
   try {
-    await Entrypoint(dir, SystemCache(isOffline: isOffline)).ensureUpToDate(
-      analytics: analytics,
-      checkForSdkUpdate: checkForSdkUpdate,
+    await Entrypoint.ensureUpToDate(
+      dir,
+      cache: SystemCache(isOffline: isOffline),
       summaryOnly: summaryOnly,
       onlyOutputWhenTerminal: onlyOutputWhenTerminal,
     );
   } on ApplicationException catch (e) {
     throw ResolutionFailedException._(e.toString());
+  } finally {
+    // TODO(https://github.com/dart-lang/pub/issues/4200)
+    // This is a bit of a hack.
+    // We should most likely take a client here.
+    globalHttpClient.close();
   }
 }
 

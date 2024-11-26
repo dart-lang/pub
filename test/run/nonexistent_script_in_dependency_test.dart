@@ -16,14 +16,14 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
 
-    var pub = await pubRun(args: ['foo:script']);
+    final pub = await pubRun(args: ['foo:script']);
     expect(
       pub.stderr,
       emits(

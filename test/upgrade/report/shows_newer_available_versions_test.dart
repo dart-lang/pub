@@ -40,7 +40,7 @@ void main() {
         'no_newer': '1.0.0',
         'one_newer_unstable': '1.0.0',
         'one_newer_unstable2': '1.0.1-unstable.1',
-        'one_newer_stable': '1.0.0'
+        'one_newer_stable': '1.0.0',
       },
     ).create();
 
@@ -49,6 +49,7 @@ void main() {
       output: RegExp(
         r'''
 Resolving dependencies\.\.\..*
+Downloading packages\.\.\..*
 . multiple_newer 1\.0\.0 \(1\.0\.1 available\)
 . multiple_newer_stable 1\.0\.0 \(1\.0\.2\ available\)
 . multiple_newer_unstable 1\.0\.0

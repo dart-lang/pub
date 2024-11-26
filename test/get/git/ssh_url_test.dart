@@ -31,7 +31,7 @@ void main() {
     expect(
       description.serializeForPubspec(
         containingDir: null,
-        languageVersion: LanguageVersion(2, 16),
+        languageVersion: const LanguageVersion(2, 16),
       ),
       {
         'url': 'git@github.com:dart-lang/pub.git',
@@ -39,7 +39,7 @@ void main() {
         'path': 'abc/',
       },
     );
-    final resolvedDescription = GitResolvedDescription(
+    final resolvedDescription = ResolvedGitDescription(
       description,
       '7d48f902b0326fc2ce0615c20f1aab6c811fe55b',
     );

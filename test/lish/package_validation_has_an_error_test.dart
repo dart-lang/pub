@@ -15,12 +15,12 @@ void main() {
         'name': 'test_pkg',
         'homepage': 'https://pub.dev',
         'version': '1.0.0',
-        'environment': {'sdk': defaultSdkConstraint}
+        'environment': {'sdk': defaultSdkConstraint},
       }),
     ]).create();
 
     await servePackages();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await pub.shouldExit(exit_codes.DATA);
     expect(

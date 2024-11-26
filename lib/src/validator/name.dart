@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../utils.dart';
 import '../validator.dart';
@@ -15,15 +15,15 @@ class NameValidator extends Validator {
   @override
   Future validate() {
     return Future.sync(() {
-      _checkName(entrypoint.root.name);
+      _checkName(package.name);
 
-      var libraries = _libraries(files);
+      final libraries = _libraries(files);
 
       if (libraries.length == 1) {
-        var libName = path.basenameWithoutExtension(libraries[0]);
-        if (libName == entrypoint.root.name) return;
+        final libName = p.basenameWithoutExtension(libraries[0]);
+        if (libName == package.name) return;
         warnings.add('The name of "${libraries[0]}", "$libName", should match '
-            'the name of the package, "${entrypoint.root.name}".\n'
+            'the name of the package, "${package.name}".\n'
             'This helps users know what library to import.');
       }
     });
@@ -32,13 +32,12 @@ class NameValidator extends Validator {
   /// Returns a list of all libraries in the current package as paths relative
   /// to the package's root directory.
   List<String> _libraries(List<String> files) {
-    var libDir = entrypoint.root.path('lib');
+    final libDir = package.path('lib');
     return filesBeneath('lib', recursive: true)
-        .map((file) => path.relative(file, from: path.dirname(libDir)))
+        .map((file) => p.relative(file, from: p.dirname(libDir)))
         .where(
           (file) =>
-              !path.split(file).contains('src') &&
-              path.extension(file) == '.dart',
+              !p.split(file).contains('src') && p.extension(file) == '.dart',
         )
         .toList();
   }
@@ -64,7 +63,7 @@ class NameValidator extends Validator {
   }
 
   String _unCamelCase(String source) {
-    var builder = StringBuffer();
+    final builder = StringBuffer();
     var lastMatchEnd = 0;
     for (var match in RegExp(r'[a-z]([A-Z])').allMatches(source)) {
       builder

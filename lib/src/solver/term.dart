@@ -30,14 +30,14 @@ class Term {
 
   VersionConstraint get constraint => package.constraint;
 
-  /// Returns whether [this] satisfies [other].
+  /// Returns whether `this` satisfies [other].
   ///
-  /// That is, whether [this] being true means that [other] must also be true.
+  /// That is, whether `this` being true means that [other] must also be true.
   bool satisfies(Term other) =>
       package.name == other.package.name &&
       relation(other) == SetRelation.subset;
 
-  /// Returns the relationship between the package versions allowed by [this]
+  /// Returns the relationship between the package versions allowed by `this`
   /// and by [other].
   ///
   /// Throws an [ArgumentError] if [other] doesn't refer to a package with the
@@ -51,7 +51,7 @@ class Term {
       );
     }
 
-    var otherConstraint = other.constraint;
+    final otherConstraint = other.constraint;
     if (other.isPositive) {
       if (isPositive) {
         // foo from hosted is disjoint with foo from git
@@ -107,10 +107,10 @@ class Term {
     }
   }
 
-  /// Returns a [Term] that represents the packages allowed by both [this] and
+  /// Returns a [Term] that represents the packages allowed by both `this` and
   /// [other].
   ///
-  /// If there is no such single [Term], for example because [this] is
+  /// If there is no such single [Term], for example because `this` is
   /// incompatible with [other], returns `null`.
   ///
   /// Throws an [ArgumentError] if [other] doesn't refer to a package with the
@@ -127,8 +127,8 @@ class Term {
     if (_compatiblePackage(other.package)) {
       if (isPositive != other.isPositive) {
         // foo ^1.0.0 ∩ not foo ^1.5.0 → foo >=1.0.0 <1.5.0
-        var positive = isPositive ? this : other;
-        var negative = isPositive ? other : this;
+        final positive = isPositive ? this : other;
+        final negative = isPositive ? other : this;
         return _nonEmptyTerm(
           positive.constraint.difference(negative.constraint),
           true,
@@ -150,11 +150,11 @@ class Term {
     }
   }
 
-  /// Returns a [Term] that represents packages allowed by [this] and not by
+  /// Returns a [Term] that represents packages allowed by `this` and not by
   /// [other].
   ///
   /// If there is no such single [Term], for example because all packages
-  /// allowed by [this] are allowed by [other], returns `null`.
+  /// allowed by `this` are allowed by [other], returns `null`.
   ///
   /// Throws an [ArgumentError] if [other] doesn't refer to a package with the
   /// same name as [package].
@@ -165,7 +165,7 @@ class Term {
     return package.isRoot || other.isRoot || other.toRef() == package.toRef();
   }
 
-  /// Returns a new [Term] with the same package as [this] and with
+  /// Returns a new [Term] with the same package as `this` and with
   /// [constraint], unless that would produce a term that allows no packages,
   /// in which case this returns `null`.
   Term? _nonEmptyTerm(VersionConstraint constraint, bool isPositive) =>

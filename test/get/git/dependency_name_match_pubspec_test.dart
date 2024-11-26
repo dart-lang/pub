@@ -22,9 +22,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'weirdname': {'git': '../foo.git'}
+          'weirdname': {'git': '../foo.git'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet(

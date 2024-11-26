@@ -22,7 +22,7 @@ import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
 class PackageServer {
-  /// The inner [IOServer] that this uses to serve its descriptors.
+  /// The inner [shelf_io.IOServer] that this uses to serve its descriptors.
   final shelf_io.IOServer _inner;
 
   /// Handlers of requests. Last matching handler will be used.
@@ -34,7 +34,7 @@ class PackageServer {
   // Setting this to false will disable automatic calculation of content-hashes.
   bool serveContentHashes = true;
 
-  /// Whether the [IOServer] should compress the content, if possible.
+  /// Whether the [shelf_io.IOServer] should compress the content, if possible.
   /// The default value is `false` (compression disabled).
   /// See [HttpServer.autoCompress] for details.
   bool get autoCompress => _inner.server.autoCompress;
@@ -70,12 +70,16 @@ class PackageServer {
   }
 
   static final _versionInfoPattern = RegExp(r'/api/packages/([a-zA-Z_0-9]*)');
+  static final _advisoriesPattern =
+      RegExp(r'/api/packages/([a-zA-Z_0-9]*)/advisories');
+
   static final _downloadPattern =
       RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
 
   static Future<PackageServer> start() async {
-    final server =
-        PackageServer._(await shelf_io.IOServer.bind('localhost', 0));
+    final server = PackageServer._(
+      await shelf_io.IOServer.bind(InternetAddress.loopbackIPv4, 0),
+    );
     server.handle(
       _versionInfoPattern,
       (shelf.Request request) async {
@@ -105,15 +109,67 @@ class PackageServer {
                     'archive_sha256': version.sha256 ??
                         hexEncode(
                           (await sha256.bind(version.contents()).first).bytes,
-                        )
-                }
+                        ),
+                },
             ],
             if (package.isDiscontinued) 'isDiscontinued': true,
+            if (package.advisoriesUpdated != null)
+              'advisoriesUpdated': package.advisoriesUpdated!.toIso8601String(),
             if (package.discontinuedReplacementText != null)
               'replacedBy': package.discontinuedReplacementText,
           }),
           headers: {
-            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'
+            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json',
+          },
+        );
+      },
+    );
+
+    server.handle(
+      _advisoriesPattern,
+      (shelf.Request request) async {
+        final parts = request.url.pathSegments;
+        assert(parts[0] == 'api');
+        assert(parts[1] == 'packages');
+        final name = parts[2];
+        assert(parts[3] == 'advisories');
+
+        final package = server._packages[name];
+        if (package == null) {
+          return shelf.Response.notFound('No package named $name');
+        }
+
+        return shelf.Response.ok(
+          jsonEncode({
+            'advisoriesUpdated': defaultAdvisoriesUpdated.toIso8601String(),
+            'advisories': [
+              for (final advisory in package.advisories.values)
+                {
+                  'id': advisory.id,
+                  'summary': 'Example',
+                  'aliases': [...advisory.aliases],
+                  'details': 'This is a dummy example.',
+                  'modified': defaultAdvisoriesUpdated.toIso8601String(),
+                  'published': defaultAdvisoriesUpdated.toIso8601String(),
+                  'affected': [
+                    for (final package in advisory.affectedPackages)
+                      {
+                        'package': {
+                          'name': package.name,
+                          'ecosystem': package.ecosystem,
+                        },
+                        'versions': [...package.versions],
+                      },
+                  ],
+                  if (advisory.displayUrl != null)
+                    'database_specific': {
+                      'pub_display_url': advisory.displayUrl,
+                    },
+                },
+            ],
+          }),
+          headers: {
+            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json',
           },
         );
       },
@@ -140,7 +196,7 @@ class PackageServer {
           if (packageVersion.version == version) {
             final headers = packageVersion.headers ?? {};
             headers[HttpHeaders.contentTypeHeader] ??= [
-              'application/octet-stream'
+              'application/octet-stream',
             ];
 
             // This gate enables tests to validate the CRC32C parser by
@@ -244,10 +300,10 @@ class PackageServer {
     String? sdk,
     Map<String, List<String>>? headers,
   }) {
-    var pubspecFields = <String, dynamic>{
+    final pubspecFields = <String, dynamic>{
       'name': name,
       'version': version,
-      'environment': {'sdk': sdk ?? '^3.0.0'}
+      'environment': {'sdk': sdk ?? '^3.0.0'},
     };
     if (pubspec != null) pubspecFields.addAll(pubspec);
     if (deps != null) pubspecFields['dependencies'] = deps;
@@ -255,7 +311,7 @@ class PackageServer {
     contents ??= [d.libDir(name, '$name $version')];
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
-    var package = _packages.putIfAbsent(name, _ServedPackage.new);
+    final package = _packages.putIfAbsent(name, _ServedPackage.new);
     package.versions[version] = _ServedPackageVersion(
       pubspecFields,
       headers: headers,
@@ -272,6 +328,32 @@ class PackageServer {
     _packages[name]!
       ..isDiscontinued = isDiscontinued
       ..discontinuedReplacementText = replacementText;
+  }
+
+  static final defaultAdvisoriesUpdated =
+      DateTime.fromMicrosecondsSinceEpoch(0);
+
+  /// Add a security advisory which affects versions in [affectedPackages].
+  void addAdvisory({
+    required String advisoryId,
+    String? displayUrl,
+    DateTime? advisoriesUpdated,
+    List<String> aliases = const <String>[],
+    required List<AffectedPackage> affectedPackages,
+  }) {
+    for (final package in affectedPackages) {
+      _packages[package.name]!.advisoriesUpdated =
+          advisoriesUpdated ?? defaultAdvisoriesUpdated;
+      _packages[package.name]!.advisories.putIfAbsent(
+            advisoryId,
+            () => _ServedAdvisory(
+              advisoryId,
+              affectedPackages,
+              aliases,
+              displayUrl,
+            ),
+          );
+    }
   }
 
   /// Clears all existing packages from this builder.
@@ -312,7 +394,7 @@ class PackageServer {
     int? crc32c,
     String? md5 = '5f4dcc3b5aa765d61d8327deb882cf99',
   }) {
-    List<String> header = [];
+    final header = <String>[];
 
     if (crc32c != null) {
       final bytes = Uint8List(4)..buffer.asByteData().setUint32(0, crc32c);
@@ -331,6 +413,8 @@ class _ServedPackage {
   final versions = <String, _ServedPackageVersion>{};
   bool isDiscontinued = false;
   String? discontinuedReplacementText;
+  DateTime? advisoriesUpdated;
+  final advisories = <String, _ServedAdvisory>{};
 }
 
 /// A package that's intended to be served.
@@ -349,6 +433,32 @@ class _ServedPackageVersion {
   Future<int> computeArchiveCrc32c() async {
     return await Crc32c.computeByConsumingStream(contents());
   }
+}
+
+class _ServedAdvisory {
+  String id;
+  List<String> aliases;
+  String? displayUrl;
+  List<AffectedPackage> affectedPackages;
+
+  _ServedAdvisory(
+    this.id,
+    this.affectedPackages,
+    this.aliases,
+    this.displayUrl,
+  );
+}
+
+class AffectedPackage {
+  String name;
+  String ecosystem;
+  List<String> versions;
+
+  AffectedPackage({
+    required this.name,
+    this.ecosystem = 'Pub',
+    required this.versions,
+  });
 }
 
 class _PatternAndHandler {

@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 
 import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
+import 'command/bump.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
@@ -23,9 +24,11 @@ import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
 import 'command/token.dart';
+import 'command/unpack.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
 import 'command/version.dart';
+import 'command/workspace.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
 import 'io.dart';
@@ -36,20 +39,20 @@ import 'utils.dart';
 
 /// The name of the program that is invoking pub
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
-String topLevelProgram = _isrunningInsideFlutter ? 'flutter' : 'dart';
+String topLevelProgram = _isRunningInsideFlutter ? 'flutter' : 'dart';
 
-bool _isrunningInsideFlutter =
+bool _isRunningInsideFlutter =
     (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String get directory => argResults.option('directory');
+  String get directory => argResults.optionWithDefault('directory');
 
   @override
   bool get captureStackChains {
     return argResults.flag('trace') ||
         argResults.flag('verbose') ||
-        argResults.optionWithoutDefault('verbosity') == 'all';
+        argResults.option('verbosity') == 'all';
   }
 
   @override
@@ -117,7 +120,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
         'normal': 'Show errors, warnings, and user messages.',
         'io': 'Also show IO operations.',
         'solver': 'Show steps during version resolution.',
-        'all': 'Show all output including internal tracing messages.'
+        'all': 'Show all output including internal tracing messages.',
       },
     );
     argParser.addFlag(
@@ -138,6 +141,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.
     addCommand(AddCommand());
+    addCommand(BumpCommand());
     addCommand(CacheCommand());
     addCommand(DepsCommand());
     addCommand(DowngradeCommand());
@@ -148,10 +152,12 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(RemoveCommand());
     addCommand(RunCommand());
     addCommand(UpgradeCommand());
+    addCommand(UnpackCommand());
     addCommand(UploaderCommand());
     addCommand(LoginCommand());
     addCommand(LogoutCommand());
     addCommand(VersionCommand());
+    addCommand(WorkspaceCommand());
     addCommand(TokenCommand());
   }
 
@@ -191,17 +197,17 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     if (!runningFromDartRepo) return;
     if (!git.isInstalled) return;
 
-    var deps = readTextFile(p.join(dartRepoRoot, 'DEPS'));
-    var pubRevRegExp = RegExp(r'^ +"pub_rev": +"@([^"]+)"', multiLine: true);
-    var match = pubRevRegExp.firstMatch(deps);
+    final deps = readTextFile(p.join(dartRepoRoot, 'DEPS'));
+    final pubRevRegExp = RegExp(r'^ +"pub_rev": +"@([^"]+)"', multiLine: true);
+    final match = pubRevRegExp.firstMatch(deps);
     if (match == null) return;
-    var depsRev = match[1];
+    final depsRev = match[1];
 
     String actualRev;
     final pubRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));
     try {
       actualRev =
-          git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).single;
+          git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).trim();
     } on git.GitException catch (_) {
       // When building for Debian, pub isn't checked out via git.
       return;
@@ -209,7 +215,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
 
     if (depsRev == actualRev) return;
     log.warning("${log.yellow('Warning:')} the revision of pub in DEPS is "
-        '${log.bold(depsRev)},\n'
+        '${log.bold(depsRev.toString())},\n'
         'but ${log.bold(actualRev)} is checked out in '
         '${p.relative(pubRoot)}.\n\n');
   }

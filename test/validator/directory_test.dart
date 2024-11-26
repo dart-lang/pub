@@ -21,8 +21,8 @@ void main() {
     test('has a nested directory named "tools"', () async {
       await d.dir(appPath, [
         d.dir('foo', [
-          d.dir('tools', [d.file('empty')])
-        ])
+          d.dir('tools', [d.file('empty')]),
+        ]),
       ]).create();
       await expectValidationDeprecated(directory);
     });
@@ -31,8 +31,8 @@ void main() {
       await d.dir(appPath, [
         d.file('.pubignore', 'tools/\n'),
         d.dir('foo', [
-          d.dir('tools', [d.file('empty')])
-        ])
+          d.dir('tools', [d.file('empty')]),
+        ]),
       ]).create();
       await expectValidationDeprecated(directory);
     });
@@ -43,20 +43,20 @@ void main() {
       'named', () {
     setUp(d.validPackage().create);
 
-    var names = [
+    final names = [
       'benchmarks',
       'docs',
       'examples',
       'sample',
       'samples',
       'tests',
-      'tools'
+      'tools',
     ];
 
     for (var name in names) {
       test('"$name"', () async {
         await d.dir(appPath, [
-          d.dir(name, [d.file('empty')])
+          d.dir(name, [d.file('empty')]),
         ]).create();
         await expectValidationDeprecated(directory, warnings: isNotEmpty);
       });

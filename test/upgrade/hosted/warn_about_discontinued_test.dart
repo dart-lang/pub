@@ -22,8 +22,8 @@ void main() {
     await pubUpgrade(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
-  transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
 ''',
@@ -33,10 +33,10 @@ Resolving dependencies...
     await pubUpgrade(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0
-  No dependencies changed.
-  1 package is discontinued.
+No dependencies changed.
+1 package is discontinued.
 ''',
     );
   });
@@ -55,7 +55,7 @@ dev_dependencies:
   foo: 1.2.3
 environment:
   sdk: '^3.1.2'
-''')
+'''),
     ]).create();
     await pubGet();
 
@@ -67,8 +67,8 @@ environment:
     await pubUpgrade(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
-    transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
 ''',
@@ -78,8 +78,8 @@ Resolving dependencies...
     await pubUpgrade(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-  transitive 1.0.0
   No dependencies changed.
   1 package is discontinued.
 ''',

@@ -24,8 +24,8 @@ void main() {
           d.file('nav.json', ''),
           d.file('index.html', ''),
           d.file('styles.css', ''),
-          d.file('dart-logo-small.png', '')
-        ])
+          d.file('dart-logo-small.png', ''),
+        ]),
       ]).create();
       await expectValidationDeprecated(compiledDartdoc);
     });
@@ -39,8 +39,8 @@ void main() {
           d.file('index.html', ''),
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
-          d.file('client-live-nav.js', '')
-        ])
+          d.file('client-live-nav.js', ''),
+        ]),
       ]).create();
       await expectValidationDeprecated(compiledDartdoc);
     });
@@ -54,9 +54,9 @@ void main() {
           d.file('index.html', ''),
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
-          d.file('client-live-nav.js', '')
+          d.file('client-live-nav.js', ''),
         ]),
-        d.file('.gitignore', '/doc-out')
+        d.file('.gitignore', '/doc-out'),
       ]).create();
       await expectValidationDeprecated(compiledDartdoc);
     });
@@ -70,8 +70,8 @@ void main() {
           d.file('index.html', ''),
           d.file('styles.css', ''),
           d.file('dart-logo-small.png', ''),
-          d.file('client-live-nav.js', '')
-        ])
+          d.file('client-live-nav.js', ''),
+        ]),
       ]).create();
 
       await expectValidationDeprecated(compiledDartdoc, warnings: isNotEmpty);

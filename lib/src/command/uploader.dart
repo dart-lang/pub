@@ -23,7 +23,7 @@ class UploaderCommand extends PubCommand {
   bool get hidden => true;
 
   /// The URL of the package hosting server.
-  Uri get server => Uri.parse(argResults.option('server'));
+  Uri get server => Uri.parse(argResults.optionWithDefault('server'));
 
   UploaderCommand() {
     argParser.addOption(
@@ -47,9 +47,9 @@ class UploaderCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    String packageName = '<packageName>';
+    var packageName = '<packageName>';
     try {
-      packageName = entrypoint.root.name;
+      packageName = entrypoint.workspaceRoot.name;
     } on Exception catch (_) {
       // Probably run without a pubspec.
       // Just print error below without a specific package name.

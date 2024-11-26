@@ -16,14 +16,14 @@ void main() {
         'foo',
         '1.0.0',
         contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi");')])
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi");')]),
         ],
       )
       ..serve(
         'foo',
         '2.0.0',
         contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi2");')])
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi2");')]),
         ],
       );
 
@@ -36,6 +36,7 @@ void main() {
       output: '''
         Package foo is currently active at version 1.0.0.
         Resolving dependencies...
+        Downloading packages...
         > foo 2.0.0 (was 1.0.0)
         Building package executables...
         Built foo:foo.

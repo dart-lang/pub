@@ -14,7 +14,7 @@ void main() {
     await d.validPackage().create();
     await d.dir(appPath, [
       d.dir('.vscode', [d.file('a')]),
-      d.file('.pubignore', '!.vscode/')
+      d.file('.pubignore', '!.vscode/'),
     ]).create();
     await runPub(
       args: ['lish', '--dry-run'],

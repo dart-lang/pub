@@ -25,7 +25,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': '../foo'}
+        'foo': {'path': '../foo'},
       },
     ).validate();
   });
@@ -44,9 +44,9 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dev_dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
+          'foo': {'path': '../foo'},
+        },
+      }),
     ]).validate();
   });
 
@@ -59,7 +59,7 @@ void main() {
     await pubAdd(
       args: ['--directory', appPath, 'foo', '--path', 'foo'],
       workingDirectory: d.sandbox,
-      output: contains('Changed 1 dependency in myapp!'),
+      output: contains('Changed 1 dependency in `myapp`!'),
     );
 
     await d.appPackageConfigFile([
@@ -68,7 +68,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': '../foo'}
+        'foo': {'path': '../foo'},
       },
     ).validate();
   });
@@ -89,7 +89,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 
@@ -103,7 +102,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'path': '../foo', 'version': '0.0.1'}
+        'foo': {'path': '../foo', 'version': '0.0.1'},
       },
     ).validate();
   });
@@ -131,7 +130,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 
@@ -145,8 +143,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {},
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).create();
 
     await pubAdd(args: ['foo', '--path', '../foo']);
@@ -159,10 +157,10 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-        'dependency_overrides': {'foo': '1.2.2'}
-      })
+        'dependency_overrides': {'foo': '1.2.2'},
+      }),
     ]).validate();
   });
 
@@ -182,7 +180,7 @@ void main() {
         'bar:{"path":"bar"}',
       ],
       workingDirectory: d.sandbox,
-      output: contains('Changed 2 dependencies in myapp!'),
+      output: contains('Changed 2 dependencies in `myapp`!'),
     );
 
     await d.appPackageConfigFile([

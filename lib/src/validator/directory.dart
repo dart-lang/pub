@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import '../io.dart';
 import '../validator.dart';
@@ -16,7 +16,7 @@ class DirectoryValidator extends Validator {
     'docs',
     'examples',
     'tests',
-    'tools'
+    'tools',
   ];
 
   static String docRef = 'See https://dart.dev/tools/pub/package-layout.';
@@ -26,17 +26,17 @@ class DirectoryValidator extends Validator {
     final visited = <String>{};
     for (final file in files) {
       // Find the topmost directory name of [file].
-      final dir = path.join(
-        entrypoint.rootDir,
-        path.split(path.relative(file, from: entrypoint.rootDir)).first,
+      final dir = p.join(
+        package.dir,
+        p.split(p.relative(file, from: package.dir)).first,
       );
       if (!visited.add(dir)) continue;
       if (!dirExists(dir)) continue;
 
-      final dirName = path.basename(dir);
+      final dirName = p.basename(dir);
       if (_pluralNames.contains(dirName)) {
         // Cut off the "s"
-        var singularName = dirName.substring(0, dirName.length - 1);
+        final singularName = dirName.substring(0, dirName.length - 1);
         warnings.add('Rename the top-level "$dirName" directory to '
             '"$singularName".\n'
             'The Pub layout convention is to use singular directory '

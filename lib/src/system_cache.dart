@@ -4,7 +4,6 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -40,8 +39,9 @@ class SystemCache {
   String get tempDir => p.join(rootDir, '_temp');
 
   static String defaultDir = (() {
-    if (Platform.environment.containsKey('PUB_CACHE')) {
-      return Platform.environment['PUB_CACHE']!;
+    final envCache = Platform.environment['PUB_CACHE'];
+    if (envCache != null) {
+      return envCache;
     } else if (Platform.isWindows) {
       // %LOCALAPPDATA% is used as the cache location over %APPDATA%, because
       // the latter is synchronised between devices when the user roams between
@@ -112,20 +112,11 @@ Consider setting the `PUB_CACHE` variable manually.
   ///
   /// Throws an [ArgumentError] if [id] has an invalid source.
   Package load(PackageId id) {
-    return Package.load(id.name, getDirectory(id), sources);
-  }
-
-  Package loadCached(PackageId id) {
-    final source = id.description.description.source;
-    if (source is CachedSource) {
-      return Package.load(
-        id.name,
-        source.getDirectoryInCache(id, this),
-        sources,
-      );
-    } else {
-      throw ArgumentError('Call only on Cached ids.');
-    }
+    return Package.load(
+      getDirectory(id),
+      loadPubspec: Pubspec.loadRootWithSources(sources),
+      expectedName: id.name,
+    );
   }
 
   /// Create a new temporary directory within the system cache.
@@ -135,7 +126,7 @@ Consider setting the `PUB_CACHE` variable manually.
   /// system temp directory to ensure that it's on the same volume as the pub
   /// system cache so that it can move the directory from it.
   String createTempDir() {
-    var temp = ensureDir(tempDir);
+    final temp = ensureDir(tempDir);
     return io.createTempDir(temp, 'dir');
   }
 
@@ -157,7 +148,7 @@ Consider setting the `PUB_CACHE` variable manually.
   /// Throws a [DataException] if the pubspec's version doesn't match [id]'s
   /// version.
   Future<Pubspec> describe(PackageId id) async {
-    var pubspec = cachedPubspecs[id] ??= await id.source.doDescribe(id, this);
+    final pubspec = cachedPubspecs[id] ??= await id.source.doDescribe(id, this);
     if (pubspec.version != id.version) {
       throw PackageNotFoundException(
         'the pubspec for $id has version ${pubspec.version}',
@@ -186,9 +177,6 @@ Consider setting the `PUB_CACHE` variable manually.
     Duration? maxAge,
     Version? allowedRetractedVersion,
   }) async {
-    if (ref.isRoot) {
-      throw ArgumentError('Cannot get versions for the root package.');
-    }
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
     versions = (await Future.wait(
@@ -206,7 +194,7 @@ Consider setting the `PUB_CACHE` variable manually.
         return null;
       }),
     ))
-        .whereNotNull()
+        .nonNulls
         .toList();
 
     return versions;
@@ -225,11 +213,6 @@ Consider setting the `PUB_CACHE` variable manually.
   /// Downloads a cached package identified by [id] to the cache.
   ///
   /// [id] must refer to a cached package.
-  ///
-  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
-  /// response if present instead of probing the server. Not probing allows for
-  /// `pub get` with a filled cache to be a fast case that doesn't require any
-  /// new version-listings.
   ///
   /// Returns [id] with an updated [ResolvedDescription], this can be different
   /// if the content-hash changed while downloading.
@@ -325,17 +308,15 @@ Consider setting the `PUB_CACHE` variable manually.
   ///
   /// If DEPRECATED.md is less than 7 days old, we don't repeat the warning.
   void _checkOldCacheLocation() {
-    // Background:
-    // Prior to Dart 2.8 the default location for the PUB_CACHE on Windows was:
-    //   %APPDATA%\Pub\Cache
+    // Background: Prior to Dart 2.8 the default location for the PUB_CACHE on
+    // Windows was: %APPDATA%\Pub\Cache
     //
     // Start Dart 2.8 pub started migrating the default PUB_CACHE location to:
-    //   %LOCALAPPDATA%\Pub\Cache
-    // That is:
-    //  * If a pub-cache existed in `%LOCALAPPDATA%\Pub\Cache` then it
-    //    would be used.
-    //  * If a pub-cache existed in `%APPDATA%\Pub\Cache` then it would be
-    //    used, unless a pub-cache in `%LOCALAPPDATA%\Pub\Cache` had been found.
+    //   %LOCALAPPDATA%\Pub\Cache That is:
+    //  * If a pub-cache existed in `%LOCALAPPDATA%\Pub\Cache` then it would be
+    //    used.
+    //  * If a pub-cache existed in `%APPDATA%\Pub\Cache` then it would be used,
+    //    unless a pub-cache in `%LOCALAPPDATA%\Pub\Cache` had been found.
     //  * If no pub-cache was found, a new empty pub-cache was created in
     //    `%LOCALAPPDATA%\Pub\Cache`.
     //
@@ -343,13 +324,14 @@ Consider setting the `PUB_CACHE` variable manually.
     // `%APPDATA%\Pub\Cache`. Instead it will always use the new location,
     // `%LOCALAPPDATA%\Pub\Cache`, as default PUB_CACHE location.
     //
-    // Using `%APPDATA%` caused the pub-cache to be copied with the user-profile,
-    // when using a networked Windows setup where users can login on multiple
-    // machines. This is undesirable because you are moving a lot of bytes over
-    // the network and onto whatever servers are storing the user profiles.
+    // Using `%APPDATA%` caused the pub-cache to be copied with the
+    // user-profile, when using a networked Windows setup where users can login
+    // on multiple machines. This is undesirable because you are moving a lot of
+    // bytes over the network and onto whatever servers are storing the user
+    // profiles.
     //
-    // Thus, we migrated to storing the pub-cache in `%LOCALAPPDATA%`.
-    // And finished the migration in Dart 3 to keep things simple.
+    // Thus, we migrated to storing the pub-cache in `%LOCALAPPDATA%`. And
+    // finished the migration in Dart 3 to keep things simple.
     if (!Platform.isWindows) return;
 
     final appData = Platform.environment['APPDATA'];
@@ -359,7 +341,8 @@ Consider setting the `PUB_CACHE` variable manually.
         p.join(legacyCacheLocation, 'DEPRECATED.md');
     final stat = tryStatFile(legacyCacheDeprecatedFile);
     if ((stat == null ||
-            DateTime.now().difference(stat.changed) > Duration(days: 7)) &&
+            DateTime.now().difference(stat.changed) >
+                const Duration(days: 7)) &&
         dirExists(legacyCacheLocation)) {
       log.warning('''
 Found a legacy Pub cache at $legacyCacheLocation. Pub is using $defaultDir.

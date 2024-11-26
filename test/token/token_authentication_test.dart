@@ -17,9 +17,9 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': globalServer.url, 'env': 'TOKEN'},
-      ]
+      ],
     }).create();
-    var pub = await startPublish(
+    final pub = await startPublish(
       globalServer,
       overrideDefaultHostedServer: false,
       environment: {'TOKEN': 'access-token'},
@@ -31,19 +31,19 @@ void main() {
     await pub.shouldExit(1);
   });
 
-  test('with a invalid environment token fails with error', () async {
+  test('with an invalid environment token fails with error', () async {
     await servePackages();
     await d.validPackage().create();
     await d.tokensFile({
       'version': 1,
       'hosted': [
         {'url': globalServer.url, 'env': 'TOKEN'},
-      ]
+      ],
     }).create();
     await runPub(
       args: ['publish'],
       environment: {
-        'TOKEN': 'access-token@' // '@' is not allowed in bearer tokens
+        'TOKEN': 'access-token@', // '@' is not allowed in bearer tokens
       },
       error: contains(
         'Credential token for ${globalServer.url} is not a valid Bearer token.',
@@ -64,12 +64,12 @@ void main() {
           'url': globalServer.url,
           'token': 'access-token@', // '@' is not allowed in bearer tokens
         },
-      ]
+      ],
     }).create();
     await runPub(
       args: ['publish'],
       environment: {
-        'TOKEN': 'access-token@' // '@' is not allowed in bearer tokens
+        'TOKEN': 'access-token@', // '@' is not allowed in bearer tokens
       },
       error: contains(
         'Credential token for ${globalServer.url} is not a valid Bearer token.',
@@ -85,9 +85,9 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': globalServer.url, 'token': 'access-token'},
-      ]
+      ],
     }).create();
-    var pub = await startPublish(
+    final pub = await startPublish(
       globalServer,
       overrideDefaultHostedServer: false,
     );

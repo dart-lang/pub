@@ -45,7 +45,7 @@ void main() {
 
   // Currently retraction does not affect prioritization. I.e., if
   // pubspec.lock already contains a retracted version, which is the newest
-  // satisfying the dependency contstraint we will not choose to downgrade.
+  // satisfying the dependency constraint we will not choose to downgrade.
   // In this case we expect a newer version to be published at some point which
   // will then cause pub upgrade to choose that one.
   test('Allow retracted version when it was already in pubspec.lock', () async {
@@ -93,14 +93,14 @@ void main() {
     await populateCache(
       {
         'foo': ['1.0.0'],
-        'bar': ['1.0.0', '1.1.0']
+        'bar': ['1.0.0', '1.1.0'],
       },
       server,
     );
 
     await d.cacheDir({
       'foo': '1.0.0',
-      'bar': ['1.0.0', '1.1.0']
+      'bar': ['1.0.0', '1.1.0'],
     }).validate();
 
     final barVersionsCache =
@@ -148,8 +148,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': '<3.0.0'},
-        'dependency_overrides': {'foo': '2.0.0'}
-      })
+        'dependency_overrides': {'foo': '2.0.0'},
+      }),
     ]).create();
 
     server.retractPackageVersion('foo', '2.0.0');
@@ -182,8 +182,8 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': '<=3.0.0'},
-        'dependency_overrides': {'foo': '2.0.0'}
-      })
+        'dependency_overrides': {'foo': '2.0.0'},
+      }),
     ]).create();
 
     await pubUpgrade();

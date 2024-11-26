@@ -28,7 +28,8 @@ class LoginCommand extends PubCommand {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Could not retrieve your user-details.\n'
-            'You might have to run `$topLevelProgram pub logout` to delete your credentials and try again.');
+            'You might have to run `$topLevelProgram pub logout` '
+            'to delete your credentials and try again.');
       } else {
         log.message('You are now logged in as $userInfo');
       }
@@ -36,7 +37,8 @@ class LoginCommand extends PubCommand {
       final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning('Your credentials seems broken.\n'
-            'Run `$topLevelProgram pub logout` to delete your credentials and try again.');
+            'Run `$topLevelProgram pub logout` '
+            'to delete your credentials and try again.');
       }
       log.warning('You are already logged in as $userInfo\n'
           'Run `$topLevelProgram pub logout` to log out and try again.');
@@ -56,16 +58,14 @@ class LoginCommand extends PubCommand {
       final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
       if (userInfoRequest.statusCode != 200) return null;
       try {
-        final userInfo = json.decode(userInfoRequest.body);
-        final name = userInfo['name'] as String?;
-        final email = userInfo['email'];
-        if (email is String) {
-          return _UserInfo(name, email);
-        } else {
-          log.fine(
-            'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
-          );
-          return null;
+        switch (json.decode(userInfoRequest.body)) {
+          case {'name': final String? name, 'email': final String email}:
+            return _UserInfo(name, email);
+          default:
+            log.fine(
+              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
+            );
+            return null;
         }
       } on FormatException catch (e) {
         log.fine(

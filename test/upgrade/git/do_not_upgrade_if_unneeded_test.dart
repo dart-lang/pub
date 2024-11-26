@@ -23,10 +23,10 @@ void main() {
           'foo_dep': {
             'git': p
                 .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
-                .toString()
-          }
+                .toString(),
+          },
         },
-      )
+      ),
     ]).create();
 
     await d.git(
@@ -36,7 +36,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -46,14 +46,14 @@ void main() {
       d.dir('git', [
         d.dir('cache', [
           d.gitPackageRepoCacheDir('foo'),
-          d.gitPackageRepoCacheDir('foo_dep')
+          d.gitPackageRepoCacheDir('foo_dep'),
         ]),
         d.gitPackageRevisionCacheDir('foo'),
         d.gitPackageRevisionCacheDir('foo_dep'),
-      ])
+      ]),
     ]).validate();
 
-    var originalFooDepSpec = packageSpec('foo_dep');
+    final originalFooDepSpec = packageSpec('foo_dep');
 
     await d.git('foo.git', [
       d.libDir('foo', 'foo 2'),
@@ -64,15 +64,15 @@ void main() {
           'foo_dep': {
             'git': p
                 .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
-                .toString()
-          }
+                .toString(),
+          },
         },
-      )
+      ),
     ]).create();
 
     await d.git('foo_dep.git', [
       d.libDir('foo_dep', 'foo_dep 2'),
-      d.libPubspec('foo_dep', '1.0.0')
+      d.libPubspec('foo_dep', '1.0.0'),
     ]).commit();
 
     await pubUpgrade(args: ['foo']);
@@ -80,7 +80,7 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.gitPackageRevisionCacheDir('foo', modifier: 2),
-      ])
+      ]),
     ]).validate();
 
     expect(packageSpec('foo_dep'), originalFooDepSpec);

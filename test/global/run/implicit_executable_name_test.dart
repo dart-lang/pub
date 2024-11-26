@@ -14,13 +14,13 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('foo');")])
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('foo');")]),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('foo'));
     await pub.shouldExit();
   });

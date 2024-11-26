@@ -14,13 +14,13 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')])
+        d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')]),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub =
+    final pub =
         await pubRun(global: true, args: ['--enable-asserts', 'foo:script']);
     expect(pub.stderr, emitsThrough(contains('Failed assertion')));
     await pub.shouldExit(255);

@@ -40,8 +40,8 @@ void main() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dev_dependencies': {'foo': '1.0.0'}
-        })
+          'dev_dependencies': {'foo': '1.0.0'},
+        }),
       ]).create();
 
       await pubCommand(
@@ -66,12 +66,12 @@ void main() {
 
       await d.appDir(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
       ).create();
 
       await d.dir('foo', [
-        d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'})
+        d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'}),
       ]).create();
 
       await pubCommand(
@@ -87,15 +87,15 @@ void main() {
     });
 
     test("doesn't send metadata headers to a foreign server", () async {
-      var server = await startPackageServer()
+      final server = await startPackageServer()
         ..serve('foo', '1.0.0');
 
       await d.appDir(
         dependencies: {
           'foo': {
             'version': '1.0.0',
-            'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'}
-          }
+            'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'},
+          },
         },
       ).create();
 

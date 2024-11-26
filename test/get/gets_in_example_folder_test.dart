@@ -25,10 +25,10 @@ void main() {
           d.pubspec({
             'name': 'app_example',
             'dependencies': {
-              'myapp': {'path': '..'}
-            }
-          })
-        ])
+              'myapp': {'path': '..'},
+            },
+          }),
+        ]),
       ]).create();
 
       await pubCommand(command, args: ['--no-example']);
@@ -45,14 +45,18 @@ void main() {
         output: command.name == 'get'
             ? '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!
-Resolving dependencies in $dotExample...
-Got dependencies in $dotExample.'''
+Resolving dependencies in `$dotExample`...
+Downloading packages...
+Got dependencies in `$dotExample`.'''
             : '''
 Resolving dependencies... 
+Downloading packages...
 No dependencies changed.
-Resolving dependencies in $dotExample...
-Got dependencies in $dotExample.''',
+Resolving dependencies in `$dotExample`...
+Downloading packages...
+Got dependencies in `$dotExample`.''',
       );
       expect(lockFile.existsSync(), true);
       expect(exampleLockFile.existsSync(), true);
@@ -65,10 +69,10 @@ Got dependencies in $dotExample.''',
           d.pubspec({
             'name': 'broken name',
             'dependencies': {
-              'myapp': {'path': '..'}
-            }
-          })
-        ])
+              'myapp': {'path': '..'},
+            },
+          }),
+        ]),
       ]).create();
       await pubGet(
         args: ['--example'],

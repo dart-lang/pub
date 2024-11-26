@@ -11,7 +11,7 @@ void main() {
   test('runs the script with assertions enabled', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')])
+      d.dir('bin', [d.file('script.dart', 'main() { assert(false); }')]),
     ]).create();
 
     await pubGet();

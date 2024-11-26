@@ -15,7 +15,7 @@ import 'utils.dart';
 void main() {
   test('--force publishes if there are warnings', () async {
     await d.validPackage().create();
-    var pkg = packageMap(
+    final pkg = packageMap(
       'test_pkg',
       '1.0.0',
       null,
@@ -28,7 +28,7 @@ void main() {
     (await servePackages()).serve('foo', '1.0.0');
 
     await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer, args: ['--force']);
+    final pub = await startPublish(globalServer, args: ['--force']);
 
     handleUploadForm(globalServer);
     handleUpload(globalServer);
@@ -36,22 +36,23 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
-    final stderrLines = await pub.stderr.rest.toList();
+    final stdoutLines = await pub.stdout.rest.toList();
     expect(
-      stderrLines,
+      stdoutLines,
       allOf([
         contains('Package validation found the following potential issue:'),
         contains(
-          '* Your dependency on "foo" should have a version constraint. For example:',
+          '* Your dependency on "foo" should have a version constraint. '
+          'For example:',
         ),
+        contains('Message from server: Package test_pkg 1.0.0 uploaded!'),
       ]),
     );
-    expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
   });
 }

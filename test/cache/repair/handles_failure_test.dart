@@ -30,13 +30,13 @@ void main() {
           d.dir(
             'foo-1.2.5',
             [d.libPubspec('foo', '1.2.5'), d.file('broken.txt')],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).create();
 
     // Repair them.
-    var pub = await startPub(args: ['cache', 'repair']);
+    final pub = await startPub(args: ['cache', 'repair']);
 
     expect(pub.stderr, emits(startsWith('Failed to repair foo 1.2.4. Error:')));
     expect(

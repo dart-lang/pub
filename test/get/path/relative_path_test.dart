@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/source/path.dart';
 import 'package:pub/src/system_cache.dart';
@@ -22,9 +22,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
@@ -42,19 +42,19 @@ void main() {
           'foo',
           '0.0.1',
           deps: {
-            'bar': {'path': '../bar'}
+            'bar': {'path': '../bar'},
           },
-        )
+        ),
       ]),
-      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')])
+      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../relative/foo'}
+          'foo': {'path': '../relative/foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
@@ -74,25 +74,25 @@ void main() {
           'foo',
           '0.0.1',
           deps: {
-            'bar': {'path': '../bar'}
+            'bar': {'path': '../bar'},
           },
-        )
+        ),
       ]),
-      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')])
+      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../relative/foo'}
+          'foo': {'path': '../relative/foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet(
       args: ['--directory', appPath],
       workingDirectory: d.sandbox,
-      output: contains('Changed 2 dependencies in myapp!'),
+      output: contains('Changed 2 dependencies in `myapp`!'),
     );
 
     await d.appPackageConfigFile([
@@ -108,25 +108,25 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
 
-    var lockfilePath = path.join(d.sandbox, appPath, 'pubspec.lock');
+    final lockfilePath = p.join(d.sandbox, appPath, 'pubspec.lock');
     final lockfileJson = loadYaml(File(lockfilePath).readAsStringSync());
     expect(
-      lockfileJson['packages']['foo']['description']['path'],
+      dig<String>(lockfileJson, ['packages', 'foo', 'description', 'path']),
       '../foo',
       reason: 'Should use `/` as separator on all platforms',
     );
-    var lockfile = LockFile.load(lockfilePath, SystemCache().sources);
-    var description =
+    final lockfile = LockFile.load(lockfilePath, SystemCache().sources);
+    final description =
         lockfile.packages['foo']!.description.description as PathDescription;
 
     expect(description.relative, isTrue);
-    expect(description.path, path.join(d.sandbox, 'foo'));
+    expect(description.path, p.join(d.sandbox, 'foo'));
   });
 }

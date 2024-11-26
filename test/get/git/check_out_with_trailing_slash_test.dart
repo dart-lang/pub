@@ -19,7 +19,7 @@ void main() {
 
       await d.appDir(
         dependencies: {
-          'foo': {'git': '../foo.git/'}
+          'foo': {'git': '../foo.git/'},
         },
       ).create();
 
@@ -28,8 +28,8 @@ void main() {
       await d.dir(cachePath, [
         d.dir('git', [
           d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-          d.gitPackageRevisionCacheDir('foo')
-        ])
+          d.gitPackageRevisionCacheDir('foo'),
+        ]),
       ]).validate();
 
       await d.dir(cachePath, [
@@ -38,7 +38,7 @@ void main() {
             d.gitPackageRepoCacheDir('foo'),
           ]),
           d.gitPackageRevisionCacheDir('foo'),
-        ])
+        ]),
       ]).validate();
     });
   });

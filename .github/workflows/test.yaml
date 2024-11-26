@@ -24,8 +24,8 @@ jobs:
       matrix:
         sdk: [dev]
     steps:
-      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
-      - uses: dart-lang/setup-dart@d6a63dab3335f427404425de0fbfed4686d93c4f
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dart-lang/setup-dart@0a8a0fc875eb934c15d08629302413c671d3f672
         with:
           sdk: ${{ matrix.sdk }}
       - id: install
@@ -52,23 +52,13 @@ jobs:
         sdk: [dev]
         shard: [0, 1, 2, 3, 4, 5, 6]
     steps:
-      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
-      - uses: dart-lang/setup-dart@d6a63dab3335f427404425de0fbfed4686d93c4f
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dart-lang/setup-dart@0a8a0fc875eb934c15d08629302413c671d3f672
         with:
           sdk: ${{ matrix.sdk }}
       - name: Install dependencies
         run: dart pub get
       - name: Build snapshot
         run: dart --snapshot=${{ env._PUB_TEST_SNAPSHOT }} bin/pub.dart
-      - name: Select tests
-        run: |
-          find test -name "*_test\\.dart" | sort > $_TESTS_FILE
-          (( tests_per_shard = ($(wc -l <$_TESTS_FILE) + 7 - 1) / 7 ))
-          (( offset = 1 + tests_per_shard * ${{ matrix.shard }} ))
-          tail -n+$offset $_TESTS_FILE | head -n$tests_per_shard > $_TESTS_FILE.${{ matrix.shard }}
-          echo 'TEST FILES SELECTED:'
-          cat "$_TESTS_FILE.${{ matrix.shard }}"
-        shell: bash
       - name: Run tests
-        run: dart test --preset travis $(cat $_TESTS_FILE.${{ matrix.shard }})
-        shell: bash
+        run: dart test --preset ci --total-shards=7 --shard-index=${{ matrix.shard }}

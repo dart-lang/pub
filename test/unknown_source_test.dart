@@ -14,7 +14,7 @@ void main() {
     test('fails gracefully on a dependency from an unknown source', () async {
       await d.appDir(
         dependencies: {
-          'foo': {'bad': 'foo'}
+          'foo': {'bad': 'foo'},
         },
       ).create();
 
@@ -36,14 +36,14 @@ void main() {
           'foo',
           '0.0.1',
           deps: {
-            'bar': {'bad': 'bar'}
+            'bar': {'bad': 'bar'},
           },
-        )
+        ),
       ]).create();
 
       await d.appDir(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
       ).create();
 
@@ -65,9 +65,9 @@ void main() {
       await d.dir(appPath, [
         d.appPubspec(
           dependencies: {
-            'foo': {'path': '../foo'}
+            'foo': {'path': '../foo'},
           },
-        )
+        ),
       ]).create();
 
       // But lock it to a bad one.
@@ -79,11 +79,11 @@ void main() {
               'foo': {
                 'version': '0.0.0',
                 'source': 'bad',
-                'description': {'name': 'foo'}
-              }
-            }
+                'description': {'name': 'foo'},
+              },
+            },
           }),
-        )
+        ),
       ]).create();
 
       await pubCommand(command);

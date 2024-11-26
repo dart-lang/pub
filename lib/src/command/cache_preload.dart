@@ -21,8 +21,9 @@ class CachePreloadCommand extends PubCommand {
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-cache';
 
-  /// The `cache preload` command is hidden by default, because it's really only intended for
-  /// `flutter` to use when pre-loading `PUB_CACHE` after being installed from `zip` archive.
+  /// The `cache preload` command is hidden by default, because it's really only
+  /// intended for `flutter` to use when pre-loading `PUB_CACHE` after being
+  /// installed from `zip` archive.
   @override
   bool get hidden => true;
 
@@ -33,12 +34,12 @@ class CachePreloadCommand extends PubCommand {
       usageException('No package to preload given.');
     }
 
-    for (String packagePath in argResults.rest) {
+    for (final packagePath in argResults.rest) {
       if (!fileExists(packagePath)) {
         fail('Could not find file $packagePath.');
       }
     }
-    for (String archivePath in argResults.rest) {
+    for (final archivePath in argResults.rest) {
       final id = await cache.hosted.preloadPackage(archivePath, cache);
       final url = (id.description.description as HostedDescription).url;
 

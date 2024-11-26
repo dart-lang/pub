@@ -26,7 +26,7 @@ void main() {
       error: allOf([
         contains('Packages can only have one source, pub add flags '
             '"--git-url" and "--path" are'),
-        contains('conflicting.')
+        contains('conflicting.'),
       ]),
       exitCode: exit_codes.USAGE,
     );
@@ -35,7 +35,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 
@@ -57,12 +56,12 @@ void main() {
         '--hosted-url',
         'http://localhost:${server.port}',
         '--path',
-        '../bar'
+        '../bar',
       ],
       error: allOf([
         contains('Packages can only have one source, pub add flags '
             '"--hosted-url" and "--path" are'),
-        contains('conflicting.')
+        contains('conflicting.'),
       ]),
       exitCode: exit_codes.USAGE,
     );
@@ -71,7 +70,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 
@@ -97,12 +95,12 @@ void main() {
         '--hosted-url',
         'http://localhost:${server.port}',
         '--git-url',
-        '../foo.git'
+        '../foo.git',
       ],
       error: allOf([
         contains('Packages can only have one source, pub add flags '
             '"--git-url" and "--hosted-url"'),
-        contains('are conflicting.')
+        contains('are conflicting.'),
       ]),
       exitCode: exit_codes.USAGE,
     );
@@ -111,7 +109,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 }

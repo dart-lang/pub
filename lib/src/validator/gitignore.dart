@@ -3,7 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 
@@ -20,17 +22,20 @@ import '../validator.dart';
 class GitignoreValidator extends Validator {
   @override
   Future<void> validate() async {
-    if (entrypoint.root.inGitRepo) {
-      late final List<String> checkedIntoGit;
+    if (package.inGitRepo) {
+      final Uint8List output;
       try {
-        checkedIntoGit = git.runSync(
+        output = git.runSyncBytes(
           [
+            '-c',
+            'core.quotePath=false',
             'ls-files',
+            '-z',
             '--cached',
             '--exclude-standard',
-            '--recurse-submodules'
+            '--recurse-submodules',
           ],
-          workingDir: entrypoint.rootDir,
+          workingDir: package.dir,
         );
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
@@ -39,9 +44,19 @@ class GitignoreValidator extends Validator {
         // --recurse-submodules we just continue silently.
         return;
       }
-      final root = git.repoRoot(entrypoint.rootDir) ?? entrypoint.rootDir;
+
+      final List<String> checkedIntoGit;
+      try {
+        checkedIntoGit = git.splitZeroTerminated(output).map((b) {
+          return utf8.decode(b);
+        }).toList();
+      } on FormatException catch (e) {
+        log.fine('Failed decoding git output. Skipping validation. $e.');
+        return;
+      }
+      final root = git.repoRoot(package.dir) ?? package.dir;
       var beneath = p.posix.joinAll(
-        p.split(p.normalize(p.relative(entrypoint.rootDir, from: root))),
+        p.split(p.normalize(p.relative(package.dir, from: root))),
       );
       if (beneath == './') {
         beneath = '';
@@ -56,13 +71,11 @@ class GitignoreValidator extends Validator {
       final unignoredByGitignore = Ignore.listFiles(
         beneath: beneath,
         listDir: (dir) {
-          var contents = Directory(resolve(dir)).listSync();
-          return contents
-              .where((e) => !(linkExists(e.path) && dirExists(e.path)))
-              .map(
-                (entity) => p.posix
-                    .joinAll(p.split(p.relative(entity.path, from: root))),
-              );
+          final contents = Directory(resolve(dir)).listSync(followLinks: false);
+          return contents.map(
+            (entity) =>
+                p.posix.joinAll(p.split(p.relative(entity.path, from: root))),
+          );
         },
         ignoreForDir: (dir) {
           final gitIgnore = resolve('$dir/.gitignore');
@@ -71,9 +84,12 @@ class GitignoreValidator extends Validator {
           ];
           return rules.isEmpty ? null : Ignore(rules);
         },
-        isDir: (dir) => dirExists(resolve(dir)),
+        isDir: (dir) {
+          final resolved = resolve(dir);
+          return dirExists(resolved) && !linkExists(resolved);
+        },
       ).map((file) {
-        final relative = p.relative(resolve(file), from: entrypoint.rootDir);
+        final relative = p.relative(resolve(file), from: package.dir);
         return Platform.isWindows
             ? p.posix.joinAll(p.split(relative))
             : relative;

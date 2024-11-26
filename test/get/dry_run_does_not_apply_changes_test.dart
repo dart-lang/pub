@@ -22,12 +22,8 @@ void main() {
     );
 
     await d.dir(appPath, [
-      // The lockfile should not be created.
       d.nothing('pubspec.lock'),
-      // The "packages" directory should not have been generated.
-      d.nothing('packages'),
-      // The ".packages" file should not have been created.
-      d.nothing('.packages'),
+      d.nothing('.dart_tool/package_config.json'),
     ]).validate();
   });
 }

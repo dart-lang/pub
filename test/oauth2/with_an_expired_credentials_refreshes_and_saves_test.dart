@@ -22,11 +22,11 @@ void main() {
           globalServer,
           'access-token',
           refreshToken: 'refresh token',
-          expiration: DateTime.now().subtract(Duration(hours: 1)),
+          expiration: DateTime.now().subtract(const Duration(hours: 1)),
         )
         .create();
 
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
     await confirmPublish(pub);
 
     globalServer.expect('POST', '/token', (request) {

@@ -7,7 +7,7 @@ No such file pubspec.lock.
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section list
-$ dependency_services list
+$ echo '' | dependency_services list
 {
   "dependencies": [
     {
@@ -35,7 +35,7 @@ $ dependency_services list
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "e963d896bb117842c18b0c7ed19c31b84c414acf5845b853acc89994339b613a"
+          "sha256": "0498214b0972f23e519cb7fb546d1eaaae2342152d952b7750e749f3f119fff6"
         }
       }
     },
@@ -43,13 +43,13 @@ $ dependency_services list
       "name": "transitive",
       "version": "1.0.0",
       "kind": "transitive",
-      "constraint": "null",
+      "constraint": null,
       "source": {
         "type": "hosted",
         "description": {
           "name": "transitive",
           "url": "http://localhost:$PORT",
-          "sha256": "bbf701e5d89787675cdbf7d818561d8cd8524a0fb49d79133a887418120ecaab"
+          "sha256": "d705923b5a6b4c7053e6d86a35799ede6467245151ff15dfdd5719986a61d49c"
         }
       }
     }
@@ -59,7 +59,7 @@ $ dependency_services list
 -------------------------------- END OF OUTPUT ---------------------------------
 
 ## Section report
-$ dependency_services report
+$ echo '' | dependency_services report
 {
   "dependencies": [
     {
@@ -89,7 +89,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "161f5087dae6dc41086fcac53e2db376488e5fa446f81b4352512917e20ccb0a"
+              "sha256": "893214328b7741cecc09046d6309aa894b4645099dd05d7f8e1a1dfa2799a6df"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -102,7 +102,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "e963d896bb117842c18b0c7ed19c31b84c414acf5845b853acc89994339b613a"
+              "sha256": "0498214b0972f23e519cb7fb546d1eaaae2342152d952b7750e749f3f119fff6"
             }
           }
         }
@@ -117,7 +117,7 @@ $ dependency_services report
         "description": {
           "name": "foo",
           "url": "http://localhost:$PORT",
-          "sha256": "e963d896bb117842c18b0c7ed19c31b84c414acf5845b853acc89994339b613a"
+          "sha256": "0498214b0972f23e519cb7fb546d1eaaae2342152d952b7750e749f3f119fff6"
         }
       },
       "latest": "2.2.3",
@@ -133,7 +133,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "161f5087dae6dc41086fcac53e2db376488e5fa446f81b4352512917e20ccb0a"
+              "sha256": "893214328b7741cecc09046d6309aa894b4645099dd05d7f8e1a1dfa2799a6df"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -146,7 +146,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "e963d896bb117842c18b0c7ed19c31b84c414acf5845b853acc89994339b613a"
+              "sha256": "0498214b0972f23e519cb7fb546d1eaaae2342152d952b7750e749f3f119fff6"
             }
           }
         }
@@ -161,7 +161,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "161f5087dae6dc41086fcac53e2db376488e5fa446f81b4352512917e20ccb0a"
+              "sha256": "893214328b7741cecc09046d6309aa894b4645099dd05d7f8e1a1dfa2799a6df"
             }
           },
           "constraintBumped": "^2.2.3",
@@ -174,7 +174,7 @@ $ dependency_services report
             "description": {
               "name": "foo",
               "url": "http://localhost:$PORT",
-              "sha256": "e963d896bb117842c18b0c7ed19c31b84c414acf5845b853acc89994339b613a"
+              "sha256": "0498214b0972f23e519cb7fb546d1eaaae2342152d952b7750e749f3f119fff6"
             }
           }
         }
@@ -189,7 +189,7 @@ $ dependency_services report
         "description": {
           "name": "transitive",
           "url": "http://localhost:$PORT",
-          "sha256": "bbf701e5d89787675cdbf7d818561d8cd8524a0fb49d79133a887418120ecaab"
+          "sha256": "d705923b5a6b4c7053e6d86a35799ede6467245151ff15dfdd5719986a61d49c"
         }
       },
       "latest": "1.0.0",

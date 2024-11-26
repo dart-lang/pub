@@ -37,7 +37,7 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
-  String? get envVar => argResults['env-var'] as String?;
+  String? get envVar => argResults.option('env-var');
 
   TokenAddCommand() {
     argParser.addOption(
@@ -60,11 +60,11 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
     final rawHostedUrl = argResults.rest.first;
 
     try {
-      var hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
-      var isLocalhost =
+      final hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
+      final isLocalhost =
           ['localhost', '127.0.0.1', '::1'].contains(hostedUrl.host);
       if (!hostedUrl.isScheme('HTTPS') && !isLocalhost) {
-        throw FormatException('url must be https://, '
+        throw const FormatException('url must be https://, '
             'insecure repositories cannot use authentication.');
       }
 

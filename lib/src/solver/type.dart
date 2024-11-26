@@ -3,22 +3,22 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// An enum for types of version resolution.
-class SolveType {
+enum SolveType {
   /// As few changes to the lockfile as possible to be consistent with the
   /// pubspec.
-  static const get = SolveType._('get');
+  get('get'),
 
   /// Upgrade all packages or specific packages to the highest versions
   /// possible, regardless of the lockfile.
-  static const upgrade = SolveType._('upgrade');
+  upgrade('upgrade'),
 
   /// Downgrade all packages or specific packages to the lowest versions
   /// possible, regardless of the lockfile.
-  static const downgrade = SolveType._('downgrade');
+  downgrade('downgrade');
 
   final String _name;
 
-  const SolveType._(this._name);
+  const SolveType(this._name);
 
   @override
   String toString() => _name;

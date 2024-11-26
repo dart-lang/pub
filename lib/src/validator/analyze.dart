@@ -14,18 +14,25 @@ import '../validator.dart';
 
 /// Runs `dart analyze` and gives a warning if it returns non-zero.
 class AnalyzeValidator extends Validator {
-  /// Only analyze dart code in the following sub-folders.
+  // Only analyze dart code in the following sub-folders and files.
+  static const List<String> _entriesToAnalyze = [
+    'bin',
+    'lib',
+    'build.dart',
+    'link.dart',
+  ];
+
   @override
   Future<void> validate() async {
-    final dirsToAnalyze = ['lib', 'test', 'bin']
-        .map((dir) => p.join(entrypoint.rootDir, dir))
-        .where(dirExists);
+    final entries = _entriesToAnalyze
+        .map((dir) => p.join(package.dir, dir))
+        .where(entryExists);
     final result = await runProcess(
       Platform.resolvedExecutable,
-      ['analyze', ...dirsToAnalyze, p.join(entrypoint.rootDir, 'pubspec.yaml')],
+      ['analyze', ...entries, p.join(package.dir, 'pubspec.yaml')],
     );
     if (result.exitCode != 0) {
-      final limitedOutput = limitLength(result.stdout.join('\n'), 1000);
+      final limitedOutput = limitLength(result.stdout, 1000);
       warnings
           .add('`dart analyze` found the following issue(s):\n$limitedOutput');
     }

@@ -15,8 +15,8 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependency_overrides': {'overridden': 'any'}
-      })
+        'dependency_overrides': {'overridden': 'any'},
+      }),
     ]).create();
 
     // Upgrade everything.
@@ -24,6 +24,7 @@ void main() {
       output: RegExp(
         r'''
 Resolving dependencies\.\.\..*
+Downloading packages\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
 ''',
         multiLine: true,

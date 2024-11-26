@@ -34,8 +34,8 @@ void main() {
           'foo-script2': 'script',
           'foo-script-not-installed': 'script',
           'foo-another-script': 'another-script',
-          'foo-another-script-not-installed': 'another-script'
-        }
+          'foo-another-script-not-installed': 'another-script',
+        },
       },
       contents: [
         d.dir('bin', [
@@ -43,8 +43,8 @@ void main() {
           d.file(
             'another-script.dart',
             r"main(args) => print('not so good $args');",
-          )
-        ])
+          ),
+        ]),
       ],
     );
 
@@ -90,12 +90,12 @@ void main() {
           d.dir(
             'bin',
             [d.outOfDateSnapshot('script.dart-3.0.0.snapshot')],
-          )
-        ])
-      ])
+          ),
+        ]),
+      ]),
     ]).create();
 
-    var process = await TestProcess.start(
+    final process = await TestProcess.start(
       p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
       ['arg1', 'arg2'],
       environment: getEnvironment(),

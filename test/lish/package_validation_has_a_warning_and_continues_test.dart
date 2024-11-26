@@ -23,7 +23,7 @@ void main() {
 
     await servePackages();
     await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
     expect(pub.stdout, emitsThrough(startsWith('Package has 1 warning.')));
     pub.stdin.writeln('y');
     handleUploadForm(globalServer);
@@ -32,12 +32,15 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });
 
     await pub.shouldExit(exit_codes.SUCCESS);
-    expect(pub.stdout, emitsThrough('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emitsThrough('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
   });
 }

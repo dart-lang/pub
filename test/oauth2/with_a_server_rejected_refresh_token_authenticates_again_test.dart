@@ -25,14 +25,14 @@ void main() {
           globalServer,
           'access-token',
           refreshToken: 'bad refresh token',
-          expiration: DateTime.now().subtract(Duration(hours: 1)),
+          expiration: DateTime.now().subtract(const Duration(hours: 1)),
         )
         .create();
 
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     globalServer.expect('POST', '/token', (request) {
-      return request.read().drain().then((_) {
+      return request.read().drain<void>().then((_) {
         return shelf.Response(
           400,
           body: jsonEncode({'error': 'invalid_request'}),
@@ -46,7 +46,7 @@ void main() {
     await expectLater(pub.stdout, emits(startsWith('Uploading...')));
     await authorizePub(pub, globalServer, 'new access token');
 
-    var done = Completer();
+    final done = Completer<void>();
     globalServer.expect('GET', '/api/packages/versions/new', (request) async {
       expect(
         request.headers,

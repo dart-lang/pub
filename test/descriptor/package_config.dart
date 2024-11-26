@@ -15,6 +15,9 @@ import 'package:test_descriptor/test_descriptor.dart';
 /// Describes a `.dart_tools/package_config.json` file and its contents.
 class PackageConfigFileDescriptor extends Descriptor {
   final String _generatorVersion;
+  final String _pubCache;
+  final String? _flutterRoot;
+  final String? _flutterVersion;
 
   /// A map describing the packages in this `package_config.json` file.
   final List<PackageConfigEntry> _packages;
@@ -26,15 +29,25 @@ class PackageConfigFileDescriptor extends Descriptor {
       generatorVersion: Version.parse(_generatorVersion),
       generator: 'pub',
       generated: DateTime.now().toUtc(),
+      additionalProperties: {
+        'pubCache': p.toUri(_pubCache).toString(),
+        if (_flutterRoot != null)
+          'flutterRoot': p.toUri(_flutterRoot).toString(),
+        if (_flutterVersion != null) 'flutterVersion': _flutterVersion,
+      },
     );
   }
 
-  /// Describes a `.packages` file with the given dependencies.
-  ///
-  /// [dependencies] maps package names to strings describing where the packages
-  /// are located on disk.
-  PackageConfigFileDescriptor(this._packages, this._generatorVersion)
-      : super('.dart_tool/package_config.json');
+  /// Describes a `.dart_tools/package_config.json` file
+  /// with the given list of package configurations and
+  /// generated with specified version.
+  PackageConfigFileDescriptor(
+    this._packages,
+    this._generatorVersion,
+    this._pubCache,
+    this._flutterRoot,
+    this._flutterVersion,
+  ) : super('.dart_tool/package_config.json');
 
   @override
   Future<void> create([String? parent]) async {
@@ -70,7 +83,8 @@ class PackageConfigFileDescriptor extends Descriptor {
                 .having(
                   (p0) => p0.languageVersion,
                   'languageVersion',
-                  // If the expected entry has no language-version we don't check it.
+                  // If the expected entry has no language-version we don't
+                  // check it.
                   p.languageVersion ?? anything,
                 )
                 .having((p0) => p0.rootUri, 'rootUri', p.rootUri)

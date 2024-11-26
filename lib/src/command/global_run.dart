@@ -54,7 +54,7 @@ class GlobalRunCommand extends PubCommand {
     String package;
     var executable = argResults.rest[0];
     if (executable.contains(':')) {
-      var parts = split1(executable, ':');
+      final parts = split1(executable, ':');
       package = parts[0];
       executable = parts[1];
     } else {
@@ -62,7 +62,7 @@ class GlobalRunCommand extends PubCommand {
       package = executable;
     }
 
-    var args = argResults.rest.skip(1).toList();
+    final args = argResults.rest.skip(1).toList();
     if (p.split(executable).length > 1) {
       usageException('Cannot run an executable in a subdirectory of a global '
           'package.');

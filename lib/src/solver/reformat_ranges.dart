@@ -16,6 +16,7 @@ import 'term.dart';
 /// human-readable (but less technically-accurate) ranges.
 ///
 /// We use a lot of ranges in the solver that explicitly allow pre-release
+// ignore: unintended_html_in_doc_comment https://github.com/dart-lang/linter/issues/5055
 /// versions, such as `>=1.0.0-0 <2.0.0` or `>=1.0.0 <2.0.0-∞`. These ensure
 /// that adjacent ranges can be merged together, which makes the solver's job
 /// much easier. However, they're not super human-friendly, and in practice most
@@ -40,27 +41,28 @@ Incompatibility reformatRanges(
 /// Returns [term] with the upper and lower bounds of its package range
 /// reformatted if necessary.
 Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
-  var versions = packageListers[term.package.toRef()]?.cachedVersions ?? [];
+  final versions = packageListers[term.package.toRef()]?.cachedVersions ?? [];
 
   if (term.package.constraint is! VersionRange) return term;
   if (term.package.constraint is Version) return term;
-  var range = term.package.constraint as VersionRange;
+  final range = term.package.constraint as VersionRange;
 
-  var min = _reformatMin(versions, range);
-  var tuple = reformatMax(versions, range);
-  var max = tuple?.first;
-  var includeMax = tuple?.last;
+  final min = _reformatMin(versions, range);
+  final maxInfo = reformatMax(versions, range);
 
-  if (min == null && max == null) return term;
+  if (min == null && maxInfo == null) return term;
+
+  final (max, includeMax) = maxInfo ?? (range.max, range.includeMax);
+
   return Term(
     term.package
         .toRef()
         .withConstraint(
           VersionRange(
             min: min ?? range.min,
-            max: max ?? range.max,
+            max: max,
             includeMin: range.includeMin,
-            includeMax: includeMax ?? range.includeMax,
+            includeMax: includeMax,
             alwaysIncludeMaxPreRelease: true,
           ),
         )
@@ -72,13 +74,13 @@ Term _reformatTerm(Map<PackageRef, PackageLister> packageListers, Term term) {
 /// Returns the new minimum version to use for [range], or `null` if it doesn't
 /// need to be reformatted.
 Version? _reformatMin(List<PackageId> versions, VersionRange range) {
-  var min = range.min;
+  final min = range.min;
   if (min == null) return null;
   if (!range.includeMin) return null;
   if (!min.isFirstPreRelease) return null;
 
-  var index = _lowerBound(versions, min);
-  var next = index == versions.length ? null : versions[index].version;
+  final index = _lowerBound(versions, min);
+  final next = index == versions.length ? null : versions[index].version;
 
   // If there's a real pre-release version of [range.min], use that as the min.
   // Otherwise, use the release version.
@@ -90,13 +92,16 @@ Version? _reformatMin(List<PackageId> versions, VersionRange range) {
 /// Returns the new maximum version to use for [range] and whether that maximum
 /// is inclusive, or `null` if it doesn't need to be reformatted.
 @visibleForTesting
-Pair<Version, bool>? reformatMax(List<PackageId> versions, VersionRange range) {
+(Version maxVersion, bool inclusive)? reformatMax(
+  List<PackageId> versions,
+  VersionRange range,
+) {
   // This corresponds to the logic in the constructor of [VersionRange] with
   // `alwaysIncludeMaxPreRelease = false` for discovering when a max-bound
   // should not include prereleases.
 
-  var max = range.max;
-  var min = range.min;
+  final max = range.max;
+  final min = range.min;
   if (max == null) return null;
   if (range.includeMax) return null;
   if (max.isPreRelease) return null;
@@ -105,12 +110,12 @@ Pair<Version, bool>? reformatMax(List<PackageId> versions, VersionRange range) {
     return null;
   }
 
-  var index = _lowerBound(versions, max);
-  var previous = index == 0 ? null : versions[index - 1].version;
+  final index = _lowerBound(versions, max);
+  final previous = index == 0 ? null : versions[index - 1].version;
 
   return previous != null && equalsIgnoringPreRelease(previous, max)
-      ? Pair(previous, true)
-      : Pair(max.firstPreRelease, false);
+      ? (previous, true)
+      : (max.firstPreRelease, false);
 }
 
 /// Returns the first index in [ids] (which is sorted by version) whose version
@@ -124,8 +129,8 @@ int _lowerBound(List<PackageId> ids, Version version) {
   var min = 0;
   var max = ids.length;
   while (min < max) {
-    var mid = min + ((max - min) >> 1);
-    var id = ids[mid];
+    final mid = min + ((max - min) >> 1);
+    final id = ids[mid];
     if (id.version.compareTo(version) < 0) {
       min = mid + 1;
     } else {

@@ -23,13 +23,12 @@ class StrictDependenciesValidator extends Validator {
   /// Files that do not parse and directives that don't import or export
   /// `package:` URLs are ignored.
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
-    final packagePath = p.normalize(p.absolute(entrypoint.rootDir));
-    final AnalysisContextManager analysisContextManager =
-        AnalysisContextManager(packagePath);
+    final packagePath = p.normalize(p.absolute(package.dir));
+    final analysisContextManager = AnalysisContextManager(packagePath);
 
     for (var file in files) {
       List<UriBasedDirective> directives;
-      var contents = readTextFile(file);
+      final contents = readTextFile(file);
       try {
         directives = analysisContextManager.parseImportsAndExports(file);
       } on AnalyzerErrorGroup catch (e, s) {
@@ -64,20 +63,24 @@ class StrictDependenciesValidator extends Validator {
 
   @override
   Future validate() async {
-    var dependencies = entrypoint.root.dependencies.keys.toSet()
-      ..add(entrypoint.root.name);
-    var devDependencies = MapKeySet(entrypoint.root.devDependencies);
-    _validateLibBin(dependencies, devDependencies);
+    final dependencies = package.dependencies.keys.toSet()..add(package.name);
+    final devDependencies = MapKeySet(package.devDependencies);
+    _validateLibBinHook(dependencies, devDependencies);
     _validateBenchmarkTestTool(dependencies, devDependencies);
   }
 
-  /// Validates that no Dart files in `lib/` or `bin/` have dependencies that
-  /// aren't in [deps].
+  /// Validates that no Dart files in `lib/`, `bin/`, `hook/build.dart`, or
+  /// `hook/link.dart` have dependencies that aren't in [deps].
   ///
   /// The [devDeps] are used to generate special warnings for files that import
   /// dev dependencies.
-  void _validateLibBin(Set<String> deps, Set<String> devDeps) {
-    for (var usage in _usagesBeneath(['lib', 'bin'])) {
+  void _validateLibBinHook(Set<String> deps, Set<String> devDeps) {
+    for (var usage in _usagesBeneath([
+      'bin',
+      'hook/build.dart',
+      'hook/link.dart',
+      'lib',
+    ])) {
       if (!deps.contains(usage.package)) {
         if (devDeps.contains(usage.package)) {
           errors.add(usage.dependencyMisplaceMessage());
@@ -91,7 +94,7 @@ class StrictDependenciesValidator extends Validator {
   /// Validates that no Dart files in `benchmark/`, `test/` or
   /// `tool/` have dependencies that aren't in [deps] or [devDeps].
   void _validateBenchmarkTestTool(Set<String> deps, Set<String> devDeps) {
-    var directories = ['benchmark', 'test', 'tool'];
+    final directories = ['benchmark', 'test', 'tool'];
     for (var usage in _usagesBeneath(directories)) {
       if (!deps.contains(usage.package) && !devDeps.contains(usage.package)) {
         warnings.add(usage.dependenciesMissingMessage());
@@ -150,20 +153,21 @@ class _Usage {
   String _toMessage(String message) =>
       errorMessage(message, _file, _contents, _directive);
 
-  /// Returns an error message saying the package is not listed in `dependencies`.
+  /// Returns an error message saying the package is not listed in
+  /// `dependencies`.
   String dependencyMissingMessage() =>
       _toMessage('This package does not have $package in the `dependencies` '
           'section of `pubspec.yaml`.');
 
-  /// Returns an error message saying the package is not listed in `dependencies`
-  ///  or `dev_dependencies`.
+  /// Returns an error message saying the package is not listed in
+  ///  `dependencies` or `dev_dependencies`.
   String dependenciesMissingMessage() =>
       _toMessage('This package does not have $package in the `dependencies` '
           'or `dev_dependencies` section of `pubspec.yaml`.');
 
   /// Returns an error message saying the package should be in `dependencies`.
   String dependencyMisplaceMessage() {
-    var shortFile = p.split(p.relative(_file)).first;
+    final shortFile = p.split(p.relative(_file)).first;
     return _toMessage(
         '$package is in the `dev_dependencies` section of `pubspec.yaml`. '
         'Packages used in $shortFile/ must be declared in the `dependencies` '

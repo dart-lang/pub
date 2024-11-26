@@ -68,7 +68,7 @@ abstract class PubCommand extends Command<int> {
 
   String get directory {
     return (argResults.options.contains('directory')
-            ? argResults.optionWithoutDefault('directory')
+            ? argResults.option('directory')
             : null) ??
         _pubTopLevel.directory;
   }
@@ -121,7 +121,7 @@ abstract class PubCommand extends Command<int> {
   Command get _topCommand {
     Command current = this;
     while (true) {
-      var parent = current.parent;
+      final parent = current.parent;
       if (parent == null) return current;
       current = parent;
     }
@@ -142,12 +142,10 @@ abstract class PubCommand extends Command<int> {
   PubTopLevel get _pubTopLevel =>
       _pubEmbeddableCommand ?? runner as PubTopLevel;
 
-  PubAnalytics? get analytics => _pubEmbeddableCommand?.analytics;
-
   @override
   String get invocation {
     PubCommand? command = this;
-    var names = [];
+    final names = <String?>[];
     do {
       names.add(command?.name);
       command = command?.parent as PubCommand?;
@@ -240,7 +238,8 @@ and attaching the relevant parts of that log file.
         }
         log.dumpTranscriptToFile(
           transcriptPath,
-          'dart pub ${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
+          'dart pub '
+          '${_topCommand.argResults!.arguments.map(protectArgument).join(' ')}',
           e,
         );
 
@@ -256,7 +255,7 @@ and attaching the relevant parts of that log file.
   /// appropriate exit code could be found.
   int _chooseExitCode(Object exception) {
     if (exception is SolveFailure) {
-      var packageNotFound = exception.packageNotFound;
+      final packageNotFound = exception.packageNotFound;
       if (packageNotFound != null) exception = packageNotFound;
     }
     while (exception is WrappedException && exception.innerError is Exception) {
@@ -317,14 +316,14 @@ and attaching the relevant parts of that log file.
     if (!argResults.wasParsed('color')) {
       forceColors = ForceColorOption.auto;
     } else {
-      forceColors = argResults['color'] as bool
+      forceColors = argResults.flag('color')
           ? ForceColorOption.always
           : ForceColorOption.never;
     }
   }
 
   static void _computeCommand(ArgResults argResults) {
-    var list = <String?>[];
+    final list = <String?>[];
     for (var command = argResults.command;
         command != null;
         command = command.command) {
@@ -354,7 +353,7 @@ abstract class PubTopLevel {
   log.Verbosity get verbosity;
   bool get trace;
 
-  static addColorFlag(ArgParser argParser) {
+  static void addColorFlag(ArgParser argParser) {
     argParser.addFlag(
       'color',
       help: 'Use colors in terminal output.\n'

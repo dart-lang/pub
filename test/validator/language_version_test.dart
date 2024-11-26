@@ -26,7 +26,7 @@ Future<void> setup({
     d.dir('lib', [
       if (libraryLanguageVersion != null)
         d.file('library.dart', '// @dart = $libraryLanguageVersion\n'),
-    ])
+    ]),
   ]).create();
 }
 
@@ -60,22 +60,29 @@ void main() {
   });
 
   group('should warn if it', () {
+    final currentVersion = Version.parse(Platform.version.split(' ').first);
+    final nextLanguageVersion =
+        LanguageVersion(currentVersion.major, currentVersion.minor + 1)
+            .toString();
+
     test('opts in to a newer version.', () async {
-      final nextVersion =
-          Version.parse(Platform.version.split(' ').first).nextMajor;
       await setup(
         sdkConstraint: '^3.0.0',
-        libraryLanguageVersion:
-            LanguageVersion.fromVersion(nextVersion).toString(),
+        libraryLanguageVersion: nextLanguageVersion,
       );
       await expectValidationWarning(
-        'The language version override can\'t specify a version greater than the latest known language version',
+        'The language version override can\'t specify a version '
+        'greater than the latest known language version',
       );
     });
     test('opts in to a newer version, with non-range constraint.', () async {
-      await setup(sdkConstraint: '3.1.2+3', libraryLanguageVersion: '3.2');
+      await setup(
+        sdkConstraint: '3.1.2+3',
+        libraryLanguageVersion: nextLanguageVersion,
+      );
       await expectValidationWarning(
-        'The language version override can\'t specify a version greater than the latest known language version',
+        'The language version override can\'t specify a version '
+        'greater than the latest known language version',
       );
     });
   });

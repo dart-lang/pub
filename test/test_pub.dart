@@ -7,6 +7,8 @@
 /// Unlike typical unit tests, most pub tests are integration tests that stage
 /// some stuff on the file system, run pub, and then validate the results. This
 /// library provides an API to build tests like that.
+library;
+
 import 'dart:convert';
 import 'dart:core';
 import 'dart:io' hide BytesBuilder;
@@ -27,10 +29,10 @@ import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
-import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:tar/tar.dart';
 import 'package:test/test.dart' hide fail;
 import 'package:test/test.dart' as test show fail;
 import 'package:test_process/test_process.dart';
@@ -51,7 +53,7 @@ Matcher isUnminifiedDart2JSOutput =
     contains('// The code supports the following hooks');
 
 /// Converts [value] into a YAML string.
-String yaml(value) => jsonEncode(value);
+String yaml(Object? value) => jsonEncode(value);
 
 /// The path of the package cache directory used for tests, relative to the
 /// sandbox directory.
@@ -74,12 +76,10 @@ String packageConfigFilePath =
     p.join(appPath, '.dart_tool', 'package_config.json');
 
 /// The entry from the `.dart_tool/package_config.json` file for [packageName].
-Map<String, dynamic> packageSpec(String packageName) => json
-    .decode(File(d.path(packageConfigFilePath)).readAsStringSync())['packages']
-    .firstWhere(
-      (e) => e['name'] == packageName,
-      orElse: () => null,
-    ) as Map<String, dynamic>;
+Map<String, dynamic> packageSpec(String packageName) => dig(
+      json.decode(File(d.path(packageConfigFilePath)).readAsStringSync()),
+      ['packages', ('name', packageName)],
+    );
 
 /// The suffix appended to a built snapshot.
 const versionSuffix = testVersion;
@@ -104,7 +104,9 @@ Try `dart pub outdated` for more information.$)'''),
   );
   static final downgrade = RunCommand(
     'downgrade',
-    RegExp(r'(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)$'),
+    RegExp(r'''(No dependencies changed\.|Changed \d+ dependenc(y|ies)!)($|
+\d+ packages? (has|have) newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.$)'''),
   );
   static final remove = RunCommand(
     'remove',
@@ -155,7 +157,7 @@ Future<void> pubCommand(
     throw ArgumentError("Cannot pass both 'error' and 'warning'.");
   }
 
-  var allArgs = [command.name];
+  final allArgs = [command.name];
   if (args != null) allArgs.addAll(args);
 
   output ??= command.success;
@@ -297,9 +299,9 @@ Future<PubProcess> pubRun({
   Map<String, String>? environment,
   bool verbose = true,
 }) async {
-  var pubArgs = global ? ['global', 'run'] : ['run'];
+  final pubArgs = global ? ['global', 'run'] : ['run'];
   pubArgs.addAll(args);
-  var pub = await startPub(
+  final pub = await startPub(
     args: pubArgs,
     environment: environment,
     verbose: verbose,
@@ -354,7 +356,7 @@ Future<void> runPub({
   // Cannot pass both output and outputJson.
   assert(output == null || outputJson == null);
 
-  var pub = await startPub(
+  final pub = await startPub(
     args: args,
     workingDirectory: workingDirectory,
     environment: environment,
@@ -368,11 +370,11 @@ Future<void> runPub({
 
   await pub.shouldExit(exitCode);
 
-  var actualOutput = (await pub.stdoutStream().toList()).join('\n');
-  var actualError = (await pub.stderrStream().toList()).join('\n');
-  var actualSilent = (await pub.silentStream().toList()).join('\n');
+  final actualOutput = (await pub.stdoutStream().toList()).join('\n');
+  final actualError = (await pub.stderrStream().toList()).join('\n');
+  final actualSilent = (await pub.silentStream().toList()).join('\n');
 
-  var failures = <String>[];
+  final failures = <String>[];
   if (outputJson == null) {
     _validateOutput(failures, 'stdout', output, actualOutput);
   } else {
@@ -398,8 +400,9 @@ Future<PubProcess> startPublish(
   bool overrideDefaultHostedServer = true,
   Map<String, String>? environment,
   String path = '',
+  String? workingDirectory,
 }) async {
-  var tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
+  final tokenEndpoint = Uri.parse(server.url).resolve('/token').toString();
   args = ['lish', ...?args];
   return await startPub(
     args: args,
@@ -411,6 +414,7 @@ Future<PubProcess> startPublish(
         'PUB_HOSTED_URL': server.url + path,
       if (environment != null) ...environment,
     },
+    workingDirectory: workingDirectory,
   );
 }
 
@@ -460,14 +464,15 @@ Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
       '_PUB_TEST_SDK_VERSION': testVersion,
       if (tokenEndpoint != null) '_PUB_TEST_TOKEN_ENDPOINT': tokenEndpoint,
       if (_globalServer?.port != null)
-        'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}'
+        'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}',
     };
 
 /// The path to the root of pub's sources in the pub repo.
 final String _pubRoot = (() {
   if (!fileExists(p.join('bin', 'pub.dart'))) {
     throw StateError(
-      "Current working directory (${p.current} is not pub's root. Run tests from pub's root.",
+      "Current working directory (${p.current} is not pub's root. "
+      "Run tests from pub's root.",
     );
   }
   return p.current;
@@ -504,7 +509,7 @@ Future<PubProcess> startPub({
 
   final dotPackagesPath = (await Isolate.packageConfig).toString();
 
-  var dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
+  final dartArgs = ['--packages=$dotPackagesPath', '--enable-asserts'];
   dartArgs
     ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
     ..addAll(args);
@@ -522,10 +527,10 @@ Future<PubProcess> startPub({
       if (systemRoot != null) 'SYSTEMROOT': systemRoot,
       if (tmp != null) 'TMP': tmp,
     },
-    ...getPubTestEnvironment(tokenEndpoint)
+    ...getPubTestEnvironment(tokenEndpoint),
   };
   for (final e in (environment ?? {}).entries) {
-    var value = e.value;
+    final value = e.value;
     if (value == null) {
       mergedEnvironment.remove(e.key);
     } else {
@@ -547,14 +552,14 @@ Future<PubProcess> startPub({
 /// makes [stdout] and [stderr] work as though pub weren't running in verbose
 /// mode.
 class PubProcess extends TestProcess {
-  late final StreamSplitter<Pair<log.Level, String>> _logSplitter =
+  late final StreamSplitter<(log.Level level, String message)> _logSplitter =
       createLogSplitter();
 
-  StreamSplitter<Pair<log.Level, String>> createLogSplitter() {
+  StreamSplitter<(log.Level, String)> createLogSplitter() {
     return StreamSplitter(
       StreamGroup.merge([
         _outputToLog(super.stdoutStream(), log.Level.message),
-        _outputToLog(super.stderrStream(), log.Level.error)
+        _outputToLog(super.stderrStream(), log.Level.error),
       ]),
     );
   }
@@ -570,7 +575,7 @@ class PubProcess extends TestProcess {
     Encoding encoding = utf8,
     bool forwardStdio = false,
   }) async {
-    var process = await Process.start(
+    final process = await Process.start(
       executable,
       arguments.toList(),
       workingDirectory: workingDirectory,
@@ -580,7 +585,7 @@ class PubProcess extends TestProcess {
     );
 
     if (description == null) {
-      var humanExecutable = p.isWithin(p.current, executable)
+      final humanExecutable = p.isWithin(p.current, executable)
           ? p.relative(executable)
           : executable;
       description = '$humanExecutable ${arguments.join(' ')}';
@@ -596,16 +601,11 @@ class PubProcess extends TestProcess {
 
   /// This is protected.
   PubProcess(
-    Process process,
-    String description, {
-    Encoding encoding = utf8,
-    bool forwardStdio = false,
-  }) : super(
-          process,
-          description,
-          encoding: encoding,
-          forwardStdio: forwardStdio,
-        );
+    super.process,
+    super.description, {
+    super.encoding,
+    super.forwardStdio,
+  });
 
   final _logLineRegExp = RegExp(r'^([A-Z ]{4})[:|] (.*)$');
   final Map<String, log.Level> _logLevels = [
@@ -614,52 +614,55 @@ class PubProcess extends TestProcess {
     log.Level.message,
     log.Level.io,
     log.Level.solver,
-    log.Level.fine
+    log.Level.fine,
   ].fold({}, (levels, level) {
     levels[level.name] = level;
     return levels;
   });
 
-  Stream<Pair<log.Level, String>> _outputToLog(
+  Stream<(log.Level, String message)> _outputToLog(
     Stream<String> stream,
     log.Level defaultLevel,
   ) {
     late log.Level lastLevel;
     return stream.map((line) {
-      var match = _logLineRegExp.firstMatch(line);
-      if (match == null) return Pair<log.Level, String>(defaultLevel, line);
+      final match = _logLineRegExp.firstMatch(line);
+      if (match == null) return (defaultLevel, line);
 
-      var level = _logLevels[match[1]] ?? lastLevel;
+      final level = _logLevels[match[1]] ?? lastLevel;
       lastLevel = level;
-      return Pair<log.Level, String>(level, match[2]!);
+      return (level, match[2]!);
     });
   }
 
   @override
   Stream<String> stdoutStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.message) return [];
-      return [entry.last];
+      final (level, message) = entry;
+      if (level != log.Level.message) return [];
+      return [message];
     });
   }
 
   @override
   Stream<String> stderrStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first != log.Level.error && entry.first != log.Level.warning) {
+      final (level, message) = entry;
+      if (level != log.Level.error && level != log.Level.warning) {
         return [];
       }
-      return [entry.last];
+      return [message];
     });
   }
 
   /// A stream of log messages that are silent by default.
   Stream<String> silentStream() {
     return _logSplitter.split().expand((entry) {
-      if (entry.first == log.Level.message) return [];
-      if (entry.first == log.Level.error) return [];
-      if (entry.first == log.Level.warning) return [];
-      return [entry.last];
+      final (level, message) = entry;
+      if (level == log.Level.message) return [];
+      if (level == log.Level.error) return [];
+      if (level == log.Level.warning) return [];
+      return [message];
     });
   }
 }
@@ -675,8 +678,8 @@ void ensureGit() {
 
 /// Creates a lock file for [package] without running `pub get`.
 ///
-/// [dependenciesInSandBox] is a list of path dependencies to be found in the sandbox
-/// directory.
+/// [dependenciesInSandBox] is a list of path dependencies to be found in the
+/// sandbox directory.
 ///
 /// [hosted] is a list of package names to version strings for dependencies on
 /// hosted packages.
@@ -685,20 +688,20 @@ Future<void> createLockFile(
   Iterable<String>? dependenciesInSandBox,
   Map<String, String>? hosted,
 }) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
+  final cache = SystemCache(rootDir: _pathInSandbox(cachePath));
 
-  var lockFile =
+  final lockFile =
       _createLockFile(cache, sandbox: dependenciesInSandBox, hosted: hosted);
 
   await d.dir(package, [
     d.file(
       'pubspec.lock',
       lockFile.serialize(p.join(d.sandbox, package), cache),
-    )
+    ),
   ]).create();
 }
 
-/// Creates a lock file for [sources] without running `pub get`.
+/// Creates a lock file without running `pub get`.
 ///
 /// [sandbox] is a list of path dependencies to be found in the sandbox
 /// directory.
@@ -710,7 +713,7 @@ LockFile _createLockFile(
   Iterable<String>? sandbox,
   Map<String, String>? hosted,
 }) {
-  var dependencies = <String, dynamic>{};
+  final dependencies = <String, dynamic>{};
 
   if (sandbox != null) {
     for (var package in sandbox) {
@@ -740,7 +743,7 @@ LockFile _createLockFile(
             sha256: null,
           ),
         ),
-      )
+      ),
   ];
 
   return LockFile(packages);
@@ -751,7 +754,7 @@ LockFile _createLockFile(
 /// Note that this will only affect HTTP requests made via http.dart in the
 /// parent process.
 void useMockClient(MockClient client) {
-  var oldInnerClient = innerHttpClient;
+  final oldInnerClient = innerHttpClient;
   innerHttpClient = client;
   addTearDown(() {
     innerHttpClient = oldInnerClient;
@@ -767,11 +770,11 @@ Map<String, Object> packageMap(
   Map? devDependencies,
   Map? environment,
 ]) {
-  var package = <String, Object>{
+  final package = <String, Object>{
     'name': name,
     'version': version,
     'homepage': 'https://pub.dev',
-    'description': 'A package, I guess.'
+    'description': 'A package, I guess.',
   };
 
   if (dependencies != null) package['dependencies'] = dependencies;
@@ -794,7 +797,7 @@ String binStubName(String name) => Platform.isWindows ? '$name.bat' : name;
 void _validateOutput(
   List<String> failures,
   String pipe,
-  expected,
+  Object? expected,
   String actual,
 ) {
   if (expected == null) return;
@@ -813,8 +816,8 @@ void _validateOutputString(
   String expected,
   String actual,
 ) {
-  var actualLines = actual.split('\n');
-  var expectedLines = expected.split('\n');
+  final actualLines = actual.split('\n');
+  final expectedLines = expected.split('\n');
 
   // Strip off the last line. This lets us have expected multiline strings
   // where the closing ''' is on its own line. It also fixes '' expected output
@@ -823,11 +826,11 @@ void _validateOutputString(
     expectedLines.removeLast();
   }
 
-  var results = <String>[];
+  final results = <String>[];
   var failed = false;
 
   // Compare them line by line to see which ones match.
-  var length = max(expectedLines.length, actualLines.length);
+  final length = max(expectedLines.length, actualLines.length);
   for (var i = 0; i < length; i++) {
     if (i >= actualLines.length) {
       // Missing output.
@@ -838,8 +841,8 @@ void _validateOutputString(
       failed = true;
       results.add('X ${actualLines[i]}');
     } else {
-      var expectedLine = expectedLines[i].trim();
-      var actualLine = actualLines[i].trim();
+      final expectedLine = expectedLines[i].trim();
+      final actualLine = actualLines[i].trim();
 
       if (expectedLine != actualLine) {
         // Mismatched lines.
@@ -881,9 +884,9 @@ void _validateOutputJson(
 
   // Remove dart2js's timing logs, which would otherwise cause tests to fail
   // flakily when compilation takes a long time.
-  actual['log']?.removeWhere(
-    (entry) =>
-        entry['level'] == 'Fine' &&
+  (actual['log'] as List?)?.removeWhere(
+    (dynamic entry) =>
+        (entry as Map)['level'] == 'Fine' &&
         (entry['message'] as String).startsWith('Not yet complete after'),
   );
 
@@ -898,48 +901,25 @@ typedef ValidatorCreator = Validator Function();
 ///
 /// Returns a scheduled Future that contains the validator after validation.
 Future<Validator> validatePackage(ValidatorCreator fn, int? size) async {
-  var cache = SystemCache(rootDir: _pathInSandbox(cachePath));
+  final cache = SystemCache(rootDir: _pathInSandbox(cachePath));
   final entrypoint = Entrypoint(_pathInSandbox(appPath), cache);
-  var validator = fn();
+  final validator = fn();
   validator.context = ValidationContext(
     entrypoint,
     await Future.value(size ?? 100),
     _globalServer == null
         ? Uri.parse('https://pub.dev')
         : Uri.parse(globalServer.url),
-    entrypoint.root.listFiles(),
+    entrypoint.workspaceRoot.listFiles(),
   );
   await validator.validate();
   return validator;
 }
 
-/// A matcher that matches a Pair.
-Matcher pairOf(firstMatcher, lastMatcher) =>
-    _PairMatcher(wrapMatcher(firstMatcher), wrapMatcher(lastMatcher));
-
-class _PairMatcher extends Matcher {
-  final Matcher _firstMatcher;
-  final Matcher _lastMatcher;
-
-  _PairMatcher(this._firstMatcher, this._lastMatcher);
-
-  @override
-  bool matches(item, Map matchState) {
-    if (item is! Pair) return false;
-    return _firstMatcher.matches(item.first, matchState) &&
-        _lastMatcher.matches(item.last, matchState);
-  }
-
-  @override
-  Description describe(Description description) {
-    return description.addAll('(', ', ', ')', [_firstMatcher, _lastMatcher]);
-  }
-}
-
 /// Returns a matcher that asserts that a string contains [times] distinct
 /// occurrences of [pattern], which must be a regular expression pattern.
 Matcher matchesMultiple(String pattern, int times) {
-  var buffer = StringBuffer(pattern);
+  final buffer = StringBuffer(pattern);
   for (var i = 1; i < times; i++) {
     buffer.write(r'(.|\n)*');
     buffer.write(pattern);
@@ -955,9 +935,13 @@ String filterUnstableText(String input) {
   // Any paths in output should be relative to the sandbox and with forward
   // slashes to be stable across platforms.
   input = input.replaceAll(d.sandbox, r'$SANDBOX');
-  input =
-      input.replaceAllMapped(RegExp(r'\\(\S|\.)'), (match) => '/${match[1]}');
-  var port = _globalServer?.port;
+  input = input
+      .replaceAllMapped(RegExp(r'\\(\S|\.)'), (match) => '/${match[1]}')
+      .replaceAll(
+        RegExp(r'sha256: "?[0-9a-f]{64}"?', multiLine: true),
+        r'sha256: $SHA256',
+      );
+  final port = _globalServer?.port;
   if (port != null) {
     input = input.replaceAll(port.toString(), '\$PORT');
   }
@@ -994,8 +978,10 @@ Future<void> runPubIntoBuffer(
   //       .join('\n'));
   // }
   final pipe = stdin == null ? '' : ' echo ${escapeShellArgument(stdin)} |';
+  final joinedArgs =
+      args.map(filterUnstableText).map(escapeShellArgument).join(' ');
   buffer.writeln(
-    '\$$pipe pub ${args.map(filterUnstableText).map(escapeShellArgument).join(' ')}',
+    '\$$pipe pub $joinedArgs',
   );
   for (final line in await process.stdout.rest.toList()) {
     buffer.writeln(filterUnstableText(line));
@@ -1034,7 +1020,7 @@ Future<PackageServer> startPackageServer() async {
   return server;
 }
 
-/// Create temporary folder 'bin/' containing a 'git' script in [sandbox]
+/// Create temporary folder 'bin/' containing a 'git' script in [d.sandbox]
 /// By adding the bin/ folder to the search `$PATH` we can prevent `pub` from
 /// detecting the installed 'git' binary and we can test that it prints
 /// a useful error message.
@@ -1063,10 +1049,25 @@ Map<String, String> extendedPathEnv() {
   };
 }
 
+const _defaultMode = 420; // 644₈
+const _executableMask = 0x49; // 001 001 001
+
 Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
   final entries = <TarEntry>[];
   void addDescriptor(d.Descriptor descriptor, String path) {
     if (descriptor is d.DirectoryDescriptor) {
+      if (descriptor.contents.isEmpty) {
+        entries.add(
+          TarEntry(
+            TarHeader(
+              name: p.posix.join(path, descriptor.name),
+              typeFlag: TypeFlag.dir,
+              mode: _defaultMode | _executableMask,
+            ),
+            Stream.fromIterable([]),
+          ),
+        );
+      }
       for (final e in descriptor.contents) {
         addDescriptor(e, p.posix.join(path, descriptor.name));
       }
@@ -1101,7 +1102,7 @@ Stream<List<int>> tarFromDescriptors(Iterable<d.Descriptor> contents) {
 }
 
 /// Replaces the entry at index 9 in [stream] with a 0. This replaces the os
-/// entry of a gzip stream, giving us the same stream and thius stable testing
+/// entry of a gzip stream, giving us the same stream and this stable testing
 /// on all platforms.
 ///
 /// See https://www.rfc-editor.org/rfc/rfc1952 section 2.3 for information
@@ -1114,4 +1115,38 @@ Stream<List<int>> _replaceOs(Stream<List<int>> stream) async* {
   final result = bytesBuilder.toBytes();
   result[9] = 0;
   yield result;
+}
+
+/// Utility for indexing json data structures.
+///
+/// Each element of [path] should be a `String`, `int` or `(String, String)`.
+///
+/// For each element `key` of [path], recurse into [json].
+///
+/// If the `key` is a String, the next json structure should be a Map, and have
+/// `key` as a property. Recurse into that property.
+///
+/// If `key` is an `int`, the next json structure must be a List, with that
+/// index. Recurse into that index.
+///
+/// If `key` in a `(String k, String v)` the next json structure must be a List
+/// of maps, one of them having the property `k` with value `v`, recurse into
+/// that map.
+///
+/// Cast the result as a [T].
+T dig<T>(dynamic json, List<dynamic> path) {
+  for (var i = 0; i < path.length; i++) {
+    switch (path[i]) {
+      case final String key:
+        json = (json as Map)[key];
+      case final int key:
+        json = (json as List)[key];
+      case (final String key, final String value):
+        json = (json as List)
+            .firstWhere((element) => (element as Map)[key] == value);
+      case final key:
+        throw ArgumentError('Bad key $key in', 'path');
+    }
+  }
+  return json as T;
 }

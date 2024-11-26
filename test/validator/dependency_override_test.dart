@@ -20,9 +20,9 @@ void main() {
       d.validPubspec(
         extras: {
           'dev_dependencies': {'foo': '^1.0.0'},
-          'dependency_overrides': {'foo': '^3.0.0'}
+          'dependency_overrides': {'foo': '^3.0.0'},
         },
-      )
+      ),
     ]).create();
 
     await expectValidation();
@@ -38,13 +38,13 @@ void main() {
         d.validPubspec(
           extras: {
             'dependencies': {'foo': '^1.0.0'},
-            'dependency_overrides': {'foo': '^3.0.0'}
+            'dependency_overrides': {'foo': '^3.0.0'},
           },
-        )
+        ),
       ]).create();
 
       await expectValidationHint(
-        contains('Non-dev dependencies are overridden in pubspec.yaml.'),
+        'Non-dev dependencies are overridden in pubspec.yaml.',
       );
     });
     test('it has a pubspec_overrides.yaml', () async {
@@ -59,7 +59,7 @@ void main() {
           },
         ),
         d.pubspecOverrides({
-          'dependency_overrides': {'foo': '3.0.0'}
+          'dependency_overrides': {'foo': '3.0.0'},
         }),
       ]).create();
 
@@ -81,9 +81,9 @@ void main() {
             'dependency_overrides': {
               'foo': '^3.0.0',
               'bar': '^3.0.0',
-            }
+            },
           },
-        )
+        ),
       ]).create();
 
       await expectValidationHint(

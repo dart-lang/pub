@@ -18,13 +18,13 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
     await pubGet();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     await d.git(
       'foo.git',

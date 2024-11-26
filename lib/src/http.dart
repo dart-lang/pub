@@ -3,11 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Helpers for dealing with HTTP.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
@@ -38,15 +41,46 @@ class _PubHttpClient extends http.BaseClient {
 
   http.Client _inner;
 
+  /// We manually keep track of whether the client was closed,
+  /// indicating that no more networking should be done. (And thus we don't need
+  /// to retry failed requests).
+  bool _wasClosed = false;
+
   _PubHttpClient([http.Client? inner]) : _inner = inner ?? http.Client();
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    _requestStopwatches[request] = Stopwatch()..start();
+    if (_wasClosed) {
+      throw StateError('Attempting to send request on closed client');
+    }
     request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
+    if (request.url.host == 'localhost') {
+      // We always prefer using ipv4 over ipv6 for 'localhost'.
+      //
+      // This prevents conflicts where the same port is occupied by the same
+      // port on localhost.
+      final resolutions = await InternetAddress.lookup('localhost');
+      final ipv4Address = resolutions
+          .firstWhereOrNull((a) => a.type == InternetAddressType.IPv4);
+      if (ipv4Address != null) {
+        request = _OverrideUrlRequest(
+          request.url.replace(host: ipv4Address.host),
+          request,
+        );
+      }
+    }
+    _requestStopwatches[request] = Stopwatch()..start();
     _logRequest(request);
-
-    final streamedResponse = await _inner.send(request);
+    final http.StreamedResponse streamedResponse;
+    try {
+      streamedResponse = await _inner.send(request);
+    } on http.ClientException {
+      if (_wasClosed) {
+        // Avoid retrying in this case.
+        throw _ClientClosedException();
+      }
+      rethrow;
+    }
 
     _logResponse(streamedResponse);
 
@@ -55,14 +89,14 @@ class _PubHttpClient extends http.BaseClient {
 
   /// Logs the fact that [request] was sent, and information about it.
   void _logRequest(http.BaseRequest request) {
-    var requestLog = StringBuffer();
+    final requestLog = StringBuffer();
     requestLog.writeln('HTTP ${request.method} ${request.url}');
     request.headers
         .forEach((name, value) => requestLog.writeln(_logField(name, value)));
 
     if (request.method == 'POST') {
-      var contentTypeString = request.headers[HttpHeaders.contentTypeHeader];
-      var contentType = ContentType.parse(contentTypeString ?? '');
+      final contentTypeString = request.headers[HttpHeaders.contentTypeHeader];
+      final contentType = ContentType.parse(contentTypeString ?? '');
       if (request is http.MultipartRequest) {
         requestLog.writeln();
         requestLog.writeln('Body fields:');
@@ -93,9 +127,9 @@ class _PubHttpClient extends http.BaseClient {
     // TODO(nweiz): Fork the response stream and log the response body. Be
     // careful not to log OAuth2 private data, though.
 
-    var responseLog = StringBuffer();
-    var request = response.request!;
-    var stopwatch = _requestStopwatches.remove(request)!..stop();
+    final responseLog = StringBuffer();
+    final request = response.request!;
+    final stopwatch = _requestStopwatches.remove(request)!..stop();
     responseLog.writeln('HTTP response ${response.statusCode} '
         '${response.reasonPhrase} for ${request.method} ${request.url}');
     responseLog.writeln('took ${stopwatch.elapsed}');
@@ -116,7 +150,10 @@ class _PubHttpClient extends http.BaseClient {
   }
 
   @override
-  void close() => _inner.close();
+  void close() {
+    _wasClosed = true;
+    _inner.close();
+  }
 }
 
 /// The [_PubHttpClient] wrapped by [globalHttpClient].
@@ -160,12 +197,12 @@ extension AttachHeaders on http.Request {
     headers['X-Pub-Command'] = PubCommand.command;
     headers['X-Pub-Session-ID'] = _sessionId;
 
-    var environment = Platform.environment['PUB_ENVIRONMENT'];
+    final environment = Platform.environment['PUB_ENVIRONMENT'];
     if (environment != null) {
       headers['X-Pub-Environment'] = environment;
     }
 
-    var type = Zone.current[#_dependencyType];
+    final type = Zone.current[#_dependencyType];
     if (type != null && type != DependencyType.none) {
       headers['X-Pub-Reason'] = type.toString();
     }
@@ -178,14 +215,14 @@ extension AttachHeaders on http.Request {
 /// "some message"}}`. If the format is correct, the message will be printed;
 /// otherwise an error will be raised.
 void handleJsonSuccess(http.Response response) {
-  final parsed = parseJsonResponse(response);
-  final success = parsed['success'];
-  if (success is! Map ||
-      !(parsed['success'] as Map).containsKey('message') ||
-      parsed['success']['message'] is! String) {
-    invalidServerResponse(response);
+  switch (parseJsonResponse(response)) {
+    case {'success': {'message': final String message}}:
+      log.message(
+        'Message from server: ${log.green(sanitizeForTerminal(message))}',
+      );
+    default:
+      invalidServerResponse(response);
   }
-  log.message(log.green(parsed['success']['message'] as String));
 }
 
 /// Handles an unsuccessful JSON-formatted response from pub.dev.
@@ -199,14 +236,54 @@ void handleJsonError(http.BaseResponse response) {
     // See https://github.com/dart-lang/pub/pull/3590#discussion_r1012978108
     fail(log.red('Invalid server response'));
   }
-  var errorMap = parseJsonResponse(response);
+  final errorMap = parseJsonResponse(response);
   final error = errorMap['error'];
   if (error is! Map ||
       !error.containsKey('message') ||
       error['message'] is! String) {
     invalidServerResponse(response);
   }
-  fail(log.red(error['message'] as String));
+  final formattedMessage =
+      log.red(sanitizeForTerminal(error['message'] as String));
+  fail(
+    'Message from server: $formattedMessage',
+  );
+}
+
+/// Handles an unsuccessful XML-formatted response from google cloud storage.
+///
+/// Assumes messages are of the form in
+/// https://cloud.google.com/storage/docs/xml-api/reference-status
+///
+/// This is a poor person's XML parsing with regexps, but this should be
+/// sufficient for the specified messages.
+void handleGCSError(http.BaseResponse response) {
+  if (response is http.Response) {
+    final responseBody = response.body;
+    if (responseBody.contains('<?xml')) {
+      String? getTagText(String tag) {
+        final result = RegExp('<$tag>(.*)</$tag>').firstMatch(responseBody)?[1];
+        if (result == null) return null;
+        return sanitizeForTerminal(result);
+      }
+
+      final code = getTagText('Code');
+      // TODO(sigurdm): we could hard-code nice error messages for known codes.
+      final message = getTagText('Message');
+      // `Details` are not specified in the doc above, but have been observed in
+      // actual responses.
+      final details = getTagText('Details');
+      if (code != null) {
+        log.error('Server error code: ${sanitizeForTerminal(code)}');
+      }
+      if (message != null) {
+        log.error('Server message: ${sanitizeForTerminal(message)}');
+      }
+      if (details != null) {
+        log.error('Server details: ${sanitizeForTerminal(details)}');
+      }
+    }
+  }
 }
 
 /// Parses a response body, assuming it's JSON-formatted.
@@ -308,7 +385,7 @@ extension Throwing on http.BaseResponse {
     HttpStatus.movedTemporarily,
     HttpStatus.seeOther,
     HttpStatus.temporaryRedirect,
-    HttpStatus.permanentRedirect
+    HttpStatus.permanentRedirect,
   ];
 
   /// Throws [PubHttpResponseException], calls [fail], or does nothing depending
@@ -351,7 +428,7 @@ extension RequestSending on http.Client {
   /// when you need to send a request object but want a regular response object.
   ///
   /// If false is passed for [throwIfNotOk], the response will not be validated.
-  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  /// See [http.BaseResponse] extension for validation details.
   Future<http.Response> fetch(
     http.BaseRequest request, {
     bool throwIfNotOk = true,
@@ -368,7 +445,7 @@ extension RequestSending on http.Client {
   /// is successful, returns a [http.StreamedResponse].
   ///
   /// If false is passed for [throwIfNotOk], the response will not be validated.
-  /// See [http.BaseResponse.throwIfNotOk] extension for validation details.
+  /// See [Throwing.throwIfNotOk] extension for validation details.
   Future<http.StreamedResponse> fetchAsStream(
     http.BaseRequest request, {
     bool throwIfNotOk = true,
@@ -379,4 +456,61 @@ extension RequestSending on http.Client {
     }
     return streamedResponse;
   }
+}
+
+/// Thrown by [_PubHttpClient.send] if the client was closed while the request
+/// was being processed. Notably it doesn't implement [http.ClientException],
+/// and thus does not trigger a retry by [retryForHttp].
+class _ClientClosedException implements Exception {
+  @override
+  String toString() => 'Request was made after http client was closed';
+}
+
+class _OverrideUrlRequest implements http.BaseRequest {
+  @override
+  final Uri url;
+
+  final http.BaseRequest wrapped;
+
+  _OverrideUrlRequest(this.url, this.wrapped);
+
+  @override
+  int? get contentLength => wrapped.contentLength;
+
+  @override
+  Map<String, String> get headers => wrapped.headers;
+
+  @override
+  bool get persistentConnection => wrapped.persistentConnection;
+
+  @override
+  bool get followRedirects => wrapped.followRedirects;
+  @override
+  set followRedirects(bool value) => wrapped.followRedirects = value;
+
+  @override
+  int get maxRedirects => wrapped.maxRedirects;
+
+  @override
+  set maxRedirects(int value) => wrapped.maxRedirects = value;
+
+  @override
+  String get method => wrapped.method;
+
+  @override
+  set contentLength(int? value) => wrapped.contentLength = value;
+
+  @override
+  http.ByteStream finalize() => wrapped.finalize();
+
+  @override
+  bool get finalized => wrapped.finalized;
+
+  @override
+  Future<http.StreamedResponse> send() {
+    throw UnimplementedError();
+  }
+
+  @override
+  set persistentConnection(bool value) => wrapped.persistentConnection = value;
 }

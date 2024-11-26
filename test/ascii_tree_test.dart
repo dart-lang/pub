@@ -4,17 +4,13 @@
 
 import 'package:pub/src/ascii_tree.dart' as tree;
 import 'package:pub/src/package.dart';
+import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart';
 import 'golden_file.dart';
 import 'test_pub.dart';
-
-/// Removes ansi color codes from [s].
-String stripColors(String s) {
-  return s.replaceAll(RegExp('\u001b\\[.*?m'), '');
-}
 
 void main() {
   setUp(() {
@@ -61,10 +57,10 @@ void main() {
         file('path.dart', bytes(100)),
       ]),
     ]).create();
-    var files = Package.load(
-      null,
+    final files = Package.load(
       path(appPath),
-      (name) => throw UnimplementedError(),
+      loadPubspec:
+          Pubspec.loadRootWithSources((name) => throw UnimplementedError()),
     ).listFiles();
     ctx.expectNextSection(
       tree.fromFiles(files, baseDir: path(appPath), showFileSizes: true),
@@ -75,7 +71,7 @@ void main() {
   });
 
   testWithGolden('tree.fromMap a complex example', colors: true, (ctx) {
-    var map = {
+    final map = {
       '.gitignore': <String, Map>{},
       'README.md': <String, Map>{},
       'TODO': <String, Map>{},
@@ -96,10 +92,10 @@ void main() {
         'join_test.dart': <String, Map>{},
         'normalize_test.dart': <String, Map>{},
         'relative_test.dart': <String, Map>{},
-        'split_test.dart': <String, Map>{}
-      }
+        'split_test.dart': <String, Map>{},
+      },
     };
 
-    ctx.expectNextSection(tree.fromMap(map));
+    ctx.expectNextSection(tree.fromMap(map, startingAtTop: false));
   });
 }

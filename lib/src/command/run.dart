@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 
 import '../command.dart';
+import '../entrypoint.dart';
 import '../executable.dart';
 import '../log.dart' as log;
 import '../utils.dart';
@@ -62,6 +63,7 @@ class RunCommand extends PubCommand {
         log.message('Deprecated. Use `dart run` instead.');
       });
     }
+    await Entrypoint.ensureUpToDate(entrypoint.workspaceRoot.dir, cache: cache);
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
@@ -69,14 +71,14 @@ class RunCommand extends PubCommand {
       dataError('The --(no-)sound-null-safety flag is no longer supported.');
     }
 
-    var package = entrypoint.root.name;
+    var package = entrypoint.workspaceRoot.name;
     var executable = argResults.rest[0];
-    var args = argResults.rest.skip(1).toList();
+    final args = argResults.rest.skip(1).toList();
 
     // A command like "foo:bar" runs the "bar" script from the "foo" package.
     // If there is no colon prefix, default to the root package.
     if (executable.contains(':')) {
-      var components = split1(executable, ':');
+      final components = split1(executable, ':');
       package = components[0];
       executable = components[1];
 
@@ -97,7 +99,7 @@ class RunCommand extends PubCommand {
 
     final vmArgs = vmArgsFromArgResults(argResults);
 
-    var exitCode = await runExecutable(
+    final exitCode = await runExecutable(
       entrypoint,
       Executable.adaptProgramName(package, executable),
       args,

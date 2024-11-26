@@ -34,14 +34,14 @@ void main() {
           d.gitPackageRepoCacheDir('foo'),
         ]),
         d.gitPackageRevisionCacheDir('foo', modifier: 1),
-      ])
+      ]),
     ]).validate();
 
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'ref': 'old'}
-        }
+          'git': {'url': '../foo.git', 'ref': 'old'},
+        },
       },
     ).validate();
   });
@@ -76,7 +76,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 }

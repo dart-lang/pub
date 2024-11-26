@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -29,7 +29,7 @@ void main() {
     await d.appDir(dependencies: {'foo': 'any'}).create();
 
     // Also delete the ".dart_tool" directory.
-    deleteEntry(path.join(d.sandbox, appPath, '.dart_tool'));
+    deleteEntry(p.join(d.sandbox, appPath, '.dart_tool'));
 
     // Do the dry run.
     await pubUpgrade(
@@ -44,7 +44,7 @@ void main() {
       // The lockfile should be unmodified.
       d.file('pubspec.lock', contains('1.0.0')),
       // The ".dart_tool" directory should not have been regenerated.
-      d.nothing('.dart_tool')
+      d.nothing('.dart_tool'),
     ]).validate();
   });
 
@@ -63,7 +63,7 @@ void main() {
     ]).validate();
 
     // Also delete the ".dart_tool" directory.
-    deleteEntry(path.join(d.sandbox, appPath, '.dart_tool'));
+    deleteEntry(p.join(d.sandbox, appPath, '.dart_tool'));
 
     // Do the dry run.
     await pubUpgrade(
@@ -84,7 +84,7 @@ void main() {
       // The lockfile should not be modified.
       d.file('pubspec.lock', contains('1.0.0')),
       // The ".dart_tool" directory should not have been regenerated.
-      d.nothing('.dart_tool')
+      d.nothing('.dart_tool'),
     ]).validate();
 
     // Try without --dry-run
@@ -102,7 +102,7 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(dependencies: {'foo': '^2.0.0'}),
       d.file('pubspec.lock', contains('2.0.0')),
-      d.dir('.dart_tool')
+      d.dir('.dart_tool'),
     ]).validate();
   });
 }

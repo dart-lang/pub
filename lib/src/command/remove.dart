@@ -10,7 +10,6 @@ import '../io.dart';
 import '../log.dart' as log;
 import '../pubspec.dart';
 import '../solver.dart';
-import '../utils.dart';
 
 /// Handles the `remove` pub command. Removes dependencies from `pubspec.yaml`,
 /// and performs an operation similar to `pub get`. Unlike `pub add`, this
@@ -88,23 +87,21 @@ To remove a dependency override of a package prefix the package name with
       /// Update the pubspec.
       _writeRemovalToPubspec(targets);
     }
-    final rootPubspec = entrypoint.root.pubspec;
-    final newPubspec = _removePackagesFromPubspec(rootPubspec, targets);
+    final workPubspec = entrypoint.workPackage.pubspec;
+    final newPubspec = _removePackagesFromPubspec(workPubspec, targets);
 
-    await entrypoint.withPubspec(newPubspec).acquireDependencies(
+    await entrypoint.withWorkPubspec(newPubspec).acquireDependencies(
           SolveType.get,
           precompile: !isDryRun && argResults.flag('precompile'),
           dryRun: isDryRun,
-          analytics: isDryRun ? null : analytics,
         );
 
-    var example = entrypoint.example;
+    final example = entrypoint.example;
     if (!isDryRun && argResults.flag('example') && example != null) {
       await example.acquireDependencies(
         SolveType.get,
         precompile: argResults.flag('precompile'),
         summaryOnly: true,
-        analytics: analytics,
       );
     }
   }
@@ -125,10 +122,7 @@ To remove a dependency override of a package prefix the package name with
         devDependencies.remove(package.name);
       }
     }
-    return Pubspec(
-      original.name,
-      version: original.version,
-      sdkConstraints: original.sdkConstraints,
+    return original.copyWith(
       dependencies: dependencies.values,
       devDependencies: devDependencies.values,
       dependencyOverrides: overrides.values,
@@ -139,7 +133,8 @@ To remove a dependency override of a package prefix the package name with
   void _writeRemovalToPubspec(Iterable<_PackageRemoval> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
-    final yamlEditor = YamlEditor(readTextFile(entrypoint.pubspecPath));
+    final yamlEditor =
+        YamlEditor(readTextFile(entrypoint.workPackage.pubspecPath));
 
     for (final package in packages) {
       final dependencyKeys = package.removeFromOverride
@@ -165,14 +160,15 @@ To remove a dependency override of a package prefix the package name with
         }
       }
       if (!found) {
+        final pubspecPath = entrypoint.workPackage.pubspecPath;
         log.warning(
-          'Package "$name" was not found in ${entrypoint.pubspecPath}!',
+          'Package "$name" was not found in $pubspecPath!',
         );
       }
     }
 
     /// Windows line endings are already handled by [yamlEditor]
-    writeTextFile(entrypoint.pubspecPath, yamlEditor.toString());
+    writeTextFile(entrypoint.workPackage.pubspecPath, yamlEditor.toString());
   }
 }
 

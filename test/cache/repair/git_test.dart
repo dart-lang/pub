@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
@@ -21,7 +21,7 @@ void main() {
 
       await d.appDir(
         dependencies: {
-          'foo': {'git': '../foo.git'}
+          'foo': {'git': '../foo.git'},
         },
       ).create();
       await pubGet();
@@ -36,14 +36,14 @@ void main() {
 
     test('reinstalls previously cached git packages', () async {
       // Find the cached foo packages for each revision.
-      var gitCacheDir = path.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith('foo-'))
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
+          .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
       // Delete "foo.dart" from them.
       for (var dir in fooDirs) {
-        deleteEntry(path.join(dir, 'lib', 'foo.dart'));
+        deleteEntry(p.join(dir, 'lib', 'foo.dart'));
       }
 
       // Repair them.
@@ -56,10 +56,10 @@ void main() {
       );
 
       // The missing libraries should have been replaced.
-      var fooLibs = fooDirs.map((dir) {
-        var fooDirName = path.basename(dir);
+      final fooLibs = fooDirs.map((dir) {
+        final fooDirName = p.basename(dir);
         return d.dir(fooDirName, [
-          d.dir('lib', [d.file('foo.dart', 'main() => "foo";')])
+          d.dir('lib', [d.file('foo.dart', 'main() => "foo";')]),
         ]);
       }).toList();
 
@@ -67,13 +67,13 @@ void main() {
     });
 
     test('deletes packages without pubspecs', () async {
-      var gitCacheDir = path.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith('foo-'))
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
+          .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
       for (var dir in fooDirs) {
-        deleteEntry(path.join(dir, 'pubspec.yaml'));
+        deleteEntry(p.join(dir, 'pubspec.yaml'));
       }
 
       await runPub(
@@ -92,18 +92,18 @@ void main() {
       );
 
       await d.dir(cachePath, [
-        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir('git', fooDirs.map((dir) => d.nothing(p.basename(dir)))),
       ]).validate();
     });
 
     test('deletes packages with invalid pubspecs', () async {
-      var gitCacheDir = path.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith('foo-'))
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
+          .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
       for (var dir in fooDirs) {
-        writeTextFile(path.join(dir, 'pubspec.yaml'), '{');
+        writeTextFile(p.join(dir, 'pubspec.yaml'), '{');
       }
 
       await runPub(
@@ -122,7 +122,7 @@ void main() {
       );
 
       await d.dir(cachePath, [
-        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir('git', fooDirs.map((dir) => d.nothing(p.basename(dir)))),
       ]).validate();
     });
   });
@@ -131,20 +131,20 @@ void main() {
     setUp(() async {
       // Create two cached revisions of foo.
       await d.git('foo.git', [
-        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.0')])
+        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.0')]),
       ]).create();
 
       await d.appDir(
         dependencies: {
           'sub': {
-            'git': {'url': '../foo.git', 'path': 'subdir'}
-          }
+            'git': {'url': '../foo.git', 'path': 'subdir'},
+          },
         },
       ).create();
       await pubGet();
 
       await d.git('foo.git', [
-        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.1')])
+        d.dir('subdir', [d.libDir('sub'), d.libPubspec('sub', '1.0.1')]),
       ]).commit();
 
       await pubUpgrade();
@@ -152,14 +152,14 @@ void main() {
 
     test('reinstalls previously cached git packages', () async {
       // Find the cached foo packages for each revision.
-      var gitCacheDir = path.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith('foo-'))
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
+          .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
       // Delete "sub.dart" from them.
       for (var dir in fooDirs) {
-        deleteEntry(path.join(dir, 'subdir/lib/sub.dart'));
+        deleteEntry(p.join(dir, 'subdir/lib/sub.dart'));
       }
 
       // Repair them.
@@ -172,12 +172,12 @@ void main() {
       );
 
       // The missing libraries should have been replaced.
-      var fooLibs = fooDirs.map((dir) {
-        var fooDirName = path.basename(dir);
+      final fooLibs = fooDirs.map((dir) {
+        final fooDirName = p.basename(dir);
         return d.dir(fooDirName, [
           d.dir('subdir', [
-            d.dir('lib', [d.file('sub.dart', 'main() => "sub";')])
-          ])
+            d.dir('lib', [d.file('sub.dart', 'main() => "sub";')]),
+          ]),
         ]);
       }).toList();
 
@@ -185,13 +185,13 @@ void main() {
     });
 
     test('deletes packages without pubspecs', () async {
-      var gitCacheDir = path.join(d.sandbox, cachePath, 'git');
-      var fooDirs = listDir(gitCacheDir)
-          .where((dir) => path.basename(dir).startsWith('foo-'))
+      final gitCacheDir = p.join(d.sandbox, cachePath, 'git');
+      final fooDirs = listDir(gitCacheDir)
+          .where((dir) => p.basename(dir).startsWith('foo-'))
           .toList();
 
       for (var dir in fooDirs) {
-        deleteEntry(path.join(dir, 'subdir', 'pubspec.yaml'));
+        deleteEntry(p.join(dir, 'subdir', 'pubspec.yaml'));
       }
 
       await runPub(
@@ -200,7 +200,7 @@ void main() {
           contains('Failed to load package:'),
           contains('Could not find a file named "pubspec.yaml" in '),
           contains('foo-'),
-          contains('${path.separator}subdir'),
+          contains('${p.separator}subdir'),
         ]),
         output: allOf([
           startsWith('Failed to reinstall 2 packages:'),
@@ -211,7 +211,7 @@ void main() {
       );
 
       await d.dir(cachePath, [
-        d.dir('git', fooDirs.map((dir) => d.nothing(path.basename(dir))))
+        d.dir('git', fooDirs.map((dir) => d.nothing(p.basename(dir)))),
       ]).validate();
     });
   });

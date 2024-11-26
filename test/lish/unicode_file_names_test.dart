@@ -19,7 +19,7 @@ void main() {
 
     await servePackages();
     await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
@@ -28,13 +28,16 @@ void main() {
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.ok(
         jsonEncode({
-          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'}
+          'success': {'message': 'Package test_pkg 1.0.0 uploaded!'},
         }),
       );
     });
 
     expect(pub.stdout, emits(startsWith('Uploading...')));
-    expect(pub.stdout, emits('Package test_pkg 1.0.0 uploaded!'));
+    expect(
+      pub.stdout,
+      emits('Message from server: Package test_pkg 1.0.0 uploaded!'),
+    );
     await pub.shouldExit(exit_codes.SUCCESS);
   });
 

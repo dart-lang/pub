@@ -24,8 +24,8 @@ class GlobalDeactivateCommand extends PubCommand {
 
     // Don't allow extra arguments.
     if (argResults.rest.length > 1) {
-      var unexpected = argResults.rest.skip(1).map((arg) => '"$arg"');
-      var arguments = pluralize('argument', unexpected.length);
+      final unexpected = argResults.rest.skip(1).map((arg) => '"$arg"');
+      final arguments = pluralize('argument', unexpected.length);
       usageException('Unexpected $arguments ${toSentence(unexpected)}.');
     }
 

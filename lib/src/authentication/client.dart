@@ -11,18 +11,19 @@ import 'package:http_parser/http_parser.dart';
 import '../http.dart';
 import '../log.dart' as log;
 import '../system_cache.dart';
+import '../utils.dart';
 import 'credential.dart';
 
 /// This client authenticates requests by injecting `Authentication` header to
 /// requests.
 ///
-/// Requests to URLs not under [serverBaseUrl] will not be authenticated.
+/// Requests to URLs not under [_credential]'s url will not be authenticated.
 class _AuthenticatedClient extends http.BaseClient {
   /// Constructs Http client wrapper that injects `authorization` header to
   /// requests and handles authentication errors.
   ///
-  /// [_credential] might be `null`. In that case `authorization` header will not
-  /// be injected to requests.
+  /// [_credential] might be `null`. In that case `authorization` header will
+  /// not be injected to requests.
   _AuthenticatedClient(this._inner, this._credential);
 
   final http.BaseClient _inner;
@@ -39,13 +40,13 @@ class _AuthenticatedClient extends http.BaseClient {
     // request.
     //
     // This check ensures that this client will only authenticate requests sent
-    // to given serverBaseUrl. Otherwise credential leaks might ocurr when
+    // to given serverBaseUrl. Otherwise credential leaks might occur when
     // archive_url hosted on 3rd party server that should not receive
     // credentials of the first party.
     if (_credential != null &&
-        _credential!.canAuthenticate(request.url.toString())) {
+        _credential.canAuthenticate(request.url.toString())) {
       request.headers[HttpHeaders.authorizationHeader] =
-          await _credential!.getAuthorizationHeaderValue();
+          await _credential.getAuthorizationHeaderValue();
     }
 
     final response = await _inner.send(request);
@@ -83,11 +84,7 @@ class _AuthenticatedClient extends http.BaseClient {
       }
     }
     if (serverMessage != null) {
-      // Only allow printable ASCII, map anything else to whitespace, take
-      // at-most 1024 characters.
-      serverMessage = String.fromCharCodes(
-        serverMessage.runes.map((r) => 32 <= r && r <= 127 ? r : 32).take(1024),
-      );
+      serverMessage = sanitizeForTerminal(serverMessage);
     }
     throw AuthenticationException(response.statusCode, serverMessage);
   }

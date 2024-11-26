@@ -3,9 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Message logging.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
@@ -41,8 +44,6 @@ const _maxTranscript = 10000;
 final Transcript<_Entry> _transcript = Transcript(_maxTranscript);
 
 /// The currently-animated progress indicator, if any.
-///
-/// This will also be in [_progresses].
 Progress? _animatedProgress;
 
 final _cyan = getAnsi('\u001b[36m');
@@ -60,36 +61,36 @@ final _bold = getAnsi('\u001b[1m');
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
 ///
-/// By default, [error] and [warning] messages are printed to sterr. [message]
-/// messages are printed to stdout, and others are ignored.
-class Level {
+/// By default, [error] and [warning] messages are printed to stderr.
+/// [message] messages are printed to stdout, and others are ignored.
+enum Level {
   /// An error occurred and an operation could not be completed.
   ///
   /// Usually shown to the user on stderr.
-  static const error = Level._('ERR ');
+  error('ERR '),
 
   /// Something unexpected happened, but the program was able to continue,
   /// though possibly in a degraded fashion.
-  static const warning = Level._('WARN');
+  warning('WARN'),
 
   /// A message intended specifically to be shown to the user.
-  static const message = Level._('MSG ');
+  message('MSG '),
 
   /// Some interaction with the external world occurred, such as a network
   /// operation, process spawning, or file IO.
-  static const io = Level._('IO  ');
+  io('IO  '),
 
   /// Incremental output during pub's version constraint solver.
-  static const solver = Level._('SLVR');
+  solver('SLVR'),
 
   /// Fine-grained and verbose additional information.
   ///
   /// Used to provide program state context for other logs (such as what pub
   /// was doing when an IO operation occurred) or just more detail for an
   /// operation.
-  static const fine = Level._('FINE');
+  fine('FINE');
 
-  const Level._(this.name);
+  const Level(this.name);
 
   final String name;
 
@@ -99,88 +100,88 @@ class Level {
 
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.
-class Verbosity {
+enum Verbosity {
   /// Silence all logging.
-  static const none = Verbosity._('none', {
+  none('none', {
     Level.error: null,
     Level.warning: null,
     Level.message: null,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
-  });
+    Level.fine: null,
+  }),
 
   /// Shows only errors.
-  static const error = Verbosity._('error', {
+  error('error', {
     Level.error: _logToStderr,
     Level.warning: null,
     Level.message: null,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
-  });
+    Level.fine: null,
+  }),
 
   /// Shows only errors and warnings.
-  static const warning = Verbosity._('warning', {
+  warning('warning', {
     Level.error: _logToStderr,
     Level.warning: _logToStderr,
     Level.message: null,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
-  });
+    Level.fine: null,
+  }),
 
   /// The default verbosity which shows errors, warnings, and messages.
-  static const normal = Verbosity._('normal', {
+  normal('normal', {
     Level.error: _logToStderr,
     Level.warning: _logToStderr,
     Level.message: _logToStdout,
     Level.io: null,
     Level.solver: null,
-    Level.fine: null
-  });
+    Level.fine: null,
+  }),
 
   /// Shows errors, warnings, messages, and IO event logs.
-  static const io = Verbosity._('io', {
+  io('io', {
     Level.error: _logToStderrWithLabel,
     Level.warning: _logToStderrWithLabel,
     Level.message: _logToStdoutWithLabel,
     Level.io: _logToStderrWithLabel,
     Level.solver: null,
-    Level.fine: null
-  });
+    Level.fine: null,
+  }),
 
   /// Shows errors, warnings, messages, and version solver logs.
-  static const solver = Verbosity._('solver', {
+  solver('solver', {
     Level.error: _logToStderr,
     Level.warning: _logToStderr,
     Level.message: _logToStdout,
     Level.io: null,
     Level.solver: _logToStdout,
-    Level.fine: null
-  });
+    Level.fine: null,
+  }),
 
   /// Shows all logs.
-  static const all = Verbosity._('all', {
+  all('all', {
     Level.error: _logToStderrWithLabel,
     Level.warning: _logToStderrWithLabel,
     Level.message: _logToStdoutWithLabel,
     Level.io: _logToStderrWithLabel,
     Level.solver: _logToStderrWithLabel,
-    Level.fine: _logToStderrWithLabel
-  });
+    Level.fine: _logToStderrWithLabel,
+  }),
 
   /// Shows all logs.
-  static const testing = Verbosity._('testing', {
+  testing('testing', {
     Level.error: _logToStderrWithLabel,
     Level.warning: _logToStderrWithLabel,
     Level.message: _logToStdoutWithLabel,
     Level.io: _logToStderrWithLabel,
     Level.solver: _logToStderrWithLabel,
-    Level.fine: _logToStderrWithLabel
+    Level.fine: _logToStderrWithLabel,
   });
 
-  const Verbosity._(this.name, this._loggers);
+  const Verbosity(this.name, this._loggers);
 
   final String name;
   final Map<Level, void Function(_Entry entry)?> _loggers;
@@ -204,7 +205,7 @@ class _Entry {
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
-void error(String message, [error, StackTrace? trace]) {
+void error(String message, [Object? error, StackTrace? trace]) {
   if (error != null) {
     message = message.isEmpty ? '$error' : '$message: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
@@ -230,18 +231,10 @@ void fine(String message) => write(Level.fine, message);
 
 /// Logs [message] at [level].
 void write(Level level, String message) {
-  message = message.toString();
-  var lines = splitLines(message);
+  final lines = const LineSplitter().convert(message);
+  final entry = _Entry(level, lines);
 
-  // Discard a trailing newline. This is useful since StringBuffers often end
-  // up with an extra newline at the end from using [writeln].
-  if (lines.isNotEmpty && lines.last == '') {
-    lines.removeLast();
-  }
-
-  var entry = _Entry(level, lines);
-
-  var logFn = verbosity._loggers[level];
+  final logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
   _transcript.add(entry);
@@ -259,18 +252,22 @@ void process(
 }
 
 /// Logs the results of running [executable].
-void processResult(String executable, PubProcessResult result) {
+void processResult(String executable, ProcessResult result) {
   // Log it all as one message so that it shows up as a single unit in the logs.
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   buffer.writeln('Finished $executable. Exit code ${result.exitCode}.');
 
-  void dumpOutput(String name, List<String> output) {
+  void dumpOutput(String name, dynamic output) {
+    if (output is! String) {
+      buffer.writeln('Binary output on $name.');
+      return;
+    }
     if (output.isEmpty) {
       buffer.writeln('Nothing output on $name.');
     } else {
       buffer.writeln('$name:');
       var numLines = 0;
-      for (var line in output) {
+      for (var line in output.split('\n')) {
         if (++numLines > 1000) {
           buffer.writeln('[${output.length - 1000}] more lines of output '
               'truncated...]');
@@ -292,7 +289,7 @@ void processResult(String executable, PubProcessResult result) {
 void exception(Object exception, [StackTrace? trace]) {
   if (exception is SilentException) return;
 
-  var chain = trace == null ? Chain.current() : Chain.forTrace(trace);
+  final chain = trace == null ? Chain.current() : Chain.forTrace(trace);
 
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
@@ -374,20 +371,31 @@ Platform: ${Platform.operatingSystem}
 ''');
 
   if (entrypoint != null) {
-    buffer.writeln('---- ${p.absolute(entrypoint.pubspecPath)} ----');
-    if (fileExists(entrypoint.pubspecPath)) {
-      buffer.writeln(limitLength(readTextFile(entrypoint.pubspecPath), 5000));
+    // TODO(https://github.com/dart-lang/pub/issues/4127): We probably want to
+    // log all pubspecs in workspace?
+
+    if (entrypoint.canFindWorkspaceRoot) {
+      buffer.writeln(
+        '---- ${p.absolute(entrypoint.workspaceRoot.pubspecPath)} ----',
+      );
+      buffer.writeln(
+        limitLength(
+          readTextFile(entrypoint.workspaceRoot.pubspecPath),
+          5000,
+        ),
+      );
+      buffer.writeln('---- End pubspec.yaml ----');
     } else {
       buffer.writeln('<No pubspec.yaml>');
     }
-    buffer.writeln('---- End pubspec.yaml ----');
-    buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
-    if (fileExists(entrypoint.lockFilePath)) {
+    if (entrypoint.canFindWorkspaceRoot &&
+        fileExists(entrypoint.lockFilePath)) {
+      buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
       buffer.writeln(limitLength(readTextFile(entrypoint.lockFilePath), 5000));
+      buffer.writeln('---- End pubspec.lock ----');
     } else {
       buffer.writeln('<No pubspec.lock>');
     }
-    buffer.writeln('---- End pubspec.lock ----');
   }
 
   buffer.writeln('---- Log transcript ----');
@@ -409,7 +417,7 @@ Platform: ${Platform.operatingSystem}
 
 /// Filter out normal pub output when not attached to a terminal
 ///
-/// Unless the user has overriden the verbosity,
+/// Unless the user has overridden the verbosity,
 ///
 /// This is useful to not pollute stdout when the output is piped somewhere.
 Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
@@ -432,7 +440,7 @@ Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 Future<T> progress<T>(String message, Future<T> Function() callback) {
   _stopProgress();
 
-  var progress = Progress(message);
+  final progress = Progress(message);
   _animatedProgress = progress;
   return callback().whenComplete(progress.stop);
 }
@@ -446,11 +454,9 @@ Future<T> spinner<T>(
   if (condition) {
     _stopProgress();
 
-    var progress = Progress(message);
+    final progress = Progress(message);
     _animatedProgress = progress;
-    return callback().whenComplete(() {
-      progress.stopAndClear();
-    });
+    return callback().whenComplete(progress.stopAndClear);
   }
   return callback();
 }
@@ -490,15 +496,13 @@ void unmuteProgress() {
 /// that supports that.
 ///
 /// Use this to highlight the most important piece of a long chunk of text.
-String bold(text) => '$_bold$text$_none';
+String bold(String text) => '$_bold$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to make it gray when on a platform
 /// that supports that.
 ///
 /// Use this for text that's less important than the text around it.
-String gray(text) {
-  return '$_gray$text$_none';
-}
+String gray(String text) => '$_gray$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to color it cyan when on a platform
 /// that supports that.
@@ -603,7 +607,7 @@ class _JsonLogger {
   ///
   /// Always prints to stdout.
   void error(Object error, [StackTrace? stackTrace]) {
-    var errorJson = {'error': error.toString()};
+    final errorJson = {'error': error.toString()};
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;
     if (stackTrace != null) {
@@ -626,9 +630,86 @@ class _JsonLogger {
   }
 
   /// Encodes [message] to JSON and prints it if JSON output is enabled.
-  void message(message) {
+  void message(Map<String, String> message) {
     if (!enabled) return;
 
     stdout.writeln(jsonEncode(message));
   }
+}
+
+/// Represents a string and its highlighting separately, such that we can
+/// compute the displayed length.
+class FormattedString {
+  final String value;
+
+  /// Should apply the ansi codes to present this string.
+  final String Function(String) _format;
+
+  /// A prefix for marking this string if colors are not used.
+  final String _prefix;
+
+  final String _suffix;
+
+  FormattedString(
+    this.value, {
+    String Function(String)? format,
+    String? prefix,
+    String? suffix,
+  })  : _format = format ?? _noFormat,
+        _prefix = prefix ?? '',
+        _suffix = suffix ?? '';
+
+  String formatted({required bool useColors}) {
+    return useColors
+        ? _format(_prefix + value + _suffix)
+        : _prefix + value + _suffix;
+  }
+
+  int computeLength({required bool? useColors}) {
+    return _prefix.length + value.length + _suffix.length;
+  }
+
+  static String _noFormat(String x) => x;
+}
+
+FormattedString format(
+  String value,
+  String Function(String) format, {
+  String? prefix = '',
+}) =>
+    FormattedString(value, format: format, prefix: prefix);
+
+/// Formats a table of [rows], inserting enough spaces to make columns line up.
+List<String> renderTable(
+  List<List<FormattedString>> rows,
+  bool useColors,
+) {
+  // Compute the width of each column by taking the max across all rows.
+  final columnWidths = <int, int>{};
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].length > 1) {
+      for (var j = 0; j < rows[i].length; j++) {
+        final currentMaxWidth = columnWidths[j] ?? 0;
+        columnWidths[j] = max(
+          rows[i][j].computeLength(useColors: useColors),
+          currentMaxWidth,
+        );
+      }
+    }
+  }
+
+  final result = <String>[];
+  for (final row in rows) {
+    final b = StringBuffer();
+    for (var j = 0; j < row.length; j++) {
+      b.write(row[j].formatted(useColors: useColors));
+      b.write(
+        ' ' *
+            ((columnWidths[j]! + 2) -
+                row[j].computeLength(useColors: useColors)),
+      );
+    }
+    result.add(b.toString());
+  }
+  return result;
 }

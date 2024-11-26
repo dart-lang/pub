@@ -21,11 +21,11 @@ void main() {
   test('runs a Dart application in the entrypoint package', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('script.dart', _script)])
+      d.dir('bin', [d.file('script.dart', _script)]),
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
     expect(pub.stdout, emitsThrough('stdout output'));
     expect(pub.stderr, emits('stderr output'));
     await pub.shouldExit(123);

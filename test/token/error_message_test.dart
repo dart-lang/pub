@@ -35,7 +35,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': globalServer.url, 'token': 'access-token'},
-      ]
+      ],
     }).create();
   });
 
@@ -52,7 +52,7 @@ void main() {
   });
 
   test('trims and prints long www-authenticate message', () async {
-    var message = List.generate(2048, (_) => 'a').join();
+    final message = List.generate(2048, (_) => 'a').join();
 
     respondWithWwwAuthenticate('bearer realm="pub", message="$message"');
     await expectPubErrorMessage(

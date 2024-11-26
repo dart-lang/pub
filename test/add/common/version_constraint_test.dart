@@ -131,10 +131,8 @@ void main() {
 
       await d.appDir(dependencies: {}).validate();
       await d.dir(appPath, [
-        // The lockfile should not be created.
         d.nothing('pubspec.lock'),
-        // The ".packages" file should not have been created.
-        d.nothing('.packages'),
+        d.nothing('.dart_tool/package_config.json'),
       ]).validate();
     });
 
@@ -156,10 +154,8 @@ void main() {
 
       await d.appDir(dependencies: {'bar': '2.0.3'}).validate();
       await d.dir(appPath, [
-        // The lockfile should not be created.
         d.nothing('pubspec.lock'),
-        // The ".packages" file should not have been created.
-        d.nothing('.packages'),
+        d.nothing('.dart_tool/package_config.json'),
       ]).validate();
     });
   });

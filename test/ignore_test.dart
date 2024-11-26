@@ -98,7 +98,7 @@ void main() {
 
     for (final c in testData) {
       c.paths.forEach((path, expected) {
-        var ignoreCase = c.ignoreCase;
+        final ignoreCase = c.ignoreCase;
         if (ignoreCase == null) {
           testIgnorePath(c, path, expected, false);
           testIgnorePath(c, path, expected, true);
@@ -129,8 +129,9 @@ void main() {
       expect(
         ret.exitCode,
         equals(0),
-        reason:
-            'Running "git init" failed. StdErr: ${ret.stderr} StdOut: ${ret.stdout}',
+        reason: 'Running "git init" failed. '
+            'StdErr: ${ret.stderr} '
+            'StdOut: ${ret.stdout}',
       );
     });
 
@@ -197,7 +198,7 @@ void main() {
 
     for (final c in testData) {
       c.paths.forEach((path, expected) {
-        var ignoreCase = c.ignoreCase;
+        final ignoreCase = c.ignoreCase;
         if (ignoreCase == null) {
           testIgnorePath(c, path, expected, false);
           testIgnorePath(c, path, expected, true);
@@ -245,7 +246,7 @@ class TestData {
     this.ignoreCase,
   })  : name = '"${pattern.replaceAll('\n', '\\n')}"',
         patterns = {
-          '.': [pattern]
+          '.': [pattern],
         };
 }
 
@@ -255,7 +256,7 @@ final testData = [
     '.': [
       '/.git/',
       '*.o',
-    ]
+    ],
   }, {
     '.git/config': true,
     '.git/': true,
@@ -265,7 +266,7 @@ final testData = [
   }),
   // Test empty lines
   TestData('empty', {
-    '.': ['']
+    '.': [''],
   }, {
     'README.md': false,
   }),
@@ -279,7 +280,7 @@ final testData = [
       '#comment\nLICENSE\t\n',
       // Trailing comments not allowed
       '#comment\nLICENSE  # ignore license\n',
-    ]
+    ],
   }, {
     '.git/config': true,
     '.git/': true,
@@ -297,7 +298,7 @@ final testData = [
       '#comment\r\nLICENSE\t\r\n',
       // Trailing comments not allowed
       '#comment\r\nLICENSE  # ignore license\r\n',
-    ]
+    ],
   }, {
     '.git/config': true,
     '.git/': true,
@@ -341,7 +342,7 @@ final testData = [
   TestData(
     'negation',
     {
-      '.': ['f*', '!file.txt']
+      '.': ['f*', '!file.txt'],
     },
     {
       'file.txt': false,
@@ -1003,7 +1004,7 @@ final testData = [
     'folder/sub/c.txt': true,
   }),
   TestData('Cannot negate folders that were excluded', {
-    '.': ['sub/', '!sub/foo.txt']
+    '.': ['sub/', '!sub/foo.txt'],
   }, {
     'sub/a.txt': true,
     'sub/foo.txt': true,
@@ -1016,7 +1017,7 @@ final testData = [
   }),
   TestData('Can negate the exclusion of folders 2', {
     '.': ['sub/', '*.txt'],
-    'folder': ['!sub/', '!foo.txt']
+    'folder': ['!sub/', '!foo.txt'],
   }, {
     'folder/sub/a.txt': true,
     'folder/sub/foo.txt': false,
@@ -1038,7 +1039,7 @@ final testData = [
       '.': [
         '/.git/',
         '*.o',
-      ]
+      ],
     },
     {
       '.git/config': true,
@@ -1075,7 +1076,7 @@ final testData = [
       '.': [
         '/.git/',
         '*.o',
-      ]
+      ],
     },
     {
       '.git/config': true,

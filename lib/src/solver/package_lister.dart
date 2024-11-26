@@ -15,6 +15,7 @@ import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
+import '../source/root.dart';
 import '../system_cache.dart';
 import '../utils.dart';
 import 'incompatibility.dart';
@@ -26,6 +27,9 @@ import 'term.dart';
 class PackageLister {
   /// The package that is being listed.
   final PackageRef _ref;
+
+  /// Only used when _ref is root.
+  final Package? _rootPackage;
 
   /// The version of this package in the lockfile.
   ///
@@ -81,13 +85,23 @@ class PackageLister {
 
   /// All versions of the package, sorted by [Version.compareTo].
   Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
-        var cachedVersions = (await withDependencyType(
-          _dependencyType,
-          () => _systemCache.getVersions(
-            _ref,
-            allowedRetractedVersion: _allowedRetractedVersion,
-          ),
-        ))
+        final cachedVersions = _ref.isRoot
+            ? [
+                PackageId(
+                  _ref.name,
+                  _rootPackage!.pubspec.version,
+                  ResolvedRootDescription(
+                    _ref.description as RootDescription,
+                  ),
+                ),
+              ]
+            : (await withDependencyType(
+                _dependencyType,
+                () => _systemCache.getVersions(
+                  _ref,
+                  allowedRetractedVersion: _allowedRetractedVersion,
+                ),
+              ))
           ..sort((id1, id2) => id1.version.compareTo(id2.version));
         _cachedVersions = cachedVersions;
         return cachedVersions;
@@ -110,12 +124,14 @@ class PackageLister {
     this._allowedRetractedVersion, {
     bool downgrade = false,
     this.sdkOverrides = const {},
-  }) : _isDowngrade = downgrade;
+  })  : _isDowngrade = downgrade,
+        _rootPackage = null;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(
     Package package,
     this._systemCache, {
+    required Set<String> overriddenPackages,
     required Map<String, Version>? sdkOverrides,
   })  : _ref = PackageRef.root(package),
         // Treat the package as locked so we avoid the logic for finding the
@@ -123,15 +139,15 @@ class PackageLister {
         // package.
         _locked = PackageId.root(package),
         _dependencyType = DependencyType.none,
-        _overriddenPackages =
-            Set.unmodifiable(package.dependencyOverrides.keys),
+        _overriddenPackages = overriddenPackages,
         _isDowngrade = false,
         _allowedRetractedVersion = null,
-        sdkOverrides = sdkOverrides ?? {};
+        sdkOverrides = sdkOverrides ?? {},
+        _rootPackage = package;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
-    if (_locked != null && constraint.allows(_locked!.version)) return 1;
+    if (_locked != null && constraint.allows(_locked.version)) return 1;
     try {
       return (await _versions)
           .where((id) => constraint.allows(id.version))
@@ -154,17 +170,17 @@ class PackageLister {
     final locked = _locked;
     if (locked != null && constraint.allows(locked.version)) return locked;
 
-    var versions = await _versions;
+    final versions = await _versions;
 
     // If [constraint] has a minimum (or a maximum in downgrade mode), we can
     // bail early once we're past it.
     var isPastLimit = (Version _) => false;
     if (constraint is VersionRange) {
       if (_isDowngrade) {
-        var max = constraint.max;
+        final max = constraint.max;
         if (max != null) isPastLimit = (version) => version > max;
       } else {
-        var min = constraint.min;
+        final min = constraint.min;
         if (min != null) isPastLimit = (version) => version < min;
       }
     }
@@ -193,43 +209,49 @@ class PackageLister {
   /// dependencies, this will return incompatibilities that reflect that. It
   /// won't return incompatibilities that have already been returned by a
   /// previous call to [incompatibilitiesFor].
+  ///
+  /// For a root package, incompatibilities for its dev-dependencies and
+  /// workspace-children are also added.
   Future<List<Incompatibility>> incompatibilitiesFor(PackageId id) async {
     if (_knownInvalidVersions.allows(id.version)) return const [];
-
     Pubspec pubspec;
-    try {
-      pubspec = await withDependencyType(
-        _dependencyType,
-        () => _systemCache.describe(id),
-      );
-    } on SourceSpanApplicationException catch (error) {
-      // The lockfile for the pubspec couldn't be parsed,
-      log.fine('Failed to parse pubspec for $id:\n$error');
-      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
-      return [
-        Incompatibility(
-          [Term(id.toRange(), true)],
-          NoVersionsIncompatibilityCause(),
-        )
-      ];
-    } on PackageNotFoundException {
-      // We can only get here if the lockfile refers to a specific package
-      // version that doesn't exist (probably because it was yanked).
-      _knownInvalidVersions = _knownInvalidVersions.union(id.version);
-      return [
-        Incompatibility(
-          [Term(id.toRange(), true)],
-          NoVersionsIncompatibilityCause(),
-        )
-      ];
+    if (id.isRoot) {
+      pubspec = _rootPackage!.pubspec;
+    } else {
+      try {
+        pubspec = await withDependencyType(
+          _dependencyType,
+          () => _systemCache.describe(id),
+        );
+      } on SourceSpanApplicationException catch (error) {
+        // The lockfile for the pubspec couldn't be parsed,
+        log.fine('Failed to parse pubspec for $id:\n$error');
+        _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+        return [
+          Incompatibility(
+            [Term(id.toRange(), true)],
+            NoVersionsIncompatibilityCause(),
+          ),
+        ];
+      } on PackageNotFoundException {
+        // We can only get here if the lockfile refers to a specific package
+        // version that doesn't exist (probably because it was yanked).
+        _knownInvalidVersions = _knownInvalidVersions.union(id.version);
+        return [
+          Incompatibility(
+            [Term(id.toRange(), true)],
+            NoVersionsIncompatibilityCause(),
+          ),
+        ];
+      }
     }
 
     if (_cachedVersions == null &&
         _locked != null &&
-        id.version == _locked!.version) {
+        id.version == _locked.version) {
       if (_listedLockedVersion) return const [];
 
-      var depender = id.toRange();
+      final depender = id.toRange();
       _listedLockedVersion = true;
       for (var sdk in sdks.values) {
         if (!_matchesSdkConstraint(pubspec, sdk)) {
@@ -240,39 +262,32 @@ class PackageLister {
                 pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
                 sdk,
               ),
-            )
+            ),
           ];
         }
       }
 
-      if (id.isRoot) {
-        var incompatibilities = <Incompatibility>[];
-
-        for (var range in pubspec.dependencies.values) {
-          if (_overriddenPackages.contains(range.name)) continue;
-          incompatibilities.add(_dependency(depender, range));
-        }
-
-        for (var range in pubspec.devDependencies.values) {
-          if (_overriddenPackages.contains(range.name)) continue;
-          incompatibilities.add(_dependency(depender, range));
-        }
-
-        for (var range in pubspec.dependencyOverrides.values) {
-          incompatibilities.add(_dependency(depender, range));
-        }
-
-        return incompatibilities;
-      } else {
-        return pubspec.dependencies.values
-            .where((range) => !_overriddenPackages.contains(range.name))
-            .map((range) => _dependency(depender, range))
-            .toList();
-      }
+      final entries = [
+        ...pubspec.dependencies.values
+            .where((range) => !_overriddenPackages.contains(range.name)),
+        if (id.isRoot)
+          ...pubspec.devDependencies.values
+              .where((range) => !_overriddenPackages.contains(range.name)),
+        if (id.isRoot) ...[
+          ..._rootPackage!.workspaceChildren.map((p) {
+            return PackageRange(
+              PackageRef(p.name, RootDescription(p.dir)),
+              p.version,
+            );
+          }),
+          ...pubspec.dependencyOverrides.values,
+        ],
+      ];
+      return entries.map((range) => _dependency(depender, range)).toList();
     }
 
-    var versions = await _versions;
-    var index = lowerBound(
+    final versions = await _versions;
+    final index = lowerBound(
       versions,
       id,
       compare: (PackageId id1, PackageId id2) =>
@@ -282,29 +297,29 @@ class PackageLister {
     assert(versions[index].version == id.version);
 
     for (var sdk in sdks.values) {
-      var sdkIncompatibility = await _checkSdkConstraint(index, sdk);
+      final sdkIncompatibility = await _checkSdkConstraint(index, sdk);
       if (sdkIncompatibility != null) return [sdkIncompatibility];
     }
 
     // Don't recompute dependencies that have already been emitted.
-    var dependencies = Map<String, PackageRange>.from(pubspec.dependencies);
+    final dependencies = Map<String, PackageRange>.from(pubspec.dependencies);
     for (var package in dependencies.keys.toList()) {
       if (_overriddenPackages.contains(package)) {
         dependencies.remove(package);
         continue;
       }
 
-      var constraint = _alreadyListedDependencies[package];
+      final constraint = _alreadyListedDependencies[package];
       if (constraint != null && constraint.allows(id.version)) {
         dependencies.remove(package);
       }
     }
 
-    var lower = await _dependencyBounds(dependencies, index, upper: false);
-    var upper = await _dependencyBounds(dependencies, index);
+    final lower = await _dependencyBounds(dependencies, index, upper: false);
+    final upper = await _dependencyBounds(dependencies, index);
 
     return ordered(dependencies.keys).map((package) {
-      var constraint = VersionRange(
+      final constraint = VersionRange(
         min: lower[package],
         includeMin: true,
         max: upper[package],
@@ -336,27 +351,28 @@ class PackageLister {
   ///
   /// Otherwise, returns `null`.
   Future<Incompatibility?> _checkSdkConstraint(int index, Sdk sdk) async {
-    var versions = await _versions;
+    final versions = await _versions;
 
     bool allowsSdk(Pubspec pubspec) => _matchesSdkConstraint(pubspec, sdk);
 
     if (allowsSdk(await _describeSafe(versions[index]))) return null;
 
-    var bounds = await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
-    var incompatibleVersions = VersionRange(
-      min: bounds.first == 0 ? null : versions[bounds.first].version,
+    final (boundsFirstIndex, boundsLastIndex) =
+        await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
+    final incompatibleVersions = VersionRange(
+      min: boundsFirstIndex == 0 ? null : versions[boundsFirstIndex].version,
       includeMin: true,
-      max: bounds.last == versions.length - 1
+      max: boundsLastIndex == versions.length - 1
           ? null
-          : versions[bounds.last + 1].version,
+          : versions[boundsLastIndex + 1].version,
       alwaysIncludeMaxPreRelease: true,
     );
     _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
-    var sdkConstraint = await foldAsync<VersionConstraint, PackageId>(
-        slice(versions, bounds.first, bounds.last + 1), VersionConstraint.empty,
-        (previous, version) async {
-      var pubspec = await _describeSafe(version);
+    final sdkConstraint = await foldAsync<VersionConstraint, PackageId>(
+        slice(versions, boundsFirstIndex, boundsLastIndex + 1),
+        VersionConstraint.empty, (previous, version) async {
+      final pubspec = await _describeSafe(version);
       return previous.union(
         pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint ??
             VersionConstraint.any,
@@ -372,12 +388,12 @@ class PackageLister {
   /// Returns the first and last indices in [_versions] of the contiguous set of
   /// versions whose pubspecs match [match].
   ///
-  /// Assumes [match] returns true for the pubspec whose version is at [index].
-  Future<Pair<int, int>> _findBounds(
+  /// Assumes [match] returns true for the pubspec whose version is at [start].
+  Future<(int firstIndex, int lastIndex)> _findBounds(
     int start,
     bool Function(Pubspec) match,
   ) async {
-    var versions = await _versions;
+    final versions = await _versions;
 
     var first = start - 1;
     while (first > 0) {
@@ -391,7 +407,7 @@ class PackageLister {
       last++;
     }
 
-    return Pair(first + 1, last - 1);
+    return (first + 1, last - 1);
   }
 
   /// Returns a map where each key is a package name and each value is the upper
@@ -407,19 +423,19 @@ class PackageLister {
     int index, {
     bool upper = true,
   }) async {
-    var versions = await _versions;
-    var bounds = <String, Version>{};
+    final versions = await _versions;
+    final bounds = <String, Version>{};
     var previous = versions[index];
     outer:
     for (var id in upper
         ? versions.skip(index + 1)
         : versions.reversed.skip(versions.length - index)) {
-      var pubspec = await _describeSafe(id);
+      final pubspec = await _describeSafe(id);
 
       // The upper bound is exclusive and so is the first package with a
       // different dependency. The lower bound is inclusive, and so is the last
       // package with the same dependency.
-      var boundary = (upper ? id : previous).version;
+      final boundary = (upper ? id : previous).version;
 
       // Once we hit an incompatible version, it doesn't matter whether it has
       // the same dependencies.
@@ -466,7 +482,7 @@ class PackageLister {
   bool _matchesSdkConstraint(Pubspec pubspec, Sdk sdk) {
     if (_overriddenPackages.contains(pubspec.name)) return true;
 
-    var constraint = pubspec.sdkConstraints[sdk.identifier];
+    final constraint = pubspec.sdkConstraints[sdk.identifier];
     if (constraint == null) return true;
 
     return sdk.isAvailable &&

@@ -16,9 +16,9 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': server.url, 'token': 'access-token'},
-      ]
+      ],
     }).create();
-    var pub = await startPublish(server, overrideDefaultHostedServer: false);
+    final pub = await startPublish(server, overrideDefaultHostedServer: false);
     await confirmPublish(pub);
 
     server.expect('GET', '/api/packages/versions/new', (request) {
@@ -31,7 +31,7 @@ void main() {
       'version': 1,
       'hosted': [
         {'url': server.url, 'token': 'access-token'},
-      ]
+      ],
     }).validate();
   });
 }

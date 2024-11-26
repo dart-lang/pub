@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-main() {
+void main() {
   test('Gives hint when solve failure concerns a pinned flutter package',
       () async {
     await d.dir('flutter', [
@@ -16,11 +16,11 @@ main() {
         d.dir(
           'flutter_foo',
           [
-            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'})
+            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'}),
           ],
-        )
+        ),
       ]),
-      d.file('version', '1.2.3')
+      d.flutterVersion('1.2.3'),
     ]).create();
     await servePackages()
       ..serve('bar', '1.0.0', deps: {'tool': '^2.0.0'})
@@ -30,13 +30,14 @@ main() {
     await d.appDir(
       dependencies: {
         'bar': 'any',
-        'flutter_foo': {'sdk': 'flutter'}
+        'flutter_foo': {'sdk': 'flutter'},
       },
     ).create();
     await pubGet(
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       error: contains(
-        'Note: tool is pinned to version 1.0.0 by flutter_foo from the flutter SDK.',
+        'Note: tool is pinned to version 1.0.0 by '
+        'flutter_foo from the flutter SDK.',
       ),
     );
   });
@@ -48,11 +49,11 @@ main() {
         d.dir(
           'flutter_foo',
           [
-            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'})
+            d.libPubspec('flutter_foo', '0.0.1', deps: {'tool': '1.0.0'}),
           ],
-        )
+        ),
       ]),
-      d.file('version', '1.2.3')
+      d.flutterVersion('1.2.3'),
     ]).create();
     await servePackages()
       ..serve('tool', '1.0.0', deps: {'bar': '^2.0.0'})
@@ -61,13 +62,14 @@ main() {
     await d.appDir(
       dependencies: {
         'bar': 'any',
-        'flutter_foo': {'sdk': 'flutter'}
+        'flutter_foo': {'sdk': 'flutter'},
       },
     ).create();
     await pubGet(
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       error: contains(
-        'Note: tool is pinned to version 1.0.0 by flutter_foo from the flutter SDK.',
+        'Note: tool is pinned to version 1.0.0 by '
+        'flutter_foo from the flutter SDK.',
       ),
     );
   });

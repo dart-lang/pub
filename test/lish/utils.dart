@@ -18,7 +18,7 @@ void handleUploadForm(PackageServer server, {Map? body, String path = ''}) {
 
     body ??= {
       'url': Uri.parse(server.url).resolve('/upload').toString(),
-      'fields': {'field1': 'value1', 'field2': 'value2'}
+      'fields': {'field1': 'value1', 'field2': 'value2'},
     };
 
     return shelf.Response.ok(
@@ -34,7 +34,7 @@ void handleUpload(PackageServer server) {
     // that the request body is correctly formatted. See issue 6952.
     return request
         .read()
-        .drain()
+        .drain<void>()
         .then((_) => server.url)
         .then((url) => shelf.Response.found(Uri.parse(url).resolve('/create')));
   });

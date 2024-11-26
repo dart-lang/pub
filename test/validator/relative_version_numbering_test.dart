@@ -143,6 +143,16 @@ The latest published version is 2.0.2.
     await expectValidation();
   });
 
+  test('Releasing a build-release causes no hint', () async {
+    final server = await servePackages();
+    server.serve(
+      'test_pkg',
+      '1.0.0',
+    );
+    await d.validPackage(version: '1.0.0+0').create();
+    await expectValidation();
+  });
+
   group('should consider a package valid if it', () {
     test('is opting in to null-safety with previous null-safe version',
         () async {
@@ -151,7 +161,7 @@ The latest published version is 2.0.2.
         'test_pkg',
         '0.0.1',
         pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'}
+          'environment': {'sdk': '>=2.12.0<3.0.0'},
         },
       );
 
@@ -167,7 +177,7 @@ The latest published version is 2.0.2.
         'test_pkg',
         '0.0.1',
         pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'}
+          'environment': {'sdk': '>=2.12.0<3.0.0'},
         },
       );
 
@@ -183,14 +193,14 @@ The latest published version is 2.0.2.
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '2.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         );
 
@@ -220,14 +230,14 @@ Your version 1.0.0 is earlier than that.'''
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '0.0.2-dev',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         );
 
@@ -244,7 +254,7 @@ Your version 1.0.0 is earlier than that.'''
         'test_pkg',
         '0.0.1',
         pubspec: {
-          'environment': {'sdk': '>=2.9.0<3.0.0'}
+          'environment': {'sdk': '>=2.9.0<3.0.0'},
         },
       );
 
@@ -268,14 +278,14 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '2.0.0',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         );
 
@@ -302,14 +312,14 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
           'test_pkg',
           '0.0.1',
           pubspec: {
-            'environment': {'sdk': '>=2.12.0<3.0.0'}
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
           },
         )
         ..serve(
           'test_pkg',
           '0.0.2-dev',
           pubspec: {
-            'environment': {'sdk': '>=2.9.0<3.0.0'}
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
           },
         );
 
@@ -334,7 +344,7 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
         'test_pkg',
         '0.0.2-dev',
         pubspec: {
-          'environment': {'sdk': '>=2.9.0<3.0.0'}
+          'environment': {'sdk': '>=2.9.0<3.0.0'},
         },
       );
       await expectValidationDeprecated(

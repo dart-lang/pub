@@ -33,7 +33,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'version': '1.2.3', 'hosted': url}
+        'foo': {'version': '1.2.3', 'hosted': url},
       },
     ).validate();
   });
@@ -49,7 +49,7 @@ void main() {
     server.serve('foo', '1.2.3');
     final oldSyntaxSdkConstraint = {
       'environment': {
-        'sdk': '>=2.14.0 <3.0.0' // Language version for old syntax.
+        'sdk': '>=2.14.0 <3.0.0', // Language version for old syntax.
       },
     };
 
@@ -66,8 +66,8 @@ void main() {
       dependencies: {
         'foo': {
           'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': url}
-        }
+          'hosted': {'name': 'foo', 'url': url},
+        },
       },
       pubspec: oldSyntaxSdkConstraint,
     ).validate();
@@ -109,7 +109,7 @@ void main() {
       dependencies: {
         'foo': {'version': '1.2.3', 'hosted': url},
         'bar': {'version': '3.2.3', 'hosted': url},
-        'baz': {'version': '1.3.5', 'hosted': url}
+        'baz': {'version': '1.3.5', 'hosted': url},
       },
     ).validate();
   });
@@ -134,7 +134,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 
@@ -162,7 +161,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'foo': {'version': '^1.2.3', 'hosted': url}
+        'foo': {'version': '^1.2.3', 'hosted': url},
       },
     ).validate();
   });
@@ -190,7 +189,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'foo': {'version': '^1.2.3', 'hosted': url}
+        'foo': {'version': '^1.2.3', 'hosted': url},
       },
     ).validate();
   });
@@ -219,7 +218,7 @@ void main() {
     ]).validate();
     await d.appDir(
       dependencies: {
-        'foo': {'version': 'any', 'hosted': url}
+        'foo': {'hosted': url},
       },
     ).validate();
   });

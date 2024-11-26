@@ -7,9 +7,9 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-Future<void> expectValidation(error, int exitCode) async {
+Future<void> expectValidation(Matcher output, int exitCode) async {
   await runPub(
-    error: error,
+    output: output,
     args: ['publish', '--dry-run'],
     environment: {
       'FLUTTER_ROOT': fakeFlutterRoot.io.path,
@@ -24,19 +24,19 @@ late d.DirectoryDescriptor fakeFlutterRoot;
 Future<void> setup({
   String? flutterConstraint,
 }) async {
-  fakeFlutterRoot = d.dir('fake_flutter_root', [d.file('version', '1.23.0')]);
+  fakeFlutterRoot = d.dir('fake_flutter_root', [d.flutterVersion('1.23.0')]);
   await fakeFlutterRoot.create();
   await d.validPackage().create();
   await d.dir(appPath, [
     d.pubspec({
       'name': 'test_pkg',
-      'description':
-          'A just long enough decription to fit the requirement of 60 characters',
+      'description': 'A just long enough description '
+          'to fit the requirement of 60 characters',
       'homepage': 'https://example.com/',
       'version': '1.0.0',
       'environment': {
         'sdk': '^3.0.0',
-        if (flutterConstraint != null) 'flutter': flutterConstraint
+        if (flutterConstraint != null) 'flutter': flutterConstraint,
       },
     }),
   ]).create();

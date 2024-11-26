@@ -12,13 +12,13 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 Future<void> expectValidation(
-  error,
+  Matcher output,
   int exitCode, {
   Map<String, String> environment = const {},
   String? workingDirectory,
 }) async {
   await runPub(
-    error: error,
+    output: output,
     args: ['publish', '--dry-run'],
     environment: environment,
     workingDirectory: workingDirectory ?? d.path(appPath),
@@ -28,8 +28,8 @@ Future<void> expectValidation(
 
 void main() {
   test(
-      'should consider a package valid if it contains no checked in otherwise ignored files',
-      () async {
+      'should consider a package valid '
+      'if it contains no checked in otherwise ignored files', () async {
     await d.git('myapp', [
       ...d.validPackage().contents,
       d.file('foo.txt'),
@@ -46,11 +46,30 @@ void main() {
         contains('Package has 1 warning.'),
         contains('foo.txt'),
         contains(
-          'Consider adjusting your `.gitignore` files to not ignore those files',
+          'Consider adjusting your `.gitignore` files '
+          'to not ignore those files',
         ),
       ]),
       exit_codes.DATA,
     );
+  });
+
+  test('should not fail on non-ascii unicode character', () async {
+    await d.git('myapp', [
+      ...d.validPackage().contents,
+      d.file('non_ascii_и.txt'),
+    ]).create();
+
+    await expectValidation(contains('Package has 0 warnings.'), 0);
+  });
+
+  test('should not fail on space character', () async {
+    await d.git('myapp', [
+      ...d.validPackage().contents,
+      d.file('space file.txt'),
+    ]).create();
+
+    await expectValidation(contains('Package has 0 warnings.'), 0);
   });
 
   test('should not fail on missing git', () async {
@@ -97,7 +116,8 @@ void main() {
         contains('Package has 1 warning.'),
         contains('foo.txt'),
         contains(
-          'Consider adjusting your `.gitignore` files to not ignore those files',
+          'Consider adjusting your `.gitignore` files '
+          'to not ignore those files',
         ),
       ]),
       exit_codes.DATA,
@@ -116,6 +136,36 @@ void main() {
       packageRoot,
       recursive: true,
     );
+
+    await expectValidation(
+      contains('Package has 0 warnings.'),
+      0,
+      workingDirectory: packageRoot,
+    );
+  });
+
+  test(
+      'Should consider symlinks to be valid files and not list '
+      'them as gitignored', () async {
+    final git = d.git(appPath, [
+      ...d.validPackage().contents,
+      d.dir('dir_with_symlink', [
+        d.file('.pubignore', 'symlink'),
+      ]),
+    ]);
+    await git.create();
+    final packageRoot = p.join(d.sandbox, appPath);
+    await pubGet(
+      workingDirectory: packageRoot,
+    );
+    await d
+        .link(
+          p.join(d.sandbox, appPath, 'dir_with_symlink', 'symlink'),
+          '..',
+          forceDirectory: true,
+        )
+        .create();
+    await git.commit();
 
     await expectValidation(
       contains('Package has 0 warnings.'),

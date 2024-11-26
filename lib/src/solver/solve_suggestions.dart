@@ -9,7 +9,6 @@ import '../flutter_releases.dart';
 import '../io.dart';
 import '../package.dart';
 import '../package_name.dart';
-import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
 import '../source/hosted.dart';
@@ -17,8 +16,8 @@ import '../system_cache.dart';
 import 'incompatibility.dart';
 import 'incompatibility_cause.dart';
 
-/// Looks through the root-[incompability] of a solve-failure and tries to see if
-/// the conflict could resolved by any of the following suggestions:
+/// Looks through the root-[incompatibility] of a solve-failure and tries to see
+/// if the conflict could resolved by any of the following suggestions:
 /// * An update of the current SDK.
 /// * Any single change to a package constraint.
 /// * Removing the bounds on all constraints, changing less than 5 dependencies.
@@ -33,6 +32,10 @@ Future<String?> suggestResolutionAlternatives(
   Iterable<String> unlock,
   SystemCache cache,
 ) async {
+  if (entrypoint.workspaceRoot.workspaceChildren.isNotEmpty) {
+    // TODO(https://github.com/dart-lang/pub/issues/4227): handle workspaces.
+    return null;
+  }
   final resolutionContext = _ResolutionContext(
     entrypoint: entrypoint,
     type: type,
@@ -49,7 +52,7 @@ Future<String?> suggestResolutionAlternatives(
 
   for (final externalIncompatibility
       in incompatibility.externalIncompatibilities) {
-    if (stopwatch.elapsed > Duration(seconds: 3)) {
+    if (stopwatch.elapsed > const Duration(seconds: 3)) {
       // Never spend more than 3 seconds computing suggestions.
       break;
     }
@@ -79,11 +82,13 @@ Future<String?> suggestResolutionAlternatives(
   if (suggestions.isEmpty) return null;
   final tryOne = suggestions.length == 1
       ? 'You can try the following suggestion to make the pubspec resolve:'
-      : 'You can try one of the following suggestions to make the pubspec resolve:';
+      : 'You can try one of the following suggestions '
+          'to make the pubspec resolve:';
 
   suggestions.sort((a, b) => a.priority.compareTo(b.priority));
 
-  return '\n$tryOne\n${suggestions.take(5).map((e) => e.suggestion).join('\n')}';
+  return '\n$tryOne\n'
+      '${suggestions.take(5).map((e) => e.suggestion).join('\n')}';
 }
 
 class _ResolutionSuggestion {
@@ -94,7 +99,8 @@ class _ResolutionSuggestion {
 
 String packageAddDescription(Entrypoint entrypoint, PackageId id) {
   final name = id.name;
-  final isDev = entrypoint.root.pubspec.devDependencies.containsKey(name);
+  final isDev =
+      entrypoint.workspaceRoot.pubspec.devDependencies.containsKey(name);
   final resolvedDescription = id.description;
   final String descriptor;
   final d = resolvedDescription.description.serializeForPubspec(
@@ -103,14 +109,14 @@ String packageAddDescription(Entrypoint entrypoint, PackageId id) {
     // This currently should have no implications as we don't create suggestions
     // for path-packages.
     ,
-    languageVersion: entrypoint.root.pubspec.languageVersion,
+    languageVersion: entrypoint.workspaceRoot.pubspec.languageVersion,
   );
   if (d == null) {
     descriptor = VersionConstraint.compatibleWith(id.version).toString();
   } else {
     descriptor = json.encode({
       'version': VersionConstraint.compatibleWith(id.version).toString(),
-      id.source.name: d
+      id.source.name: d,
     });
   }
 
@@ -144,15 +150,15 @@ class _ResolutionContext {
     final constraint = cause.constraint;
     if (constraint == null) return null;
 
-    /// Find the most relevant Flutter release fullfilling the constraint.
+    // Find the most relevant Flutter release fulfilling the constraint.
     final bestRelease =
         await inferBestFlutterRelease({cause.sdk.identifier: constraint});
     if (bestRelease == null) return null;
     final result = await _tryResolve(
-      entrypoint.root.pubspec,
+      entrypoint.workspaceRoot,
       sdkOverrides: {
         'dart': bestRelease.dartVersion,
-        'flutter': bestRelease.flutterVersion
+        'flutter': bestRelease.flutterVersion,
       },
     );
     if (result == null) {
@@ -160,7 +166,8 @@ class _ResolutionContext {
     }
     return _ResolutionSuggestion(
       runningFromFlutter
-          ? '* Try using the Flutter SDK version: ${bestRelease.flutterVersion}. '
+          ? '* Try using the Flutter SDK version: '
+              '${bestRelease.flutterVersion}. '
           :
           // Here we assume that any Dart version included in a Flutter
           // release can also be found as a released Dart SDK.
@@ -171,8 +178,10 @@ class _ResolutionContext {
   /// Attempt another resolution with a relaxed constraint on [name]. If that
   /// resolves, suggest upgrading to that version.
   Future<_ResolutionSuggestion?> suggestSinglePackageUpdate(String name) async {
-    final originalRange = entrypoint.root.dependencies[name] ??
-        entrypoint.root.devDependencies[name];
+    // TODO(https://github.com/dart-lang/pub/issues/4127): This should
+    // operate on all packages in workspace.
+    final originalRange = entrypoint.workspaceRoot.dependencies[name] ??
+        entrypoint.workspaceRoot.devDependencies[name];
     if (originalRange == null ||
         originalRange.description is! HostedDescription) {
       // We can only relax constraints on hosted dependencies.
@@ -180,12 +189,18 @@ class _ResolutionContext {
     }
     final originalConstraint = originalRange.constraint;
     final relaxedPubspec = stripVersionBounds(
-      entrypoint.root.pubspec,
+      entrypoint.workspaceRoot.pubspec,
       stripOnly: [name],
       stripLowerBound: true,
     );
 
-    final result = await _tryResolve(relaxedPubspec);
+    final result = await _tryResolve(
+      Package(
+        relaxedPubspec,
+        entrypoint.workspaceRoot.dir,
+        entrypoint.workspaceRoot.workspaceChildren,
+      ),
+    );
     if (result == null) {
       return null;
     }
@@ -194,19 +209,19 @@ class _ResolutionContext {
     final addDescription = packageAddDescription(entrypoint, resolvingPackage);
 
     var priority = 1;
-    var suggestion =
-        '* Try updating your constraint on $name: $topLevelProgram pub add $addDescription';
+    var suggestion = '* Try updating your constraint on $name: '
+        '$topLevelProgram pub add $addDescription';
     if (originalConstraint is VersionRange) {
       final min = originalConstraint.min;
       if (min != null) {
         if (resolvingPackage.version < min) {
           priority = 3;
-          suggestion =
-              '* Consider downgrading your constraint on $name: $topLevelProgram pub add $addDescription';
+          suggestion = '* Consider downgrading your constraint on $name: '
+              '$topLevelProgram pub add $addDescription';
         } else {
           priority = 2;
-          suggestion =
-              '* Try upgrading your constraint on $name: $topLevelProgram pub add $addDescription';
+          suggestion = '* Try upgrading your constraint on $name: '
+              '$topLevelProgram pub add $addDescription';
         }
       }
     }
@@ -219,11 +234,17 @@ class _ResolutionContext {
   Future<_ResolutionSuggestion?> suggestUnlockingAll({
     required bool stripLowerBound,
   }) async {
-    final originalPubspec = entrypoint.root.pubspec;
+    final originalPubspec = entrypoint.workspaceRoot.pubspec;
     final relaxedPubspec =
         stripVersionBounds(originalPubspec, stripLowerBound: stripLowerBound);
 
-    final result = await _tryResolve(relaxedPubspec);
+    final result = await _tryResolve(
+      Package(
+        relaxedPubspec,
+        entrypoint.workspaceRoot.dir,
+        entrypoint.workspaceRoot.workspaceChildren,
+      ),
+    );
     if (result == null) {
       return null;
     }
@@ -246,12 +267,14 @@ class _ResolutionContext {
           .map((e) => packageAddDescription(entrypoint, e))
           .join(' ');
       return _ResolutionSuggestion(
-        '* Try updating the following constraints: $topLevelProgram pub add $formattedConstraints',
+        '* Try updating the following constraints: '
+        '$topLevelProgram pub add $formattedConstraints',
         priority: 4,
       );
     } else {
       return _ResolutionSuggestion(
-        '* Try an upgrade of your constraints: $topLevelProgram pub upgrade --major-versions',
+        '* Try an upgrade of your constraints: '
+        '$topLevelProgram pub upgrade --major-versions',
         priority: 4,
       );
     }
@@ -259,14 +282,14 @@ class _ResolutionContext {
 
   /// Attempt resolving
   Future<SolveResult?> _tryResolve(
-    Pubspec pubspec, {
+    Package package, {
     Map<String, Version> sdkOverrides = const {},
   }) async {
     try {
       return await resolveVersions(
         type,
         cache,
-        Package.inMemory(pubspec),
+        package,
         sdkOverrides: sdkOverrides,
         lockFile: entrypoint.lockFile,
         unlock: unlock,

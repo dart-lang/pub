@@ -32,7 +32,7 @@ class ChangelogValidator extends Validator {
           'See https://dart.dev/tools/pub/publishing#important-files.');
     }
 
-    var bytes = readBinaryFile(changelog);
+    final bytes = readBinaryFile(changelog);
     String contents;
 
     try {
@@ -46,7 +46,7 @@ class ChangelogValidator extends Validator {
       return;
     }
 
-    final version = entrypoint.root.pubspec.version.toString();
+    final version = package.pubspec.version.toString();
 
     if (!contents.contains(version)) {
       warnings.add("$changelog doesn't mention current version ($version).\n"

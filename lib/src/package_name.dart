@@ -27,14 +27,14 @@ class PackageRef {
 
   /// Creates a reference to the given root package.
   static PackageRef root(Package package) =>
-      PackageRef(package.name, RootDescription(package));
+      PackageRef(package.name, RootDescription(package.dir));
 
   @override
   String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
     if (isRoot) return name;
 
-    var buffer = StringBuffer(name);
+    final buffer = StringBuffer(name);
     if (detail.showSource ?? description is! HostedDescription) {
       buffer.write(' from ${description.source}');
       if (detail.showDescription) {
@@ -49,7 +49,7 @@ class PackageRef {
       PackageRange(this, constraint);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is PackageRef &&
       name == other.name &&
       description == other.description;
@@ -88,14 +88,14 @@ class PackageId {
   static PackageId root(Package package) => PackageId(
         package.name,
         package.version,
-        ResolvedRootDescription(RootDescription(package)),
+        ResolvedRootDescription(RootDescription(package.dir)),
       );
 
   @override
   int get hashCode => Object.hash(name, version, description);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is PackageId &&
       name == other.name &&
       version == other.version &&
@@ -110,7 +110,7 @@ class PackageId {
   String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
 
-    var buffer = StringBuffer(name);
+    final buffer = StringBuffer(name);
     if (detail.showVersion ?? !isRoot) buffer.write(' $version');
 
     if (!isRoot &&
@@ -156,7 +156,7 @@ class PackageRange {
   String toString([PackageDetail? detail]) {
     detail ??= PackageDetail.defaults;
 
-    var buffer = StringBuffer(name);
+    final buffer = StringBuffer(name);
     if (detail.showVersion ?? _showVersionConstraint) {
       buffer.write(' $constraint');
     }
@@ -177,16 +177,16 @@ class PackageRange {
     return description.source.hasMultipleVersions;
   }
 
-  /// Returns a copy of [this] with the same semantics, but with a `^`-style
+  /// Returns a copy of `this` with the same semantics, but with a `^`-style
   /// constraint if possible.
   PackageRange withTerseConstraint() {
     if (constraint is! VersionRange) return this;
     if (constraint.toString().startsWith('^')) return this;
 
-    var range = constraint as VersionRange;
+    final range = constraint as VersionRange;
     if (!range.includeMin) return this;
     if (range.includeMax) return this;
-    var min = range.min;
+    final min = range.min;
     if (min == null) return this;
     if (range.max == min.nextBreaking.firstPreRelease) {
       return PackageRange(_ref, VersionConstraint.compatibleWith(min));
@@ -197,7 +197,7 @@ class PackageRange {
 
   /// Whether [id] satisfies this dependency.
   ///
-  /// Specifically, whether [id] refers to the same package as [this] *and*
+  /// Specifically, whether [id] refers to the same package as `this` *and*
   /// [constraint] allows `id.version`.
   bool allows(PackageId id) =>
       name == id.name &&
@@ -208,7 +208,7 @@ class PackageRange {
   int get hashCode => Object.hash(_ref, constraint);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is PackageRange &&
       _ref == other._ref &&
       other.constraint == constraint;
@@ -245,7 +245,7 @@ class PackageDetail {
   })  : showSource = showDescription == true ? true : showSource,
         showDescription = showDescription ?? false;
 
-  /// Returns a [PackageDetail] with the maximum amount of detail between [this]
+  /// Returns a [PackageDetail] with the maximum amount of detail between `this`
   /// and [other].
   PackageDetail max(PackageDetail other) => PackageDetail(
         showVersion: showVersion! || other.showVersion!,

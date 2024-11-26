@@ -7,7 +7,9 @@
 // support relative paths. So this test, by design, will not pass on Windows.
 // So just skip it.
 @TestOn('!windows')
-import 'package:path/path.dart' as path;
+library;
+
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -23,9 +25,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet();
@@ -39,13 +41,13 @@ void main() {
     // Move the app and package. Since they are still next to each other, it
     // should still be found and have the same relative path in the package
     // spec.
-    renameInSandbox('foo', path.join('moved', 'foo'));
-    renameInSandbox(appPath, path.join('moved', appPath));
+    renameInSandbox('foo', p.join('moved', 'foo'));
+    renameInSandbox(appPath, p.join('moved', appPath));
 
     await d.dir('moved', [
       d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', path: '../foo'),
-      ])
+      ]),
     ]).validate();
   });
 }

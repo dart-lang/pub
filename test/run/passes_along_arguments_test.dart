@@ -17,14 +17,15 @@ void main() {
   test('passes arguments to the spawned script', () async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('args.dart', _script)])
+      d.dir('bin', [d.file('args.dart', _script)]),
     ]).create();
 
     await pubGet();
 
     // Use some args that would trip up pub's arg parser to ensure that it
     // isn't trying to look at them.
-    var pub = await pubRun(args: ['bin/args', '--verbose', '-m', '--', 'help']);
+    final pub =
+        await pubRun(args: ['bin/args', '--verbose', '-m', '--', 'help']);
 
     expect(pub.stdout, emitsThrough('--verbose -m -- help'));
     await pub.shouldExit();

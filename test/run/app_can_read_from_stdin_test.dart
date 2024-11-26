@@ -23,12 +23,12 @@ void main() {
             print(line1);
             print(line2);
           }
-        """)
-      ])
+        """),
+      ]),
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
 
     await expectLater(pub.stdout, emitsThrough('started'));
     pub.stdin.writeln('first');
@@ -50,12 +50,12 @@ void main() {
             print("started");
             stdin.listen(stdout.add);
           }
-        """)
-      ])
+        """),
+      ]),
     ]).create();
 
     await pubGet();
-    var pub = await pubRun(args: ['bin/script']);
+    final pub = await pubRun(args: ['bin/script']);
 
     await expectLater(pub.stdout, emitsThrough('started'));
     pub.stdin.writeln('first');

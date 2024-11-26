@@ -38,15 +38,17 @@ void main() {
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
 Got dependencies!
+1 package is discontinued.
 ''',
     );
     expect(fileExists(fooVersionsCache), isTrue);
-    final c = json.decode(readTextFile(fooVersionsCache));
+    final c = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make the cache artificially old.
     c['_fetchedAt'] =
-        DateTime.now().subtract(Duration(days: 5)).toIso8601String();
+        DateTime.now().subtract(const Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
 
     server.discontinue('foo', replacementText: 'bar');
@@ -54,16 +56,19 @@ Got dependencies!
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
-    final c2 = json.decode(readTextFile(fooVersionsCache));
+    final c2 = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make a bad cached value to test that responses are actually from cache.
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!''',
     );
     // Repairing the cache should reset the package listing caches.
@@ -71,8 +76,10 @@ Got dependencies!''',
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     // Test that --offline won't try to access the server for retrieving the
     // status.
@@ -81,8 +88,10 @@ Got dependencies!''',
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     deleteEntry(fooVersionsCache);
     deleteEntry(transitiveVersionsCache);
@@ -90,6 +99,7 @@ Got dependencies!''',
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!
 ''',
     );
@@ -110,7 +120,7 @@ dev_dependencies:
   foo: 1.2.3
 environment:
   sdk: '$defaultSdkConstraint'
-''')
+'''),
     ]).create();
     await pubGet();
 
@@ -128,30 +138,35 @@ environment:
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued)
 Got dependencies!
+1 package is discontinued.
 ''',
     );
     expect(fileExists(fooVersionsCache), isTrue);
-    final c = json.decode(readTextFile(fooVersionsCache));
+    final c = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make the cache artificially old.
     c['_fetchedAt'] =
-        DateTime.now().subtract(Duration(days: 5)).toIso8601String();
+        DateTime.now().subtract(const Duration(days: 5)).toIso8601String();
     writeTextFile(fooVersionsCache, json.encode(c));
     builder.discontinue('foo', replacementText: 'bar');
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
-    final c2 = json.decode(readTextFile(fooVersionsCache));
+    final c2 = json.decode(readTextFile(fooVersionsCache)) as Map;
     // Make a bad cached value to test that responses are actually from cache.
     c2['isDiscontinued'] = false;
     writeTextFile(fooVersionsCache, json.encode(c2));
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!''',
     );
     // Repairing the cache should reset the package listing caches.
@@ -159,8 +174,10 @@ Got dependencies!''',
     await pubGet(
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     // Test that --offline won't try to access the server for retrieving the
     // status.
@@ -169,14 +186,17 @@ Got dependencies!''',
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
   foo 1.2.3 (discontinued replaced by bar)
-Got dependencies!''',
+Got dependencies!
+1 package is discontinued.''',
     );
     deleteEntry(fooVersionsCache);
     await pubGet(
       args: ['--offline'],
       output: '''
 Resolving dependencies...
+Downloading packages...
 Got dependencies!
 ''',
     );
@@ -197,7 +217,8 @@ Got dependencies!
       (shelf.Request request) => shelf.Response.notFound('Not found'),
     );
 
-    /// Even if we fail to get status we still report success if versions don't unlock.
+    /// Even if we fail to get status we still report success if versions don't
+    /// unlock.
     await pubGet();
   });
 }

@@ -17,7 +17,7 @@ void main() {
       args: ['global', 'activate', 'foo'],
       silent: allOf([
         contains('Downloading bar 1.0.0...'),
-        contains('Downloading baz 1.0.0...')
+        contains('Downloading baz 1.0.0...'),
       ]),
     );
   });

@@ -15,6 +15,8 @@ class FuchsiaSdk extends Sdk {
   String get name => 'Fuchsia';
   @override
   bool get isAvailable => _isAvailable;
+  @override
+  bool get allowsNonSdkDepsInSdkPackages => true;
 
   static final bool _isAvailable = _rootDirectory != null;
   static final String? _rootDirectory =
@@ -40,7 +42,7 @@ class FuchsiaSdk extends Sdk {
   String? packagePath(String name) {
     if (!isAvailable) return null;
 
-    var packagePath = p.join(_rootDirectory!, 'packages', name);
+    final packagePath = p.join(_rootDirectory!, 'packages', name);
     if (dirExists(packagePath)) return packagePath;
 
     return null;

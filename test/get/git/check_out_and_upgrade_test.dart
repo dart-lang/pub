@@ -18,7 +18,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -27,8 +27,8 @@ void main() {
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     await d.dir(cachePath, [
@@ -37,10 +37,10 @@ void main() {
           d.gitPackageRepoCacheDir('foo'),
         ]),
         d.gitPackageRevisionCacheDir('foo'),
-      ])
+      ]),
     ]).validate();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     await d.git(
       'foo.git',
@@ -55,8 +55,8 @@ void main() {
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.gitPackageRevisionCacheDir('foo'),
-        d.gitPackageRevisionCacheDir('foo', modifier: 2)
-      ])
+        d.gitPackageRevisionCacheDir('foo', modifier: 2),
+      ]),
     ]).validate();
 
     expect(packageSpec('foo'), isNot(originalFooSpec));

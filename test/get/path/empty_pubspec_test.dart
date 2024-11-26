@@ -17,15 +17,15 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await pubGet(
       exitCode: exit_codes.DATA,
-      error:
-          'Error on line 1, column 1 of ${p.join('..', 'foo', 'pubspec.yaml')}: '
+      error: 'Error on line 1, column 1 of '
+          '${p.join('..', 'foo', 'pubspec.yaml')}: '
           'Missing the required "name" field.',
     );
   });

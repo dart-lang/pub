@@ -14,14 +14,17 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")]),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir('global_packages/foo/bin', [d.file('script.dart.snapshot', 'junk')])
+      d.dir(
+        'global_packages/foo/bin',
+        [d.file('script.dart.snapshot', 'junk')],
+      ),
     ]).create();
 
     await runPub(
@@ -29,12 +32,13 @@ void main() {
       output: '''
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
+          Downloading packages...
           Building package executables...
           Built foo:script.
           Reactivated 1 package.''',
     );
 
-    var pub = await pubRun(global: true, args: ['foo:script']);
+    final pub = await pubRun(global: true, args: ['foo:script']);
     expect(pub.stdout, emits('ok'));
     await pub.shouldExit();
   });

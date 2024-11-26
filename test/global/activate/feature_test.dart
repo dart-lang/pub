@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 @Skip()
+library;
 
 import 'package:test/test.dart';
 
@@ -17,13 +18,13 @@ void main() {
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -33,6 +34,7 @@ void main() {
       args: ['global', 'activate', 'foo'],
       output: contains('''
 Resolving dependencies...
+Downloading packages...
 + bar 1.0.0
 + foo 1.0.0
 Downloading'''),
@@ -47,13 +49,13 @@ Downloading'''),
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -63,6 +65,7 @@ Downloading'''),
       args: ['global', 'activate', 'foo', '--features', 'things'],
       output: contains('''
 Resolving dependencies...
+Downloading packages...
 + bar 1.0.0
 + baz 1.0.0
 + foo 1.0.0
@@ -78,13 +81,13 @@ Downloading'''),
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -94,6 +97,7 @@ Downloading'''),
       args: ['global', 'activate', 'foo', '--omit-features', 'stuff'],
       output: contains('''
 Resolving dependencies...
+Downloading packages...
 + foo 1.0.0
 Downloading'''),
     );
@@ -108,13 +112,13 @@ Downloading'''),
           'features': {
             'stuff': {
               'default': false,
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -124,6 +128,7 @@ Downloading'''),
       args: ['global', 'activate', 'foo', '--features', 'things,stuff'],
       output: contains('''
 Resolving dependencies...
+Downloading packages...
 + bar 1.0.0
 + baz 1.0.0
 + foo 1.0.0
@@ -139,13 +144,13 @@ Downloading'''),
         pubspec: {
           'features': {
             'stuff': {
-              'dependencies': {'bar': '1.0.0'}
+              'dependencies': {'bar': '1.0.0'},
             },
             'things': {
               'default': false,
-              'dependencies': {'baz': '1.0.0'}
-            }
-          }
+              'dependencies': {'baz': '1.0.0'},
+            },
+          },
         },
       )
       ..serve('bar', '1.0.0')
@@ -159,10 +164,11 @@ Downloading'''),
         '--features',
         'things',
         '--omit-features',
-        'stuff'
+        'stuff',
       ],
       output: contains('''
 Resolving dependencies...
+Downloading packages...
 + baz 1.0.0
 + foo 1.0.0
 Downloading'''),

@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
+import 'package:pub/src/source/root.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 
@@ -54,7 +55,7 @@ void basicGraph() {
         'ab': '1.0.0',
         'b': '1.0.0',
         'ba': '1.0.0',
-        'bb': '1.0.0'
+        'bb': '1.0.0',
       },
     );
   });
@@ -192,7 +193,7 @@ void withLockFile() {
         'bar': '2.0.0',
         'baz': '2.0.0',
         'qux': '1.0.0',
-        'newdep': '2.0.0'
+        'newdep': '2.0.0',
       },
       tries: 2,
     );
@@ -200,8 +201,8 @@ void withLockFile() {
 
   // Issue 1853
   test(
-      "produces a nice message for a locked dependency that's the only version of its package",
-      () async {
+      'produces a nice message for a locked dependency '
+      "that's the only version of its package", () async {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'bar': '>=2.0.0'})
       ..serve('bar', '1.0.0')
@@ -235,7 +236,7 @@ void rootDependency() {
         'bar',
         '1.0.0',
         deps: {
-          'myapp': {'git': 'http://nowhere.com/'}
+          'myapp': {'git': 'http://nowhere.com/'},
         },
       );
 
@@ -267,8 +268,8 @@ void devDependency() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dev_dependencies': {'foo': '1.0.0', 'bar': '1.0.0'}
-      })
+        'dev_dependencies': {'foo': '1.0.0', 'bar': '1.0.0'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
@@ -282,8 +283,8 @@ void devDependency() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dev_dependencies': {'foo': '1.0.0'}
-      })
+        'dev_dependencies': {'foo': '1.0.0'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '1.0.0', 'bar': '1.0.0'});
@@ -295,7 +296,7 @@ void devDependency() {
       'foo',
       '1.0.0',
       pubspec: {
-        'dev_dependencies': {'bar': '1.0.0'}
+        'dev_dependencies': {'bar': '1.0.0'},
       },
     );
 
@@ -314,8 +315,8 @@ void devDependency() {
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '>=1.0.0 <3.0.0'},
-          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'}
-        })
+          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'},
+        }),
       ]).create();
 
       await expectResolves(result: {'foo': '2.0.0'});
@@ -329,8 +330,8 @@ void devDependency() {
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '>=1.0.0 <3.0.0'},
-          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'}
-        })
+          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'},
+        }),
       ]).create();
 
       await expectResolves(
@@ -348,8 +349,8 @@ So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '>=1.0.0 <3.0.0'},
-          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'}
-        })
+          'dev_dependencies': {'foo': '>=2.0.0 <4.0.0'},
+        }),
       ]).create();
 
       await expectResolves(
@@ -367,13 +368,14 @@ So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '>=1.0.0 <2.0.0'},
-          'dev_dependencies': {'foo': '>=2.0.0 <3.0.0'}
-        })
+          'dev_dependencies': {'foo': '>=2.0.0 <3.0.0'},
+        }),
       ]).create();
 
       await expectResolves(
         error: contains(
-          'Because myapp depends on both foo ^1.0.0 and foo ^2.0.0, version solving failed.',
+          'Because myapp depends on both '
+          'foo ^1.0.0 and foo ^2.0.0, version solving failed.',
         ),
       );
     });
@@ -387,9 +389,9 @@ So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
           'name': 'myapp',
           'dependencies': {'foo': '>=1.0.0 <2.0.0'},
           'dev_dependencies': {
-            'foo': {'path': '../foo'}
-          }
-        })
+            'foo': {'path': '../foo'},
+          },
+        }),
       ]).create();
 
       await expectResolves(
@@ -408,12 +410,12 @@ So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
         d.pubspec({
           'name': 'myapp',
           'dependencies': {
-            'foo': {'path': 'foo'}
+            'foo': {'path': 'foo'},
           },
           'dev_dependencies': {
-            'foo': {'path': '../foo'}
-          }
-        })
+            'foo': {'path': '../foo'},
+          },
+        }),
       ]).create();
 
       await expectResolves(
@@ -479,7 +481,7 @@ Because myapp depends on foo ^1.0.0 which doesn't match any versions, version so
   });
 
   test('mismatched descriptions', () async {
-    var otherServer = await startPackageServer();
+    final otherServer = await startPackageServer();
     otherServer.serve('shared', '1.0.0');
 
     await servePackages()
@@ -490,8 +492,8 @@ Because myapp depends on foo ^1.0.0 which doesn't match any versions, version so
         deps: {
           'shared': {
             'hosted': {'name': 'shared', 'url': otherServer.url},
-            'version': '1.0.0'
-          }
+            'version': '1.0.0',
+          },
         },
       )
       ..serve('shared', '1.0.0');
@@ -507,7 +509,7 @@ Because myapp depends on foo ^1.0.0 which doesn't match any versions, version so
             'http://localhost:'),
         contains(', bar is incompatible with foo.'),
         contains('So, because myapp depends on both foo 1.0.0 and bar 1.0.0, '
-            'version solving failed.')
+            'version solving failed.'),
       ]),
     );
   });
@@ -521,7 +523,7 @@ Because myapp depends on foo ^1.0.0 which doesn't match any versions, version so
         'bar',
         '1.0.0',
         deps: {
-          'shared': {'path': p.join(d.sandbox, 'shared')}
+          'shared': {'path': p.join(d.sandbox, 'shared')},
         },
       )
       ..serve('shared', '1.0.0');
@@ -614,7 +616,7 @@ void badSource() {
   test('fail if the root package has a bad source in dep', () async {
     await d.appDir(
       dependencies: {
-        'foo': {'bad': 'any'}
+        'foo': {'bad': 'any'},
       },
     ).create();
     await expectResolves(
@@ -630,9 +632,9 @@ void badSource() {
       d.pubspec({
         'name': 'myapp',
         'dev_dependencies': {
-          'foo': {'bad': 'any'}
-        }
-      })
+          'foo': {'bad': 'any'},
+        },
+      }),
     ]).create();
 
     await expectResolves(
@@ -649,21 +651,21 @@ void badSource() {
         'foo',
         '1.0.0',
         deps: {
-          'bar': {'bad': 'any'}
+          'bar': {'bad': 'any'},
         },
       )
       ..serve(
         'foo',
         '1.0.1',
         deps: {
-          'baz': {'bad': 'any'}
+          'baz': {'bad': 'any'},
         },
       )
       ..serve(
         'foo',
         '1.0.2',
         deps: {
-          'bang': {'bad': 'any'}
+          'bang': {'bad': 'any'},
         },
       );
 
@@ -690,14 +692,14 @@ void badSource() {
         'foo',
         '1.0.1',
         deps: {
-          'bar': {'bad': 'any'}
+          'bar': {'bad': 'any'},
         },
       )
       ..serve(
         'foo',
         '1.0.2',
         deps: {
-          'bar': {'bad': 'any'}
+          'bar': {'bad': 'any'},
         },
       )
       ..serve('bar', '1.0.0');
@@ -717,7 +719,7 @@ void badSource() {
     await d.appDir(
       dependencies: {
         'foo': 'any',
-        'baz': {'path': '../baz'}
+        'baz': {'path': '../baz'},
       },
     ).create();
     await expectResolves(
@@ -887,7 +889,7 @@ void backtracking() {
         'b',
         '2.0.0',
         deps: {
-          'a': {'path': p.join(d.sandbox, 'a')}
+          'a': {'path': p.join(d.sandbox, 'a')},
         },
       )
       ..serve('c', '1.0.0')
@@ -902,7 +904,7 @@ void backtracking() {
 
   // Like the above test, but for a conflicting description.
   test('successful backjump to conflicting description', () async {
-    var otherServer = await startPackageServer();
+    final otherServer = await startPackageServer();
     otherServer.serve('a', '1.0.0');
 
     await servePackages()
@@ -913,8 +915,8 @@ void backtracking() {
         '2.0.0',
         deps: {
           'a': {
-            'hosted': {'name': 'a', 'url': otherServer.url}
-          }
+            'hosted': {'name': 'a', 'url': otherServer.url},
+          },
         },
       )
       ..serve('c', '1.0.0')
@@ -938,7 +940,7 @@ void backtracking() {
         'b',
         '1.0.0',
         deps: {
-          'a': {'path': p.join(d.sandbox, 'shared')}
+          'a': {'path': p.join(d.sandbox, 'shared')},
         },
       )
       ..serve('c', '1.0.0')
@@ -958,7 +960,7 @@ void backtracking() {
   });
 
   test('failing backjump to conflicting description', () async {
-    var otherServer = await startPackageServer();
+    final otherServer = await startPackageServer();
     otherServer.serve('a', '1.0.0');
 
     await servePackages()
@@ -968,8 +970,8 @@ void backtracking() {
         '1.0.0',
         deps: {
           'a': {
-            'hosted': {'name': 'a', 'url': otherServer.url}
-          }
+            'hosted': {'name': 'a', 'url': otherServer.url},
+          },
         },
       )
       ..serve('c', '1.0.0')
@@ -985,7 +987,7 @@ void backtracking() {
             'http://localhost:'),
         contains(' and myapp depends on a from hosted on http://localhost:'),
         contains(', b is forbidden.'),
-        contains('So, because myapp depends on b any, version solving failed.')
+        contains('So, because myapp depends on b any, version solving failed.'),
       ]),
     );
   });
@@ -1044,14 +1046,14 @@ void backtracking() {
         'a',
         '1.0.0',
         deps: {
-          'foo': 'any' // ok
+          'foo': 'any', // ok
         },
       )
       ..serve(
         'a',
         '2.0.0',
         deps: {
-          'foo': '<1.0.0' // disjoint with myapp's constraint on foo
+          'foo': '<1.0.0', // disjoint with myapp's constraint on foo
         },
       )
       ..serve('foo', '2.0.0')
@@ -1089,8 +1091,8 @@ void dartSdkConstraint() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '3.1.2+3'}
-      })
+        'environment': {'sdk': '3.1.2+3'},
+      }),
     ]).create();
 
     await expectResolves(result: {});
@@ -1100,8 +1102,8 @@ void dartSdkConstraint() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '2.12.0'}
-      })
+        'environment': {'sdk': '2.12.0'},
+      }),
     ]).create();
 
     await expectResolves(
@@ -1118,7 +1120,7 @@ Because myapp requires SDK version 2.12.0, version solving failed.'''),
       'foo',
       '1.0.0',
       pubspec: {
-        'environment': {'sdk': '2.12.0'}
+        'environment': {'sdk': '2.12.0'},
       },
     );
 
@@ -1140,7 +1142,7 @@ Because myapp requires SDK version 2.12.0, version solving failed.'''),
         'bar',
         '1.0.0',
         pubspec: {
-          'environment': {'sdk': '2.12.0'}
+          'environment': {'sdk': '2.12.0'},
         },
       );
 
@@ -1162,28 +1164,28 @@ Because myapp requires SDK version 2.12.0, version solving failed.'''),
         'foo',
         '1.0.0',
         pubspec: {
-          'environment': {'sdk': '3.1.2+3'}
+          'environment': {'sdk': '3.1.2+3'},
         },
       )
       ..serve(
         'foo',
         '2.0.0',
         pubspec: {
-          'environment': {'sdk': '3.1.2+3'}
+          'environment': {'sdk': '3.1.2+3'},
         },
       )
       ..serve(
         'foo',
         '3.0.0',
         pubspec: {
-          'environment': {'sdk': '0.0.0'}
+          'environment': {'sdk': '0.0.0'},
         },
       )
       ..serve(
         'foo',
         '4.0.0',
         pubspec: {
-          'environment': {'sdk': '0.0.0'}
+          'environment': {'sdk': '0.0.0'},
         },
       );
 
@@ -1198,28 +1200,28 @@ Because myapp requires SDK version 2.12.0, version solving failed.'''),
         'bar',
         '1.0.0',
         pubspec: {
-          'environment': {'sdk': '3.1.2+3'}
+          'environment': {'sdk': '3.1.2+3'},
         },
       )
       ..serve(
         'bar',
         '2.0.0',
         pubspec: {
-          'environment': {'sdk': '3.1.2+3'}
+          'environment': {'sdk': '3.1.2+3'},
         },
       )
       ..serve(
         'bar',
         '3.0.0',
         pubspec: {
-          'environment': {'sdk': '0.0.0'}
+          'environment': {'sdk': '0.0.0'},
         },
       )
       ..serve(
         'bar',
         '4.0.0',
         pubspec: {
-          'environment': {'sdk': '0.0.0'}
+          'environment': {'sdk': '0.0.0'},
         },
       );
 
@@ -1239,28 +1241,28 @@ Because myapp requires SDK version 2.12.0, version solving failed.'''),
         'bar',
         '1.0.0',
         pubspec: {
-          'environment': {'sdk': '3.1.2+3'}
+          'environment': {'sdk': '3.1.2+3'},
         },
       )
       ..serve(
         'bar',
         '2.0.0',
         pubspec: {
-          'environment': {'sdk': '3.1.2+3'}
+          'environment': {'sdk': '3.1.2+3'},
         },
       )
       ..serve(
         'bar',
         '3.0.0',
         pubspec: {
-          'environment': {'sdk': '0.0.0'}
+          'environment': {'sdk': '0.0.0'},
         },
       )
       ..serve(
         'bar',
         '4.0.0',
         pubspec: {
-          'environment': {'sdk': '0.0.0'}
+          'environment': {'sdk': '0.0.0'},
         },
       );
 
@@ -1275,15 +1277,15 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'flutter': '1.2.3'}
-        })
+          'environment': {'flutter': '1.2.3'},
+        }),
       ]).create();
 
       await expectResolves(
         error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `dart pub get`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });
@@ -1294,7 +1296,7 @@ void sdkConstraint() {
         'foo',
         '1.0.0',
         pubspec: {
-          'environment': {'flutter': 'any', 'sdk': defaultSdkConstraint}
+          'environment': {'flutter': 'any', 'sdk': defaultSdkConstraint},
         },
       );
 
@@ -1304,7 +1306,7 @@ void sdkConstraint() {
         Because myapp depends on foo any which requires the Flutter SDK, version
           solving failed.
 
-        Flutter users should run `flutter pub get` instead of `dart pub get`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });
@@ -1317,7 +1319,7 @@ void sdkConstraint() {
           'foo',
           '3.0.0',
           pubspec: {
-            'environment': {'flutter': '0.0.0'}
+            'environment': {'flutter': '0.0.0'},
           },
         );
 
@@ -1329,15 +1331,15 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'}
-        })
+          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'},
+        }),
       ]).create();
 
       await expectResolves(
         error: equalsIgnoringWhitespace('''
         Because myapp requires the Flutter SDK, version solving failed.
 
-        Flutter users should run `flutter pub get` instead of `dart pub get`.
+        Flutter users should use `flutter pub` instead of `dart pub`.
       '''),
       );
     });
@@ -1347,8 +1349,8 @@ void sdkConstraint() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'fuchsia': '1.2.3'}
-      })
+        'environment': {'fuchsia': '1.2.3'},
+      }),
     ]).create();
 
     await expectResolves(
@@ -1363,15 +1365,15 @@ void sdkConstraint() {
 
   group('with a Flutter SDK', () {
     setUp(() {
-      return d.dir('flutter', [d.file('version', '1.2.3')]).create();
+      return d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
     });
 
     test('succeeds with a matching constraint', () async {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'flutter': 'any'}
-        })
+          'environment': {'flutter': 'any'},
+        }),
       ]).create();
 
       await expectResolves(
@@ -1384,8 +1386,8 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'flutter': '>1.2.3'}
-        })
+          'environment': {'flutter': '>1.2.3'},
+        }),
       ]).create();
 
       await expectResolves(
@@ -1403,8 +1405,8 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'}
-        })
+          'environment': {'sdk': '3.1.2+3', 'flutter': '1.2.3'},
+        }),
       ]).create();
 
       await expectResolves(
@@ -1417,8 +1419,8 @@ void sdkConstraint() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'environment': {'sdk': '3.1.2+3', 'flutter': '>1.2.3'}
-        })
+          'environment': {'sdk': '3.1.2+3', 'flutter': '>1.2.3'},
+        }),
       ]).create();
 
       await expectResolves(
@@ -1445,12 +1447,10 @@ void sdkConstraint() {
 
       await expectResolves(
         environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
-        error: equalsIgnoringWhitespace('''
-            The current Dart SDK version is 3.1.2+3.
+        error: contains('''
+The current Dart SDK version is 3.1.2+3.
 
-            Because myapp requires SDK version >3.1.2+3, version solving
-            failed.
-          '''),
+Because myapp requires SDK version >3.1.2+3, version solving failed.'''),
       );
     });
 
@@ -1460,21 +1460,21 @@ void sdkConstraint() {
           'foo',
           '1.0.0',
           pubspec: {
-            'environment': {'flutter': '^0.0.0', 'sdk': defaultSdkConstraint}
+            'environment': {'flutter': '^0.0.0', 'sdk': defaultSdkConstraint},
           },
         )
         ..serve(
           'foo',
           '2.0.0',
           pubspec: {
-            'environment': {'flutter': '^1.0.0', 'sdk': defaultSdkConstraint}
+            'environment': {'flutter': '^1.0.0', 'sdk': defaultSdkConstraint},
           },
         )
         ..serve(
           'foo',
           '3.0.0',
           pubspec: {
-            'environment': {'flutter': '^2.0.0', 'sdk': defaultSdkConstraint}
+            'environment': {'flutter': '^2.0.0', 'sdk': defaultSdkConstraint},
           },
         );
 
@@ -1635,7 +1635,8 @@ void prerelease() {
     ).create();
     await expectResolves(
       error: contains(
-        'So, because myapp depends on both a 0.12.0 and b any, version solving failed.',
+        'So, because myapp depends on both '
+        'a 0.12.0 and b any, version solving failed.',
       ),
       tries: 2,
     );
@@ -1669,8 +1670,8 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'a': 'any'},
-        'dependency_overrides': {'a': '<3.0.0'}
-      })
+        'dependency_overrides': {'a': '<3.0.0'},
+      }),
     ]).create();
 
     await expectResolves(result: {'a': '2.0.0'});
@@ -1685,8 +1686,8 @@ void override() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependency_overrides': {'a': '<3.0.0'}
-      })
+        'dependency_overrides': {'a': '<3.0.0'},
+      }),
     ]).create();
 
     await expectResolves(result: {'a': '2.0.0'});
@@ -1704,14 +1705,14 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'b': 'any', 'c': 'any'},
-        'dependency_overrides': {'a': '2.0.0'}
-      })
+        'dependency_overrides': {'a': '2.0.0'},
+      }),
     ]).create();
 
     await expectResolves(result: {'a': '2.0.0', 'b': '1.0.0', 'c': '1.0.0'});
   });
 
-  test('backtracks on overidden package for its constraints', () async {
+  test('backtracks on overridden package for its constraints', () async {
     await servePackages()
       ..serve('a', '1.0.0', deps: {'shared': 'any'})
       ..serve('a', '2.0.0', deps: {'shared': '1.0.0'})
@@ -1722,8 +1723,8 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'shared': '2.0.0'},
-        'dependency_overrides': {'a': '<3.0.0'}
-      })
+        'dependency_overrides': {'a': '<3.0.0'},
+      }),
     ]).create();
 
     await expectResolves(result: {'a': '1.0.0', 'shared': '2.0.0'});
@@ -1744,8 +1745,8 @@ void override() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependency_overrides': {'foo': '<1.0.2'}
-      })
+        'dependency_overrides': {'foo': '<1.0.2'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '1.0.1', 'bar': '1.0.1'});
@@ -1766,8 +1767,8 @@ void override() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependency_overrides': {'foo': '>1.0.1'}
-      })
+        'dependency_overrides': {'foo': '>1.0.1'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '1.0.2', 'bar': '1.0.2'});
@@ -1781,8 +1782,8 @@ void override() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependency_overrides': {'foo': '>=1.0.0 <2.0.0'}
-      })
+        'dependency_overrides': {'foo': '>=1.0.0 <2.0.0'},
+      }),
     ]).create();
 
     await expectResolves(
@@ -1801,10 +1802,10 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'bad': 'any'}
+          'foo': {'bad': 'any'},
         },
-        'dependency_overrides': {'foo': 'any'}
-      })
+        'dependency_overrides': {'foo': 'any'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '0.0.0'});
@@ -1816,15 +1817,15 @@ void override() {
       'foo',
       '0.0.0',
       pubspec: {
-        'environment': {'sdk': '0.0.0'}
+        'environment': {'sdk': '0.0.0'},
       },
     );
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependency_overrides': {'foo': 'any'}
-      })
+        'dependency_overrides': {'foo': 'any'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '0.0.0'});
@@ -1838,8 +1839,8 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'version': '2.0.0',
-        'dependency_overrides': {'foo': 'any'}
-      })
+        'dependency_overrides': {'foo': 'any'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '0.0.0'});
@@ -1860,8 +1861,8 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'foo': 'any'},
-        'dependency_overrides': {'bar': '0.0.1'}
-      })
+        'dependency_overrides': {'bar': '0.0.1'},
+      }),
     ]).create();
 
     await expectResolves(result: {'foo': '1.2.3', 'bar': '0.0.1'});
@@ -1878,7 +1879,7 @@ void override() {
         'dependencies': {'a': '1.0.0'},
       }),
       d.pubspecOverrides({
-        'dependency_overrides': {'a': '2.0.0'}
+        'dependency_overrides': {'a': '2.0.0'},
       }),
     ]).create();
 
@@ -1895,10 +1896,10 @@ void override() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'a': '1.0.0'},
-        'dependency_overrides': {'a': '2.0.0'}
+        'dependency_overrides': {'a': '2.0.0'},
       }),
       d.pubspecOverrides({
-        'dependency_overrides': {'a': '3.0.0'}
+        'dependency_overrides': {'a': '3.0.0'},
       }),
     ]).create();
 
@@ -1956,8 +1957,8 @@ void downgrade() {
 /// If [downgrade] is `true`, this runs "pub downgrade" instead of "pub get".
 Future expectResolves({
   Map? result,
-  error,
-  output,
+  Object? error,
+  Object? output,
   int? tries,
   Map<String, String>? environment,
   bool downgrade = false,
@@ -1979,16 +1980,20 @@ Future expectResolves({
 
   if (result == null) return;
 
-  var cache = SystemCache();
-  var registry = cache.sources;
-  var lockFile =
+  final cache = SystemCache();
+  final registry = cache.sources;
+  final lockFile =
       LockFile.load(p.join(d.sandbox, appPath, 'pubspec.lock'), registry);
-  var resultPubspec = Pubspec.fromMap({'dependencies': result}, registry);
+  final resultPubspec = Pubspec.fromMap(
+    {'dependencies': result},
+    registry,
+    containingDescription: RootDescription('.'),
+  );
 
-  var ids = {...lockFile.packages};
+  final ids = {...lockFile.packages};
   for (var dep in resultPubspec.dependencies.values) {
     expect(ids, contains(dep.name));
-    var id = ids.remove(dep.name)!;
+    final id = ids.remove(dep.name)!;
     final description = dep.description;
     if (description is HostedDescription &&
         (description.url == SystemCache().hosted.defaultUrl)) {
@@ -2032,23 +2037,23 @@ void regressions() {
         d.dir(
           'baz',
           [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
-        )
+        ),
       ]),
-      d.file('version', '1.2.3')
+      d.flutterVersion('1.2.3'),
     ]).create();
     await servePackages()
       ..serve(
         'foo',
         '1.0.0',
         deps: {
-          'baz': {'sdk': 'flutter'}
+          'baz': {'sdk': 'flutter'},
         },
       )
       ..serve(
         'bar',
         '1.0.0',
         deps: {
-          'baz': {'sdk': 'flutter'}
+          'baz': {'sdk': 'flutter'},
         },
       );
     await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();

@@ -11,7 +11,7 @@ import '../test_pub.dart';
 void main() {
   test('package validation has a warning and is canceled', () async {
     await d.validPackage().create();
-    var pkg = packageMap(
+    final pkg = packageMap(
       'test_pkg',
       '1.0.0',
       null,
@@ -24,7 +24,7 @@ void main() {
     ]).create();
 
     await servePackages();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     pub.stdin.writeln('n');
     await pub.shouldExit(exit_codes.DATA);

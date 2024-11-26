@@ -25,7 +25,7 @@ void main() {
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', 'main() => print("ok");')])
+      d.dir('bin', [d.file('foo.dart', 'main() => print("ok");')]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-sgit', '../foo.git']);
@@ -39,12 +39,12 @@ void main() {
   test('lists an activated Path package', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', 'main() => print("ok");')])
+      d.dir('bin', [d.file('foo.dart', 'main() => print("ok");')]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var path = canonicalize(p.join(d.sandbox, 'foo'));
+    final path = canonicalize(p.join(d.sandbox, 'foo'));
     await runPub(args: ['global', 'list'], output: 'foo 1.0.0 at path "$path"');
   });
 

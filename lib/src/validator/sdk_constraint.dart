@@ -11,14 +11,13 @@ import '../validator.dart';
 /// A validator of the SDK constraint.
 ///
 /// Validates that a package's SDK constraint:
-/// * doesn't use the "^" syntax.
 /// * has an upper bound.
 /// * is not depending on a prerelease, unless the package itself is a
 /// prerelease.
 class SdkConstraintValidator extends Validator {
   @override
   Future validate() async {
-    final dartConstraint = entrypoint.root.pubspec.dartSdkConstraint;
+    final dartConstraint = package.pubspec.dartSdkConstraint;
     final originalConstraint = dartConstraint.originalConstraint;
     final effectiveConstraint = dartConstraint.effectiveConstraint;
     if (originalConstraint is VersionRange) {
@@ -32,7 +31,7 @@ class SdkConstraintValidator extends Validator {
       }
 
       final constraintMin = originalConstraint.min;
-      final packageVersion = entrypoint.root.version;
+      final packageVersion = package.version;
 
       if (constraintMin != null &&
           constraintMin.isPreRelease &&

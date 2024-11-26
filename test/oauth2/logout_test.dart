@@ -15,7 +15,7 @@ void main() {
           globalServer,
           'access-token',
           refreshToken: 'refresh token',
-          expiration: DateTime.now().add(Duration(hours: 1)),
+          expiration: DateTime.now().add(const Duration(hours: 1)),
         )
         .create();
 

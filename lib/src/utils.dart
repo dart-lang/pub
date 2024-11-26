@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Generic utility functions. Stuff that should possibly be in core.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -14,10 +16,13 @@ import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
+import 'exit_codes.dart' as exit_codes;
 import 'io.dart';
 import 'log.dart' as log;
+import 'pubspec_parse.dart';
 
 /// A regular expression matching a Dart identifier.
 ///
@@ -29,39 +34,78 @@ final identifierRegExp = RegExp(r'[a-zA-Z_]\w*');
 final onlyIdentifierRegExp = RegExp('^${identifierRegExp.pattern}\$');
 
 /// Dart reserved words, from the Dart spec.
-const reservedWords = [
+const reservedWords = <String>{
+  'abstract',
+  'as',
   'assert',
+  // 'async', // Reserved, but allowed because package:async already exists.
+  'await',
+  // 'base', // Reserved, but allowed because package:base already exists.
   'break',
   'case',
   'catch',
   'class',
   'const',
   'continue',
+  'covariant',
   'default',
+  'deferred',
   'do',
+  // 'dynamic', // Reserved, but allowed because package:dynamic already exists.
   'else',
+  'enum',
+  'export',
   'extends',
+  // 'extension', // Reserved, but allowed because package:extension already exists.
+  'external',
+  // 'factory', // Reserved, but allowed because package:factory already exists.
   'false',
   'final',
   'finally',
   'for',
+  // 'get', // Reserved, but allowed because package:get already exists.
+  'hide',
   'if',
+  'implements',
+  'import',
   'in',
+  'inline',
+  'interface',
   'is',
+  'late',
+  'library',
+  'mixin',
   'new',
   'null',
+  'of',
+  'on',
+  'operator',
+  'part',
+  'required',
+  'rethrow',
   'return',
+  'sealed',
+  'set',
+  // 'show', // Reserved, but allowed because package:show already exists.
+  // 'static', // Reserved, but allowed because package:static already exists.
   'super',
   'switch',
+  // 'sync', // Reserved, but allowed because package:sync already exists.
   'this',
   'throw',
   'true',
   'try',
+  'type',
+  // 'typedef', // Reserved, but allowed because package:typedef already exists.
   'var',
   'void',
+  // 'when', // Reserved, but allowed because package:when already exists.
   'while',
-  'with'
-];
+  'with',
+  'yield',
+};
+
+const workspacesDocUrl = 'https://dart.dev/go/pub-workspaces';
 
 /// An cryptographically secure instance of [math.Random].
 final random = math.Random.secure();
@@ -78,26 +122,6 @@ final int? _lineLength = () {
   }
 }();
 
-/// A pair of values.
-class Pair<E, F> {
-  E first;
-  F last;
-
-  Pair(this.first, this.last);
-
-  @override
-  String toString() => '($first, $last)';
-
-  @override
-  bool operator ==(other) {
-    if (other is! Pair) return false;
-    return other.first == first && other.last == last;
-  }
-
-  @override
-  int get hashCode => first.hashCode ^ last.hashCode;
-}
-
 /// Runs [callback] in an error zone and pipes any unhandled error to the
 /// returned [Future].
 ///
@@ -109,7 +133,7 @@ Future<T> captureErrors<T>(
   Future<T> Function() callback, {
   bool captureStackChains = false,
 }) {
-  var completer = Completer<T>();
+  final completer = Completer<T>();
   void wrappedCallback() {
     Future.sync(callback)
         .then(completer.complete)
@@ -236,7 +260,7 @@ bool isLoopback(String host) {
 
 /// Returns a list containing the sorted elements of [iter].
 List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
-  var list = iter.toList();
+  final list = iter.toList();
   list.sort();
   return list;
 }
@@ -248,7 +272,7 @@ List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
 /// and only if that path's basename is in [files].
 Set<String> createFileFilter(Iterable<String> files) {
   return files.expand<String>((file) {
-    var result = ['/$file'];
+    final result = ['/$file'];
     if (Platform.isWindows) result.add('\\$file');
     return result;
   }).toSet();
@@ -261,7 +285,7 @@ Set<String> createFileFilter(Iterable<String> files) {
 /// and only if one of that path's components is in [dirs].
 Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
-    var result = ['/$dir/'];
+    final result = ['/$dir/'];
     if (Platform.isWindows) {
       result
         ..add('/$dir\\')
@@ -293,7 +317,7 @@ Future<S?> minByAsync<S, T>(
 ) async {
   int? minIndex;
   T? minOrderBy;
-  var valuesList = values.toList();
+  final valuesList = values.toList();
   final orderByResults = await Future.wait(values.map(orderBy));
   for (var i = 0; i < orderByResults.length; i++) {
     final elementOrderBy = orderByResults[i];
@@ -338,7 +362,7 @@ Future<S> foldAsync<S, T>(
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
 String replace(String source, Pattern matcher, String Function(Match) fn) {
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   var start = 0;
   for (var match in matcher.allMatches(source)) {
     buffer.write(source.substring(start, match.start));
@@ -357,38 +381,29 @@ String hexEncode(List<int> bytes) => hex.encode(bytes);
 
 Uint8List hexDecode(String string) => hex.decode(string) as Uint8List;
 
-/// A regular expression matching a trailing CR character.
-final _trailingCR = RegExp(r'\r$');
-
-// TODO(nweiz): Use `text.split(new RegExp("\r\n?|\n\r?"))` when issue 9360 is
-// fixed.
-/// Splits [text] on its line breaks in a Windows-line-break-friendly way.
-List<String> splitLines(String text) =>
-    text.split('\n').map((line) => line.replaceFirst(_trailingCR, '')).toList();
-
 /// Like [String.split], but only splits on the first occurrence of the pattern.
 ///
 /// This always returns an array of two elements or fewer.
 List<String> split1(String toSplit, String pattern) {
   if (toSplit.isEmpty) return <String>[];
 
-  var index = toSplit.indexOf(pattern);
+  final index = toSplit.indexOf(pattern);
   if (index == -1) return [toSplit];
   return [
     toSplit.substring(0, index),
-    toSplit.substring(index + pattern.length)
+    toSplit.substring(index + pattern.length),
   ];
 }
 
 /// Convert a URL query string (or `application/x-www-form-urlencoded` body)
 /// into a [Map] from parameter names to values.
 Map<String, String> queryToMap(String queryList) {
-  var map = <String, String>{};
+  final map = <String, String>{};
   for (var pair in queryList.split('&')) {
-    var split = split1(pair, '=');
+    final split = split1(pair, '=');
     if (split.isEmpty) continue;
-    var key = _urlDecode(split[0]);
-    var value = split.length > 1 ? _urlDecode(split[1]) : '';
+    final key = _urlDecode(split[0]);
+    final value = split.length > 1 ? _urlDecode(split[1]) : '';
     map[key] = value;
   }
   return map;
@@ -396,15 +411,15 @@ Map<String, String> queryToMap(String queryList) {
 
 /// Returns a human-friendly representation of [duration].
 String niceDuration(Duration duration) {
-  var hasMinutes = duration.inMinutes > 0;
-  var result = hasMinutes ? '${duration.inMinutes}:' : '';
+  final hasMinutes = duration.inMinutes > 0;
+  final result = hasMinutes ? '${duration.inMinutes}:' : '';
 
-  var s = duration.inSeconds % 60;
-  var ms = duration.inMilliseconds % 1000;
+  final s = duration.inSeconds % 60;
+  final ms = duration.inMilliseconds % 1000;
 
   // If we're using verbose logging, be more verbose but more accurate when
   // reporting timing information.
-  var msString = log.verbosity.isLevelVisible(log.Level.fine)
+  final msString = log.verbosity.isLevelVisible(log.Level.fine)
       ? _padLeft(ms.toString(), 3, '0')
       : (ms ~/ 100).toString();
 
@@ -450,7 +465,7 @@ bool get canUseAnsiCodes {
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
 
 /// Gets a emoji special character as unicode, or the [alternative] if unicode
-/// charactors are not supported by stdout.
+/// characters are not supported by stdout.
 String emoji(String unicode, String alternative) =>
     canUseUnicode ? unicode : alternative;
 
@@ -475,7 +490,7 @@ String prefixLines(String text, {String prefix = '| ', String? firstPrefix}) {
     return lines.map((line) => '$prefix$line').join('\n');
   }
 
-  var firstLine = '$firstPrefix${lines.first}';
+  final firstLine = '$firstPrefix${lines.first}';
   lines = lines.skip(1).map((line) => '$prefix$line').toList();
   lines.insert(0, firstLine);
   return lines.join('\n');
@@ -489,10 +504,10 @@ final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 
 /// Converts [data], which is a parsed YAML object, to a pretty-printed string,
 /// using indentation for maps.
-String yamlToString(data) {
-  var buffer = StringBuffer();
+String yamlToString(Object? data) {
+  final buffer = StringBuffer();
 
-  void stringify(bool isMapValue, String indent, data) {
+  void stringify(bool isMapValue, String indent, Object? data) {
     // TODO(nweiz): Serialize using the YAML library once it supports
     // serialization.
 
@@ -504,7 +519,7 @@ String yamlToString(data) {
       }
 
       // Sort the keys. This minimizes deltas in diffs.
-      var keys = data.keys.toList();
+      final keys = data.keys.toList();
       keys.sort((a, b) => a.toString().compareTo(b.toString()));
 
       var first = true;
@@ -566,23 +581,28 @@ Never dataError(String message) => throw DataException(message);
 ///
 /// If [bytes] is not provided, it is generated using `Random.secure`.
 String createUuid([List<int>? bytes]) {
-  var rnd = math.Random.secure();
+  final rnd = math.Random.secure();
 
   // See http://www.cryptosys.net/pki/uuid-rfc4122.html for notes
   bytes ??= List<int>.generate(16, (_) => rnd.nextInt(256));
   bytes[6] = (bytes[6] & 0x0F) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
-  var chars = bytes
+  final chars = bytes
       .map((b) => b.toRadixString(16).padLeft(2, '0'))
       .join()
       .toUpperCase();
 
-  return '${chars.substring(0, 8)}-${chars.substring(8, 12)}-'
-      '${chars.substring(12, 16)}-${chars.substring(16, 20)}-${chars.substring(20, 32)}';
+  return ''
+      '${chars.substring(0, 8)}-'
+      '${chars.substring(8, 12)}-'
+      '${chars.substring(12, 16)}-'
+      '${chars.substring(16, 20)}-'
+      '${chars.substring(20, 32)}';
 }
 
-/// Wraps [text] so that it fits within [_lineLength], if there is a line length.
+/// Wraps [text] so that it fits within [_lineLength], if there is a line
+/// length.
 ///
 /// This preserves existing newlines and doesn't consider terminal color escapes
 /// part of a word's length. It only splits words on spaces, not on other sorts
@@ -597,11 +617,11 @@ String wordWrap(String text, {String prefix = ''}) {
   }
 
   return text.split('\n').map((originalLine) {
-    var buffer = StringBuffer();
+    final buffer = StringBuffer();
     var lengthSoFar = 0;
     var firstLine = true;
     for (var word in originalLine.split(' ')) {
-      var wordLength = _withoutColors(word).length;
+      final wordLength = _withoutColors(word).length;
       if (wordLength > lineLength) {
         if (lengthSoFar != 0) buffer.writeln();
         if (!firstLine) buffer.write(prefix);
@@ -639,8 +659,8 @@ final _exceptionPrefix = RegExp(r'^([A-Z][a-zA-Z]*)?(Exception|Error): ');
 /// Get a string description of an exception.
 ///
 /// Many exceptions include the exception class name at the beginning of their
-/// [toString], so we remove that if it exists.
-String getErrorMessage(error) =>
+/// [Object.toString], so we remove that if it exists.
+String getErrorMessage(Object error) =>
     error.toString().replaceFirst(_exceptionPrefix, '');
 
 /// Returns whether [version1] and [version2] are the same, ignoring the
@@ -738,13 +758,77 @@ Future<T> retry<T>(
     final rf = randomizationFactor * (random.nextDouble() * 2 - 1) + 1;
     final exp = math.min(attempt, 31); // prevent overflows.
     final delay = delayFactor * math.pow(2.0, exp) * rf;
-    await Future.delayed(delay < maxDelay ? delay : maxDelay);
+    await Future<void>.delayed(delay < maxDelay ? delay : maxDelay);
   }
 }
 
 extension RetrieveFlags on ArgResults {
-  bool flag(String name) => this[name] as bool;
+  String optionWithDefault(String name) => option(name)!;
+}
 
-  String option(String name) => this[name] as String;
-  String? optionWithoutDefault(String name) => this[name] as String?;
+/// Limits the range of characters and length.
+///
+/// Useful for displaying externally provided strings.
+///
+/// Only allowd printable ASCII, map anything else to whitespace, take at-most
+/// 1024 characters.
+String sanitizeForTerminal(String input) => String.fromCharCodes(
+      input.runes.map((r) => 32 <= r && r <= 127 ? r : 32).take(1024),
+    );
+
+extension ExpectField on YamlMap {
+  /// Looks up the [key] in this map, and validates that it is of type [T],
+  /// returning it if so.
+  ///
+  /// Throws a [SourceSpanApplicationException] if not present and [T] is not
+  /// nullable, or if the value is not of type [T].
+  T expectField<T extends Object?>(String key) {
+    final value = this[key];
+    if (value is T) return value;
+    if (value == null) {
+      throw SourceSpanApplicationException(
+        'Missing the required "$key" field.',
+        span,
+      );
+    } else {
+      throw SourceSpanApplicationException(
+        '"$key" field must be a $T.',
+        nodes[key]?.span,
+      );
+    }
+  }
+
+  String expectPackageNameField() {
+    final name = expectField<String>('name');
+    if (!packageNameRegExp.hasMatch(name)) {
+      throw SourceSpanApplicationException(
+        '"name" field must be a valid Dart identifier.',
+        nodes['name']?.span,
+      );
+    } else if (reservedWords.contains(name.toLowerCase())) {
+      throw SourceSpanApplicationException(
+        '"name" field may not be a Dart reserved word.',
+        nodes['name']?.span,
+      );
+    }
+    return name;
+  }
+}
+
+extension ExpectEntries on YamlList {
+  /// Expects each entry in `this` to have a value of type [T],
+  /// and returns a `List<T>`.
+  ///
+  /// Throws a [SourceSpanApplicationException] for the first entry that does
+  /// not have a value of type [T].
+  List<T> expectElements<T extends Object?>() => [
+        for (var node in nodes)
+          if (node.value case final T value)
+            value
+          else
+            throw SourceSpanApplicationException(
+              'Elements must be of type $T.',
+              node.span,
+            ),
+      ];
 }

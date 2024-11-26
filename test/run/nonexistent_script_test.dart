@@ -14,7 +14,7 @@ void main() {
     await d.dir(appPath, [d.appPubspec()]).create();
 
     await pubGet();
-    var pub = await pubRun(args: [p.join('bin', 'script')]);
+    final pub = await pubRun(args: [p.join('bin', 'script')]);
     expect(
       pub.stderr,
       emits("Could not find ${p.join("bin", "script.dart")}."),

@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
@@ -14,22 +14,26 @@ import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
 
-/// Base class for a [BoundSource] that installs packages into pub's
-/// [SystemCache].
+/// Base class for a [Source] that installs packages into pub's [SystemCache].
 ///
-/// A source should be cached if it requires network access to retrieve
-/// packages or the package needs to be "frozen" at the point in time that it's
-/// installed. (For example, Git packages are cached because installing from
-/// the same repo over time may yield different commits.)
+/// A source should be cached if it requires network access to retrieve packages
+/// or the package needs to be "frozen" at the point in time that it's
+/// installed. (For example, Git packages are cached because installing from the
+/// same repo over time may yield different commits.)
 abstract class CachedSource extends Source {
   /// If [id] is already in the system cache, just loads it from there.
   ///
   /// Otherwise, defers to the subclass.
   @override
   Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async {
-    var packageDir = getDirectoryInCache(id, cache);
-    if (fileExists(path.join(packageDir, 'pubspec.yaml'))) {
-      return Pubspec.load(packageDir, cache.sources, expectedName: id.name);
+    final packageDir = getDirectoryInCache(id, cache);
+    if (fileExists(p.join(packageDir, 'pubspec.yaml'))) {
+      return Pubspec.load(
+        packageDir,
+        cache.sources,
+        expectedName: id.name,
+        containingDescription: id.description.description,
+      );
     }
 
     return await describeUncached(id, cache);
@@ -40,8 +44,13 @@ abstract class CachedSource extends Source {
     PackageId id,
     SystemCache cache, {
     String? relativeFrom,
-  }) =>
-      getDirectoryInCache(id, cache);
+  }) {
+    final dir = getDirectoryInCache(id, cache);
+    if (p.isRelative(dir)) {
+      return p.relative(dir, from: relativeFrom);
+    }
+    return dir;
+  }
 
   String getDirectoryInCache(PackageId id, SystemCache cache);
 
@@ -71,7 +80,7 @@ abstract class CachedSource extends Source {
 
 /// The result of repairing a single cache entry.
 class RepairResult {
-  /// `true` if [package] was repaired successfully.
+  /// `true` if [packageName] was repaired successfully.
   /// `false` if something failed during the repair.
   ///
   /// When something goes wrong the package is attempted removed from

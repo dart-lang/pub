@@ -19,32 +19,19 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")]),
       ],
+      sdk: '3.1.2+3',
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    await d.hostedCache([
-      d.dir('foo-1.0.0', [d.libPubspec('foo', '1.0.0', sdk: '0.5.6')])
-    ]).create();
-
-    // Make the snapshot out-of-date, too, so that we load the pubspec with the
-    // SDK constraint in the first place. In practice, the VM snapshot
-    // invalidation logic is based on the version anyway, so this is a safe
-    // assumption.
-    await d.dir(cachePath, [
-      d.dir('global_packages', [
-        d.dir('foo', [
-          d.dir('bin', [d.outOfDateSnapshot('script.dart.snapshot')])
-        ])
-      ])
-    ]).create();
-
     await runPub(
       args: ['global', 'run', 'foo:script'],
-      error: contains("foo 1.0.0 doesn't support Dart 3.1.2+3."),
+      error:
+          contains("foo as globally activated doesn't support Dart 3.1.2+4."),
       exitCode: exit_codes.DATA,
+      environment: {'_PUB_TEST_SDK_VERSION': '3.1.2+4'},
     );
   });
 
@@ -55,7 +42,7 @@ void main() {
       '1.0.0',
       sdk: '^3.0.1',
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")]),
       ],
     );
 
@@ -69,10 +56,10 @@ void main() {
     await runPub(
       environment: {
         // Not compatible with [defaultSdkConstraint].
-        '_PUB_TEST_SDK_VERSION': '3.0.0'
+        '_PUB_TEST_SDK_VERSION': '3.0.0',
       },
       args: ['global', 'run', 'foo:script'],
-      error: contains("foo 1.0.0 doesn't support Dart 3.0.0."),
+      error: contains("foo as globally activated doesn't support Dart 3.0.0."),
       exitCode: exit_codes.DATA,
     );
   });
@@ -90,7 +77,7 @@ void main() {
           d.dir(
             'bin',
             [d.file('script.dart', "main(args) => print('123-OK');")],
-          )
+          ),
         ],
       )
       ..serve(
@@ -134,7 +121,7 @@ try:
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('123-OK');")],
-        )
+        ),
       ],
     );
 

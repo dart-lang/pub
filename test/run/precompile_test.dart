@@ -29,7 +29,7 @@ void main() {
         d.dir(
           'bin',
           [d.file('test.dart', 'main(List<String> args) => print("hello");')],
-        )
+        ),
       ],
     );
 
@@ -38,7 +38,7 @@ void main() {
 
   test('`pub run` precompiles script', () async {
     await setupForPubRunToPrecompile();
-    var pub = await pubRun(args: ['test']);
+    final pub = await pubRun(args: ['test']);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
     expect(lines, contains('Building package executable...'));
@@ -46,11 +46,11 @@ void main() {
   });
 
   test(
-      "`pub run` doesn't write about precompilation when a terminal is not attached",
-      () async {
+      "`pub run` doesn't write about precompilation "
+      'when a terminal is not attached', () async {
     await setupForPubRunToPrecompile();
 
-    var pub = await pubRun(args: ['test'], verbose: false);
+    final pub = await pubRun(args: ['test'], verbose: false);
     await pub.shouldExit(0);
     final lines = await pub.stdout.rest.toList();
     expect(lines, isNot(contains('Building package executable...')));
@@ -68,7 +68,7 @@ void main() {
       'test',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('test.dart', _script)])
+        d.dir('bin', [d.file('test.dart', _script)]),
       ],
     );
 
@@ -77,7 +77,7 @@ void main() {
       environment: {'PUB_CACHE': '.pub_cache'},
     );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
       environment: {'PUB_CACHE': '.pub_cache'},
     );
@@ -97,7 +97,7 @@ void main() {
       'test',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('test.dart', _script)])
+        d.dir('bin', [d.file('test.dart', _script)]),
       ],
     );
 
@@ -106,7 +106,7 @@ void main() {
       output: contains('Building package executables...'),
     );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
     );
     await pub.shouldExit(0);
@@ -126,7 +126,7 @@ void main() {
       'test',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('test.dart', _script)])
+        d.dir('bin', [d.file('test.dart', _script)]),
       ],
     );
 
@@ -136,7 +136,7 @@ void main() {
       output: contains('Building package executables...'),
     );
 
-    var pub = await pubRun(
+    final pub = await pubRun(
       args: ['test'],
       environment: {'PUB_CACHE': '.pub_cache'},
     );

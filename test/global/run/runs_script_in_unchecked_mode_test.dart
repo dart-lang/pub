@@ -21,13 +21,13 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', _script)])
+        d.dir('bin', [d.file('script.dart', _script)]),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ['foo:script']);
+    final pub = await pubRun(global: true, args: ['foo:script']);
     expect(pub.stdout, emits('no checks'));
     await pub.shouldExit();
   });

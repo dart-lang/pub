@@ -25,7 +25,7 @@ void main() {
   testWithGolden('skips non-Dart executables', (ctx) async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir('bin', [d.file('foo.py'), d.file('bar.sh')])
+      d.dir('bin', [d.file('foo.py'), d.file('bar.sh')]),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -37,7 +37,7 @@ void main() {
       d.dir(
         'bin',
         [d.file('foo.dart', _validMain), d.file('bar.dart', _invalidMain)],
-      )
+      ),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -48,8 +48,8 @@ void main() {
       d.appPubspec(),
       d.dir('bin', [
         d.file('foo.dart', _validMain),
-        d.dir('sub', [d.file('bar.dart', _validMain)])
-      ])
+        d.dir('sub', [d.file('bar.dart', _validMain)]),
+      ]),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -58,15 +58,15 @@ void main() {
   testWithGolden('lists executables from a dependency', (ctx) async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('bar.dart', _validMain)])
+      d.dir('bin', [d.file('bar.dart', _validMain)]),
     ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -77,9 +77,9 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
-          'foo': {'path': '../foo'}
+          'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir('foo', [
@@ -87,15 +87,15 @@ void main() {
         'foo',
         '1.0.0',
         deps: {
-          'baz': {'path': '../baz'}
+          'baz': {'path': '../baz'},
         },
       ),
-      d.dir('bin', [d.file('bar.dart', _validMain)])
+      d.dir('bin', [d.file('bar.dart', _validMain)]),
     ]).create();
 
     await d.dir('baz', [
       d.libPubspec('baz', '1.0.0'),
-      d.dir('bin', [d.file('qux.dart', _validMain)])
+      d.dir('bin', [d.file('qux.dart', _validMain)]),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -106,10 +106,10 @@ void main() {
       d.appPubspec(
         dependencies: {
           'foo': {'path': '../foo'},
-          'bar': {'path': '../bar'}
+          'bar': {'path': '../bar'},
         },
       ),
-      d.dir('bin', [d.file('myapp.dart', _validMain)])
+      d.dir('bin', [d.file('myapp.dart', _validMain)]),
     ]).create();
 
     await d.dir('foo', [
@@ -117,12 +117,12 @@ void main() {
       d.dir(
         'bin',
         [d.file('baz.dart', _validMain), d.file('foo.dart', _validMain)],
-      )
+      ),
     ]).create();
 
     await d.dir('bar', [
       d.libPubspec('bar', '1.0.0'),
-      d.dir('bin', [d.file('qux.dart', _validMain)])
+      d.dir('bin', [d.file('qux.dart', _validMain)]),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -131,16 +131,16 @@ void main() {
   testWithGolden('dev dependencies', (ctx) async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('bar.dart', _validMain)])
+      d.dir('bin', [d.file('bar.dart', _validMain)]),
     ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
         'dev_dependencies': {
-          'foo': {'path': '../foo'}
-        }
-      })
+          'foo': {'path': '../foo'},
+        },
+      }),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -149,7 +149,7 @@ void main() {
   testWithGolden('overriden dependencies executables', (ctx) async {
     await d.dir('foo-1.0', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('bar.dart', _validMain)])
+      d.dir('bin', [d.file('bar.dart', _validMain)]),
     ]).create();
 
     await d.dir('foo-2.0', [
@@ -157,19 +157,19 @@ void main() {
       d.dir(
         'bin',
         [d.file('bar.dart', _validMain), d.file('baz.dart', _validMain)],
-      )
+      ),
     ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'path': '../foo-1.0'}
+          'foo': {'path': '../foo-1.0'},
         },
         'dependency_overrides': {
-          'foo': {'path': '../foo-2.0'}
-        }
-      })
+          'foo': {'path': '../foo-2.0'},
+        },
+      }),
     ]).create();
 
     await ctx.runExecutablesTest();

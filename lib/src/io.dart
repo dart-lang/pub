@@ -3,21 +3,25 @@
 // BSD-style license that can be found in the LICENSE file.
 
 /// Helper functionality to make working with IO easier.
+library;
+
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
     show EnvironmentNotFoundException, applicationConfigHome;
+import 'package:collection/collection.dart';
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
-// ignore: prefer_relative_imports
-import 'package:pub/src/third_party/tar/lib/tar.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:tar/tar.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
@@ -95,18 +99,22 @@ FileStat? tryStatFile(String path) {
   return null;
 }
 
+FileStat statPath(String path) {
+  return File(path).statSync();
+}
+
 /// Returns the canonical path for [pathString].
 ///
-/// This is the normalized, absolute path, with symlinks resolved. As in
-/// [transitiveTarget], broken or recursive symlinks will not be fully resolved.
+/// This is the normalized, absolute path, with symlinks resolved. Broken or
+/// recursive symlinks will not be fully resolved.
 ///
 /// This doesn't require [pathString] to point to a path that exists on the
 /// filesystem; nonexistent or unreadable path entries are treated as normal
 /// directories.
 String canonicalize(String pathString) {
-  var seen = <String>{};
+  final seen = <String>{};
   var components =
-      Queue<String>.from(path.split(path.normalize(path.absolute(pathString))));
+      Queue<String>.from(p.split(p.normalize(p.absolute(pathString))));
 
   // The canonical path, built incrementally as we iterate through [components].
   var newPath = components.removeFirst();
@@ -115,22 +123,22 @@ String canonicalize(String pathString) {
   // necessary. A resolved component may also add new components that need to be
   // resolved in turn.
   while (components.isNotEmpty) {
-    seen.add(path.join(newPath, path.joinAll(components)));
-    var resolvedPath =
-        _resolveLink(path.join(newPath, components.removeFirst()));
-    var relative = path.relative(resolvedPath, from: newPath);
+    seen.add(p.join(newPath, p.joinAll(components)));
+    final resolvedPath =
+        _resolveLink(p.join(newPath, components.removeFirst()));
+    final relative = p.relative(resolvedPath, from: newPath);
 
     // If the resolved path of the component relative to `newPath` is just ".",
     // that means component was a symlink pointing to its parent directory. We
     // can safely ignore such components.
     if (relative == '.') continue;
 
-    var relativeComponents = Queue<String>.from(path.split(relative));
+    final relativeComponents = Queue<String>.from(p.split(relative));
 
     // If the resolved path is absolute relative to `newPath`, that means it's
     // on a different drive. We need to canonicalize the entire target of that
     // symlink again.
-    if (path.isAbsolute(relative)) {
+    if (p.isAbsolute(relative)) {
       // If we've already tried to canonicalize the new path, we've encountered
       // a symlink loop. Avoid going infinite by treating the recursive symlink
       // as the canonical path.
@@ -146,8 +154,8 @@ String canonicalize(String pathString) {
 
     // Pop directories off `newPath` if the component links upwards in the
     // directory hierarchy.
-    while (relativeComponents.first == '..') {
-      newPath = path.dirname(newPath);
+    while (relativeComponents.firstOrNull == '..') {
+      newPath = p.dirname(newPath);
       relativeComponents.removeFirst();
     }
 
@@ -155,14 +163,14 @@ String canonicalize(String pathString) {
     // not a link (or is a broken link). We can just add it to `newPath` and
     // continue resolving the remaining components.
     if (relativeComponents.length == 1) {
-      newPath = path.join(newPath, relativeComponents.single);
+      newPath = p.join(newPath, relativeComponents.single);
       continue;
     }
 
     // If we've already tried to canonicalize the new path, we've encountered a
     // symlink loop. Avoid going infinite by treating the recursive symlink as
     // the canonical path.
-    var newSubPath = path.join(newPath, path.joinAll(relativeComponents));
+    final newSubPath = p.join(newPath, p.joinAll(relativeComponents));
     if (seen.contains(newSubPath)) {
       newPath = newSubPath;
       continue;
@@ -186,16 +194,26 @@ String canonicalize(String pathString) {
 ///
 /// This accepts paths to non-links or broken links, and returns them as-is.
 String _resolveLink(String link) {
-  var seen = <String>{};
+  final seen = <String>{};
   while (linkExists(link) && seen.add(link)) {
-    link =
-        path.normalize(path.join(path.dirname(link), Link(link).targetSync()));
+    link = p.normalize(p.join(p.dirname(link), Link(link).targetSync()));
   }
   return link;
 }
 
-/// Reads the contents of the text file [file].
-String readTextFile(String file) => File(file).readAsStringSync();
+/// Reads the contents of the text file at [path].
+String readTextFile(String path) => File(path).readAsStringSync();
+
+/// Reads the contents of the text file at [path].
+/// Returns `null` if the operation fails.
+String? tryReadTextFile(String path) {
+  try {
+    return readTextFile(path);
+  } on FileSystemException {
+    // TODO: Consider handlind file-not-found differently from other exceptions.
+    return null;
+  }
+}
 
 /// Reads the contents of the text file [file].
 Future<String> readTextFileAsync(String file) {
@@ -203,9 +221,9 @@ Future<String> readTextFileAsync(String file) {
 }
 
 /// Reads the contents of the binary file [file].
-List<int> readBinaryFile(String file) {
+Uint8List readBinaryFile(String file) {
   log.io('Reading binary file $file.');
-  var contents = File(file).readAsBytesSync();
+  final contents = File(file).readAsBytesSync();
   log.io('Read ${contents.length} bytes from $file.');
   return contents;
 }
@@ -213,7 +231,7 @@ List<int> readBinaryFile(String file) {
 /// Reads the contents of the binary file [file] as a [Stream].
 Stream<List<int>> readBinaryFileAsStream(String file) {
   log.io('Reading binary file $file.');
-  var contents = File(file).openRead();
+  final contents = File(file).openRead();
   return contents;
 }
 
@@ -235,6 +253,12 @@ void writeTextFile(
 
   deleteIfLink(file);
   File(file).writeAsStringSync(contents, encoding: encoding);
+}
+
+/// Reads the contents of the binary file [file].
+void writeBinaryFile(String file, Uint8List data) {
+  log.io('Writing ${data.length} bytes to file $file.');
+  File(file).writeAsBytesSync(data);
 }
 
 /// Creates [file] and writes [contents] to it.
@@ -295,12 +319,12 @@ String ensureDir(String dir) {
   return dir;
 }
 
-/// Creates a temp directory in [dir], whose name will be [prefix] with
+/// Creates a temp directory in [base], whose name will be [prefix] with
 /// characters appended to it to make a unique name.
 ///
 /// Returns the path of the created directory.
 String createTempDir(String base, String prefix) {
-  var tempDir = Directory(base).createTempSync(prefix);
+  final tempDir = Directory(base).createTempSync(prefix);
   log.io('Created temp directory ${tempDir.path}');
   return tempDir.path;
 }
@@ -310,7 +334,7 @@ String createTempDir(String base, String prefix) {
 ///
 /// Returns the path of the created directory.
 Future<String> _createSystemTempDir() async {
-  var tempDir = await Directory.systemTemp.createTemp('pub_');
+  final tempDir = await Directory.systemTemp.createTemp('pub_');
   log.io('Created temp directory ${tempDir.path}');
   return tempDir.resolveSymbolicLinksSync();
 }
@@ -344,7 +368,7 @@ List<String> listDir(
   bool includeDirs = true,
   Iterable<String> allowed = const <String>[],
 }) {
-  var allowlistFilter = createFileFilter(allowed);
+  final allowListFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
   // files. As such, it leans more heavily towards optimization as opposed to
@@ -358,15 +382,15 @@ List<String> listDir(
         if (entity is Link) return false;
         if (includeHidden) return true;
 
-        // Using substring here is generally problematic in cases where dir has one
-        // or more trailing slashes. If you do listDir("foo"), you'll get back
-        // paths like "foo/bar". If you do listDir("foo/"), you'll get "foo/bar"
-        // (note the trailing slash was dropped. If you do listDir("foo//"), you'll
-        // get "foo//bar".
+        // Using substring here is generally problematic in cases where dir has
+        // one or more trailing slashes. If you do listDir("foo"), you'll get
+        // back paths like "foo/bar". If you do listDir("foo/"), you'll get
+        // "foo/bar" (note the trailing slash was dropped. If you do
+        // listDir("foo//"), you'll get "foo//bar".
         //
-        // This means if you strip off the prefix, the resulting string may have a
-        // leading separator (if the prefix did not have a trailing one) or it may
-        // not. However, since we are only using the results of that to call
+        // This means if you strip off the prefix, the resulting string may have
+        // a leading separator (if the prefix did not have a trailing one) or it
+        // may not. However, since we are only using the results of that to call
         // contains() on, the leading separator is harmless.
         assert(entity.path.startsWith(dir));
         var pathInDir = entity.path.substring(dir.length);
@@ -374,9 +398,9 @@ List<String> listDir(
         // If the basename is in [allowed], don't count its "/." as making the
         // file hidden.
 
-        if (allowlistFilter.any(pathInDir.contains)) {
+        if (allowListFilter.any(pathInDir.contains)) {
           final allowedBasename =
-              allowlistFilter.firstWhere(pathInDir.contains);
+              allowListFilter.firstWhere(pathInDir.contains);
           pathInDir =
               pathInDir.substring(0, pathInDir.length - allowedBasename.length);
         }
@@ -440,13 +464,13 @@ void _attempt(
       operation();
       break;
     } on FileSystemException catch (error) {
-      var reason = getErrorReason(error);
+      final reason = getErrorReason(error);
       if (reason == null) rethrow;
 
       if (i < maxRetries - 1) {
         log.io('Pub failed to $description because $reason. '
             'Retrying in 50ms.');
-        sleep(Duration(milliseconds: 50));
+        sleep(const Duration(milliseconds: 50));
       } else {
         fail('Pub failed to $description because $reason.\n'
             'This may be caused by a virus scanner or having a file\n'
@@ -510,7 +534,7 @@ void renameDir(String from, String to) {
 /// If it fails with "destination not empty" we log and continue, assuming
 /// another process got there before us.
 void tryRenameDir(String from, String to) {
-  ensureDir(path.dirname(to));
+  ensureDir(p.dirname(to));
   try {
     renameDir(from, to);
   } on FileSystemException catch (e) {
@@ -537,18 +561,27 @@ void renameFile(String from, String to) {
 bool _isDirectoryNotEmptyException(FileSystemException e) {
   final errorCode = e.osError?.errorCode;
   return
-      // On Linux rename will fail with ENOTEMPTY if directory exists:
-      // https://man7.org/linux/man-pages/man2/rename.2.html
-      // #define	ENOTEMPTY	39	/* Directory not empty */
+      // On Linux rename will fail with either ENOTEMPTY or EEXISTS if directory
+      // exists: https://man7.org/linux/man-pages/man2/rename.2.html
+      // ```
+      // #define  ENOTEMPTY 39  /* Directory not empty */
+      // #define  EEXIST    17  /* File exists */
+      // ```
+      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno-base.h#n21
       // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
-      (Platform.isLinux && errorCode == 39) ||
-          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or ERROR_ALREADY_EXISTS
+      (Platform.isLinux && (errorCode == 39 || errorCode == 17)) ||
+          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or
+          // ERROR_ALREADY_EXISTS
           // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
           (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
           // On MacOS rename will fail with ENOTEMPTY if directory exists.
+          // We also catch EEXIST - perhaps that could also be thrown...
+          // ```
           // #define ENOTEMPTY       66              /* Directory not empty */
+          // #define	EEXIST		17	/* File exists */
+          // ```
           // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
-          (Platform.isMacOS && errorCode == 66);
+          (Platform.isMacOS && (errorCode == 66 || errorCode == 17));
 }
 
 /// Creates a new symlink at path [symlink] that points to [target].
@@ -566,13 +599,13 @@ void createSymlink(String target, String symlink, {bool relative = false}) {
     // relative path to be relative to the cwd, not the symlink, and will be
     // confused by forward slashes.
     if (Platform.isWindows) {
-      target = path.normalize(path.absolute(target));
+      target = p.normalize(p.absolute(target));
     } else {
       // If the directory where we're creating the symlink was itself reached
       // by traversing a symlink, we want the relative path to be relative to
       // it's actual location, not the one we went through to get to it.
-      var symlinkDir = canonicalize(path.dirname(symlink));
-      target = path.normalize(path.relative(target, from: symlinkDir));
+      final symlinkDir = canonicalize(p.dirname(symlink));
+      target = p.normalize(p.relative(target, from: symlinkDir));
     }
   }
 
@@ -597,7 +630,7 @@ void createPackageSymlink(
 }) {
   // See if the package has a "lib" directory. If not, there's nothing to
   // symlink to.
-  target = path.join(target, 'lib');
+  target = p.join(target, 'lib');
   if (!dirExists(target)) return;
 
   log.fine("Creating ${isSelfLink ? "self" : ""}link for package '$name'.");
@@ -650,9 +683,9 @@ final String dartRepoRoot = (() {
 
   // Get the URL of the repo root in a way that works when either both running
   // as a test or as a pub executable.
-  var url = Platform.script
+  final url = Platform.script
       .replace(path: Platform.script.path.replaceAll(_dartRepoRegExp, ''));
-  return path.fromUri(url);
+  return p.fromUri(url);
 })();
 
 /// Displays a message and reads a yes/no confirmation from the user.
@@ -664,9 +697,9 @@ final String dartRepoRoot = (() {
 /// should just be a fragment like, "Are you sure you want to proceed". The
 /// default for an empty response, or any response not starting with `y` or `Y`
 /// is false.
-Future<bool> confirm(String message) {
-  log.fine('Showing confirm message: $message');
-  return stdinPrompt('$message (y/N)?').then(RegExp(r'^[yY]').hasMatch);
+Future<bool> confirm(String message) async {
+  final reply = await stdinPrompt('$message (y/N)?');
+  return RegExp(r'^[yY]').hasMatch(reply);
 }
 
 /// Writes [prompt] and reads a line from stdin.
@@ -706,7 +739,8 @@ bool get terminalOutputForStdout {
     return true;
   } else {
     throw DataException(
-      'Environment variable ${EnvironmentKeys.forceTerminalOutput} has unsupported value: $environmentValue.',
+      'Environment variable ${EnvironmentKeys.forceTerminalOutput} has '
+      'unsupported value: $environmentValue.',
     );
   }
 }
@@ -725,10 +759,12 @@ Future flushThenExit(int status) {
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
 /// will succeed when [EventSink] is closed or fail with any errors that occur
 /// while writing.
-Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
-  var controller = StreamController<T>(sync: true);
-  var done = controller.stream.pipe(consumer);
-  return Pair(controller.sink, done);
+(EventSink<T> consumerSink, Future done) _consumerToSink<T>(
+  StreamConsumer<T> consumer,
+) {
+  final controller = StreamController<T>(sync: true);
+  final done = controller.stream.pipe(consumer);
+  return (controller.sink, done);
 }
 
 /// Spawns and runs the process located at [executable], passing in [args].
@@ -739,25 +775,30 @@ Pair<EventSink<T>, Future> _consumerToSink<T>(StreamConsumer<T> consumer) {
 /// The spawned process will inherit its parent's environment variables. If
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
-Future<PubProcessResult> runProcess(
+Future<StringProcessResult> runProcess(
   String executable,
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
 
   return _descriptorPool.withResource(() async {
     ProcessResult result;
     try {
-      result = await _doProcess(
-        Process.run,
+      (executable, args) =
+          _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+      result = await Process.run(
         executable,
         args,
-        workingDir: workingDir,
+        workingDirectory: workingDir,
         environment: environment,
         runInShell: runInShell,
+        stdoutEncoding: stdoutEncoding,
+        stderrEncoding: stderrEncoding,
       );
     } on IOException catch (e) {
       throw RunProcessException(
@@ -765,13 +806,12 @@ Future<PubProcessResult> runProcess(
       );
     }
 
-    var pubResult = PubProcessResult(
+    log.processResult(executable, result);
+    return StringProcessResult(
       result.stdout as String,
       result.stderr as String,
       result.exitCode,
     );
-    log.processResult(executable, pubResult);
-    return pubResult;
   });
 }
 
@@ -794,11 +834,12 @@ Future<PubProcess> startProcess(
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
-      ioProcess = await _doProcess(
-        Process.start,
+      (executable, args) =
+          _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+      ioProcess = await Process.start(
         executable,
         args,
-        workingDir: workingDir,
+        workingDirectory: workingDir,
         environment: environment,
         runInShell: runInShell,
       );
@@ -808,41 +849,100 @@ Future<PubProcess> startProcess(
       );
     }
 
-    var process = PubProcess(ioProcess);
+    final process = PubProcess(ioProcess);
     unawaited(process.exitCode.whenComplete(resource.release));
     return process;
   });
 }
 
 /// Like [runProcess], but synchronous.
-PubProcessResult runProcessSync(
+StringProcessResult runProcessSync(
   String executable,
   List<String> args, {
   String? workingDir,
   Map<String, String>? environment,
   bool runInShell = false,
+  Encoding stdoutEncoding = systemEncoding,
+  Encoding stderrEncoding = systemEncoding,
 }) {
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
-    result = _doProcess(
-      Process.runSync,
+    (executable, args) =
+        _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+    result = Process.runSync(
       executable,
       args,
-      workingDir: workingDir,
+      workingDirectory: workingDir,
       environment: environment,
       runInShell: runInShell,
+      stdoutEncoding: stdoutEncoding,
+      stderrEncoding: stderrEncoding,
     );
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
-  var pubResult = PubProcessResult(
+  log.processResult(executable, result);
+  return StringProcessResult(
     result.stdout as String,
     result.stderr as String,
     result.exitCode,
   );
-  log.processResult(executable, pubResult);
-  return pubResult;
+}
+
+/// Like [runProcess], but synchronous.
+/// Always outputs stdout as `List<int>`.
+BytesProcessResult runProcessSyncBytes(
+  String executable,
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+  bool runInShell = false,
+  Encoding stderrEncoding = systemEncoding,
+}) {
+  ProcessResult result;
+  try {
+    (executable, args) =
+        _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+    result = Process.runSync(
+      executable,
+      args,
+      workingDirectory: workingDir,
+      environment: environment,
+      runInShell: runInShell,
+      stdoutEncoding: null,
+      stderrEncoding: stderrEncoding,
+    );
+  } on IOException catch (e) {
+    throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
+  }
+  log.processResult(executable, result);
+  return BytesProcessResult(
+    result.stdout as List<int>,
+    result.stderr as String,
+    result.exitCode,
+  );
+}
+
+/// Adaptation of ProcessResult when stdout is a `List<String>`.
+class StringProcessResult {
+  final String stdout;
+  final String stderr;
+  final int exitCode;
+  StringProcessResult(this.stdout, this.stderr, this.exitCode);
+  bool get success => exitCode == exit_codes.SUCCESS;
+}
+
+/// Adaptation of ProcessResult when stdout is a `List<bytes>`.
+class BytesProcessResult {
+  final Uint8List stdout;
+  final String stderr;
+  final int exitCode;
+  BytesProcessResult(List<int> stdout, this.stderr, this.exitCode)
+      :
+        // Not clear that we need to do this, but seems harmless.
+        stdout = stdout is Uint8List ? stdout : Uint8List.fromList(stdout);
+  bool get success => exitCode == exit_codes.SUCCESS;
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
@@ -907,18 +1007,18 @@ class PubProcess {
 
   /// Creates a new [PubProcess] wrapping [process].
   PubProcess(Process process) : _process = process {
-    var errorGroup = ErrorGroup();
+    final errorGroup = ErrorGroup();
 
-    var pair = _consumerToSink(process.stdin);
-    _stdin = pair.first;
-    _stdinClosed = errorGroup.registerFuture(pair.last);
+    final (consumerSink, done) = _consumerToSink(process.stdin);
+    _stdin = consumerSink;
+    _stdinClosed = errorGroup.registerFuture(done);
 
     _stdout = ByteStream(errorGroup.registerStream(process.stdout));
     _stderr = ByteStream(errorGroup.registerStream(process.stderr));
 
-    var exitCodeCompleter = Completer<int>();
+    final exitCodeCompleter = Completer<int>();
     _exitCode = errorGroup.registerFuture(exitCodeCompleter.future);
-    _process.exitCode.then((code) => exitCodeCompleter.complete(code));
+    _process.exitCode.then(exitCodeCompleter.complete);
   }
 
   /// Sends [signal] to the underlying process.
@@ -926,23 +1026,12 @@ class PubProcess {
       _process.kill(signal);
 }
 
-/// Calls [fn] with appropriately modified arguments.
-///
-/// [fn] should have the same signature as [Process.start], except that the
-/// returned value may have any return type.
-T _doProcess<T>(
-  T Function(
-    String,
-    List<String>, {
-    String? workingDirectory,
-    Map<String, String>? environment,
-    bool runInShell,
-  }) fn,
+/// Sanitizes the executable path on windows for [Process.start], [Process.run]
+/// and [Process.runSync].
+(String, List<String>) _sanitizeExecutablePath(
   String executable,
   List<String> args, {
   String? workingDir,
-  Map<String, String>? environment,
-  bool runInShell = false,
 }) {
   // TODO(rnystrom): Should dart:io just handle this?
   // Spawning a process on Windows will not look for the executable in the
@@ -954,18 +1043,14 @@ T _doProcess<T>(
   }
 
   log.process(executable, args, workingDir ?? '.');
-
-  return fn(
-    executable,
-    args,
-    workingDirectory: workingDir,
-    environment: environment,
-    runInShell: runInShell,
-  );
+  return (executable, args);
 }
 
 /// Updates [path]'s modification time.
-void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
+void touch(String path) {
+  log.fine('Touching `$path`');
+  File(path).setLastModifiedSync(DateTime.now());
+}
 
 /// Creates a temporary directory and passes its path to [fn].
 ///
@@ -976,7 +1061,7 @@ void touch(String path) => File(path).setLastModifiedSync(DateTime.now());
 /// Returns a future that completes to the value that the future returned from
 /// [fn] completes to.
 Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
-  var tempDir = await _createSystemTempDir();
+  final tempDir = await _createSystemTempDir();
   try {
     return await fn(tempDir);
   } finally {
@@ -989,27 +1074,51 @@ Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
 /// If [host] is "localhost", this will automatically listen on both the IPv4
 /// and IPv6 loopback addresses.
 Future<HttpServer> bindServer(String host, int port) async {
-  var server = host == 'localhost'
+  final server = host == 'localhost'
       ? await HttpMultiServer.loopback(port)
       : await HttpServer.bind(host, port);
   server.autoCompress = true;
   return server;
 }
 
+/// Extracts a single file from a `.tar.gz` [stream].
+///
+/// [filename] should be the relative path inside the archive (with unix
+/// separators '/').
+///
+/// Throws a `FormatException` if that file did not exist.
+Future<Uint8List> extractFileFromTarGz(
+  Stream<List<int>> stream,
+  String filename,
+) async {
+  final reader = TarReader(stream.transform(gzip.decoder));
+  filename = p.posix.normalize(filename);
+  while (await reader.moveNext()) {
+    final entry = reader.current;
+    if (p.posix.normalize(entry.name) != filename) continue;
+    if (!(entry.type == TypeFlag.reg || entry.type == TypeFlag.regA)) {
+      // Can only read regular files.
+      throw FormatException('$filename is not a file');
+    }
+    return await collectBytes(entry.contents);
+  }
+  throw FormatException('Could not find $filename in archive');
+}
+
 /// Extracts a `.tar.gz` file from [stream] to [destination].
-Future extractTarGz(Stream<List<int>> stream, String destination) async {
+Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
 
-  destination = path.absolute(destination);
+  destination = p.absolute(destination);
   final reader = TarReader(stream.transform(gzip.decoder));
   final paths = <String>{};
   while (await reader.moveNext()) {
     final entry = reader.current;
 
-    final filePath = path.joinAll([
+    final filePath = p.joinAll([
       destination,
       // Tar file names always use forward slashes
-      ...path.posix.split(entry.name),
+      ...p.posix.split(entry.name),
     ]);
     if (!paths.add(filePath)) {
       // The tar file contained the same entry twice. Assume it is broken.
@@ -1017,18 +1126,20 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
       throw FormatException('Tar file contained duplicate path ${entry.name}');
     }
 
-    if (!path.isWithin(destination, filePath)) {
+    if (!(p.isWithin(destination, filePath) ||
+        // allow including '.' as an entry in the tar.gz archive.
+        (entry.type == TypeFlag.dir && p.equals(destination, filePath)))) {
       // The tar contains entries that would be written outside of the
       // destination. That doesn't happen by accident, assume that the tar file
       // is malicious.
       await reader.cancel();
-      throw FormatException('Invalid tar entry: ${entry.name}');
+      throw FormatException('Invalid tar entry: `${entry.name}`');
     }
 
-    final parentDirectory = path.dirname(filePath);
+    final parentDirectory = p.dirname(filePath);
 
     bool checkValidTarget(String linkTarget) {
-      final isValid = path.isWithin(destination, linkTarget);
+      final isValid = p.isWithin(destination, linkTarget);
       if (!isValid) {
         log.fine('Skipping ${entry.name}: Invalid link target');
       }
@@ -1059,8 +1170,8 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         break;
       case TypeFlag.symlink:
         // Link to another file in this tar, relative from this entry.
-        final resolvedTarget = path.joinAll(
-          [parentDirectory, ...path.posix.split(entry.header.linkName!)],
+        final resolvedTarget = p.joinAll(
+          [parentDirectory, ...p.posix.split(entry.header.linkName!)],
         );
         if (!checkValidTarget(resolvedTarget)) {
           // Don't allow links to files outside of this tar.
@@ -1069,7 +1180,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
         ensureDir(parentDirectory);
         createSymlink(
-          path.relative(resolvedTarget, from: parentDirectory),
+          p.relative(resolvedTarget, from: parentDirectory),
           filePath,
         );
         break;
@@ -1077,12 +1188,12 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
         // We generate hardlinks as symlinks too, but their linkName is relative
         // to the root of the tar file (unlike symlink entries, whose linkName
         // is relative to the entry itself).
-        final fromDestination = path.join(destination, entry.header.linkName);
+        final fromDestination = p.join(destination, entry.header.linkName);
         if (!checkValidTarget(fromDestination)) {
           break; // Link points outside of the tar file.
         }
 
-        final fromFile = path.relative(fromDestination, from: parentDirectory);
+        final fromFile = p.relative(fromDestination, from: parentDirectory);
         ensureDir(parentDirectory);
         createSymlink(fromFile, filePath);
         break;
@@ -1097,55 +1208,71 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
 /// Create a .tar.gz archive from a list of entries.
 ///
-/// Each entry can be a [String], [Directory], or [File] object. The root of
-/// the archive is considered to be [baseDir], which defaults to the current
-/// working directory.
+/// Each entry is the path to a directory or file. The root of the archive is
+/// considered to be [baseDir], which defaults to the current working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
 ByteStream createTarGz(
   List<String> contents, {
   required String baseDir,
 }) {
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   buffer.write('Creating .tar.gz stream containing:\n');
   contents.forEach(buffer.writeln);
   log.fine(buffer.toString());
 
   ArgumentError.checkNotNull(baseDir, 'baseDir');
-  baseDir = path.normalize(path.absolute(baseDir));
+  baseDir = p.normalize(p.absolute(baseDir));
 
   final tarContents = Stream.fromIterable(
     contents.map((entry) {
-      entry = path.normalize(path.absolute(entry));
-      if (!path.isWithin(baseDir, entry)) {
+      entry = p.normalize(p.absolute(entry));
+      if (p.equals(baseDir, entry)) {
+        return null;
+      }
+      if (!p.isWithin(baseDir, entry)) {
         throw ArgumentError('Entry $entry is not inside $baseDir.');
       }
 
-      final relative = path.relative(entry, from: baseDir);
+      final relative = p.relative(entry, from: baseDir);
       // On Windows, we can't open some files without normalizing them
-      final file = File(path.normalize(entry));
+      final file = File(p.normalize(entry));
       final stat = file.statSync();
+
+      // Ensure paths in tar files use forward slashes
+      final name = p.url.joinAll(p.split(relative));
 
       if (stat.type == FileSystemEntityType.link) {
         log.message('$entry is a link locally, but will be uploaded as a '
             'duplicate file.');
       }
-
-      return TarEntry(
-        TarHeader(
-          // Ensure paths in tar files use forward slashes
-          name: path.url.joinAll(path.split(relative)),
-          // We want to keep executable bits, but otherwise use the default
-          // file mode
-          mode: _defaultMode | (stat.mode & _executableMask),
-          size: stat.size,
-          modified: stat.changed,
-          userName: 'pub',
-          groupName: 'pub',
-        ),
-        file.openRead(),
-      );
-    }),
+      if (stat.type == FileSystemEntityType.directory) {
+        return TarEntry(
+          TarHeader(
+            name: name,
+            mode: _defaultMode | _executableMask,
+            typeFlag: TypeFlag.dir,
+            userName: 'pub',
+            groupName: 'pub',
+          ),
+          Stream.fromIterable([]),
+        );
+      } else {
+        return TarEntry(
+          TarHeader(
+            name: name,
+            // We want to keep executable bits, but otherwise use the default
+            // file mode
+            mode: _defaultMode | (stat.mode & _executableMask),
+            size: stat.size,
+            modified: stat.changed,
+            userName: 'pub',
+            groupName: 'pub',
+          ),
+          file.openRead(),
+        );
+      }
+    }).nonNulls,
   );
 
   return ByteStream(
@@ -1155,33 +1282,13 @@ ByteStream createTarGz(
   );
 }
 
-/// Contains the results of invoking a [Process] and waiting for it to complete.
-class PubProcessResult {
-  final List<String> stdout;
-  final List<String> stderr;
-  final int exitCode;
-
-  PubProcessResult(String stdout, String stderr, this.exitCode)
-      : stdout = _toLines(stdout),
-        stderr = _toLines(stderr);
-
-  // TODO(rnystrom): Remove this and change to returning one string.
-  static List<String> _toLines(String output) {
-    var lines = splitLines(output);
-    if (lines.isNotEmpty && lines.last == '') lines.removeLast();
-    return lines;
-  }
-
-  bool get success => exitCode == exit_codes.SUCCESS;
-}
-
 /// The location for dart-specific configuration.
 ///
 /// `null` if no config dir could be found.
 final String? dartConfigDir = () {
   if (runningFromTest &&
       Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
-    return path.join(Platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
+    return p.join(Platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
   }
   try {
     return applicationConfigHome('dart');
@@ -1199,3 +1306,32 @@ String escapeShellArgument(String x) =>
     RegExp(r'^[a-zA-Z0-9-_=@.^]+$').stringMatch(x) == null
         ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
         : x;
+
+/// Returns all parent directories of [path], starting from [path] to the
+/// filesystem root.
+///
+/// If [path] is relative the directories will also be.
+///
+/// If [from] is passed, directories are made relative to that.
+///
+/// Examples:
+///   parentDirs('/a/b/c') => ('/a/b/c', '/a/b', '/a', '/')
+///   parentDirs('./d/e', from: '/a/b/c') => ('./d/e', './d', '.', '..', '../..', '../../..')
+Iterable<String> parentDirs(String path, {String? from}) sync* {
+  var relative = false;
+  var d = path;
+  while (true) {
+    if (relative) {
+      yield p.relative(d, from: from);
+    } else {
+      yield d;
+    }
+    if (!p.isWithin(from ?? p.current, d)) {
+      d = p.normalize(p.join(from ?? p.current, d));
+      relative = true;
+    }
+    final parent = p.dirname(d);
+    if (parent == d) break;
+    d = parent;
+  }
+}

@@ -14,14 +14,14 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")]),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('script'), 'junk')])
+      d.dir('bin', [d.file(binStubName('script'), 'junk')]),
     ]).create();
 
     await runPub(

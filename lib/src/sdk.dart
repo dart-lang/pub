@@ -37,6 +37,10 @@ abstract class Sdk {
   /// be `null`, indicating that no such message should be printed.
   String? get installMessage;
 
+  /// Whether or not non-SDK dependencies are allowed in the regular
+  /// dependencies section for packages vendored by this SDK.
+  bool get allowsNonSdkDepsInSdkPackages;
+
   /// Returns the path to the package [name] within this SDK.
   ///
   /// Returns `null` if the SDK isn't available or if it doesn't contain a

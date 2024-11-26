@@ -21,14 +21,14 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git'}
-        }
+          'git': {'url': '../foo.git'},
+        },
       },
     ).create();
 
     await pubGet();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     // Delete the repo. This will cause "pub get" to fail if it tries to
     // re-fetch.

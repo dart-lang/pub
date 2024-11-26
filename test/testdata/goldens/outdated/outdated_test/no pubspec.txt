@@ -2,6 +2,6 @@
 
 ## Section 0
 $ pub outdated
-[STDERR] Could not find a file named "pubspec.yaml" in "$SANDBOX/myapp".
+[STDERR] Found no `pubspec.yaml` file in `$SANDBOX/myapp` or parent directories
 [EXIT CODE] 66
 

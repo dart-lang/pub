@@ -17,13 +17,13 @@ void main() {
       'foo',
       '1.0.0',
       contents: [
-        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")])
+        d.dir('bin', [d.file('foo.dart', "main(args) => print('hosted');")]),
       ],
     );
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('git');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('git');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', 'foo']);
@@ -33,6 +33,7 @@ void main() {
       output: allOf(
         startsWith('Package foo is currently active at version 1.0.0.\n'
             'Resolving dependencies...\n'
+            'Downloading packages...\n'
             '* foo 1.0.0 from git ..${separator}foo.git at '),
         // Specific revision number goes here.
         endsWith('Building package executables...\n'
@@ -42,7 +43,7 @@ void main() {
     );
 
     // Should now run the git one.
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('git'));
     await pub.shouldExit();
   });

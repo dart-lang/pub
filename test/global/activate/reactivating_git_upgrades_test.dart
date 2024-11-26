@@ -14,13 +14,14 @@ void main() {
 
     await d.git('foo.git', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+      d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
     ]).create();
 
     await runPub(
       args: ['global', 'activate', '-sgit', '../foo.git'],
       output: allOf(
         startsWith('Resolving dependencies...\n'
+            'Downloading packages...\n'
             '+ foo 1.0.0 from git ..${separator}foo.git at '),
         // Specific revision number goes here.
         endsWith('Building package executables...\n'
@@ -38,6 +39,7 @@ void main() {
         startsWith('Package foo is currently active from Git repository '
             '"..${separator}foo.git".\n'
             'Resolving dependencies...\n'
+            'Downloading packages...\n'
             '> foo 1.0.1 from git ..${separator}foo.git at '),
         // Specific revision number goes here.
         endsWith('Building package executables...\n'

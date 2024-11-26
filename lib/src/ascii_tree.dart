@@ -4,16 +4,18 @@
 
 /// A simple library for rendering tree-like structures in Unicode symbols with
 /// a fallback to ASCII.
+library;
+
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'log.dart' as log;
 import 'utils.dart';
 
 /// Draws a tree for the given list of files
 ///
-/// Shows each file with the file size if [showFileSize] is `true`.
+/// Shows each file with the file size if [showFileSizes] is `true`.
 /// This will stats each file in the list for finding the size.
 ///
 /// Given files like:
@@ -64,15 +66,18 @@ String fromFiles(
   required bool showFileSizes,
 }) {
   // Parse out the files into a tree of nested maps.
-  var root = <String, Map>{};
+  final root = <String, Map>{};
   for (var file in files) {
     final relativeFile =
-        baseDir == null ? file : path.relative(file, from: baseDir);
-    final parts = path.split(relativeFile);
+        baseDir == null ? file : p.relative(file, from: baseDir);
+    final parts = p.split(relativeFile);
     if (showFileSizes) {
-      final size = File(path.normalize(file)).statSync().size;
-      final sizeString = _readableFileSize(size);
-      parts.last = '${parts.last} $sizeString';
+      final stat = File(p.normalize(file)).statSync();
+      if (stat.type != FileSystemEntityType.directory) {
+        final size = stat.size;
+        final sizeString = _readableFileSize(size);
+        parts.last = '${parts.last} $sizeString';
+      }
     }
     var directory = root;
     for (var part in parts) {
@@ -82,7 +87,7 @@ String fromFiles(
   }
 
   // Walk the map recursively and render to a string.
-  return fromMap(root);
+  return fromMap(root, startingAtTop: false);
 }
 
 /// Draws a tree from a nested map. Given a map like:
@@ -106,9 +111,17 @@ String fromFiles(
 ///     barback
 ///
 /// Items with no children should have an empty map as the value.
-String fromMap(Map<String, Map> map) {
-  var buffer = StringBuffer();
-  _draw(buffer, '', null, map);
+///
+/// If [startingAtTop] is `false`, the tree will be shown as:
+///
+///     |-- analyzer
+///     |   '-- args
+///     |   |   '-- collection
+///     '   '---logging
+///     '---barback
+String fromMap(Map<String, Map> map, {bool startingAtTop = true}) {
+  final buffer = StringBuffer();
+  _draw(buffer, '', null, map, depth: startingAtTop ? 0 : 1);
   return buffer.toString();
 }
 
@@ -117,10 +130,11 @@ void _drawLine(
   String prefix,
   bool isLastChild,
   String? name,
+  bool isRoot,
 ) {
   // Print lines.
   buffer.write(prefix);
-  if (name != null) {
+  if (!isRoot) {
     if (isLastChild) {
       buffer.write(log.gray(emoji('└── ', "'-- ")));
     } else {
@@ -145,15 +159,16 @@ void _draw(
   Map<String, Map> children, {
   bool showAllChildren = false,
   bool isLast = false,
+  required int depth,
 }) {
   // Don't draw a line for the root node.
-  if (name != null) _drawLine(buffer, prefix, isLast, name);
+  if (name != null) _drawLine(buffer, prefix, isLast, name, depth <= 1);
 
   // Recurse to the children.
-  var childNames = ordered(children.keys);
+  final childNames = ordered(children.keys);
 
   void drawChild(bool isLastChild, String child) {
-    var childPrefix = _getPrefix(name == null, isLast);
+    final childPrefix = _getPrefix(depth <= 1, isLast);
     _draw(
       buffer,
       '$prefix$childPrefix',
@@ -161,6 +176,7 @@ void _draw(
       children[child] as Map<String, Map>,
       showAllChildren: showAllChildren,
       isLast: isLastChild,
+      depth: depth + 1,
     );
   }
 

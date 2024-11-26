@@ -12,22 +12,23 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'foo': 'foo', 'collide1': 'foo', 'collide2': 'foo'}
+        'executables': {'foo': 'foo', 'collide1': 'foo', 'collide2': 'foo'},
       }),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await d.dir('bar', [
       d.pubspec({
         'name': 'bar',
-        'executables': {'bar': 'bar', 'collide1': 'bar', 'collide2': 'bar'}
+        'executables': {'bar': 'bar', 'collide1': 'bar', 'collide2': 'bar'},
       }),
-      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('bar.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var pub = await startPub(args: ['global', 'activate', '-spath', '../bar']);
+    final pub =
+        await startPub(args: ['global', 'activate', '-spath', '../bar']);
     expect(pub.stdout, emitsThrough('Installed executable bar.'));
     expect(
       pub.stderr,
@@ -49,8 +50,8 @@ void main() {
         d.file(binStubName('foo'), contains('foo:foo')),
         d.file(binStubName('bar'), contains('bar:bar')),
         d.file(binStubName('collide1'), contains('foo:foo')),
-        d.file(binStubName('collide2'), contains('foo:foo'))
-      ])
+        d.file(binStubName('collide2'), contains('foo:foo')),
+      ]),
     ]).validate();
   });
 }

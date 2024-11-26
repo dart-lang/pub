@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import '../../test_pub.dart';
 
 void main() {
-  test('fails if the package cound not be found on the source', () async {
+  test('fails if the package could not be found on the source', () async {
     await servePackages();
 
     await runPub(

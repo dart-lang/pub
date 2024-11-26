@@ -19,15 +19,15 @@ void main() {
           d.dir('bin', [
             d.file('foo.dart', r'''
 import 'package:bar/bar.dart';
-main(args) => print('bar $version');''')
-          ])
+main(args) => print('bar $version');'''),
+          ]),
         ],
       )
       ..serve(
         'bar',
         '1.0.0',
         contents: [
-          d.dir('lib', [d.file('bar.dart', 'final version = "1.0.0";')])
+          d.dir('lib', [d.file('bar.dart', 'final version = "1.0.0";')]),
         ],
       );
 
@@ -38,12 +38,13 @@ main(args) => print('bar $version');''')
       output: '''
 Package foo is currently active at version 1.0.0.
 Resolving dependencies...
+Downloading packages...
 The package foo is already activated at newest available version.
 To recompile executables, first run `dart pub global deactivate foo`.
 Activated foo 1.0.0.''',
     );
 
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emits('bar 1.0.0'));
     await pub.shouldExit();
 
@@ -53,7 +54,7 @@ Activated foo 1.0.0.''',
       'bar',
       '2.0.0',
       contents: [
-        d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')])
+        d.dir('lib', [d.file('bar.dart', 'final version = "2.0.0";')]),
       ],
     );
 
@@ -62,13 +63,14 @@ Activated foo 1.0.0.''',
       output: '''
 Package foo is currently active at version 1.0.0.
 Resolving dependencies...
+Downloading packages...
 > bar 2.0.0 (was 1.0.0)
 Building package executables...
 Built foo:foo.
 Activated foo 1.0.0.''',
     );
 
-    var pub2 = await pubRun(global: true, args: ['foo']);
+    final pub2 = await pubRun(global: true, args: ['foo']);
     expect(pub2.stdout, emits('bar 2.0.0'));
     await pub2.shouldExit();
   });

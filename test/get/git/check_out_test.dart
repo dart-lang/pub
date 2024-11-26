@@ -25,7 +25,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -35,17 +35,17 @@ void main() {
       File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
     expect(
-      lockfile['packages']['foo']['description']['url'],
+      dig<String>(lockfile, ['packages', 'foo', 'description', 'url']),
       '../foo.git',
-      reason:
-          'The relative path should be preserved, and be a url (forward slashes on all platforms)',
+      reason: 'The relative path should be preserved, '
+          'and be a url (forward slashes on all platforms)',
     );
 
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
-        d.gitPackageRevisionCacheDir('foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo'),
+      ]),
     ]).validate();
 
     expect(packageSpec('foo'), isNotNull);
@@ -65,7 +65,7 @@ environment:
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -93,7 +93,7 @@ environment:
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'}
+        'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'},
       },
     ).create();
 
@@ -102,8 +102,8 @@ environment:
     await d.dir(cachePath, [
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('____foo')]),
-        d.gitPackageRevisionCacheDir('foo', repoName: '____foo')
-      ])
+        d.gitPackageRevisionCacheDir('foo', repoName: '____foo'),
+      ]),
     ]).validate();
 
     expect(packageSpec('foo'), isNotNull);

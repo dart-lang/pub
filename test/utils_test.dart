@@ -43,7 +43,7 @@ void main() {
       expect(
         yamlToString({
           'a': {'b': 1, 'c': 2},
-          'd': 3
+          'd': 3,
         }),
         equals('''
 a:
@@ -75,7 +75,7 @@ no: 1
     });
 
     test('handles non-string map keys', () {
-      var map = {};
+      final map = <Object?, Object?>{};
       map[null] = 'null';
       map[123] = 'num';
       map[true] = 'bool';
@@ -92,7 +92,7 @@ true: bool'''),
     test('handles empty maps', () {
       expect(yamlToString({}), equals('{}'));
       expect(
-        yamlToString({'a': {}, 'b': {}}),
+        yamlToString({'a': <Object, Object>{}, 'b': <Object, Object>{}}),
         equals('''
 a: {}
 b: {}'''),
@@ -103,37 +103,37 @@ b: {}'''),
   group('niceDuration()', () {
     test('formats duration longer than a minute correctly', () {
       expect(
-        niceDuration(Duration(minutes: 3, seconds: 1, milliseconds: 337)),
+        niceDuration(const Duration(minutes: 3, seconds: 1, milliseconds: 337)),
         equals('3:01.3s'),
       );
     });
 
     test('does not display extra zero when duration is less than a minute', () {
-      expect(niceDuration(Duration(milliseconds: 400)), equals('0.4s'));
+      expect(niceDuration(const Duration(milliseconds: 400)), equals('0.4s'));
     });
 
     test('has reasonable output on minute boundary', () {
-      expect(niceDuration(Duration(minutes: 1)), equals('1:00.0s'));
+      expect(niceDuration(const Duration(minutes: 1)), equals('1:00.0s'));
     });
   });
 
   group('uuid', () {
-    var uuidRegexp = RegExp('^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-'
+    final uuidRegexp = RegExp('^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-'
         r'[8-9A-B][0-9A-F]{3}-[0-9A-F]{12}$');
 
     test('min value is valid', () {
-      var uuid = createUuid(List<int>.filled(16, 0));
+      final uuid = createUuid(List<int>.filled(16, 0));
       expect(uuid, matches(uuidRegexp));
       expect(uuid, '00000000-0000-4000-8000-000000000000');
     });
     test('max value is valid', () {
-      var uuid = createUuid(List<int>.filled(16, 255));
+      final uuid = createUuid(List<int>.filled(16, 255));
       expect(uuid, matches(uuidRegexp));
       expect(uuid, 'FFFFFFFF-FFFF-4FFF-BFFF-FFFFFFFFFFFF');
     });
     test('random values are valid', () {
       for (var i = 0; i < 100; i++) {
-        var uuid = createUuid();
+        final uuid = createUuid();
         expect(uuid, matches(uuidRegexp));
       }
     });
@@ -188,7 +188,7 @@ b: {}'''),
     expect(() => hexEncode([256, 0, 1]), throwsA(isA<FormatException>()));
   });
   test('hexDecode', () {
-    expect(hexDecode(''), []);
+    expect(hexDecode(''), <int>[]);
     expect(hexDecode('ff0001f0abcdef'), [255, 0, 1, 240, 171, 205, 239]);
     expect(hexDecode('FF0001F0ABCDEF'), [255, 0, 1, 240, 171, 205, 239]);
     expect(() => hexDecode('F'), throwsA(isA<FormatException>()));

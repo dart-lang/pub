@@ -14,10 +14,10 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       },
       contents: [
-        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")])
+        d.dir('bin', [d.file('script.dart', "main(args) => print('ok');")]),
       ],
     );
 
@@ -28,8 +28,8 @@ void main() {
         d.file(
           binStubName('foo-script'),
           contains('script.dart-$versionSuffix.snapshot'),
-        )
-      ])
+        ),
+      ]),
     ]).validate();
   });
 }

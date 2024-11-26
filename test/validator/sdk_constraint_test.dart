@@ -37,7 +37,7 @@ void main() {
 
     test('depends on a pre-release Dart SDK from a pre-release', () async {
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0-dev.1', sdk: '>=1.8.0-dev.1 <2.0.0')
+        d.libPubspec('test_pkg', '1.0.0-dev.1', sdk: '>=1.8.0-dev.1 <2.0.0'),
       ]).create();
       await expectValidationDeprecated(sdkConstraint);
     });
@@ -49,8 +49,8 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'environment': {'sdk': '>=1.19.0 <2.0.0', 'flutter': '^1.2.3'}
-        })
+          'environment': {'sdk': '>=1.19.0 <2.0.0', 'flutter': '^1.2.3'},
+        }),
       ]).create();
       await expectValidationDeprecated(sdkConstraint);
     });
@@ -62,8 +62,11 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0-dev.1',
-          'environment': {'sdk': '>=2.0.0-dev.51.0 <2.0.0', 'fuchsia': '^1.2.3'}
-        })
+          'environment': {
+            'sdk': '>=2.0.0-dev.51.0 <2.0.0',
+            'fuchsia': '^1.2.3',
+          },
+        }),
       ]).create();
       await expectValidationDeprecated(sdkConstraint);
     });
@@ -96,7 +99,7 @@ void main() {
 
     test('depends on a pre-release sdk from a non-pre-release', () async {
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0-dev.1 <2.0.0')
+        d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0-dev.1 <2.0.0'),
       ]).create();
       await expectValidationDeprecated(
         sdkConstraint,
@@ -109,14 +112,14 @@ void main() {
     });
 
     test(
-        'Gives a hint if package has a <3.0.0 constraint that is interpreted as <4.0.0',
-        () async {
+        'Gives a hint if package has a <3.0.0 constraint '
+        'that is interpreted as <4.0.0', () async {
       await d.dir(appPath, [
         d.rawPubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'environment': {'sdk': '^2.19.0'}
-        })
+          'environment': {'sdk': '^2.19.0'},
+        }),
       ]).create();
       await expectValidationDeprecated(
         sdkConstraint,

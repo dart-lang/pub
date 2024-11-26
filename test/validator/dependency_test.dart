@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
@@ -15,7 +15,7 @@ import '../test_pub.dart';
 
 d.DirectoryDescriptor package({
   String version = '1.0.0',
-  Map? deps,
+  Map<String, Object?>? deps,
   String? sdk,
 }) {
   return d.dir(appPath, [
@@ -28,17 +28,17 @@ d.DirectoryDescriptor package({
     d.file('LICENSE', 'Eh, do what you want.'),
     d.file('README.md', "This package isn't real."),
     d.file('CHANGELOG.md', '# $version\nFirst version\n'),
-    d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')])
+    d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
   ]);
 }
 
 Future<void> expectValidation({
-  error,
+  Object? message,
   int exitCode = 0,
   Map<String, String> environment = const {},
 }) async {
   await runPub(
-    error: error ?? contains('Package has 0 warnings.'),
+    output: message ?? contains('Package has 0 warnings.'),
     args: ['publish', '--dry-run'],
     // workingDirectory: d.path(appPath),
     exitCode: exitCode,
@@ -47,26 +47,26 @@ Future<void> expectValidation({
 }
 
 Future<void> expectValidationWarning(
-  error, {
+  Object? message, {
   int count = 1,
   Map<String, String> environment = const {},
 }) async {
-  if (error is String) error = contains(error);
+  if (message is String) message = contains(message);
   await expectValidation(
-    error: allOf([error, contains('Package has $count warning')]),
+    message: allOf([message, contains('Package has $count warning')]),
     exitCode: DATA,
     environment: environment,
   );
 }
 
 Future<void> expectValidationError(
-  String text, {
+  String message, {
   Map<String, String> environment = const {},
 }) async {
   await expectValidation(
-    error: allOf([
-      contains(text),
-      contains('Package validation found the following error:')
+    message: allOf([
+      contains(message),
+      contains('Package validation found the following error:'),
     ]),
     exitCode: DATA,
     environment: environment,
@@ -74,7 +74,7 @@ Future<void> expectValidationError(
 }
 
 Future<void> setUpDependency(
-  dep, {
+  Map<String, String> dep, {
   String? sdk,
   List<String> hostedVersions = const [],
 }) async {
@@ -108,8 +108,8 @@ void main() {
       await package(
         deps: {
           'foo': {
-            'git': {'url': '../foo', 'path': 'subdir'}
-          }
+            'git': {'url': '../foo', 'path': 'subdir'},
+          },
         },
       ).create();
 
@@ -124,25 +124,25 @@ void main() {
     });
 
     test('depends on Flutter from an SDK source', () async {
-      await d.dir('flutter', [d.file('version', '1.2.3')]).create();
+      await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
       await flutterPackage('flutter').create();
       await package(
         deps: {
-          'flutter': {'sdk': 'flutter'}
+          'flutter': {'sdk': 'flutter'},
         },
       ).create();
 
       await expectValidation(
-        environment: {'FLUTTER_ROOT': path.join(d.sandbox, 'flutter')},
+        environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
       );
     });
 
     test(
-      'depends on a package from Flutter with an appropriate Dart SDK constraint',
+      'depends on a package from Flutter '
+      'with an appropriate Dart SDK constraint',
       () async {
-        await d.dir('flutter', [d.file('version', '1.2.3')]).create();
+        await d.dir('flutter', [d.flutterVersion('1.2.3')]).create();
         await flutterPackage('foo').create();
-        await d.dir('flutter', [d.file('version', '1.2.3')]).create();
         await package(
           deps: {
             'foo': {'sdk': 'flutter', 'version': '>=1.2.3 <2.0.0'},
@@ -151,25 +151,26 @@ void main() {
 
         await expectValidation(
           environment: {
-            'FLUTTER_ROOT': path.join(d.sandbox, 'flutter'),
+            'FLUTTER_ROOT': p.join(d.sandbox, 'flutter'),
           },
         );
       },
     );
 
     test(
-      'depends on a package from Fuchsia with an appropriate Dart SDK constraint',
+      'depends on a package from Fuchsia '
+      'with an appropriate Dart SDK constraint',
       () async {
-        await fuschiaPackage('foo', sdk: '^3.0.0').create();
+        await fuchsiaPackage('foo', sdk: '^3.0.0').create();
         await package(
           deps: {
-            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'}
+            'foo': {'sdk': 'fuchsia', 'version': '>=1.2.3 <2.0.0'},
           },
         ).create();
 
         await expectValidation(
           environment: {
-            'FUCHSIA_DART_SDK_ROOT': path.join(d.sandbox, 'fuchsia'),
+            'FUCHSIA_DART_SDK_ROOT': p.join(d.sandbox, 'fuchsia'),
           },
         );
       },
@@ -186,7 +187,7 @@ void main() {
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo')},
+            {'path': p.join(d.sandbox, 'foo')},
             hostedVersions: ['3.0.0-pre', '2.0.0', '1.0.0'],
           );
           await expectValidationError(
@@ -195,13 +196,13 @@ void main() {
         });
 
         test(
-            "and should suggest the hosted prerelease version if it's the only version available",
-            () async {
+            'and should suggest the hosted prerelease version '
+            "if it's the only version available", () async {
           await d.dir('foo', [
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo')},
+            {'path': p.join(d.sandbox, 'foo')},
             hostedVersions: ['3.0.0-pre', '2.0.0-pre'],
           );
           await expectValidationError(
@@ -215,7 +216,7 @@ void main() {
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo')},
+            {'path': p.join(d.sandbox, 'foo')},
             hostedVersions: ['0.0.1', '0.0.2'],
           );
           await expectValidationError(
@@ -230,8 +231,8 @@ void main() {
             d.libPubspec('foo', '1.2.3'),
           ]).create();
           await setUpDependency({
-            'path': path.join(d.sandbox, 'foo'),
-            'version': '>=1.0.0 <2.0.0'
+            'path': p.join(d.sandbox, 'foo'),
+            'version': '>=1.0.0 <2.0.0',
           });
           await expectValidationError(
             '  foo: ">=1.0.0 <2.0.0"',
@@ -245,7 +246,7 @@ void main() {
             d.libPubspec('foo', '0.2.3'),
           ]).create();
           await setUpDependency(
-            {'path': path.join(d.sandbox, 'foo'), 'version': '0.2.3'},
+            {'path': p.join(d.sandbox, 'foo'), 'version': '0.2.3'},
           );
           await expectValidationError(
             '  foo: 0.2.3',
@@ -267,8 +268,8 @@ void main() {
         });
 
         test(
-            'and it should suggest a concrete constraint if the locked version is pre-1.0.0',
-            () async {
+            'and it should suggest a concrete constraint '
+            'if the locked version is pre-1.0.0', () async {
           (await servePackages()).serve('foo', '0.1.2');
 
           await d.dir(appPath, [
@@ -280,11 +281,11 @@ void main() {
                   'foo': {
                     'version': '0.1.2',
                     'source': 'hosted',
-                    'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                  }
-                }
+                    'description': {'name': 'foo', 'url': 'https://pub.dev'},
+                  },
+                },
               }),
-            )
+            ),
           ]).create();
 
           await expectValidationWarning('  foo: ^0.1.2');
@@ -300,7 +301,7 @@ void main() {
           'test_pkg',
           '1.0.0',
           deps: {'foo': '^1.2.3-dev'},
-        )
+        ),
       ]).create();
 
       await expectValidationWarning(
@@ -312,7 +313,7 @@ void main() {
         'constraint based on the version', () async {
       (await servePackages()).serve('foo', '1.2.3');
       await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '1.2.3'})
+        d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '1.2.3'}),
       ]).create();
 
       await expectValidationWarning('  foo: ^1.2.3');
@@ -328,7 +329,7 @@ void main() {
           d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '<3.0.0'}),
           d.file(
             'pubspec.lock',
-          )
+          ),
         ]).create();
 
         await expectValidationWarning('  foo: ">=1.2.3 <3.0.0"');
@@ -345,11 +346,11 @@ void main() {
                 'foo': {
                   'version': '1.2.3',
                   'source': 'hosted',
-                  'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                }
-              }
+                  'description': {'name': 'foo', 'url': 'https://pub.dev'},
+                },
+              },
             }),
-          )
+          ),
         ]).create();
 
         await expectValidationWarning('  foo: ">=1.2.3 <=3.0.0"');
@@ -369,11 +370,11 @@ void main() {
                 'foo': {
                   'version': '1.2.3',
                   'source': 'hosted',
-                  'description': {'name': 'foo', 'url': 'https://pub.dev'}
-                }
-              }
+                  'description': {'name': 'foo', 'url': 'https://pub.dev'},
+                },
+              },
             }),
-          )
+          ),
         ]).create();
 
         await expectValidationWarning('  foo: ^1.2.3');
@@ -385,7 +386,7 @@ void main() {
           () async {
         (await servePackages()).serve('foo', '1.2.3');
         await d.dir(appPath, [
-          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>=1.2.3'})
+          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>=1.2.3'}),
         ]).create();
 
         await expectValidationWarning('  foo: ^1.2.3');
@@ -394,7 +395,7 @@ void main() {
       test('and it should preserve the lower-bound operator', () async {
         (await servePackages()).serve('foo', '1.2.4');
         await d.dir(appPath, [
-          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>1.2.3'})
+          d.libPubspec('test_pkg', '1.0.0', deps: {'foo': '>1.2.3'}),
         ]).create();
 
         await expectValidationWarning('  foo: ">1.2.3 <2.0.0"');
@@ -403,7 +404,7 @@ void main() {
   });
 }
 
-d.Descriptor fuschiaPackage(
+d.Descriptor fuchsiaPackage(
   String name, {
   Map<String, String> deps = const {},
   String? sdk,

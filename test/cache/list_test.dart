@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -10,7 +10,7 @@ import '../test_pub.dart';
 
 void main() {
   String hostedDir(String package) {
-    return path.join(d.sandbox, cachePath, 'hosted', 'pub.dev', package);
+    return p.join(d.sandbox, cachePath, 'hosted', 'pub.dev', package);
   }
 
   test('running pub cache list when there is no cache', () async {
@@ -20,10 +20,18 @@ void main() {
   test('running pub cache list on empty cache', () async {
     // Set up a cache.
     await d.dir(cachePath, [
-      d.dir('hosted', [d.dir('pub.dev', [])])
+      d.dir('hosted', [d.dir('pub.dev', [])]),
     ]).create();
 
-    await runPub(args: ['cache', 'list'], outputJson: {'packages': {}});
+    await runPub(
+      args: [
+        'cache',
+        'list',
+      ],
+      outputJson: {
+        'packages': <String, Object>{},
+      },
+    );
   });
 
   test('running pub cache list', () async {
@@ -32,9 +40,9 @@ void main() {
       d.dir('hosted', [
         d.dir('pub.dev', [
           d.dir('foo-1.2.3', [d.libPubspec('foo', '1.2.3'), d.libDir('foo')]),
-          d.dir('bar-2.0.0', [d.libPubspec('bar', '2.0.0'), d.libDir('bar')])
-        ])
-      ])
+          d.dir('bar-2.0.0', [d.libPubspec('bar', '2.0.0'), d.libDir('bar')]),
+        ]),
+      ]),
     ]).create();
 
     await runPub(
@@ -42,12 +50,12 @@ void main() {
       outputJson: {
         'packages': {
           'bar': {
-            '2.0.0': {'location': hostedDir('bar-2.0.0')}
+            '2.0.0': {'location': hostedDir('bar-2.0.0')},
           },
           'foo': {
-            '1.2.3': {'location': hostedDir('foo-1.2.3')}
-          }
-        }
+            '1.2.3': {'location': hostedDir('foo-1.2.3')},
+          },
+        },
       },
     );
   });
@@ -62,13 +70,13 @@ void main() {
               'foo',
               '1.2.3',
               deps: {
-                'bar': {'bad': 'bar'}
+                'bar': {'bad': 'bar'},
               },
             ),
-            d.libDir('foo')
-          ])
-        ])
-      ])
+            d.libDir('foo'),
+          ]),
+        ]),
+      ]),
     ]).create();
 
     await runPub(
@@ -76,9 +84,9 @@ void main() {
       outputJson: {
         'packages': {
           'foo': {
-            '1.2.3': {'location': hostedDir('foo-1.2.3')}
-          }
-        }
+            '1.2.3': {'location': hostedDir('foo-1.2.3')},
+          },
+        },
       },
     );
   });

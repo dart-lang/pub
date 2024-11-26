@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:test_descriptor/test_descriptor.dart';
@@ -14,27 +14,27 @@ import 'package:test_descriptor/test_descriptor.dart';
 class TarFileDescriptor extends FileDescriptor {
   final List<Descriptor> contents;
 
-  TarFileDescriptor(String name, Iterable<Descriptor> contents)
+  TarFileDescriptor(super.name, Iterable<Descriptor> contents)
       : contents = contents.toList(),
-        super.protected(name);
+        super.protected();
 
   /// Creates the files and directories within this tar file, then archives
-  /// them, compresses them, and saves the result to [parentDir].
+  /// them, compresses them, and saves the result to [parent].
   @override
   Future create([String? parent]) {
     return withTempDir((tempDir) async {
       await Future.wait(contents.map((entry) => entry.create(tempDir)));
 
-      var createdContents = listDir(
+      final createdContents = listDir(
         tempDir,
         recursive: true,
         includeHidden: true,
         includeDirs: false,
       );
-      var bytes =
+      final bytes =
           await createTarGz(createdContents, baseDir: tempDir).toBytes();
 
-      var file = path.join(parent ?? sandbox, name);
+      final file = p.join(parent ?? sandbox, name);
       _writeBinaryFile(file, bytes);
       return file;
     });
@@ -56,7 +56,7 @@ class TarFileDescriptor extends FileDescriptor {
     return Stream<List<int>>.fromFuture(
       withTempDir((tempDir) async {
         await create(tempDir);
-        return readBinaryFile(path.join(tempDir, name));
+        return readBinaryFile(p.join(tempDir, name));
       }),
     );
   }

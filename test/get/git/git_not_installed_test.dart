@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 @TestOn('linux')
+library;
+
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -24,7 +26,7 @@ echo "not git"
     );
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -61,7 +63,7 @@ if "%1"=="--version" (
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 

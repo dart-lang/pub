@@ -13,7 +13,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.11.0 <3.0.0'}
+        'environment': {'sdk': '>=2.11.0 <3.0.0'},
       }),
     ]).create();
 
@@ -29,13 +29,14 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.1.0'}
+        'environment': {'sdk': '>=2.12.0 <3.1.0'},
       }),
     ]).create();
 
     await pubGet(
       error: contains(
-        'Because myapp requires SDK version >=2.12.0 <3.1.0, version solving failed',
+        'Because myapp requires SDK version >=2.12.0 <3.1.0, '
+        'version solving failed',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
@@ -45,7 +46,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.11.0 <2.999.0'}
+        'environment': {'sdk': '>=2.11.0 <2.999.0'},
       }),
     ]).create();
 
@@ -62,7 +63,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.11.0 <3.0.0-0.0'}
+        'environment': {'sdk': '>=2.11.0 <3.0.0-0.0'},
       }),
     ]).create();
 
@@ -79,7 +80,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.0.0'}
+        'environment': {'sdk': '>=2.12.0 <3.0.0'},
       }),
     ]).create();
 
@@ -92,7 +93,7 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.0.0-0'}
+        'environment': {'sdk': '>=2.12.0 <3.0.0-0'},
       }),
     ]).create();
 
@@ -100,37 +101,40 @@ void main() {
   });
 
   test('The bound of ">=3.0.0-dev <3.0.0" is not modified', () async {
-    // When the lower bound is a dev release of 3.0.0 the upper bound is treated literally, and not
-    //  converted to 3.0.0-0, therefore the rewrite to 4.0.0 doesn't happen.
+    // When the lower bound is a dev release of 3.0.0 the upper bound is treated
+    //  literally, and not converted to 3.0.0-0, therefore the rewrite to 4.0.0
+    //  doesn't happen.
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=3.0.0-dev <3.0.0'}
+        'environment': {'sdk': '>=3.0.0-dev <3.0.0'},
       }),
     ]).create();
 
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Because myapp requires SDK version >=3.0.0-dev <3.0.0, version solving failed.',
+        'Because myapp requires SDK version >=3.0.0-dev <3.0.0, '
+        'version solving failed.',
       ),
     );
   });
 
   test(
-      'The bound of ">=2.12.0 <3.0.0" is not compatible with prereleases of dart 4',
-      () async {
+      'The bound of ">=2.12.0 <3.0.0" is not '
+      'compatible with prereleases of dart 4', () async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.12.0 <3.0.0'}
+        'environment': {'sdk': '>=2.12.0 <3.0.0'},
       }),
     ]).create();
 
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '4.0.0-alpha'},
       error: contains(
-        'Because myapp requires SDK version >=2.12.0 <4.0.0, version solving failed.',
+        'Because myapp requires SDK version >=2.12.0 <4.0.0, '
+        'version solving failed.',
       ),
     );
   });
@@ -140,7 +144,7 @@ void main() {
     await d.appDir(
       dependencies: {'foo': 'any'},
       pubspec: {
-        'environment': {'sdk': '^2.12.0'}
+        'environment': {'sdk': '^2.12.0'},
       },
     ).create();
     final server = await servePackages();
@@ -150,12 +154,13 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'environment': {'sdk': '>=2.10.0 <3.0.0'}
+        'environment': {'sdk': '>=2.10.0 <3.0.0'},
       },
     );
     await pubGet(
       error: contains(
-        'The lower bound of "sdk: \'>=2.10.0 <3.0.0\'" must be 2.12.0 or higher to enable null safety.'
+        'The lower bound of "sdk: \'>=2.10.0 <3.0.0\'" '
+        'must be 2.12.0 or higher to enable null safety.'
         '\nFor details, see https://dart.dev/null-safety',
       ),
     );
@@ -165,13 +170,14 @@ void main() {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'environment': {'sdk': '>=2.19.1 <3.0.0'}
+        'environment': {'sdk': '>=2.19.1 <3.0.0'},
       }),
     ]).create();
 
     await pubGet(
       error: contains(
-        'Because myapp requires SDK version >=2.19.1 <3.0.0, version solving failed.',
+        'Because myapp requires SDK version >=2.19.1 <3.0.0, '
+        'version solving failed.',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '2.19.0'},
     );

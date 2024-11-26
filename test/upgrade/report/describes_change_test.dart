@@ -48,17 +48,17 @@ void main() {
 
     await d.dir('source_changed', [
       d.libDir('source_changed'),
-      d.libPubspec('source_changed', '2.0.0')
+      d.libPubspec('source_changed', '2.0.0'),
     ]).create();
 
     await d.dir('description_changed_1', [
       d.libDir('description_changed'),
-      d.libPubspec('description_changed', '1.0.0')
+      d.libPubspec('description_changed', '1.0.0'),
     ]).create();
 
     await d.dir('description_changed_2', [
       d.libDir('description_changed'),
-      d.libPubspec('description_changed', '1.0.0')
+      d.libPubspec('description_changed', '1.0.0'),
     ]).create();
 
     // Create the first lockfile.
@@ -70,7 +70,7 @@ void main() {
         'version_downgraded': '2.0.0',
         'source_changed': 'any',
         'package_removed': 'any',
-        'description_changed': {'path': '../description_changed_1'}
+        'description_changed': {'path': '../description_changed_1'},
       },
     ).create();
 
@@ -99,11 +99,13 @@ void main() {
       output: allOf([
         contains('Resolving dependencies...'),
         contains(
-          '* description_changed 1.0.0 from path ..${separator}description_changed_2 (was 1.0.0 from path ..${separator}description_changed_1)',
+          '* description_changed 1.0.0 from path '
+          '..${separator}description_changed_2 (was 1.0.0 from path '
+          '..${separator}description_changed_1)',
         ),
-        contains('  unchanged 1.0.0'),
         contains(
-          '* source_changed 2.0.0 from path ..${separator}source_changed (was 1.0.0)',
+          '* source_changed 2.0.0 from path '
+          '..${separator}source_changed (was 1.0.0)',
         ),
         contains('> version_upgraded 2.0.0 (was 1.0.0'),
         contains('< version_downgraded 1.0.0 (was 2.0.0'),

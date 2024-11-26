@@ -17,20 +17,20 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'script': null}
+        'executables': {'script': null},
       },
       contents: [
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 
     // Add the test's cache bin directory to the path.
-    var binDir = p.dirname(Platform.executable);
-    var separator = Platform.isWindows ? ';' : ':';
-    var path = "${Platform.environment["PATH"]}$separator$binDir";
+    final binDir = p.dirname(Platform.executable);
+    final separator = Platform.isWindows ? ';' : ':';
+    final path = "${Platform.environment["PATH"]}$separator$binDir";
 
     await runPub(
       args: ['global', 'activate', 'foo'],

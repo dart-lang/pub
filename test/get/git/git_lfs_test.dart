@@ -15,7 +15,7 @@ void main() {
     await foo.runGit(['lfs', 'install']);
 
     await d.dir('foo.git', [
-      d.dir('lib', [d.file('foo.dart', 'main() => print("hi");')])
+      d.dir('lib', [d.file('foo.dart', 'main() => print("hi");')]),
     ]).create();
     await foo.runGit(['lfs', 'track', 'lib/foo.dart']);
     await foo.runGit(['add', '.gitattributes']);
@@ -24,8 +24,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git'}
-        }
+          'git': {'url': '../foo.git'},
+        },
       },
       contents: [
         d.dir('bin', [d.file('main.dart', 'export "package:foo/foo.dart";')]),
@@ -38,7 +38,7 @@ void main() {
     await d.git(
       'foo.git',
       [
-        d.dir('lib', [d.file('foo.dart', 'main() => print("bye");')])
+        d.dir('lib', [d.file('foo.dart', 'main() => print("bye");')]),
       ],
     ).commit();
 

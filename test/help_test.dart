@@ -10,7 +10,8 @@ import 'golden_file.dart';
 /// Extract all commands and subcommands.
 ///
 /// Result will be an iterable of lists, illustrated as follows:
-/// ```
+///
+/// ```none
 /// [
 ///   [pub]
 ///   [pub, get]

@@ -6,15 +6,12 @@ import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../http.dart';
-import '../io.dart';
 import '../lock_file.dart';
-import '../log.dart' as log;
+import '../log.dart';
 import '../package.dart';
 import '../package_name.dart';
-import '../pub_embeddable_command.dart';
 import '../pubspec.dart';
 import '../source/cached.dart';
-import '../source/hosted.dart';
 import '../system_cache.dart';
 
 /// The result of a successful version resolution.
@@ -22,6 +19,9 @@ class SolveResult {
   /// The list of concrete package versions that were selected for each package
   /// reachable from the root.
   final List<PackageId> packages;
+
+  /// Names of all dependency overrides in the workspace.
+  final Set<String> _overriddenPackages;
 
   /// The root package of this resolution.
   final Package _root;
@@ -62,33 +62,32 @@ class SolveResult {
   /// and the new one a warning will be printed but the new one will be
   /// returned.
   Future<LockFile> downloadCachedPackages(SystemCache cache) async {
-    final resolvedPackageIds = await Future.wait(
-      packages.map((id) async {
-        if (id.source is CachedSource) {
-          return await withDependencyType(_root.pubspec.dependencyType(id.name),
-              () async {
-            return (await cache.downloadPackage(
-              id,
-            ))
-                .packageId;
-          });
-        }
-        return id;
-      }),
-    );
-
+    final resolvedPackageIds = await progress('Downloading packages', () async {
+      return await Future.wait(
+        packages.map((id) async {
+          if (id.source is CachedSource) {
+            return await withDependencyType(
+                _root.pubspec.dependencyType(id.name), () async {
+              return (await cache.downloadPackage(
+                id,
+              ))
+                  .packageId;
+            });
+          }
+          return id;
+        }),
+      );
+    });
     // Invariant: the content-hashes in PUB_CACHE matches those provided by the
     // server.
 
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
-    var nonOverrides = pubspecs.values
-        .where(
-          (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name),
-        )
+    final nonOverrides = pubspecs.values
+        .where((pubspec) => !_overriddenPackages.contains(pubspec.name))
         .toList();
 
-    var sdkConstraints = <String, VersionConstraint>{};
+    final sdkConstraints = <String, VersionConstraint>{};
     for (var pubspec in nonOverrides) {
       pubspec.sdkConstraints.forEach((identifier, constraint) {
         sdkConstraints[identifier] = constraint.effectiveConstraint
@@ -103,7 +102,7 @@ class SolveResult {
       },
       mainDependencies: MapKeySet(_root.dependencies),
       devDependencies: MapKeySet(_root.devDependencies),
-      overriddenDependencies: MapKeySet(_root.dependencyOverrides),
+      overriddenDependencies: _overriddenPackages,
     );
   }
 
@@ -113,7 +112,7 @@ class SolveResult {
   ///
   /// This includes packages that were added or removed.
   Set<String> get changedPackages {
-    var changed = packages
+    final changed = packages
         .where((id) => _previousLockFile.packages[id.name] != id)
         .map((id) => id.name)
         .toSet();
@@ -127,6 +126,7 @@ class SolveResult {
 
   SolveResult(
     this._root,
+    this._overriddenPackages,
     this._previousLockFile,
     this.packages,
     this.pubspecs,
@@ -134,54 +134,6 @@ class SolveResult {
     this.attemptedSolutions,
     this.resolutionTime,
   );
-
-  /// Send analytics about the package resolution.
-  void sendAnalytics(PubAnalytics pubAnalytics) {
-    ArgumentError.checkNotNull(pubAnalytics);
-    final analytics = pubAnalytics.analytics;
-    if (analytics == null) return;
-
-    final dependenciesForAnalytics = <PackageId>[];
-    for (final package in packages) {
-      // Only send analytics for packages from pub.dev.
-      if (HostedSource.isFromPubDev(package) ||
-          (package.source is HostedSource && runningFromTest)) {
-        dependenciesForAnalytics.add(package);
-      }
-    }
-    // Randomize the dependencies, such that even if some analytics events don't
-    // get sent, the results will still be representative.
-    shuffle(dependenciesForAnalytics);
-    for (final package in dependenciesForAnalytics) {
-      final dependencyKind = const {
-        DependencyType.dev: 'dev',
-        DependencyType.direct: 'direct',
-        DependencyType.none: 'transitive'
-      }[_root.pubspec.dependencyType(package.name)]!;
-      analytics.sendEvent(
-        'pub-get',
-        package.name,
-        label: package.version.canonicalizedVersion,
-        value: 1,
-        parameters: {
-          'ni': '1', // We consider a pub-get a non-interactive event.
-          pubAnalytics.dependencyKindCustomDimensionName: dependencyKind,
-        },
-      );
-      log.fine(
-        'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind',
-      );
-    }
-
-    analytics.sendTiming(
-      'resolution',
-      resolutionTime.inMilliseconds,
-      category: 'pub-get',
-    );
-    log.fine(
-      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds',
-    );
-  }
 
   @override
   String toString() => 'Took $attemptedSolutions tries to resolve to\n'

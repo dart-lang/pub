@@ -26,13 +26,13 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
     await pubGet();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     // Switch to a new cache.
     renameInSandbox(cachePath, '$cachePath.old');
@@ -46,7 +46,7 @@ void main() {
     await pubUpgrade(output: contains('Changed 1 dependency!'));
 
     // Switch back to the old cache.
-    var cacheDir = p.join(d.sandbox, cachePath);
+    final cacheDir = p.join(d.sandbox, cachePath);
     deleteEntry(cacheDir);
     renameInSandbox('$cachePath.old', cacheDir);
 
@@ -57,8 +57,8 @@ void main() {
       d.dir('git', [
         d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.gitPackageRevisionCacheDir('foo'),
-        d.gitPackageRevisionCacheDir('foo', modifier: 2)
-      ])
+        d.gitPackageRevisionCacheDir('foo', modifier: 2),
+      ]),
     ]).validate();
 
     expect(packageSpec('foo'), isNot(originalFooSpec));

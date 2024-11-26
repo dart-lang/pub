@@ -11,7 +11,7 @@ void main() {
   test('checks out a package at a specific branch from Git', () async {
     ensureGit();
 
-    var repo = d.git(
+    final repo = d.git(
       'foo.git',
       [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')],
     );
@@ -26,8 +26,8 @@ void main() {
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'ref': 'old'}
-        }
+          'git': {'url': '../foo.git', 'ref': 'old'},
+        },
       },
     ).create();
 
@@ -39,7 +39,7 @@ void main() {
           d.gitPackageRepoCacheDir('foo'),
         ]),
         d.gitPackageRevisionCacheDir('foo', modifier: 1),
-      ])
+      ]),
     ]).validate();
   });
 }

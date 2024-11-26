@@ -5,8 +5,9 @@
 // These tests only work on case-sensitive file systems (ie. only on linux).
 @OnPlatform({
   'windows': Skip('Windows file system is case-insensitive'),
-  'mac-os': Skip('MacOS file system is case-insensitive')
+  'mac-os': Skip('macOS file system is case-insensitive'),
 })
+library;
 
 import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
@@ -14,16 +15,14 @@ import 'package:test/test.dart';
 import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
-Future<void> expectValidation(error, int exitCode) async {
+Future<void> expectValidation(Matcher output, int exitCode) async {
   await runPub(
-    error: error,
+    output: output,
     args: ['publish', '--dry-run'],
     workingDirectory: d.path(appPath),
     exitCode: exitCode,
   );
 }
-
-late d.DirectoryDescriptor fakeFlutterRoot;
 
 void main() {
   test('Recognizes files that only differ in capitalization.', () async {
@@ -31,7 +30,7 @@ void main() {
     await d.dir(appPath, [d.file('Pubspec.yaml')]).create();
     await expectValidation(
       allOf(
-        contains('Package validation found the following error:'),
+        matches(r'Package validation found the following \d* ?errors?:'),
         contains(
           'The file ./pubspec.yaml and ./Pubspec.yaml only differ in capitalization.',
         ),

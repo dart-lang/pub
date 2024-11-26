@@ -11,14 +11,14 @@ void main() {
   test('changes in a path package are immediately reflected', () async {
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")])
+      d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
 
     await d.file('foo/bin/foo.dart', "main() => print('changed');").create();
 
-    var pub = await pubRun(global: true, args: ['foo']);
+    final pub = await pubRun(global: true, args: ['foo']);
     expect(pub.stdout, emitsThrough('changed'));
     await pub.shouldExit();
   });

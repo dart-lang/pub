@@ -7,7 +7,6 @@ import 'dart:async';
 import '../command.dart';
 import '../log.dart' as log;
 import '../solver.dart';
-import '../utils.dart';
 
 /// Handles the `get` pub command.
 class GetCommand extends PubCommand {
@@ -38,8 +37,11 @@ class GetCommand extends PubCommand {
     argParser.addFlag(
       'enforce-lockfile',
       negatable: false,
-      help:
-          'Enforce pubspec.lock. Fail resolution if pubspec.lock does not satisfy pubspec.yaml',
+      help: 'Enforce pubspec.lock. '
+          'Fail `pub get` if the current `pubspec.lock` '
+          'does not exactly specify a valid resolution of `pubspec.yaml` '
+          'or if any content hash of a hosted package has changed.\n'
+          'Useful for CI or deploying to production.',
     );
 
     argParser.addFlag(
@@ -78,17 +80,15 @@ class GetCommand extends PubCommand {
       SolveType.get,
       dryRun: argResults.flag('dry-run'),
       precompile: argResults.flag('precompile'),
-      analytics: analytics,
       enforceLockfile: argResults.flag('enforce-lockfile'),
     );
 
-    var example = entrypoint.example;
-    if ((argResults['example'] as bool? ?? false) && example != null) {
+    final example = entrypoint.example;
+    if ((argResults.flag('example')) && example != null) {
       await example.acquireDependencies(
         SolveType.get,
         dryRun: argResults.flag('dry-run'),
         precompile: argResults.flag('precompile'),
-        analytics: analytics,
         summaryOnly: true,
         enforceLockfile: argResults.flag('enforce-lockfile'),
       );

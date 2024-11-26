@@ -13,7 +13,9 @@ void main() {
     await d.appDir(dependencies: {'foo': 'any'}).create();
 
     await pubGet(
-      output: 'Resolving dependencies...\nGot dependencies.',
+      output: 'Resolving dependencies...\n'
+          'Downloading packages...\n'
+          'Got dependencies.',
       silent: contains('+ foo 1.0.0'),
       environment: {'PUB_SUMMARY_ONLY': '1'},
     );

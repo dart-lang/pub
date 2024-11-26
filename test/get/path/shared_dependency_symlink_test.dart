@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'package:test/test.dart';
 
@@ -22,9 +22,9 @@ void main() {
         'foo',
         '0.0.1',
         deps: {
-          'shared': {'path': '../shared'}
+          'shared': {'path': '../shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir('bar', [
@@ -33,9 +33,9 @@ void main() {
         'bar',
         '0.0.1',
         deps: {
-          'shared': {'path': '../link/shared'}
+          'shared': {'path': '../link/shared'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir(appPath, [
@@ -44,11 +44,11 @@ void main() {
           'bar': {'path': '../bar'},
           'foo': {'path': '../foo'},
         },
-      )
+      ),
     ]).create();
 
     await d.dir('link').create();
-    symlinkInSandbox('shared', path.join('link', 'shared'));
+    symlinkInSandbox('shared', p.join('link', 'shared'));
 
     await pubGet();
 

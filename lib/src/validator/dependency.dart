@@ -25,8 +25,8 @@ class DependencyValidator extends Validator {
     /// Emit an error for dependencies from unknown SDKs or without appropriate
     /// constraints on the Dart SDK.
     void warnAboutSdkSource(PackageRange dep) {
-      var identifier = (dep.description as SdkDescription).sdk;
-      var sdk = sdks[identifier];
+      final identifier = (dep.description as SdkDescription).sdk;
+      final sdk = sdks[identifier];
       if (sdk == null) {
         errors.add('Unknown SDK "$identifier" for dependency "${dep.name}".');
         return;
@@ -37,8 +37,7 @@ class DependencyValidator extends Validator {
     Future warnAboutSource(PackageRange dep) async {
       List<Version> versions;
       try {
-        var ids = await entrypoint.cache
-            .getVersions(entrypoint.cache.hosted.refFor(dep.name));
+        final ids = await cache.getVersions(cache.hosted.refFor(dep.name));
         versions = ids.map((id) => id.version).toList();
       } on ApplicationException catch (_) {
         versions = [];
@@ -55,7 +54,7 @@ class DependencyValidator extends Validator {
       }
 
       // Path sources are errors. Other sources are just warnings.
-      var messages = dep.source is PathSource ? errors : warnings;
+      final messages = dep.source is PathSource ? errors : warnings;
 
       messages.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
           'source. Use the hosted source instead. For example:\n'
@@ -88,7 +87,7 @@ class DependencyValidator extends Validator {
     void warnAboutNoConstraint(PackageRange dep) {
       var message = 'Your dependency on "${dep.name}" should have a version '
           'constraint.';
-      var locked = entrypoint.lockFile.packages[dep.name];
+      final locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         message = '$message For example:\n'
             '\n'
@@ -96,14 +95,14 @@ class DependencyValidator extends Validator {
             '  ${dep.name}: ^${locked.version}\n';
       }
       warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support ${log.bold("all")} '
-          'future versions of "${dep.name}".');
+          'Without a constraint, you\'re promising to support '
+          '${log.bold("all")} future versions of "${dep.name}".');
     }
 
     /// Warn that dependencies should allow more than a single version.
     void warnAboutSingleVersionConstraint(PackageRange dep) {
-      warnings.add(
-          'Your dependency on "${dep.name}" should allow more than one version. '
+      warnings.add('Your dependency on "${dep.name}" '
+          'should allow more than one version. '
           'For example:\n'
           '\n'
           'dependencies:\n'
@@ -118,7 +117,7 @@ class DependencyValidator extends Validator {
     void warnAboutNoConstraintLowerBound(PackageRange dep) {
       var message =
           'Your dependency on "${dep.name}" should have a lower bound.';
-      var locked = entrypoint.lockFile.packages[dep.name];
+      final locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
         String constraint;
         if (locked.version == (dep.constraint as VersionRange).max) {
@@ -133,8 +132,8 @@ class DependencyValidator extends Validator {
             '  ${dep.name}: $constraint\n';
       }
       warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support ${log.bold("all")} '
-          'previous versions of "${dep.name}".');
+          'Without a constraint, you\'re promising to support '
+          '${log.bold("all")} previous versions of "${dep.name}".');
     }
 
     /// Warn that dependencies should have upper bounds on their constraints.
@@ -160,7 +159,7 @@ class DependencyValidator extends Validator {
     }
 
     void warnAboutPrerelease(String dependencyName, VersionRange constraint) {
-      final packageVersion = entrypoint.root.version;
+      final packageVersion = package.version;
       if (constraint.min != null &&
           constraint.min!.isPreRelease &&
           !packageVersion.isPreRelease) {
@@ -176,7 +175,7 @@ class DependencyValidator extends Validator {
     /// Validates all dependencies in [dependencies].
     Future validateDependencies(Iterable<PackageRange> dependencies) async {
       for (var dependency in dependencies) {
-        var constraint = dependency.constraint;
+        final constraint = dependency.constraint;
         if (dependency.name == 'flutter') {
           warnAboutFlutterSdk(dependency);
         } else if (dependency.source is SdkSource) {
@@ -203,6 +202,6 @@ class DependencyValidator extends Validator {
       }
     }
 
-    await validateDependencies(entrypoint.root.pubspec.dependencies.values);
+    await validateDependencies(package.pubspec.dependencies.values);
   }
 }

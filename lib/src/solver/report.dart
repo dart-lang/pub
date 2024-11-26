@@ -31,6 +31,7 @@ class SolveReport {
   final LockFile _newLockFile;
   final SystemCache _cache;
   final bool _dryRun;
+  final Map<String, PackageRange> _overriddenPackages;
 
   /// If quiet only a single summary line is output.
   final bool _quiet;
@@ -45,10 +46,14 @@ class SolveReport {
   /// Version list will not contain any retracted package versions.
   final Map<String, List<Version>> _availableVersions;
 
+  static const maxAdvisoryFootnotesPerLine = 5;
+  final advisoryDisplayHandles = <String>[];
+
   SolveReport(
     this._type,
     this._location,
     this._rootPubspec,
+    this._overriddenPackages,
     this._previousLockFile,
     this._newLockFile,
     this._availableVersions,
@@ -63,12 +68,13 @@ class SolveReport {
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
   ///
-  /// Returns `true` if there was any change of dependencies relative to the old
-  /// lockfile.
-  Future<bool> show() async {
-    final hasChanges = await _reportChanges();
+  /// If [summary] is `true` a count of changes and number of
+  /// discontinued/retracted packages will be shown at the end of the report.
+
+  Future<void> show({required bool summary}) async {
+    final changes = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
-    return hasChanges;
+    if (summary) await summarize(changes);
   }
 
   void _checkContentHashesMatchOldLockfile() {
@@ -134,34 +140,22 @@ $contentHashesDocumentationUrl
   /// If [_dryRun] or [_enforceLockfile] is true, describes it in terms of what
   /// would be done.
   ///
-  /// [type] is the type of version resolution that was run.
+  /// [_type] is the type of version resolution that was run.
 
-  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages that
-  /// are not at the latest available version and the number of outdated
+  /// If [_type] is `SolveType.UPGRADE` it also shows the number of packages
+  /// that are not at the latest available version and the number of outdated
   /// packages.
-  Future<void> summarize() async {
+  Future<void> summarize(int changes) async {
     // Count how many dependencies actually changed.
-    var dependencies = _newLockFile.packages.keys.toSet();
+    final dependencies = _newLockFile.packages.keys.toSet();
     dependencies.addAll(_previousLockFile.packages.keys);
     dependencies.remove(_rootPubspec.name);
-
-    var numChanged = dependencies.where((name) {
-      var oldId = _previousLockFile.packages[name];
-      var newId = _newLockFile.packages[name];
-
-      // Added or removed dependencies count.
-      if (oldId == null) return true;
-      if (newId == null) return true;
-
-      // The dependency existed before, so see if it was modified.
-      return oldId != newId;
-    }).length;
 
     var suffix = '';
     final dir = _location;
     if (dir != null) {
       if (dir != '.') {
-        suffix = ' in $dir';
+        suffix = ' in `$dir`';
       }
     }
 
@@ -169,7 +163,7 @@ $contentHashesDocumentationUrl
       if (_dryRun) {
         log.message('Would get dependencies$suffix.');
       } else if (_enforceLockfile) {
-        if (numChanged == 0) {
+        if (changes == 0) {
           log.message('Got dependencies$suffix.');
         }
       } else {
@@ -177,69 +171,68 @@ $contentHashesDocumentationUrl
       }
     } else {
       if (_dryRun) {
-        if (numChanged == 0) {
+        if (changes == 0) {
           log.message('No dependencies would change$suffix.');
-        } else if (numChanged == 1) {
-          log.message('Would change $numChanged dependency$suffix.');
+        } else if (changes == 1) {
+          log.message('Would change $changes dependency$suffix.');
         } else {
-          log.message('Would change $numChanged dependencies$suffix.');
+          log.message('Would change $changes dependencies$suffix.');
         }
       } else if (_enforceLockfile) {
-        if (numChanged == 0) {
+        if (changes == 0) {
           log.message('Got dependencies$suffix!');
-        } else if (numChanged == 1) {
-          log.message('Would change $numChanged dependency$suffix.');
+        } else if (changes == 1) {
+          log.message('Would change $changes dependency$suffix.');
         } else {
-          log.message('Would change $numChanged dependencies$suffix.');
+          log.message('Would change $changes dependencies$suffix.');
         }
       } else {
-        if (numChanged == 0) {
+        if (changes == 0) {
           if (_type == SolveType.get) {
             log.message('Got dependencies$suffix!');
           } else {
             log.message('No dependencies changed$suffix.');
           }
-        } else if (numChanged == 1) {
-          log.message('Changed $numChanged dependency$suffix!');
+        } else if (changes == 1) {
+          log.message('Changed $changes dependency$suffix!');
         } else {
-          log.message('Changed $numChanged dependencies$suffix!');
+          log.message('Changed $changes dependencies$suffix!');
         }
       }
-      if (_type == SolveType.upgrade) {
-        await reportDiscontinued();
-        reportOutdated();
-      }
+      await reportDiscontinued();
+      reportAdvisories();
+      reportOutdated();
     }
   }
 
   /// Displays a report of all of the previous and current dependencies and
   /// how they have changed.
   ///
-  /// Returns true if anything changed.
-  Future<bool> _reportChanges() async {
+  /// Returns the number of changes.
+  Future<int> _reportChanges() async {
     final output = StringBuffer();
     // Show the new set of dependencies ordered by name.
-    var names = _newLockFile.packages.keys.toList();
+    final names = _newLockFile.packages.keys.toList();
     names.remove(_rootPubspec.name);
     names.sort();
-    var hasChanges = false;
+    var changes = 0;
     for (final name in names) {
-      hasChanges |= await _reportPackage(name, output);
+      changes += await _reportPackage(name, output) ? 1 : 0;
     }
     // Show any removed ones.
-    var removed = _previousLockFile.packages.keys.toSet();
+    final removed = _previousLockFile.packages.keys.toSet();
     removed.removeAll(names);
     removed.remove(_rootPubspec.name); // Never consider root.
     if (removed.isNotEmpty) {
       output.writeln('These packages are no longer being depended on:');
       for (var name in ordered(removed)) {
         await _reportPackage(name, output, alwaysShow: true);
+        changes += 1;
       }
-      hasChanges = true;
     }
 
     message(output.toString());
-    return hasChanges;
+    return changes;
   }
 
   /// Displays a single-line message, number of discontinued packages
@@ -248,8 +241,12 @@ $contentHashesDocumentationUrl
     var numDiscontinued = 0;
     for (var id in _newLockFile.packages.values) {
       if (id.description is RootDescription) continue;
-      final status = await id.source
-          .status(id.toRef(), id.version, _cache, maxAge: Duration(days: 3));
+      final status = await id.source.status(
+        id.toRef(),
+        id.version,
+        _cache,
+        maxAge: const Duration(days: 3),
+      );
       if (status.isDiscontinued &&
           (_rootPubspec.dependencyType(id.name) == DependencyType.direct ||
               _rootPubspec.dependencyType(id.name) == DependencyType.dev)) {
@@ -288,15 +285,55 @@ $contentHashesDocumentationUrl
         packageCountString = '$outdatedPackagesCount packages have';
       }
       message('$packageCountString newer versions incompatible with '
-          'dependency constraints.\nTry `$topLevelProgram pub outdated` for more information.');
+          'dependency constraints.\n'
+          'Try `$topLevelProgram pub outdated` for more information.');
     }
+  }
+
+  void reportAdvisories() {
+    if (advisoryDisplayHandles.isNotEmpty) {
+      message('Dependencies are affected by security advisories:');
+      for (var footnote = 0;
+          footnote < advisoryDisplayHandles.length;
+          footnote++) {
+        message(
+          '  [^$footnote]: ${advisoryDisplayHandles[footnote]}',
+        );
+      }
+    }
+  }
+
+  static DependencyType dependencyType(LockFile lockFile, String name) =>
+      lockFile.mainDependencies.contains(name)
+          ? DependencyType.direct
+          : lockFile.devDependencies.contains(name)
+              ? DependencyType.dev
+              : DependencyType.none;
+
+  String? _constructAdvisoriesMessage(
+    List<int> footnotes,
+    bool advisoriesTruncated,
+  ) {
+    if (footnotes.isNotEmpty) {
+      final advisoryString = footnotes.length == 1 ? 'advisory' : 'advisories';
+      final buffer = StringBuffer('affected by $advisoryString: ');
+      buffer.write('[^${footnotes.first}]');
+      for (final footnote in footnotes.getRange(1, footnotes.length)) {
+        buffer.write(', [^$footnote]');
+      }
+
+      if (advisoriesTruncated) {
+        buffer.write(', ...');
+      }
+      return buffer.toString();
+    }
+    return null;
   }
 
   /// Reports the results of the upgrade on the package named [name].
   ///
   /// If [alwaysShow] is true, the package is reported even if it didn't change,
-  /// regardless of [_type]. If [highlightOverride] is true (or absent), writes
-  /// "(override)" next to overridden packages.
+  /// regardless of [_type].
   ///
   /// Returns true if the package had changed.
   Future<bool> _reportPackage(
@@ -304,11 +341,11 @@ $contentHashesDocumentationUrl
     StringBuffer output, {
     bool alwaysShow = false,
   }) async {
-    var newId = _newLockFile.packages[name];
-    var oldId = _previousLockFile.packages[name];
-    var id = newId ?? oldId!;
+    final newId = _newLockFile.packages[name];
+    final oldId = _previousLockFile.packages[name];
+    final id = newId ?? oldId!;
 
-    var isOverridden = _rootPubspec.dependencyOverrides.containsKey(id.name);
+    final isOverridden = _overriddenPackages.containsKey(id.name);
 
     // If the package was previously a dependency but the dependency has
     // changed in some way.
@@ -357,7 +394,7 @@ $contentHashesDocumentationUrl
     // See if there are any newer versions of the package that we were
     // unable to upgrade to.
     if (newId != null && _type != SolveType.downgrade) {
-      var versions = _availableVersions[newId.name]!;
+      final versions = _availableVersions[newId.name]!;
 
       var newerStable = false;
       var newerUnstable = false;
@@ -375,45 +412,98 @@ $contentHashesDocumentationUrl
         id.toRef(),
         id.version,
         _cache,
-        maxAge: Duration(days: 3),
+        maxAge: const Duration(days: 3),
       );
 
+      final notes = <String>[];
+
+      final advisories = await id.source.getAdvisoriesForPackageVersion(
+        id,
+        _cache,
+        const Duration(days: 3),
+      );
+
+      if (advisories != null && advisories.isNotEmpty) {
+        final advisoryFootnotes = <int>[];
+        final reportedAdvisories = advisories
+            .where(
+              (adv) => _rootPubspec.ignoredAdvisories.intersection({
+                ...adv.aliases,
+                adv.id,
+              }).isEmpty,
+            )
+            .take(maxAdvisoryFootnotesPerLine);
+        for (final adv in reportedAdvisories) {
+          advisoryFootnotes.add(advisoryDisplayHandles.length);
+          advisoryDisplayHandles.add(adv.displayHandle);
+        }
+
+        final advisoriesMessage = _constructAdvisoriesMessage(
+          advisoryFootnotes,
+          advisories.length > maxAdvisoryFootnotesPerLine,
+        );
+
+        if (advisoriesMessage != null) {
+          notes.add(advisoriesMessage);
+        }
+      }
       if (status.isRetracted) {
         if (newerStable) {
-          message =
-              '(retracted, ${maxAll(versions, Version.prioritize)} available)';
+          notes.add(
+            'retracted, ${maxAll(versions, Version.prioritize)} available',
+          );
         } else if (newId.version.isPreRelease && newerUnstable) {
-          message = '(retracted, ${maxAll(versions)} available)';
+          notes.add(
+            'retracted, ${maxAll(versions)} available',
+          );
         } else {
-          message = '(retracted)';
+          notes.add(
+            'retracted',
+          );
         }
       } else if (status.isDiscontinued &&
           [DependencyType.direct, DependencyType.dev]
               .contains(_rootPubspec.dependencyType(name))) {
         if (status.discontinuedReplacedBy == null) {
-          message = '(discontinued)';
+          notes.add(
+            'discontinued',
+          );
         } else {
-          message =
-              '(discontinued replaced by ${status.discontinuedReplacedBy})';
+          notes.add(
+            'discontinued replaced by ${status.discontinuedReplacedBy}',
+          );
         }
       } else if (newerStable) {
         // If there are newer stable versions, only show those.
-        message = '(${maxAll(versions, Version.prioritize)} available)';
+        notes.add(
+          '${maxAll(versions, Version.prioritize)} available',
+        );
       } else if (
           // Only show newer prereleases for versions where a prerelease is
           // already chosen.
           newId.version.isPreRelease && newerUnstable) {
-        message = '(${maxAll(versions)} available)';
+        notes.add(
+          '${maxAll(versions)} available',
+        );
       }
+
+      message = notes.isEmpty ? null : '(${notes.join(', ')})';
     }
 
-    if (_type == SolveType.get &&
-        !(alwaysShow ||
-            changed ||
-            addedOrRemoved ||
-            message != null ||
-            isOverridden)) {
-      return changed || addedOrRemoved;
+    final oldDependencyType = dependencyType(_previousLockFile, name);
+    final newDependencyType = dependencyType(_newLockFile, name);
+
+    final dependencyTypeChanged = oldId != null &&
+        newId != null &&
+        oldDependencyType != newDependencyType;
+
+    if (!(alwaysShow ||
+        changed ||
+        addedOrRemoved ||
+        dependencyTypeChanged ||
+        message != null ||
+        isOverridden)) {
+      return changed || addedOrRemoved || dependencyTypeChanged;
     }
 
     output.write(icon);
@@ -426,6 +516,18 @@ $contentHashesDocumentationUrl
       output.write(' (was ');
       _writeId(oldId!, output);
       output.write(')');
+    }
+
+    if (dependencyTypeChanged) {
+      if (dependencyTypeChanged) {
+        output.write(' (from ');
+
+        _writeDependencyType(oldDependencyType, output);
+        output.write(' dependency to ');
+
+        _writeDependencyType(newDependencyType, output);
+        output.write(' dependency)');
+      }
     }
 
     // Highlight overridden packages.
@@ -441,7 +543,7 @@ $contentHashesDocumentationUrl
     if (message != null) output.write(' ${log.cyan(message)}');
 
     output.writeln();
-    return changed || addedOrRemoved;
+    return changed || addedOrRemoved || dependencyTypeChanged;
   }
 
   /// Writes a terse description of [id] (not including its name) to the output.
@@ -449,9 +551,21 @@ $contentHashesDocumentationUrl
     output.write(id.version);
 
     if (id.source != _cache.defaultSource) {
-      var description = id.description.format();
+      final description = id.description.format();
       output.write(' from ${id.source} $description');
     }
+  }
+
+  void _writeDependencyType(DependencyType t, StringBuffer output) {
+    output.write(
+      log.bold(
+        switch (t) {
+          DependencyType.direct => 'direct',
+          DependencyType.dev => 'dev',
+          DependencyType.none => 'transitive',
+        },
+      ),
+    );
   }
 
   void warning(String message) {

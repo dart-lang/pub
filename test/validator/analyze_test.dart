@@ -17,7 +17,7 @@ void main() {
       d.file('LICENSE', 'Eh, do what you want.'),
       d.file('README.md', "This package isn't real."),
       d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')])
+      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
     ]).create();
     await expectValidation();
   });
@@ -34,8 +34,8 @@ void main() {
   });
 
   test(
-      'follows analysis_options.yaml and should not warn if package contains only infos',
-      () async {
+      'follows analysis_options.yaml '
+      'and should not warn if package contains only infos', () async {
     await d.dir(appPath, [
       d.libPubspec(
         'test_pkg', '1.0.0',
@@ -50,15 +50,15 @@ void main() {
 linter:
   rules:
     - secure_pubspec_urls
-''')
+'''),
     ]).create();
 
     await expectValidation();
   });
 
   test(
-      'follows analysis_options.yaml and should warn if package contains warnings in pubspec.yaml',
-      () async {
+      'follows analysis_options.yaml and '
+      'should warn if package contains warnings in pubspec.yaml', () async {
     await d.dir(appPath, [
       d.libPubspec(
         'test_pkg', '1.0.0',
@@ -76,13 +76,14 @@ linter:
 analyzer:
   errors:
     secure_pubspec_urls: warning
-''')
+'''),
     ]).create();
 
     await expectValidation(
-      error: allOf([
+      message: allOf([
         contains(
-          "The 'http' protocol shouldn't be used because it isn't secure. Try using a secure protocol, such as 'https'.",
+          "The 'http' protocol shouldn't be used because it isn't secure. "
+          "Try using a secure protocol, such as 'https'.",
         ),
         contains('Package has 1 warning.'),
       ]),
@@ -104,8 +105,8 @@ analyzer:
 void main() {
   final a = 10; // Unused.
 }
-''')
-      ])
+'''),
+      ]),
     ]).create();
 
     await expectValidation();
@@ -119,54 +120,28 @@ void main() {
       d.file('LICENSE', 'Eh, do what you want.'),
       d.file('README.md', "This package isn't real."),
       d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+      d.file('build.dart', 'void main(){}'),
+      d.file('link.dart', 'void main(){}'),
       d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
       d.dir('bin', [
         d.file('test_pkg.dart', '''
 void main() {
 // Missing }
-''')
-      ])
+'''),
+      ]),
     ]).create();
 
     await expectValidation(
-      error: allOf([
+      message: allOf([
         contains('`dart analyze` found the following issue(s):'),
-        contains('Analyzing lib, bin, pubspec.yaml...'),
+        contains('Analyzing bin, lib, build.dart, link.dart, pubspec.yaml...'),
         contains('error -'),
         contains("Expected to find '}'."),
-        contains('Package has 1 warning.')
+        contains('Package has 1 warning.'),
       ]),
       exitCode: DATA,
       extraArgs: ['--directory', appPath],
       workingDirectory: d.sandbox,
-    );
-  });
-
-  test('should warn if package contains warnings in test folder', () async {
-    await d.dir(appPath, [
-      d.validPubspec(),
-      d.file('LICENSE', 'Eh, do what you want.'),
-      d.file('README.md', "This package isn't real."),
-      d.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      d.dir('lib', [d.file('test_pkg.dart', 'int i = 1;')]),
-      d.dir('test', [
-        d.file('test_pkg.dart', '''
-void main() {
-  final a = 10; // Unused.
-}
-''')
-      ]),
-    ]).create();
-
-    await expectValidation(
-      error: allOf([
-        contains('`dart analyze` found the following issue(s):'),
-        contains('Analyzing lib, test, pubspec.yaml...'),
-        contains('warning -'),
-        contains("The value of the local variable 'a' isn't used"),
-        contains('Package has 1 warning.')
-      ]),
-      exitCode: DATA,
     );
   });
 }

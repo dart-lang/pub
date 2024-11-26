@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
 
@@ -20,7 +20,7 @@ void main() {
 
     await d.appDir(
       dependencies: {
-        'foo': {'git': '../foo.git'}
+        'foo': {'git': '../foo.git'},
       },
     ).create();
 
@@ -33,13 +33,13 @@ void main() {
           d.gitPackageRepoCacheDir('foo'),
         ]),
         d.gitPackageRevisionCacheDir('foo'),
-      ])
+      ]),
     ]).validate();
 
-    var originalFooSpec = packageSpec('foo');
+    final originalFooSpec = packageSpec('foo');
 
     // Delete the package spec to simulate a new checkout of the application.
-    deleteEntry(path.join(d.sandbox, packageConfigFilePath));
+    deleteEntry(p.join(d.sandbox, packageConfigFilePath));
 
     await d.git(
       'foo.git',

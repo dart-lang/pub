@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart' hide mapMap;
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
@@ -11,9 +11,12 @@ import 'package:yaml/yaml.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'language_version.dart';
+import 'package.dart';
 import 'package_name.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
+import 'source.dart';
+import 'source/root.dart';
 import 'system_cache.dart';
 
 export 'pubspec_parse.dart' hide PubspecBase;
@@ -35,8 +38,8 @@ class Pubspec extends PubspecBase {
   // initialization can throw a [PubspecException], that error should also be
   // exposed through [allErrors].
 
-  /// The fields of [pubspecOverridesFilename]. `null` if no such file exists or has
-  /// to be considered.
+  /// The fields of [pubspecOverridesFilename]. `null` if no such file exists or
+  /// has to be considered.
   final YamlMap? _overridesFileFields;
 
   String? get _packageName => fields['name'] != null ? name : null;
@@ -54,25 +57,90 @@ class Pubspec extends PubspecBase {
 
   /// The registry of sources to use when parsing [dependencies] and
   /// [devDependencies].
-  ///
-  /// This will be null if this was created using [Pubspec] or [Pubspec.empty].
-  final SourceRegistry _sources;
+  final SourceRegistry sources;
 
-  /// The location from which the pubspec was loaded.
-  ///
-  /// This can be null if the pubspec was created in-memory or if its location
-  /// is unknown.
-  Uri? get _location => fields.span.sourceUrl;
+  /// It is used to resolve relative paths. And to resolve path-descriptions
+  /// from a git dependency as git-descriptions.
+  final Description _containingDescription;
+
+  /// Directories of packages that should resolve together with this package.
+  late List<String> workspace = () {
+    final result = <String>[];
+    final workspaceNode =
+        _overridesFileFields?.nodes['workspace'] ?? fields.nodes['workspace'];
+    if (workspaceNode != null && !languageVersion.supportsWorkspaces) {
+      _error(
+        '`workspace` and `resolution` requires at least language version '
+        '${LanguageVersion.firstVersionWithWorkspaces}',
+        workspaceNode.span,
+        hint: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${sdk.version}'
+''',
+      );
+    }
+    if (workspaceNode == null || workspaceNode.value == null) return <String>[];
+
+    if (workspaceNode is! YamlList) {
+      _error('"workspace" must be a list of strings', workspaceNode.span);
+    }
+    for (final t in workspaceNode.nodes) {
+      final value = t.value;
+      if (value is! String) {
+        _error('"workspace" must be a list of strings', t.span);
+      }
+      if (!p.isRelative(value)) {
+        _error('"workspace" members must be relative paths', t.span);
+      }
+      if (p.equals(value, '.') || !p.isWithin('.', value)) {
+        _error('"workspace" members must be subdirectories', t.span);
+      }
+      result.add(value);
+    }
+    return result;
+  }();
+
+  /// The resolution mode.
+  late Resolution resolution = () {
+    final resolutionNode =
+        _overridesFileFields?.nodes['resolution'] ?? fields.nodes['resolution'];
+
+    if (resolutionNode != null && !languageVersion.supportsWorkspaces) {
+      _error(
+        '`workspace` and `resolution` requires at least language version '
+        '${LanguageVersion.firstVersionWithWorkspaces}',
+        resolutionNode.span,
+        hint: '''
+Consider updating the SDK constraint to:
+
+environment:
+  sdk: '^${sdk.version}'
+''',
+      );
+    }
+    return switch (resolutionNode?.value) {
+      null => Resolution.none,
+      'local' => Resolution.local,
+      'workspace' => Resolution.workspace,
+      'external' => Resolution.external,
+      _ => _error(
+          '"resolution" must be one of `workspace`, `local`, `external`',
+          resolutionNode!.span,
+        )
+    };
+  }();
 
   /// The additional packages this package depends on.
   Map<String, PackageRange> get dependencies =>
       _dependencies ??= _parseDependencies(
         'dependencies',
         fields.nodes['dependencies'],
-        _sources,
+        sources,
         languageVersion,
         _packageName,
-        _location,
+        _containingDescription,
       );
 
   Map<String, PackageRange>? _dependencies;
@@ -82,42 +150,34 @@ class Pubspec extends PubspecBase {
       _devDependencies ??= _parseDependencies(
         'dev_dependencies',
         fields.nodes['dev_dependencies'],
-        _sources,
+        sources,
         languageVersion,
         _packageName,
-        _location,
+        _containingDescription,
       );
 
   Map<String, PackageRange>? _devDependencies;
 
-  /// The dependency constraints that this package overrides when it is the
-  /// root package.
+  /// The dependency constraints that this package overrides when it is the root
+  /// package.
   ///
   /// Dependencies here will replace any dependency on a package with the same
   /// name anywhere in the dependency graph.
   ///
-  /// These can occur both in the pubspec.yaml file and the [pubspecOverridesFilename].
+  /// These can occur both in the pubspec.yaml file and the
+  /// [pubspecOverridesFilename].
   Map<String, PackageRange> get dependencyOverrides {
     if (_dependencyOverrides != null) return _dependencyOverrides!;
     final pubspecOverridesFields = _overridesFileFields;
     if (pubspecOverridesFields != null) {
-      pubspecOverridesFields.nodes.forEach((key, _) {
-        final keyNode = key as YamlNode;
-        if (!const {'dependency_overrides'}.contains(keyNode.value)) {
-          throw SourceSpanApplicationException(
-            'pubspec_overrides.yaml only supports the `dependency_overrides` field.',
-            keyNode.span,
-          );
-        }
-      });
       if (pubspecOverridesFields.containsKey('dependency_overrides')) {
         _dependencyOverrides = _parseDependencies(
           'dependency_overrides',
           pubspecOverridesFields.nodes['dependency_overrides'],
-          _sources,
+          sources,
           languageVersion,
           _packageName,
-          _location,
+          _containingDescription,
           fileType: _FileType.pubspecOverrides,
         );
       }
@@ -125,10 +185,10 @@ class Pubspec extends PubspecBase {
     return _dependencyOverrides ??= _parseDependencies(
       'dependency_overrides',
       fields.nodes['dependency_overrides'],
-      _sources,
+      sources,
       languageVersion,
       _packageName,
-      _location,
+      _containingDescription,
     );
   }
 
@@ -142,14 +202,14 @@ class Pubspec extends PubspecBase {
 
   final Map<String, SdkConstraint>? _givenSdkConstraints;
 
-  /// Whether or not to apply the [_defaultUpperBoundsSdkConstraint] to this
+  /// Whether or not to apply the [_defaultUpperBoundSdkConstraint] to this
   /// pubspec.
   final bool _includeDefaultSdkConstraint;
 
   /// Parses the "environment" field in [parent] and returns a map from SDK
   /// identifiers to constraints on those SDKs.
   Map<String, SdkConstraint> _parseEnvironment(YamlMap parent) {
-    var yaml = parent['environment'];
+    final yaml = parent['environment'];
     final VersionConstraint originalDartSdkConstraint;
     if (yaml == null) {
       originalDartSdkConstraint = VersionConstraint.any;
@@ -165,13 +225,13 @@ class Pubspec extends PubspecBase {
         _FileType.pubspec,
       );
     }
-    var constraints = {
+    final constraints = {
       'dart': SdkConstraint.interpretDartSdkConstraint(
         originalDartSdkConstraint,
         defaultUpperBoundConstraint: _includeDefaultSdkConstraint
             ? _defaultUpperBoundSdkConstraint
             : null,
-      )
+      ),
     };
 
     if (yaml is YamlMap) {
@@ -217,9 +277,10 @@ class Pubspec extends PubspecBase {
     SourceRegistry sources, {
     String? expectedName,
     bool allowOverridesFile = false,
+    required Description containingDescription,
   }) {
-    var pubspecPath = path.join(packageDir, pubspecYamlFilename);
-    var overridesPath = path.join(packageDir, pubspecOverridesFilename);
+    final pubspecPath = p.join(packageDir, pubspecYamlFilename);
+    final overridesPath = p.join(packageDir, pubspecOverridesFilename);
     if (!fileExists(pubspecPath)) {
       throw FileException(
         // Make the package dir absolute because for the entrypoint it'll just
@@ -229,7 +290,7 @@ class Pubspec extends PubspecBase {
         pubspecPath,
       );
     }
-    String? overridesFileContents =
+    final overridesFileContents =
         allowOverridesFile && fileExists(overridesPath)
             ? readTextFile(overridesPath)
             : null;
@@ -238,10 +299,31 @@ class Pubspec extends PubspecBase {
       readTextFile(pubspecPath),
       sources,
       expectedName: expectedName,
-      location: path.toUri(pubspecPath),
+      location: p.toUri(pubspecPath),
       overridesFileContents: overridesFileContents,
-      overridesLocation: path.toUri(overridesPath),
+      overridesLocation: p.toUri(overridesPath),
+      containingDescription: containingDescription,
     );
+  }
+
+  /// Convenience helper to pass to [Package.load].
+  static Pubspec Function(
+    String dir, {
+    String? expectedName,
+    required bool withPubspecOverrides,
+  }) loadRootWithSources(SourceRegistry sources) {
+    return (
+      String dir, {
+      String? expectedName,
+      required bool withPubspecOverrides,
+    }) =>
+        Pubspec.load(
+          dir,
+          sources,
+          expectedName: expectedName,
+          allowOverridesFile: withPubspecOverrides,
+          containingDescription: RootDescription(dir),
+        );
   }
 
   Pubspec(
@@ -253,7 +335,9 @@ class Pubspec extends PubspecBase {
     Map? fields,
     SourceRegistry? sources,
     Map<String, SdkConstraint>? sdkConstraints,
+    this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
+    this.resolution = Resolution.none,
   })  : _dependencies = dependencies == null
             ? null
             : {for (final d in dependencies) d.name: d},
@@ -266,9 +350,12 @@ class Pubspec extends PubspecBase {
         _givenSdkConstraints = sdkConstraints ??
             UnmodifiableMapView({'dart': SdkConstraint(VersionConstraint.any)}),
         _includeDefaultSdkConstraint = false,
-        _sources = sources ??
+        sources = sources ??
             ((String? name) => throw StateError('No source registry given')),
         _overridesFileFields = null,
+        // This is a dummy value. Dependencies should already be resolved, so we
+        // never need to do relative resolutions.
+        _containingDescription = RootDescription('.'),
         super(
           fields == null ? YamlMap() : YamlMap.wrap(fields),
           name: name,
@@ -279,25 +366,40 @@ class Pubspec extends PubspecBase {
   /// contents.
   ///
   /// If [expectedName] is passed and the pubspec doesn't have a matching name
-  /// field, this will throw a [PubspecError].
+  /// field, this will throw an [ApplicationException].
   ///
   /// [location] is the location from which this pubspec was loaded.
   Pubspec.fromMap(
     Map fields,
-    this._sources, {
+    this.sources, {
     YamlMap? overridesFields,
     String? expectedName,
     Uri? location,
+    required Description containingDescription,
   })  : _overridesFileFields = overridesFields,
         _includeDefaultSdkConstraint = true,
         _givenSdkConstraints = null,
         dependencyOverridesFromOverridesFile = overridesFields != null &&
             overridesFields.containsKey('dependency_overrides'),
+        _containingDescription = containingDescription,
         super(
           fields is YamlMap
               ? fields
               : YamlMap.wrap(fields, sourceUrl: location),
         ) {
+    if (overridesFields != null) {
+      overridesFields.nodes.forEach((key, _) {
+        final keyNode = key as YamlNode;
+        if (!const {'dependency_overrides', 'resolution', 'workspace'}
+            .contains(keyNode.value)) {
+          throw SourceSpanApplicationException(
+            'pubspec_overrides.yaml only supports the '
+            '`dependency_overrides`, `resolution` and `workspace` fields.',
+            keyNode.span,
+          );
+        }
+      });
+    }
     // If [expectedName] is passed, ensure that the actual 'name' field exists
     // and matches the expectation.
     if (expectedName == null) return;
@@ -321,6 +423,7 @@ class Pubspec extends PubspecBase {
     Uri? location,
     String? overridesFileContents,
     Uri? overridesLocation,
+    required Description containingDescription,
   }) {
     late final YamlMap pubspecMap;
     YamlMap? overridesFileMap;
@@ -341,6 +444,32 @@ class Pubspec extends PubspecBase {
       overridesFields: overridesFileMap,
       expectedName: expectedName,
       location: location,
+      containingDescription: containingDescription,
+    );
+  }
+
+  Pubspec copyWith({
+    String? name,
+    Version? version,
+    Iterable<PackageRange>? dependencies,
+    Iterable<PackageRange>? devDependencies,
+    Iterable<PackageRange>? dependencyOverrides,
+    Map? fields,
+    Map<String, SdkConstraint>? sdkConstraints,
+    List<String>? workspace,
+    //this.dependencyOverridesFromOverridesFile = false,
+    Resolution? resolution,
+  }) {
+    return Pubspec(
+      name ?? this.name,
+      version: version ?? this.version,
+      dependencies: dependencies ?? this.dependencies.values,
+      devDependencies: devDependencies ?? this.devDependencies.values,
+      dependencyOverrides:
+          dependencyOverrides ?? this.dependencyOverrides.values,
+      sdkConstraints: sdkConstraints ?? this.sdkConstraints,
+      workspace: workspace ?? this.workspace,
+      resolution: resolution ?? this.resolution,
     );
   }
 
@@ -362,11 +491,10 @@ class Pubspec extends PubspecBase {
     }
   }
 
-  /// Returns a list of most errors in this pubspec.
-  ///
-  /// This will return at most one error for each field.
-  List<SourceSpanApplicationException> get allErrors {
-    var errors = <SourceSpanApplicationException>[];
+  List<SourceSpanApplicationException> _collectErrorsFor(
+    List<dynamic Function()> toCheck,
+  ) {
+    final errors = <SourceSpanApplicationException>[];
     void collectError(void Function() fn) {
       try {
         fn();
@@ -375,16 +503,39 @@ class Pubspec extends PubspecBase {
       }
     }
 
-    collectError(() => name);
-    collectError(() => version);
-    collectError(() => dependencies);
-    collectError(() => devDependencies);
-    collectError(() => publishTo);
-    collectError(() => executables);
-    collectError(() => falseSecrets);
-    collectError(() => sdkConstraints);
+    for (final fn in toCheck) {
+      collectError(fn);
+    }
     return errors;
   }
+
+  /// Returns a list of errors relevant to consuming this pubspec as a
+  /// dependency
+  ///
+  /// This will return at most one error for each field.
+  List<SourceSpanApplicationException> get dependencyErrors =>
+      _collectErrorsFor([
+        () => name,
+        () => version,
+        () => dependencies,
+        () => executables,
+        () => ignoredAdvisories,
+      ]);
+
+  /// Returns a list of most errors in this pubspec.
+  ///
+  /// This will return at most one error for each field.
+  List<SourceSpanApplicationException> get allErrors => _collectErrorsFor([
+        () => name,
+        () => version,
+        () => dependencies,
+        () => devDependencies,
+        () => publishTo,
+        () => executables,
+        () => falseSecrets,
+        () => sdkConstraints,
+        () => ignoredAdvisories,
+      ]);
 
   /// Returns the type of dependency from this package onto [name].
   DependencyType dependencyType(String? name) {
@@ -416,10 +567,10 @@ Map<String, PackageRange> _parseDependencies(
   SourceRegistry sources,
   LanguageVersion languageVersion,
   String? packageName,
-  Uri? location, {
+  Description containingDescription, {
   _FileType fileType = _FileType.pubspec,
 }) {
-  var dependencies = <String, PackageRange>{};
+  final dependencies = <String, PackageRange>{};
 
   // Allow an empty dependencies key.
   if (node == null || node.value == null) return dependencies;
@@ -428,7 +579,7 @@ Map<String, PackageRange> _parseDependencies(
     _error('"$field" field must be a map.', node.span);
   }
 
-  var nonStringNode = node.nodes.keys
+  final nonStringNode = node.nodes.keys
       .firstWhereOrNull((e) => e is YamlScalar && e.value is! String);
   if (nonStringNode != null) {
     _error(
@@ -439,14 +590,14 @@ Map<String, PackageRange> _parseDependencies(
 
   node.nodes.forEach(
     (nameNode, specNode) {
-      var name = (nameNode as YamlNode).value;
+      final name = (nameNode as YamlNode).value;
       if (name is! String) {
         _error('A dependency name must be a string.', nameNode.span);
       }
       if (!packageNameRegExp.hasMatch(name)) {
         _error('Not a valid package name.', nameNode.span);
       }
-      var spec = specNode.value;
+      final spec = specNode.value;
       if (packageName != null && name == packageName) {
         _error('A package may not list itself as a dependency.', nameNode.span);
       }
@@ -469,7 +620,7 @@ Map<String, PackageRange> _parseDependencies(
           fileType,
         );
         final otherEntries = specNode.nodes.entries
-            .where((entry) => entry.key.value != 'version')
+            .where((entry) => (entry.key as YamlNode).value != 'version')
             .toList();
         if (otherEntries.length > 1) {
           _error('A dependency may only have one source.', specNode.span);
@@ -478,7 +629,10 @@ Map<String, PackageRange> _parseDependencies(
           sourceName = 'hosted';
         } else {
           switch (otherEntries.single) {
-            case MapEntry(key: YamlScalar(value: String s), value: final d):
+            case MapEntry(
+                key: YamlScalar(value: final String s),
+                value: final d
+              ):
               sourceName = s;
               descriptionNode = d;
             case MapEntry(key: final k, value: _):
@@ -496,19 +650,14 @@ Map<String, PackageRange> _parseDependencies(
       }
 
       // Let the source validate the description.
-      var ref = _wrapFormatException(
+      final ref = _wrapFormatException(
         'description',
         descriptionNode?.span,
         () {
-          String? pubspecDir;
-          if (location != null && _isFileUri(location)) {
-            pubspecDir = path.dirname(path.fromUri(location));
-          }
-
           return sources(sourceName).parseRef(
             name,
             descriptionNode?.value,
-            containingDir: pubspecDir,
+            containingDescription: containingDescription,
             languageVersion: languageVersion,
           );
         },
@@ -524,17 +673,11 @@ Map<String, PackageRange> _parseDependencies(
   return dependencies;
 }
 
-/// Returns whether [uri] is a file URI.
-///
-/// This is slightly more complicated than just checking if the scheme is
-/// 'file', since relative URIs also refer to the filesystem on the VM.
-bool _isFileUri(Uri uri) => uri.scheme == 'file' || uri.scheme == '';
-
 /// Parses [node] to a [VersionConstraint].
 ///
-/// If or [defaultUpperBoundConstraint] is specified then it will be set as the
-/// max constraint if the original constraint doesn't have an upper bound and it
-/// is compatible with [defaultUpperBoundConstraint].
+/// `null` is interpreted as [VersionConstraint.any].
+///
+/// A String is parsed with [VersionConstraint.parse].
 VersionConstraint _parseVersionConstraint(
   YamlNode? node,
   String? packageName,
@@ -552,7 +695,7 @@ VersionConstraint _parseVersionConstraint(
     'version constraint',
     node.span,
     () {
-      var constraint = VersionConstraint.parse(value);
+      final constraint = VersionConstraint.parse(value);
       return constraint;
     },
     packageName,
@@ -595,8 +738,8 @@ T _wrapFormatException<T>(
 }
 
 /// Throws a [SourceSpanApplicationException] with the given message.
-Never _error(String message, SourceSpan? span) {
-  throw SourceSpanApplicationException(message, span);
+Never _error(String message, SourceSpan? span, {String? hint}) {
+  throw SourceSpanApplicationException(message, span, hint: hint);
 }
 
 enum _FileType {
@@ -635,7 +778,7 @@ class SdkConstraint {
     VersionConstraint originalConstraint, {
     required VersionConstraint? defaultUpperBoundConstraint,
   }) {
-    VersionConstraint constraint = originalConstraint;
+    var constraint = originalConstraint;
     if (defaultUpperBoundConstraint != null &&
         constraint is VersionRange &&
         constraint.max == null &&
@@ -698,11 +841,23 @@ class SdkConstraint {
   }
 
   @override
-  operator ==(other) =>
+  bool operator ==(Object other) =>
       other is SdkConstraint &&
       other.effectiveConstraint == effectiveConstraint &&
       other.originalConstraint == originalConstraint;
 
   @override
   int get hashCode => Object.hash(effectiveConstraint, originalConstraint);
+}
+
+enum Resolution {
+  // Still unused.
+  external,
+  // This package is a member of a workspace, and should be resolved with a
+  // pubspec.yaml located higher.
+  workspace,
+  // Still unused.
+  local,
+  // This package is at the root of a workspace.
+  none,
 }

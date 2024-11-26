@@ -12,14 +12,14 @@ import '../validator.dart';
 /// absence thereof).
 class DependencyOverrideValidator extends Validator {
   @override
-  Future validate() {
-    var overridden = MapKeySet(entrypoint.root.dependencyOverrides);
-    var dev = MapKeySet(entrypoint.root.devDependencies);
+  Future<void> validate() async {
+    final overridden =
+        MapKeySet(context.entrypoint.workspaceRoot.allOverridesInWorkspace);
+    final dev = MapKeySet(package.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {
-      final overridesFile =
-          entrypoint.root.pubspec.dependencyOverridesFromOverridesFile
-              ? entrypoint.pubspecOverridesPath
-              : entrypoint.pubspecPath;
+      final overridesFile = package.pubspec.dependencyOverridesFromOverridesFile
+          ? package.pubspecOverridesPath
+          : package.pubspecPath;
 
       hints.add('''
 Non-dev dependencies are overridden in $overridesFile.
@@ -31,6 +31,5 @@ This might be necessary for packages with cyclic dependencies.
 
 Please be extra careful when publishing.''');
     }
-    return Future.value();
   }
 }

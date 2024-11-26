@@ -2,43 +2,30 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import 'package.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
+import 'source/hosted.dart';
+import 'system_cache.dart';
 
 /// Returns a new [Pubspec] without [original]'s dev_dependencies.
 Pubspec stripDevDependencies(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original');
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: [], // explicitly give empty list, to prevent lazy parsing
-    dependencyOverrides: original.dependencyOverrides.values,
-  );
+  return original.copyWith(devDependencies: []);
 }
 
 /// Returns a new [Pubspec] without [original]'s dependency_overrides.
 Pubspec stripDependencyOverrides(Pubspec original) {
-  ArgumentError.checkNotNull(original, 'original');
-
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
-    dependencies: original.dependencies.values,
-    devDependencies: original.devDependencies.values,
-    dependencyOverrides: [],
-  );
+  return original.copyWith(dependencyOverrides: []);
 }
 
 /// Returns new pubspec with the same dependencies as [original] but with the
 /// the bounds of the constraints removed.
 ///
-/// If [stripLower] is `false` (the default) only the upper bound is removed.
+/// If [stripLowerBound] is `false` (the default) only the upper bound is
+/// removed.
 ///
 /// If [stripOnly] is provided, only the packages whose names are in [stripOnly]
 /// will have their bounds removed. If [stripOnly] is not specified or empty,
@@ -48,7 +35,6 @@ Pubspec stripVersionBounds(
   Iterable<String>? stripOnly,
   bool stripLowerBound = false,
 }) {
-  ArgumentError.checkNotNull(original, 'original');
   stripOnly ??= [];
 
   List<PackageRange> stripBounds(
@@ -74,13 +60,41 @@ Pubspec stripVersionBounds(
     return result;
   }
 
-  return Pubspec(
-    original.name,
-    version: original.version,
-    sdkConstraints: original.sdkConstraints,
+  return original.copyWith(
     dependencies: stripBounds(original.dependencies),
     devDependencies: stripBounds(original.devDependencies),
-    dependencyOverrides: original.dependencyOverrides.values,
+  );
+}
+
+/// Returns a pubspec with the same dependencies as [original] but with all
+/// version constraints replaced by `>=c` where `c`, is the member of `current`
+/// that has same name as the dependency.
+Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
+  List<PackageRange> fixBounds(
+    Map<String, PackageRange> constrained,
+  ) {
+    final result = <PackageRange>[];
+
+    for (final name in constrained.keys) {
+      final packageRange = constrained[name]!;
+      final currentVersion = current.firstWhereOrNull((id) => id.name == name);
+      if (currentVersion == null) {
+        result.add(packageRange);
+      } else {
+        result.add(
+          packageRange.toRef().withConstraint(
+                VersionRange(min: currentVersion.version, includeMin: true),
+              ),
+        );
+      }
+    }
+
+    return result;
+  }
+
+  return original.copyWith(
+    dependencies: fixBounds(original.dependencies),
+    devDependencies: fixBounds(original.devDependencies),
   );
 }
 
@@ -107,4 +121,36 @@ VersionConstraint stripUpperBound(VersionConstraint constraint) {
   /// If it gets here, [constraint] is the empty version constraint, so we
   /// just return an empty version constraint.
   return VersionConstraint.empty;
+}
+
+/// Returns a somewhat normalized version the description of a dependency with a
+/// version constraint (what comes after the version name in a dependencies
+/// section) as a json-style object.
+///
+/// Will use just the constraint for dependencies hosted at the default host.
+///
+/// Relative paths will be relative to the directory of [receivingPackage].
+///
+/// The syntax used for hosted will depend on the language version of
+/// [receivingPackage].
+Object pubspecDescription(
+  PackageRange range,
+  SystemCache cache,
+  Package receivingPackage,
+) {
+  final description = range.description;
+
+  final constraint = range.constraint;
+  if (description is HostedDescription &&
+      description.url == cache.hosted.defaultUrl) {
+    return constraint.toString();
+  } else {
+    return {
+      range.source.name: description.serializeForPubspec(
+        containingDir: receivingPackage.dir,
+        languageVersion: receivingPackage.pubspec.languageVersion,
+      ),
+      if (!constraint.isAny) 'version': constraint.toString(),
+    };
+  }
 }

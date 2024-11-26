@@ -13,9 +13,9 @@ import '../test_pub.dart';
 // Prefer using expectValidation.
 Future<void> expectValidationDeprecated(
   ValidatorCreator fn, {
-  hints,
-  warnings,
-  errors,
+  Object? hints,
+  Object? warnings,
+  Object? errors,
   int? size,
 }) async {
   final validator = await validatePackage(fn, size);
@@ -25,14 +25,14 @@ Future<void> expectValidationDeprecated(
 }
 
 Future<void> expectValidation({
-  error,
+  Object? message,
   int exitCode = 0,
   Map<String, String> environment = const {},
   List<String>? extraArgs,
   String? workingDirectory,
 }) async {
   await runPub(
-    error: error ?? contains('Package has 0 warnings.'),
+    output: message ?? contains('Package has 0 warnings.'),
     args: ['publish', '--dry-run', ...?extraArgs],
     // workingDirectory: d.path(appPath),
     exitCode: exitCode,
@@ -42,28 +42,32 @@ Future<void> expectValidation({
 }
 
 Future<void> expectValidationWarning(
-  error, {
+  String error, {
   int count = 1,
   Map<String, String> environment = const {},
 }) async {
-  if (error is String) error = contains(error);
   final s = count == 1 ? '' : 's';
   await expectValidation(
-    error: allOf([error, contains('Package has $count warning$s')]),
+    message: allOf([
+      contains(error),
+      contains('Package has $count warning$s'),
+    ]),
     exitCode: DATA,
     environment: environment,
   );
 }
 
 Future<void> expectValidationHint(
-  hint, {
+  String hint, {
   int count = 1,
   Map<String, String> environment = const {},
 }) async {
-  if (hint is String) hint = contains(hint);
   final s = count == 1 ? '' : 's';
   await expectValidation(
-    error: allOf([hint, contains('and $count hint$s')]),
+    message: allOf([
+      contains(hint),
+      contains('and $count hint$s'),
+    ]),
     environment: environment,
   );
 }
@@ -73,9 +77,9 @@ Future<void> expectValidationError(
   Map<String, String> environment = const {},
 }) async {
   await expectValidation(
-    error: allOf([
+    message: allOf([
       contains(text),
-      contains('Package validation found the following error:')
+      contains('Package validation found the following error:'),
     ]),
     exitCode: DATA,
     environment: environment,

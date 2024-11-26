@@ -19,7 +19,7 @@ void main() {
         d.appPubspec(dependencies: {'lib': '1.0.0'}),
         d.dir('lib'),
         d.pubspecOverrides({
-          'dependency_overrides': {'lib': '2.0.0'}
+          'dependency_overrides': {'lib': '2.0.0'},
         }),
       ]).create();
 
@@ -43,7 +43,7 @@ void main() {
             path: '.',
             languageVersion: '3.0',
           ),
-        ])
+        ]),
       ]).validate();
     });
   });
@@ -60,13 +60,13 @@ void main() {
       d.appPubspec(
         dependencies: {'lib': '1.0.0', 'foo': '1.0.0'},
         extras: {
-          'dependency_overrides': {'lib': '2.0.0', 'foo': '2.0.0'}
+          'dependency_overrides': {'lib': '2.0.0', 'foo': '2.0.0'},
         },
       ),
       d.dir('lib'),
       // empty overrides file:
       d.pubspecOverrides({
-        'dependency_overrides': {'lib': '3.0.0'}
+        'dependency_overrides': {'lib': '3.0.0'},
       }),
     ]).create();
 
@@ -79,8 +79,8 @@ void main() {
     );
   });
   test(
-      "An empty pubspec_overrides.yaml doesn't shadow overrides from pubspec.yaml",
-      () async {
+      "An empty pubspec_overrides.yaml doesn't shadow overrides "
+      'from pubspec.yaml', () async {
     await servePackages()
       ..serve('lib', '1.0.0')
       ..serve('lib', '2.0.0');
@@ -91,7 +91,7 @@ void main() {
           'lib': '1.0.0',
         },
         extras: {
-          'dependency_overrides': {'lib': '2.0.0'}
+          'dependency_overrides': {'lib': '2.0.0'},
         },
       ),
       d.dir('lib'),

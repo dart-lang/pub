@@ -38,13 +38,13 @@ ${Platform.resolvedExecutable} %*
         ],
       ).create();
 
-      var process = await Process.run(
+      final process = await Process.run(
         p.join(d.sandbox, cachePath, 'bin', 'script.bat'),
         ['hi'],
         environment: {
           'PATH': [
             p.join(d.sandbox, 'bin'),
-            p.dirname(Platform.resolvedExecutable)
+            p.dirname(Platform.resolvedExecutable),
           ].join(';'),
           ...getPubTestEnvironment(),
         },

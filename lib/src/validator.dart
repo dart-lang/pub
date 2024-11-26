@@ -10,18 +10,22 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'entrypoint.dart';
 import 'log.dart' as log;
+import 'package.dart';
 import 'sdk.dart';
+import 'system_cache.dart';
 import 'validator/analyze.dart';
 import 'validator/changelog.dart';
 import 'validator/compiled_dartdoc.dart';
 import 'validator/dependency.dart';
 import 'validator/dependency_override.dart';
 import 'validator/deprecated_fields.dart';
+import 'validator/devtools_extension.dart';
 import 'validator/directory.dart';
 import 'validator/executable.dart';
 import 'validator/file_case.dart';
 import 'validator/flutter_constraint.dart';
 import 'validator/flutter_plugin_format.dart';
+import 'validator/git_status.dart';
 import 'validator/gitignore.dart';
 import 'validator/leak_detection.dart';
 import 'validator/license.dart';
@@ -59,7 +63,8 @@ abstract class Validator {
   final hints = <String>[];
 
   late ValidationContext context;
-  Entrypoint get entrypoint => context.entrypoint;
+  Package get package => context.entrypoint.workPackage;
+  SystemCache get cache => context.entrypoint.cache;
   int get packageSize => context.packageSize;
   Uri get serverUrl => context.serverUrl;
   List<String> get files => context.files;
@@ -74,7 +79,7 @@ abstract class Validator {
   void validateSdkConstraint(Version firstSdkVersion, String message) {
     // If the SDK constraint disallowed all versions before [firstSdkVersion],
     // no error is necessary.
-    if (entrypoint.root.pubspec.dartSdkConstraint.originalConstraint
+    if (package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(VersionRange(max: firstSdkVersion))
         .isEmpty) {
       return;
@@ -88,7 +93,7 @@ abstract class Validator {
       firstSdkVersion = firstSdkVersion.nextPatch;
     }
 
-    var allowedSdks = VersionRange(
+    final allowedSdks = VersionRange(
       min: firstSdkVersion,
       includeMin: true,
       max: firstSdkVersion.isPreRelease
@@ -96,8 +101,7 @@ abstract class Validator {
           : firstSdkVersion.nextBreaking,
     );
 
-    var newSdkConstraint = entrypoint
-        .root.pubspec.dartSdkConstraint.originalConstraint
+    var newSdkConstraint = package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
@@ -108,7 +112,8 @@ abstract class Validator {
         '  sdk: "${newSdkConstraint.asCompatibleWithIfPossible()}"');
   }
 
-  /// Returns whether [version1] and [version2] are pre-releases of the same version.
+  /// Returns whether [version1] and [version2] are pre-releases of the same
+  /// version.
   bool _isSamePreRelease(Version version1, Version version2) =>
       version1.isPreRelease &&
       version2.isPreRelease &&
@@ -128,17 +133,18 @@ abstract class Validator {
   /// upload to the server.
   static Future<void> runAll(
     Entrypoint entrypoint,
-    Future<int> packageSize,
+    int packageSize,
     Uri serverUrl,
     List<String> files, {
     required List<String> hints,
     required List<String> warnings,
     required List<String> errors,
   }) async {
-    var validators = [
+    final validators = [
       FileCaseValidator(),
       AnalyzeValidator(),
       GitignoreValidator(),
+      GitStatusValidator(),
       PubspecValidator(),
       LicenseValidator(),
       NameValidator(),
@@ -159,11 +165,12 @@ abstract class Validator {
       PubspecTypoValidator(),
       LeakDetectionValidator(),
       SizeValidator(),
+      DevtoolsExtensionValidator(),
     ];
 
     final context = ValidationContext(
       entrypoint,
-      await packageSize,
+      packageSize,
       serverUrl,
       files,
     );
@@ -178,48 +185,40 @@ abstract class Validator {
           .addAll([for (final validator in validators) ...validator.warnings]);
       errors.addAll([for (final validator in validators) ...validator.errors]);
 
-      if (errors.isNotEmpty) {
-        final s = errors.length > 1 ? 's' : '';
-        log.error('Package validation found the following error$s:');
-        for (var error in errors) {
-          log.error("* ${error.split('\n').join('\n  ')}");
-        }
-        log.error('');
-      }
+      String presentDiagnostics(List<String> diagnostics) => diagnostics
+          .map((diagnostic) => "* ${diagnostic.split('\n').join('\n  ')}\n")
+          .join('\n');
+      final sections = <String>[];
 
-      if (warnings.isNotEmpty) {
-        final s = warnings.length > 1 ? 's' : '';
-        log.warning(
-          'Package validation found the following potential issue$s:',
-        );
-        for (var warning in warnings) {
-          log.warning("* ${warning.split('\n').join('\n  ')}");
+      for (final (kind, diagnostics) in [
+        ('error', errors),
+        ('potential issue', warnings),
+        ('hint', hints),
+      ]) {
+        if (diagnostics.isNotEmpty) {
+          final s = diagnostics.length > 1 ? 's' : '';
+          final count = diagnostics.length > 1 ? '${diagnostics.length} ' : '';
+          sections.add(
+            'Package validation found the following $count$kind$s:\n'
+            '${presentDiagnostics(diagnostics)}',
+          );
         }
-        log.warning('');
       }
-
-      if (hints.isNotEmpty) {
-        final s = hints.length > 1 ? 's' : '';
-        log.warning(
-          'Package validation found the following hint$s:',
-        );
-        for (var hint in hints) {
-          log.warning("* ${hint.split('\n').join('\n  ')}");
-        }
-        log.warning('');
-      }
+      log.message(sections.join('\n'));
     });
   }
 
-  /// Returns the [files] that are inside [dir] (relative to the package
-  /// entrypoint).
+  /// Returns the [files] that are [path] or inside [path] (relative to the
+  /// package entrypoint).
   // TODO(sigurdm): Consider moving this to a more central location.
-  List<String> filesBeneath(String dir, {required bool recursive}) {
-    final base = p.canonicalize(p.join(entrypoint.rootDir, dir));
+  List<String> filesBeneath(String path, {required bool recursive}) {
+    final base = p.canonicalize(p.join(package.dir, path));
     return files
         .where(
           recursive
-              ? (file) => p.canonicalize(file).startsWith(base)
+              ? (file) =>
+                  p.isWithin(base, p.canonicalize(file)) ||
+                  p.canonicalize(file) == base
               : (file) => p.canonicalize(p.dirname(file)) == base,
         )
         .toList();

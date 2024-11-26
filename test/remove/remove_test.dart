@@ -43,7 +43,7 @@ dev_dependencies:
 
 environment:
   sdk: '$defaultSdkConstraint'
-''')
+'''),
     ]).create();
 
     await pubRemove(args: ['foo']);
@@ -56,8 +56,8 @@ environment:
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dev_dependencies': {'bar': '2.0.0'}
-      })
+        'dev_dependencies': {'bar': '2.0.0'},
+      }),
     ]).validate();
   });
 
@@ -72,7 +72,7 @@ environment:
       args: ['foo', '--dry-run'],
       output: allOf([
         contains('These packages are no longer being depended on:'),
-        contains('- foo 1.2.3')
+        contains('- foo 1.2.3'),
       ]),
     );
 
@@ -91,7 +91,7 @@ environment:
 
   test('prints a warning if the dependencies map does not exist', () async {
     await d.dir(appPath, [
-      d.pubspec({'name': 'myapp'})
+      d.pubspec({'name': 'myapp'}),
     ]).create();
     await pubRemove(
       args: ['foo'],
@@ -99,7 +99,7 @@ environment:
     );
 
     await d.dir(appPath, [
-      d.pubspec({'name': 'myapp'})
+      d.pubspec({'name': 'myapp'}),
     ]).validate();
   });
 
@@ -110,8 +110,8 @@ environment:
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dev_dependencies': {'foo': '1.2.3'}
-      })
+        'dev_dependencies': {'foo': '1.2.3'},
+      }),
     ]).create();
     await pubGet();
 
@@ -121,7 +121,7 @@ environment:
     await d.appPackageConfigFile([]).validate();
 
     await d.dir(appPath, [
-      d.pubspec({'name': 'myapp'})
+      d.pubspec({'name': 'myapp'}),
     ]).validate();
   });
 
@@ -137,8 +137,8 @@ environment:
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'bar': '>=2.3.4', 'jfj': '0.2.1'},
-        'dev_dependencies': {'foo': '^1.2.3', 'baz': '3.2.1'}
-      })
+        'dev_dependencies': {'foo': '^1.2.3', 'baz': '3.2.1'},
+      }),
     ]).create();
     await pubGet();
 
@@ -154,7 +154,7 @@ environment:
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'jfj': '0.2.1'},
-      })
+      }),
     ]).validate();
   });
 
@@ -164,16 +164,16 @@ environment:
 
     ensureGit();
     final repo = d.git('foo.git', [
-      d.dir('subdir', [d.libPubspec('foo', '1.0.0'), d.libDir('foo', '1.0.0')])
+      d.dir('subdir', [d.libPubspec('foo', '1.0.0'), d.libDir('foo', '1.0.0')]),
     ]);
     await repo.create();
 
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'path': 'subdir'}
+          'git': {'url': '../foo.git', 'path': 'subdir'},
         },
-        'bar': '1.2.3'
+        'bar': '1.2.3',
       },
     ).create();
 
@@ -196,7 +196,7 @@ environment:
     await d.appDir(
       dependencies: {
         'foo': {'path': '../foo'},
-        'bar': '1.2.3'
+        'bar': '1.2.3',
       },
     ).create();
 
@@ -213,16 +213,16 @@ environment:
     final server = await servePackages();
     server.serve('bar', '2.0.1');
 
-    var custom = await startPackageServer();
+    final custom = await startPackageServer();
     custom.serve('foo', '1.2.3');
 
     await d.appDir(
       dependencies: {
         'foo': {
           'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${custom.port}'}
+          'hosted': {'name': 'foo', 'url': 'http://localhost:${custom.port}'},
         },
-        'bar': '2.0.1'
+        'bar': '2.0.1',
       },
     ).create();
 
@@ -246,8 +246,8 @@ environment:
         'name': 'myapp',
         'dependencies': {'foo': '^1.0.0'},
         'dev_dependencies': {'bar': '^2.0.0'},
-        'dependency_overrides': {'bar': '1.0.0'}
-      })
+        'dependency_overrides': {'bar': '1.0.0'},
+      }),
     ]).create();
 
     await pubGet();
@@ -298,7 +298,7 @@ environment:
         contains('# comment B'),
         contains('# comment C'),
         contains('# comment D'),
-        contains('# comment E')
+        contains('# comment E'),
       ]),
     );
   });
@@ -311,8 +311,8 @@ environment:
       d.pubspec({
         'name': 'myapp',
         'dependencies': {'bar': '>=2.3.4'},
-        'dev_dependencies': {'foo': '^1.2.3'}
-      })
+        'dev_dependencies': {'foo': '^1.2.3'},
+      }),
     ]).create();
     await pubGet();
 
@@ -323,7 +323,7 @@ environment:
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-      })
+      }),
     ]).validate();
   });
 }

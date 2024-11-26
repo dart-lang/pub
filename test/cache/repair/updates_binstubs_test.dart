@@ -24,20 +24,20 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       },
       contents: [
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir('bin', [d.file(binStubName('foo-script'), _outdatedBinstub)])
+      d.dir('bin', [d.file(binStubName('foo-script'), _outdatedBinstub)]),
     ]).create();
 
     // Repair them.
@@ -46,6 +46,7 @@ void main() {
       output: '''
           Reinstalled 1 package.
           Reactivating foo 1.0.0...
+          Downloading packages...
           Building package executables...
           Built foo:script.
           Installed executable foo-script.
@@ -58,8 +59,8 @@ void main() {
         d.file(
           binStubName('foo-script'),
           contains('This file was created by pub v3.1.2+3'),
-        )
-      ])
+        ),
+      ]),
     ]).validate();
   });
 }

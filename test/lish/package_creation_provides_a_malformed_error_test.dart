@@ -16,13 +16,13 @@ void main() {
     await servePackages();
     await d.validPackage().create();
     await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
     handleUploadForm(globalServer);
     handleUpload(globalServer);
 
-    var body = {'error': 'Your package was too boring.'};
+    final body = {'error': 'Your package was too boring.'};
     globalServer.expect('GET', '/create', (request) {
       return shelf.Response.notFound(jsonEncode(body));
     });

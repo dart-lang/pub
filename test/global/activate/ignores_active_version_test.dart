@@ -18,7 +18,7 @@ void main() {
         'foo',
         '1.3.0',
         contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')])
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
         ],
       );
 
@@ -31,6 +31,7 @@ void main() {
       output: '''
         Package foo is currently active at version 1.2.3.
         Resolving dependencies...
+        Downloading packages...
         > foo 1.3.0 (was 1.2.3)
         Building package executables...
         Built foo:foo.

@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
 
 import 'package:test/test.dart';
 
@@ -21,8 +21,8 @@ void main() {
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'foo': '>2.0.0'},
-          'dependency_overrides': {'foo': '<3.0.0'}
-        })
+          'dependency_overrides': {'foo': '<3.0.0'},
+        }),
       ]).create();
 
       await pubCommand(command);
@@ -39,8 +39,8 @@ void main() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dependency_overrides': {'foo': 'any'}
-        })
+          'dependency_overrides': {'foo': 'any'},
+        }),
       ]).create();
 
       await pubCommand(command);
@@ -59,7 +59,7 @@ void main() {
           'bar',
           '1.0.0',
           pubspec: {
-            'dependencies': {'foo': '5.0.0-nonexistent'}
+            'dependencies': {'foo': '5.0.0-nonexistent'},
           },
         );
 
@@ -67,8 +67,8 @@ void main() {
         d.pubspec({
           'name': 'myapp',
           'dependencies': {'bar': 'any'},
-          'dependency_overrides': {'foo': '<3.0.0'}
-        })
+          'dependency_overrides': {'foo': '<3.0.0'},
+        }),
       ]).create();
 
       await pubCommand(command);
@@ -85,15 +85,15 @@ void main() {
         'foo',
         '1.0.0',
         pubspec: {
-          'environment': {'sdk': '5.6.7-fblthp'}
+          'environment': {'sdk': '5.6.7-fblthp'},
         },
       );
 
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dependency_overrides': {'foo': 'any'}
-        })
+          'dependency_overrides': {'foo': 'any'},
+        }),
       ]).create();
 
       await pubCommand(command);
@@ -116,12 +116,12 @@ void main() {
           'dependency_overrides': {
             'foo': 'any',
             'bar': 'any',
-            'baz': {'path': '../baz'}
-          }
-        })
+            'baz': {'path': '../baz'},
+          },
+        }),
       ]).create();
 
-      var bazPath = path.join('..', 'baz');
+      final bazPath = p.join('..', 'baz');
 
       await runPub(
         args: [command.name],

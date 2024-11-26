@@ -24,16 +24,16 @@ void main() {
     test('has a non-primary readme with invalid utf-8', () async {
       await d.validPackage().create();
       await d.dir(appPath, [
-        d.file('README.x.y.z', [192])
+        d.file('README.x.y.z', [192]),
       ]).create();
       await expectValidationDeprecated(readme);
     });
 
     test('has a gitignored README with invalid utf-8', () async {
       await d.validPackage().create();
-      var repo = d.git(appPath, [
+      final repo = d.git(appPath, [
         d.file('README', [192]),
-        d.file('.gitignore', 'README')
+        d.file('.gitignore', 'README'),
       ]);
       await repo.create();
       await expectValidationDeprecated(readme);
@@ -57,7 +57,7 @@ void main() {
     test('has a primary README with invalid utf-8', () async {
       await d.validPackage().create();
       await d.dir(appPath, [
-        d.file('README', [192])
+        d.file('README', [192]),
       ]).create();
       await expectValidationDeprecated(readme, warnings: isNotEmpty);
     });

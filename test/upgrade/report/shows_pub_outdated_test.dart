@@ -35,7 +35,7 @@ void main() {
         'multiple_newer_unstable': '1.0.0',
         'no_newer': '1.0.0',
         'one_newer_unstable': '1.0.0',
-        'one_newer_stable': '1.0.0'
+        'one_newer_stable': '1.0.0',
       },
     ).create();
 
@@ -68,7 +68,7 @@ Try `flutter pub outdated` for more information.$''',
         'multiple_newer_unstable': '1.0.0',
         'no_newer': '1.0.0',
         'one_newer_unstable': '1.0.0',
-        'one_newer_stable': '1.0.0'
+        'one_newer_stable': '1.0.0',
       },
     ).create();
 
@@ -90,7 +90,7 @@ Try `dart pub outdated` for more information.$''',
         'multiple_newer_unstable': '1.0.0',
         'no_newer': '1.0.0',
         'one_newer_unstable': '1.0.0',
-        'one_newer_stable': '1.0.0'
+        'one_newer_stable': '1.0.0',
       },
     ).create();
 
@@ -112,7 +112,7 @@ Try `dart pub outdated` for more information.$''',
         'multiple_newer_unstable': '1.0.1-unstable.2',
         'no_newer': '1.0.0',
         'one_newer_unstable': '1.0.1-unstable.1',
-        'one_newer_stable': '1.0.0'
+        'one_newer_stable': '1.0.0',
       },
     ).create();
 

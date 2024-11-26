@@ -8,12 +8,15 @@ import '../exceptions.dart';
 import '../source/hosted.dart';
 import '../utils.dart';
 
-/// Token is a structure for storing authentication credentials for third-party
-/// pub registries. A token holds registry [url], credential [kind] and [token]
-/// itself.
+/// [Credential] is a structure for storing authentication credentials for
+/// third-party pub registries.
 ///
-/// Token could be serialized into and from JSON format structured like
-/// this:
+/// A [Credential] holds a registry [url], and either the [token] itself or the
+/// name of an environment variable [env] for looking up the token when
+/// authenticating.
+///
+/// For storing in the pub-tokens.json configuration, a [Credential] can be
+/// serialized into and from JSON format structured like this:
 ///
 /// ```json
 /// {
@@ -21,8 +24,19 @@ import '../utils.dart';
 ///   "token": "gjrjo7Tm2F0u64cTsECDq4jBNZYhco"
 /// }
 /// ```
+///
+/// or
+///
+/// ```json
+/// {
+///   "url": "https://example.com/",
+///   "env": "TOKEN_ENV_VAR"
+/// }
+/// ```
+///
+/// Unknown JSON properties will be preserved when reencoding.
 class Credential {
-  /// Internal constructor that's only used by [fromJson].
+  /// Internal constructor that's only used by [Credential.fromJson].
   Credential._internal({
     required this.url,
     required this.unknownFields,
@@ -46,7 +60,7 @@ class Credential {
   /// Throws [FormatException] if [json] is not a valid [Credential].
   factory Credential.fromJson(Map<String, dynamic> json) {
     if (json['url'] is! String) {
-      throw FormatException('Url is not provided for the credential');
+      throw const FormatException('Url is not provided for the credential');
     }
 
     final hostedUrl = validateAndNormalizeHostedUrl(json['url'] as String);
@@ -87,9 +101,9 @@ class Credential {
   /// Environment variable name that stores token value
   final String? env;
 
-  /// Unknown fields found in pub-tokens.json. The fields might be created by the
-  /// future version of pub tool. We don't want to override them when using the
-  /// old SDK.
+  /// Unknown fields found in pub-tokens.json. The fields might be created by
+  /// the future version of pub tool. We don't want to override them when using
+  /// the old SDK.
   final Map<String, dynamic> unknownFields;
 
   /// Serializes [Credential] into json format.

@@ -209,8 +209,8 @@ void main() {
         () async {
           await isBeingProcessed['a']!.future;
           await isBeingProcessed['b']!.future;
-          // This will put 'c' in front of the queue, but in a zone with zoneValue
-          // bound to S.
+          // This will put 'c' in front of the queue, but in a zone with
+          // zoneValue bound to S.
           final f = expectLater(scheduler.schedule('c'), completion('S'));
           completers['a']!.complete();
           completers['b']!.complete();

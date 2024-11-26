@@ -30,12 +30,12 @@ class Progress {
 
   /// Creates a new progress indicator.
   ///
-  /// If [fine] is passed, this will log progress messages on [log.Level.FINE]
-  /// as opposed to [log.Level.MESSAGE].
+  /// If [fine] is passed, this will log progress messages on [log.Level.fine]
+  /// as opposed to [log.Level.message].
   Progress(this._message, {bool fine = false}) {
     _stopwatch.start();
 
-    var level = fine ? log.Level.fine : log.Level.message;
+    final level = fine ? log.Level.fine : log.Level.message;
 
     // The animation is only shown when it would be meaningful to a human.
     // That means we're writing a visible message to a TTY at normal log levels
@@ -50,7 +50,7 @@ class Progress {
       return;
     }
 
-    _timer = Timer.periodic(Duration(milliseconds: 100), (_) {
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       _update();
     });
 
@@ -121,7 +121,7 @@ class Progress {
     // rather than using `\r` to erase the entire line ensures that we don't
     // spam progress lines if they're wider than the terminal width.
     stdout.write('\b' * _timeLength);
-    var time = _time;
+    final time = _time;
     _timeLength = time.length;
     stdout.write(log.gray(time));
   }

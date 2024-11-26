@@ -15,13 +15,13 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'dev_dependencies': {'bar': '1.0.0'}
+        'dev_dependencies': {'bar': '1.0.0'},
       },
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var pub = await pubRun(global: true, args: ['foo:script']);
+    final pub = await pubRun(global: true, args: ['foo:script']);
     expect(
       pub.stderr,
       emits(

@@ -18,16 +18,16 @@ void main() {
       d.dir('packages', [
         d.dir('foo', [
           d.libDir('foo', 'foo 0.0.1'),
-          d.libPubspec('foo', '0.0.1', deps: {'bar': 'any'})
-        ])
+          d.libPubspec('foo', '0.0.1', deps: {'bar': 'any'}),
+        ]),
       ]),
       d.dir('bin/cache/pkg', [
         d.dir(
           'baz',
           [d.libDir('baz', 'foo 0.0.1'), d.libPubspec('baz', '0.0.1')],
-        )
+        ),
       ]),
-      d.file('version', '1.2.3')
+      d.flutterVersion('1.2.3'),
     ]).create();
   });
 
@@ -42,18 +42,22 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'sdk': 'flutter'}
-        }
+          'foo': {'sdk': 'flutter'},
+        },
       }),
     ]).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-        name: 'foo',
-        path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-      ),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackageConfigFile(
+      [
+        d.packageConfigEntry(
+          name: 'foo',
+          path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
+        ),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      ],
+      flutterRoot: p.join(d.sandbox, 'flutter'),
+      flutterVersion: '1.2.3',
+    ).validate();
   });
 
   test(
@@ -69,17 +73,21 @@ void main() {
       d.pubspec({
         'name': 'myapp',
         'dependencies': {
-          'foo': {'sdk': 'flutter', 'version': '0.0.1'}
-        }
+          'foo': {'sdk': 'flutter', 'version': '0.0.1'},
+        },
       }),
     ]).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-        name: 'foo',
-        path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
-      ),
-      d.packageConfigEntry(name: 'bar', version: '1.0.0'),
-    ]).validate();
+    await d.appPackageConfigFile(
+      [
+        d.packageConfigEntry(
+          name: 'foo',
+          path: p.join(d.sandbox, 'flutter', 'packages', 'foo'),
+        ),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
+      ],
+      flutterRoot: p.join(d.sandbox, 'flutter'),
+      flutterVersion: '1.2.3',
+    ).validate();
   });
 
   test('adds an SDK dependency from bin/cache/pkg', () async {
@@ -89,12 +97,16 @@ void main() {
       environment: {'FLUTTER_ROOT': p.join(d.sandbox, 'flutter')},
     );
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(
-        name: 'baz',
-        path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
-      )
-    ]).validate();
+    await d.appPackageConfigFile(
+      [
+        d.packageConfigEntry(
+          name: 'baz',
+          path: p.join(d.sandbox, 'flutter', 'bin', 'cache', 'pkg', 'baz'),
+        ),
+      ],
+      flutterRoot: p.join(d.sandbox, 'flutter'),
+      flutterVersion: '1.2.3',
+    ).validate();
   });
 
   test("fails if the version constraint doesn't match", () async {
@@ -113,7 +125,6 @@ void main() {
     await d.dir(appPath, [
       d.nothing('.dart_tool/package_config.json'),
       d.nothing('pubspec.lock'),
-      d.nothing('.packages'),
     ]).validate();
   });
 }

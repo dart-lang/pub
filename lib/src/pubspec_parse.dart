@@ -7,7 +7,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
-import 'utils.dart' show identifierRegExp, reservedWords;
+import 'utils.dart' show ExpectField, identifierRegExp;
 
 /// A regular expression matching allowed package names.
 ///
@@ -18,10 +18,12 @@ final packageNameRegExp =
     RegExp('^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$');
 
 /// Helper class for pubspec parsing to:
-/// - extract the fields and methods that are reusable outside of `pub` client, and
+/// - extract the fields and methods that are reusable outside of `pub` client,
+///   and
 /// - help null-safety migration a bit.
 ///
-/// This class should be eventually extracted to a separate library, or re-merged with `Pubspec`.
+/// This class should be eventually extracted to a separate library, or
+/// re-merged with `Pubspec`.
 abstract class PubspecBase {
   /// All pubspec fields.
   ///
@@ -36,34 +38,7 @@ abstract class PubspecBase {
         _version = version;
 
   /// The package's name.
-  String get name => _name ??= _lookupName();
-
-  String _lookupName() {
-    final name = fields['name'];
-    if (name == null) {
-      throw SourceSpanApplicationException(
-        'Missing the required "name" field.',
-        fields.span,
-      );
-    } else if (name is! String) {
-      throw SourceSpanApplicationException(
-        '"name" field must be a string.',
-        fields.nodes['name']?.span,
-      );
-    } else if (!packageNameRegExp.hasMatch(name)) {
-      throw SourceSpanApplicationException(
-        '"name" field must be a valid Dart identifier.',
-        fields.nodes['name']?.span,
-      );
-    } else if (reservedWords.contains(name)) {
-      throw SourceSpanApplicationException(
-        '"name" field may not be a Dart reserved word.',
-        fields.nodes['name']?.span,
-      );
-    }
-
-    return name;
-  }
+  String get name => _name ??= fields.expectPackageNameField();
 
   String? _name;
 
@@ -124,7 +99,7 @@ abstract class PubspecBase {
         _wrapFormatException('"publish_to" field', span, () {
           final url = Uri.parse(publishTo);
           if (url.scheme.isEmpty) {
-            throw FormatException('must be an absolute URL.');
+            throw const FormatException('must be an absolute URL.');
           }
         });
       }
@@ -138,39 +113,75 @@ abstract class PubspecBase {
   bool _parsedPublishTo = false;
   String? _publishTo;
 
+  /// The list of advisory IDs to be ignored when reporting security advisories
+  /// affecting dependencies.
+  Set<String> get ignoredAdvisories {
+    var advisoryIDs = _ignoredAdvisories;
+    if (advisoryIDs != null) {
+      return advisoryIDs;
+    }
+    advisoryIDs = <String>{};
+
+    Never ignoredAdvisoriesError(SourceSpan span) => _error(
+          '"ignored_advisories" field must be a list of advisory IDs',
+          span,
+        );
+
+    final ignoredAdvisoriesNode = fields.nodes['ignored_advisories'];
+    if (ignoredAdvisoriesNode == null) {
+      return _ignoredAdvisories = Set.unmodifiable(advisoryIDs);
+    }
+    if (ignoredAdvisoriesNode is! YamlList) {
+      ignoredAdvisoriesError(ignoredAdvisoriesNode.span);
+    }
+    for (final node in ignoredAdvisoriesNode.nodes) {
+      final value = node.value;
+      if (value is! String) {
+        ignoredAdvisoriesError(node.span);
+      }
+      advisoryIDs.add(value);
+    }
+
+    return _ignoredAdvisories = Set.unmodifiable(advisoryIDs);
+  }
+
+  Set<String>? _ignoredAdvisories;
+
   /// The list of patterns covering _false-positive secrets_ in the package.
   ///
   /// This is a list of git-ignore style patterns for files that should be
   /// ignored when trying to detect possible leaks of secrets during
   /// package publication.
   List<String> get falseSecrets {
-    if (_falseSecrets == null) {
-      final falseSecrets = <String>[];
-
-      // Throws a [PubspecException]
-      void falseSecretsError(SourceSpan span) => _error(
-            '"false_secrets" field must be a list of git-ignore style patterns',
-            span,
-          );
-
-      final falseSecretsNode = fields.nodes['false_secrets'];
-      if (falseSecretsNode != null) {
-        if (falseSecretsNode is YamlList) {
-          for (final node in falseSecretsNode.nodes) {
-            final value = node.value;
-            if (value is! String) {
-              falseSecretsError(node.span);
-            }
-            falseSecrets.add(value as String);
-          }
-        } else {
-          falseSecretsError(falseSecretsNode.span);
-        }
-      }
-
-      _falseSecrets = List.unmodifiable(falseSecrets);
+    var falseSecrets = _falseSecrets;
+    if (falseSecrets != null) {
+      return falseSecrets;
     }
-    return _falseSecrets!;
+    falseSecrets = <String>[];
+
+    // Throws a [PubspecException]
+    Never falseSecretsError(SourceSpan span) => _error(
+          '"false_secrets" field must be a list of git-ignore style patterns',
+          span,
+        );
+
+    final falseSecretsNode = fields.nodes['false_secrets'];
+    if (falseSecretsNode == null) {
+      return _falseSecrets = List.unmodifiable(falseSecrets);
+    }
+    if (falseSecretsNode is! YamlList) {
+      falseSecretsError(falseSecretsNode.span);
+    }
+
+    for (final node in falseSecretsNode.nodes) {
+      final value = node.value;
+      if (value is! String) {
+        falseSecretsError(node.span);
+      }
+      falseSecrets.add(value);
+    }
+
+    return _falseSecrets = List.unmodifiable(falseSecrets);
   }
 
   List<String>? _falseSecrets;
@@ -182,13 +193,13 @@ abstract class PubspecBase {
   /// that will be placed on the user's PATH. The value is the name of the
   /// .dart script (without extension) in the package's `bin` directory that
   /// should be run for that command. Both key and value must be "simple"
-  /// strings: alphanumerics, underscores and hypens only. If a value is
+  /// strings: alphanumerics, underscores and hyphens only. If a value is
   /// omitted, it is inferred to use the same name as the key.
   Map<String, String> get executables {
     if (_executables != null) return _executables!;
 
     _executables = {};
-    var yaml = fields['executables'];
+    final yaml = fields['executables'];
     if (yaml == null) return _executables!;
 
     if (yaml is! YamlMap) {
@@ -198,7 +209,7 @@ abstract class PubspecBase {
       );
     }
 
-    var yamlMap = yaml;
+    final yamlMap = yaml;
 
     yamlMap.nodes.forEach((key, value) {
       key = key as YamlNode;
@@ -219,11 +230,11 @@ abstract class PubspecBase {
       final valuePattern = RegExp(r'[/\\]');
       _executables![keyValue] = switch (value.value) {
         null => keyValue,
-        String s when valuePattern.hasMatch(s) => _error(
+        final String s when valuePattern.hasMatch(s) => _error(
             '"executables" values may not contain path separators.',
             value.span,
           ),
-        String s => s,
+        final String s => s,
         _ => _error('"executables" values must be strings or null.', value.span)
       };
     });

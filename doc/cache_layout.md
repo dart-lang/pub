@@ -14,14 +14,14 @@ cache conventions.
 ## Location
 
 The global default pub-cache is located at:
- * `$HOME/.pub_cache` on Linux and Mac OS,
+ * `$HOME/.pub_cache` on Linux and macOS,
  * `%LOCALAPPDATA%/Pub/Cache` on Windows.
 
 Prior to Flutter 3.8.0, the Flutter SDK declared `PUB_CACHE=$FLUTTER_ROOT/.pub_cache` overriding the default global pub-cache.
 
 The default location of the pub-cache can be overridden using the environment variable `PUB_CACHE`.
 
-For the remainder of this document we refer to the location of the pub-cache as `$PUB_CACHE`.```
+For the remainder of this document we refer to the location of the pub-cache as `$PUB_CACHE`.
 
 ## Layout
 
@@ -48,7 +48,7 @@ stored in a platform specific config dir:
 
 * On Linux `$XDG_CONFIG_HOME/dart/pub-credentials.json` if `$XDG_CONFIG_HOME` is
   defined, otherwise `$HOME/.config/dart/pub-credentials.json`
-* On Mac OS: `$HOME/Library/Application Support/dart/pub-credentials.json`
+* On macOS: `$HOME/Library/Application Support/dart/pub-credentials.json`
 * On Windows: `%APPDATA%/dart/pub-credentials.json`
 
 ### Hosted
@@ -207,7 +207,6 @@ $PUB_CACHE/global_packages/
     │   └── mono_repo.dart-3.0.0-55.0.dev.snapshot
     ├── .dart_tool/
     │   └── package_config.json
-    ├── incremental
     └── pubspec.lock
 ```
 
@@ -225,9 +224,6 @@ The `bin/` folder contains precompiled snapshots - these are compilations of
 activated package is used by several sdk-versions (TODO: This does have some
 limitations, and we should probably rethink this). A re-activation of the
 package will delete all the existing snapshots.
-
-The `incremental` is used while compiling them. (TODO: We should probably remove
-this after succesful compilation https://github.com/dart-lang/pub/issues/3896).
 
 For packages activated with `--source=path` the lockfile is special-cased to just point
 to the activated path, and `.dart_tool/package_config.json`, snapshots are

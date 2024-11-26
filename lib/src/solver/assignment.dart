@@ -4,6 +4,7 @@
 
 import '../package_name.dart';
 import 'incompatibility.dart';
+import 'partial_solution.dart';
 import 'term.dart';
 
 /// A term in a [PartialSolution] that tracks some additional metadata.
@@ -12,7 +13,7 @@ class Assignment extends Term {
   /// contains it.
   final int decisionLevel;
 
-  /// The index of this assignment in [PartialSolution.assignments].
+  /// The index of this assignment in [PartialSolution._assignments].
   final int index;
 
   /// The incompatibility that caused this assignment to be derived, or `null`
@@ -30,10 +31,10 @@ class Assignment extends Term {
   /// Creates a derivation: an assignment that's automatically propagated from
   /// incompatibilities.
   Assignment.derivation(
-    PackageRange package,
-    bool isPositive,
+    super.package,
+    super.isPositive,
     this.cause,
     this.decisionLevel,
     this.index,
-  ) : super(package, isPositive);
+  );
 }

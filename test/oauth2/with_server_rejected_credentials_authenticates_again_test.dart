@@ -17,7 +17,7 @@ void main() {
     await d.validPackage().create();
     await servePackages();
     await d.credentialsFile(globalServer, 'access-token').create();
-    var pub = await startPublish(globalServer);
+    final pub = await startPublish(globalServer);
 
     await confirmPublish(pub);
 
@@ -25,11 +25,11 @@ void main() {
       return shelf.Response(
         401,
         body: jsonEncode({
-          'error': {'message': 'your token sucks'}
+          'error': {'message': 'your token sucks'},
         }),
         headers: {
           'www-authenticate': 'Bearer error="invalid_token",'
-              ' error_description="your token sucks"'
+              ' error_description="your token sucks"',
         },
       );
     });

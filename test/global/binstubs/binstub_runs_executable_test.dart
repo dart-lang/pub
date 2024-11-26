@@ -17,19 +17,19 @@ void main() {
       'foo',
       '1.0.0',
       pubspec: {
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       },
       contents: [
         d.dir(
           'bin',
           [d.file('script.dart', "main(args) => print('ok \$args');")],
-        )
+        ),
       ],
     );
 
     await runPub(args: ['global', 'activate', 'foo']);
 
-    var process = await TestProcess.start(
+    final process = await TestProcess.start(
       p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
       ['arg1', 'arg2'],
       environment: getEnvironment(),
@@ -44,20 +44,23 @@ void main() {
     await d.dir('foo', [
       d.pubspec({
         'name': 'foo',
-        'executables': {'foo-script': 'script'}
+        'executables': {'foo-script': 'script'},
       }),
-      d.dir('bin', [d.file('script.dart', "main(args) => print('ok \$args');")])
+      d.dir(
+        'bin',
+        [d.file('script.dart', "main(args) => print('ok \$args');")],
+      ),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    var process = await TestProcess.start(
+    final process = await TestProcess.start(
       p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
       ['arg1', 'arg2'],
       environment: getEnvironment(),
     );
 
-    expect(process.stdout, emits('ok [arg1, arg2]'));
+    expect(process.stdout, emitsThrough('ok [arg1, arg2]'));
     await process.shouldExit();
   });
 }
