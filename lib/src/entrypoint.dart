@@ -1342,15 +1342,15 @@ See https://dart.dev/go/sdk-constraint
   /// This is to avoid surprises if a package is turned into a workspace member
   /// but still has an old package config or lockfile.
   void _removeStrayLockAndConfigFiles() {
-    final visited = <String>{};
+    final visited = <String>{
+      // By adding this to visited we will never go above the workspaceRoot.dir.
+      p.canonicalize(workspaceRoot.dir),
+    };
     var deletedAny = false;
     for (final package in workspaceRoot.transitiveWorkspace) {
       if (package.pubspec.resolution == Resolution.workspace) {
         for (final dir in parentDirs(package.dir)) {
-          if (p.equals(dir, workspaceRoot.dir)) {
-            break;
-          }
-          if (!visited.add(dir)) {
+          if (!visited.add(p.canonicalize(dir))) {
             // No reason to delete from the same directory twice.
             break;
           }
@@ -1371,7 +1371,7 @@ See https://dart.dev/go/sdk-constraint
     }
     if (deletedAny) {
       log.warning(
-        'See https://dart.dev/go/workspaces-no-inbetween-packages for details.',
+        'See https://dart.dev/go/workspaces-stray-files for details.',
       );
     }
   }

@@ -509,17 +509,19 @@ Package `$override` at `${overriddenWorkspacePackage.presentationDir}` is overri
   }
 
   // Check for pubspec.yaml files between the root and any workspace package.
-  final visited = <String>{};
+  final visited = <String>{
+    // By adding this to visited we will never go above the workspaceRoot.dir.
+    p.canonicalize(root.dir),
+  };
   for (final package in root.transitiveWorkspace) {
     // Run through all parent directories until we meet another workspace
     // package.
     for (final dir in parentDirs(package.dir).skip(1)) {
-      // Stop
-      if (includedFrom.containsKey(p.canonicalize(dir)) ||
-          p.equals(dir, root.dir)) {
+      // Stop if we meet another package directory.
+      if (includedFrom.containsKey(p.canonicalize(dir))) {
         break;
       }
-      if (!visited.add(dir)) {
+      if (!visited.add(p.canonicalize(dir))) {
         // We have been here before.
         break;
       }
@@ -534,7 +536,7 @@ This blocks the resolution of the package at `${package.dir}`.
 
 Consider removing it.
 
-See https://dart.dev/go/workspaces-no-inbetween-packages for details.
+See https://dart.dev/go/workspaces-stray-files for details.
 ''');
       }
     }

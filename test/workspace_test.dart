@@ -912,7 +912,7 @@ foo:foomain''',
           '`.${s}pkgs$s.dart_tool${s}package_config.json`',
         ),
         contains(
-          'See https://dart.dev/go/workspaces-no-inbetween-packages for details.',
+          'See https://dart.dev/go/workspaces-stray-files for details.',
         ),
       ),
     );
