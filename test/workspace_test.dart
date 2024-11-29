@@ -836,7 +836,8 @@ foo:foomain''',
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'The file `./pkgs/pubspec.yaml` is located in a directory between the workspace root',
+        'The file `.${s}pkgs${s}pubspec.yaml` '
+        'is located in a directory between the workspace root',
       ),
     );
   });
@@ -900,13 +901,15 @@ foo:foomain''',
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       warning: allOf(
-        contains('Deleting old lock-file: `./pkgs/a/pubspec.lock'),
+        contains('Deleting old lock-file: `.${s}pkgs${s}a${s}pubspec.lock'),
         contains(
-          'Deleting old package config: `./pkgs/a/.dart_tool/package_config.json`',
+          'Deleting old package config: '
+          '`.${s}pkgs${s}a$s.dart_tool${s}package_config.json`',
         ),
-        contains('Deleting old lock-file: `./pkgs/pubspec.lock'),
+        contains('Deleting old lock-file: `.${s}pkgs${s}pubspec.lock'),
         contains(
-          'Deleting old package config: `./pkgs/.dart_tool/package_config.json`',
+          'Deleting old package config: '
+          '`.${s}pkgs$s.dart_tool${s}package_config.json`',
         ),
         contains(
           'See https://dart.dev/go/workspaces-no-inbetween-packages for details.',
