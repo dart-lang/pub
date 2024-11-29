@@ -435,9 +435,12 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
 /// * If a package name occurs twice.
 /// * If two packages in the workspace override the same package name.
 /// * A workspace package is overridden.
+/// * A pubspec not included in the workspace exists in a directory
+///   between the root and a workspace package.
 void validateWorkspace(Package root) {
   if (root.workspaceChildren.isEmpty) return;
 
+  /// Maps the `p.canonicalize`d dir of each workspace-child to its parent.
   final includedFrom = <String, String>{};
   final stack = [root];
 
@@ -500,6 +503,38 @@ Consider removing one of the overrides.
 Cannot override workspace packages.
 
 Package `$override` at `${overriddenWorkspacePackage.presentationDir}` is overridden in `${package.pubspecPath}`.
+''');
+      }
+    }
+  }
+
+  // Check for pubspec.yaml files between the root and any workspace package.
+  final visited = <String>{};
+  for (final package in root.transitiveWorkspace) {
+    // Run through all parent directories until we meet another workspace
+    // package.
+    for (final dir in parentDirs(package.dir).skip(1)) {
+      // Stop
+      if (includedFrom.containsKey(p.canonicalize(dir)) ||
+          p.equals(dir, root.dir)) {
+        break;
+      }
+      if (!visited.add(dir)) {
+        // We have been here before.
+        break;
+      }
+      final pubspecCandidate = p.join(dir, 'pubspec.yaml');
+      if (fileExists(pubspecCandidate)) {
+        fail('''
+The file `$pubspecCandidate` is located in a directory between the workspace root at
+`${root.dir}` and a workspace package at `${package.dir}`. But is not a member of the
+workspace.
+
+This blocks the resolution of the package at `${package.dir}`.
+
+Consider removing it.
+
+See https://dart.dev/go/workspaces-no-inbetween-packages for details.
 ''');
       }
     }

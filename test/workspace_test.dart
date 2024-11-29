@@ -809,7 +809,39 @@ foo:foomain''',
     );
   });
 
-  test('Removes lock files and package configs from workspace members',
+  test('Reports error if pubspec inside workspace is not part of the workspace',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/a/example'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        libPubspec('not_in_workspace', '1.0.0'),
+        dir(
+          'a',
+          [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            dir('example', [
+              libPubspec('example', '0.0.0', resolutionWorkspace: true),
+            ]),
+          ],
+        ),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: contains(
+        'The file `./pkgs/pubspec.yaml` is located in a directory between the workspace root',
+      ),
+    );
+  });
+
+  test('Removes lock files and package configs from inside the workspace',
       () async {
     await dir(appPath, [
       libPubspec(
@@ -865,7 +897,22 @@ foo:foomain''',
     createLockFileAndPackageConfig(pkgsDir);
     createLockFileAndPackageConfig(inside);
 
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      warning: allOf(
+        contains('Deleting old lock-file: `./pkgs/a/pubspec.lock'),
+        contains(
+          'Deleting old package config: `./pkgs/a/.dart_tool/package_config.json`',
+        ),
+        contains('Deleting old lock-file: `./pkgs/pubspec.lock'),
+        contains(
+          'Deleting old package config: `./pkgs/.dart_tool/package_config.json`',
+        ),
+        contains(
+          'See https://dart.dev/go/workspaces-no-inbetween-packages for details.',
+        ),
+      ),
+    );
 
     validateLockFileAndPackageConfig(
       outideWorkpace,

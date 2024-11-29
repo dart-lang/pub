@@ -1343,6 +1343,7 @@ See https://dart.dev/go/sdk-constraint
   /// but still has an old package config or lockfile.
   void _removeStrayLockAndConfigFiles() {
     final visited = <String>{};
+    var deletedAny = false;
     for (final package in workspaceRoot.transitiveWorkspace) {
       if (package.pubspec.resolution == Resolution.workspace) {
         for (final dir in parentDirs(package.dir)) {
@@ -1353,10 +1354,25 @@ See https://dart.dev/go/sdk-constraint
             // No reason to delete from the same directory twice.
             break;
           }
-          deleteEntry(p.join(dir, 'pubspec.lock'));
-          deleteEntry(p.join(dir, '.dart_tool', 'package_config.json'));
+          void deleteIfPresent(String path, String type) {
+            fileExists(path);
+            log.warning('Deleting old $type: `$path`.');
+            deleteEntry(path);
+            deletedAny = true;
+          }
+
+          deleteIfPresent(p.join(dir, 'pubspec.lock'), 'lock-file');
+          deleteIfPresent(
+            p.join(dir, '.dart_tool', 'package_config.json'),
+            'package config',
+          );
         }
       }
+    }
+    if (deletedAny) {
+      log.warning(
+        'See https://dart.dev/go/workspaces-no-inbetween-packages for details.',
+      );
     }
   }
 
