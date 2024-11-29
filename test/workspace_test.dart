@@ -901,10 +901,10 @@ foo:foomain''',
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       warning: allOf(
-        contains('Deleting old lock-file: `.${s}pkgs${s}a${s}pubspec.lock'),
+        contains('Deleting old lock-file: `.${s}pkgs/a${s}pubspec.lock'),
         contains(
           'Deleting old package config: '
-          '`.${s}pkgs${s}a$s.dart_tool${s}package_config.json`',
+          '`.${s}pkgs/a$s.dart_tool${s}package_config.json`',
         ),
         contains('Deleting old lock-file: `.${s}pkgs${s}pubspec.lock'),
         contains(
