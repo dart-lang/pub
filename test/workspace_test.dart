@@ -809,7 +809,40 @@ foo:foomain''',
     );
   });
 
-  test('Removes lock files and package configs from workspace members',
+  test('Reports error if pubspec inside workspace is not part of the workspace',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a', 'pkgs/a/example'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        libPubspec('not_in_workspace', '1.0.0'),
+        dir(
+          'a',
+          [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            dir('example', [
+              libPubspec('example', '0.0.0', resolutionWorkspace: true),
+            ]),
+          ],
+        ),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: contains(
+        'The file `.${s}pkgs${s}pubspec.yaml` '
+        'is located in a directory between the workspace root',
+      ),
+    );
+  });
+
+  test('Removes lock files and package configs from inside the workspace',
       () async {
     await dir(appPath, [
       libPubspec(
@@ -825,34 +858,75 @@ foo:foomain''',
           'a',
           [
             libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            dir('test_data', []),
           ],
         ),
       ]),
     ]).create();
+    // Directories outside the workspace should not be affected.
+    final outideWorkpace = sandbox;
+    // Directories of worksace packages should be cleaned.
     final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+    // Directories between workspace root and workspace packages should
+    // be cleaned.
     final pkgsDir = p.join(sandbox, appPath, 'pkgs');
-    final strayLockFile = File(p.join(aDir, 'pubspec.lock'));
-    final strayPackageConfig =
-        File(p.join(aDir, '.dart_tool', 'package_config.json'));
+    // Directories inside a workspace package should not be cleaned.
+    final inside = p.join(aDir, 'test_data');
 
-    final unmanagedLockFile = File(p.join(pkgsDir, 'pubspec.lock'));
-    final unmanagedPackageConfig =
-        File(p.join(pkgsDir, '.dart_tool', 'package_config.json'));
-    strayPackageConfig.createSync(recursive: true);
-    strayLockFile.createSync(recursive: true);
+    void createLockFileAndPackageConfig(String dir) {
+      File(p.join(dir, 'pubspec.lock')).createSync(recursive: true);
+      File(p.join(dir, '.dart_tool', 'package_config.json'))
+          .createSync(recursive: true);
+    }
 
-    unmanagedPackageConfig.createSync(recursive: true);
-    unmanagedLockFile.createSync(recursive: true);
+    void validateLockFileAndPackageConfig(
+      String dir,
+      FileSystemEntityType state,
+    ) {
+      expect(
+        File(p.join(dir, 'pubspec.lock')).statSync().type,
+        state,
+      );
+      expect(
+        File(p.join(dir, '.dart_tool', 'package_config.json')).statSync().type,
+        state,
+      );
+    }
 
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    createLockFileAndPackageConfig(sandbox);
+    createLockFileAndPackageConfig(aDir);
+    createLockFileAndPackageConfig(pkgsDir);
+    createLockFileAndPackageConfig(inside);
 
-    expect(strayLockFile.statSync().type, FileSystemEntityType.notFound);
-    expect(strayPackageConfig.statSync().type, FileSystemEntityType.notFound);
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      warning: allOf(
+        contains('Deleting old lock-file: `.${s}pkgs/a${s}pubspec.lock'),
+        contains(
+          'Deleting old package config: '
+          '`.${s}pkgs/a$s.dart_tool${s}package_config.json`',
+        ),
+        contains('Deleting old lock-file: `.${s}pkgs${s}pubspec.lock'),
+        contains(
+          'Deleting old package config: '
+          '`.${s}pkgs$s.dart_tool${s}package_config.json`',
+        ),
+        contains(
+          'See https://dart.dev/go/workspaces-stray-files for details.',
+        ),
+      ),
+    );
 
-    // We only delete stray files from directories that contain an actual
-    // package.
-    expect(unmanagedLockFile.statSync().type, FileSystemEntityType.file);
-    expect(unmanagedPackageConfig.statSync().type, FileSystemEntityType.file);
+    validateLockFileAndPackageConfig(
+      outideWorkpace,
+      FileSystemEntityType.file,
+    );
+    validateLockFileAndPackageConfig(aDir, FileSystemEntityType.notFound);
+    validateLockFileAndPackageConfig(pkgsDir, FileSystemEntityType.notFound);
+    validateLockFileAndPackageConfig(
+      inside,
+      FileSystemEntityType.file,
+    );
   });
 
   test('Reports error if workspace doesn\'t form a tree.', () async {
