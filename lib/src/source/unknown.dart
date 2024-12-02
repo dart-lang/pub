@@ -113,6 +113,9 @@ class UnknownDescription extends Description {
 
   @override
   int get hashCode => Object.hash(source.name, json.encode(description));
+
+  @override
+  bool get hasMultipleVersions => false;
 }
 
 class ResolvedUnknownDescription extends ResolvedDescription {

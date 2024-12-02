@@ -397,6 +397,7 @@ class DependencyServicesApplyCommand extends PubCommand {
         } else if (targetRevision != null &&
             (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
+
           final currentDescription = ref.description as GitDescription;
           final updatedRef = PackageRef(
             targetPackage,
@@ -405,6 +406,7 @@ class DependencyServicesApplyCommand extends PubCommand {
               path: currentDescription.path,
               ref: targetRevision,
               containingDir: directory,
+              tagPattern: currentDescription.tagPattern,
             ),
           );
           final versions = await cache.getVersions(updatedRef);

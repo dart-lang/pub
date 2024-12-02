@@ -72,6 +72,8 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   bool get supportsWorkspaces => this >= firstVersionWithWorkspaces;
 
+  bool get supportsTagPattern => this >= firstVersionWithTagPattern;
+
   /// Minimum language version at which short hosted syntax is supported.
   ///
   /// This allows `hosted` dependencies to be expressed as:
@@ -109,6 +111,7 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   static const firstVersionWithNullSafety = LanguageVersion(2, 12);
   static const firstVersionWithShorterHostedSyntax = LanguageVersion(2, 15);
   static const firstVersionWithWorkspaces = LanguageVersion(3, 5);
+  static const firstVersionWithTagPattern = LanguageVersion(3, 7);
 
   /// Transform language version to string that can be parsed with
   /// [LanguageVersion.parse].

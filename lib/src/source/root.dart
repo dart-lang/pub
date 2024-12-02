@@ -121,4 +121,7 @@ class RootDescription extends Description {
 
   @override
   int get hashCode => 'root'.hashCode;
+
+  @override
+  bool get hasMultipleVersions => false;
 }
