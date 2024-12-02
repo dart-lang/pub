@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: c57b02f47e021c9d7ced6d2e28824b315e0fd585578274bc4c2a5db0626f154a
+      sha256: "16e298750b6d0af7ce8a3ba7c18c69c3785d11b15ec83f6dcd0ad2a0009b3cab"
       url: "https://pub.dev"
     source: hosted
-    version: "75.0.0"
+    version: "76.0.0"
   _macros:
     dependency: transitive
     description: dart
@@ -18,10 +18,10 @@ packages:
     dependency: "direct main"
     description:
       name: analyzer
-      sha256: ef226c581b7cd875f734125b1b9928df3db08cc85ff87ce7d9be89a677aaee23
+      sha256: "1f14db053a8c23e260789e9b0980fa27f2680dd640932cae5e1137cce0e46e1e"
       url: "https://pub.dev"
     source: hosted
-    version: "6.10.0"
+    version: "6.11.0"
   args:
     dependency: "direct main"
     description:
