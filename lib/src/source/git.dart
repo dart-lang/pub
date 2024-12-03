@@ -38,7 +38,7 @@ class GitSource extends CachedSource {
     String name,
     Object? description, {
     Description? containingDescription,
-    LanguageVersion? languageVersion,
+    required LanguageVersion languageVersion,
   }) {
     String url;
     String? ref;
@@ -72,6 +72,16 @@ class GitSource extends CachedSource {
             'string.');
       }
       path = descriptionPath;
+
+      if (languageVersion.forbidsUnknownDescriptionKeys) {
+        for (final key in description.keys) {
+          if (!['url', 'ref', 'path'].contains(key)) {
+            throw FormatException(
+              'Unknown key "$key" in description.',
+            );
+          }
+        }
+      }
     }
 
     final containingDir = switch (containingDescription) {

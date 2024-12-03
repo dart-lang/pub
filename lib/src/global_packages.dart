@@ -13,6 +13,7 @@ import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'executable.dart' as exec;
 import 'io.dart';
+import 'language_version.dart';
 import 'lock_file.dart';
 import 'log.dart' as log;
 import 'package.dart';
@@ -114,6 +115,7 @@ class GlobalPackages {
           if (ref != null) 'ref': ref,
         },
         containingDescription: RootDescription(p.current),
+        languageVersion: LanguageVersion.fromVersion(sdk.version),
       );
     } on FormatException catch (e) {
       throw ApplicationException(e.message);
