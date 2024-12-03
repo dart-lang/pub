@@ -381,6 +381,15 @@ class HostedSource extends CachedSource {
     }
     final url = u ?? defaultUrl;
 
+    if (languageVersion.forbidsUnknownDescriptionKeys) {
+      for (final key in description.keys) {
+        if (!['url', 'name'].contains(key)) {
+          throw FormatException(
+            'Unknown key "$key" in description.',
+          );
+        }
+      }
+    }
     return HostedDescription(name, url as String);
   }
 

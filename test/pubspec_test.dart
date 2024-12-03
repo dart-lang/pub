@@ -1133,5 +1133,39 @@ name: 'foo'
         );
       });
     });
+    test(
+        'Throws after language 3.7 '
+        'if using unknown keys in dependency description', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: 3.7.0
+dependencies:
+  foo:
+    hosted:
+      name: 'foo'
+      url: https://pub.dev/
+      someOtherProperty: 'smile'
+''',
+        (pubspec) => pubspec.dependencies,
+        expectedContains: 'Unknown key "someOtherProperty" in description.',
+      );
+
+      expectPubspecException(
+        '''
+environment:
+  sdk: 3.7.0
+dependencies:
+  test:
+    git:
+      ref: 'v1.0.0'
+      url: https://github.com/dart-lang/test
+      path: 'pkgs/test'
+      someOtherProperty: 'smile'
+''',
+        (pubspec) => pubspec.dependencies,
+        expectedContains: 'Unknown key "someOtherProperty" in description.',
+      );
+    });
   });
 }
