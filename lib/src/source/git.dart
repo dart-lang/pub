@@ -402,12 +402,11 @@ class GitSource extends CachedSource {
       final path = description.path;
       await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
         if (!entryExists(revisionCachePath)) {
-          await _cloneViaTemp(
+          await _createWorktree(
             _repoCachePath(description, cache),
             revisionCachePath,
-            cache,
+            resolvedRef,
           );
-          await _checkOut(revisionCachePath, resolvedRef);
           _writePackageList(revisionCachePath, [path]);
           didUpdate = true;
         } else {
@@ -446,7 +445,7 @@ class GitSource extends CachedSource {
     final result = <RepairResult>[];
 
     final packages = listDir(rootDir)
-        .where((entry) => dirExists(p.join(entry, '.git')))
+        .where((entry) => entryExists(p.join(entry, '.git')))
         .expand((revisionCachePath) {
           return _readPackageList(revisionCachePath).map((relative) {
             // If we've already failed to load another package from this
@@ -571,7 +570,7 @@ class GitSource extends CachedSource {
     final path = _repoCachePath(description, cache);
     assert(!_updatedRepos.contains(path));
     try {
-      await _cloneViaTemp(description.url, path, cache, mirror: true);
+      await _clone(description.url, path, cache);
     } catch (_) {
       await _deleteGitRepoIfInvalid(path);
       rethrow;
@@ -591,7 +590,7 @@ class GitSource extends CachedSource {
   ) async {
     final path = _repoCachePath(description, cache);
     if (_updatedRepos.contains(path)) return false;
-    await git.run([_gitDirArg(path), 'fetch'], workingDir: path);
+    await git.run([_gitDirArg(path), 'fetch', 'origin'], workingDir: path);
     _updatedRepos.add(path);
     return true;
   }
@@ -623,15 +622,15 @@ class GitSource extends CachedSource {
     }
   }
 
-  /// Updates the package list file in [revisionCachePath] to include [path], if
-  /// necessary.
+  /// Updates the package list file in [revisionCachePath] to include [package],
+  /// if necessary.
   ///
   /// Returns `true` if it had to update anything.
-  bool _updatePackageList(String revisionCachePath, String path) {
+  bool _updatePackageList(String revisionCachePath, String package) {
     final packages = _readPackageList(revisionCachePath);
-    if (packages.contains(path)) return false;
+    if (packages.contains(package)) return false;
 
-    _writePackageList(revisionCachePath, packages..add(path));
+    _writePackageList(revisionCachePath, packages..add(package));
     return true;
   }
 
@@ -655,7 +654,7 @@ class GitSource extends CachedSource {
   /// The path in a revision cache repository in which we keep a list of the
   /// packages in the repository.
   String _packageListPath(String revisionCachePath) =>
-      p.join(revisionCachePath, '.git/pub-packages');
+      p.join(revisionCachePath, '.pub-packages');
 
   /// Runs "git rev-list" on [reference] in [path] and returns the first result.
   ///
@@ -679,37 +678,38 @@ class GitSource extends CachedSource {
     return output;
   }
 
-  /// Clones the repo at the URI [from] to the path [to] on the local
-  /// filesystem.
+  /// Makes a working tree of the repo at the path [from] at ref [ref] to the
+  /// path [to] on the local filesystem.
   ///
-  /// If [mirror] is true, creates a bare, mirrored clone. This doesn't check
-  /// out the working tree, but instead makes the repository a local mirror of
-  /// the remote repository. See the manpage for `git clone` for more
-  /// information.
-  Future<void> _clone(
-    String from,
-    String to, {
-    bool mirror = false,
-  }) async {
+  /// Also checks out any submodules.
+  Future<void> _createWorktree(String from, String to, String ref) async {
     // Git on Windows does not seem to automatically create the destination
     // directory.
     ensureDir(to);
-    final args = ['clone', if (mirror) '--mirror', from, to];
-
-    await git.run(args);
+    await git.run(
+      [
+        _gitDirArg(from),
+        'worktree', 'add',
+        // Checkout <branch> even if already checked out in other worktree.
+        // Should not be necessary, but cannot hurt either.
+        '--force',
+        to,
+        ref,
+      ],
+      workingDir: from,
+    );
   }
 
-  /// Like [_clone], but clones to a temporary directory (inside the [cache])
-  /// and moves
-  Future<void> _cloneViaTemp(
-    String from,
-    String to,
-    SystemCache cache, {
-    bool mirror = false,
-  }) async {
+  /// Clones git repository at url [from] to the path [to]
+  /// clones to a temporary directory (inside the [cache])
+  /// and moves it to [to] as an atomic operation.
+  Future<void> _clone(String from, String to, SystemCache cache) async {
     final tempDir = cache.createTempDir();
     try {
-      await _clone(from, tempDir, mirror: mirror);
+      // Git on Windows does not seem to automatically create the destination
+      // directory.
+      ensureDir(tempDir);
+      await git.run(['clone', '--mirror', from, tempDir]);
     } catch (_) {
       deleteEntry(tempDir);
       rethrow;
@@ -721,12 +721,6 @@ class GitSource extends CachedSource {
     // another pub process has installed the same package version while we
     // cloned. In that case [tryRenameDir] will delete the folder for us.
     tryRenameDir(tempDir, to);
-  }
-
-  /// Checks out the reference [ref] in [repoPath].
-  Future<void> _checkOut(String repoPath, String ref) {
-    return git
-        .run(['checkout', ref], workingDir: repoPath).then((result) => null);
   }
 
   String _revisionCachePath(PackageId id, SystemCache cache) => p.join(
