@@ -101,7 +101,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   sha256: $SHA256
 [E]    |   url: "http://localhost:$PORT"
 [E]    |   source: hosted
-[E]    |   version: "1.0.0"
+[E]    |   version: 1.0.0
 [E]    | sdks:
 [E]    |   dart: ">=3.0.2 <4.0.0"
 [E] IO  : Writing $N characters to text file .dart_tool/package_config.json.
@@ -160,7 +160,7 @@ packages:
    sha256: $SHA256
    url: "http://localhost:$PORT"
    source: hosted
-   version: "1.0.0"
+   version: 1.0.0
 sdks:
   dart: ">=3.0.2 <4.0.0"
 
@@ -265,7 +265,7 @@ FINE: Contents:
    |   sha256: $SHA256
    |   url: "http://localhost:$PORT"
    |   source: hosted
-   |   version: "1.0.0"
+   |   version: 1.0.0
    | sdks:
    |   dart: ">=3.0.2 <4.0.0"
 IO  : Writing $N characters to text file .dart_tool/package_config.json.
