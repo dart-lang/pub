@@ -1355,10 +1355,11 @@ See https://dart.dev/go/sdk-constraint
             break;
           }
           void deleteIfPresent(String path, String type) {
-            fileExists(path);
-            log.warning('Deleting old $type: `$path`.');
-            deleteEntry(path);
-            deletedAny = true;
+            if (fileExists(path)) {
+              log.warning('Deleting old $type: `$path`.');
+              deleteEntry(path);
+              deletedAny = true;
+            }
           }
 
           deleteIfPresent(p.join(dir, 'pubspec.lock'), 'lock-file');

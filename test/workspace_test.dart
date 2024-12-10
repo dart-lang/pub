@@ -849,7 +849,7 @@ foo:foomain''',
         'myapp',
         '1.2.3',
         extras: {
-          'workspace': ['pkgs/a'],
+          'workspace': ['pkgs/a', 'pkgs/b'],
         },
         sdk: '^3.5.0',
       ),
@@ -859,6 +859,12 @@ foo:foomain''',
           [
             libPubspec('a', '1.1.1', resolutionWorkspace: true),
             dir('test_data', []),
+          ],
+        ),
+        dir(
+          'b',
+          [
+            libPubspec('b', '1.1.1', resolutionWorkspace: true),
           ],
         ),
       ]),
@@ -902,6 +908,7 @@ foo:foomain''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       warning: allOf(
         contains('Deleting old lock-file: `.${s}pkgs/a${s}pubspec.lock'),
+        isNot(contains('.${s}pkgs/b${s}pubspec.lock')),
         contains(
           'Deleting old package config: '
           '`.${s}pkgs/a$s.dart_tool${s}package_config.json`',
