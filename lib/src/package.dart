@@ -513,7 +513,7 @@ Package `$override` at `${overriddenWorkspacePackage.presentationDir}` is overri
     // By adding this to visited we will never go above the workspaceRoot.dir.
     p.canonicalize(root.dir),
   };
-  for (final package in root.transitiveWorkspace) {
+  for (final package in root.transitiveWorkspace.skip(1)) {
     // Run through all parent directories until we meet another workspace
     // package.
     for (final dir in parentDirs(package.dir).skip(1)) {
