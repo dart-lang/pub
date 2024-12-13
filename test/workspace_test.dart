@@ -1491,6 +1491,72 @@ Consider removing one of the overrides.''',
     );
   });
 
+  test(
+      'rejects workspace with non-workspace between root and workspace package',
+      () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        libPubspec(
+          'in_the_way',
+          '1.0.0',
+        ),
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.0.0',
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: contains(
+        'The file `.${s}pkgs${s}pubspec.yaml` is located in a directory '
+        'between the workspace root at',
+      ),
+    );
+  });
+
+  test('Doesn\t complain about pubspecs above the workspace', () async {
+    // Regression test for https://github.com/dart-lang/pub/issues/4463
+    await dir(appPath, [
+      libPubspec(
+        'not_in_the_way',
+        '1.0.0',
+      ),
+      dir('pkgs', [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.0.0',
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      workingDirectory: p.join(sandbox, appPath, 'pkgs'),
+    );
+  });
+
   test('overrides are applied', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
