@@ -159,13 +159,26 @@ $PUB_CACHE/git/
 └── pub-c4e9ddc888c3aa89ef4462f0c4298929191e32b9/
 ```
 
-The `$PUB_CACHE/git/cache/` folder contains a "bare" checkout of each git-url (just the ). The
-folders are `$PUB_CACHE/git/cache/$name-$hash/` where `$name` is derived from base-name of the
-git url (without `.git`). and `$hash` is the sha1 of the git-url. This makes
-them recognizable and unique.
+The `$PUB_CACHE/git/cache/` folder contains a "bare" checkout of each git-url
+(just the .git folder without a working tree).
 
-The other sub-folders are the actual checkouts. They are clones of respective the `$PUB_CACHE/git/cache/$name-$hash/`
-folders checked out at a specific `ref`. The name is `$PUB_CACHE/git/$name-$resolvedRef/` where
+The folders are `$PUB_CACHE/git/cache/$name-$hash/` where `$name` is derived
+from base-name of the git url (without `.git`). and `$hash` is the sha1 of the
+git-url. This makes them recognizable and unique.
+
+The other sub-folders of `$PUB_CACHE/git` are the actual checkouts.
+
+Until Dart 3.1 These where clones of the respective
+`$PUB_CACHE/git/cache/$name-$hash/` folders checked out at a specific `ref`.
+
+After Dart 3.1 these are [git worktrees](https://git-scm.com/docs/git-worktree)
+instead of clones. This avoids repeating the entire .git folder for each checked
+out ref.
+
+In Dart 3.1 and later a clone will be recognized and replaced by a worktree when
+seen.
+
+The name of the checkout is `$PUB_CACHE/git/$name-$resolvedRef/` where
 `resolvedRef` is the commit-id that `ref` resolves to.
 
 ## Global packages
