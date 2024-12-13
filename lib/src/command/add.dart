@@ -58,7 +58,7 @@ Make dependency overrides by prefixing with "override:".
 Add packages with specific constraints or other sources by giving a descriptor
 after a colon.
 
-For example:
+For example (follow the same format including spaces):
   * Add a hosted dependency at newest compatible stable version:
     `$topLevelProgram pub add foo`
   * Add a hosted dev dependency at newest compatible stable version:
@@ -67,19 +67,19 @@ For example:
     `$topLevelProgram pub add foo:^1.2.3`
   * Add multiple dependencies:
     `$topLevelProgram pub add foo dev:bar`
-  * Add a path dependency:
-    `$topLevelProgram pub add 'foo:{"path":"../foo"}'`
-  * Add a hosted dependency:
-    `$topLevelProgram pub add 'foo:{"hosted":"my-pub.dev"}'`
-  * Add an sdk dependency:
-    `$topLevelProgram pub add 'foo:{"sdk":"flutter"}'`
-  * Add a git dependency:
-    `$topLevelProgram pub add 'foo:{"git":"https://github.com/foo/foo"}'`
   * Add a dependency override:
-    `$topLevelProgram pub add 'override:foo:1.0.0'`
+    `$topLevelProgram pub add override:foo:1.0.0`
+  * Add a path dependency:
+    `$topLevelProgram pub add "foo:{path: ../foo}"`
+  * Add a hosted dependency:
+    `$topLevelProgram pub add "foo:{hosted: https://my-pub.dev}"`
+  * Add an sdk dependency:
+    `$topLevelProgram pub add "foo:{sdk: flutter}"`
+  * Add a git dependency:
+    `$topLevelProgram pub add "foo:{git: https://github.com/foo/foo}"`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add \\
-      'foo:{"git":{"url":"../foo.git","ref":"<branch>","path":"<subdir>"}}'`''';
+      "foo:{git:{url: ../foo.git, ref: <branch>, path: <subdir>}}"`''';
 
   @override
   String get argumentsDescription =>
