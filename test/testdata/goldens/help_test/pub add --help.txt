@@ -24,7 +24,7 @@ For example (follow the same format including spaces):
   * Add multiple dependencies:
     `dart pub add foo dev:bar`
   * Add a dependency override:
-    `dart pub add 'override:foo:1.0.0'`
+    `dart pub add override:foo:1.0.0`
   * Add a path dependency:
     `dart pub add "foo:{path: ../foo}"`
   * Add a hosted dependency:
