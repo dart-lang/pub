@@ -394,10 +394,10 @@ packages:
     dependency: "direct dev"
     description:
       name: test_descriptor
-      sha256: abe245e8b0d61245684127fe32343542c25dc2a1ce8f405531637241d98d07e4
+      sha256: "9ce468c97ae396e8440d26bb43763f84e2a2a5331813ee5a397cb4da481aaf9a"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "2.0.2"
   test_process:
     dependency: "direct dev"
     description:
