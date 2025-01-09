@@ -56,8 +56,8 @@ Future<int> runExecutable(
 
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
-  if (entrypoint.workspaceRoot.name != executable.package &&
-      !entrypoint.workspaceRoot.immediateDependencies.containsKey(package)) {
+  if (entrypoint.workPackage.name != executable.package &&
+      !entrypoint.workPackage.immediateDependencies.containsKey(package)) {
     if ((await entrypoint.packageGraph).packages.containsKey(package)) {
       dataError('Package "$package" is not an immediate dependency.\n'
           'Cannot run executables in transitive dependencies.');
