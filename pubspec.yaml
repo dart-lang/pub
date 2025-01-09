@@ -21,7 +21,7 @@ dependencies:
   pool: ^1.5.1
   pub_semver: ^2.1.4
   shelf: ^1.4.1
-  source_span: ^1.10.0
+  source_span: ^1.10.1
   stack_trace: ^1.11.1
   tar: ^2.0.0
   typed_data: ^1.4.0
