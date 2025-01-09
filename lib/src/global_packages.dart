@@ -189,14 +189,15 @@ class GlobalPackages {
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.get);
-    final name = entrypoint.workspaceRoot.name;
+    final activatedPackage = entrypoint.workPackage;
+    final name = activatedPackage.name;
     _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
-    final fullPath = canonicalize(entrypoint.workspaceRoot.dir);
+    final fullPath = canonicalize(activatedPackage.dir);
     final id = cache.path.idFor(
       name,
-      entrypoint.workspaceRoot.version,
+      activatedPackage.version,
       fullPath,
       p.current,
     );
@@ -212,7 +213,7 @@ class GlobalPackages {
 
     _updateBinStubs(
       entrypoint,
-      entrypoint.workspaceRoot,
+      activatedPackage,
       executables,
       overwriteBinStubs: overwriteBinStubs,
     );
@@ -1031,6 +1032,6 @@ Package activatedPackage(Entrypoint entrypoint) {
     final dep = entrypoint.workspaceRoot.dependencies.keys.single;
     return entrypoint.cache.load(entrypoint.lockFile.packages[dep]!);
   } else {
-    return entrypoint.workspaceRoot;
+    return entrypoint.workPackage;
   }
 }
