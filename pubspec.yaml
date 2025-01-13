@@ -4,7 +4,7 @@ environment:
   sdk: ^3.5.0
 
 dependencies:
-  analyzer: ^6.8.0
+  analyzer: 7.1.0
   args: ^2.6.0
   async: ^2.11.0
   cli_util: ^0.4.1
