@@ -14,7 +14,7 @@ dependencies:
   frontend_server_client: ^4.0.0
   graphs: ^2.3.1
   http: ^1.1.2
-  http_multi_server: ^3.2.1
+  http_multi_server: ^3.2.2
   http_parser: ^4.1.1
   meta: ^1.16.0
   path: ^1.9.1
