@@ -270,6 +270,9 @@ class PathDescription extends Description {
   final String path;
   final bool relative;
 
+  // Canonicalization is rather slow - cache the result;
+  late final String _canonicalizedPath = canonicalize(path);
+
   PathDescription(this.path, this.relative) : assert(!p.isRelative(path));
   @override
   String format() {
@@ -294,11 +297,11 @@ class PathDescription extends Description {
   @override
   bool operator ==(Object other) {
     return other is PathDescription &&
-        canonicalize(path) == canonicalize(other.path);
+        _canonicalizedPath == other._canonicalizedPath;
   }
 
   @override
-  int get hashCode => canonicalize(path).hashCode;
+  int get hashCode => _canonicalizedPath.hashCode;
 }
 
 class ResolvedPathDescription extends ResolvedDescription {
