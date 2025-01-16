@@ -51,6 +51,38 @@ void main() {
     expect(packageSpec('foo'), isNotNull);
   });
 
+  test('checks out a package from Git with relative pub cache', () async {
+    ensureGit();
+
+    await d.git(
+      'foo.git',
+      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
+    ).create();
+
+    await d.appDir(
+      dependencies: {
+        'foo': {'git': '../foo.git'},
+      },
+    ).create();
+
+    await pubGet(
+      environment: {
+        'PUB_CACHE': './pub_cache/',
+      },
+    );
+
+    await d.dir(appPath, [
+      d.dir('pub_cache', [
+        d.dir('git', [
+          d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
+          d.gitPackageRevisionCacheDir('foo'),
+        ]),
+      ]),
+    ]).validate();
+
+    expect(packageSpec('foo')['rootUri'], startsWith('../pub_cache/git/foo-'));
+  });
+
   test('checks out a package from Git using non-json YAML', () async {
     ensureGit();
 
