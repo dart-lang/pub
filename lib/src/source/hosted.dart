@@ -1311,7 +1311,7 @@ class HostedSource extends CachedSource {
     return (await Future.wait(
       listDir(rootDir).map((serverDir) async {
         final directory = p.basename(serverDir);
-        late final String url;
+        final String url;
         try {
           url = _directoryToUrl(directory);
         } on FormatException {
@@ -1493,13 +1493,13 @@ class HostedSource extends CachedSource {
         versions.firstWhereOrNull((i) => i.version == id.version);
     final packageName = id.name;
     final version = id.version;
-    late final Uint8List contentHash;
     if (versionInfo == null) {
       throw PackageNotFoundException(
         'Package $packageName has no version $version',
       );
     }
 
+    late final Uint8List contentHash;
     final archiveUrl = versionInfo.archiveUrl;
     log.io('Get package from $archiveUrl.');
     log.fine('Downloading ${log.bold(id.name)} ${id.version}...');
@@ -1626,7 +1626,7 @@ See $contentHashesDocumentationUrl.
   ) async {
     // Extract to a temp-folder and do atomic rename to preserve the integrity
     // of the cache.
-    late final Uint8List contentHash;
+    final Uint8List contentHash;
 
     final tempDir = cache.createTempDir();
     final PackageId id;

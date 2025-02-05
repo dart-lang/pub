@@ -22,7 +22,7 @@ class LockFile {
 
   /// The intersections of all SDK constraints for all locked packages, indexed
   /// by SDK identifier.
-  Map<String, SdkConstraint> sdkConstraints;
+  final Map<String, SdkConstraint> sdkConstraints;
 
   /// Dependency names that appeared in the root package's `dependencies`
   /// section.

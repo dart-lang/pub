@@ -240,7 +240,7 @@ See $workspacesDocUrl for more information.''',
           '"pub" version, please run "$topLevelProgram pub get".');
     }
 
-    late String packageConfigRaw;
+    final String packageConfigRaw;
     try {
       packageConfigRaw = readTextFile(packageConfigPath);
     } on FileException {
@@ -249,7 +249,7 @@ See $workspacesDocUrl for more information.''',
         'please run "$topLevelProgram pub get".',
       );
     }
-    late PackageConfig result;
+    final PackageConfig result;
     try {
       result = PackageConfig.fromJson(
         json.decode(packageConfigRaw) as Object?,
@@ -297,7 +297,7 @@ See $workspacesDocUrl for more information.''',
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file
   /// relative to the current working directory .
-  late String packageConfigPath = p.relative(
+  late final String packageConfigPath = p.relative(
     p.normalize(p.join(workspaceRoot.dir, '.dart_tool', 'package_config.json')),
   );
 
@@ -434,19 +434,21 @@ See $workspacesDocUrl for more information.''',
     VersionConstraint? entrypointSdkConstraint,
   }) async {
     final entries = <PackageConfigEntry>[];
-    late final relativeFromPath = p.join(workspaceRoot.dir, '.dart_tool');
-    for (final name in ordered(lockFile.packages.keys)) {
-      final id = lockFile.packages[name]!;
-      final rootPath = cache.getDirectory(id, relativeFrom: relativeFromPath);
-      final pubspec = await cache.describe(id);
-      entries.add(
-        PackageConfigEntry(
-          name: name,
-          rootUri: p.toUri(rootPath),
-          packageUri: p.toUri('lib/'),
-          languageVersion: pubspec.languageVersion,
-        ),
-      );
+    if (lockFile.packages.isNotEmpty) {
+      final relativeFromPath = p.join(workspaceRoot.dir, '.dart_tool');
+      for (final name in ordered(lockFile.packages.keys)) {
+        final id = lockFile.packages[name]!;
+        final rootPath = cache.getDirectory(id, relativeFrom: relativeFromPath);
+        final pubspec = await cache.describe(id);
+        entries.add(
+          PackageConfigEntry(
+            name: name,
+            rootUri: p.toUri(rootPath),
+            packageUri: p.toUri('lib/'),
+            languageVersion: pubspec.languageVersion,
+          ),
+        );
+      }
     }
 
     if (!isCachedGlobal) {
@@ -1016,8 +1018,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           rootDir = parent;
           break;
         }
-        final potentialPubspacPath = p.join(parent, 'pubspec.yaml');
-        if (tryStatFile(potentialPubspacPath) == null) {
+        final potentialPubspecPath = p.join(parent, 'pubspec.yaml');
+        if (tryStatFile(potentialPubspecPath) == null) {
           // No package at [parent] continue to next dir.
           continue;
         }
@@ -1029,8 +1031,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         final workspaceRefText = tryReadTextFile(potentialWorkspaceRefPath);
         if (workspaceRefText == null) {
           log.fine(
-            '`$potentialPubspacPath` exists without corresponding '
-            '`$potentialPubspacPath` or `$potentialWorkspaceRefPath`.',
+            '`$potentialPubspecPath` exists without corresponding '
+            '`$potentialPubspecPath` or `$potentialWorkspaceRefPath`.',
           );
           return null;
         } else {
@@ -1093,7 +1095,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return null;
       }
       final lockFilePath = p.normalize(p.join(rootDir, 'pubspec.lock'));
-      late final packageConfig = _loadPackageConfig(packageConfigPath);
+      final packageConfig = _loadPackageConfig(packageConfigPath);
       if (p.isWithin(cache.rootDir, packageConfigPath)) {
         // We always consider a global package (inside the cache) up-to-date.
         return (packageConfig, rootDir);

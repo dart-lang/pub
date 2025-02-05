@@ -44,7 +44,7 @@ class ErrorGroup {
   ///
   /// We need to be able to access it internally as an [_ErrorGroupFuture] so
   /// we can check if it has listeners and signal errors on it.
-  late _ErrorGroupFuture _done;
+  late final _ErrorGroupFuture<void> _done;
 
   /// Returns a [Future] that completes successfully when all members of `this`
   /// are complete, or with an error if any member receives an error.
@@ -52,7 +52,7 @@ class ErrorGroup {
   /// This [Future] is effectively in the group in that an error on it won't be
   /// passed to the top-level error handler unless no members of the group have
   /// listeners attached.
-  Future get done => _done;
+  Future<void> get done => _done;
 
   /// Creates a new group with no members.
   ErrorGroup() {
@@ -257,17 +257,17 @@ class _ErrorGroupStream<T> extends Stream<T> {
   var _isDone = false;
 
   /// The underlying [StreamController] for `this`.
-  late final StreamController<T> _controller;
+  final StreamController<T> _controller;
 
   /// The controller's [Stream].
   ///
   /// May be different than `_controller.stream` if the wrapped stream is a
   /// broadcasting stream.
-  late Stream<T> _stream;
+  late final Stream<T> _stream;
 
   /// The [StreamSubscription] that connects the wrapped [Stream] to
   /// [_controller].
-  late StreamSubscription<T> _subscription;
+  late final StreamSubscription<T> _subscription;
 
   /// Whether `this` has any listeners.
   bool get _hasListeners => _controller.hasListener;

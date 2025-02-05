@@ -38,7 +38,7 @@ class Package {
   ///
   /// If [dir] is just a parent directory like ../.. it gets replaced with
   /// the absolute dir.
-  late String presentationDir =
+  late final String presentationDir =
       p.isWithin(dir, '.') ? p.normalize(p.absolute(dir)) : dir;
 
   /// The name of the package.
