@@ -950,26 +950,11 @@ class PubProcess {
   /// The underlying `dart:io` [Process].
   final Process _process;
 
-  /// The mutable field for [stdin].
-  late EventSink<List<int>> _stdin;
-
-  /// The mutable field for [stdinClosed].
-  late Future _stdinClosed;
-
-  /// The mutable field for [stdout].
-  late ByteStream _stdout;
-
-  /// The mutable field for [stderr].
-  late ByteStream _stderr;
-
-  /// The mutable field for [exitCode].
-  late Future<int> _exitCode;
-
   /// The sink used for passing data to the process's standard input stream.
   ///
   /// Errors on this stream are surfaced through [stdinClosed], [stdout],
   /// [stderr], and [exitCode], which are all members of an [ErrorGroup].
-  EventSink<List<int>> get stdin => _stdin;
+  final EventSink<List<int>> stdin;
 
   // TODO(nweiz): write some more sophisticated Future machinery so that this
   // doesn't surface errors from the other streams/futures, but still passes its
@@ -981,21 +966,21 @@ class PubProcess {
   /// This is in an [ErrorGroup] with [stdout], [stderr], and [exitCode], so any
   /// error in process will be passed to it, but won't reach the top-level error
   /// handler unless nothing has handled it.
-  Future get stdinClosed => _stdinClosed;
+  final Future stdinClosed;
 
   /// The process's standard output stream.
   ///
   /// This is in an [ErrorGroup] with [stdinClosed], [stderr], and [exitCode],
   /// so any error in process will be passed to it, but won't reach the
   /// top-level error handler unless nothing has handled it.
-  ByteStream get stdout => _stdout;
+  final ByteStream stdout;
 
   /// The process's standard error stream.
   ///
   /// This is in an [ErrorGroup] with [stdinClosed], [stdout], and [exitCode],
   /// so any error in process will be passed to it, but won't reach the
   /// top-level error handler unless nothing has handled it.
-  ByteStream get stderr => _stderr;
+  final ByteStream stderr;
 
   /// A [Future] that will complete to the process's exit code once the process
   /// has finished running.
@@ -1003,22 +988,39 @@ class PubProcess {
   /// This is in an [ErrorGroup] with [stdinClosed], [stdout], and [stderr], so
   /// any error in process will be passed to it, but won't reach the top-level
   /// error handler unless nothing has handled it.
-  Future<int> get exitCode => _exitCode;
+  final Future<int> exitCode;
+
+  PubProcess._(
+    this._process, {
+    required this.stdin,
+    required this.stdinClosed,
+    required this.stdout,
+    required this.stderr,
+    required this.exitCode,
+  });
 
   /// Creates a new [PubProcess] wrapping [process].
-  PubProcess(Process process) : _process = process {
+  factory PubProcess(Process process) {
     final errorGroup = ErrorGroup();
 
     final (consumerSink, done) = _consumerToSink(process.stdin);
-    _stdin = consumerSink;
-    _stdinClosed = errorGroup.registerFuture(done);
+    final stdinClosed = errorGroup.registerFuture(done);
 
-    _stdout = ByteStream(errorGroup.registerStream(process.stdout));
-    _stderr = ByteStream(errorGroup.registerStream(process.stderr));
+    final stdout = ByteStream(errorGroup.registerStream(process.stdout));
+    final stderr = ByteStream(errorGroup.registerStream(process.stderr));
 
     final exitCodeCompleter = Completer<int>();
-    _exitCode = errorGroup.registerFuture(exitCodeCompleter.future);
-    _process.exitCode.then(exitCodeCompleter.complete);
+    final exitCode = errorGroup.registerFuture(exitCodeCompleter.future);
+    process.exitCode.then(exitCodeCompleter.complete);
+
+    return PubProcess._(
+      process,
+      stdin: consumerSink,
+      stdinClosed: stdinClosed,
+      stdout: stdout,
+      stderr: stderr,
+      exitCode: exitCode,
+    );
   }
 
   /// Sends [signal] to the underlying process.

@@ -322,7 +322,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
   /// Shows the user the currently active package with [name], if any.
   LockFile? _describeActive(String name, SystemCache cache) {
-    late final LockFile lockFile;
+    final LockFile lockFile;
     try {
       lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
     } on IOException {
@@ -380,7 +380,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
   /// Returns an [Entrypoint] loaded with the active package if found.
   Future<Entrypoint> find(String name) async {
     final lockFilePath = _getLockFilePath(name);
-    late final LockFile lockFile;
+    final LockFile lockFile;
     try {
       lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
@@ -861,7 +861,7 @@ Try reactivating the package.
     final pubInvocation =
         runningFromTest ? Platform.script.toFilePath() : 'pub';
 
-    late String binstub;
+    final String binstub;
     // We need an absolute path since relative ones won't be relative to the
     // right directory when the user runs this.
     snapshot = p.absolute(snapshot);

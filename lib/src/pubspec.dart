@@ -425,7 +425,7 @@ environment:
     Uri? overridesLocation,
     required Description containingDescription,
   }) {
-    late final YamlMap pubspecMap;
+    final YamlMap pubspecMap;
     YamlMap? overridesFileMap;
     try {
       pubspecMap = _ensureMap(loadYamlNode(contents, sourceUrl: location));

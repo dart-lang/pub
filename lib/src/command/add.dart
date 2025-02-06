@@ -203,7 +203,7 @@ Specify multiple sdk packages with descriptors.''');
       resolutionPubspec = await _addPackageToPubspec(resolutionPubspec, update);
     }
 
-    late SolveResult solveResult;
+    final SolveResult solveResult;
 
     try {
       /// Use [SolveType.UPGRADE] to solve for the highest version of [package]
@@ -520,7 +520,7 @@ Specify multiple sdk packages with descriptors.''');
     }
 
     /// The package to be added.
-    late final PackageRef ref;
+    final PackageRef ref;
     final path = argResults.path;
     if (argResults.hasGitOptions) {
       final gitUrl = argResults.gitUrl;

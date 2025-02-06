@@ -351,8 +351,8 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       CommandResolutionIssue.fileNotFound,
     );
   }
-  late final String command;
-  String package;
+  final String command;
+  final String package;
   if (descriptor.contains(':')) {
     final parts = descriptor.split(':');
     if (parts.length > 2) {
@@ -361,12 +361,11 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
         CommandResolutionIssue.parseError,
       );
     }
-    package = parts[0];
-    if (package.isEmpty) package = rootPackageName;
+    final packageName = parts[0];
+    package = packageName.isNotEmpty ? packageName : rootPackageName;
     command = parts[1];
   } else {
-    package = descriptor;
-    if (package.isEmpty) package = rootPackageName;
+    package = descriptor.isNotEmpty ? descriptor : rootPackageName;
     command = package;
   }
 
