@@ -322,14 +322,31 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
   /// Shows the user the currently active package with [name], if any.
   LockFile? _describeActive(String name, SystemCache cache) {
+    final lower = name.toLowerCase();
+    if (name != lower) {
+      fail('''
+You can only activate packages with lower-case names.
+
+Did you mean `$lower`?
+''');
+    }
     final LockFile lockFile;
+    final lockFilePath = _getLockFilePath(name);
     try {
-      lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
+      lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
       // Couldn't read the lock file. It probably doesn't exist.
       return null;
     }
-    final id = lockFile.packages[name]!;
+
+    final id = lockFile.packages[name];
+    if (id == null) {
+      fail('''
+Could not find `$name` in `$lockFilePath`.
+Your Pub cache might be corrupted.
+
+Consider `$topLevelProgram pub global deactivate $name`''');
+    }
     final description = id.description.description;
 
     if (description is GitDescription) {
@@ -367,9 +384,12 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
     _deleteBinStubs(name);
 
     final lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
-    final id = lockFile.packages[name]!;
-    log.message('Deactivated package ${_formatPackage(id)}.');
-
+    final id = lockFile.packages[name];
+    if (id == null) {
+      log.message('Removed package `$name`');
+    } else {
+      log.message('Deactivated package ${_formatPackage(id)}.');
+    }
     deleteEntry(dir);
 
     return true;
