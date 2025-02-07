@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -322,14 +323,40 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
   /// Shows the user the currently active package with [name], if any.
   LockFile? _describeActive(String name, SystemCache cache) {
-    final LockFile lockFile;
+    // Check if we a package is already installed, only with a different casing.
     try {
-      lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
+      final packageDirs = listDir(_directory);
+      final differsByOnlyCasing = packageDirs.map(p.basename).firstWhereOrNull(
+            (d) => d != name && d.toLowerCase() == name.toLowerCase(),
+          );
+
+      if (differsByOnlyCasing != null) {
+        fail('''
+You are trying to activate `$name` but already have `$differsByOnlyCasing` which
+differs only by casing. `pub` does not allow that.
+
+Consider `$topLevelProgram pub global deactivate $differsByOnlyCasing`''');
+      }
+    } on IOException {
+      // Most likely the global_packages directory does not exist yet.
+    }
+    final LockFile lockFile;
+    final lockFilePath = _getLockFilePath(name);
+    try {
+      lockFile = LockFile.load(lockFilePath, cache.sources);
     } on IOException {
       // Couldn't read the lock file. It probably doesn't exist.
       return null;
     }
-    final id = lockFile.packages[name]!;
+
+    final id = lockFile.packages[name];
+    if (id == null) {
+      fail('''
+Could not find `$name` in `$lockFilePath`.
+Your Pub cache might be corrupted.
+
+Consider `$topLevelProgram pub global deactivate $name`''');
+    }
     final description = id.description.description;
 
     if (description is GitDescription) {
@@ -367,9 +394,12 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
     _deleteBinStubs(name);
 
     final lockFile = LockFile.load(_getLockFilePath(name), cache.sources);
-    final id = lockFile.packages[name]!;
-    log.message('Deactivated package ${_formatPackage(id)}.');
-
+    final id = lockFile.packages[name];
+    if (id == null) {
+      log.message('Removed package `$name`');
+    } else {
+      log.message('Deactivated package ${_formatPackage(id)}.');
+    }
     deleteEntry(dir);
 
     return true;
