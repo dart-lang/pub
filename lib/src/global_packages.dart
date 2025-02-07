@@ -323,22 +323,13 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
   /// Shows the user the currently active package with [name], if any.
   LockFile? _describeActive(String name, SystemCache cache) {
-    // Check if we a package is already installed, only with a different casing.
-    try {
-      final packageDirs = listDir(_directory);
-      final differsByOnlyCasing = packageDirs.map(p.basename).firstWhereOrNull(
-            (d) => d != name && d.toLowerCase() == name.toLowerCase(),
-          );
+    final lower = name.toLowerCase();
+    if (name != lower) {
+      fail('''
+You can only activate packages with lower-case names.
 
-      if (differsByOnlyCasing != null) {
-        fail('''
-You are trying to activate `$name` but already have `$differsByOnlyCasing` which
-differs only by casing. `pub` does not allow that.
-
-Consider `$topLevelProgram pub global deactivate $differsByOnlyCasing`''');
-      }
-    } on IOException {
-      // Most likely the global_packages directory does not exist yet.
+Did you mean `$lower`?
+''');
     }
     final LockFile lockFile;
     final lockFilePath = _getLockFilePath(name);

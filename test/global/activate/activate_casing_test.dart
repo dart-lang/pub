@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -9,16 +10,9 @@ import '../../test_pub.dart';
 
 void main() {
   test(
-    'On case-insensitive systems, will not allow installing ',
+    'We only allow activating lower-case package names',
     () async {
       final server = await servePackages();
-      server.serve(
-        'foo',
-        '1.0.0',
-        contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
-        ],
-      );
       server.serve(
         'Foo',
         '1.0.0',
@@ -27,14 +21,22 @@ void main() {
         ],
       );
 
-      await runPub(args: ['global', 'activate', 'foo']);
+      await d.dir('foo', [d.libPubspec('Foo', '1.0.0')]).create();
       await runPub(
         args: ['global', 'activate', 'Foo'],
         error: '''
-You are trying to activate `Foo` but already have `foo` which
-differs only by casing. `pub` does not allow that.
+You can only activate packages with lower-case names.
 
-Consider `dart pub global deactivate foo`''',
+Did you mean `foo`?''',
+        exitCode: 1,
+      );
+
+      await runPub(
+        args: ['global', 'activate', '-spath', p.join(d.sandbox, 'foo')],
+        error: '''
+You can only activate packages with lower-case names.
+
+Did you mean `foo`?''',
         exitCode: 1,
       );
     },
