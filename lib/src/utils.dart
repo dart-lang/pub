@@ -258,13 +258,6 @@ bool isLoopback(String host) {
   return InternetAddress.tryParse(host)?.isLoopback ?? false;
 }
 
-/// Returns a list containing the sorted elements of [iter].
-List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
-  final list = iter.toList();
-  list.sort();
-  return list;
-}
-
 /// Given a list of filenames, returns a set of patterns that can be used to
 /// filter for those filenames.
 ///

@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -109,7 +110,8 @@ class Package {
   List<String> get executablePaths {
     final binDir = p.join(dir, 'bin');
     if (!dirExists(binDir)) return <String>[];
-    return ordered(listDir(p.join(dir, 'bin'), includeDirs: false))
+    return listDir(p.join(dir, 'bin'), includeDirs: false)
+        .sorted()
         .where((executable) => p.extension(executable) == '.dart')
         .map((executable) => p.relative(executable, from: dir))
         .toList();

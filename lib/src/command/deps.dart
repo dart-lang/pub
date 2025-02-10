@@ -5,6 +5,8 @@
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
+
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../command_runner.dart';
@@ -243,7 +245,7 @@ class DepsCommand extends PubCommand {
 
     buffer.writeln();
     buffer.writeln('$section:');
-    for (var name in ordered(names)) {
+    for (var name in names.sorted()) {
       final package = await _getPackage(name);
 
       buffer.write('- ${_labelPackage(package)}');
@@ -291,7 +293,7 @@ class DepsCommand extends PubCommand {
 
     await _outputListSection(
       'transitive dependencies',
-      ordered(transitive),
+      transitive.sorted(),
       buffer,
     );
   }
