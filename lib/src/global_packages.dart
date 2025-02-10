@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -767,7 +768,7 @@ Try reactivating the package.
 
     final installed = <String>[];
     final collided = <String, String>{};
-    final allExecutables = ordered(package.pubspec.executables.keys);
+    final allExecutables = package.pubspec.executables.keys.sorted();
     for (var executable in allExecutables) {
       if (executables != null && !executables.contains(executable)) continue;
 
@@ -799,7 +800,7 @@ Try reactivating the package.
 
     // Show errors for any collisions.
     if (collided.isNotEmpty) {
-      for (var command in ordered(collided.keys)) {
+      for (var command in collided.keys.sorted()) {
         if (overwriteBinStubs) {
           log.warning('Replaced ${log.bold(command)} previously installed from '
               '${log.bold(collided[command].toString())}.');
@@ -817,10 +818,9 @@ Try reactivating the package.
 
     // Show errors for any unknown executables.
     if (executables != null) {
-      final unknown = ordered(
-        executables
-            .where((exe) => !package.pubspec.executables.keys.contains(exe)),
-      );
+      final unknown = executables
+          .where((exe) => !package.pubspec.executables.keys.contains(exe))
+          .sorted();
       if (unknown.isNotEmpty) {
         dataError("Unknown ${namedSequence('executable', unknown)}.");
       }

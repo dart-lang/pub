@@ -318,7 +318,7 @@ class PackageLister {
     final lower = await _dependencyBounds(dependencies, index, upper: false);
     final upper = await _dependencyBounds(dependencies, index);
 
-    return ordered(dependencies.keys).map((package) {
+    return dependencies.keys.sorted().map((package) {
       final constraint = VersionRange(
         min: lower[package],
         includeMin: true,
