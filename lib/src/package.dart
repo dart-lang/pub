@@ -4,7 +4,6 @@
 
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -99,22 +98,23 @@ class Package {
   /// This includes regular, dev dependencies, and overrides from this package.
   Map<String, PackageRange> get immediateDependencies {
     // Make sure to add overrides last so they replace normal dependencies.
-    return {}
-      ..addAll(dependencies)
-      ..addAll(devDependencies)
-      ..addAll(pubspec.dependencyOverrides);
+    return {
+      ...dependencies,
+      ...devDependencies,
+      ...pubspec.dependencyOverrides,
+    };
   }
 
-  /// Returns a list of paths to all Dart executables in this package's bin
-  /// directory.
+  /// Returns a list of paths to all Dart executables in
+  /// this package's `bin` directory.
   List<String> get executablePaths {
     final binDir = p.join(dir, 'bin');
     if (!dirExists(binDir)) return <String>[];
-    return listDir(p.join(dir, 'bin'), includeDirs: false)
-        .sorted()
-        .where((executable) => p.extension(executable) == '.dart')
-        .map((executable) => p.relative(executable, from: dir))
-        .toList();
+    return [
+      for (var executable in listDir(binDir, includeDirs: false))
+        if (p.extension(executable) == '.dart')
+          p.relative(executable, from: dir),
+    ]..sort();
   }
 
   List<String> get executableNames =>
