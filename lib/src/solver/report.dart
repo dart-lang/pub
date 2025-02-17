@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -225,7 +226,7 @@ $contentHashesDocumentationUrl
     removed.remove(_rootPubspec.name); // Never consider root.
     if (removed.isNotEmpty) {
       output.writeln('These packages are no longer being depended on:');
-      for (var name in ordered(removed)) {
+      for (var name in removed.sorted()) {
         await _reportPackage(name, output, alwaysShow: true);
         changes += 1;
       }

@@ -8,6 +8,7 @@ library;
 
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
 import 'log.dart' as log;
@@ -165,7 +166,7 @@ void _draw(
   if (name != null) _drawLine(buffer, prefix, isLast, name, depth <= 1);
 
   // Recurse to the children.
-  final childNames = ordered(children.keys);
+  final childNames = children.keys.sorted();
 
   void drawChild(bool isLastChild, String child) {
     final childPrefix = _getPrefix(depth <= 1, isLast);
