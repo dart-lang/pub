@@ -102,8 +102,10 @@ class DowngradeCommand extends PubCommand {
     }
 
     if (isOffline) {
-      log.warning('Warning: Downgrading when offline may not update you to '
-          'the oldest versions of your dependencies.');
+      log.warning(
+        'Warning: Downgrading when offline may not update you to '
+        'the oldest versions of your dependencies.',
+      );
     }
   }
 }

@@ -11,33 +11,33 @@ void main() {
   test('checks out a package at a specific branch from Git', () async {
     ensureGit();
 
-    final repo = d.git(
-      'foo.git',
-      [d.libDir('foo', 'foo 1'), d.libPubspec('foo', '1.0.0')],
-    );
+    final repo = d.git('foo.git', [
+      d.libDir('foo', 'foo 1'),
+      d.libPubspec('foo', '1.0.0'),
+    ]);
     await repo.create();
     await repo.runGit(['branch', 'old']);
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
-    ).commit();
+    await d.git('foo.git', [
+      d.libDir('foo', 'foo 2'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).commit();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {'url': '../foo.git', 'ref': 'old'},
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo.git', 'ref': 'old'},
+            },
+          },
+        )
+        .create();
 
     await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.dir('cache', [
-          d.gitPackageRepoCacheDir('foo'),
-        ]),
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.gitPackageRevisionCacheDir('foo', modifier: 1),
       ]),
     ]).validate();

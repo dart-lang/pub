@@ -61,20 +61,20 @@ void main() {
       ]).validate();
     });
 
-    test('package_config.json uses relative paths if PUB_CACHE is relative',
-        () async {
-      final server = await servePackages();
-      server.serve('foo', '1.2.3');
+    test(
+      'package_config.json uses relative paths if PUB_CACHE is relative',
+      () async {
+        final server = await servePackages();
+        server.serve('foo', '1.2.3');
 
-      await d.dir(appPath, [
-        d.appPubspec(dependencies: {'foo': '1.2.3'}),
-      ]).create();
+        await d.dir(appPath, [
+          d.appPubspec(dependencies: {'foo': '1.2.3'}),
+        ]).create();
 
-      await pubCommand(command, environment: {'PUB_CACHE': './pub_cache'});
+        await pubCommand(command, environment: {'PUB_CACHE': './pub_cache'});
 
-      await d.dir(appPath, [
-        d.packageConfigFile(
-          [
+        await d.dir(appPath, [
+          d.packageConfigFile([
             PackageConfigEntry(
               name: 'foo',
               rootUri: p.toUri(
@@ -87,11 +87,10 @@ void main() {
               path: '.',
               languageVersion: '3.0',
             ),
-          ],
-          pubCache: p.join(d.sandbox, appPath, 'pub_cache'),
-        ),
-      ]).validate();
-    });
+          ], pubCache: p.join(d.sandbox, appPath, 'pub_cache')),
+        ]).validate();
+      },
+    );
 
     test('package_config.json file is overwritten', () async {
       await servePackages()
@@ -178,60 +177,56 @@ void main() {
     });
 
     test(
-        '.dart_tool/package_config.json file has relative path to path dependency',
-        () async {
-      await servePackages()
-        ..serve(
-          'foo',
-          '1.2.3',
-          deps: {'baz': 'any'},
-          contents: [d.dir('lib', [])],
-        )
-        ..serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
+      '.dart_tool/package_config.json file has relative path to path dependency',
+      () async {
+        await servePackages()
+          ..serve(
+            'foo',
+            '1.2.3',
+            deps: {'baz': 'any'},
+            contents: [d.dir('lib', [])],
+          )
+          ..serve('baz', '9.9.9', deps: {}, contents: [d.dir('lib', [])]);
 
-      await d.dir('local_baz', [
-        d.libDir('baz', 'baz 3.2.1'),
-        d.pubspec({
-          'name': 'baz',
-          'version': '3.2.1',
-        }),
-      ]).create();
+        await d.dir('local_baz', [
+          d.libDir('baz', 'baz 3.2.1'),
+          d.pubspec({'name': 'baz', 'version': '3.2.1'}),
+        ]).create();
 
-      await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependencies': {
-            'foo': '^1.2.3',
-          },
-          'dependency_overrides': {
-            'baz': {'path': '../local_baz'},
-          },
-        }),
-        d.dir('lib'),
-      ]).create();
+        await d.dir(appPath, [
+          d.pubspec({
+            'name': 'myapp',
+            'dependencies': {'foo': '^1.2.3'},
+            'dependency_overrides': {
+              'baz': {'path': '../local_baz'},
+            },
+          }),
+          d.dir('lib'),
+        ]).create();
 
-      await pubCommand(command);
+        await pubCommand(command);
 
-      await d.dir(appPath, [
-        d.packageConfigFile([
-          d.packageConfigEntry(
-            name: 'foo',
-            version: '1.2.3',
-            languageVersion: '3.0',
-          ),
-          d.packageConfigEntry(
-            name: 'baz',
-            path: '../local_baz',
-            languageVersion: '3.0',
-          ),
-          d.packageConfigEntry(
-            name: 'myapp',
-            path: '.',
-            languageVersion: '3.0',
-          ),
-        ]),
-      ]).validate();
-    });
+        await d.dir(appPath, [
+          d.packageConfigFile([
+            d.packageConfigEntry(
+              name: 'foo',
+              version: '1.2.3',
+              languageVersion: '3.0',
+            ),
+            d.packageConfigEntry(
+              name: 'baz',
+              path: '../local_baz',
+              languageVersion: '3.0',
+            ),
+            d.packageConfigEntry(
+              name: 'myapp',
+              path: '.',
+              languageVersion: '3.0',
+            ),
+          ]),
+        ]).validate();
+      },
+    );
 
     test('package_config.json has language version', () async {
       final server = await servePackages();
@@ -249,9 +244,7 @@ void main() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dependencies': {
-            'foo': '^1.2.3',
-          },
+          'dependencies': {'foo': '^1.2.3'},
           'environment': {
             'sdk': '>=3.1.0 <=3.2.2+2', // tests runs with '3.1.2+3'
           },
@@ -284,9 +277,7 @@ void main() {
         'foo',
         '1.2.3',
         pubspec: {
-          'environment': {
-            'sdk': '<4.0.0',
-          },
+          'environment': {'sdk': '<4.0.0'},
         },
         contents: [d.dir('lib', [])],
       );
@@ -294,9 +285,7 @@ void main() {
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
-          'dependencies': {
-            'foo': '^1.2.3',
-          },
+          'dependencies': {'foo': '^1.2.3'},
         }),
         d.dir('lib'),
       ]).create();

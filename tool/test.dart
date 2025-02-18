@@ -29,8 +29,9 @@ Future<void> main(List<String> args) async {
   final sub = ProcessSignal.sigint.watch().listen((signal) {
     testProcess?.kill(signal);
   });
-  final pubSnapshotFilename =
-      p.absolute(p.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'));
+  final pubSnapshotFilename = p.absolute(
+    p.join('.dart_tool', '_pub', 'pub.dart.snapshot.dart2'),
+  );
   try {
     final stopwatch = Stopwatch()..start();
     stderr.write('Building snapshot...');

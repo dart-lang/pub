@@ -63,7 +63,8 @@ class DartSdk extends Sdk {
     // Some of the pub integration tests require an SDK version number, but the
     // tests on the bots are not run from a built SDK so this lets us avoid
     // parsing the missing version file.
-    final sdkVersion = Platform.environment['_PUB_TEST_SDK_VERSION'] ??
+    final sdkVersion =
+        Platform.environment['_PUB_TEST_SDK_VERSION'] ??
         Platform.version.split(' ').first;
 
     return Version.parse(sdkVersion);

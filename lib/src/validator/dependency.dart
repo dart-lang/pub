@@ -56,14 +56,16 @@ class DependencyValidator extends Validator {
       // Path sources are errors. Other sources are just warnings.
       final messages = dep.source is PathSource ? errors : warnings;
 
-      messages.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
-          'source. Use the hosted source instead. For example:\n'
-          '\n'
-          'dependencies:\n'
-          '  ${dep.name}: $constraint\n'
-          '\n'
-          'Using the hosted source ensures that everyone can download your '
-          'package\'s dependencies along with your package.');
+      messages.add(
+        'Don\'t depend on "${dep.name}" from the ${dep.source} '
+        'source. Use the hosted source instead. For example:\n'
+        '\n'
+        'dependencies:\n'
+        '  ${dep.name}: $constraint\n'
+        '\n'
+        'Using the hosted source ensures that everyone can download your '
+        'package\'s dependencies along with your package.',
+      );
     }
 
     /// Warn about improper dependencies on Flutter.
@@ -73,44 +75,52 @@ class DependencyValidator extends Validator {
         return;
       }
 
-      errors.add('Don\'t depend on "${dep.name}" from the ${dep.source} '
-          'source. Use the SDK source instead. For example:\n'
-          '\n'
-          'dependencies:\n'
-          '  ${dep.name}:\n'
-          '    sdk: ${dep.constraint}\n'
-          '\n'
-          'The Flutter SDK is downloaded and managed outside of pub.');
+      errors.add(
+        'Don\'t depend on "${dep.name}" from the ${dep.source} '
+        'source. Use the SDK source instead. For example:\n'
+        '\n'
+        'dependencies:\n'
+        '  ${dep.name}:\n'
+        '    sdk: ${dep.constraint}\n'
+        '\n'
+        'The Flutter SDK is downloaded and managed outside of pub.',
+      );
     }
 
     /// Warn that dependencies should have version constraints.
     void warnAboutNoConstraint(PackageRange dep) {
-      var message = 'Your dependency on "${dep.name}" should have a version '
+      var message =
+          'Your dependency on "${dep.name}" should have a version '
           'constraint.';
       final locked = context.entrypoint.lockFile.packages[dep.name];
       if (locked != null) {
-        message = '$message For example:\n'
+        message =
+            '$message For example:\n'
             '\n'
             'dependencies:\n'
             '  ${dep.name}: ^${locked.version}\n';
       }
-      warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support '
-          '${log.bold("all")} future versions of "${dep.name}".');
+      warnings.add(
+        '$message\n'
+        'Without a constraint, you\'re promising to support '
+        '${log.bold("all")} future versions of "${dep.name}".',
+      );
     }
 
     /// Warn that dependencies should allow more than a single version.
     void warnAboutSingleVersionConstraint(PackageRange dep) {
-      warnings.add('Your dependency on "${dep.name}" '
-          'should allow more than one version. '
-          'For example:\n'
-          '\n'
-          'dependencies:\n'
-          '  ${dep.name}: ^${dep.constraint}\n'
-          '\n'
-          'Constraints that are too tight will make it difficult for people to '
-          'use your package\n'
-          'along with other packages that also depend on "${dep.name}".');
+      warnings.add(
+        'Your dependency on "${dep.name}" '
+        'should allow more than one version. '
+        'For example:\n'
+        '\n'
+        'dependencies:\n'
+        '  ${dep.name}: ^${dep.constraint}\n'
+        '\n'
+        'Constraints that are too tight will make it difficult for people to '
+        'use your package\n'
+        'along with other packages that also depend on "${dep.name}".',
+      );
     }
 
     /// Warn that dependencies should have lower bounds on their constraints.
@@ -126,14 +136,17 @@ class DependencyValidator extends Validator {
           constraint = '">=${locked.version} ${dep.constraint}"';
         }
 
-        message = '$message For example:\n'
+        message =
+            '$message For example:\n'
             '\n'
             'dependencies:\n'
             '  ${dep.name}: $constraint\n';
       }
-      warnings.add('$message\n'
-          'Without a constraint, you\'re promising to support '
-          '${log.bold("all")} previous versions of "${dep.name}".');
+      warnings.add(
+        '$message\n'
+        'Without a constraint, you\'re promising to support '
+        '${log.bold("all")} previous versions of "${dep.name}".',
+      );
     }
 
     /// Warn that dependencies should have upper bounds on their constraints.
@@ -142,20 +155,22 @@ class DependencyValidator extends Validator {
       if ((dep.constraint as VersionRange).includeMin) {
         constraint = '^${(dep.constraint as VersionRange).min}';
       } else {
-        constraint = '"${dep.constraint} '
+        constraint =
+            '"${dep.constraint} '
             '<${(dep.constraint as VersionRange).min!.nextBreaking}"';
       }
       // TODO: Handle the case where `dep.constraint.min` is null.
 
       warnings.add(
-          'Your dependency on "${dep.name}" should have an upper bound. For '
-          'example:\n'
-          '\n'
-          'dependencies:\n'
-          '  ${dep.name}: $constraint\n'
-          '\n'
-          'Without an upper bound, you\'re promising to support '
-          '${log.bold("all")} future versions of ${dep.name}.');
+        'Your dependency on "${dep.name}" should have an upper bound. For '
+        'example:\n'
+        '\n'
+        'dependencies:\n'
+        '  ${dep.name}: $constraint\n'
+        '\n'
+        'Without an upper bound, you\'re promising to support '
+        '${log.bold("all")} future versions of ${dep.name}.',
+      );
     }
 
     void warnAboutPrerelease(String dependencyName, VersionRange constraint) {
@@ -163,12 +178,14 @@ class DependencyValidator extends Validator {
       if (constraint.min != null &&
           constraint.min!.isPreRelease &&
           !packageVersion.isPreRelease) {
-        warnings.add('Packages dependent on a pre-release of another package '
-            'should themselves be published as a pre-release version. '
-            'If this package needs $dependencyName version ${constraint.min}, '
-            'consider publishing the package as a pre-release instead.\n'
-            'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
-            'For more information on pre-releases.');
+        warnings.add(
+          'Packages dependent on a pre-release of another package '
+          'should themselves be published as a pre-release version. '
+          'If this package needs $dependencyName version ${constraint.min}, '
+          'consider publishing the package as a pre-release instead.\n'
+          'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
+          'For more information on pre-releases.',
+        );
       }
     }
 

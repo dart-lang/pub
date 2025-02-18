@@ -21,10 +21,9 @@ void main() {
         'executables': {'foo-script': 'script'},
       },
       contents: [
-        d.dir(
-          'bin',
-          [d.file('script.dart', "main(args) => print('ok \$args');")],
-        ),
+        d.dir('bin', [
+          d.file('script.dart', "main(args) => print('ok \$args');"),
+        ]),
       ],
     );
 
@@ -33,10 +32,9 @@ void main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir(
-            'bin',
-            [d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1')],
-          ),
+          d.dir('bin', [
+            d.outOfDateSnapshot('script.dart-$versionSuffix.snapshot-1'),
+          ]),
         ]),
       ]),
     ]).create();

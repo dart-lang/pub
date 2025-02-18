@@ -12,11 +12,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 import 'embedding_test.dart';
 
-enum ResolutionAttempt {
-  resolution,
-  fastPath,
-  noResolution,
-}
+enum ResolutionAttempt { resolution, fastPath, noResolution }
 
 Future<void> testGetExecutable(
   String command,
@@ -55,12 +51,7 @@ Future<void> testGetExecutable(
       reason: '${p.join(root, executable)} should exist',
     );
     final filtered = filterUnstableText(packageConfig ?? 'No package config');
-    expect(
-      output,
-      contains(
-        'Package config: $filtered\n',
-      ),
-    );
+    expect(output, contains('Package config: $filtered\n'));
   }
   switch (resolution) {
     case ResolutionAttempt.fastPath:
@@ -130,18 +121,14 @@ void testGetExecutableForCommand() {
     test('Error message when pubspec is broken', () async {
       await servePackages();
       await d.dir('foo', [
-        d.pubspec({
-          'name': 'broken name',
-        }),
+        d.pubspec({'name': 'broken name'}),
       ]).create();
 
       await d.dir(appPath, [
         d.pubspec({
           'name': 'myapp',
           'dependencies': {
-            'foo': {
-              'path': '../foo',
-            },
+            'foo': {'path': '../foo'},
           },
         }),
       ]).create();
@@ -170,9 +157,7 @@ void testGetExecutableForCommand() {
           'name': 'myapp',
           'dependencies': {'foo': '^1.0.0'},
         }),
-        d.dir('bin', [
-          d.file('myapp.dart', 'main() {print(42);}'),
-        ]),
+        d.dir('bin', [d.file('myapp.dart', 'main() {print(42);}')]),
       ]).create();
 
       await servePackages();
@@ -190,9 +175,7 @@ void testGetExecutableForCommand() {
     test('Reports parse failure', () async {
       await servePackages();
       await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-        }),
+        d.pubspec({'name': 'myapp'}),
       ]).create();
       await testGetExecutable(
         '::',
@@ -206,12 +189,8 @@ void testGetExecutableForCommand() {
     test('Reports compilation failure', () async {
       await servePackages();
       await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-        }),
-        d.dir('bin', [
-          d.file('foo.dart', 'main() {'),
-        ]),
+        d.pubspec({'name': 'myapp'}),
+        d.dir('bin', [d.file('foo.dart', 'main() {')]),
       ]).create();
 
       await servePackages();
@@ -254,10 +233,7 @@ void testGetExecutableForCommand() {
         d.pubspec({
           'name': 'myapp',
           'dependencies': {
-            'foo': {
-              'hosted': globalServer.url,
-              'version': '^1.0.0',
-            },
+            'foo': {'hosted': globalServer.url, 'version': '^1.0.0'},
           },
         }),
         d.dir('bin', [
@@ -435,10 +411,7 @@ void testGetExecutableForCommand() {
           '1.2.3',
           deps: {
             'a': 'any',
-            'foo': {
-              'hosted': globalServer.url,
-              'version': '^1.0.0',
-            },
+            'foo': {'hosted': globalServer.url, 'version': '^1.0.0'},
           },
           extras: {
             'workspace': ['pkgs/a', 'pkgs/b'],
@@ -464,19 +437,11 @@ void testGetExecutableForCommand() {
               d.file('tool.dart', 'main() {print(42);}'),
             ]),
             d.dir('sub', [
-              d.libPubspec(
-                'sub',
-                '1.0.0',
-                resolutionWorkspace: true,
-              ),
+              d.libPubspec('sub', '1.0.0', resolutionWorkspace: true),
             ]),
           ]),
           d.dir('b', [
-            d.libPubspec(
-              'b',
-              '1.0.0',
-              resolutionWorkspace: true,
-            ),
+            d.libPubspec('b', '1.0.0', resolutionWorkspace: true),
             d.dir('bin', [
               d.file('b.dart', 'main() {print(42);}'),
               d.file('tool.dart', 'main() {print(42);}'),
@@ -484,9 +449,7 @@ void testGetExecutableForCommand() {
           ]),
         ]),
       ]).create();
-      await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      );
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
       await testGetExecutable(
         'myapp',
         p.join(d.sandbox, appPath, 'pkgs', 'a'),
@@ -517,22 +480,20 @@ void testGetExecutableForCommand() {
           'myapp.dart-3.5.0.snapshot',
         ),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        packageConfig:
-            p.join('..', '..', '..', '.dart_tool', 'package_config.json'),
+        packageConfig: p.join(
+          '..',
+          '..',
+          '..',
+          '.dart_tool',
+          'package_config.json',
+        ),
         resolution: ResolutionAttempt.fastPath,
       );
 
       await testGetExecutable(
         'a',
         p.join(d.sandbox, appPath, 'pkgs'),
-        executable: p.join(
-          d.sandbox,
-          appPath,
-          'pkgs',
-          'a',
-          'bin',
-          'a.dart',
-        ),
+        executable: p.join(d.sandbox, appPath, 'pkgs', 'a', 'bin', 'a.dart'),
         allowSnapshot: false,
         packageConfig: p.join('..', '.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
@@ -542,14 +503,7 @@ void testGetExecutableForCommand() {
         'b:tool',
         p.join(d.sandbox, appPath),
         allowSnapshot: false,
-        executable: p.join(
-          d.sandbox,
-          appPath,
-          'pkgs',
-          'b',
-          'bin',
-          'tool.dart',
-        ),
+        executable: p.join(d.sandbox, appPath, 'pkgs', 'b', 'bin', 'tool.dart'),
         packageConfig: p.join('.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         resolution: ResolutionAttempt.fastPath,
@@ -573,14 +527,7 @@ void testGetExecutableForCommand() {
         ':tool',
         p.join(d.sandbox, appPath, 'pkgs', 'a'),
         allowSnapshot: false,
-        executable: p.join(
-          d.sandbox,
-          appPath,
-          'pkgs',
-          'a',
-          'bin',
-          'tool.dart',
-        ),
+        executable: p.join(d.sandbox, appPath, 'pkgs', 'a', 'bin', 'tool.dart'),
         packageConfig: p.join('..', '..', '.dart_tool', 'package_config.json'),
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         resolution: ResolutionAttempt.fastPath,

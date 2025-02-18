@@ -1,7 +1,7 @@
 name: pub
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.7.0
 
 dependencies:
   analyzer: 7.1.0

@@ -93,26 +93,29 @@ void main() {
   });
 
   test(
-      'empty constraint allows it to choose the latest version not in conflict',
-      () async {
-    await servePackages()
-      ..serve('foo', '0.1.0')
-      ..serve('foo', '1.2.3', deps: {'bar': '2.0.4'})
-      ..serve('bar', '2.0.3')
-      ..serve('bar', '2.0.4');
+    'empty constraint allows it to choose the latest version not in conflict',
+    () async {
+      await servePackages()
+        ..serve('foo', '0.1.0')
+        ..serve('foo', '1.2.3', deps: {'bar': '2.0.4'})
+        ..serve('bar', '2.0.3')
+        ..serve('bar', '2.0.4');
 
-    await d.appDir(dependencies: {'bar': '2.0.3'}).create();
+      await d.appDir(dependencies: {'bar': '2.0.3'}).create();
 
-    await pubAdd(args: ['foo']);
+      await pubAdd(args: ['foo']);
 
-    await d.appDir(dependencies: {'foo': '^0.1.0', 'bar': '2.0.3'}).validate();
+      await d
+          .appDir(dependencies: {'foo': '^0.1.0', 'bar': '2.0.3'})
+          .validate();
 
-    await d.cacheDir({'foo': '0.1.0', 'bar': '2.0.3'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '0.1.0'),
-      d.packageConfigEntry(name: 'bar', version: '2.0.3'),
-    ]).validate();
-  });
+      await d.cacheDir({'foo': '0.1.0', 'bar': '2.0.3'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '0.1.0'),
+        d.packageConfigEntry(name: 'bar', version: '2.0.3'),
+      ]).validate();
+    },
+  );
 
   group('does not update pubspec if no available version found', () {
     test('simple', () async {
@@ -123,9 +126,10 @@ void main() {
 
       await pubAdd(
         args: ['foo:>1.2.0 <2.0.0'],
-        error:
-            contains("Because myapp depends on foo >1.2.0 <2.0.0 which doesn't "
-                'match any versions, version solving failed.'),
+        error: contains(
+          "Because myapp depends on foo >1.2.0 <2.0.0 which doesn't "
+          'match any versions, version solving failed.',
+        ),
         exitCode: exit_codes.DATA,
       );
 
@@ -147,8 +151,9 @@ void main() {
       await pubAdd(
         args: ['foo:1.2.3'],
         error: contains(
-            'Because every version of foo depends on bar 2.0.4 and myapp '
-            'depends on bar 2.0.3, foo is forbidden.'),
+          'Because every version of foo depends on bar 2.0.4 and myapp '
+          'depends on bar 2.0.3, foo is forbidden.',
+        ),
         exitCode: exit_codes.DATA,
       );
 

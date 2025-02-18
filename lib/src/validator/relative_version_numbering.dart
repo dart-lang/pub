@@ -29,10 +29,7 @@ class RelativeVersionNumberingValidator extends Validator {
     List<PackageId> existingVersions;
     try {
       existingVersions = await cache.getVersions(
-        hostedSource.refFor(
-          package.name,
-          url: serverUrl.toString(),
-        ),
+        hostedSource.refFor(package.name, url: serverUrl.toString()),
       );
     } on PackageNotFoundException {
       existingVersions = [];
@@ -49,8 +46,9 @@ The latest published version is $latestVersion.
 Your version $currentVersion is earlier than that.''');
     }
 
-    final previousRelease =
-        existingVersions.lastWhereOrNull((id) => id.version < package.version);
+    final previousRelease = existingVersions.lastWhereOrNull(
+      (id) => id.version < package.version,
+    );
 
     if (previousRelease == null) return;
 
@@ -110,9 +108,9 @@ See $semverUrl for information about versioning.''');
 
 extension on Version {
   Version withoutBuild() => Version(
-        major,
-        minor,
-        patch,
-        pre: preRelease.isEmpty ? null : preRelease.join('.'),
-      );
+    major,
+    minor,
+    patch,
+    pre: preRelease.isEmpty ? null : preRelease.join('.'),
+  );
 }

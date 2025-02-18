@@ -70,153 +70,138 @@ class PackageServer {
   }
 
   static final _versionInfoPattern = RegExp(r'/api/packages/([a-zA-Z_0-9]*)');
-  static final _advisoriesPattern =
-      RegExp(r'/api/packages/([a-zA-Z_0-9]*)/advisories');
+  static final _advisoriesPattern = RegExp(
+    r'/api/packages/([a-zA-Z_0-9]*)/advisories',
+  );
 
-  static final _downloadPattern =
-      RegExp(r'/packages/([^/]*)/versions/([^/]*).tar.gz');
+  static final _downloadPattern = RegExp(
+    r'/packages/([^/]*)/versions/([^/]*).tar.gz',
+  );
 
   static Future<PackageServer> start() async {
     final server = PackageServer._(
       await shelf_io.IOServer.bind(InternetAddress.loopbackIPv4, 0),
     );
-    server.handle(
-      _versionInfoPattern,
-      (shelf.Request request) async {
-        final parts = request.url.pathSegments;
-        assert(parts[0] == 'api');
-        assert(parts[1] == 'packages');
-        final name = parts[2];
+    server.handle(_versionInfoPattern, (shelf.Request request) async {
+      final parts = request.url.pathSegments;
+      assert(parts[0] == 'api');
+      assert(parts[1] == 'packages');
+      final name = parts[2];
 
-        final package = server._packages[name];
-        if (package == null) {
-          return shelf.Response.notFound('No package named $name');
-        }
+      final package = server._packages[name];
+      if (package == null) {
+        return shelf.Response.notFound('No package named $name');
+      }
 
-        return shelf.Response.ok(
-          jsonEncode({
-            'name': name,
-            'uploaders': ['nweiz@google.com'],
-            'versions': [
-              for (final version in package.versions.values)
-                {
-                  'pubspec': version.pubspec,
-                  'version': version.version.toString(),
-                  'archive_url':
-                      '${server.url}/packages/$name/versions/${version.version}.tar.gz',
-                  if (version.isRetracted) 'retracted': true,
-                  if (version.sha256 != null || server.serveContentHashes)
-                    'archive_sha256': version.sha256 ??
-                        hexEncode(
-                          (await sha256.bind(version.contents()).first).bytes,
-                        ),
-                },
-            ],
-            if (package.isDiscontinued) 'isDiscontinued': true,
-            if (package.advisoriesUpdated != null)
-              'advisoriesUpdated': package.advisoriesUpdated!.toIso8601String(),
-            if (package.discontinuedReplacementText != null)
-              'replacedBy': package.discontinuedReplacementText,
-          }),
-          headers: {
-            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json',
-          },
-        );
-      },
-    );
+      return shelf.Response.ok(
+        jsonEncode({
+          'name': name,
+          'uploaders': ['nweiz@google.com'],
+          'versions': [
+            for (final version in package.versions.values)
+              {
+                'pubspec': version.pubspec,
+                'version': version.version.toString(),
+                'archive_url':
+                    '${server.url}/packages/$name/versions/${version.version}.tar.gz',
+                if (version.isRetracted) 'retracted': true,
+                if (version.sha256 != null || server.serveContentHashes)
+                  'archive_sha256':
+                      version.sha256 ??
+                      hexEncode(
+                        (await sha256.bind(version.contents()).first).bytes,
+                      ),
+              },
+          ],
+          if (package.isDiscontinued) 'isDiscontinued': true,
+          if (package.advisoriesUpdated != null)
+            'advisoriesUpdated': package.advisoriesUpdated!.toIso8601String(),
+          if (package.discontinuedReplacementText != null)
+            'replacedBy': package.discontinuedReplacementText,
+        }),
+        headers: {HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'},
+      );
+    });
 
-    server.handle(
-      _advisoriesPattern,
-      (shelf.Request request) async {
-        final parts = request.url.pathSegments;
-        assert(parts[0] == 'api');
-        assert(parts[1] == 'packages');
-        final name = parts[2];
-        assert(parts[3] == 'advisories');
+    server.handle(_advisoriesPattern, (shelf.Request request) async {
+      final parts = request.url.pathSegments;
+      assert(parts[0] == 'api');
+      assert(parts[1] == 'packages');
+      final name = parts[2];
+      assert(parts[3] == 'advisories');
 
-        final package = server._packages[name];
-        if (package == null) {
-          return shelf.Response.notFound('No package named $name');
-        }
+      final package = server._packages[name];
+      if (package == null) {
+        return shelf.Response.notFound('No package named $name');
+      }
 
-        return shelf.Response.ok(
-          jsonEncode({
-            'advisoriesUpdated': defaultAdvisoriesUpdated.toIso8601String(),
-            'advisories': [
-              for (final advisory in package.advisories.values)
-                {
-                  'id': advisory.id,
-                  'summary': 'Example',
-                  'aliases': [...advisory.aliases],
-                  'details': 'This is a dummy example.',
-                  'modified': defaultAdvisoriesUpdated.toIso8601String(),
-                  'published': defaultAdvisoriesUpdated.toIso8601String(),
-                  'affected': [
-                    for (final package in advisory.affectedPackages)
-                      {
-                        'package': {
-                          'name': package.name,
-                          'ecosystem': package.ecosystem,
-                        },
-                        'versions': [...package.versions],
+      return shelf.Response.ok(
+        jsonEncode({
+          'advisoriesUpdated': defaultAdvisoriesUpdated.toIso8601String(),
+          'advisories': [
+            for (final advisory in package.advisories.values)
+              {
+                'id': advisory.id,
+                'summary': 'Example',
+                'aliases': [...advisory.aliases],
+                'details': 'This is a dummy example.',
+                'modified': defaultAdvisoriesUpdated.toIso8601String(),
+                'published': defaultAdvisoriesUpdated.toIso8601String(),
+                'affected': [
+                  for (final package in advisory.affectedPackages)
+                    {
+                      'package': {
+                        'name': package.name,
+                        'ecosystem': package.ecosystem,
                       },
-                  ],
-                  if (advisory.displayUrl != null)
-                    'database_specific': {
-                      'pub_display_url': advisory.displayUrl,
+                      'versions': [...package.versions],
                     },
-                },
-            ],
-          }),
-          headers: {
-            HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json',
-          },
-        );
-      },
-    );
+                ],
+                if (advisory.displayUrl != null)
+                  'database_specific': {'pub_display_url': advisory.displayUrl},
+              },
+          ],
+        }),
+        headers: {HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'},
+      );
+    });
 
-    server.handle(
-      _downloadPattern,
-      (shelf.Request request) async {
-        final parts = request.url.pathSegments;
-        assert(parts[0] == 'packages');
-        final name = parts[1];
-        assert(parts[2] == 'versions');
-        final package = server._packages[name];
-        if (package == null) {
-          return shelf.Response.notFound('No package $name');
-        }
+    server.handle(_downloadPattern, (shelf.Request request) async {
+      final parts = request.url.pathSegments;
+      assert(parts[0] == 'packages');
+      final name = parts[1];
+      assert(parts[2] == 'versions');
+      final package = server._packages[name];
+      if (package == null) {
+        return shelf.Response.notFound('No package $name');
+      }
 
-        final version = Version.parse(
-          parts[3].substring(0, parts[3].length - '.tar.gz'.length),
-        );
-        assert(parts[3].endsWith('.tar.gz'));
+      final version = Version.parse(
+        parts[3].substring(0, parts[3].length - '.tar.gz'.length),
+      );
+      assert(parts[3].endsWith('.tar.gz'));
 
-        for (final packageVersion in package.versions.values) {
-          if (packageVersion.version == version) {
-            final headers = packageVersion.headers ?? {};
-            headers[HttpHeaders.contentTypeHeader] ??= [
-              'application/octet-stream',
-            ];
+      for (final packageVersion in package.versions.values) {
+        if (packageVersion.version == version) {
+          final headers = packageVersion.headers ?? {};
+          headers[HttpHeaders.contentTypeHeader] ??= [
+            'application/octet-stream',
+          ];
 
-            // This gate enables tests to validate the CRC32C parser by
-            // passing in arbitrary values for the checksum header.
-            if (server.serveChecksums &&
-                !headers.containsKey(checksumHeaderName)) {
-              headers[checksumHeaderName] = composeChecksumHeader(
-                crc32c: await packageVersion.computeArchiveCrc32c(),
-              );
-            }
-
-            return shelf.Response.ok(
-              packageVersion.contents(),
-              headers: headers,
+          // This gate enables tests to validate the CRC32C parser by
+          // passing in arbitrary values for the checksum header.
+          if (server.serveChecksums &&
+              !headers.containsKey(checksumHeaderName)) {
+            headers[checksumHeaderName] = composeChecksumHeader(
+              crc32c: await packageVersion.computeArchiveCrc32c(),
             );
           }
+
+          return shelf.Response.ok(packageVersion.contents(), headers: headers);
         }
-        return shelf.Response.notFound('No version $version of $name');
-      },
-    );
+      }
+      return shelf.Response.notFound('No version $version of $name');
+    });
     return server;
   }
 
@@ -231,25 +216,20 @@ class PackageServer {
   String get url => _inner.url.toString();
 
   /// From now on report errors on any request.
-  void serveErrors() => _handlers
-    ..clear()
-    ..add(
-      _PatternAndHandler(
-        RegExp('.*'),
-        (request) {
-          fail('The HTTP server received an unexpected request:\n'
-              '${request.method} ${request.requestedUri}');
-        },
-      ),
-    );
+  void serveErrors() =>
+      _handlers
+        ..clear()
+        ..add(
+          _PatternAndHandler(RegExp('.*'), (request) {
+            fail(
+              'The HTTP server received an unexpected request:\n'
+              '${request.method} ${request.requestedUri}',
+            );
+          }),
+        );
 
   void handle(Pattern pattern, shelf.Handler handler) {
-    _handlers.add(
-      _PatternAndHandler(
-        pattern,
-        handler,
-      ),
-    );
+    _handlers.add(_PatternAndHandler(pattern, handler));
   }
 
   // Installs a handler at [pattern] that expects to be called exactly once with
@@ -260,12 +240,10 @@ class PackageServer {
   void expect(String method, Pattern pattern, shelf.Handler handler) {
     handle(
       pattern,
-      expectAsync1(
-        (request) {
-          test.expect(request.method, method);
-          return handler(request);
-        },
-      ),
+      expectAsync1((request) {
+        test.expect(request.method, method);
+        return handler(request);
+      }),
     );
   }
 
@@ -330,8 +308,9 @@ class PackageServer {
       ..discontinuedReplacementText = replacementText;
   }
 
-  static final defaultAdvisoriesUpdated =
-      DateTime.fromMicrosecondsSinceEpoch(0);
+  static final defaultAdvisoriesUpdated = DateTime.fromMicrosecondsSinceEpoch(
+    0,
+  );
 
   /// Add a security advisory which affects versions in [affectedPackages].
   void addAdvisory({
@@ -345,14 +324,10 @@ class PackageServer {
       _packages[package.name]!.advisoriesUpdated =
           advisoriesUpdated ?? defaultAdvisoriesUpdated;
       _packages[package.name]!.advisories.putIfAbsent(
-            advisoryId,
-            () => _ServedAdvisory(
-              advisoryId,
-              affectedPackages,
-              aliases,
-              displayUrl,
-            ),
-          );
+        advisoryId,
+        () =>
+            _ServedAdvisory(advisoryId, affectedPackages, aliases, displayUrl),
+      );
     }
   }
 
@@ -383,8 +358,9 @@ class PackageServer {
 
     // Otherwise, compute from package contents.
     if (serveChecksums) {
-      checksumHeader ??=
-          composeChecksumHeader(crc32c: await v.computeArchiveCrc32c());
+      checksumHeader ??= composeChecksumHeader(
+        crc32c: await v.computeArchiveCrc32c(),
+      );
     }
 
     return checksumHeader?.join(',');

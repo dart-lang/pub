@@ -27,14 +27,15 @@ class AnalysisContextManager {
   final AnalysisSession _session;
 
   factory AnalysisContextManager(String packagePath) => sessions.putIfAbsent(
-        packagePath,
-        () => AnalysisContextManager._(packagePath),
-      );
+    packagePath,
+    () => AnalysisContextManager._(packagePath),
+  );
 
   AnalysisContextManager._(this.packagePath)
-      : _session = AnalysisContextCollection(
-          includedPaths: [packagePath],
-        ).contextFor(packagePath).currentSession;
+    : _session =
+          AnalysisContextCollection(
+            includedPaths: [packagePath],
+          ).contextFor(packagePath).currentSession;
 
   /// Parse the file with the given [path] into AST.
   ///
@@ -123,8 +124,10 @@ Future<void> precompile({
     tempDir = createTempDir(p.dirname(outputPath), 'tmp');
     // To avoid potential races we copy the incremental data to a temporary file
     // for just this compilation.
-    final temporaryIncrementalDill =
-        p.join(tempDir, '${p.basename(incrementalDillPath)}.temp');
+    final temporaryIncrementalDill = p.join(
+      tempDir,
+      '${p.basename(incrementalDillPath)}.temp',
+    );
     try {
       if (fileExists(outputPath)) {
         copyFile(outputPath, temporaryIncrementalDill);

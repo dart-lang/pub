@@ -10,10 +10,9 @@ import 'package:test/test.dart';
 void main() {
   test('splitZeroTerminated works', () {
     expect(splitZeroTerminated(Uint8List.fromList([])), <Uint8List>[]);
-    expect(
-      splitZeroTerminated(Uint8List.fromList([0])),
-      <Uint8List>[Uint8List.fromList([])],
-    );
+    expect(splitZeroTerminated(Uint8List.fromList([0])), <Uint8List>[
+      Uint8List.fromList([]),
+    ]);
 
     expect(splitZeroTerminated(Uint8List.fromList([1, 0, 1])), <Uint8List>[
       Uint8List.fromList([1]),

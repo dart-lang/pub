@@ -25,11 +25,7 @@ void main() {
           'dev_dependencies': {'test': '^1.0.0'},
         },
       )
-      ..serve(
-        'bar',
-        '3.2.1',
-        sdk: '^3.5.0',
-      )
+      ..serve('bar', '3.2.1', sdk: '^3.5.0')
       ..serve(
         'baz',
         '2.2.2',
@@ -37,16 +33,8 @@ void main() {
         deps: {'bar': '3.2.1'},
         contents: [d.dir('lib', [])],
       )
-      ..serve(
-        'test',
-        '1.0.0',
-        sdk: '^3.5.0',
-      )
-      ..serve(
-        'test',
-        '2.0.0',
-        sdk: '^3.5.0',
-      );
+      ..serve('test', '1.0.0', sdk: '^3.5.0')
+      ..serve('test', '2.0.0', sdk: '^3.5.0');
 
     await d.dir('boo', [
       d.libPubspec(
@@ -65,25 +53,17 @@ void main() {
           'boo': {'path': '../boo'},
         },
         extras: {
-          'environment': {
-            'sdk': '^3.5.0',
-          },
+          'environment': {'sdk': '^3.5.0'},
           'dev_dependencies': {'test': '^2.0.0'},
           'workspace': ['helper/'],
         },
       ),
       d.dir('helper', [
-        d.libPubspec(
-          'helper',
-          '2.0.0',
-          resolutionWorkspace: true,
-        ),
+        d.libPubspec('helper', '2.0.0', resolutionWorkspace: true),
       ]),
     ]).create();
 
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-    );
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
 
     final packageGraph = jsonDecode(
       File(p.join(d.sandbox, packageGraphFilePath)).readAsStringSync(),
@@ -119,7 +99,7 @@ void main() {
           'name': 'baz',
           'version': '2.2.2',
           'dependencies': ['bar'],
-        }
+        },
       ],
       'configVersion': 1,
     });

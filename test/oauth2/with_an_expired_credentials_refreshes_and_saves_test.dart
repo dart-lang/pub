@@ -11,8 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test(
-      'with an expired credentials.json, refreshes and saves the '
+  test('with an expired credentials.json, refreshes and saves the '
       'refreshed access token to credentials.json', () async {
     await d.validPackage().create();
 
@@ -37,9 +36,10 @@ void main() {
         );
 
         return shelf.Response.ok(
-          jsonEncode(
-            {'access_token': 'new access token', 'token_type': 'bearer'},
-          ),
+          jsonEncode({
+            'access_token': 'new access token',
+            'token_type': 'bearer',
+          }),
           headers: {'content-type': 'application/json'},
         );
       });

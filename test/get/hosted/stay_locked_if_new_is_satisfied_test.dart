@@ -8,8 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      "doesn't unlock dependencies if a new dependency is already "
+  test("doesn't unlock dependencies if a new dependency is already "
       'satisfied', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0', deps: {'bar': '<2.0.0'});

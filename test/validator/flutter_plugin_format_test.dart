@@ -20,52 +20,61 @@ void main() {
     });
 
     test('is a Flutter 1.9.0 package', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.9.0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.9.0 <2.0.0'},
+      );
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
       await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0 package', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.10.0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.10.0 <2.0.0'},
+      );
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
       await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a Flutter 1.10.0-0 package', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.10.0-0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.10.0-0 <2.0.0'},
+      );
       await d.dir(appPath, [d.pubspec(pkg), d.dir('ios')]).create();
       await expectValidationDeprecated(flutterPluginFormat);
     });
 
     test('is a flutter 1.10.0 plugin with the new format', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.10.0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.10.0 <2.0.0'},
+      );
       pkg['flutter'] = {
         'plugin': {
           'platforms': {
-            'ios': {
-              'classPrefix': 'FLT',
-              'pluginClass': 'SamplePlugin',
-            },
+            'ios': {'classPrefix': 'FLT', 'pluginClass': 'SamplePlugin'},
           },
         },
       };
@@ -76,22 +85,22 @@ void main() {
 
   group('should consider a package invalid if it', () {
     test('is a flutter plugin with old and new format', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.9.0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.9.0 <2.0.0'},
+      );
       pkg['flutter'] = {
         'plugin': {
           'androidPackage': 'io.flutter.plugins.myplugin',
           'iosPrefix': 'FLT',
           'pluginClass': 'MyPlugin',
           'platforms': {
-            'ios': {
-              'classPrefix': 'FLT',
-              'pluginClass': 'SamplePlugin',
-            },
+            'ios': {'classPrefix': 'FLT', 'pluginClass': 'SamplePlugin'},
           },
         },
       };
@@ -107,12 +116,15 @@ void main() {
     });
 
     test('is a flutter 1.9.0 plugin with old format', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.9.0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.9.0 <2.0.0'},
+      );
       pkg['flutter'] = {
         'plugin': {
           'androidPackage': 'io.flutter.plugins.myplugin',
@@ -130,19 +142,19 @@ void main() {
     });
 
     test('is a flutter 1.9.0 plugin with new format', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.9.0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.9.0 <2.0.0'},
+      );
       pkg['flutter'] = {
         'plugin': {
           'platforms': {
-            'ios': {
-              'classPrefix': 'FLT',
-              'pluginClass': 'SamplePlugin',
-            },
+            'ios': {'classPrefix': 'FLT', 'pluginClass': 'SamplePlugin'},
           },
         },
       };
@@ -157,21 +169,22 @@ void main() {
       );
     });
 
-    test(
-        'is a flutter plugin with only implicit flutter sdk version constraint '
+    test('is a flutter plugin with only implicit '
+        'flutter sdk version constraint '
         'and the new format', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0'},
+      );
       pkg['flutter'] = {
         'plugin': {
           'platforms': {
-            'ios': {
-              'classPrefix': 'FLT',
-              'pluginClass': 'SamplePlugin',
-            },
+            'ios': {'classPrefix': 'FLT', 'pluginClass': 'SamplePlugin'},
           },
         },
       };
@@ -193,10 +206,7 @@ void main() {
       pkg['flutter'] = {
         'plugin': {
           'platforms': {
-            'ios': {
-              'classPrefix': 'FLT',
-              'pluginClass': 'SamplePlugin',
-            },
+            'ios': {'classPrefix': 'FLT', 'pluginClass': 'SamplePlugin'},
           },
         },
       };
@@ -212,19 +222,19 @@ void main() {
     });
 
     test('is a flutter 1.8.0 plugin with new format', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.8.0 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.8.0 <2.0.0'},
+      );
       pkg['flutter'] = {
         'plugin': {
           'platforms': {
-            'ios': {
-              'classPrefix': 'FLT',
-              'pluginClass': 'SamplePlugin',
-            },
+            'ios': {'classPrefix': 'FLT', 'pluginClass': 'SamplePlugin'},
           },
         },
       };
@@ -240,19 +250,19 @@ void main() {
     });
 
     test('is a flutter 1.9.999 plugin with new format', () async {
-      final pkg = packageMap('test_pkg', '1.0.0', {
-        'flutter': {'sdk': 'flutter'},
-      }, {}, {
-        'sdk': '>=2.0.0 <3.0.0',
-        'flutter': '>=1.9.999 <2.0.0',
-      });
+      final pkg = packageMap(
+        'test_pkg',
+        '1.0.0',
+        {
+          'flutter': {'sdk': 'flutter'},
+        },
+        {},
+        {'sdk': '>=2.0.0 <3.0.0', 'flutter': '>=1.9.999 <2.0.0'},
+      );
       pkg['flutter'] = {
         'plugin': {
           'platforms': {
-            'ios': {
-              'classPrefix': 'FLT',
-              'pluginClass': 'SamplePlugin',
-            },
+            'ios': {'classPrefix': 'FLT', 'pluginClass': 'SamplePlugin'},
           },
         },
       };

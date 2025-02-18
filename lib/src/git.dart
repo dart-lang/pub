@@ -35,13 +35,14 @@ class GitException implements ApplicationException {
   final int exitCode;
 
   @override
-  String get message => 'Git error. Command: `git ${args.join(' ')}`\n'
+  String get message =>
+      'Git error. Command: `git ${args.join(' ')}`\n'
       'stdout: ${stdout is String ? stdout : '<binary>'}\n'
       'stderr: ${stderr is String ? stderr : '<binary>'}\n'
       'exit code: $exitCode';
 
   GitException(Iterable<String> args, this.stdout, this.stderr, this.exitCode)
-      : args = args.toList();
+    : args = args.toList();
 
   @override
   String toString() => message;
@@ -92,8 +93,10 @@ Future<String> run(
   Encoding stderrEncoding = systemEncoding,
 }) async {
   if (!isInstalled) {
-    fail('Cannot find a Git executable.\n'
-        'Please ensure Git is correctly installed.');
+    fail(
+      'Cannot find a Git executable.\n'
+      'Please ensure Git is correctly installed.',
+    );
   }
 
   log.muteProgress();
@@ -107,12 +110,7 @@ Future<String> run(
       stderrEncoding: stderrEncoding,
     );
     if (!result.success) {
-      throw GitException(
-        args,
-        result.stdout,
-        result.stderr,
-        result.exitCode,
-      );
+      throw GitException(args, result.stdout, result.stderr, result.exitCode);
     }
     return result.stdout;
   } finally {
@@ -129,8 +127,10 @@ String runSync(
   Encoding stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
-    fail('Cannot find a Git executable.\n'
-        'Please ensure Git is correctly installed.');
+    fail(
+      'Cannot find a Git executable.\n'
+      'Please ensure Git is correctly installed.',
+    );
   }
 
   final result = runProcessSync(
@@ -142,12 +142,7 @@ String runSync(
     stderrEncoding: stderrEncoding,
   );
   if (!result.success) {
-    throw GitException(
-      args,
-      result.stdout,
-      result.stderr,
-      result.exitCode,
-    );
+    throw GitException(args, result.stdout, result.stderr, result.exitCode);
   }
 
   return result.stdout;
@@ -161,8 +156,10 @@ Uint8List runSyncBytes(
   Encoding stderrEncoding = systemEncoding,
 }) {
   if (!isInstalled) {
-    fail('Cannot find a Git executable.\n'
-        'Please ensure Git is correctly installed.');
+    fail(
+      'Cannot find a Git executable.\n'
+      'Please ensure Git is correctly installed.',
+    );
   }
 
   final result = runProcessSyncBytes(
@@ -173,12 +170,7 @@ Uint8List runSyncBytes(
     stderrEncoding: stderrEncoding,
   );
   if (!result.success) {
-    throw GitException(
-      args,
-      result.stdout,
-      result.stderr,
-      result.exitCode,
-    );
+    throw GitException(args, result.stdout, result.stderr, result.exitCode);
   }
 
   return result.stdout;
@@ -218,8 +210,10 @@ bool _tryGitCommand(String command) {
     // Some users may have configured commands such as autorun, which may
     // produce additional output, so we need to look for "git version"
     // in every line of the output.
-    final match = RegExp(r'^git version (\d+)\.(\d+)\..*$', multiLine: true)
-        .matchAsPrefix(output);
+    final match = RegExp(
+      r'^git version (\d+)\.(\d+)\..*$',
+      multiLine: true,
+    ).matchAsPrefix(output);
     if (match == null) return false;
     final versionString = match[0]!.substring('git version '.length);
     // Git seems to use many parts in the version number. We just check the

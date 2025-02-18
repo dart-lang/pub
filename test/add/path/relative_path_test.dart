@@ -12,8 +12,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('can use relative path', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
@@ -23,22 +25,24 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'path': '../foo'},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'path': '../foo'},
+          },
+        )
+        .validate();
   });
 
   test('can use relative path with a path descriptor', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '1.2.3')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.2.3'),
+    ]).create();
 
     await d.appDir().create();
 
-    await pubAdd(
-      args: ['dev:foo:{"path":"../foo"}'],
-    );
+    await pubAdd(args: ['dev:foo:{"path":"../foo"}']);
 
     await d.dir(appPath, [
       d.pubspec({
@@ -51,8 +55,10 @@ void main() {
   });
 
   test('can use relative path with --directory', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
@@ -66,11 +72,13 @@ void main() {
       d.packageConfigEntry(name: 'foo', path: '../foo'),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'path': '../foo'},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'path': '../foo'},
+          },
+        )
+        .validate();
   });
 
   test('fails if path does not exist', () async {
@@ -79,9 +87,10 @@ void main() {
     await pubAdd(
       args: ['foo', '--path', '../foo'],
       error: equalsIgnoringWhitespace(
-          'Because myapp depends on foo from path which doesn\'t exist '
-          '(could not find package foo at "..${Platform.pathSeparator}foo"), '
-          'version solving failed.'),
+        'Because myapp depends on foo from path which doesn\'t exist '
+        '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+        'version solving failed.',
+      ),
       exitCode: exit_codes.DATA,
     );
 
@@ -93,36 +102,41 @@ void main() {
   });
 
   test('adds a package from absolute path with version constraint', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(args: ['foo:0.0.1', '--path', '../foo']);
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'path': '../foo', 'version': '0.0.1'},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'path': '../foo', 'version': '0.0.1'},
+          },
+        )
+        .validate();
   });
 
   test('fails when adding with an invalid version constraint', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['foo:2.0.0', '--path', '../foo'],
       error: equalsIgnoringWhitespace(
-          'Because myapp depends on foo from path which doesn\'t exist '
-          '(could not find package foo at "..${Platform.pathSeparator}foo"), '
-          'version solving failed.'),
+        'Because myapp depends on foo from path which doesn\'t exist '
+        '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+        'version solving failed.',
+      ),
       exitCode: exit_codes.DATA,
     );
 
@@ -136,8 +150,10 @@ void main() {
   test('can be overriden by dependency override', () async {
     final server = await servePackages();
     server.serve('foo', '1.2.2');
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
@@ -165,10 +181,14 @@ void main() {
   });
 
   test('Can add multiple path packages using descriptors', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
-    await d
-        .dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
+    await d.dir('bar', [
+      d.libDir('bar'),
+      d.libPubspec('bar', '0.0.1'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
@@ -188,11 +208,13 @@ void main() {
       d.packageConfigEntry(name: 'bar', path: '../bar'),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'path': '../foo'},
-        'bar': {'path': '../bar'},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'path': '../foo'},
+            'bar': {'path': '../bar'},
+          },
+        )
+        .validate();
   });
 }

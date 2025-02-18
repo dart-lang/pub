@@ -8,8 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      "upgrades one locked pub server package's dependencies if it's "
+  test("upgrades one locked pub server package's dependencies if it's "
       'necessary', () async {
     final server = await servePackages();
 

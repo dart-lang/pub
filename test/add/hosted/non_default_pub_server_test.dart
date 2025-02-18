@@ -31,11 +31,13 @@ void main() {
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'version': '1.2.3', 'hosted': url},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'version': '1.2.3', 'hosted': url},
+          },
+        )
+        .validate();
   });
 
   test('Uses old syntax when needed', () async {
@@ -53,24 +55,23 @@ void main() {
       },
     };
 
-    await d.appDir(
-      dependencies: {},
-      pubspec: oldSyntaxSdkConstraint,
-    ).create();
+    await d.appDir(dependencies: {}, pubspec: oldSyntaxSdkConstraint).create();
 
     final url = server.url;
 
     await pubAdd(args: ['foo:1.2.3', '--hosted-url', url]);
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': url},
-        },
-      },
-      pubspec: oldSyntaxSdkConstraint,
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'version': '1.2.3',
+              'hosted': {'name': 'foo', 'url': url},
+            },
+          },
+          pubspec: oldSyntaxSdkConstraint,
+        )
+        .validate();
   });
 
   test('adds multiple packages from a non-default pub server', () async {
@@ -94,10 +95,11 @@ void main() {
       args: ['foo:1.2.3', 'bar:3.2.3', 'baz:1.3.5', '--hosted-url', url],
     );
 
-    await d.cacheDir(
-      {'foo': '1.2.3', 'bar': '3.2.3', 'baz': '1.3.5'},
-      port: server.port,
-    ).validate();
+    await d.cacheDir({
+      'foo': '1.2.3',
+      'bar': '3.2.3',
+      'baz': '1.3.5',
+    }, port: server.port).validate();
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
@@ -105,13 +107,15 @@ void main() {
       d.packageConfigEntry(name: 'baz', version: '1.3.5', server: server),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'version': '1.2.3', 'hosted': url},
-        'bar': {'version': '3.2.3', 'hosted': url},
-        'baz': {'version': '1.3.5', 'hosted': url},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'version': '1.2.3', 'hosted': url},
+            'bar': {'version': '3.2.3', 'hosted': url},
+            'baz': {'version': '1.3.5', 'hosted': url},
+          },
+        )
+        .validate();
   });
 
   test('fails when adding from an invalid url', () async {
@@ -121,8 +125,10 @@ void main() {
 
     await pubAdd(
       args: ['foo', '--hosted-url', 'https://invalid-url.foo'],
-      error: contains('Got socket error trying to find package foo at '
-          'https://invalid-url.foo.'),
+      error: contains(
+        'Got socket error trying to find package foo at '
+        'https://invalid-url.foo.',
+      ),
       exitCode: exit_codes.DATA,
       environment: {
         // Limit the retries - the url will never go valid.
@@ -138,64 +144,70 @@ void main() {
   });
 
   test(
-      'adds a package from a non-default pub server with no version constraint',
-      () async {
-    // Make the default server serve errors. Only the custom server should
-    // be accessed.
-    (await servePackages()).serveErrors();
+    'adds a package from a non-default pub server with no version constraint',
+    () async {
+      // Make the default server serve errors. Only the custom server should
+      // be accessed.
+      (await servePackages()).serveErrors();
 
-    final server = await startPackageServer();
-    server.serve('foo', '0.2.5');
-    server.serve('foo', '1.1.0');
-    server.serve('foo', '1.2.3');
+      final server = await startPackageServer();
+      server.serve('foo', '0.2.5');
+      server.serve('foo', '1.1.0');
+      server.serve('foo', '1.2.3');
 
-    await d.appDir(dependencies: {}).create();
+      await d.appDir(dependencies: {}).create();
 
-    final url = server.url;
+      final url = server.url;
 
-    await pubAdd(args: ['foo', '--hosted-url', url]);
+      await pubAdd(args: ['foo', '--hosted-url', url]);
 
-    await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
-    ]).validate();
-    await d.appDir(
-      dependencies: {
-        'foo': {'version': '^1.2.3', 'hosted': url},
-      },
-    ).validate();
-  });
-
-  test('adds a package from a non-default pub server with a version constraint',
-      () async {
-    // Make the default server serve errors. Only the custom server should
-    // be accessed.
-    (await servePackages()).serveErrors();
-
-    final server = await startPackageServer();
-    server.serve('foo', '0.2.5');
-    server.serve('foo', '1.1.0');
-    server.serve('foo', '1.2.3');
-
-    await d.appDir(dependencies: {}).create();
-
-    final url = server.url;
-
-    await pubAdd(args: ['foo', '--hosted-url', url]);
-
-    await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
-    ]).validate();
-    await d.appDir(
-      dependencies: {
-        'foo': {'version': '^1.2.3', 'hosted': url},
-      },
-    ).validate();
-  });
+      await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
+      ]).validate();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'version': '^1.2.3', 'hosted': url},
+            },
+          )
+          .validate();
+    },
+  );
 
   test(
-      'adds a package from a non-default pub server with the "any" version '
+    'adds a package from a non-default pub server with a version constraint',
+    () async {
+      // Make the default server serve errors. Only the custom server should
+      // be accessed.
+      (await servePackages()).serveErrors();
+
+      final server = await startPackageServer();
+      server.serve('foo', '0.2.5');
+      server.serve('foo', '1.1.0');
+      server.serve('foo', '1.2.3');
+
+      await d.appDir(dependencies: {}).create();
+
+      final url = server.url;
+
+      await pubAdd(args: ['foo', '--hosted-url', url]);
+
+      await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
+      ]).validate();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'version': '^1.2.3', 'hosted': url},
+            },
+          )
+          .validate();
+    },
+  );
+
+  test('adds a package from a non-default pub server with the "any" version '
       'constraint', () async {
     // Make the default server serve errors. Only the custom server should
     // be accessed.
@@ -216,10 +228,12 @@ void main() {
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.2.3', server: server),
     ]).validate();
-    await d.appDir(
-      dependencies: {
-        'foo': {'hosted': url},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'hosted': url},
+          },
+        )
+        .validate();
   });
 }

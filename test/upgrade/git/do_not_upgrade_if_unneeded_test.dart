@@ -9,8 +9,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      "doesn't upgrade one locked Git package's dependencies if it's "
+  test("doesn't upgrade one locked Git package's dependencies if it's "
       'not necessary', () async {
     ensureGit();
 
@@ -21,24 +20,27 @@ void main() {
         '1.0.0',
         deps: {
           'foo_dep': {
-            'git': p
-                .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
-                .toString(),
+            'git':
+                p
+                    .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
+                    .toString(),
           },
         },
       ),
     ]).create();
 
-    await d.git(
-      'foo_dep.git',
-      [d.libDir('foo_dep'), d.libPubspec('foo_dep', '1.0.0')],
-    ).create();
+    await d.git('foo_dep.git', [
+      d.libDir('foo_dep'),
+      d.libPubspec('foo_dep', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -62,9 +64,10 @@ void main() {
         '1.0.0',
         deps: {
           'foo_dep': {
-            'git': p
-                .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
-                .toString(),
+            'git':
+                p
+                    .toUri(p.absolute(d.sandbox, appPath, '../foo_dep.git'))
+                    .toString(),
           },
         },
       ),
@@ -78,9 +81,7 @@ void main() {
     await pubUpgrade(args: ['foo']);
 
     await d.dir(cachePath, [
-      d.dir('git', [
-        d.gitPackageRevisionCacheDir('foo', modifier: 2),
-      ]),
+      d.dir('git', [d.gitPackageRevisionCacheDir('foo', modifier: 2)]),
     ]).validate();
 
     expect(packageSpec('foo_dep'), originalFooDepSpec);

@@ -11,8 +11,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('path dependency when path is a file', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.file('dummy.txt', '').create();
     final dummyPath = p.join(d.sandbox, 'dummy.txt');
@@ -26,7 +28,8 @@ void main() {
     ]).create();
 
     await pubGet(
-      error: 'Because myapp depends on foo from path which doesn\'t exist '
+      error:
+          'Because myapp depends on foo from path which doesn\'t exist '
           '(Path dependency for package foo must refer to a directory, '
           'not a file. Was "$dummyPath".), version solving failed.',
       exitCode: exit_codes.NO_INPUT,

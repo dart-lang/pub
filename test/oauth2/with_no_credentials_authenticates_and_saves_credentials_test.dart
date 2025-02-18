@@ -10,8 +10,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  test(
-      'with no credentials.json, authenticates and saves '
+  test('with no credentials.json, authenticates and saves '
       'credentials.json', () async {
     await d.validPackage().create();
     await servePackages();

@@ -11,15 +11,12 @@ void main() {
   void testBump(String part, String from, String to) {
     test('Bumps the $part version from $from to $to', () async {
       await dir(appPath, [
-        file(
-          'pubspec.yaml',
-          '''
+        file('pubspec.yaml', '''
 name: myapp
 version: $from # comment
 environment:
   sdk: $defaultSdkConstraint
-''',
-        ),
+'''),
       ]).create();
       await runPub(
         args: ['bump', part, '--dry-run'],

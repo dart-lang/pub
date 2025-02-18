@@ -26,8 +26,10 @@ void main() {
 
     expect(
       pub.stderr,
-      emitsLines('Invalid server response:\n'
-          '{not json'),
+      emitsLines(
+        'Invalid server response:\n'
+        '{not json',
+      ),
     );
     await pub.shouldExit(1);
   });

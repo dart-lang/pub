@@ -120,8 +120,7 @@ void main() {
     );
   });
 
-  test(
-      'The bound of ">=2.12.0 <3.0.0" is not '
+  test('The bound of ">=2.12.0 <3.0.0" is not '
       'compatible with prereleases of dart 4', () async {
     await d.dir(appPath, [
       d.pubspec({
@@ -139,32 +138,36 @@ void main() {
     );
   });
 
-  test('When the constraint is not rewritten, a helpful hint is given',
-      () async {
-    await d.appDir(
-      dependencies: {'foo': 'any'},
-      pubspec: {
-        'environment': {'sdk': '^2.12.0'},
-      },
-    ).create();
-    final server = await servePackages();
+  test(
+    'When the constraint is not rewritten, a helpful hint is given',
+    () async {
+      await d
+          .appDir(
+            dependencies: {'foo': 'any'},
+            pubspec: {
+              'environment': {'sdk': '^2.12.0'},
+            },
+          )
+          .create();
+      final server = await servePackages();
 
-    // foo is not null safe.
-    server.serve(
-      'foo',
-      '1.0.0',
-      pubspec: {
-        'environment': {'sdk': '>=2.10.0 <3.0.0'},
-      },
-    );
-    await pubGet(
-      error: contains(
-        'The lower bound of "sdk: \'>=2.10.0 <3.0.0\'" '
-        'must be 2.12.0 or higher to enable null safety.'
-        '\nFor details, see https://dart.dev/null-safety',
-      ),
-    );
-  });
+      // foo is not null safe.
+      server.serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'environment': {'sdk': '>=2.10.0 <3.0.0'},
+        },
+      );
+      await pubGet(
+        error: contains(
+          'The lower bound of "sdk: \'>=2.10.0 <3.0.0\'" '
+          'must be 2.12.0 or higher to enable null safety.'
+          '\nFor details, see https://dart.dev/null-safety',
+        ),
+      );
+    },
+  );
 
   test('Rewrite only happens after Dart 3', () async {
     await d.dir(appPath, [

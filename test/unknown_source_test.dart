@@ -12,11 +12,13 @@ import 'test_pub.dart';
 void main() {
   forBothPubGetAndUpgrade((command) {
     test('fails gracefully on a dependency from an unknown source', () async {
-      await d.appDir(
-        dependencies: {
-          'foo': {'bad': 'foo'},
-        },
-      ).create();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'bad': 'foo'},
+            },
+          )
+          .create();
 
       await pubCommand(
         command,
@@ -27,8 +29,7 @@ void main() {
       );
     });
 
-    test(
-        'fails gracefully on transitive dependency from an unknown '
+    test('fails gracefully on transitive dependency from an unknown '
         'source', () async {
       await d.dir('foo', [
         d.libDir('foo', 'foo 0.0.1'),
@@ -41,11 +42,13 @@ void main() {
         ),
       ]).create();
 
-      await d.appDir(
-        dependencies: {
-          'foo': {'path': '../foo'},
-        },
-      ).create();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'path': '../foo'},
+            },
+          )
+          .create();
 
       await pubCommand(
         command,
@@ -58,8 +61,10 @@ void main() {
     });
 
     test('ignores unknown source in lockfile', () async {
-      await d
-          .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+      await d.dir('foo', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '0.0.1'),
+      ]).create();
 
       // Depend on "foo" from a valid source.
       await d.dir(appPath, [

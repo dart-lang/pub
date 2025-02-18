@@ -85,17 +85,16 @@ class PackageLister {
 
   /// All versions of the package, sorted by [Version.compareTo].
   Future<List<PackageId>> get _versions => _versionsMemo.runOnce(() async {
-        final cachedVersions = _ref.isRoot
-            ? [
+    final cachedVersions =
+        _ref.isRoot
+              ? [
                 PackageId(
                   _ref.name,
                   _rootPackage!.pubspec.version,
-                  ResolvedRootDescription(
-                    _ref.description as RootDescription,
-                  ),
+                  ResolvedRootDescription(_ref.description as RootDescription),
                 ),
               ]
-            : (await withDependencyType(
+              : (await withDependencyType(
                 _dependencyType,
                 () => _systemCache.getVersions(
                   _ref,
@@ -103,9 +102,9 @@ class PackageLister {
                 ),
               ))
           ..sort((id1, id2) => id1.version.compareTo(id2.version));
-        _cachedVersions = cachedVersions;
-        return cachedVersions;
-      });
+    _cachedVersions = cachedVersions;
+    return cachedVersions;
+  });
   final _versionsMemo = AsyncMemoizer<List<PackageId>>();
 
   /// The most recent version of this package (or the oldest, if we're
@@ -124,8 +123,8 @@ class PackageLister {
     this._allowedRetractedVersion, {
     bool downgrade = false,
     this.sdkOverrides = const {},
-  })  : _isDowngrade = downgrade,
-        _rootPackage = null;
+  }) : _isDowngrade = downgrade,
+       _rootPackage = null;
 
   /// Creates a package lister for the root [package].
   PackageLister.root(
@@ -133,17 +132,17 @@ class PackageLister {
     this._systemCache, {
     required Set<String> overriddenPackages,
     required Map<String, Version>? sdkOverrides,
-  })  : _ref = PackageRef.root(package),
-        // Treat the package as locked so we avoid the logic for finding the
-        // boundaries of various constraints, which is useless for the root
-        // package.
-        _locked = PackageId.root(package),
-        _dependencyType = DependencyType.none,
-        _overriddenPackages = overriddenPackages,
-        _isDowngrade = false,
-        _allowedRetractedVersion = null,
-        sdkOverrides = sdkOverrides ?? {},
-        _rootPackage = package;
+  }) : _ref = PackageRef.root(package),
+       // Treat the package as locked so we avoid the logic for finding the
+       // boundaries of various constraints, which is useless for the root
+       // package.
+       _locked = PackageId.root(package),
+       _dependencyType = DependencyType.none,
+       _overriddenPackages = overriddenPackages,
+       _isDowngrade = false,
+       _allowedRetractedVersion = null,
+       sdkOverrides = sdkOverrides ?? {},
+       _rootPackage = package;
 
   /// Returns the number of versions of this package that match [constraint].
   Future<int> countVersions(VersionConstraint constraint) async {
@@ -228,20 +227,18 @@ class PackageLister {
         log.fine('Failed to parse pubspec for $id:\n$error');
         _knownInvalidVersions = _knownInvalidVersions.union(id.version);
         return [
-          Incompatibility(
-            [Term(id.toRange(), true)],
-            NoVersionsIncompatibilityCause(),
-          ),
+          Incompatibility([
+            Term(id.toRange(), true),
+          ], NoVersionsIncompatibilityCause()),
         ];
       } on PackageNotFoundException {
         // We can only get here if the lockfile refers to a specific package
         // version that doesn't exist (probably because it was yanked).
         _knownInvalidVersions = _knownInvalidVersions.union(id.version);
         return [
-          Incompatibility(
-            [Term(id.toRange(), true)],
-            NoVersionsIncompatibilityCause(),
-          ),
+          Incompatibility([
+            Term(id.toRange(), true),
+          ], NoVersionsIncompatibilityCause()),
         ];
       }
     }
@@ -268,11 +265,13 @@ class PackageLister {
       }
 
       final entries = [
-        ...pubspec.dependencies.values
-            .where((range) => !_overriddenPackages.contains(range.name)),
+        ...pubspec.dependencies.values.where(
+          (range) => !_overriddenPackages.contains(range.name),
+        ),
         if (id.isRoot)
-          ...pubspec.devDependencies.values
-              .where((range) => !_overriddenPackages.contains(range.name)),
+          ...pubspec.devDependencies.values.where(
+            (range) => !_overriddenPackages.contains(range.name),
+          ),
         if (id.isRoot) ...[
           ..._rootPackage!.workspaceChildren.map((p) {
             return PackageRange(
@@ -290,8 +289,8 @@ class PackageLister {
     final index = lowerBound(
       versions,
       id,
-      compare: (PackageId id1, PackageId id2) =>
-          id1.version.compareTo(id2.version),
+      compare:
+          (PackageId id1, PackageId id2) => id1.version.compareTo(id2.version),
     );
     assert(index < versions.length);
     assert(versions[index].version == id.version);
@@ -340,10 +339,10 @@ class PackageLister {
   /// Returns an [Incompatibility] that represents a dependency from [depender]
   /// onto [target].
   Incompatibility _dependency(PackageRange depender, PackageRange target) {
-    return Incompatibility(
-      [Term(depender, true), Term(target, false)],
-      DependencyIncompatibilityCause(depender, target),
-    );
+    return Incompatibility([
+      Term(depender, true),
+      Term(target, false),
+    ], DependencyIncompatibilityCause(depender, target));
   }
 
   /// If the version at [index] in [_versions] isn't compatible with the current
@@ -357,32 +356,36 @@ class PackageLister {
 
     if (allowsSdk(await _describeSafe(versions[index]))) return null;
 
-    final (boundsFirstIndex, boundsLastIndex) =
-        await _findBounds(index, (pubspec) => !allowsSdk(pubspec));
+    final (boundsFirstIndex, boundsLastIndex) = await _findBounds(
+      index,
+      (pubspec) => !allowsSdk(pubspec),
+    );
     final incompatibleVersions = VersionRange(
       min: boundsFirstIndex == 0 ? null : versions[boundsFirstIndex].version,
       includeMin: true,
-      max: boundsLastIndex == versions.length - 1
-          ? null
-          : versions[boundsLastIndex + 1].version,
+      max:
+          boundsLastIndex == versions.length - 1
+              ? null
+              : versions[boundsLastIndex + 1].version,
       alwaysIncludeMaxPreRelease: true,
     );
     _knownInvalidVersions = incompatibleVersions.union(_knownInvalidVersions);
 
     final sdkConstraint = await foldAsync<VersionConstraint, PackageId>(
-        slice(versions, boundsFirstIndex, boundsLastIndex + 1),
-        VersionConstraint.empty, (previous, version) async {
-      final pubspec = await _describeSafe(version);
-      return previous.union(
-        pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint ??
-            VersionConstraint.any,
-      );
-    });
-
-    return Incompatibility(
-      [Term(_ref.withConstraint(incompatibleVersions), true)],
-      SdkIncompatibilityCause(sdkConstraint, sdk),
+      slice(versions, boundsFirstIndex, boundsLastIndex + 1),
+      VersionConstraint.empty,
+      (previous, version) async {
+        final pubspec = await _describeSafe(version);
+        return previous.union(
+          pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint ??
+              VersionConstraint.any,
+        );
+      },
     );
+
+    return Incompatibility([
+      Term(_ref.withConstraint(incompatibleVersions), true),
+    ], SdkIncompatibilityCause(sdkConstraint, sdk));
   }
 
   /// Returns the first and last indices in [_versions] of the contiguous set of
@@ -427,9 +430,10 @@ class PackageLister {
     final bounds = <String, Version>{};
     var previous = versions[index];
     outer:
-    for (var id in upper
-        ? versions.skip(index + 1)
-        : versions.reversed.skip(versions.length - index)) {
+    for (var id
+        in upper
+            ? versions.skip(index + 1)
+            : versions.reversed.skip(versions.length - index)) {
       final pubspec = await _describeSafe(id);
 
       // The upper bound is exclusive and so is the first package with a
@@ -486,7 +490,8 @@ class PackageLister {
     if (constraint == null) return true;
 
     return sdk.isAvailable &&
-        constraint.effectiveConstraint
-            .allows(sdkOverrides[sdk.identifier] ?? sdk.version!);
+        constraint.effectiveConstraint.allows(
+          sdkOverrides[sdk.identifier] ?? sdk.version!,
+        );
   }
 }

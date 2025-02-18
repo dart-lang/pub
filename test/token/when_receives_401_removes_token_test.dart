@@ -27,8 +27,9 @@ void main() {
 
     await pub.shouldExit(65);
 
-    await d.tokensFile(
-      {'version': 1, 'hosted': <Map<String, Object?>>[]},
-    ).validate();
+    await d.tokensFile({
+      'version': 1,
+      'hosted': <Map<String, Object?>>[],
+    }).validate();
   });
 }

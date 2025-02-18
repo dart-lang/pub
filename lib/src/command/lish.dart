@@ -94,7 +94,8 @@ class LishCommand extends PubCommand {
     argParser.addFlag(
       'skip-validation',
       negatable: false,
-      help: 'Publish without validation and resolution '
+      help:
+          'Publish without validation and resolution '
           '(this will ignore errors).',
     );
     argParser.addOption(
@@ -110,7 +111,8 @@ class LishCommand extends PubCommand {
     );
     argParser.addOption(
       'from-archive',
-      help: 'Publish from a .tar.gz archive instead of current folder. '
+      help:
+          'Publish from a .tar.gz archive instead of current folder. '
           'Implies `--skip-validation`.',
       valueHelp: '[archive.tar.gz]',
       hide: true,
@@ -134,65 +136,79 @@ class LishCommand extends PubCommand {
     try {
       await log.progress('Uploading', () async {
         /// 1. Initiate upload
-        final parametersResponse =
-            await retryForHttp('initiating upload', () async {
-          final request =
-              http.Request('GET', host.resolve('api/packages/versions/new'));
-          request.attachPubApiHeaders();
-          request.attachMetadataHeaders();
-          return await client.fetch(request);
-        });
+        final parametersResponse = await retryForHttp(
+          'initiating upload',
+          () async {
+            final request = http.Request(
+              'GET',
+              host.resolve('api/packages/versions/new'),
+            );
+            request.attachPubApiHeaders();
+            request.attachMetadataHeaders();
+            return await client.fetch(request);
+          },
+        );
         final parameters = parseJsonResponse(parametersResponse);
 
         /// 2. Upload package
         final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
-        final uploadResponse =
-            await retryForHttp('uploading package', () async {
-          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-          // should report that error and exit.
-          final request = http.MultipartRequest('POST', cloudStorageUrl!);
+        final uploadResponse = await retryForHttp(
+          'uploading package',
+          () async {
+            // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+            // should report that error and exit.
+            final request = http.MultipartRequest('POST', cloudStorageUrl!);
 
-          final fields = _expectField(parameters, 'fields', parametersResponse);
-          if (fields is! Map) invalidServerResponse(parametersResponse);
-          fields.forEach((key, value) {
-            if (value is! String) invalidServerResponse(parametersResponse);
-            request.fields[key as String] = value;
-          });
+            final fields = _expectField(
+              parameters,
+              'fields',
+              parametersResponse,
+            );
+            if (fields is! Map) invalidServerResponse(parametersResponse);
+            fields.forEach((key, value) {
+              if (value is! String) invalidServerResponse(parametersResponse);
+              request.fields[key as String] = value;
+            });
 
-          request.followRedirects = false;
-          request.files.add(
-            http.MultipartFile.fromBytes(
-              'file',
-              packageBytes,
-              filename: 'package.tar.gz',
-            ),
-          );
-          return await client.fetch(request);
-        });
+            request.followRedirects = false;
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                'file',
+                packageBytes,
+                filename: 'package.tar.gz',
+              ),
+            );
+            return await client.fetch(request);
+          },
+        );
 
         /// 3. Finalize publish
         final location = uploadResponse.headers['location'];
         if (location == null) throw PubHttpResponseException(uploadResponse);
-        final finalizeResponse =
-            await retryForHttp('finalizing publish', () async {
-          final request = http.Request('GET', Uri.parse(location));
-          request.attachPubApiHeaders();
-          request.attachMetadataHeaders();
-          return await client.fetch(request);
-        });
+        final finalizeResponse = await retryForHttp(
+          'finalizing publish',
+          () async {
+            final request = http.Request('GET', Uri.parse(location));
+            request.attachPubApiHeaders();
+            request.attachMetadataHeaders();
+            return await client.fetch(request);
+          },
+        );
         handleJsonSuccess(finalizeResponse);
       });
     } on AuthenticationException catch (error) {
       var msg = '';
       if (error.statusCode == 401) {
-        msg += '$host package repository requested authentication!\n'
+        msg +=
+            '$host package repository requested authentication!\n'
             'You can provide credentials using:\n'
             '    $topLevelProgram pub token add $host\n';
       }
       if (error.statusCode == 403) {
-        msg += 'Insufficient permissions to the resource at the $host '
+        msg +=
+            'Insufficient permissions to the resource at the $host '
             'package repository.\nYou can modify credentials using:\n'
             '    $topLevelProgram pub token add $host\n';
       }
@@ -262,11 +278,9 @@ class LishCommand extends PubCommand {
   Future<void> _validateArgs() async {
     if (argResults.wasParsed('server')) {
       await log.errorsOnlyUnlessTerminal(() {
-        log.message(
-          '''
+        log.message('''
 The --server option is deprecated. Use `publish_to` in your pubspec.yaml or set
-the \$PUB_HOSTED_URL environment variable.''',
-        );
+the \$PUB_HOSTED_URL environment variable.''');
       });
     }
 
@@ -291,9 +305,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (!dryRun &&
         _toArchive == null &&
         entrypoint.workPackage.pubspec.isPrivate) {
-      dataError('A private package cannot be published.\n'
-          'You can enable this by changing the "publish_to" field in your '
-          'pubspec.');
+      dataError(
+        'A private package cannot be published.\n'
+        'You can enable this by changing the "publish_to" field in your '
+        'pubspec.',
+      );
     }
     if (skipValidation) {
       log.warning(
@@ -337,15 +353,14 @@ the \$PUB_HOSTED_URL environment variable.''',
       'Publishing ${package.name} ${package.version} to $host:\n$fileTree',
     );
 
-    final packageBytes = await createTarGz(
-      filesAndDirs,
-      baseDir: entrypoint.workPackage.dir,
-    ).toBytes();
+    final packageBytes =
+        await createTarGz(
+          filesAndDirs,
+          baseDir: entrypoint.workPackage.dir,
+        ).toBytes();
 
     final size = _readableFileSize(packageBytes.length);
-    log.message(
-      '\nTotal compressed archive size: $size.\n',
-    );
+    log.message('\nTotal compressed archive size: $size.\n');
 
     final validationResult =
         skipValidation ? null : await _validate(packageBytes, files, host);
@@ -368,9 +383,7 @@ the \$PUB_HOSTED_URL environment variable.''',
 
       packageBytes = readBinaryFile(archive);
     } on FileSystemException catch (e) {
-      dataError(
-        'Failed reading archive file: $e)',
-      );
+      dataError('Failed reading archive file: $e)');
     }
     final Pubspec pubspec;
     try {
@@ -388,9 +401,11 @@ the \$PUB_HOSTED_URL environment variable.''',
       dataError('Failed to read pubspec.yaml from archive: ${e.message}');
     }
     if (!dryRun && _toArchive == null && pubspec.isPrivate) {
-      dataError('A private package cannot be published.\n'
-          'You can enable this by changing the "publish_to" field in your '
-          'pubspec.');
+      dataError(
+        'A private package cannot be published.\n'
+        'You can enable this by changing the "publish_to" field in your '
+        'pubspec.',
+      );
     }
     final host = computeHost(pubspec);
     log.message('Publishing ${pubspec.name} ${pubspec.version} to $host.');
@@ -431,10 +446,12 @@ the \$PUB_HOSTED_URL environment variable.''',
     );
 
     if (errors.isNotEmpty) {
-      dataError('Sorry, your package is missing '
-          "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
-          "and can't be published yet.\nFor more information, see: "
-          'https://dart.dev/tools/pub/cmd/pub-lish.\n');
+      dataError(
+        'Sorry, your package is missing '
+        "${(errors.length > 1) ? 'some requirements' : 'a requirement'} "
+        "and can't be published yet.\nFor more information, see: "
+        'https://dart.dev/tools/pub/cmd/pub-lish.\n',
+      );
     }
 
     return (warningsCount: warnings.length, hintsCount: hints.length);
@@ -446,10 +463,13 @@ the \$PUB_HOSTED_URL environment variable.''',
   /// Throws if user didn't confirm.
   Future<void> _confirmUpload(_Publication package, Uri host) async {
     if (force) return;
-    log.message('\nPublishing is forever; packages cannot be unpublished.'
-        '\nPolicy details are available at https://pub.dev/policy\n');
+    log.message(
+      '\nPublishing is forever; packages cannot be unpublished.'
+      '\nPolicy details are available at https://pub.dev/policy\n',
+    );
 
-    var message = 'Do you want to publish '
+    var message =
+        'Do you want to publish '
         '${package.pubspec.name} ${package.pubspec.version} to $host';
     if (package.hintCount != 0 || package.warningCount != 0) {
       message = '${package.warningsCountMessage}. $message';
@@ -462,9 +482,10 @@ the \$PUB_HOSTED_URL environment variable.''',
   @override
   Future runProtected() async {
     await _validateArgs();
-    final publication = await (_fromArchive == null
-        ? _publicationFromEntrypoint()
-        : _publicationFromArchive(_fromArchive));
+    final publication =
+        await (_fromArchive == null
+            ? _publicationFromEntrypoint()
+            : _publicationFromArchive(_fromArchive));
     if (dryRun) {
       log.message(publication.warningsCountMessage);
       if (publication.warningCount != 0) {

@@ -99,7 +99,8 @@ Only packages currently missing that PROPERTY will be included unless
     argParser.addFlag(
       'up-to-date',
       hide: true,
-      help: 'Include dependencies that are already at the '
+      help:
+          'Include dependencies that are already at the '
           'latest version. Alias of --show-all.',
     );
     argParser.addFlag(
@@ -126,23 +127,27 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     final includeDevDependencies = argResults.flag('dev-dependencies');
     final includeDependencyOverrides = argResults.flag('dependency-overrides');
     if (argResults.flag('json') && argResults.wasParsed('transitive')) {
-      usageException('Cannot specify both `--json` and `--transitive`\n'
-          'The json report always includes transitive dependencies.');
+      usageException(
+        'Cannot specify both `--json` and `--transitive`\n'
+        'The json report always includes transitive dependencies.',
+      );
     }
 
     /// The workspace root with dependency overrides removed if requested.
-    final baseWorkspace = includeDependencyOverrides
-        ? entrypoint.workspaceRoot
-        : entrypoint.workspaceRoot.transformWorkspace(
-            (package) => stripDependencyOverrides(package.pubspec),
-          );
+    final baseWorkspace =
+        includeDependencyOverrides
+            ? entrypoint.workspaceRoot
+            : entrypoint.workspaceRoot.transformWorkspace(
+              (package) => stripDependencyOverrides(package.pubspec),
+            );
 
     /// [baseWorkspace] with dev-dependencies removed if requested.
-    final upgradableWorkspace = includeDevDependencies
-        ? baseWorkspace
-        : baseWorkspace.transformWorkspace(
-            (package) => stripDevDependencies(package.pubspec),
-          );
+    final upgradableWorkspace =
+        includeDevDependencies
+            ? baseWorkspace
+            : baseWorkspace.transformWorkspace(
+              (package) => stripDevDependencies(package.pubspec),
+            );
 
     /// [upgradableWorkspace] with upper bounds removed.
     final resolvableWorkspace = upgradableWorkspace.transformWorkspace(
@@ -153,27 +158,23 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     late bool hasUpgradableResolution;
     late bool hasResolvableResolution;
 
-    await log.spinner(
-      'Resolving',
-      () async {
-        final upgradablePackagesResult = await _tryResolve(
-          upgradableWorkspace,
-          cache,
-          lockFile: entrypoint.lockFile,
-        );
-        hasUpgradableResolution = upgradablePackagesResult != null;
-        upgradablePackages = upgradablePackagesResult ?? [];
+    await log.spinner('Resolving', () async {
+      final upgradablePackagesResult = await _tryResolve(
+        upgradableWorkspace,
+        cache,
+        lockFile: entrypoint.lockFile,
+      );
+      hasUpgradableResolution = upgradablePackagesResult != null;
+      upgradablePackages = upgradablePackagesResult ?? [];
 
-        final resolvablePackagesResult = await _tryResolve(
-          resolvableWorkspace,
-          cache,
-          lockFile: entrypoint.lockFile,
-        );
-        hasResolvableResolution = resolvablePackagesResult != null;
-        resolvablePackages = resolvablePackagesResult ?? [];
-      },
-      condition: _shouldShowSpinner,
-    );
+      final resolvablePackagesResult = await _tryResolve(
+        resolvableWorkspace,
+        cache,
+        lockFile: entrypoint.lockFile,
+      );
+      hasResolvableResolution = resolvablePackagesResult != null;
+      resolvablePackages = resolvablePackagesResult ?? [];
+    }, condition: _shouldShowSpinner);
 
     // This list will be empty if there is no lock file.
     final currentPackages = entrypoint.lockFile.packages.values;
@@ -200,10 +201,12 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       final name = packageRef.name;
       final current = entrypoint.lockFile.packages[name];
 
-      final upgradable =
-          upgradablePackages.firstWhereOrNull((id) => id.name == name);
-      final resolvable =
-          resolvablePackages.firstWhereOrNull((id) => id.name == name);
+      final upgradable = upgradablePackages.firstWhereOrNull(
+        (id) => id.name == name,
+      );
+      final resolvable = resolvablePackages.firstWhereOrNull(
+        (id) => id.name == name,
+      );
 
       // Find the latest version, and if it's overridden.
       var latestIsOverridden = false;
@@ -218,15 +221,15 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       }
       // If present as a dependency or dev_dependency we use this
       latest ??= await cache.getLatest(
-        allDependencies(baseWorkspace)
-            .firstWhereOrNull((r) => r.name == name)
-            ?.toRef(),
+        allDependencies(
+          baseWorkspace,
+        ).firstWhereOrNull((r) => r.name == name)?.toRef(),
         allowPrereleases: prereleases,
       );
       latest ??= await cache.getLatest(
-        allDevDependencies(baseWorkspace)
-            .firstWhereOrNull((r) => r.name == name)
-            ?.toRef(),
+        allDevDependencies(
+          baseWorkspace,
+        ).firstWhereOrNull((r) => r.name == name)?.toRef(),
         allowPrereleases: prereleases,
       );
       // If not overridden and present in either upgradable or resolvable we
@@ -267,8 +270,12 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       );
 
       final id = current ?? upgradable ?? resolvable ?? latest;
-      var packageAdvisories = await id?.source
-              .getAdvisoriesForPackage(id, cache, const Duration(days: 3)) ??
+      var packageAdvisories =
+          await id?.source.getAdvisoriesForPackage(
+            id,
+            cache,
+            const Duration(days: 3),
+          ) ??
           [];
 
       final discontinued =
@@ -303,15 +310,15 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
       if (currentVersionDetails != null) {
         // Filter out advisories added to `ignored_advisores` in the root
         // pubspec.
-        packageAdvisories = packageAdvisories
-            .where(
-              (adv) => entrypoint.workspaceRoot.pubspec.ignoredAdvisories
-                  .intersection({
-                ...adv.aliases,
-                adv.id,
-              }).isEmpty,
-            )
-            .toList();
+        packageAdvisories =
+            packageAdvisories
+                .where(
+                  (adv) =>
+                      entrypoint.workspaceRoot.pubspec.ignoredAdvisories
+                          .intersection({...adv.aliases, adv.id})
+                          .isEmpty,
+                )
+                .toList();
         for (final advisory in packageAdvisories) {
           if (advisory.affectedVersions.contains(
             currentVersionDetails._pubspec.version.canonicalizedVersion,
@@ -340,8 +347,9 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     final rows = <_PackageDetails>[];
 
     final visited = {
-      ...entrypoint.workspaceRoot.transitiveWorkspace
-          .map((package) => package.name),
+      ...entrypoint.workspaceRoot.transitiveWorkspace.map(
+        (package) => package.name,
+      ),
     };
     // Add all dependencies from the lockfile.
     for (final id in [
@@ -421,11 +429,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     if (id == null) {
       return null;
     }
-    return _VersionDetails(
-      await cache.describe(id),
-      id,
-      isOverridden,
-    );
+    return _VersionDetails(await cache.describe(id), id, isOverridden);
   }
 
   /// Computes the closure of the graph of dependencies (not including
@@ -488,8 +492,10 @@ Future<void> _outputJson(
   required bool showAll,
   required bool includeDevDependencies,
 }) async {
-  final markedRows =
-      Map.fromIterables(rows, await mode.markVersionDetails(rows));
+  final markedRows = Map.fromIterables(
+    rows,
+    await mode.markVersionDetails(rows),
+  );
   if (!showAll) {
     rows.removeWhere((row) => row.isLatest);
   }
@@ -510,26 +516,24 @@ Future<void> _outputJson(
   }
 
   log.message(
-    const JsonEncoder.withIndent('  ').convert(
-      {
-        'packages': [
-          ...(rows..sort((a, b) => a.name.compareTo(b.name))).map(
-            (packageDetails) => {
-              'package': packageDetails.name,
-              'kind': kindString(packageDetails.kind),
-              'isDiscontinued': packageDetails.isDiscontinued,
-              'isCurrentRetracted': packageDetails.isCurrentRetracted,
-              'isCurrentAffectedByAdvisory':
-                  packageDetails.isCurrentAffectedBySecurityAdvisory,
-              'current': markedRows[packageDetails]![0].toJson(),
-              'upgradable': markedRows[packageDetails]![1].toJson(),
-              'resolvable': markedRows[packageDetails]![2].toJson(),
-              'latest': markedRows[packageDetails]![3].toJson(),
-            },
-          ),
-        ],
-      },
-    ),
+    const JsonEncoder.withIndent('  ').convert({
+      'packages': [
+        ...(rows..sort((a, b) => a.name.compareTo(b.name))).map(
+          (packageDetails) => {
+            'package': packageDetails.name,
+            'kind': kindString(packageDetails.kind),
+            'isDiscontinued': packageDetails.isDiscontinued,
+            'isCurrentRetracted': packageDetails.isCurrentRetracted,
+            'isCurrentAffectedByAdvisory':
+                packageDetails.isCurrentAffectedBySecurityAdvisory,
+            'current': markedRows[packageDetails]![0].toJson(),
+            'upgradable': markedRows[packageDetails]![1].toJson(),
+            'resolvable': markedRows[packageDetails]![2].toJson(),
+            'latest': markedRows[packageDetails]![3].toJson(),
+          },
+        ),
+      ],
+    }),
   );
 }
 
@@ -549,13 +553,15 @@ Future<void> _outputHuman(
 }) async {
   final directoryDesc = directory == '.' ? '' : ' in $directory';
   log.message('${mode.explanation(directoryDesc)}\n');
-  final markedRows =
-      Map.fromIterables(rows, await mode.markVersionDetails(rows));
+  final markedRows = Map.fromIterables(
+    rows,
+    await mode.markVersionDetails(rows),
+  );
 
   List<FormattedString> formatted(_PackageDetails package) => [
-        FormattedString(package.name),
-        ...markedRows[package]!.map((m) => m.toHuman()),
-      ];
+    FormattedString(package.name),
+    ...markedRows[package]!.map((m) => m.toHuman()),
+  ];
 
   if (!showAll) {
     rows.removeWhere((row) => row.isLatest);
@@ -570,15 +576,21 @@ Future<void> _outputHuman(
 
   final directRows = rows.where(hasKind(_DependencyKind.direct)).map(formatted);
   final devRows = rows.where(hasKind(_DependencyKind.dev)).map(formatted);
-  final transitiveRows =
-      rows.where(hasKind(_DependencyKind.transitive)).map(formatted);
-  final devTransitiveRows =
-      rows.where(hasKind(_DependencyKind.devTransitive)).map(formatted);
+  final transitiveRows = rows
+      .where(hasKind(_DependencyKind.transitive))
+      .map(formatted);
+  final devTransitiveRows = rows
+      .where(hasKind(_DependencyKind.devTransitive))
+      .map(formatted);
 
   final formattedRows = <List<FormattedString>>[
-    ['Package Name', 'Current', 'Upgradable', 'Resolvable', 'Latest']
-        .map((s) => format(s, log.bold))
-        .toList(),
+    [
+      'Package Name',
+      'Current',
+      'Upgradable',
+      'Resolvable',
+      'Latest',
+    ].map((s) => format(s, log.bold)).toList(),
     if (hasDirectDependencies) ...[
       [
         if (directRows.isEmpty)
@@ -613,44 +625,44 @@ Future<void> _outputHuman(
     log.message(line);
   }
 
-  final upgradable = rows.where(
-    (row) {
-      final current = row.current;
-      final upgradable = row.upgradable;
-      return current != null &&
-          upgradable != null &&
-          current < upgradable &&
-          // Include transitive only, if we show them
-          (showTransitiveDependencies ||
-              hasKind(_DependencyKind.direct)(row) ||
-              hasKind(_DependencyKind.dev)(row));
-    },
-  ).length;
+  final upgradable =
+      rows.where((row) {
+        final current = row.current;
+        final upgradable = row.upgradable;
+        return current != null &&
+            upgradable != null &&
+            current < upgradable &&
+            // Include transitive only, if we show them
+            (showTransitiveDependencies ||
+                hasKind(_DependencyKind.direct)(row) ||
+                hasKind(_DependencyKind.dev)(row));
+      }).length;
 
-  final notAtResolvable = rows.where(
-    (row) {
-      final current = row.current;
-      final upgradable = row.upgradable;
-      final resolvable = row.resolvable;
-      return (current != null || !lockFileExists) &&
-          resolvable != null &&
-          upgradable != null &&
-          upgradable < resolvable &&
-          // Include transitive only, if we show them
-          (showTransitiveDependencies ||
-              hasKind(_DependencyKind.direct)(row) ||
-              hasKind(_DependencyKind.dev)(row));
-    },
-  ).length;
+  final notAtResolvable =
+      rows.where((row) {
+        final current = row.current;
+        final upgradable = row.upgradable;
+        final resolvable = row.resolvable;
+        return (current != null || !lockFileExists) &&
+            resolvable != null &&
+            upgradable != null &&
+            upgradable < resolvable &&
+            // Include transitive only, if we show them
+            (showTransitiveDependencies ||
+                hasKind(_DependencyKind.direct)(row) ||
+                hasKind(_DependencyKind.dev)(row));
+      }).length;
 
   if (!hasUpgradableResolution || !hasResolvableResolution) {
     log.message(mode.noResolutionText);
   } else if (lockFileExists) {
     if (upgradable != 0) {
       if (upgradable == 1) {
-        log.message('\n1 upgradable dependency is locked (in pubspec.lock) to '
-            'an older version.\n'
-            'To update it, use `$topLevelProgram pub upgrade`.');
+        log.message(
+          '\n1 upgradable dependency is locked (in pubspec.lock) to '
+          'an older version.\n'
+          'To update it, use `$topLevelProgram pub upgrade`.',
+        );
       } else {
         log.message(
           '\n$upgradable upgradable dependencies are locked '
@@ -673,36 +685,45 @@ Future<void> _outputHuman(
       log.message(mode.allSafe);
     }
   } else {
-    log.message('\nNo pubspec.lock found. There are no Current versions.\n'
-        'Run `$topLevelProgram pub get` to create a pubspec.lock '
-        'with versions matching your '
-        'pubspec.yaml.');
+    log.message(
+      '\nNo pubspec.lock found. There are no Current versions.\n'
+      'Run `$topLevelProgram pub get` to create a pubspec.lock '
+      'with versions matching your '
+      'pubspec.yaml.',
+    );
   }
   if (notAtResolvable != 0) {
     if (notAtResolvable == 1) {
-      log.message('\n1 dependency is constrained to a '
-          'version that is older than a resolvable version.\n'
-          'To update it, ${mode.upgradeConstrained}.');
+      log.message(
+        '\n1 dependency is constrained to a '
+        'version that is older than a resolvable version.\n'
+        'To update it, ${mode.upgradeConstrained}.',
+      );
     } else {
-      log.message('\n$notAtResolvable  dependencies are constrained to '
-          'versions that are older than a resolvable version.\n'
-          'To update these dependencies, ${mode.upgradeConstrained}.');
+      log.message(
+        '\n$notAtResolvable  dependencies are constrained to '
+        'versions that are older than a resolvable version.\n'
+        'To update these dependencies, ${mode.upgradeConstrained}.',
+      );
     }
   }
 
   List<Advisory> advisoriesWithAffectedVersions(_PackageDetails package) {
     return package.advisories
         .where(
-          (advisory) => advisory.affectedVersions
-              .intersection(
-                [
-                  package.current,
-                  package.upgradable,
-                  package.resolvable,
-                  package.latest,
-                ].map((e) => e?._pubspec.version.canonicalizedVersion).toSet(),
-              )
-              .isNotEmpty,
+          (advisory) =>
+              advisory.affectedVersions
+                  .intersection(
+                    [
+                          package.current,
+                          package.upgradable,
+                          package.resolvable,
+                          package.latest,
+                        ]
+                        .map((e) => e?._pubspec.version.canonicalizedVersion)
+                        .toSet(),
+                  )
+                  .isNotEmpty,
         )
         .toList();
   }
@@ -721,9 +742,10 @@ Future<void> _outputHuman(
     for (var package in rows.where(displayExtraInfo)) {
       log.message(log.bold(package.name));
       if (package.isDiscontinued) {
-        final replacedByText = package.discontinuedReplacedBy != null
-            ? ', replaced by ${package.discontinuedReplacedBy}.'
-            : '.';
+        final replacedByText =
+            package.discontinuedReplacedBy != null
+                ? ', replaced by ${package.discontinuedReplacedBy}.'
+                : '.';
         log.message(
           '    Package ${package.name} has been discontinued$replacedByText '
           'See https://dart.dev/go/package-discontinue',
@@ -737,9 +759,10 @@ Future<void> _outputHuman(
       }
       final displayedAdvisories = advisoriesToDisplay[package.name]!;
       if (displayedAdvisories.isNotEmpty) {
-        final advisoriesText = displayedAdvisories.length > 1
-            ? 'security advisories'
-            : 'a security advisory';
+        final advisoriesText =
+            displayedAdvisories.length > 1
+                ? 'security advisories'
+                : 'a security advisory';
         log.message(
           '    Package ${package.name} is affected by $advisoriesText. '
           'See https://dart.dev//go/pub-security-advisories',
@@ -800,7 +823,8 @@ Showing outdated packages$directoryDescription.
       '''No resolution was found. Try running `$topLevelProgram pub upgrade --dry-run` to explore why.''';
 
   @override
-  String get upgradeConstrained => 'edit pubspec.yaml, or run '
+  String get upgradeConstrained =>
+      'edit pubspec.yaml, or run '
       '`$topLevelProgram pub upgrade --major-versions`';
 
   @override
@@ -837,13 +861,14 @@ Showing outdated packages$directoryDescription.
             }
           }
           final advisories = packageDetails.advisories;
-          final hasAdvisory = advisories
-              .where(
-                (advisory) => advisory.affectedVersions.contains(
-                  versionDetails._pubspec.version.canonicalizedVersion,
-                ),
-              )
-              .isNotEmpty;
+          final hasAdvisory =
+              advisories
+                  .where(
+                    (advisory) => advisory.affectedVersions.contains(
+                      versionDetails._pubspec.version.canonicalizedVersion,
+                    ),
+                  )
+                  .isNotEmpty;
           if (hasAdvisory) {
             suffix = '${suffix ?? ''} (advisory)';
           }
@@ -900,9 +925,9 @@ class _VersionDetails {
   }
 
   Map<String, Object> toJson() => {
-        'version': _pubspec.version.toString(),
-        if (_overridden) 'overridden': true,
-      };
+    'version': _pubspec.version.toString(),
+    if (_overridden) 'overridden': true,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -1024,18 +1049,18 @@ class _MarkedVersionDetails implements _Details {
     String? prefix = '',
     String? suffix = '',
     MapEntry<String, Object>? jsonExplanation,
-  })  : _format = format,
-        _prefix = prefix,
-        _suffix = suffix,
-        _jsonExplanation = jsonExplanation;
+  }) : _format = format,
+       _prefix = prefix,
+       _suffix = suffix,
+       _jsonExplanation = jsonExplanation;
 
   @override
   FormattedString toHuman() => FormattedString(
-        _versionDetails?.describe ?? '-',
-        format: _format,
-        prefix: _prefix,
-        suffix: _suffix,
-      );
+    _versionDetails?.describe ?? '-',
+    format: _format,
+    prefix: _prefix,
+    suffix: _suffix,
+  );
 
   @override
   Object? toJson() {
@@ -1057,15 +1082,17 @@ bool hasOverride(Package workspaceRoot, String name) {
 /// Whether the package [name] is depended on directly anywhere in the workspace
 /// rooted at [workspaceRoot].
 bool hasDependency(Package workspaceRoot, String name) {
-  return workspaceRoot.transitiveWorkspace
-      .any((p) => p.dependencies.containsKey(name));
+  return workspaceRoot.transitiveWorkspace.any(
+    (p) => p.dependencies.containsKey(name),
+  );
 }
 
 /// Whether the package [name] is dev-depended on directly anywhere in the
 /// workspace rooted at [workspaceRoot].
 bool hasDevDependency(Package workspaceRoot, String name) {
-  return workspaceRoot.transitiveWorkspace
-      .any((p) => p.devDependencies.containsKey(name));
+  return workspaceRoot.transitiveWorkspace.any(
+    (p) => p.devDependencies.containsKey(name),
+  );
 }
 
 Iterable<PackageRange> allDependencies(Package workspaceRoot) =>

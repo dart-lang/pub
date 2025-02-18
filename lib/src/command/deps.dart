@@ -107,20 +107,23 @@ class DepsCommand extends PubCommand {
         final currentPackage =
             (await entrypoint.packageGraph).packages[current]!;
         final isRoot = workspacePackageNames.contains(currentPackage.name);
-        final next = (isRoot
-                ? currentPackage.immediateDependencies
-                : currentPackage.dependencies)
-            .keys
-            .toList();
-        final dependencyType =
-            entrypoint.workspaceRoot.pubspec.dependencyType(current);
-        final kind = isRoot
-            ? 'root'
-            : (dependencyType == DependencyType.direct
-                ? 'direct'
-                : (dependencyType == DependencyType.dev
-                    ? 'dev'
-                    : 'transitive'));
+        final next =
+            (isRoot
+                    ? currentPackage.immediateDependencies
+                    : currentPackage.dependencies)
+                .keys
+                .toList();
+        final dependencyType = entrypoint.workspaceRoot.pubspec.dependencyType(
+          current,
+        );
+        final kind =
+            isRoot
+                ? 'root'
+                : (dependencyType == DependencyType.direct
+                    ? 'direct'
+                    : (dependencyType == DependencyType.dev
+                        ? 'dev'
+                        : 'transitive'));
         final source =
             entrypoint.lockFile.packages[current]?.source.name ?? 'root';
         packagesJson.add({
@@ -131,11 +134,12 @@ class DepsCommand extends PubCommand {
           // This field is kept for backwards compatibility with dart 3.5 and
           // before. Clients should opt to consume directDependencies and
           // devDependencies separately instead.
-          'dependencies': (isRoot
-                  ? currentPackage.immediateDependencies
-                  : currentPackage.dependencies)
-              .keys
-              .toList(),
+          'dependencies':
+              (isRoot
+                      ? currentPackage.immediateDependencies
+                      : currentPackage.dependencies)
+                  .keys
+                  .toList(),
           'directDependencies': currentPackage.dependencies.keys.toList(),
           if (isRoot)
             'devDependencies': currentPackage.devDependencies.keys.toList(),
@@ -145,29 +149,29 @@ class DepsCommand extends PubCommand {
       final executables = [
         for (final package in [
           entrypoint.workspaceRoot,
-          ...entrypoint.workspaceRoot.immediateDependencies.keys
-              .map((name) => graph.packages[name]),
+          ...entrypoint.workspaceRoot.immediateDependencies.keys.map(
+            (name) => graph.packages[name],
+          ),
         ])
           ...package!.executableNames.map(
-            (name) => package == entrypoint.workspaceRoot
-                ? ':$name'
-                : (package.name == name ? name : '${package.name}:$name'),
+            (name) =>
+                package == entrypoint.workspaceRoot
+                    ? ':$name'
+                    : (package.name == name ? name : '${package.name}:$name'),
           ),
       ];
 
       buffer.writeln(
-        const JsonEncoder.withIndent('  ').convert(
-          {
-            'root': entrypoint.workspaceRoot.name,
-            'packages': packagesJson,
-            'sdks': [
-              for (var sdk in sdks.values)
-                if (sdk.version != null)
-                  {'name': sdk.name, 'version': sdk.version.toString()},
-            ],
-            'executables': executables,
-          },
-        ),
+        const JsonEncoder.withIndent('  ').convert({
+          'root': entrypoint.workspaceRoot.name,
+          'packages': packagesJson,
+          'sdks': [
+            for (var sdk in sdks.values)
+              if (sdk.version != null)
+                {'name': sdk.name, 'version': sdk.version.toString()},
+          ],
+          'executables': executables,
+        }),
       );
     } else {
       if (argResults.flag('executables')) {
@@ -201,9 +205,7 @@ class DepsCommand extends PubCommand {
   /// For each dependency listed, *that* package's immediate dependencies are
   /// shown. Unlike [_outputList], this prints all of these dependencies on one
   /// line.
-  Future<void> _outputCompact(
-    StringBuffer buffer,
-  ) async {
+  Future<void> _outputCompact(StringBuffer buffer) async {
     var first = true;
     for (final root in entrypoint.workspaceRoot.transitiveWorkspace) {
       if (!first) {
@@ -327,9 +329,7 @@ class DepsCommand extends PubCommand {
   /// dependency), later ones are not traversed. This is done in breadth-first
   /// fashion so that a package will always be expanded at the shallowest
   /// depth that it appears at.
-  Future<void> _outputTree(
-    StringBuffer buffer,
-  ) async {
+  Future<void> _outputTree(StringBuffer buffer) async {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
@@ -344,8 +344,9 @@ class DepsCommand extends PubCommand {
     final immediateDependencies =
         entrypoint.workspaceRoot.immediateDependencies.keys.toSet();
     if (!_includeDev) {
-      immediateDependencies
-          .removeAll(entrypoint.workspaceRoot.devDependencies.keys);
+      immediateDependencies.removeAll(
+        entrypoint.workspaceRoot.devDependencies.keys,
+      );
     }
     for (var name in workspacePackageNames) {
       toWalk.add((await _getPackage(name), packageTree));
@@ -425,8 +426,10 @@ class DepsCommand extends PubCommand {
   Future<Package> _getPackage(String name) async {
     final package = (await entrypoint.packageGraph).packages[name];
     if (package != null) return package;
-    dataError('The pubspec.yaml file has changed since the pubspec.lock file '
-        'was generated, please run "$topLevelProgram pub get" again.');
+    dataError(
+      'The pubspec.yaml file has changed since the pubspec.lock file '
+      'was generated, please run "$topLevelProgram pub get" again.',
+    );
   }
 
   /// Outputs all executables reachable from [entrypoint].
@@ -435,9 +438,9 @@ class DepsCommand extends PubCommand {
     final packages = {
       for (final p in entrypoint.workspaceRoot.transitiveWorkspace) ...[
         graph.packages[p.name]!,
-        ...(_includeDev ? p.immediateDependencies : p.dependencies)
-            .keys
-            .map((name) => graph.packages[name]!),
+        ...(_includeDev ? p.immediateDependencies : p.dependencies).keys.map(
+          (name) => graph.packages[name]!,
+        ),
       ],
     };
 

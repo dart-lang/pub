@@ -64,9 +64,10 @@ class CacheAddCommand extends PubCommand {
     final source = cache.hosted;
 
     // TODO(rnystrom): Allow specifying the server.
-    final ids = (await cache.getVersions(source.refFor(package)))
-        .where((id) => constraint.allows(id.version))
-        .toList();
+    final ids =
+        (await cache.getVersions(
+          source.refFor(package),
+        )).where((id) => constraint.allows(id.version)).toList();
 
     if (ids.isEmpty) {
       // TODO(rnystrom): Show most recent unmatching version?

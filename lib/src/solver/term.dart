@@ -26,7 +26,7 @@ class Term {
   Term get inverse => Term(package, !isPositive);
 
   Term(PackageRange package, this.isPositive)
-      : package = package.withTerseConstraint();
+    : package = package.withTerseConstraint();
 
   VersionConstraint get constraint => package.constraint;
 

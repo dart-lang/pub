@@ -9,8 +9,7 @@ import '../../test_pub.dart';
 
 void main() {
   // Regression test for issue 22194.
-  test(
-      'gets a dependency with broken dev dependencies from a pub '
+  test('gets a dependency with broken dev dependencies from a pub '
       'server', () async {
     final server = await servePackages();
     server.serve(

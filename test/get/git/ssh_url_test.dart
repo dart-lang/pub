@@ -16,46 +16,44 @@ void main() {
   // We could set up a local cache, and only test the '--offline' part of this.
   // But for now we live with this.
   test(
-      'Git description uris can be of the form git@github.com:dart-lang/pub.git',
-      () {
-    final description = GitDescription(
-      url: 'git@github.com:dart-lang/pub.git',
-      ref: 'main',
-      path: 'abc/',
-      containingDir: null,
-    );
-    expect(
-      description.format(),
-      'git@github.com:dart-lang/pub.git at main in abc/',
-    );
-    expect(
-      description.serializeForPubspec(
+    'Git description uris can be of the form git@github.com:dart-lang/pub.git',
+    () {
+      final description = GitDescription(
+        url: 'git@github.com:dart-lang/pub.git',
+        ref: 'main',
+        path: 'abc/',
         containingDir: null,
-        languageVersion: const LanguageVersion(2, 16),
-      ),
-      {
-        'url': 'git@github.com:dart-lang/pub.git',
-        'ref': 'main',
-        'path': 'abc/',
-      },
-    );
-    final resolvedDescription = ResolvedGitDescription(
-      description,
-      '7d48f902b0326fc2ce0615c20f1aab6c811fe55b',
-    );
+      );
+      expect(
+        description.format(),
+        'git@github.com:dart-lang/pub.git at main in abc/',
+      );
+      expect(
+        description.serializeForPubspec(
+          containingDir: null,
+          languageVersion: const LanguageVersion(2, 16),
+        ),
+        {
+          'url': 'git@github.com:dart-lang/pub.git',
+          'ref': 'main',
+          'path': 'abc/',
+        },
+      );
+      final resolvedDescription = ResolvedGitDescription(
+        description,
+        '7d48f902b0326fc2ce0615c20f1aab6c811fe55b',
+      );
 
-    expect(
-      resolvedDescription.format(),
-      'git@github.com:dart-lang/pub.git at 7d48f9 in abc/',
-    );
-    expect(
-      resolvedDescription.serializeForLockfile(containingDir: null),
-      {
+      expect(
+        resolvedDescription.format(),
+        'git@github.com:dart-lang/pub.git at 7d48f9 in abc/',
+      );
+      expect(resolvedDescription.serializeForLockfile(containingDir: null), {
         'url': 'git@github.com:dart-lang/pub.git',
         'ref': 'main',
         'path': 'abc/',
         'resolved-ref': '7d48f902b0326fc2ce0615c20f1aab6c811fe55b',
-      },
-    );
-  });
+      });
+    },
+  );
 }

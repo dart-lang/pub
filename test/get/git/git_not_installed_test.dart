@@ -24,11 +24,13 @@ exit 1
 echo "not git"
 ''',
     );
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet(
       environment: extendedPathEnv(),
@@ -61,16 +63,19 @@ if "%1"=="--version" (
 
     await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet(
       environment: extendedPathEnv(),
-      warning:
-          contains('You have a very old version of git (version 2.13.1.616)'),
+      warning: contains(
+        'You have a very old version of git (version 2.13.1.616)',
+      ),
       exitCode: 0,
     );
   });

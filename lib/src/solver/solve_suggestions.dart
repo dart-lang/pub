@@ -80,10 +80,11 @@ Future<String?> suggestResolutionAlternatives(
   }
 
   if (suggestions.isEmpty) return null;
-  final tryOne = suggestions.length == 1
-      ? 'You can try the following suggestion to make the pubspec resolve:'
-      : 'You can try one of the following suggestions '
-          'to make the pubspec resolve:';
+  final tryOne =
+      suggestions.length == 1
+          ? 'You can try the following suggestion to make the pubspec resolve:'
+          : 'You can try one of the following suggestions '
+              'to make the pubspec resolve:';
 
   suggestions.sort((a, b) => a.priority.compareTo(b.priority));
 
@@ -99,16 +100,18 @@ class _ResolutionSuggestion {
 
 String packageAddDescription(Entrypoint entrypoint, PackageId id) {
   final name = id.name;
-  final isDev =
-      entrypoint.workspaceRoot.pubspec.devDependencies.containsKey(name);
+  final isDev = entrypoint.workspaceRoot.pubspec.devDependencies.containsKey(
+    name,
+  );
   final resolvedDescription = id.description;
   final String descriptor;
   final d = resolvedDescription.description.serializeForPubspec(
-    containingDir: Directory.current
-        .path // The add command will resolve file names relative to CWD.
+    containingDir:
+        Directory
+            .current
+            .path, // The add command will resolve file names relative to CWD.
     // This currently should have no implications as we don't create suggestions
     // for path-packages.
-    ,
     languageVersion: entrypoint.workspaceRoot.pubspec.languageVersion,
   );
   if (d == null) {
@@ -151,8 +154,9 @@ class _ResolutionContext {
     if (constraint == null) return null;
 
     // Find the most relevant Flutter release fulfilling the constraint.
-    final bestRelease =
-        await inferBestFlutterRelease({cause.sdk.identifier: constraint});
+    final bestRelease = await inferBestFlutterRelease({
+      cause.sdk.identifier: constraint,
+    });
     if (bestRelease == null) return null;
     final result = await _tryResolve(
       entrypoint.workspaceRoot,
@@ -180,7 +184,8 @@ class _ResolutionContext {
   Future<_ResolutionSuggestion?> suggestSinglePackageUpdate(String name) async {
     // TODO(https://github.com/dart-lang/pub/issues/4127): This should
     // operate on all packages in workspace.
-    final originalRange = entrypoint.workspaceRoot.dependencies[name] ??
+    final originalRange =
+        entrypoint.workspaceRoot.dependencies[name] ??
         entrypoint.workspaceRoot.devDependencies[name];
     if (originalRange == null ||
         originalRange.description is! HostedDescription) {
@@ -209,18 +214,21 @@ class _ResolutionContext {
     final addDescription = packageAddDescription(entrypoint, resolvingPackage);
 
     var priority = 1;
-    var suggestion = '* Try updating your constraint on $name: '
+    var suggestion =
+        '* Try updating your constraint on $name: '
         '$topLevelProgram pub add $addDescription';
     if (originalConstraint is VersionRange) {
       final min = originalConstraint.min;
       if (min != null) {
         if (resolvingPackage.version < min) {
           priority = 3;
-          suggestion = '* Consider downgrading your constraint on $name: '
+          suggestion =
+              '* Consider downgrading your constraint on $name: '
               '$topLevelProgram pub add $addDescription';
         } else {
           priority = 2;
-          suggestion = '* Try upgrading your constraint on $name: '
+          suggestion =
+              '* Try upgrading your constraint on $name: '
               '$topLevelProgram pub add $addDescription';
         }
       }
@@ -235,8 +243,10 @@ class _ResolutionContext {
     required bool stripLowerBound,
   }) async {
     final originalPubspec = entrypoint.workspaceRoot.pubspec;
-    final relaxedPubspec =
-        stripVersionBounds(originalPubspec, stripLowerBound: stripLowerBound);
+    final relaxedPubspec = stripVersionBounds(
+      originalPubspec,
+      stripLowerBound: stripLowerBound,
+    );
 
     final result = await _tryResolve(
       Package(
@@ -250,9 +260,10 @@ class _ResolutionContext {
     }
     final updatedPackageVersions = <PackageId>[];
     for (final id in result.packages) {
-      final originalConstraint = (originalPubspec.dependencies[id.name] ??
-              originalPubspec.devDependencies[id.name])
-          ?.constraint;
+      final originalConstraint =
+          (originalPubspec.dependencies[id.name] ??
+                  originalPubspec.devDependencies[id.name])
+              ?.constraint;
       if (originalConstraint != null) {
         updatedPackageVersions.add(id);
       }

@@ -38,8 +38,7 @@ void main() {
     });
   });
 
-  group(
-      'should consider a package invalid if it has a top-level directory '
+  group('should consider a package invalid if it has a top-level directory '
       'named', () {
     setUp(d.validPackage().create);
 

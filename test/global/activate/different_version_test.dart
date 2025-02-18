@@ -8,8 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      "discards the previous active version if it doesn't match the "
+  test("discards the previous active version if it doesn't match the "
       'constraint', () async {
     await servePackages()
       ..serve(

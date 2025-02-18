@@ -38,18 +38,18 @@ class SolveFailure implements ApplicationException {
   }
 
   SolveFailure(this.incompatibility, {this.suggestions})
-      : assert(
-          incompatibility.terms.isEmpty ||
-              incompatibility.terms.single.package.isRoot,
-        );
+    : assert(
+        incompatibility.terms.isEmpty ||
+            incompatibility.terms.single.package.isRoot,
+      );
 
   /// Describes how [incompatibility] was derived, and thus why version solving
   /// failed.
   @override
   String toString() => [
-        _Writer(incompatibility).write(),
-        if (suggestions != null) suggestions,
-      ].join('\n');
+    _Writer(incompatibility).write(),
+    if (suggestions != null) suggestions,
+  ].join('\n');
 }
 
 /// A class that writes a human-readable description of the cause of a
@@ -160,9 +160,9 @@ class _Writer {
         .toSet() // avoid duplicates
         .sortedBy((hint) => hint) // sort hints for consistent ordering.
         .forEach((hint) {
-      buffer.writeln();
-      buffer.writeln(hint);
-    });
+          buffer.writeln();
+          buffer.writeln(hint);
+        });
 
     return buffer.toString();
   }
@@ -204,8 +204,9 @@ class _Writer {
     // from their successors or that are used for multiple derivations.
     final numbered = conclusion || _derivations[incompatibility]! > 1;
     final conjunction = conclusion || incompatibility == _root ? 'So,' : 'And';
-    final incompatibilityString =
-        log.bold(incompatibility.toString(detailsForIncompatibility));
+    final incompatibilityString = log.bold(
+      incompatibility.toString(detailsForIncompatibility),
+    );
 
     final conflictClause = incompatibility.cause as ConflictCause;
     var detailsForCause = _detailsForCause(conflictClause);
@@ -278,17 +279,23 @@ class _Writer {
         }
       }
     } else if (cause is ConflictCause || otherCause is ConflictCause) {
-      final derived = cause is ConflictCause
-          ? conflictClause.conflict
-          : conflictClause.other;
-      final ext = cause is ConflictCause
-          ? conflictClause.other
-          : conflictClause.conflict;
+      final derived =
+          cause is ConflictCause
+              ? conflictClause.conflict
+              : conflictClause.other;
+      final ext =
+          cause is ConflictCause
+              ? conflictClause.other
+              : conflictClause.conflict;
 
       final derivedLine = _lineNumbers[derived];
       if (derivedLine != null) {
-        final extAndDerived =
-            ext.andToString(derived, detailsForCause, null, derivedLine);
+        final extAndDerived = ext.andToString(
+          derived,
+          detailsForCause,
+          null,
+          derivedLine,
+        );
         _write(
           incompatibility,
           'Because $extAndDerived, $incompatibilityString.',
@@ -296,12 +303,14 @@ class _Writer {
         );
       } else if (_isCollapsible(derived)) {
         final derivedCause = derived.cause as ConflictCause;
-        final collapsedDerived = derivedCause.conflict.cause is ConflictCause
-            ? derivedCause.conflict
-            : derivedCause.other;
-        final collapsedExt = derivedCause.conflict.cause is ConflictCause
-            ? derivedCause.other
-            : derivedCause.conflict;
+        final collapsedDerived =
+            derivedCause.conflict.cause is ConflictCause
+                ? derivedCause.conflict
+                : derivedCause.other;
+        final collapsedExt =
+            derivedCause.conflict.cause is ConflictCause
+                ? derivedCause.other
+                : derivedCause.conflict;
 
         detailsForCause = mergeMaps(
           detailsForCause,
@@ -327,8 +336,10 @@ class _Writer {
         );
       }
     } else {
-      final conflictAndOther = conflictClause.conflict
-          .andToString(conflictClause.other, detailsForCause);
+      final conflictAndOther = conflictClause.conflict.andToString(
+        conflictClause.other,
+        detailsForCause,
+      );
       _write(
         incompatibility,
         'Because '
@@ -417,11 +428,15 @@ class _Writer {
       if (conflictPackage == null) continue;
       if (conflictPackage.description.source !=
           term.package.description.source) {
-        details[term.package.name] =
-            const PackageDetail(showSource: true, showVersion: false);
+        details[term.package.name] = const PackageDetail(
+          showSource: true,
+          showVersion: false,
+        );
       } else if (conflictPackage.toRef() != term.package.toRef()) {
-        details[term.package.name] =
-            const PackageDetail(showDescription: true, showVersion: false);
+        details[term.package.name] = const PackageDetail(
+          showDescription: true,
+          showVersion: false,
+        );
       }
     }
 

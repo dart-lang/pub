@@ -37,18 +37,22 @@ class DirectoryValidator extends Validator {
       if (_pluralNames.contains(dirName)) {
         // Cut off the "s"
         final singularName = dirName.substring(0, dirName.length - 1);
-        warnings.add('Rename the top-level "$dirName" directory to '
-            '"$singularName".\n'
-            'The Pub layout convention is to use singular directory '
-            'names.\n'
-            'Plural names won\'t be correctly identified by Pub and other '
-            'tools.\n$docRef');
+        warnings.add(
+          'Rename the top-level "$dirName" directory to '
+          '"$singularName".\n'
+          'The Pub layout convention is to use singular directory '
+          'names.\n'
+          'Plural names won\'t be correctly identified by Pub and other '
+          'tools.\n$docRef',
+        );
       }
 
       if (dirName.contains(RegExp(r'^samples?$'))) {
-        warnings.add('Rename the top-level "$dirName" directory to "example".\n'
-            'This allows Pub to find your examples and create "packages" '
-            'directories for them.\n$docRef');
+        warnings.add(
+          'Rename the top-level "$dirName" directory to "example".\n'
+          'This allows Pub to find your examples and create "packages" '
+          'directories for them.\n$docRef',
+        );
       }
     }
   }

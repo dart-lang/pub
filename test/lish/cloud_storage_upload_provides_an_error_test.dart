@@ -29,12 +29,7 @@ void main() {
       });
     });
 
-    expect(
-      pub.stderr,
-      emits(
-        'Server error code: EntityTooLarge',
-      ),
-    );
+    expect(pub.stderr, emits('Server error code: EntityTooLarge'));
     expect(
       pub.stderr,
       emits(

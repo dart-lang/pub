@@ -73,7 +73,8 @@ class GlobalActivateCommand extends PubCommand {
     argParser.addOption(
       'hosted-url',
       abbr: 'u',
-      help: 'A custom pub server URL for the package. '
+      help:
+          'A custom pub server URL for the package. '
           'Only applies when using the `hosted` source.',
     );
   }
@@ -137,8 +138,10 @@ class GlobalActivateCommand extends PubCommand {
 
         PackageRef ref;
         try {
-          ref = cache.hosted
-              .refFor(package, url: argResults.option('hosted-url'));
+          ref = cache.hosted.refFor(
+            package,
+            url: argResults.option('hosted-url'),
+          );
         } on FormatException catch (e) {
           usageException('Invalid hosted-url: $e');
         }
@@ -156,10 +159,11 @@ class GlobalActivateCommand extends PubCommand {
         validateNoExtraArgs();
 
         if (!packageNameRegExp.hasMatch(package)) {
-          final suggestion = dirExists(package)
-              ? '\n\nDid you mean `$topLevelProgram pub global activate '
-                  '--source path ${escapeShellArgument(package)}`?'
-              : '';
+          final suggestion =
+              dirExists(package)
+                  ? '\n\nDid you mean `$topLevelProgram pub global activate '
+                      '--source path ${escapeShellArgument(package)}`?'
+                  : '';
 
           usageException('Not a valid package name: "$package"$suggestion');
         }

@@ -10,8 +10,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  test(
-      'with a malformed credentials.json, authenticates again and '
+  test('with a malformed credentials.json, authenticates again and '
       'saves credentials.json', () async {
     await d.validPackage().create();
 

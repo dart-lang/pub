@@ -25,10 +25,7 @@ void main() {
     await d.validPackage().create();
     await d.dir(appPath, [
       d.dir('extension', [
-        d.dir('devtools', [
-          d.file('config.yaml'),
-          d.dir('build', []),
-        ]),
+        d.dir('devtools', [d.file('config.yaml'), d.dir('build', [])]),
       ]),
     ]).create();
     await expectValidationWarning(

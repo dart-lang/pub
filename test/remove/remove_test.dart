@@ -25,15 +25,16 @@ void main() {
     await d.appDir().validate();
   });
 
-  test('removing a package from dependencies does not affect dev_dependencies',
-      () async {
-    await servePackages()
-      ..serve('foo', '1.2.3')
-      ..serve('foo', '1.2.2')
-      ..serve('bar', '2.0.0');
+  test(
+    'removing a package from dependencies does not affect dev_dependencies',
+    () async {
+      await servePackages()
+        ..serve('foo', '1.2.3')
+        ..serve('foo', '1.2.2')
+        ..serve('bar', '2.0.0');
 
-    await d.dir(appPath, [
-      d.file('pubspec.yaml', '''
+      await d.dir(appPath, [
+        d.file('pubspec.yaml', '''
 name: myapp
 dependencies:
   foo: 1.2.3
@@ -44,22 +45,23 @@ dev_dependencies:
 environment:
   sdk: '$defaultSdkConstraint'
 '''),
-    ]).create();
+      ]).create();
 
-    await pubRemove(args: ['foo']);
+      await pubRemove(args: ['foo']);
 
-    await d.cacheDir({'bar': '2.0.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'bar', version: '2.0.0'),
-    ]).validate();
+      await d.cacheDir({'bar': '2.0.0'}).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'bar', version: '2.0.0'),
+      ]).validate();
 
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'dev_dependencies': {'bar': '2.0.0'},
-      }),
-    ]).validate();
-  });
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dev_dependencies': {'bar': '2.0.0'},
+        }),
+      ]).validate();
+    },
+  );
 
   test('dry-run does not actually remove dependency', () async {
     final server = await servePackages();
@@ -125,38 +127,40 @@ environment:
     ]).validate();
   });
 
-  test('removes multiple packages from dependencies and dev_dependencies',
-      () async {
-    await servePackages()
-      ..serve('foo', '1.2.3')
-      ..serve('bar', '2.3.4')
-      ..serve('baz', '3.2.1')
-      ..serve('jfj', '0.2.1');
+  test(
+    'removes multiple packages from dependencies and dev_dependencies',
+    () async {
+      await servePackages()
+        ..serve('foo', '1.2.3')
+        ..serve('bar', '2.3.4')
+        ..serve('baz', '3.2.1')
+        ..serve('jfj', '0.2.1');
 
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'dependencies': {'bar': '>=2.3.4', 'jfj': '0.2.1'},
-        'dev_dependencies': {'foo': '^1.2.3', 'baz': '3.2.1'},
-      }),
-    ]).create();
-    await pubGet();
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'bar': '>=2.3.4', 'jfj': '0.2.1'},
+          'dev_dependencies': {'foo': '^1.2.3', 'baz': '3.2.1'},
+        }),
+      ]).create();
+      await pubGet();
 
-    await pubRemove(args: ['foo', 'bar', 'baz']);
+      await pubRemove(args: ['foo', 'bar', 'baz']);
 
-    await d.cacheDir({'jfj': '0.2.1'}).validate();
+      await d.cacheDir({'jfj': '0.2.1'}).validate();
 
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'jfj', version: '0.2.1'),
-    ]).validate();
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'jfj', version: '0.2.1'),
+      ]).validate();
 
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'dependencies': {'jfj': '0.2.1'},
-      }),
-    ]).validate();
-  });
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'jfj': '0.2.1'},
+        }),
+      ]).validate();
+    },
+  );
 
   test('removes git dependencies', () async {
     final server = await servePackages();
@@ -168,14 +172,16 @@ environment:
     ]);
     await repo.create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {'url': '../foo.git', 'path': 'subdir'},
-        },
-        'bar': '1.2.3',
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo.git', 'path': 'subdir'},
+            },
+            'bar': '1.2.3',
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -190,15 +196,19 @@ environment:
   test('removes path dependencies', () async {
     final server = await servePackages();
     server.serve('bar', '1.2.3');
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'path': '../foo'},
-        'bar': '1.2.3',
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'path': '../foo'},
+            'bar': '1.2.3',
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -216,15 +226,20 @@ environment:
     final custom = await startPackageServer();
     custom.serve('foo', '1.2.3');
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'version': '1.2.3',
-          'hosted': {'name': 'foo', 'url': 'http://localhost:${custom.port}'},
-        },
-        'bar': '2.0.1',
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'version': '1.2.3',
+              'hosted': {
+                'name': 'foo',
+                'url': 'http://localhost:${custom.port}',
+              },
+            },
+            'bar': '2.0.1',
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -321,9 +336,7 @@ environment:
     await d.appPackageConfigFile([]).validate();
 
     await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-      }),
+      d.pubspec({'name': 'myapp'}),
     ]).validate();
   });
 }

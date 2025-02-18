@@ -20,8 +20,10 @@ Future authorizePub(
 ]) async {
   await expectLater(
     pub.stdout,
-    emits('Pub needs your authorization to upload packages on your '
-        'behalf.'),
+    emits(
+      'Pub needs your authorization to upload packages on your '
+      'behalf.',
+    ),
   );
 
   final line = await pub.stdout.next;
@@ -67,13 +69,16 @@ String _mapToQuery(Map<String, String?> map) {
   final pairs = <List<String?>>[];
   map.forEach((key, value) {
     key = Uri.encodeQueryComponent(key);
-    value = (value == null || value.isEmpty)
-        ? null
-        : Uri.encodeQueryComponent(value);
+    value =
+        (value == null || value.isEmpty)
+            ? null
+            : Uri.encodeQueryComponent(value);
     pairs.add([key, value]);
   });
-  return pairs.map((pair) {
-    if (pair[1] == null) return pair[0];
-    return '${pair[0]}=${pair[1]}';
-  }).join('&');
+  return pairs
+      .map((pair) {
+        if (pair[1] == null) return pair[0];
+        return '${pair[0]}=${pair[1]}';
+      })
+      .join('&');
 }

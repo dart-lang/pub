@@ -23,12 +23,11 @@ void main() {
 
       await pubCommand(
         command,
-        error: 'Got socket error trying to find package foo at '
+        error:
+            'Got socket error trying to find package foo at '
             'https://invalid-url.foo.',
         exitCode: exit_codes.UNAVAILABLE,
-        environment: {
-          'PUB_MAX_HTTP_RETRIES': '2',
-        },
+        environment: {'PUB_MAX_HTTP_RETRIES': '2'},
       );
     });
   });

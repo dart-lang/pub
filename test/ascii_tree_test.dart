@@ -32,9 +32,7 @@ void main() {
       dir('example', [
         file('console_example.dart', bytes(1000)),
         file('main.dart', bytes(1024)),
-        dir('web copy', [
-          file('web_example.dart', bytes(1025)),
-        ]),
+        dir('web copy', [file('web_example.dart', bytes(1025))]),
       ]),
       dir('test', [
         file('absolute_test.dart', bytes(0)),
@@ -53,15 +51,15 @@ void main() {
       ]),
       file('.gitignore', bytes(100)),
       file('README.md', bytes(100)),
-      dir('lib', [
-        file('path.dart', bytes(100)),
-      ]),
+      dir('lib', [file('path.dart', bytes(100))]),
     ]).create();
-    final files = Package.load(
-      path(appPath),
-      loadPubspec:
-          Pubspec.loadRootWithSources((name) => throw UnimplementedError()),
-    ).listFiles();
+    final files =
+        Package.load(
+          path(appPath),
+          loadPubspec: Pubspec.loadRootWithSources(
+            (name) => throw UnimplementedError(),
+          ),
+        ).listFiles();
     ctx.expectNextSection(
       tree.fromFiles(files, baseDir: path(appPath), showFileSizes: true),
     );

@@ -10,19 +10,21 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 Future<void> main() async {
-  test('pub get creates lock file with unix line endings if none exist',
-      () async {
-    await d.appDir().create();
+  test(
+    'pub get creates lock file with unix line endings if none exist',
+    () async {
+      await d.appDir().create();
 
-    await pubGet();
+      await pubGet();
 
-    await d
-        .file(
-          p.join(appPath, 'pubspec.lock'),
-          allOf(contains('\n'), isNot(contains('\r\n'))),
-        )
-        .validate();
-  });
+      await d
+          .file(
+            p.join(appPath, 'pubspec.lock'),
+            allOf(contains('\n'), isNot(contains('\r\n'))),
+          )
+          .validate();
+    },
+  );
 
   test('pub get preserves line endings of lock file', () async {
     await d.appDir().create();

@@ -14,8 +14,7 @@ import 'utils.dart';
 
 void main() {
   // Regression test for issue 8849.
-  test(
-      'with a server-rejected refresh token, authenticates again and '
+  test('with a server-rejected refresh token, authenticates again and '
       'saves credentials.json', () async {
     await d.validPackage().create();
 

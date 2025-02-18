@@ -9,8 +9,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test(
-      'Errors if the executable is in a subdirectory in a '
+  test('Errors if the executable is in a subdirectory in a '
       'dependency.', () async {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
 

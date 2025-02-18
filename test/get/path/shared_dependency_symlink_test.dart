@@ -11,10 +11,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('shared dependency with symlink', () async {
-    await d.dir(
-      'shared',
-      [d.libDir('shared'), d.libPubspec('shared', '0.0.1')],
-    ).create();
+    await d.dir('shared', [
+      d.libDir('shared'),
+      d.libPubspec('shared', '0.0.1'),
+    ]).create();
 
     await d.dir('foo', [
       d.libDir('foo'),

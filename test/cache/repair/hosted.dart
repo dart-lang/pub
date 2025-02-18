@@ -25,18 +25,18 @@ void main() {
     await d.dir(cachePath, [
       d.dir('hosted', [
         d.dir('localhost%58${globalServer.port}', [
-          d.dir(
-            'foo-1.2.3',
-            [d.libPubspec('foo', '1.2.3'), d.file('broken.txt')],
-          ),
-          d.dir(
-            'foo-1.2.5',
-            [d.libPubspec('foo', '1.2.5'), d.file('broken.txt')],
-          ),
-          d.dir(
-            'bar-1.2.4',
-            [d.libPubspec('bar', '1.2.4'), d.file('broken.txt')],
-          ),
+          d.dir('foo-1.2.3', [
+            d.libPubspec('foo', '1.2.3'),
+            d.file('broken.txt'),
+          ]),
+          d.dir('foo-1.2.5', [
+            d.libPubspec('foo', '1.2.5'),
+            d.file('broken.txt'),
+          ]),
+          d.dir('bar-1.2.4', [
+            d.libPubspec('bar', '1.2.4'),
+            d.file('broken.txt'),
+          ]),
         ]),
       ]),
     ]).create();

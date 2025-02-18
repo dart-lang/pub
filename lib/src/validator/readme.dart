@@ -21,8 +21,10 @@ class ReadmeValidator extends Validator {
     // If multiple READMEs are found, this uses the same conventions as
     // pub.dev for choosing the primary one: the README with the fewest
     // extensions that is lexically ordered first is chosen.
-    final readmes = filesBeneath('.', recursive: false)
-        .where((file) => p.basename(file).contains(_readmeRegexp));
+    final readmes = filesBeneath(
+      '.',
+      recursive: false,
+    ).where((file) => p.basename(file).contains(_readmeRegexp));
 
     if (readmes.isEmpty) {
       warnings.add('Please add a README.md file that describes your package.');
@@ -38,8 +40,10 @@ class ReadmeValidator extends Validator {
     });
 
     if (p.basename(readme) != 'README.md') {
-      warnings.add('Please consider renaming $readme to `README.md`. '
-          'See https://dart.dev/tools/pub/publishing#important-files.');
+      warnings.add(
+        'Please consider renaming $readme to `README.md`. '
+        'See https://dart.dev/tools/pub/publishing#important-files.',
+      );
     }
 
     final bytes = readBinaryFile(readme);
@@ -47,9 +51,11 @@ class ReadmeValidator extends Validator {
       // utf8.decode doesn't allow invalid UTF-8.
       utf8.decode(bytes);
     } on FormatException catch (_) {
-      warnings.add('$readme contains invalid UTF-8.\n'
-          'This will cause it to be displayed incorrectly on '
-          'the Pub site (https://pub.dev).');
+      warnings.add(
+        '$readme contains invalid UTF-8.\n'
+        'This will cause it to be displayed incorrectly on '
+        'the Pub site (https://pub.dev).',
+      );
     }
   }
 }

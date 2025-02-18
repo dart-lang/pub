@@ -36,11 +36,12 @@ Future<List<FlutterRelease>> _flutterReleases = () async {
         'Bad response - releases should be a list of maps.',
       );
     }
-    final channel = {
-      'beta': Channel.beta,
-      'stable': Channel.stable,
-      'dev': Channel.dev,
-    }[release['channel']];
+    final channel =
+        {
+          'beta': Channel.beta,
+          'stable': Channel.stable,
+          'dev': Channel.dev,
+        }[release['channel']];
     if (channel == null) {
       throw const FormatException('Release with bad channel');
     }
@@ -85,18 +86,16 @@ Future<FlutterRelease?> inferBestFlutterRelease(
   }
   return flutterReleases.firstWhereOrNull(
     (release) =>
-        (sdkConstraints['flutter'] ?? VersionConstraint.any)
-            .allows(release.flutterVersion) &&
-        (sdkConstraints['dart'] ?? VersionConstraint.any)
-            .allows(release.dartVersion),
+        (sdkConstraints['flutter'] ?? VersionConstraint.any).allows(
+          release.flutterVersion,
+        ) &&
+        (sdkConstraints['dart'] ?? VersionConstraint.any).allows(
+          release.dartVersion,
+        ),
   );
 }
 
-enum Channel {
-  stable,
-  beta,
-  dev,
-}
+enum Channel { stable, beta, dev }
 
 /// A version of the Flutter SDK and its related Dart SDK.
 class FlutterRelease {
@@ -109,7 +108,8 @@ class FlutterRelease {
     required this.channel,
   });
   @override
-  String toString() => 'FlutterRelease(flutter=$flutterVersion, '
+  String toString() =>
+      'FlutterRelease(flutter=$flutterVersion, '
       'dart=$dartVersion, '
       'channel=$channel)';
 }

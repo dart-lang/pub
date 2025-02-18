@@ -53,9 +53,11 @@ abstract class Sdk {
 
 /// A map from SDK identifiers that appear in pubspecs to the implementations of
 /// those SDKs.
-final sdks = UnmodifiableMapView<String, Sdk>(
-  {'dart': sdk, 'flutter': FlutterSdk(), 'fuchsia': FuchsiaSdk()},
-);
+final sdks = UnmodifiableMapView<String, Sdk>({
+  'dart': sdk,
+  'flutter': FlutterSdk(),
+  'fuchsia': FuchsiaSdk(),
+});
 
 /// The core Dart SDK.
 final sdk = DartSdk();

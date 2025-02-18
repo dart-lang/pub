@@ -18,8 +18,9 @@ void main() {
       d.dir('bin', [d.file('foo.dart', "main() => print('ok');")]),
     ]).create();
 
-    final pub =
-        await startPub(args: ['global', 'activate', '-spath', '../foo']);
+    final pub = await startPub(
+      args: ['global', 'activate', '-spath', '../foo'],
+    );
     expect(pub.stdout, emitsThrough('Resolving dependencies in `../foo`...'));
     expect(pub.stdout, emitsThrough(startsWith('Activated foo 0.0.0 at path')));
     await pub.shouldExit();

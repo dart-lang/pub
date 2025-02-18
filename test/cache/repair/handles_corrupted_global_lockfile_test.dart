@@ -17,8 +17,10 @@ void main() {
     await runPub(
       args: ['cache', 'repair'],
       error: contains('Failed to reactivate foo:'),
-      output: contains('Failed to reactivate 1 package:\n'
-          '- foo'),
+      output: contains(
+        'Failed to reactivate 1 package:\n'
+        '- foo',
+      ),
       exitCode: exit_codes.UNAVAILABLE,
     );
   });

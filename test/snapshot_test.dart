@@ -20,10 +20,9 @@ void main() {
             d.file('hello.dart', "void main() => print('hello!');"),
             d.file('goodbye.dart', "void main() => print('goodbye!');"),
             d.file('shell.sh', 'echo shell'),
-            d.dir(
-              'subdir',
-              [d.file('sub.dart', "void main() => print('sub!');")],
-            ),
+            d.dir('subdir', [
+              d.file('sub.dart', "void main() => print('sub!');"),
+            ]),
           ]),
         ],
       );
@@ -32,9 +31,10 @@ void main() {
 
       await pubGet(
         args: ['--precompile'],
-        output: allOf(
-          [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
-        ),
+        output: allOf([
+          contains('Built foo:hello.'),
+          contains('Built foo:goodbye.'),
+        ]),
       );
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
@@ -65,10 +65,9 @@ void main() {
               d.file('hello.dart', "void main() => print('hello!');"),
               d.file('goodbye.dart', "void main() => print('goodbye!');"),
               d.file('shell.sh', 'echo shell'),
-              d.dir(
-                'subdir',
-                [d.file('sub.dart', "void main() => print('sub!');")],
-              ),
+              d.dir('subdir', [
+                d.file('sub.dart', "void main() => print('sub!');"),
+              ]),
             ]),
           ],
         )
@@ -78,9 +77,10 @@ void main() {
 
       await pubGet(
         args: ['--precompile'],
-        output: allOf(
-          [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
-        ),
+        output: allOf([
+          contains('Built foo:hello.'),
+          contains('Built foo:goodbye.'),
+        ]),
       );
 
       await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
@@ -108,10 +108,9 @@ void main() {
           'foo',
           '1.2.3',
           contents: [
-            d.dir(
-              'bin',
-              [d.file('hello.dart', "void main() => print('hello!');")],
-            ),
+            d.dir('bin', [
+              d.file('hello.dart', "void main() => print('hello!');"),
+            ]),
           ],
         );
 
@@ -130,10 +129,9 @@ void main() {
           'foo',
           '1.2.4',
           contents: [
-            d.dir(
-              'bin',
-              [d.file('hello.dart', "void main() => print('hello 2!');")],
-            ),
+            d.dir('bin', [
+              d.file('hello.dart', "void main() => print('hello 2!');"),
+            ]),
           ],
         );
 
@@ -216,17 +214,18 @@ void main() {
 
         await d.git('foo.git', [
           d.pubspec({'name': 'foo', 'version': '0.0.1'}),
-          d.dir(
-            'bin',
-            [d.file('hello.dart', "void main() => print('Hello!');")],
-          ),
+          d.dir('bin', [
+            d.file('hello.dart', "void main() => print('Hello!');"),
+          ]),
         ]).create();
 
-        await d.appDir(
-          dependencies: {
-            'foo': {'git': '../foo.git'},
-          },
-        ).create();
+        await d
+            .appDir(
+              dependencies: {
+                'foo': {'git': '../foo.git'},
+              },
+            )
+            .create();
 
         await pubGet(
           args: ['--precompile'],
@@ -238,10 +237,9 @@ void main() {
         ]).validate();
 
         await d.git('foo.git', [
-          d.dir(
-            'bin',
-            [d.file('hello.dart', "void main() => print('Goodbye!');")],
-          ),
+          d.dir('bin', [
+            d.file('hello.dart', "void main() => print('Goodbye!');"),
+          ]),
         ]).commit();
 
         await pubUpgrade(
@@ -264,10 +262,9 @@ void main() {
           'foo',
           '5.6.7',
           contents: [
-            d.dir(
-              'bin',
-              [d.file('hello.dart', "void main() => print('hello!');")],
-            ),
+            d.dir('bin', [
+              d.file('hello.dart', "void main() => print('hello!');"),
+            ]),
           ],
         );
 
@@ -276,10 +273,9 @@ void main() {
         await pubGet(args: ['--no-precompile']);
 
         await d.dir(p.join(appPath, '.dart_tool', 'pub', 'bin'), [
-          d.dir(
-            'foo',
-            [d.outOfDateSnapshot('hello.dart-$versionSuffix.snapshot')],
-          ),
+          d.dir('foo', [
+            d.outOfDateSnapshot('hello.dart-$versionSuffix.snapshot'),
+          ]),
         ]).create();
 
         final process = await pubRun(args: ['foo:hello']);

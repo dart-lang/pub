@@ -25,18 +25,15 @@ class GitignoreValidator extends Validator {
     if (package.inGitRepo) {
       final Uint8List output;
       try {
-        output = git.runSyncBytes(
-          [
-            '-c',
-            'core.quotePath=false',
-            'ls-files',
-            '-z',
-            '--cached',
-            '--exclude-standard',
-            '--recurse-submodules',
-          ],
-          workingDir: package.dir,
-        );
+        output = git.runSyncBytes([
+          '-c',
+          'core.quotePath=false',
+          'ls-files',
+          '-z',
+          '--cached',
+          '--exclude-standard',
+          '--recurse-submodules',
+        ], workingDir: package.dir);
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
         // This validation is only a warning.
@@ -47,9 +44,10 @@ class GitignoreValidator extends Validator {
 
       final List<String> checkedIntoGit;
       try {
-        checkedIntoGit = git.splitZeroTerminated(output).map((b) {
-          return utf8.decode(b);
-        }).toList();
+        checkedIntoGit =
+            git.splitZeroTerminated(output).map((b) {
+              return utf8.decode(b);
+            }).toList();
       } on FormatException catch (e) {
         log.fine('Failed decoding git output. Skipping validation. $e.');
         return;
@@ -68,35 +66,40 @@ class GitignoreValidator extends Validator {
         return p.join(root, path);
       }
 
-      final unignoredByGitignore = Ignore.listFiles(
-        beneath: beneath,
-        listDir: (dir) {
-          final contents = Directory(resolve(dir)).listSync(followLinks: false);
-          return contents.map(
-            (entity) =>
-                p.posix.joinAll(p.split(p.relative(entity.path, from: root))),
-          );
-        },
-        ignoreForDir: (dir) {
-          final gitIgnore = resolve('$dir/.gitignore');
-          final rules = [
-            if (fileExists(gitIgnore)) readTextFile(gitIgnore),
-          ];
-          return rules.isEmpty ? null : Ignore(rules);
-        },
-        isDir: (dir) {
-          final resolved = resolve(dir);
-          return dirExists(resolved) && !linkExists(resolved);
-        },
-      ).map((file) {
-        final relative = p.relative(resolve(file), from: package.dir);
-        return Platform.isWindows
-            ? p.posix.joinAll(p.split(relative))
-            : relative;
-      }).toSet();
-      final ignoredFilesCheckedIn = checkedIntoGit
-          .where((file) => !unignoredByGitignore.contains(file))
-          .toList();
+      final unignoredByGitignore =
+          Ignore.listFiles(
+            beneath: beneath,
+            listDir: (dir) {
+              final contents = Directory(
+                resolve(dir),
+              ).listSync(followLinks: false);
+              return contents.map(
+                (entity) => p.posix.joinAll(
+                  p.split(p.relative(entity.path, from: root)),
+                ),
+              );
+            },
+            ignoreForDir: (dir) {
+              final gitIgnore = resolve('$dir/.gitignore');
+              final rules = [
+                if (fileExists(gitIgnore)) readTextFile(gitIgnore),
+              ];
+              return rules.isEmpty ? null : Ignore(rules);
+            },
+            isDir: (dir) {
+              final resolved = resolve(dir);
+              return dirExists(resolved) && !linkExists(resolved);
+            },
+          ).map((file) {
+            final relative = p.relative(resolve(file), from: package.dir);
+            return Platform.isWindows
+                ? p.posix.joinAll(p.split(relative))
+                : relative;
+          }).toSet();
+      final ignoredFilesCheckedIn =
+          checkedIntoGit
+              .where((file) => !unignoredByGitignore.contains(file))
+              .toList();
 
       if (ignoredFilesCheckedIn.isNotEmpty) {
         warnings.add('''

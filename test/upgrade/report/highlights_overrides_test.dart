@@ -21,14 +21,11 @@ void main() {
 
     // Upgrade everything.
     await pubUpgrade(
-      output: RegExp(
-        r'''
+      output: RegExp(r'''
 Resolving dependencies\.\.\..*
 Downloading packages\.\.\..*
 ! overridden 1\.0\.0 \(overridden\)
-''',
-        multiLine: true,
-      ),
+''', multiLine: true),
     );
   });
 }

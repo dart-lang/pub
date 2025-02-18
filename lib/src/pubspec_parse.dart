@@ -14,8 +14,9 @@ import 'utils.dart' show ExpectField, identifierRegExp;
 /// This allows dot-separated valid Dart identifiers. The dots are there for
 /// compatibility with Google's internal Dart packages, but they may not be used
 /// when publishing a package to pub.dev.
-final packageNameRegExp =
-    RegExp('^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$');
+final packageNameRegExp = RegExp(
+  '^${identifierRegExp.pattern}(\\.${identifierRegExp.pattern})*\$',
+);
 
 /// Helper class for pubspec parsing to:
 /// - extract the fields and methods that are reusable outside of `pub` client,
@@ -30,12 +31,9 @@ abstract class PubspecBase {
   /// This includes the fields from which other properties are derived.
   final YamlMap fields;
 
-  PubspecBase(
-    this.fields, {
-    String? name,
-    Version? version,
-  })  : _name = name,
-        _version = version;
+  PubspecBase(this.fields, {String? name, Version? version})
+    : _name = name,
+      _version = version;
 
   /// The package's name.
   String get name => _name ??= fields.expectPackageNameField();
@@ -123,9 +121,9 @@ abstract class PubspecBase {
     advisoryIDs = <String>{};
 
     Never ignoredAdvisoriesError(SourceSpan span) => _error(
-          '"ignored_advisories" field must be a list of advisory IDs',
-          span,
-        );
+      '"ignored_advisories" field must be a list of advisory IDs',
+      span,
+    );
 
     final ignoredAdvisoriesNode = fields.nodes['ignored_advisories'];
     if (ignoredAdvisoriesNode == null) {
@@ -161,9 +159,9 @@ abstract class PubspecBase {
 
     // Throws a [PubspecException]
     Never falseSecretsError(SourceSpan span) => _error(
-          '"false_secrets" field must be a list of git-ignore style patterns',
-          span,
-        );
+      '"false_secrets" field must be a list of git-ignore style patterns',
+      span,
+    );
 
     final falseSecretsNode = fields.nodes['false_secrets'];
     if (falseSecretsNode == null) {
@@ -231,11 +229,14 @@ abstract class PubspecBase {
       _executables![keyValue] = switch (value.value) {
         null => keyValue,
         final String s when valuePattern.hasMatch(s) => _error(
-            '"executables" values may not contain path separators.',
-            value.span,
-          ),
+          '"executables" values may not contain path separators.',
+          value.span,
+        ),
         final String s => s,
-        _ => _error('"executables" values must be strings or null.', value.span)
+        _ => _error(
+          '"executables" values must be strings or null.',
+          value.span,
+        ),
       };
     });
 

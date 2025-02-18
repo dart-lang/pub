@@ -28,14 +28,14 @@ void main() {
   });
 
   group('hints if package is more than 100 MB', () {
-    test('package is not under source control and no .gitignore exists',
-        () async {
-      await d.validPackage().create();
+    test(
+      'package is not under source control and no .gitignore exists',
+      () async {
+        await d.validPackage().create();
 
-      await expectSizeValidationHint(
-        contains('Your package is 100.0 MB.'),
-      );
-    });
+        await expectSizeValidationHint(contains('Your package is 100.0 MB.'));
+      },
+    );
 
     test('package is not under source control and .gitignore exists', () async {
       await d.validPackage().create();
@@ -44,8 +44,10 @@ void main() {
       await expectSizeValidationHint(
         allOf(
           contains('Your package is 100.0 MB.'),
-          contains('Your .gitignore has no effect since your project '
-              'does not appear to be in version control.'),
+          contains(
+            'Your .gitignore has no effect since your project '
+            'does not appear to be in version control.',
+          ),
         ),
       );
     });
@@ -57,8 +59,10 @@ void main() {
       await expectSizeValidationHint(
         allOf(
           contains('Your package is 100.0 MB.'),
-          contains('Consider adding a .gitignore to avoid including '
-              'temporary files.'),
+          contains(
+            'Consider adding a .gitignore to avoid including '
+            'temporary files.',
+          ),
         ),
       );
     });
@@ -67,9 +71,7 @@ void main() {
       await d.validPackage().create();
       await d.git(appPath, [d.file('.gitignore', 'ignored')]).create();
 
-      await expectSizeValidationHint(
-        contains('Your package is 100.0 MB.'),
-      );
+      await expectSizeValidationHint(contains('Your package is 100.0 MB.'));
     });
   });
 }

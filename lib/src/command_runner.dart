@@ -41,8 +41,8 @@ import 'utils.dart';
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
 String topLevelProgram = _isRunningInsideFlutter ? 'flutter' : 'dart';
 
-bool _isRunningInsideFlutter =
-    (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
+bool _isRunningInsideFlutter = (Platform.environment['PUB_ENVIRONMENT'] ?? '')
+    .contains('flutter_cli');
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
@@ -100,11 +100,11 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
       'See https://dart.dev/tools/pub/cmd for detailed documentation.';
 
   PubCommandRunner()
-      : super(
-          'pub',
-          'Pub is a package manager for Dart.',
-          usageLineLength: lineLength,
-        ) {
+    : super(
+        'pub',
+        'Pub is a package manager for Dart.',
+        usageLineLength: lineLength,
+      ) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
     argParser.addFlag(
       'trace',
@@ -214,9 +214,11 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     }
 
     if (depsRev == actualRev) return;
-    log.warning("${log.yellow('Warning:')} the revision of pub in DEPS is "
-        '${log.bold(depsRev.toString())},\n'
-        'but ${log.bold(actualRev)} is checked out in '
-        '${p.relative(pubRoot)}.\n\n');
+    log.warning(
+      "${log.yellow('Warning:')} the revision of pub in DEPS is "
+      '${log.bold(depsRev.toString())},\n'
+      'but ${log.bold(actualRev)} is checked out in '
+      '${p.relative(pubRoot)}.\n\n',
+    );
   }
 }

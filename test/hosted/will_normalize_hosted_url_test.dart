@@ -88,25 +88,18 @@ void main() {
     /// This is a bit of a hack, to easily test if hosted pub URLs with a path
     /// segment works and if the slashes are normalized.
     void proxyMyFolderToRoot() {
-      globalServer.handle(
-        RegExp('/my-folder/.*'),
-        (r) async {
-          if (r.method != 'GET' && r.method != 'HEAD') {
-            return Response.forbidden(null);
-          }
-          final path = r.requestedUri.path.substring('/my-folder/'.length);
-          final res = await http.get(
-            Uri.parse('${globalServer.url}/$path'),
-          );
-          return Response(
-            res.statusCode,
-            body: res.bodyBytes,
-            headers: {
-              'Content-Type': res.headers['content-type']!,
-            },
-          );
-        },
-      );
+      globalServer.handle(RegExp('/my-folder/.*'), (r) async {
+        if (r.method != 'GET' && r.method != 'HEAD') {
+          return Response.forbidden(null);
+        }
+        final path = r.requestedUri.path.substring('/my-folder/'.length);
+        final res = await http.get(Uri.parse('${globalServer.url}/$path'));
+        return Response(
+          res.statusCode,
+          body: res.bodyBytes,
+          headers: {'Content-Type': res.headers['content-type']!},
+        );
+      });
     }
 
     test('will use normalized url with path', () async {

@@ -12,16 +12,18 @@ void main() {
     test('checks out a package from Git with a trailing slash', () async {
       ensureGit();
 
-      await d.git(
-        'foo.git',
-        [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-      ).create();
+      await d.git('foo.git', [
+        d.libDir('foo'),
+        d.libPubspec('foo', '1.0.0'),
+      ]).create();
 
-      await d.appDir(
-        dependencies: {
-          'foo': {'git': '../foo.git/'},
-        },
-      ).create();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'git': '../foo.git/'},
+            },
+          )
+          .create();
 
       await pubGet();
 
@@ -34,9 +36,7 @@ void main() {
 
       await d.dir(cachePath, [
         d.dir('git', [
-          d.dir('cache', [
-            d.gitPackageRepoCacheDir('foo'),
-          ]),
+          d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
           d.gitPackageRevisionCacheDir('foo'),
         ]),
       ]).validate();

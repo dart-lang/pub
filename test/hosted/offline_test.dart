@@ -29,13 +29,10 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     test('upgrades a package using the cache', () async {
       final server = await servePackages();
-      await populateCache(
-        {
-          'foo': ['1.2.2', '1.2.3'],
-          'bar': ['1.2.3'],
-        },
-        server,
-      );
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3'],
+        'bar': ['1.2.3'],
+      }, server);
 
       // Now serve only errors - to validate we are truly offline.
       server.serveErrors();
@@ -44,7 +41,8 @@ void main() {
 
       String? warning;
       if (command == RunCommand.upgrade) {
-        warning = 'Warning: Upgrading when offline may not update you '
+        warning =
+            'Warning: Upgrading when offline may not update you '
             'to the latest versions of your dependencies.';
       }
 
@@ -57,12 +55,9 @@ void main() {
 
     test('supports prerelease versions', () async {
       final server = await servePackages();
-      await populateCache(
-        {
-          'foo': ['1.2.3-alpha.1'],
-        },
-        server,
-      );
+      await populateCache({
+        'foo': ['1.2.3-alpha.1'],
+      }, server);
       // Now serve only errors - to validate we are truly offline.
       server.serveErrors();
 
@@ -70,7 +65,8 @@ void main() {
 
       String? warning;
       if (command == RunCommand.upgrade) {
-        warning = 'Warning: Upgrading when offline may not update you '
+        warning =
+            'Warning: Upgrading when offline may not update you '
             'to the latest versions of your dependencies.';
       }
 
@@ -103,12 +99,9 @@ void main() {
 
     test('fails gracefully if no cached versions match', () async {
       final server = await servePackages();
-      await populateCache(
-        {
-          'foo': ['1.2.2', '1.2.3'],
-        },
-        server,
-      );
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3'],
+      }, server);
 
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
@@ -118,13 +111,14 @@ void main() {
       await pubCommand(
         command,
         args: ['--offline'],
-        error: contains('''
-Because myapp depends on foo >2.0.0 which doesn't match any versions, version solving failed.'''),
+        error: contains(
+          '''
+Because myapp depends on foo >2.0.0 which doesn't match any versions, version solving failed.''',
+        ),
       );
     });
 
-    test(
-        'fails gracefully if a dependency is not cached and a lockfile '
+    test('fails gracefully if a dependency is not cached and a lockfile '
         'exists', () async {
       final server = await servePackages();
 
@@ -151,12 +145,9 @@ Because myapp depends on foo >2.0.0 which doesn't match any versions, version so
     test('downgrades to the version in the cache if necessary', () async {
       final server = await servePackages();
 
-      await populateCache(
-        {
-          'foo': ['1.2.2', '1.2.3'],
-        },
-        server,
-      );
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3'],
+      }, server);
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
@@ -174,12 +165,9 @@ Because myapp depends on foo >2.0.0 which doesn't match any versions, version so
     test('skips invalid cached versions', () async {
       final server = await servePackages();
 
-      await populateCache(
-        {
-          'foo': ['1.2.2', '1.2.3'],
-        },
-        server,
-      );
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3'],
+      }, server);
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 
@@ -200,12 +188,9 @@ Because myapp depends on foo >2.0.0 which doesn't match any versions, version so
     test('skips invalid locked versions', () async {
       final server = await servePackages();
 
-      await populateCache(
-        {
-          'foo': ['1.2.2', '1.2.3'],
-        },
-        server,
-      );
+      await populateCache({
+        'foo': ['1.2.2', '1.2.3'],
+      }, server);
       // Run the server so that we know what URL to use in the system cache.
       server.serveErrors();
 

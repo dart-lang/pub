@@ -29,17 +29,17 @@ void main() {
 
     await runPub(
       args: ['unpack', 'foo:1.0'],
-      error: 'Error on line 1, column 1 of descriptor: '
+      error:
+          'Error on line 1, column 1 of descriptor: '
           'A dependency specification must be a string or a mapping.',
       exitCode: DATA,
     );
 
+    await runPub(args: ['unpack', 'foo']);
     await runPub(
       args: ['unpack', 'foo'],
-    );
-    await runPub(
-      args: ['unpack', 'foo'],
-      error: 'Target directory `.${s}foo-1.2.3` already exists. '
+      error:
+          'Target directory `.${s}foo-1.2.3` already exists. '
           'Use --force to overwrite.',
       exitCode: 1,
     );
@@ -76,20 +76,20 @@ Downloading foo 1.2.3 to `.${s}foo-1.2.3`...
 Resolving dependencies in `.${s}foo-1.2.3`...
 '''),
         contains('To explore type: cd .${s}foo-1.2.3'),
-        contains(
-          'To explore the example type: cd .${s}foo-1.2.3${s}example',
-        ),
+        contains('To explore the example type: cd .${s}foo-1.2.3${s}example'),
       ),
     );
 
     expect(
-      File(p.join(d.sandbox, appPath, 'foo-1.2.3', 'pubspec.yaml'))
-          .existsSync(),
+      File(
+        p.join(d.sandbox, appPath, 'foo-1.2.3', 'pubspec.yaml'),
+      ).existsSync(),
       isTrue,
     );
     expect(
-      File(p.join(d.sandbox, appPath, 'foo-1.2.3', 'example', 'pubspec.yaml'))
-          .existsSync(),
+      File(
+        p.join(d.sandbox, appPath, 'foo-1.2.3', 'example', 'pubspec.yaml'),
+      ).existsSync(),
       isTrue,
     );
 
@@ -155,9 +155,7 @@ Resolving dependencies in `../foo-1.2.3-pre`...
       args: ['unpack', 'foo:1.0.0'],
       output: allOf(
         contains('Downloading foo 1.0.0 to `.${s}foo-1.0.0`...'),
-        contains(
-          '+ bar',
-        ),
+        contains('+ bar'),
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );

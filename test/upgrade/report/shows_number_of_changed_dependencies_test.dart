@@ -8,8 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'does not show how many newer versions are available for '
+  test('does not show how many newer versions are available for '
       'packages that are locked and not being upgraded', () async {
     await servePackages()
       ..serve('a', '1.0.0')

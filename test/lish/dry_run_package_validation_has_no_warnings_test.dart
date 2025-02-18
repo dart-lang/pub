@@ -10,14 +10,16 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('--dry-run package validation on valid package has no warnings',
-      () async {
-    await d.validPackage().create();
+  test(
+    '--dry-run package validation on valid package has no warnings',
+    () async {
+      await d.validPackage().create();
 
-    await servePackages();
-    final pub = await startPublish(globalServer, args: ['--dry-run']);
+      await servePackages();
+      final pub = await startPublish(globalServer, args: ['--dry-run']);
 
-    await pub.shouldExit(exit_codes.SUCCESS);
-    expect(pub.stdout, emitsThrough('Package has 0 warnings.'));
-  });
+      await pub.shouldExit(exit_codes.SUCCESS);
+      expect(pub.stdout, emitsThrough('Package has 0 warnings.'));
+    },
+  );
 }

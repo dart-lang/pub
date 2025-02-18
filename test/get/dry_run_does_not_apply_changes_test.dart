@@ -16,9 +16,10 @@ void main() {
 
     await pubGet(
       args: ['--dry-run'],
-      output: allOf(
-        [contains('+ foo 1.0.0'), contains('Would change 1 dependency.')],
-      ),
+      output: allOf([
+        contains('+ foo 1.0.0'),
+        contains('Would change 1 dependency.'),
+      ]),
     );
 
     await d.dir(appPath, [

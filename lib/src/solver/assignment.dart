@@ -25,8 +25,8 @@ class Assignment extends Term {
 
   /// Creates a decision: a speculative assignment of a single package version.
   Assignment.decision(PackageId package, this.decisionLevel, this.index)
-      : cause = null,
-        super(package.toRange(), true);
+    : cause = null,
+      super(package.toRange(), true);
 
   /// Creates a derivation: an assignment that's automatically propagated from
   /// incompatibilities.

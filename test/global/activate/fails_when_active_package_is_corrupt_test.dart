@@ -12,41 +12,47 @@ import '../../test_pub.dart';
 
 void main() {
   test(
-      'Complains if the current lockfile does not contain the expected package',
-      () async {
-    final server = await servePackages();
-    server.serve(
-      'foo',
-      '1.0.0',
-      contents: [
-        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
-      ],
-    );
+    'Complains if the current lockfile does not contain the expected package',
+    () async {
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        contents: [
+          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
+        ],
+      );
 
-    await runPub(args: ['global', 'activate', 'foo']);
+      await runPub(args: ['global', 'activate', 'foo']);
 
-    // Write a bad pubspec.lock file.
-    final lockFilePath =
-        p.join(d.sandbox, cachePath, 'global_packages', 'foo', 'pubspec.lock');
-    File(lockFilePath).writeAsStringSync('''
+      // Write a bad pubspec.lock file.
+      final lockFilePath = p.join(
+        d.sandbox,
+        cachePath,
+        'global_packages',
+        'foo',
+        'pubspec.lock',
+      );
+      File(lockFilePath).writeAsStringSync('''
 packages: {}
 sdks: {}
 ''');
 
-    // Activating it again suggests deactivating the package.
-    await runPub(
-      args: ['global', 'activate', 'foo'],
-      error: '''
+      // Activating it again suggests deactivating the package.
+      await runPub(
+        args: ['global', 'activate', 'foo'],
+        error: '''
 Could not find `foo` in `$lockFilePath`.
 Your Pub cache might be corrupted.
 
 Consider `dart pub global deactivate foo`''',
-      exitCode: 1,
-    );
+        exitCode: 1,
+      );
 
-    await runPub(
-      args: ['global', 'deactivate', 'foo'],
-      output: 'Removed package `foo`',
-    );
-  });
+      await runPub(
+        args: ['global', 'deactivate', 'foo'],
+        output: 'Removed package `foo`',
+      );
+    },
+  );
 }

@@ -104,12 +104,12 @@ class StrictDependenciesValidator extends Validator {
 
   Iterable<_Usage> _usagesBeneath(List<String> paths) {
     return _findPackages(
-      paths.expand(
-        (path) {
-          return filesBeneath(path, recursive: true)
-              .where((file) => p.extension(file) == '.dart');
-        },
-      ),
+      paths.expand((path) {
+        return filesBeneath(
+          path,
+          recursive: true,
+        ).where((file) => p.extension(file) == '.dart');
+      }),
     );
   }
 }
@@ -155,22 +155,25 @@ class _Usage {
 
   /// Returns an error message saying the package is not listed in
   /// `dependencies`.
-  String dependencyMissingMessage() =>
-      _toMessage('This package does not have $package in the `dependencies` '
-          'section of `pubspec.yaml`.');
+  String dependencyMissingMessage() => _toMessage(
+    'This package does not have $package in the `dependencies` '
+    'section of `pubspec.yaml`.',
+  );
 
   /// Returns an error message saying the package is not listed in
   ///  `dependencies` or `dev_dependencies`.
-  String dependenciesMissingMessage() =>
-      _toMessage('This package does not have $package in the `dependencies` '
-          'or `dev_dependencies` section of `pubspec.yaml`.');
+  String dependenciesMissingMessage() => _toMessage(
+    'This package does not have $package in the `dependencies` '
+    'or `dev_dependencies` section of `pubspec.yaml`.',
+  );
 
   /// Returns an error message saying the package should be in `dependencies`.
   String dependencyMisplaceMessage() {
     final shortFile = p.split(p.relative(_file)).first;
     return _toMessage(
-        '$package is in the `dev_dependencies` section of `pubspec.yaml`. '
-        'Packages used in $shortFile/ must be declared in the `dependencies` '
-        'section.');
+      '$package is in the `dev_dependencies` section of `pubspec.yaml`. '
+      'Packages used in $shortFile/ must be declared in the `dependencies` '
+      'section.',
+    );
   }
 }

@@ -38,8 +38,10 @@ class PubspecTypoValidator extends Validator {
       /// 0.21 is a magic value determined by looking at the most common typos
       /// in all the pubspecs on pub.dev.
       if (bestLevenshteinRatio > 0 && bestLevenshteinRatio < 0.21) {
-        warnings.add('"$key" is not a key recognized by pub - '
-            'did you mean "$closestKey"?');
+        warnings.add(
+          '"$key" is not a key recognized by pub - '
+          'did you mean "$closestKey"?',
+        );
         warningCount++;
 
         if (warningCount == 3) break;

@@ -8,8 +8,11 @@ import 'package:pub/src/rate_limited_scheduler.dart';
 import 'package:test/test.dart';
 
 void main() {
-  Map<String, Completer> threeCompleters() =>
-      {'a': Completer(), 'b': Completer(), 'c': Completer()};
+  Map<String, Completer> threeCompleters() => {
+    'a': Completer(),
+    'b': Completer(),
+    'c': Completer(),
+  };
 
   test('scheduler is rate limited', () async {
     final completers = threeCompleters();
@@ -26,9 +29,10 @@ void main() {
       preschedule('a');
       preschedule('b');
       preschedule('c');
-      await Future.wait(
-        [isBeingProcessed['a']!.future, isBeingProcessed['b']!.future],
-      );
+      await Future.wait([
+        isBeingProcessed['a']!.future,
+        isBeingProcessed['b']!.future,
+      ]);
       expect(isBeingProcessed['c']!.isCompleted, isFalse);
       completers['a']!.complete();
       await isBeingProcessed['c']!.future;
@@ -37,68 +41,72 @@ void main() {
     });
   });
 
-  test('scheduler.preschedule cancels unrun prescheduled task after callback',
-      () async {
-    final completers = threeCompleters();
-    final isBeingProcessed = threeCompleters();
+  test(
+    'scheduler.preschedule cancels unrun prescheduled task after callback',
+    () async {
+      final completers = threeCompleters();
+      final isBeingProcessed = threeCompleters();
 
-    Future<String> f(String i) async {
-      isBeingProcessed[i]!.complete();
-      await completers[i]!.future;
-      return i.toUpperCase();
-    }
+      Future<String> f(String i) async {
+        isBeingProcessed[i]!.complete();
+        await completers[i]!.future;
+        return i.toUpperCase();
+      }
 
-    final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
+      final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
 
-    await scheduler.withPrescheduling((preschedule1) async {
-      await scheduler.withPrescheduling((preschedule2) async {
-        preschedule1('a');
-        preschedule2('b');
-        preschedule1('c');
-        await isBeingProcessed['a']!.future;
-        // b, c should not start processing due to rate-limiting.
+      await scheduler.withPrescheduling((preschedule1) async {
+        await scheduler.withPrescheduling((preschedule2) async {
+          preschedule1('a');
+          preschedule2('b');
+          preschedule1('c');
+          await isBeingProcessed['a']!.future;
+          // b, c should not start processing due to rate-limiting.
+          expect(isBeingProcessed['b']!.isCompleted, isFalse);
+          expect(isBeingProcessed['c']!.isCompleted, isFalse);
+        });
+        completers['a']!.complete();
+        // b is removed from the queue, now c should start processing.
+        await isBeingProcessed['c']!.future;
+        completers['c']!.complete();
+        expect(await scheduler.schedule('c'), 'C');
+        // b is not on the queue anymore.
         expect(isBeingProcessed['b']!.isCompleted, isFalse);
-        expect(isBeingProcessed['c']!.isCompleted, isFalse);
+      });
+    },
+  );
+
+  test(
+    'scheduler.preschedule does not cancel tasks that are scheduled',
+    () async {
+      final completers = threeCompleters();
+      final isBeingProcessed = threeCompleters();
+
+      Future<String> f(String i) async {
+        isBeingProcessed[i]!.complete();
+        await completers[i]!.future;
+        return i.toUpperCase();
+      }
+
+      final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
+
+      Future? b;
+      await scheduler.withPrescheduling((preschedule) async {
+        preschedule('a');
+        preschedule('b');
+        await isBeingProcessed['a']!.future;
+        // b should not start processing due to rate-limiting.
+        expect(isBeingProcessed['b']!.isCompleted, isFalse);
+        b = scheduler.schedule('b');
       });
       completers['a']!.complete();
-      // b is removed from the queue, now c should start processing.
-      await isBeingProcessed['c']!.future;
-      completers['c']!.complete();
-      expect(await scheduler.schedule('c'), 'C');
-      // b is not on the queue anymore.
-      expect(isBeingProcessed['b']!.isCompleted, isFalse);
-    });
-  });
-
-  test('scheduler.preschedule does not cancel tasks that are scheduled',
-      () async {
-    final completers = threeCompleters();
-    final isBeingProcessed = threeCompleters();
-
-    Future<String> f(String i) async {
-      isBeingProcessed[i]!.complete();
-      await completers[i]!.future;
-      return i.toUpperCase();
-    }
-
-    final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 1);
-
-    Future? b;
-    await scheduler.withPrescheduling((preschedule) async {
-      preschedule('a');
-      preschedule('b');
-      await isBeingProcessed['a']!.future;
-      // b should not start processing due to rate-limiting.
-      expect(isBeingProcessed['b']!.isCompleted, isFalse);
-      b = scheduler.schedule('b');
-    });
-    completers['a']!.complete();
-    expect(await scheduler.schedule('a'), 'A');
-    // b was scheduled, so it should get processed now
-    await isBeingProcessed['b']!.future;
-    completers['b']!.complete();
-    expect(await b, 'B');
-  });
+      expect(await scheduler.schedule('a'), 'A');
+      // b was scheduled, so it should get processed now
+      await isBeingProcessed['b']!.future;
+      completers['b']!.complete();
+      expect(await b, 'B');
+    },
+  );
 
   test('scheduler caches results', () async {
     final completers = threeCompleters();
@@ -186,41 +194,29 @@ void main() {
 
     final scheduler = RateLimitedScheduler(f, maxConcurrentOperations: 2);
     await scheduler.withPrescheduling((preschedule) async {
-      runZoned(
-        () {
-          preschedule('a');
-        },
-        zoneValues: {'zoneValue': 'A'},
-      );
-      runZoned(
-        () {
-          preschedule('b');
-        },
-        zoneValues: {'zoneValue': 'B'},
-      );
-      runZoned(
-        () {
-          preschedule('c');
-        },
-        zoneValues: {'zoneValue': 'C'},
-      );
+      runZoned(() {
+        preschedule('a');
+      }, zoneValues: {'zoneValue': 'A'});
+      runZoned(() {
+        preschedule('b');
+      }, zoneValues: {'zoneValue': 'B'});
+      runZoned(() {
+        preschedule('c');
+      }, zoneValues: {'zoneValue': 'C'});
 
-      await runZoned(
-        () async {
-          await isBeingProcessed['a']!.future;
-          await isBeingProcessed['b']!.future;
-          // This will put 'c' in front of the queue, but in a zone with
-          // zoneValue bound to S.
-          final f = expectLater(scheduler.schedule('c'), completion('S'));
-          completers['a']!.complete();
-          completers['b']!.complete();
-          expect(await scheduler.schedule('a'), 'A');
-          expect(await scheduler.schedule('b'), 'B');
-          completers['c']!.complete();
-          await f;
-        },
-        zoneValues: {'zoneValue': 'S'},
-      );
+      await runZoned(() async {
+        await isBeingProcessed['a']!.future;
+        await isBeingProcessed['b']!.future;
+        // This will put 'c' in front of the queue, but in a zone with
+        // zoneValue bound to S.
+        final f = expectLater(scheduler.schedule('c'), completion('S'));
+        completers['a']!.complete();
+        completers['b']!.complete();
+        expect(await scheduler.schedule('a'), 'A');
+        expect(await scheduler.schedule('b'), 'B');
+        completers['c']!.complete();
+        await f;
+      }, zoneValues: {'zoneValue': 'S'});
     });
   });
 }

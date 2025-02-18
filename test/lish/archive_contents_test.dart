@@ -22,8 +22,7 @@ const _defaultMode = 420; // 644₈
 const _executableMask = 0x49; // 001 001 001
 
 void main() {
-  test(
-      'archives and uploads empty directories in package. '
+  test('archives and uploads empty directories in package. '
       'Maintains the executable bit', () async {
     await d.validPackage().create();
     await d.dir(appPath, [
@@ -32,10 +31,10 @@ void main() {
     ]).create();
 
     if (!Platform.isWindows) {
-      Process.runSync(
-        'chmod',
-        ['+x', p.join(d.sandbox, appPath, 'tool', 'tool.sh')],
-      );
+      Process.runSync('chmod', [
+        '+x',
+        p.join(d.sandbox, appPath, 'tool', 'tool.sh'),
+      ]);
     }
 
     await servePackages();

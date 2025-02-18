@@ -22,7 +22,8 @@ void main() {
     ]).create();
 
     await pubGet(
-      error: 'Because myapp depends on foo from path which doesn\'t exist '
+      error:
+          'Because myapp depends on foo from path which doesn\'t exist '
           '(could not find package foo at "$badPath"), version solving failed.',
       exitCode: exit_codes.NO_INPUT,
     );

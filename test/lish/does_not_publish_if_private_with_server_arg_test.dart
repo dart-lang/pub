@@ -9,8 +9,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test(
-      'does not publish if the package is private even if a server '
+  test('does not publish if the package is private even if a server '
       'argument is provided', () async {
     await d.validPackage(pubspecExtras: {'publish_to': 'none'}).create();
 

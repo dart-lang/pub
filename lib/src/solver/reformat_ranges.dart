@@ -30,13 +30,12 @@ import 'term.dart';
 Incompatibility reformatRanges(
   Map<PackageRef, PackageLister> packageListers,
   Incompatibility incompatibility,
-) =>
-    Incompatibility(
-      incompatibility.terms
-          .map((term) => _reformatTerm(packageListers, term))
-          .toList(),
-      _reformatCause(packageListers, incompatibility.cause),
-    );
+) => Incompatibility(
+  incompatibility.terms
+      .map((term) => _reformatTerm(packageListers, term))
+      .toList(),
+  _reformatCause(packageListers, incompatibility.cause),
+);
 
 /// Returns [term] with the upper and lower bounds of its package range
 /// reformatted if necessary.
@@ -150,7 +149,7 @@ IncompatibilityCause _reformatCause(
 ) =>
     cause is ConflictCause
         ? ConflictCause(
-            reformatRanges(packageListers, cause.conflict),
-            reformatRanges(packageListers, cause.other),
-          )
+          reformatRanges(packageListers, cause.conflict),
+          reformatRanges(packageListers, cause.other),
+        )
         : cause;

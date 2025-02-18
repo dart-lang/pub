@@ -82,8 +82,9 @@ String fromFiles(
     }
     var directory = root;
     for (var part in parts) {
-      directory = directory.putIfAbsent(part, () => <String, Map>{})
-          as Map<String, Map>;
+      directory =
+          directory.putIfAbsent(part, () => <String, Map>{})
+              as Map<String, Map>;
     }
   }
 
