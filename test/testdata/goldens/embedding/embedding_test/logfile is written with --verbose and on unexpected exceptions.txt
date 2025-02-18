@@ -127,6 +127,29 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   "generatorVersion": "3.1.2+3",
 [E]    |   "pubCache": "file://$SANDBOX/cache"
 [E]    | }
+[E] IO  : Writing $N characters to text file .dart_tool/package_graph.json.
+[E] FINE: Contents:
+[E]    | {
+[E]    |   "roots": [
+[E]    |   "myapp"
+[E]    |   ],
+[E]    |   "packages": [
+[E]    |   {
+[E]    |   "name": "myapp",
+[E]    |   "version": "0.0.0",
+[E]    |   "dependencies": [
+[E]    |   "foo"
+[E]    |   ],
+[E]    |   "devDependencies": []
+[E]    |   },
+[E]    |   {
+[E]    |   "name": "foo",
+[E]    |   "version": "1.0.0",
+[E]    |   "dependencies": []
+[E]    |   }
+[E]    |   ],
+[E]    |   "configVersion": 1
+[E]    | }
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/log/pub_log.txt.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -290,6 +313,29 @@ FINE: Contents:
    |   "generator": "pub",
    |   "generatorVersion": "3.1.2+3",
    |   "pubCache": "file://$SANDBOX/cache"
+   | }
+IO  : Writing $N characters to text file .dart_tool/package_graph.json.
+FINE: Contents:
+   | {
+   |   "roots": [
+   |   "myapp"
+   |   ],
+   |   "packages": [
+   |   {
+   |   "name": "myapp",
+   |   "version": "0.0.0",
+   |   "dependencies": [
+   |   "foo"
+   |   ],
+   |   "devDependencies": []
+   |   },
+   |   {
+   |   "name": "foo",
+   |   "version": "1.0.0",
+   |   "dependencies": []
+   |   }
+   |   ],
+   |   "configVersion": 1
    | }
 ---- End log transcript ----
 -------------------------------- END OF OUTPUT ---------------------------------

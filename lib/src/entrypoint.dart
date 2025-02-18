@@ -302,6 +302,10 @@ See $workspacesDocUrl for more information.''',
     p.normalize(p.join(workspaceRoot.dir, '.dart_tool', 'package_config.json')),
   );
 
+  late final String packageGraphPath = p.relative(
+    p.normalize(p.join(workspaceRoot.dir, '.dart_tool', 'package_graph.json')),
+  );
+
   /// The path to the entrypoint workspace's lockfile.
   String get lockFilePath =>
       p.normalize(p.join(workspaceRoot.dir, 'pubspec.lock'));
@@ -396,10 +400,12 @@ See $workspacesDocUrl for more information.''',
   /// Writes the .dart_tool/package_config.json file and workspace references to
   /// it.
   ///
+  /// Also writes the .dart_tool.package_graph.json file.
+  ///
   /// If the workspace is non-trivial: For each package in the workspace write:
   /// `.dart_tool/pub/workspace_ref.json` with a pointer to the workspace root
   /// package dir.
-  Future<void> writePackageConfigFile() async {
+  Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
     writeTextFile(
       packageConfigPath,
@@ -409,6 +415,7 @@ See $workspacesDocUrl for more information.''',
             .pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
       ),
     );
+    writeTextFile(packageGraphPath, await _packageGraphFile(cache));
     if (workspaceRoot.workspaceChildren.isNotEmpty) {
       for (final package in workspaceRoot.transitiveWorkspace) {
         final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
@@ -424,6 +431,30 @@ See $workspacesDocUrl for more information.''',
         );
       }
     }
+  }
+
+  Future<String> _packageGraphFile(SystemCache cache) async {
+    return const JsonEncoder.withIndent('  ').convert({
+      'roots': workspaceRoot.transitiveWorkspace.map((p) => p.name).toList()
+        ..sort(),
+      'packages': [
+        for (final p in workspaceRoot.transitiveWorkspace)
+          {
+            'name': p.name,
+            'version': p.version.toString(),
+            'dependencies': p.dependencies.keys.toList()..sort(),
+            'devDependencies': p.devDependencies.keys.toList()..sort(),
+          },
+        for (final p in lockFile.packages.values)
+          {
+            'name': p.name,
+            'version': p.version.toString(),
+            'dependencies': (await cache.describe(p)).dependencies.keys.toList()
+              ..sort(),
+          },
+      ],
+      'configVersion': 1,
+    });
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
@@ -605,7 +636,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       /// have to reload and reparse all the pubspecs.
       _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
 
-      await writePackageConfigFile();
+      await writePackageConfigFiles();
 
       try {
         if (precompile) {
