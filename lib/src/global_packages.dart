@@ -298,7 +298,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
         solveResult: result,
       );
 
-      await entrypoint.writePackageConfigFile();
+      await entrypoint.writePackageConfigFiles();
 
       await entrypoint.precompileExecutables();
 

@@ -75,6 +75,11 @@ const String appPath = 'myapp';
 String packageConfigFilePath =
     p.join(appPath, '.dart_tool', 'package_config.json');
 
+/// The path of the ".dart_tool/package_graph.json" file in the mock app used
+/// for tests, relative to the sandbox directory.
+String packageGraphFilePath =
+    p.join(appPath, '.dart_tool', 'package_graph.json');
+
 /// The entry from the `.dart_tool/package_config.json` file for [packageName].
 Map<String, dynamic> packageSpec(String packageName) => dig(
       json.decode(File(d.path(packageConfigFilePath)).readAsStringSync()),
