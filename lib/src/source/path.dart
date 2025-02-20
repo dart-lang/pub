@@ -80,10 +80,7 @@ class PathSource extends Source {
         name,
         PathDescription(
           p.normalize(
-            p.join(
-              p.absolute(containingDescription.path),
-              description,
-            ),
+            p.join(p.absolute(containingDescription.path), description),
           ),
           isRelative,
         ),
@@ -96,10 +93,7 @@ class PathSource extends Source {
         );
       }
       final resolvedPath = p.url.normalize(
-        p.url.joinAll([
-          containingDescription.path,
-          ...p.posix.split(dir),
-        ]),
+        p.url.joinAll([containingDescription.path, ...p.posix.split(dir)]),
       );
       if (!(p.isWithin('.', resolvedPath) || p.equals('.', resolvedPath))) {
         throw FormatException(
@@ -118,13 +112,17 @@ class PathSource extends Source {
       );
     } else if (containingDescription is HostedDescription) {
       if (isRelative) {
-        throw FormatException('"$description" is a relative path, but this '
-            'isn\'t a local pubspec.');
+        throw FormatException(
+          '"$description" is a relative path, but this '
+          'isn\'t a local pubspec.',
+        );
       }
       return PackageRef(name, PathDescription(dir, false));
     } else {
-      throw FormatException('"$description" is a path, but this '
-          'isn\'t a local pubspec.');
+      throw FormatException(
+        '"$description" is a path, but this '
+        'isn\'t a local pubspec.',
+      );
     }
   }
 
@@ -140,13 +138,17 @@ class PathSource extends Source {
     }
     var path = description['path'];
     if (path is! String) {
-      throw const FormatException("The 'path' field of the description must "
-          'be a string.');
+      throw const FormatException(
+        "The 'path' field of the description must "
+        'be a string.',
+      );
     }
     final relative = description['relative'];
     if (relative is! bool) {
-      throw const FormatException("The 'relative' field of the description "
-          'must be a boolean.');
+      throw const FormatException(
+        "The 'relative' field of the description "
+        'must be a boolean.',
+      );
     }
 
     // Resolve the path relative to the containing file path.
@@ -154,13 +156,13 @@ class PathSource extends Source {
       // Relative paths coming from lockfiles that are not on the local file
       // system aren't allowed.
       if (containingDir == null) {
-        throw FormatException('"$description" is a relative path, but this '
-            'isn\'t a local pubspec.');
+        throw FormatException(
+          '"$description" is a relative path, but this '
+          'isn\'t a local pubspec.',
+        );
       }
 
-      path = p.normalize(
-        p.absolute(p.join(containingDir, path)),
-      );
+      path = p.normalize(p.absolute(p.join(containingDir, path)));
     }
 
     return PackageId(
@@ -286,8 +288,8 @@ class PathDescription extends Description {
   }) {
     return relative
         ? PathSource.relativePathWithPosixSeparators(
-            p.relative(path, from: containingDir),
-          )
+          p.relative(path, from: containingDir),
+        )
         : path;
   }
 

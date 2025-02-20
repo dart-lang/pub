@@ -27,10 +27,10 @@ void main() {
       ..serve('circular_a', '1.2.3', deps: {'circular_b': 'any'})
       ..serve('circular_b', '1.2.3', deps: {'circular_a': 'any'});
 
-    await d.dir(
-      'from_path',
-      [d.libDir('from_path'), d.libPubspec('from_path', '1.2.3')],
-    ).create();
+    await d.dir('from_path', [
+      d.libDir('from_path'),
+      d.libPubspec('from_path', '1.2.3'),
+    ]).create();
 
     await d.dir(appPath, [
       d.pubspec({

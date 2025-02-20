@@ -64,14 +64,16 @@ void main() {
   });
 
   group('should warn if a package', () {
-    test('is missing both the "homepage" and the "description" field',
-        () async {
-      final pkg = packageMap('test_pkg', '1.0.0');
-      pkg.remove('homepage');
-      await d.dir(appPath, [d.pubspec(pkg)]).create();
+    test(
+      'is missing both the "homepage" and the "description" field',
+      () async {
+        final pkg = packageMap('test_pkg', '1.0.0');
+        pkg.remove('homepage');
+        await d.dir(appPath, [d.pubspec(pkg)]).create();
 
-      await expectValidationDeprecated(pubspecField, warnings: isNotEmpty);
-    });
+        await expectValidationDeprecated(pubspecField, warnings: isNotEmpty);
+      },
+    );
   });
 
   group('should consider a package invalid if it', () {
@@ -143,9 +145,7 @@ void main() {
 
     test('has invalid executables mapping to a number', () async {
       final pkg = packageMap('test_pkg', '1.0.0');
-      pkg['executables'] = <String, dynamic>{
-        'test_pkg': 33,
-      };
+      pkg['executables'] = <String, dynamic>{'test_pkg': 33};
       await d.dir(appPath, [d.pubspec(pkg)]).create();
 
       await expectValidationDeprecated(pubspecField, errors: isNotEmpty);

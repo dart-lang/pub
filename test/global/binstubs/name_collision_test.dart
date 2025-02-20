@@ -27,8 +27,9 @@ void main() {
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);
 
-    final pub =
-        await startPub(args: ['global', 'activate', '-spath', '../bar']);
+    final pub = await startPub(
+      args: ['global', 'activate', '-spath', '../bar'],
+    );
     expect(pub.stdout, emitsThrough('Installed executable bar.'));
     expect(
       pub.stderr,
@@ -40,8 +41,10 @@ void main() {
     );
     expect(
       pub.stderr,
-      emits('Deactivate the other package(s) or activate bar using '
-          '--overwrite.'),
+      emits(
+        'Deactivate the other package(s) or activate bar using '
+        '--overwrite.',
+      ),
     );
     await pub.shouldExit();
 

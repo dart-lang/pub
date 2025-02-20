@@ -10,10 +10,7 @@ import '../../test_pub.dart';
 void main() {
   test('ignores previously activated version', () async {
     await servePackages()
-      ..serve(
-        'foo',
-        '1.2.3',
-      )
+      ..serve('foo', '1.2.3')
       ..serve(
         'foo',
         '1.3.0',

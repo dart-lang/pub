@@ -39,7 +39,6 @@ int levenshteinDistance(String s, String t) {
       final newDistance = _min3(
         1 + distances[j], //  Deletion
         1 + distances[j - 1], // Insertion
-
         // Substitution
         holder + (a.codeUnitAt(i - 1) == b.codeUnitAt(j - 1) ? 0 : 1),
       );

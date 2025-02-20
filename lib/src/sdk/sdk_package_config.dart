@@ -49,8 +49,10 @@ class SdkPackageConfig {
   factory SdkPackageConfig.fromYaml(YamlMap yaml) {
     final version = yaml.expectField<int>('version');
     if (version != 1) {
-      throw UnsupportedError('This SDK only supports version 1 of the '
-          'sdk_packages.yaml format, but got version $version');
+      throw UnsupportedError(
+        'This SDK only supports version 1 of the '
+        'sdk_packages.yaml format, but got version $version',
+      );
     }
     final packages = <String, SdkPackage>{};
     final packageDescriptions =
@@ -60,20 +62,14 @@ class SdkPackageConfig {
       packages[package.name] = package;
     }
 
-    return SdkPackageConfig(
-      yaml.expectField<String>('sdk'),
-      packages,
-      version,
-    );
+    return SdkPackageConfig(yaml.expectField<String>('sdk'), packages, version);
   }
 
   Map<String, Object?> toMap() => {
-        'sdk': sdk,
-        'packages': [
-          for (var package in packages.values) package.toMap(),
-        ],
-        'version': version,
-      };
+    'sdk': sdk,
+    'packages': [for (var package in packages.values) package.toMap()],
+    'version': version,
+  };
 }
 
 /// The structure for each `packages` entry in an `sdk_packages.yaml` file.
@@ -91,11 +87,8 @@ class SdkPackage {
   SdkPackage(this.name, this.path);
 
   SdkPackage.fromYaml(YamlMap yaml)
-      : name = yaml.expectPackageNameField(),
-        path = yaml.expectField<String>('path');
+    : name = yaml.expectPackageNameField(),
+      path = yaml.expectField<String>('path');
 
-  Map<String, Object?> toMap() => {
-        'name': name,
-        'path': path,
-      };
+  Map<String, Object?> toMap() => {'name': name, 'path': path};
 }

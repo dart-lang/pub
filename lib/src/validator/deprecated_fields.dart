@@ -12,20 +12,28 @@ class DeprecatedFieldsValidator extends Validator {
   @override
   Future validate() async {
     if (package.pubspec.fields.containsKey('transformers')) {
-      warnings.add('Your pubspec.yaml includes a "transformers" section which'
-          ' is no longer used and may be removed.');
+      warnings.add(
+        'Your pubspec.yaml includes a "transformers" section which'
+        ' is no longer used and may be removed.',
+      );
     }
     if (package.pubspec.fields.containsKey('web')) {
-      warnings.add('Your pubspec.yaml includes a "web" section which'
-          ' is no longer used and may be removed.');
+      warnings.add(
+        'Your pubspec.yaml includes a "web" section which'
+        ' is no longer used and may be removed.',
+      );
     }
     if (package.pubspec.fields.containsKey('author')) {
-      warnings.add('Your pubspec.yaml includes an "author" section which'
-          ' is no longer used and may be removed.');
+      warnings.add(
+        'Your pubspec.yaml includes an "author" section which'
+        ' is no longer used and may be removed.',
+      );
     }
     if (package.pubspec.fields.containsKey('authors')) {
-      warnings.add('Your pubspec.yaml includes an "authors" section which'
-          ' is no longer used and may be removed.');
+      warnings.add(
+        'Your pubspec.yaml includes an "authors" section which'
+        ' is no longer used and may be removed.',
+      );
     }
   }
 }

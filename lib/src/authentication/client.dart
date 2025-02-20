@@ -69,8 +69,9 @@ class _AuthenticatedClient extends http.BaseClient {
     if (response.headers.containsKey(HttpHeaders.wwwAuthenticateHeader)) {
       try {
         final header = response.headers[HttpHeaders.wwwAuthenticateHeader]!;
-        final challenge =
-            AuthenticationChallenge.parseHeader(header).firstWhereOrNull(
+        final challenge = AuthenticationChallenge.parseHeader(
+          header,
+        ).firstWhereOrNull(
           (challenge) =>
               challenge.scheme == 'bearer' &&
               challenge.parameters['realm'] == 'pub' &&

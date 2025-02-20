@@ -24,7 +24,6 @@ linter:
     - no_runtimeType_toString
     - prefer_const_declarations
     - prefer_final_locals
-    - require_trailing_commas
     - unawaited_futures
     - unreachable_from_main
     - use_enums

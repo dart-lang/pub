@@ -59,7 +59,7 @@ class WrappedException extends ApplicationException {
   final Chain? innerChain;
 
   WrappedException(super.message, this.innerError, [StackTrace? innerTrace])
-      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace);
+    : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace);
 }
 
 /// A class for exceptions that shouldn't be printed at the top level.
@@ -68,7 +68,7 @@ class WrappedException extends ApplicationException {
 /// [log.exception].
 class SilentException extends WrappedException {
   SilentException(Object? innerError, [StackTrace? innerTrace])
-      : super(innerError.toString(), innerError, innerTrace);
+    : super(innerError.toString(), innerError, innerTrace);
 }
 
 /// A class for errors in a command's input data.

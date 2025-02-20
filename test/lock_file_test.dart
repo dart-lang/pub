@@ -27,8 +27,7 @@ void main() {
       });
 
       test('parses a series of package descriptions', () {
-        final lockFile = LockFile.parse(
-          '''
+        final lockFile = LockFile.parse('''
 packages:
   bar:
     version: 1.2.3
@@ -42,9 +41,7 @@ packages:
     description:
       name: foo
       url: https://foo.com
-''',
-          cache.sources,
-        );
+''', cache.sources);
 
         expect(lockFile.packages.length, equals(2));
 
@@ -68,27 +65,21 @@ packages:
       });
 
       test('allows an unknown source', () {
-        final lockFile = LockFile.parse(
-          '''
+        final lockFile = LockFile.parse('''
 packages:
   foo:
     source: bad
     version: 1.2.3
     description: foo desc
-''',
-          cache.sources,
-        );
+''', cache.sources);
         final foo = lockFile.packages['foo']!;
         expect(foo.source, equals(sources('bad')));
       });
 
       test('allows an empty dependency map', () {
-        final lockFile = LockFile.parse(
-          '''
+        final lockFile = LockFile.parse('''
 packages:
-''',
-          sources,
-        );
+''', sources);
         expect(lockFile.packages, isEmpty);
       });
 
@@ -103,15 +94,12 @@ packages:
       });
 
       test('allows new-style SDK constraints', () {
-        final lockFile = LockFile.parse(
-          '''
+        final lockFile = LockFile.parse('''
 sdks:
   dart: ">=1.2.3 <4.0.0"
   flutter: ^0.1.2
   fuchsia: ^5.6.7
-''',
-          sources,
-        );
+''', sources);
         expect(
           lockFile.sdkConstraints['dart']!.effectiveConstraint,
           VersionConstraint.parse('>=1.2.3 <4.0.0'),
@@ -127,118 +115,76 @@ sdks:
       });
 
       test('throws if the top level is not a map', () {
-        expect(
-          () {
-            LockFile.parse(
-              '''
+        expect(() {
+          LockFile.parse('''
 not a map
-''',
-              sources,
-            );
-          },
-          throwsSourceSpanException,
-        );
+''', sources);
+        }, throwsSourceSpanException);
       });
 
       test("throws if the contents of 'packages' is not a map", () {
-        expect(
-          () {
-            LockFile.parse(
-              '''
+        expect(() {
+          LockFile.parse('''
 packages: not a map
-''',
-              sources,
-            );
-          },
-          throwsSourceSpanException,
-        );
+''', sources);
+        }, throwsSourceSpanException);
       });
 
       test('throws if the version is missing', () {
-        expect(
-          () {
-            LockFile.parse(
-              '''
+        expect(() {
+          LockFile.parse('''
 packages:
   foo:
     source: fake
     description: foo desc
-''',
-              sources,
-            );
-          },
-          throwsSourceSpanException,
-        );
+''', sources);
+        }, throwsSourceSpanException);
       });
 
       test('throws if the version is invalid', () {
-        expect(
-          () {
-            LockFile.parse(
-              '''
+        expect(() {
+          LockFile.parse('''
 packages:
   foo:
     version: vorpal
     source: fake
     description: foo desc
-''',
-              sources,
-            );
-          },
-          throwsSourceSpanException,
-        );
+''', sources);
+        }, throwsSourceSpanException);
       });
 
       test('throws if the source is missing', () {
-        expect(
-          () {
-            LockFile.parse(
-              '''
+        expect(() {
+          LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
     description: foo desc
-''',
-              sources,
-            );
-          },
-          throwsSourceSpanException,
-        );
+''', sources);
+        }, throwsSourceSpanException);
       });
 
       test('throws if the description is missing', () {
-        expect(
-          () {
-            LockFile.parse(
-              '''
+        expect(() {
+          LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
     source: fake
-''',
-              sources,
-            );
-          },
-          throwsSourceSpanException,
-        );
+''', sources);
+        }, throwsSourceSpanException);
       });
 
       test('throws if the description is invalid', () {
-        expect(
-          () {
-            LockFile.parse(
-              '''
+        expect(() {
+          LockFile.parse('''
 packages:
   foo:
     version: 1.2.3
     source: hosted
     description: foam
-''',
-              sources,
-            );
-          },
-          throwsSourceSpanException,
-        );
+''', sources);
+        }, throwsSourceSpanException);
       });
 
       test("throws if the old-style SDK constraint isn't a string", () {
@@ -267,12 +213,9 @@ packages:
           () => LockFile.parse('sdks: {dart: 1.0}', sources),
           throwsSourceSpanException,
         );
-        expect(
-          () {
-            LockFile.parse('sdks: {dart: 1.0.0, flutter: 1.0}', sources);
-          },
-          throwsSourceSpanException,
-        );
+        expect(() {
+          LockFile.parse('sdks: {dart: 1.0.0, flutter: 1.0}', sources);
+        }, throwsSourceSpanException);
       });
 
       test('throws if an sdk constraint is invalid', () {
@@ -280,17 +223,13 @@ packages:
           () => LockFile.parse('sdks: {dart: oops}', sources),
           throwsSourceSpanException,
         );
-        expect(
-          () {
-            LockFile.parse('sdks: {dart: 1.0.0, flutter: oops}', sources);
-          },
-          throwsSourceSpanException,
-        );
+        expect(() {
+          LockFile.parse('sdks: {dart: 1.0.0, flutter: oops}', sources);
+        }, throwsSourceSpanException);
       });
 
       test('Reads pub.dartlang.org as pub.dev in hosted descriptions', () {
-        final lockfile = LockFile.parse(
-          '''
+        final lockfile = LockFile.parse('''
 packages:
   characters:
     dependency: transitive
@@ -307,16 +246,12 @@ packages:
       sha256:
     source: hosted
     version: "1.0.0"
-''',
-          sources,
-        );
+''', sources);
         void expectComesFromPubDev(String name) {
-          final description = lockfile.packages[name]!.description.description
-              as HostedDescription;
-          expect(
-            description.url,
-            'https://pub.dev',
-          );
+          final description =
+              lockfile.packages[name]!.description.description
+                  as HostedDescription;
+          expect(description.url, 'https://pub.dev');
         }
 
         expectComesFromPubDev('characters');
@@ -325,8 +260,7 @@ packages:
 
       test('Complains about malformed content-hashes', () {
         expect(
-          () => LockFile.parse(
-            '''
+          () => LockFile.parse('''
 packages:
   retry:
     dependency: transitive
@@ -336,9 +270,7 @@ packages:
       sha256: abc # Not long enough
     source: hosted
     version: "1.0.0"
-''',
-            sources,
-          ),
+''', sources),
           throwsA(
             isA<FormatException>().having(
               (e) => e.message,
@@ -350,8 +282,7 @@ packages:
       });
 
       test('ignores extra stuff in file', () {
-        LockFile.parse(
-          '''
+        LockFile.parse('''
 extra:
   some: stuff
 packages:
@@ -360,9 +291,7 @@ packages:
     version: 1.2.3
     source: fake
     description: foo desc
-''',
-          sources,
-        );
+''', sources);
       });
     });
 

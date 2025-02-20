@@ -30,15 +30,9 @@ const _pathMax = 260 - 1;
 void main() {
   testWithGolden('displays all files', (context) async {
     await d.validPackage().create();
-    await d.dir(
-      appPath,
-      [
-        d.dir(
-          'lib',
-          List.generate(20, (i) => d.file('file_$i.dart')),
-        ),
-      ],
-    ).create();
+    await d.dir(appPath, [
+      d.dir('lib', List.generate(20, (i) => d.file('file_$i.dart'))),
+    ]).create();
     await servePackages();
     await d.credentialsFile(globalServer, 'access-token').create();
     final pub = await startPublish(globalServer);
@@ -61,8 +55,7 @@ void main() {
     );
   });
 
-  test(
-      'archives and uploads a package with more files than can fit on '
+  test('archives and uploads a package with more files than can fit on '
       'the command line', () async {
     await d.validPackage().create();
 
@@ -75,8 +68,10 @@ void main() {
       // automatically.
       final result = Process.runSync('getconf', ['ARG_MAX']);
       if (result.exitCode != 0) {
-        fail('getconf failed with exit code ${result.exitCode}:\n'
-            '${result.stderr}');
+        fail(
+          'getconf failed with exit code ${result.exitCode}:\n'
+          '${result.stderr}',
+        );
       }
 
       argMax = int.parse(result.stdout as String);

@@ -247,8 +247,10 @@ void process(
   List<String> arguments,
   String workingDirectory,
 ) {
-  io("Spawning \"$executable ${arguments.join(' ')}\" in "
-      '${p.absolute(workingDirectory)}');
+  io(
+    "Spawning \"$executable ${arguments.join(' ')}\" in "
+    '${p.absolute(workingDirectory)}',
+  );
 }
 
 /// Logs the results of running [executable].
@@ -269,8 +271,10 @@ void processResult(String executable, ProcessResult result) {
       var numLines = 0;
       for (var line in output.split('\n')) {
         if (++numLines > 1000) {
-          buffer.writeln('[${output.length - 1000}] more lines of output '
-              'truncated...]');
+          buffer.writeln(
+            '[${output.length - 1000}] more lines of output '
+            'truncated...]',
+          );
           break;
         }
 
@@ -327,11 +331,14 @@ void exception(Object exception, [StackTrace? trace]) {
 /// Prints the recorded log transcript to stderr.
 void dumpTranscriptToStdErr() {
   stderr.writeln('---- Log transcript ----');
-  _transcript.forEach((entry) {
-    _printToStream(stderr, entry, showLabel: true);
-  }, (discarded) {
-    stderr.writeln('---- ($discarded discarded) ----');
-  });
+  _transcript.forEach(
+    (entry) {
+      _printToStream(stderr, entry, showLabel: true);
+    },
+    (discarded) {
+      stderr.writeln('---- ($discarded discarded) ----');
+    },
+  );
   stderr.writeln('---- End log transcript ----');
 }
 
@@ -379,10 +386,7 @@ Platform: ${Platform.operatingSystem}
         '---- ${p.absolute(entrypoint.workspaceRoot.pubspecPath)} ----',
       );
       buffer.writeln(
-        limitLength(
-          readTextFile(entrypoint.workspaceRoot.pubspecPath),
-          5000,
-        ),
+        limitLength(readTextFile(entrypoint.workspaceRoot.pubspecPath), 5000),
       );
       buffer.writeln('---- End pubspec.yaml ----');
     } else {
@@ -400,11 +404,14 @@ Platform: ${Platform.operatingSystem}
 
   buffer.writeln('---- Log transcript ----');
 
-  _transcript.forEach((entry) {
-    _printToStream(buffer, entry, showLabel: true);
-  }, (discarded) {
-    buffer.writeln('---- ($discarded entries discarded) ----');
-  });
+  _transcript.forEach(
+    (entry) {
+      _printToStream(buffer, entry, showLabel: true);
+    },
+    (discarded) {
+      buffer.writeln('---- ($discarded entries discarded) ----');
+    },
+  );
   buffer.writeln('---- End log transcript ----');
   ensureDir(p.dirname(path));
   try {
@@ -618,8 +625,9 @@ class _JsonLogger {
     if (error is SourceSpanException && error.span?.sourceUrl != null) {
       // Normalize paths and make them absolute for backwards compatibility with
       // the protocol used by the analyzer.
-      errorJson['path'] =
-          p.normalize(p.absolute(p.fromUri(error.span!.sourceUrl)));
+      errorJson['path'] = p.normalize(
+        p.absolute(p.fromUri(error.span!.sourceUrl)),
+      );
     }
 
     if (error is FileException) {
@@ -655,9 +663,9 @@ class FormattedString {
     String Function(String)? format,
     String? prefix,
     String? suffix,
-  })  : _format = format ?? _noFormat,
-        _prefix = prefix ?? '',
-        _suffix = suffix ?? '';
+  }) : _format = format ?? _noFormat,
+       _prefix = prefix ?? '',
+       _suffix = suffix ?? '';
 
   String formatted({required bool useColors}) {
     return useColors
@@ -676,14 +684,10 @@ FormattedString format(
   String value,
   String Function(String) format, {
   String? prefix = '',
-}) =>
-    FormattedString(value, format: format, prefix: prefix);
+}) => FormattedString(value, format: format, prefix: prefix);
 
 /// Formats a table of [rows], inserting enough spaces to make columns line up.
-List<String> renderTable(
-  List<List<FormattedString>> rows,
-  bool useColors,
-) {
+List<String> renderTable(List<List<FormattedString>> rows, bool useColors) {
   // Compute the width of each column by taking the max across all rows.
   final columnWidths = <int, int>{};
   for (var i = 0; i < rows.length; i++) {

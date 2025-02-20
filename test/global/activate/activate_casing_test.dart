@@ -9,36 +9,33 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-    'We only allow activating lower-case package names',
-    () async {
-      final server = await servePackages();
-      server.serve(
-        'Foo',
-        '1.0.0',
-        contents: [
-          d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
-        ],
-      );
+  test('We only allow activating lower-case package names', () async {
+    final server = await servePackages();
+    server.serve(
+      'Foo',
+      '1.0.0',
+      contents: [
+        d.dir('bin', [d.file('foo.dart', 'main() => print("hi"); ')]),
+      ],
+    );
 
-      await d.dir('foo', [d.libPubspec('Foo', '1.0.0')]).create();
-      await runPub(
-        args: ['global', 'activate', 'Foo'],
-        error: '''
+    await d.dir('foo', [d.libPubspec('Foo', '1.0.0')]).create();
+    await runPub(
+      args: ['global', 'activate', 'Foo'],
+      error: '''
 You can only activate packages with lower-case names.
 
 Did you mean `foo`?''',
-        exitCode: 1,
-      );
+      exitCode: 1,
+    );
 
-      await runPub(
-        args: ['global', 'activate', '-spath', p.join(d.sandbox, 'foo')],
-        error: '''
+    await runPub(
+      args: ['global', 'activate', '-spath', p.join(d.sandbox, 'foo')],
+      error: '''
 You can only activate packages with lower-case names.
 
 Did you mean `foo`?''',
-        exitCode: 1,
-      );
-    },
-  );
+      exitCode: 1,
+    );
+  });
 }

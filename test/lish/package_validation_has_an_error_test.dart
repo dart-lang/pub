@@ -25,8 +25,10 @@ void main() {
     await pub.shouldExit(exit_codes.DATA);
     expect(
       pub.stderr,
-      emitsThrough('Sorry, your package is missing some '
-          "requirements and can't be published yet."),
+      emitsThrough(
+        'Sorry, your package is missing some '
+        "requirements and can't be published yet.",
+      ),
     );
   });
 }

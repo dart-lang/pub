@@ -17,18 +17,23 @@ void main() {
       }),
     ]).create();
 
-    final pub =
-        await startPub(args: ['global', 'activate', '-spath', '../foo']);
+    final pub = await startPub(
+      args: ['global', 'activate', '-spath', '../foo'],
+    );
 
     expect(
       pub.stderr,
-      emits('Warning: Executable "missing" runs '
-          '"${p.join('bin', 'not_here.dart')}", which was not found in foo.'),
+      emits(
+        'Warning: Executable "missing" runs '
+        '"${p.join('bin', 'not_here.dart')}", which was not found in foo.',
+      ),
     );
     expect(
       pub.stderr,
-      emits('Warning: Executable "nope" runs '
-          '"${p.join('bin', 'nope.dart')}", which was not found in foo.'),
+      emits(
+        'Warning: Executable "nope" runs '
+        '"${p.join('bin', 'nope.dart')}", which was not found in foo.',
+      ),
     );
     await pub.shouldExit();
   });

@@ -9,8 +9,7 @@ import '../test_pub.dart';
 
 void main() {
   forBothPubGetAndUpgrade((command) {
-    test(
-        "removes a transitive dependency that's no longer depended "
+    test("removes a transitive dependency that's no longer depended "
         'on', () async {
       await servePackages()
         ..serve('foo', '1.0.0', deps: {'shared_dep': 'any'})

@@ -61,10 +61,7 @@ void main() {
 
     test('contains typos', () async {
       await d.dir(appPath, [
-        d.pubspec({
-          'name': 'myapp',
-          'dependecies': {},
-        }),
+        d.pubspec({'name': 'myapp', 'dependecies': {}}),
       ]).create();
 
       await expectValidationDeprecated(pubspecTypo, warnings: isNotEmpty);

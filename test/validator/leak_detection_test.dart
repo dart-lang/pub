@@ -33,9 +33,7 @@ void main() {
         d.pubspec({
           'name': 'test_pkg',
           'version': '1.0.0',
-          'false_secrets': [
-            '/lib/test_pkg.dart',
-          ],
+          'false_secrets': ['/lib/test_pkg.dart'],
         }),
         d.dir('lib', [
           d.file('test_pkg.dart', '''

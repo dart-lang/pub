@@ -11,9 +11,7 @@ Future<void> expectValidation(Matcher output, int exitCode) async {
   await runPub(
     output: output,
     args: ['publish', '--dry-run'],
-    environment: {
-      'FLUTTER_ROOT': fakeFlutterRoot.io.path,
-    },
+    environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path},
     workingDirectory: d.path(appPath),
     exitCode: exitCode,
   );
@@ -21,16 +19,15 @@ Future<void> expectValidation(Matcher output, int exitCode) async {
 
 late d.DirectoryDescriptor fakeFlutterRoot;
 
-Future<void> setup({
-  String? flutterConstraint,
-}) async {
+Future<void> setup({String? flutterConstraint}) async {
   fakeFlutterRoot = d.dir('fake_flutter_root', [d.flutterVersion('1.23.0')]);
   await fakeFlutterRoot.create();
   await d.validPackage().create();
   await d.dir(appPath, [
     d.pubspec({
       'name': 'test_pkg',
-      'description': 'A just long enough description '
+      'description':
+          'A just long enough description '
           'to fit the requirement of 60 characters',
       'homepage': 'https://example.com/',
       'version': '1.0.0',
@@ -40,9 +37,7 @@ Future<void> setup({
       },
     }),
   ]).create();
-  await pubGet(
-    environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path},
-  );
+  await pubGet(environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path});
 }
 
 void main() {
@@ -58,9 +53,7 @@ void main() {
     await setup(flutterConstraint: '>=1.20.0 <=2.0.0');
     await expectValidation(
       allOf([
-        contains(
-          'You can replace that with just the lower bound: `>=1.20.0`.',
-        ),
+        contains('You can replace that with just the lower bound: `>=1.20.0`.'),
         contains('Package has 1 warning.'),
       ]),
       65,

@@ -15,25 +15,25 @@ void main() {
   test('checks out the repository for a locked revision', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     // This get should lock the foo.git dependency to the current revision.
     await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.dir('cache', [
-          d.gitPackageRepoCacheDir('foo'),
-        ]),
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.gitPackageRevisionCacheDir('foo'),
       ]),
     ]).validate();
@@ -45,10 +45,10 @@ void main() {
     deleteEntry(p.join(d.sandbox, packageConfigFilePath));
     deleteEntry(p.join(d.sandbox, cachePath));
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
-    ).commit();
+    await d.git('foo.git', [
+      d.libDir('foo', 'foo 2'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).commit();
 
     // This get shouldn't upgrade the foo.git dependency due to the lockfile.
     await pubGet();

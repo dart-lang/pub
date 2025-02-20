@@ -44,9 +44,10 @@ class Incompatibility {
     if (terms.length != 1 &&
         cause is ConflictCause &&
         terms.any((term) => term.isPositive && term.package.isRoot)) {
-      terms = terms
-          .where((term) => !term.isPositive || !term.package.isRoot)
-          .toList();
+      terms =
+          terms
+              .where((term) => !term.isPositive || !term.package.isRoot)
+              .toList();
     }
 
     if (terms.length == 1 ||
@@ -111,8 +112,9 @@ class Incompatibility {
       assert(terms.first.isPositive);
 
       final cause = this.cause as SdkIncompatibilityCause;
-      final buffer =
-          StringBuffer(_terse(terms.first, details, allowEvery: true));
+      final buffer = StringBuffer(
+        _terse(terms.first, details, allowEvery: true),
+      );
       if (cause.noNullSafetyCause) {
         buffer.write(' doesn\'t support null safety');
       } else {
@@ -170,12 +172,14 @@ class Incompatibility {
       final term2 = terms.last;
       if (term1.isPositive == term2.isPositive) {
         if (term1.isPositive) {
-          final package1 = term1.constraint.isAny
-              ? _terseRef(term1, details)
-              : _terse(term1, details);
-          final package2 = term2.constraint.isAny
-              ? _terseRef(term2, details)
-              : _terse(term2, details);
+          final package1 =
+              term1.constraint.isAny
+                  ? _terseRef(term1, details)
+                  : _terse(term1, details);
+          final package2 =
+              term2.constraint.isAny
+                  ? _terseRef(term2, details)
+                  : _terse(term2, details);
           return '$package1 is incompatible with $package2';
         } else {
           return 'either ${_terse(term1, details)} or '
@@ -222,12 +226,20 @@ class Incompatibility {
     final requiresBoth = _tryRequiresBoth(other, details, thisLine, otherLine);
     if (requiresBoth != null) return requiresBoth;
 
-    final requiresThrough =
-        _tryRequiresThrough(other, details, thisLine, otherLine);
+    final requiresThrough = _tryRequiresThrough(
+      other,
+      details,
+      thisLine,
+      otherLine,
+    );
     if (requiresThrough != null) return requiresThrough;
 
-    final requiresForbidden =
-        _tryRequiresForbidden(other, details, thisLine, otherLine);
+    final requiresForbidden = _tryRequiresForbidden(
+      other,
+      details,
+      thisLine,
+      otherLine,
+    );
     if (requiresForbidden != null) return requiresForbidden;
 
     final buffer = StringBuffer(toString(details));
@@ -264,9 +276,11 @@ class Incompatibility {
         .map((term) => _terse(term, details))
         .join(' or ');
 
-    final buffer =
-        StringBuffer('${_terse(thisPositive, details, allowEvery: true)} ');
-    final isDependency = cause is DependencyIncompatibilityCause &&
+    final buffer = StringBuffer(
+      '${_terse(thisPositive, details, allowEvery: true)} ',
+    );
+    final isDependency =
+        cause is DependencyIncompatibilityCause &&
         other.cause is DependencyIncompatibilityCause;
     buffer.write(isDependency ? 'depends on' : 'requires');
     buffer.write(' both $thisNegatives');
@@ -326,15 +340,19 @@ class Incompatibility {
 
     final buffer = StringBuffer();
     if (priorPositives.length > 1) {
-      final priorString =
-          priorPositives.map((term) => _terse(term, details)).join(' or ');
+      final priorString = priorPositives
+          .map((term) => _terse(term, details))
+          .join(' or ');
       buffer.write('if $priorString then ');
     } else {
-      final verb = prior.cause is DependencyIncompatibilityCause
-          ? 'depends on'
-          : 'requires';
-      buffer.write('${_terse(priorPositives.first, details, allowEvery: true)} '
-          '$verb ');
+      final verb =
+          prior.cause is DependencyIncompatibilityCause
+              ? 'depends on'
+              : 'requires';
+      buffer.write(
+        '${_terse(priorPositives.first, details, allowEvery: true)} '
+        '$verb ',
+      );
     }
 
     buffer.write(_terse(priorNegative, details));
@@ -395,8 +413,9 @@ class Incompatibility {
 
     final buffer = StringBuffer();
     if (positives.length > 1) {
-      final priorString =
-          positives.map((term) => _terse(term, details)).join(' or ');
+      final priorString = positives
+          .map((term) => _terse(term, details))
+          .join(' or ');
       buffer.write('if $priorString then ');
     } else {
       buffer.write(_terse(positives.first, details, allowEvery: true));
@@ -437,8 +456,10 @@ class Incompatibility {
       buffer.write("which doesn't match any versions");
     } else if (latterCause is PackageNotFoundIncompatibilityCause) {
       final exceptionMessage = latterCause.exception.message;
-      buffer.write("which doesn't exist "
-          '($exceptionMessage)');
+      buffer.write(
+        "which doesn't exist "
+        '($exceptionMessage)',
+      );
     } else {
       buffer.write('which is forbidden');
     }
@@ -463,10 +484,10 @@ class Incompatibility {
   }
 
   /// Returns a terse representation of [term]'s package ref.
-  String _terseRef(Term term, Map<String, PackageDetail>? details) =>
-      term.package
-          .toRef()
-          .toString(details == null ? null : details[term.package.name]);
+  String _terseRef(Term term, Map<String, PackageDetail>? details) => term
+      .package
+      .toRef()
+      .toString(details == null ? null : details[term.package.name]);
 
   /// Returns a terse representation of [term]'s package.
   ///
@@ -480,8 +501,9 @@ class Incompatibility {
     if (allowEvery && term!.constraint.isAny) {
       return 'every version of ${_terseRef(term, details)}';
     } else {
-      return term!.package
-          .toString(details == null ? null : details[term.package.name]);
+      return term!.package.toString(
+        details == null ? null : details[term.package.name],
+      );
     }
   }
 }

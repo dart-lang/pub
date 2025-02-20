@@ -56,10 +56,7 @@ void main() {
 
     respondWithWwwAuthenticate('bearer realm="pub", message="$message"');
     await expectPubErrorMessage(
-      allOf(
-        isNot(contains(message)),
-        contains(message.substring(0, 1024)),
-      ),
+      allOf(isNot(contains(message)), contains(message.substring(0, 1024))),
     );
   });
 
@@ -68,11 +65,13 @@ void main() {
     await expectPubErrorMessage(isNot(contains('custom message')));
   });
 
-  test('does not prints message if challenge is not equals to bearer',
-      () async {
-    respondWithWwwAuthenticate('basic realm="pub", message="custom message"');
-    await expectPubErrorMessage(isNot(contains('custom message')));
-  });
+  test(
+    'does not prints message if challenge is not equals to bearer',
+    () async {
+      respondWithWwwAuthenticate('basic realm="pub", message="custom message"');
+      await expectPubErrorMessage(isNot(contains('custom message')));
+    },
+  );
 
   test('prints message for bearer challenge for pub realm only', () async {
     respondWithWwwAuthenticate(

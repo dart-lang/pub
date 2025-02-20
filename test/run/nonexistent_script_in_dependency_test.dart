@@ -26,9 +26,7 @@ void main() {
     final pub = await pubRun(args: ['foo:script']);
     expect(
       pub.stderr,
-      emits(
-        "Could not find ${p.join("bin", "script.dart")} in package foo.",
-      ),
+      emits("Could not find ${p.join("bin", "script.dart")} in package foo."),
     );
     await pub.shouldExit(exit_codes.NO_INPUT);
   });

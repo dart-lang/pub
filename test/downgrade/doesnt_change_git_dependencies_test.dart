@@ -11,25 +11,27 @@ void main() {
   test("doesn't change git dependencies", () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
 
     final originalFooSpec = packageSpec('foo');
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
-    ).commit();
+    await d.git('foo.git', [
+      d.libDir('foo', 'foo 2'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).commit();
 
     await pubDowngrade();
 

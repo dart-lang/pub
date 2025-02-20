@@ -81,18 +81,16 @@ void main() {
       ),
     ]).create();
     await pubGet(
-      error: allOf(
-        [
-          contains(
-            '* Consider downgrading your constraint on foo: '
-            'dart pub add foo:^0.9.0',
-          ),
-          contains(
-            '* Try upgrading your constraint on bar: '
-            'dart pub add dev:bar:^2.0.0',
-          ),
-        ],
-      ),
+      error: allOf([
+        contains(
+          '* Consider downgrading your constraint on foo: '
+          'dart pub add foo:^0.9.0',
+        ),
+        contains(
+          '* Try upgrading your constraint on bar: '
+          'dart pub add dev:bar:^2.0.0',
+        ),
+      ]),
     );
   });
 
@@ -101,20 +99,14 @@ void main() {
     server.serve('foo', '1.0.0');
 
     await d.dir(appPath, [
-      d.libPubspec(
-        'myApp',
-        '1.0.0',
-        deps: {'foo': '>1.0.0 <=0.0.0'},
-      ),
+      d.libPubspec('myApp', '1.0.0', deps: {'foo': '>1.0.0 <=0.0.0'}),
     ]).create();
     await pubGet(
-      error: allOf(
-        [
-          contains(
-            '* Try updating your constraint on foo: dart pub add foo:^1.0.0',
-          ),
-        ],
-      ),
+      error: allOf([
+        contains(
+          '* Try updating your constraint on foo: dart pub add foo:^1.0.0',
+        ),
+      ]),
     );
   });
 
@@ -141,43 +133,45 @@ void main() {
     );
   });
 
-  test('suggests a major upgrade if more than 5 needs to be upgraded',
-      () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0', deps: {'bar': '2.0.0'});
-    server.serve('bar', '1.0.0', deps: {'foo': '2.0.0'});
-    server.serve('foo', '2.0.0', deps: {'bar': '2.0.0'});
-    server.serve('bar', '2.0.0', deps: {'foo': '2.0.0'});
-    server.serve('foo1', '1.0.0', deps: {'bar1': '2.0.0'});
-    server.serve('bar1', '1.0.0', deps: {'foo1': '2.0.0'});
-    server.serve('foo1', '2.0.0', deps: {'bar1': '2.0.0'});
-    server.serve('bar1', '2.0.0', deps: {'foo1': '2.0.0'});
-    server.serve('foo2', '1.0.0', deps: {'bar2': '2.0.0'});
-    server.serve('bar2', '1.0.0', deps: {'foo2': '2.0.0'});
-    server.serve('foo2', '2.0.0', deps: {'bar2': '2.0.0'});
-    server.serve('bar2', '2.0.0', deps: {'foo2': '2.0.0'});
+  test(
+    'suggests a major upgrade if more than 5 needs to be upgraded',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0', deps: {'bar': '2.0.0'});
+      server.serve('bar', '1.0.0', deps: {'foo': '2.0.0'});
+      server.serve('foo', '2.0.0', deps: {'bar': '2.0.0'});
+      server.serve('bar', '2.0.0', deps: {'foo': '2.0.0'});
+      server.serve('foo1', '1.0.0', deps: {'bar1': '2.0.0'});
+      server.serve('bar1', '1.0.0', deps: {'foo1': '2.0.0'});
+      server.serve('foo1', '2.0.0', deps: {'bar1': '2.0.0'});
+      server.serve('bar1', '2.0.0', deps: {'foo1': '2.0.0'});
+      server.serve('foo2', '1.0.0', deps: {'bar2': '2.0.0'});
+      server.serve('bar2', '1.0.0', deps: {'foo2': '2.0.0'});
+      server.serve('foo2', '2.0.0', deps: {'bar2': '2.0.0'});
+      server.serve('bar2', '2.0.0', deps: {'foo2': '2.0.0'});
 
-    await d.dir(appPath, [
-      d.libPubspec(
-        'myApp',
-        '1.0.0',
-        deps: {
-          'foo': '1.0.0',
-          'bar': '1.0.0',
-          'foo1': '1.0.0',
-          'bar1': '1.0.0',
-          'foo2': '1.0.0',
-          'bar2': '1.0.0',
-        },
-      ),
-    ]).create();
-    await pubGet(
-      error: contains(
-        '* Try an upgrade of your constraints: '
-        'dart pub upgrade --major-versions',
-      ),
-    );
-  });
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myApp',
+          '1.0.0',
+          deps: {
+            'foo': '1.0.0',
+            'bar': '1.0.0',
+            'foo1': '1.0.0',
+            'bar1': '1.0.0',
+            'foo2': '1.0.0',
+            'bar2': '1.0.0',
+          },
+        ),
+      ]).create();
+      await pubGet(
+        error: contains(
+          '* Try an upgrade of your constraints: '
+          'dart pub upgrade --major-versions',
+        ),
+      );
+    },
+  );
 
   test('suggests upgrades to non-default servers', () async {
     final server = await servePackages();
@@ -209,9 +203,7 @@ void main() {
         'bar:\'{"version":"^2.0.0","hosted":"${server2.url}"}\'',
       ),
     );
-    await pubAdd(
-      args: ['bar:{"version":"^2.0.0","hosted":"${server2.url}"}'],
-    );
+    await pubAdd(args: ['bar:{"version":"^2.0.0","hosted":"${server2.url}"}']);
     await d.dir(appPath, [
       d.libPubspec(
         'myApp',

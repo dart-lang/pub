@@ -27,11 +27,11 @@ class CacheRepairCommand extends PubCommand {
     cache.deleteTempDir();
     // Repair every cached source.
     final repairResults = (await Future.wait(
-      <CachedSource>[cache.hosted, cache.git].map(
-        (source) => source.repairCachedPackages(cache),
-      ),
-    ))
-        .expand((x) => x);
+      <CachedSource>[
+        cache.hosted,
+        cache.git,
+      ].map((source) => source.repairCachedPackages(cache)),
+    )).expand((x) => x);
 
     final successes = repairResults.where((result) => result.success);
     final failures = repairResults.where((result) => !result.success);

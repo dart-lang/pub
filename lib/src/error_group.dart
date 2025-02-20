@@ -67,8 +67,10 @@ class ErrorGroup {
   /// error, it's a [StateError] to try to register a new [Future].
   Future<T> registerFuture<T>(Future<T> future) {
     if (_isDone) {
-      throw StateError("Can't register new members on a complete "
-          'ErrorGroup.');
+      throw StateError(
+        "Can't register new members on a complete "
+        'ErrorGroup.',
+      );
     }
 
     final wrapped = _ErrorGroupFuture(this, future);
@@ -90,8 +92,10 @@ class ErrorGroup {
   /// error, it's a [StateError] to try to register a new [Stream].
   Stream<T> registerStream<T>(Stream<T> stream) {
     if (_isDone) {
-      throw StateError("Can't register new members on a complete "
-          'ErrorGroup.');
+      throw StateError(
+        "Can't register new members on a complete "
+        'ErrorGroup.',
+      );
     }
 
     final wrapped = _ErrorGroupStream(this, stream);
@@ -146,7 +150,8 @@ class ErrorGroup {
   void _signalFutureComplete(_ErrorGroupFuture future) {
     if (_isDone) return;
 
-    _isDone = _futures.every((future) => future._isDone) &&
+    _isDone =
+        _futures.every((future) => future._isDone) &&
         _streams.every((stream) => stream._isDone);
     if (_isDone) _doneCompleter.complete();
   }
@@ -155,7 +160,8 @@ class ErrorGroup {
   void _signalStreamComplete(_ErrorGroupStream stream) {
     if (_isDone) return;
 
-    _isDone = _futures.every((future) => future._isDone) &&
+    _isDone =
+        _futures.every((future) => future._isDone) &&
         _streams.every((stream) => stream._isDone);
     if (_isDone) _doneCompleter.complete();
   }
@@ -182,13 +188,15 @@ class _ErrorGroupFuture<T> implements Future<T> {
   /// Creates a new [_ErrorGroupFuture] that's a child of [_group] and wraps
   /// [inner].
   _ErrorGroupFuture(this._group, Future<T> inner) {
-    inner.then((value) {
-      if (!_isDone) _completer.complete(value);
-      _isDone = true;
-      _group._signalFutureComplete(this);
-    }).catchError((Object e, [StackTrace? s]) async {
-      _group._signalError(e, s);
-    });
+    inner
+        .then((value) {
+          if (!_isDone) _completer.complete(value);
+          _isDone = true;
+          _group._signalFutureComplete(this);
+        })
+        .catchError((Object e, [StackTrace? s]) async {
+          _group._signalError(e, s);
+        });
 
     // Make sure _completer.future doesn't automatically send errors to the
     // top-level.
@@ -275,12 +283,15 @@ class _ErrorGroupStream<T> extends Stream<T> {
   /// Creates a new [_ErrorGroupFuture] that's a child of [_group] and wraps
   /// [inner].
   _ErrorGroupStream(this._group, Stream<T> inner)
-      : _controller = StreamController(sync: true) {
+    : _controller = StreamController(sync: true) {
     // Use old-style asBroadcastStream behavior - cancel source _subscription
     // the first time the stream has no listeners.
-    _stream = inner.isBroadcast
-        ? _controller.stream.asBroadcastStream(onCancel: (sub) => sub.cancel())
-        : _controller.stream;
+    _stream =
+        inner.isBroadcast
+            ? _controller.stream.asBroadcastStream(
+              onCancel: (sub) => sub.cancel(),
+            )
+            : _controller.stream;
     _subscription = inner.listen(
       _controller.add,
       onError: _group._signalError,

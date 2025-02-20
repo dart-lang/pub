@@ -14,8 +14,10 @@ void main() {
     await runPub(
       args: ['global', 'activate', 'foo'],
       error: allOf([
-        contains("Because pub global activate depends on foo any which doesn't "
-            'exist (could not find package foo at http://localhost:'),
+        contains(
+          "Because pub global activate depends on foo any which doesn't "
+          'exist (could not find package foo at http://localhost:',
+        ),
         contains('), version solving failed.'),
       ]),
       exitCode: exit_codes.UNAVAILABLE,

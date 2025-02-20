@@ -206,8 +206,10 @@ class GlobalPackages {
     final tempDir = cache.createTempDir();
     // TODO(rnystrom): Look in "bin" and display list of binaries that
     // user can run.
-    LockFile([id], mainDependencies: {id.name})
-        .writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
+    LockFile(
+      [id],
+      mainDependencies: {id.name},
+    ).writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
     tryDeleteEntry(_packageDir(name));
     tryRenameDir(tempDir, _packageDir(name));
@@ -351,14 +353,20 @@ Consider `$topLevelProgram pub global deactivate $name`''');
     final description = id.description.description;
 
     if (description is GitDescription) {
-      log.message('Package ${log.bold(name)} is currently active from Git '
-          'repository "${GitDescription.prettyUri(description.url)}".');
+      log.message(
+        'Package ${log.bold(name)} is currently active from Git '
+        'repository "${GitDescription.prettyUri(description.url)}".',
+      );
     } else if (description is PathDescription) {
-      log.message('Package ${log.bold(name)} is currently active at path '
-          '"${description.path}".');
+      log.message(
+        'Package ${log.bold(name)} is currently active at path '
+        '"${description.path}".',
+      );
     } else {
-      log.message('Package ${log.bold(name)} is currently active at version '
-          '${log.bold(id.version.toString())}.');
+      log.message(
+        'Package ${log.bold(name)} is currently active at version '
+        '${log.bold(id.version.toString())}.',
+      );
     }
     return lockFile;
   }
@@ -433,8 +441,10 @@ Consider `$topLevelProgram pub global deactivate $name`''');
     lockFile.sdkConstraints.forEach((sdkName, constraint) {
       final sdk = sdks[sdkName];
       if (sdk == null) {
-        dataError('${log.bold(name)} as globally activated requires '
-            'unknown SDK "$name".');
+        dataError(
+          '${log.bold(name)} as globally activated requires '
+          'unknown SDK "$name".',
+        );
       } else if (sdkName == 'dart') {
         if (constraint.effectiveConstraint.allows((sdk as DartSdk).version)) {
           return;
@@ -446,8 +456,10 @@ try:
 `$topLevelProgram pub global activate $name` to reactivate.
 ''');
       } else {
-        dataError('${log.bold(name)} as globally activated requires the '
-            '${sdk.name} SDK, which is unsupported for global executables.');
+        dataError(
+          '${log.bold(name)} as globally activated requires the '
+          '${sdk.name} SDK, which is unsupported for global executables.',
+        );
       }
     });
 
@@ -582,8 +594,10 @@ Try reactivating the package.
         LockFile.load(p.join(_directory, path), cache.sources).packages[name];
 
     if (id == null) {
-      throw FormatException("Pubspec for activated package $name didn't "
-          'contain an entry for itself.');
+      throw FormatException(
+        "Pubspec for activated package $name didn't "
+        'contain an entry for itself.',
+      );
     }
 
     return id;
@@ -608,7 +622,7 @@ Try reactivating the package.
   /// Returns a pair of two lists of strings. The first indicates which packages
   /// were successfully re-activated; the second indicates which failed.
   Future<(List<String> successes, List<String> failures)>
-      repairActivatedPackages() async {
+  repairActivatedPackages() async {
     final executables = <String, List<String>>{};
     if (dirExists(_binStubDir)) {
       for (var entry in listDir(_binStubDir)) {
@@ -667,7 +681,8 @@ Try reactivating the package.
           }
           successes.add(id.name);
         } catch (error, stackTrace) {
-          var message = 'Failed to reactivate '
+          var message =
+              'Failed to reactivate '
               '${log.bold(p.basenameWithoutExtension(entry))}';
           if (id != null) {
             message += ' ${id.version}';
@@ -683,15 +698,19 @@ Try reactivating the package.
     }
 
     if (executables.isNotEmpty) {
-      final message = StringBuffer('Binstubs exist for non-activated '
-          'packages:\n');
+      final message = StringBuffer(
+        'Binstubs exist for non-activated '
+        'packages:\n',
+      );
       executables.forEach((package, executableNames) {
         for (var executable in executableNames) {
           deleteEntry(p.join(_binStubDir, executable));
         }
 
-        message.writeln('  From ${log.bold(package)}: '
-            '${toSentence(executableNames)}');
+        message.writeln(
+          '  From ${log.bold(package)}: '
+          '${toSentence(executableNames)}',
+        );
       });
       log.error(message.toString());
     }
@@ -723,8 +742,9 @@ Try reactivating the package.
           binStubScript,
           overwrite: true,
           isRefreshingBinstub: true,
-          snapshot:
-              executable.pathOfGlobalSnapshot(entrypoint.workspaceRoot.dir),
+          snapshot: executable.pathOfGlobalSnapshot(
+            entrypoint.workspaceRoot.dir,
+          ),
         );
       }
     }
@@ -802,25 +822,32 @@ Try reactivating the package.
     if (collided.isNotEmpty) {
       for (var command in collided.keys.sorted()) {
         if (overwriteBinStubs) {
-          log.warning('Replaced ${log.bold(command)} previously installed from '
-              '${log.bold(collided[command].toString())}.');
+          log.warning(
+            'Replaced ${log.bold(command)} previously installed from '
+            '${log.bold(collided[command].toString())}.',
+          );
         } else {
-          log.warning('Executable ${log.bold(command)} was already installed '
-              'from ${log.bold(collided[command].toString())}.');
+          log.warning(
+            'Executable ${log.bold(command)} was already installed '
+            'from ${log.bold(collided[command].toString())}.',
+          );
         }
       }
 
       if (!overwriteBinStubs) {
-        log.warning('Deactivate the other package(s) or activate '
-            '${log.bold(package.name)} using --overwrite.');
+        log.warning(
+          'Deactivate the other package(s) or activate '
+          '${log.bold(package.name)} using --overwrite.',
+        );
       }
     }
 
     // Show errors for any unknown executables.
     if (executables != null) {
-      final unknown = executables
-          .where((exe) => !package.pubspec.executables.keys.contains(exe))
-          .sorted();
+      final unknown =
+          executables
+              .where((exe) => !package.pubspec.executables.keys.contains(exe))
+              .sorted();
       if (unknown.isNotEmpty) {
         dataError("Unknown ${namedSequence('executable', unknown)}.");
       }
@@ -834,8 +861,10 @@ Try reactivating the package.
       final script = package.pubspec.executables[executable];
       final scriptPath = p.join('bin', '$script.dart');
       if (!binFiles.contains(scriptPath)) {
-        log.warning('Warning: Executable "$executable" runs "$scriptPath", '
-            'which was not found in ${log.bold(package.name)}.');
+        log.warning(
+          'Warning: Executable "$executable" runs "$scriptPath", '
+          'which was not found in ${log.bold(package.name)}.',
+        );
       }
     }
 
@@ -955,8 +984,10 @@ fi
         final result = Process.runSync('chmod', ['+x', tmpPath]);
         if (result.exitCode != 0) {
           // Couldn't make it executable so don't leave it laying around.
-          fail('Could not make "$tmpPath" executable (exit code '
-              '${result.exitCode}):\n${result.stderr}');
+          fail(
+            'Could not make "$tmpPath" executable (exit code '
+            '${result.exitCode}):\n${result.stderr}',
+          );
         }
       }
       File(tmpPath).renameSync(binStubPath);
@@ -998,18 +1029,22 @@ fi
       final result = runProcessSync('where', [r'\q', '$installed.bat']);
       if (result.exitCode == 0) return;
 
-      log.warning("${log.yellow('Warning:')} Pub installs executables into "
-          '${log.bold(_binStubDir)}, which is not on your path.\n'
-          "You can fix that by adding that directory to your system's "
-          '"Path" environment variable.\n'
-          'A web search for "configure windows path" will show you how.');
+      log.warning(
+        "${log.yellow('Warning:')} Pub installs executables into "
+        '${log.bold(_binStubDir)}, which is not on your path.\n'
+        "You can fix that by adding that directory to your system's "
+        '"Path" environment variable.\n'
+        'A web search for "configure windows path" will show you how.',
+      );
     } else {
       // See if the shell can find one of the binstubs.
       //
       // The "command" builtin is more reliable than the "which" executable. See
       // http://unix.stackexchange.com/questions/85249/why-not-use-which-what-to-use-then
-      final result =
-          runProcessSync('command', ['-v', installed], runInShell: true);
+      final result = runProcessSync('command', [
+        '-v',
+        installed,
+      ], runInShell: true);
       if (result.exitCode == 0) return;
 
       var binDir = _binStubDir;
@@ -1019,17 +1054,20 @@ fi
           p.relative(binDir, from: Platform.environment['HOME']),
         );
       }
-      final shellConfigFiles = Platform.isMacOS
-          // zsh is default on mac - mention that first.
-          ? '(.zshrc, .bashrc, .bash_profile, etc.)'
-          : '(.bashrc, .bash_profile, .zshrc etc.)';
-      log.warning("${log.yellow('Warning:')} Pub installs executables into "
-          '${log.bold(binDir)}, which is not on your path.\n'
-          "You can fix that by adding this to your shell's config file "
-          '$shellConfigFiles:\n'
-          '\n'
-          "  ${log.bold('export PATH="\$PATH":"$binDir"')}\n"
-          '\n');
+      final shellConfigFiles =
+          Platform.isMacOS
+              // zsh is default on mac - mention that first.
+              ? '(.zshrc, .bashrc, .bash_profile, etc.)'
+              : '(.bashrc, .bash_profile, .zshrc etc.)';
+      log.warning(
+        "${log.yellow('Warning:')} Pub installs executables into "
+        '${log.bold(binDir)}, which is not on your path.\n'
+        "You can fix that by adding this to your shell's config file "
+        '$shellConfigFiles:\n'
+        '\n'
+        "  ${log.bold('export PATH="\$PATH":"$binDir"')}\n"
+        '\n',
+      );
     }
   }
 

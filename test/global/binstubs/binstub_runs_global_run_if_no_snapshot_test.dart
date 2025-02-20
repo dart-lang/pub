@@ -28,16 +28,12 @@ void main() {
 
     await d.dir(cachePath, [
       d.dir('bin', [
-        d.file(
-          binStubName('foo-script'),
-          contains('global run foo:script'),
-        ),
+        d.file(binStubName('foo-script'), contains('global run foo:script')),
       ]),
     ]).validate();
   });
 
-  test(
-      'the binstubs of hosted package runs pub global run '
+  test('the binstubs of hosted package runs pub global run '
       'if there is no snapshot', () async {
     final server = await servePackages();
     server.serve(
@@ -59,10 +55,7 @@ void main() {
 
     await d.dir(cachePath, [
       d.dir('bin', [
-        d.file(
-          binStubName('foo-script'),
-          contains('global run foo:script'),
-        ),
+        d.file(binStubName('foo-script'), contains('global run foo:script')),
       ]),
     ]).validate();
 
@@ -76,18 +69,18 @@ void main() {
       'bin',
       'foo-script${Platform.isWindows ? '.bat' : ''}',
     );
-    final result =
-        await Process.run(binstub, [], environment: getPubTestEnvironment());
+    final result = await Process.run(
+      binstub,
+      [],
+      environment: getPubTestEnvironment(),
+    );
     expect(result.stderr, '');
     expect(result.exitCode, 0);
     expect(result.stdout, contains('ok'));
 
     await d.dir(cachePath, [
       d.dir('bin', [
-        d.file(
-          binStubName('foo-script'),
-          contains('global run foo:script'),
-        ),
+        d.file(binStubName('foo-script'), contains('global run foo:script')),
       ]),
     ]).validate();
   });

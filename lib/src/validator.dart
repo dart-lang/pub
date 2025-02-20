@@ -96,20 +96,23 @@ abstract class Validator {
     final allowedSdks = VersionRange(
       min: firstSdkVersion,
       includeMin: true,
-      max: firstSdkVersion.isPreRelease
-          ? firstSdkVersion.nextPatch
-          : firstSdkVersion.nextBreaking,
+      max:
+          firstSdkVersion.isPreRelease
+              ? firstSdkVersion.nextPatch
+              : firstSdkVersion.nextBreaking,
     );
 
     var newSdkConstraint = package.pubspec.dartSdkConstraint.originalConstraint
         .intersect(allowedSdks);
     if (newSdkConstraint.isEmpty) newSdkConstraint = allowedSdks;
 
-    errors.add('$message\n'
-        'Make sure your SDK constraint excludes old versions:\n'
-        '\n'
-        'environment:\n'
-        '  sdk: "${newSdkConstraint.asCompatibleWithIfPossible()}"');
+    errors.add(
+      '$message\n'
+      'Make sure your SDK constraint excludes old versions:\n'
+      '\n'
+      'environment:\n'
+      '  sdk: "${newSdkConstraint.asCompatibleWithIfPossible()}"',
+    );
   }
 
   /// Returns whether [version1] and [version2] are pre-releases of the same
@@ -181,8 +184,9 @@ abstract class Validator {
       }),
     ).then((_) {
       hints.addAll([for (final validator in validators) ...validator.hints]);
-      warnings
-          .addAll([for (final validator in validators) ...validator.warnings]);
+      warnings.addAll([
+        for (final validator in validators) ...validator.warnings,
+      ]);
       errors.addAll([for (final validator in validators) ...validator.errors]);
 
       String presentDiagnostics(List<String> diagnostics) => diagnostics

@@ -20,13 +20,17 @@ void main() {
     await runPub(
       args: ['global', 'activate', '-sgit', '../foo.git'],
       output: allOf(
-        startsWith('Resolving dependencies...\n'
-            'Downloading packages...\n'
-            '+ foo 1.0.0 from git ..${separator}foo.git at '),
+        startsWith(
+          'Resolving dependencies...\n'
+          'Downloading packages...\n'
+          '+ foo 1.0.0 from git ..${separator}foo.git at ',
+        ),
         // Specific revision number goes here.
-        endsWith('Building package executables...\n'
-            'Built foo:foo.\n'
-            'Activated foo 1.0.0 from Git repository "..${separator}foo.git".'),
+        endsWith(
+          'Building package executables...\n'
+          'Built foo:foo.\n'
+          'Activated foo 1.0.0 from Git repository "..${separator}foo.git".',
+        ),
       ),
     );
 
@@ -36,15 +40,19 @@ void main() {
     await runPub(
       args: ['global', 'activate', '-sgit', '../foo.git'],
       output: allOf(
-        startsWith('Package foo is currently active from Git repository '
-            '"..${separator}foo.git".\n'
-            'Resolving dependencies...\n'
-            'Downloading packages...\n'
-            '> foo 1.0.1 from git ..${separator}foo.git at '),
+        startsWith(
+          'Package foo is currently active from Git repository '
+          '"..${separator}foo.git".\n'
+          'Resolving dependencies...\n'
+          'Downloading packages...\n'
+          '> foo 1.0.1 from git ..${separator}foo.git at ',
+        ),
         // Specific revision number goes here.
-        endsWith('Building package executables...\n'
-            'Built foo:foo.\n'
-            'Activated foo 1.0.1 from Git repository "..${separator}foo.git".'),
+        endsWith(
+          'Building package executables...\n'
+          'Built foo:foo.\n'
+          'Activated foo 1.0.1 from Git repository "..${separator}foo.git".',
+        ),
       ),
     );
   });

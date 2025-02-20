@@ -73,8 +73,10 @@ final class LeakDetectionValidator extends Validator {
     if (leaks.length > 3) {
       errors.addAll(leaks.take(2).map((leak) => leak.describe()));
 
-      final files =
-          leaks.map((leak) => leak.url).toSet().toList(growable: false)..sort();
+      final files = leaks
+        .map((leak) => leak.url)
+        .toSet()
+        .toList(growable: false)..sort();
       final s = files.length > 1 ? 's' : '';
 
       errors.add(
@@ -128,9 +130,10 @@ final class LeakMatch {
           'at offset $start:$end.\n\n'
           '```\n${content.substring(start, end)}\n```\n';
     }
-    return SourceFile.fromString(content, url: url)
-        .span(start, end)
-        .message('Potential leak of ${pattern.kind} detected.');
+    return SourceFile.fromString(
+      content,
+      url: url,
+    ).span(start, end).message('Potential leak of ${pattern.kind} detected.');
   }
 }
 
@@ -176,11 +179,11 @@ final class LeakPattern {
     Map<int, double> entropyThresholds = const <int, double>{},
     Iterable<String> testsWithLeaks = const <String>[],
     Iterable<String> testsWithNoLeaks = const <String>[],
-  })  : _pattern = RegExp(pattern),
-        _allowed = List.unmodifiable(allowed),
-        _entropyThresholds = Map.unmodifiable(entropyThresholds),
-        testsWithLeaks = List.unmodifiable(testsWithLeaks),
-        testsWithNoLeaks = List.unmodifiable(testsWithNoLeaks);
+  }) : _pattern = RegExp(pattern),
+       _allowed = List.unmodifiable(allowed),
+       _entropyThresholds = Map.unmodifiable(entropyThresholds),
+       testsWithLeaks = List.unmodifiable(testsWithLeaks),
+       testsWithNoLeaks = List.unmodifiable(testsWithNoLeaks);
 
   /// Find possible leaks using this [LeakPattern].
   ///
@@ -194,8 +197,9 @@ final class LeakPattern {
       if (_allowed.any((s) => m.group(0)!.contains(s))) {
         continue;
       }
-      if (_entropyThresholds.entries
-          .any((entry) => _entropy(m.group(entry.key)!) < entry.value)) {
+      if (_entropyThresholds.entries.any(
+        (entry) => _entropy(m.group(entry.key)!) < entry.value,
+      )) {
         continue;
       }
 
@@ -246,7 +250,8 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
     //
     // Maximum length of an access key is specified as 128 here:
     // https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html#API_AccessKey_Contents
-    pattern: r'[^A-Z0-9]'
+    pattern:
+        r'[^A-Z0-9]'
         r'('
         r'(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)'
         r'[A-Z0-9]{12,128}'
@@ -398,7 +403,7 @@ final leakPatterns = List<LeakPattern>.unmodifiable([
       final id = "191919191919-onesonesonesonesonesonesonesones.apps.googleusercontent.com";
       // This will count as being leaked
       final superSecret = '204799038523-t6juuc8cvsvn7bdq0chhihkejuru0bkj.apps.googleusercontent.com';
-      '''
+      ''',
     ],
     testsWithNoLeaks: [
       // Not enough entropy:
@@ -564,18 +569,19 @@ H0M6xpM2q+53wmsN/eYLdgtjgBd3DBmHtPilCkiFICXyaA8z9LkJ
   ),
   LeakPattern._(
     kind: 'PGP Private Key',
-    pattern: [
-      _pemBegin('PGP PRIVATE KEY BLOCK'),
-      // Allow "Armor Headers" from:
-      // https://www.rfc-editor.org/rfc/rfc4880.html#section-6.2
-      '(?:\\w+: [^\\n]{1,1024}$_pemRequireLineBreak$_pemWSP)*',
-      _pemBase64Block(),
-      // Require a line break, and a 24-bit base64 encoded checksum prefixed '='
-      // https://www.rfc-editor.org/rfc/rfc4880.html#section-6
-      '$_pemRequireLineBreak$_pemWSP',
-      '=(?:(?:[a-zA-Z0-9+/]$_pemWSP){4})',
-      _pemEnd('PGP PRIVATE KEY BLOCK'),
-    ].join(),
+    pattern:
+        [
+          _pemBegin('PGP PRIVATE KEY BLOCK'),
+          // Allow "Armor Headers" from:
+          // https://www.rfc-editor.org/rfc/rfc4880.html#section-6.2
+          '(?:\\w+: [^\\n]{1,1024}$_pemRequireLineBreak$_pemWSP)*',
+          _pemBase64Block(),
+          // Require a line break, and a 24-bit base64 encoded checksum prefixed '='
+          // https://www.rfc-editor.org/rfc/rfc4880.html#section-6
+          '$_pemRequireLineBreak$_pemWSP',
+          '=(?:(?:[a-zA-Z0-9+/]$_pemWSP){4})',
+          _pemEnd('PGP PRIVATE KEY BLOCK'),
+        ].join(),
     testsWithLeaks: [
       '''
 -----BEGIN PGP PRIVATE KEY BLOCK-----
@@ -620,7 +626,8 @@ String _pemWSP = r'(?:\\r|\\n|\\t|\s)*';
 // is in a JSON string. We just require something to indicate line break.
 String _pemRequireLineBreak = r'\s*(?:\\r|\\n|\r|\n)\s*';
 
-String _pemBegin(String label) => [
+String _pemBegin(String label) =>
+    [
       // Require a boundary
       '-----BEGIN $label-----',
       // Require \n, \r, \\r, or \\n, backslash escaping is allowed if the key
@@ -630,7 +637,8 @@ String _pemBegin(String label) => [
       _pemWSP,
     ].join();
 
-String _pemBase64Block() => [
+String _pemBase64Block() =>
+    [
       // Require base64 character in blocks of 4, allow arbirary whitespace
       // and escaped line breaks in between.
       '(?:(?:[a-zA-Z0-9+/]$_pemWSP){4})+',
@@ -655,7 +663,8 @@ String _pemBase64Block() => [
       '))?',
     ].join();
 
-String _pemEnd(String label) => [
+String _pemEnd(String label) =>
+    [
       // Require \n, \r, \\r, or \\n, backslash escaping is allowed if the key
       // is in a JSON string. We just require something to indicate line break.
       _pemRequireLineBreak,
@@ -664,8 +673,5 @@ String _pemEnd(String label) => [
       '-----END $label-----',
     ].join();
 
-String _pemKeyFormat(String label) => [
-      _pemBegin(label),
-      _pemBase64Block(),
-      _pemEnd(label),
-    ].join();
+String _pemKeyFormat(String label) =>
+    [_pemBegin(label), _pemBase64Block(), _pemEnd(label)].join();

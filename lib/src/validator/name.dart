@@ -22,9 +22,11 @@ class NameValidator extends Validator {
       if (libraries.length == 1) {
         final libName = p.basenameWithoutExtension(libraries[0]);
         if (libName == package.name) return;
-        warnings.add('The name of "${libraries[0]}", "$libName", should match '
-            'the name of the package, "${package.name}".\n'
-            'This helps users know what library to import.');
+        warnings.add(
+          'The name of "${libraries[0]}", "$libName", should match '
+          'the name of the package, "${package.name}".\n'
+          'This helps users know what library to import.',
+        );
       }
     });
   }
@@ -47,18 +49,26 @@ class NameValidator extends Validator {
     if (name == '') {
       errors.add('$description may not be empty.');
     } else if (!RegExp(r'^[a-zA-Z0-9_]*$').hasMatch(name)) {
-      errors.add('$description may only contain letters, numbers, and '
-          'underscores.\n'
-          'Using a valid Dart identifier makes the name usable in Dart code.');
+      errors.add(
+        '$description may only contain letters, numbers, and '
+        'underscores.\n'
+        'Using a valid Dart identifier makes the name usable in Dart code.',
+      );
     } else if (!RegExp(r'^[a-zA-Z_]').hasMatch(name)) {
-      errors.add('$description must begin with a letter or underscore.\n'
-          'Using a valid Dart identifier makes the name usable in Dart code.');
+      errors.add(
+        '$description must begin with a letter or underscore.\n'
+        'Using a valid Dart identifier makes the name usable in Dart code.',
+      );
     } else if (reservedWords.contains(name.toLowerCase())) {
-      errors.add('$description may not be a reserved word in Dart.\n'
-          'Using a valid Dart identifier makes the name usable in Dart code.');
+      errors.add(
+        '$description may not be a reserved word in Dart.\n'
+        'Using a valid Dart identifier makes the name usable in Dart code.',
+      );
     } else if (RegExp(r'[A-Z]').hasMatch(name)) {
-      warnings.add('$description should be lower-case. Maybe use '
-          '"${_unCamelCase(name)}"?');
+      warnings.add(
+        '$description should be lower-case. Maybe use '
+        '"${_unCamelCase(name)}"?',
+      );
     }
   }
 

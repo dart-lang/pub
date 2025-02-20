@@ -20,10 +20,9 @@ void main() {
         'executables': {'foo-script': 'script'},
       },
       contents: [
-        d.dir(
-          'bin',
-          [d.file('script.dart', "main(args) => print('ok \$args');")],
-        ),
+        d.dir('bin', [
+          d.file('script.dart', "main(args) => print('ok \$args');"),
+        ]),
       ],
     );
 
@@ -46,10 +45,9 @@ void main() {
         'name': 'foo',
         'executables': {'foo-script': 'script'},
       }),
-      d.dir(
-        'bin',
-        [d.file('script.dart', "main(args) => print('ok \$args');")],
-      ),
+      d.dir('bin', [
+        d.file('script.dart', "main(args) => print('ok \$args');"),
+      ]),
     ]).create();
 
     await runPub(args: ['global', 'activate', '-spath', '../foo']);

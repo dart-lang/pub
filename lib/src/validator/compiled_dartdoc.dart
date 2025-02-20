@@ -28,10 +28,12 @@ class CompiledDartdocValidator extends Validator {
         ];
 
         if (files.every(fileExists)) {
-          warnings.add('Avoid putting generated documentation in '
-              '${p.relative(dir)}.\n'
-              'Generated documentation bloats the package with redundant '
-              'data.');
+          warnings.add(
+            'Avoid putting generated documentation in '
+            '${p.relative(dir)}.\n'
+            'Generated documentation bloats the package with redundant '
+            'data.',
+          );
         }
       }
     });

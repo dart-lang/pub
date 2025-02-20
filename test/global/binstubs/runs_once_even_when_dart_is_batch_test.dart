@@ -28,15 +28,12 @@ void main() {
 
       await runPub(args: ['global', 'activate', 'foo']);
 
-      await d.dir(
-        'bin',
-        [
-          d.file('dart.bat', '''
+      await d.dir('bin', [
+        d.file('dart.bat', '''
 @echo off
 ${Platform.resolvedExecutable} %*
 '''),
-        ],
-      ).create();
+      ]).create();
 
       final process = await Process.run(
         p.join(d.sandbox, cachePath, 'bin', 'script.bat'),

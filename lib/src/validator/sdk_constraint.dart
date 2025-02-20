@@ -23,11 +23,12 @@ class SdkConstraintValidator extends Validator {
     if (originalConstraint is VersionRange) {
       if (originalConstraint.max == null) {
         errors.add(
-            'Published packages should have an upper bound constraint on the '
-            'Dart SDK (typically this should restrict to less than the next '
-            'major version to guard against breaking changes).\n'
-            'See https://dart.dev/tools/pub/pubspec#sdk-constraints for '
-            'instructions on setting an sdk version constraint.');
+          'Published packages should have an upper bound constraint on the '
+          'Dart SDK (typically this should restrict to less than the next '
+          'major version to guard against breaking changes).\n'
+          'See https://dart.dev/tools/pub/pubspec#sdk-constraints for '
+          'instructions on setting an sdk version constraint.',
+        );
       }
 
       final constraintMin = originalConstraint.min;
@@ -37,19 +38,20 @@ class SdkConstraintValidator extends Validator {
           constraintMin.isPreRelease &&
           !packageVersion.isPreRelease) {
         warnings.add(
-            'Packages with an SDK constraint on a pre-release of the Dart SDK '
-            'should themselves be published as a pre-release version. '
-            'If this package needs Dart version $constraintMin, consider '
-            'publishing the package as a pre-release instead.\n'
-            'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
-            'For more information on pre-releases.');
+          'Packages with an SDK constraint on a pre-release of the Dart SDK '
+          'should themselves be published as a pre-release version. '
+          'If this package needs Dart version $constraintMin, consider '
+          'publishing the package as a pre-release instead.\n'
+          'See https://dart.dev/tools/pub/publishing#publishing-prereleases '
+          'For more information on pre-releases.',
+        );
       }
       if (
-          // We only want to give this hint if there was no other problems with
-          // the sdk constraint.
-          warnings.isEmpty &&
-              errors.isEmpty &&
-              originalConstraint != effectiveConstraint) {
+      // We only want to give this hint if there was no other problems with
+      // the sdk constraint.
+      warnings.isEmpty &&
+          errors.isEmpty &&
+          originalConstraint != effectiveConstraint) {
         hints.add('''
 The declared SDK constraint is '$originalConstraint', this is interpreted as '$effectiveConstraint'.
 

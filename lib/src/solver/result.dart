@@ -67,12 +67,11 @@ class SolveResult {
         packages.map((id) async {
           if (id.source is CachedSource) {
             return await withDependencyType(
-                _root.pubspec.dependencyType(id.name), () async {
-              return (await cache.downloadPackage(
-                id,
-              ))
-                  .packageId;
-            });
+              _root.pubspec.dependencyType(id.name),
+              () async {
+                return (await cache.downloadPackage(id)).packageId;
+              },
+            );
           }
           return id;
         }),
@@ -83,15 +82,17 @@ class SolveResult {
 
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
-    final nonOverrides = pubspecs.values
-        .where((pubspec) => !_overriddenPackages.contains(pubspec.name))
-        .toList();
+    final nonOverrides =
+        pubspecs.values
+            .where((pubspec) => !_overriddenPackages.contains(pubspec.name))
+            .toList();
 
     final sdkConstraints = <String, VersionConstraint>{};
     for (var pubspec in nonOverrides) {
       pubspec.sdkConstraints.forEach((identifier, constraint) {
-        sdkConstraints[identifier] = constraint.effectiveConstraint
-            .intersect(sdkConstraints[identifier] ?? VersionConstraint.any);
+        sdkConstraints[identifier] = constraint.effectiveConstraint.intersect(
+          sdkConstraints[identifier] ?? VersionConstraint.any,
+        );
       });
     }
     return LockFile(
@@ -112,10 +113,11 @@ class SolveResult {
   ///
   /// This includes packages that were added or removed.
   Set<String> get changedPackages {
-    final changed = packages
-        .where((id) => _previousLockFile.packages[id.name] != id)
-        .map((id) => id.name)
-        .toSet();
+    final changed =
+        packages
+            .where((id) => _previousLockFile.packages[id.name] != id)
+            .map((id) => id.name)
+            .toSet();
 
     return changed.union(
       _previousLockFile.packages.keys
@@ -136,6 +138,7 @@ class SolveResult {
   );
 
   @override
-  String toString() => 'Took $attemptedSolutions tries to resolve to\n'
+  String toString() =>
+      'Took $attemptedSolutions tries to resolve to\n'
       '- ${packages.join("\n- ")}';
 }

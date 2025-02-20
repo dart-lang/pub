@@ -16,12 +16,17 @@ void main() {
     await expectValidationDeprecated(PubspecValidator.new);
   });
 
-  test('should consider a package invalid if it has a .gitignored pubspec',
-      () async {
-    final repo = d.git(appPath, [d.file('.gitignore', 'pubspec.yaml')]);
-    await d.validPackage().create();
-    await repo.create();
+  test(
+    'should consider a package invalid if it has a .gitignored pubspec',
+    () async {
+      final repo = d.git(appPath, [d.file('.gitignore', 'pubspec.yaml')]);
+      await d.validPackage().create();
+      await repo.create();
 
-    await expectValidationDeprecated(PubspecValidator.new, errors: isNotEmpty);
-  });
+      await expectValidationDeprecated(
+        PubspecValidator.new,
+        errors: isNotEmpty,
+      );
+    },
+  );
 }

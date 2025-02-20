@@ -37,9 +37,7 @@ Pubspec stripVersionBounds(
 }) {
   stripOnly ??= [];
 
-  List<PackageRange> stripBounds(
-    Map<String, PackageRange> constrained,
-  ) {
+  List<PackageRange> stripBounds(Map<String, PackageRange> constrained) {
     final result = <PackageRange>[];
 
     for (final name in constrained.keys) {
@@ -70,9 +68,7 @@ Pubspec stripVersionBounds(
 /// version constraints replaced by `>=c` where `c`, is the member of `current`
 /// that has same name as the dependency.
 Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
-  List<PackageRange> fixBounds(
-    Map<String, PackageRange> constrained,
-  ) {
+  List<PackageRange> fixBounds(Map<String, PackageRange> constrained) {
     final result = <PackageRange>[];
 
     for (final name in constrained.keys) {
@@ -83,8 +79,8 @@ Pubspec atLeastCurrent(Pubspec original, List<PackageId> current) {
       } else {
         result.add(
           packageRange.toRef().withConstraint(
-                VersionRange(min: currentVersion.version, includeMin: true),
-              ),
+            VersionRange(min: currentVersion.version, includeMin: true),
+          ),
         );
       }
     }

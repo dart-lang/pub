@@ -141,13 +141,14 @@ class PackageConfig {
       generatorVersion: generatorVersion,
       additionalProperties: Map.fromEntries(
         root.entries.where(
-          (e) => !{
-            'configVersion',
-            'packages',
-            'generated',
-            'generator',
-            'generatorVersion',
-          }.contains(e.key),
+          (e) =>
+              !{
+                'configVersion',
+                'packages',
+                'generated',
+                'generator',
+                'generatorVersion',
+              }.contains(e.key),
         ),
       ),
     );
@@ -155,12 +156,12 @@ class PackageConfig {
 
   /// Convert to JSON structure.
   Map<String, Object?> toJson() => {
-        'configVersion': configVersion,
-        'packages': packages.map((p) => p.toJson()).toList(),
-        'generated': generated?.toUtc().toIso8601String(),
-        'generator': generator,
-        'generatorVersion': generatorVersion?.toString(),
-      }..addAll(additionalProperties);
+    'configVersion': configVersion,
+    'packages': packages.map((p) => p.toJson()).toList(),
+    'generated': generated?.toUtc().toIso8601String(),
+    'generator': generator,
+    'generatorVersion': generatorVersion?.toString(),
+  }..addAll(additionalProperties);
 
   // We allow the package called 'flutter_gen' to be injected into
   // package_config.
@@ -289,11 +290,11 @@ class PackageConfigEntry {
 
   /// Convert to JSON structure.
   Map<String, Object?> toJson() => {
-        'name': name,
-        'rootUri': rootUri.toString(),
-        if (packageUri != null) 'packageUri': packageUri.toString(),
-        if (languageVersion != null) 'languageVersion': '$languageVersion',
-      }..addAll(additionalProperties ?? {});
+    'name': name,
+    'rootUri': rootUri.toString(),
+    if (packageUri != null) 'packageUri': packageUri.toString(),
+    if (languageVersion != null) 'languageVersion': '$languageVersion',
+  }..addAll(additionalProperties ?? {});
 
   @override
   String toString() {

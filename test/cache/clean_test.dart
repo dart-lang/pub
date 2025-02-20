@@ -36,43 +36,41 @@ void main() {
     );
   });
 
-  test('running pub cache clean deletes cache only with confirmation',
-      () async {
-    await servePackages()
-      ..serve('foo', '1.1.2')
-      ..serve('bar', '1.2.3');
-    await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
-    await pubGet();
-    final cache = p.join(d.sandbox, cachePath);
-    expect(
-      listDir(cache, includeHidden: true),
-      contains(pathInCache('hosted')),
-    );
-    {
-      final process = await startPub(
-        args: ['cache', 'clean'],
+  test(
+    'running pub cache clean deletes cache only with confirmation',
+    () async {
+      await servePackages()
+        ..serve('foo', '1.1.2')
+        ..serve('bar', '1.2.3');
+      await d.appDir(dependencies: {'foo': 'any', 'bar': 'any'}).create();
+      await pubGet();
+      final cache = p.join(d.sandbox, cachePath);
+      expect(
+        listDir(cache, includeHidden: true),
+        contains(pathInCache('hosted')),
       );
-      process.stdin.writeln('n');
-      expect(await process.exitCode, 0);
-    }
-    expect(
-      listDir(cache, includeHidden: true),
-      contains(pathInCache('hosted')),
-    );
+      {
+        final process = await startPub(args: ['cache', 'clean']);
+        process.stdin.writeln('n');
+        expect(await process.exitCode, 0);
+      }
+      expect(
+        listDir(cache, includeHidden: true),
+        contains(pathInCache('hosted')),
+      );
 
-    {
-      final process = await startPub(
-        args: ['cache', 'clean'],
+      {
+        final process = await startPub(args: ['cache', 'clean']);
+        process.stdin.writeln('y');
+        expect(await process.exitCode, 0);
+      }
+      expect(
+        listDir(
+          cache,
+          includeHidden: true,
+        ), // The README.md will be reconstructed.
+        [pathInCache('README.md')],
       );
-      process.stdin.writeln('y');
-      expect(await process.exitCode, 0);
-    }
-    expect(
-      listDir(
-        cache,
-        includeHidden: true,
-      ), // The README.md will be reconstructed.
-      [pathInCache('README.md')],
-    );
-  });
+    },
+  );
 }

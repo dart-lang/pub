@@ -14,13 +14,15 @@ void main() {
     test('sends the correct Accept header', () async {
       await servePackages();
 
-      await d.appDir(
-        dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url},
-          },
-        },
-      ).create();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'hosted': {'name': 'foo', 'url': globalServer.url},
+              },
+            },
+          )
+          .create();
 
       globalServer.expect('GET', '/api/packages/foo', (request) {
         expect(
@@ -40,13 +42,15 @@ void main() {
     test('prints a friendly error if the version is out-of-date', () async {
       await servePackages();
 
-      await d.appDir(
-        dependencies: {
-          'foo': {
-            'hosted': {'name': 'foo', 'url': globalServer.url},
-          },
-        },
-      ).create();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'hosted': {'name': 'foo', 'url': globalServer.url},
+              },
+            },
+          )
+          .create();
 
       final pub = await startPub(args: [command.name]);
 

@@ -12,24 +12,22 @@ import 'golden_file.dart';
 import 'test_pub.dart';
 
 Future<void> main() async {
-  testWithGolden('commands taking a --directory/-C parameter work',
-      (ctx) async {
+  testWithGolden('commands taking a --directory/-C parameter work', (
+    ctx,
+  ) async {
     await servePackages()
       ..serve('foo', '1.0.0')
       ..serve('foo', '0.1.2')
       ..serve('bar', '1.2.3');
     await credentialsFile(globalServer, 'access-token').create();
-    globalServer.handle(
-      RegExp('/api/packages/test_pkg/uploaders'),
-      (request) {
-        return shelf.Response.ok(
-          jsonEncode({
-            'success': {'message': 'Good job!'},
-          }),
-          headers: {'content-type': 'application/json'},
-        );
-      },
-    );
+    globalServer.handle(RegExp('/api/packages/test_pkg/uploaders'), (request) {
+      return shelf.Response.ok(
+        jsonEncode({
+          'success': {'message': 'Good job!'},
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    });
 
     await validPackage().create();
     await dir(appPath, [
@@ -78,10 +76,7 @@ main() => print('Hi');
     ];
 
     for (var i = 0; i < cases.length; i++) {
-      await ctx.run(
-        cases[i],
-        workingDirectory: sandbox,
-      );
+      await ctx.run(cases[i], workingDirectory: sandbox);
     }
   });
 }

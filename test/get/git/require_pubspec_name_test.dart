@@ -9,18 +9,19 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'requires the dependency to have a pubspec with a name '
+  test('requires the dependency to have a pubspec with a name '
       'field', () async {
     ensureGit();
 
     await d.git('foo.git', [d.libDir('foo'), d.pubspec({})]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet(
       error: contains('Missing the required "name" field.'),

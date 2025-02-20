@@ -34,10 +34,10 @@ void main() {
   testWithGolden('lists Dart executables, without entrypoints', (ctx) async {
     await d.dir(appPath, [
       d.appPubspec(),
-      d.dir(
-        'bin',
-        [d.file('foo.dart', _validMain), d.file('bar.dart', _invalidMain)],
-      ),
+      d.dir('bin', [
+        d.file('foo.dart', _validMain),
+        d.file('bar.dart', _invalidMain),
+      ]),
     ]).create();
 
     await ctx.runExecutablesTest();
@@ -72,8 +72,9 @@ void main() {
     await ctx.runExecutablesTest();
   });
 
-  testWithGolden('lists executables only from immediate dependencies',
-      (ctx) async {
+  testWithGolden('lists executables only from immediate dependencies', (
+    ctx,
+  ) async {
     await d.dir(appPath, [
       d.appPubspec(
         dependencies: {
@@ -114,10 +115,10 @@ void main() {
 
     await d.dir('foo', [
       d.libPubspec('foo', '1.0.0'),
-      d.dir(
-        'bin',
-        [d.file('baz.dart', _validMain), d.file('foo.dart', _validMain)],
-      ),
+      d.dir('bin', [
+        d.file('baz.dart', _validMain),
+        d.file('foo.dart', _validMain),
+      ]),
     ]).create();
 
     await d.dir('bar', [
@@ -154,10 +155,10 @@ void main() {
 
     await d.dir('foo-2.0', [
       d.libPubspec('foo', '2.0.0'),
-      d.dir(
-        'bin',
-        [d.file('bar.dart', _validMain), d.file('baz.dart', _validMain)],
-      ),
+      d.dir('bin', [
+        d.file('bar.dart', _validMain),
+        d.file('baz.dart', _validMain),
+      ]),
     ]).create();
 
     await d.dir(appPath, [

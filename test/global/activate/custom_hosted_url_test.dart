@@ -15,12 +15,9 @@ void main() {
     // The custom pub server.
     final customServer = await startPackageServer();
     Map<String, dynamic> hostedDep(String name, String constraint) => {
-          'hosted': {
-            'url': customServer.url,
-            'name': name,
-          },
-          'version': constraint,
-        };
+      'hosted': {'url': customServer.url, 'name': name},
+      'version': constraint,
+    };
 
     customServer.serve('foo', '1.0.0', deps: {'bar': hostedDep('bar', 'any')});
     customServer.serve('bar', '1.0.0', deps: {'baz': 'any'});

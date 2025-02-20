@@ -18,19 +18,19 @@ void main() {
           d.file('hello.dart', "void main() => print('hello!');"),
           d.file('goodbye.dart', "void main() => print('goodbye!');"),
           d.file('shell.sh', 'echo shell'),
-          d.dir(
-            'subdir',
-            [d.file('sub.dart', "void main() => print('sub!');")],
-          ),
+          d.dir('subdir', [
+            d.file('sub.dart', "void main() => print('sub!');"),
+          ]),
         ]),
       ],
     );
 
     await runPub(
       args: ['global', 'activate', 'foo'],
-      output: allOf(
-        [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
-      ),
+      output: allOf([
+        contains('Built foo:hello.'),
+        contains('Built foo:goodbye.'),
+      ]),
     );
 
     await d.dir(cachePath, [

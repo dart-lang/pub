@@ -8,8 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'unlocks dependencies if necessary to ensure that a new '
+  test('unlocks dependencies if necessary to ensure that a new '
       'dependency is satisfied', () async {
     final server = await servePackages();
 

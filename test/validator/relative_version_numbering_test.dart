@@ -28,10 +28,7 @@ Future<void> setup({required String sdkConstraint}) async {
 void main() {
   test('Hints about not publishing latest', () async {
     final server = await servePackages();
-    server.serve(
-      'test_pkg',
-      '2.0.2',
-    );
+    server.serve('test_pkg', '2.0.2');
     await d.validPackage().create();
 
     await expectValidationHint('''
@@ -42,10 +39,7 @@ The latest published version is 2.0.2.
 
   test('Hints incrementing more than needed', () async {
     final server = await servePackages();
-    server.serve(
-      'test_pkg',
-      '1.0.2',
-    );
+    server.serve('test_pkg', '1.0.2');
 
     const notIncrementalHintText = '''
 * The previous version is 1.0.2.
@@ -68,10 +62,7 @@ The latest published version is 2.0.2.
 
   test('Hints incrementing more than needed after a prerelease', () async {
     final server = await servePackages();
-    server.serve(
-      'test_pkg',
-      '1.0.2-pre',
-    );
+    server.serve('test_pkg', '1.0.2-pre');
 
     const notIncrementalHintText = '''
 * The previous version is 1.0.2-pre.
@@ -94,10 +85,7 @@ The latest published version is 2.0.2.
 
   test('Hints incrementing more than after pre 1.0', () async {
     final server = await servePackages();
-    server.serve(
-      'test_pkg',
-      '0.0.1',
-    );
+    server.serve('test_pkg', '0.0.1');
 
     const notIncrementalHintText = '''
 * The previous version is 0.0.1.
@@ -118,59 +106,53 @@ The latest published version is 2.0.2.
     await expectValidationHint(notIncrementalHintText);
   });
 
-  test('Releasing a prerelease of incremental version causes no hint',
-      () async {
-    final server = await servePackages();
-    server.serve(
-      'test_pkg',
-      '1.0.0',
-    );
-    await d.validPackage(version: '1.0.1-dev').create();
-    await expectValidation();
-    await d.validPackage(version: '1.1.0-dev').create();
-    await expectValidation();
-    await d.validPackage(version: '2.0.0-dev').create();
-    await expectValidation();
-  });
+  test(
+    'Releasing a prerelease of incremental version causes no hint',
+    () async {
+      final server = await servePackages();
+      server.serve('test_pkg', '1.0.0');
+      await d.validPackage(version: '1.0.1-dev').create();
+      await expectValidation();
+      await d.validPackage(version: '1.1.0-dev').create();
+      await expectValidation();
+      await d.validPackage(version: '2.0.0-dev').create();
+      await expectValidation();
+    },
+  );
 
   test('Releasing the prereleased version causes no hint', () async {
     final server = await servePackages();
-    server.serve(
-      'test_pkg',
-      '1.0.0-dev',
-    );
+    server.serve('test_pkg', '1.0.0-dev');
     await d.validPackage().create();
     await expectValidation();
   });
 
   test('Releasing a build-release causes no hint', () async {
     final server = await servePackages();
-    server.serve(
-      'test_pkg',
-      '1.0.0',
-    );
+    server.serve('test_pkg', '1.0.0');
     await d.validPackage(version: '1.0.0+0').create();
     await expectValidation();
   });
 
   group('should consider a package valid if it', () {
-    test('is opting in to null-safety with previous null-safe version',
-        () async {
-      final server = await servePackages();
-      server.serve(
-        'test_pkg',
-        '0.0.1',
-        pubspec: {
-          'environment': {'sdk': '>=2.12.0<3.0.0'},
-        },
-      );
-
-      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidationDeprecated(validator);
-    });
-
     test(
-        'is opting in to null-safety using a pre-release of 2.12.0 '
+      'is opting in to null-safety with previous null-safe version',
+      () async {
+        final server = await servePackages();
+        server.serve(
+          'test_pkg',
+          '0.0.1',
+          pubspec: {
+            'environment': {'sdk': '>=2.12.0<3.0.0'},
+          },
+        );
+
+        await setup(sdkConstraint: '>=2.12.0 <3.0.0');
+        await expectValidationDeprecated(validator);
+      },
+    );
+
+    test('is opting in to null-safety using a pre-release of 2.12.0 '
         'with previous null-safe version', () async {
       final server = await servePackages();
       server.serve(
@@ -185,8 +167,7 @@ The latest published version is 2.0.2.
       await expectValidationDeprecated(validator);
     });
 
-    test(
-        'is opting in to null-safety with previous null-safe version. '
+    test('is opting in to null-safety with previous null-safe version. '
         'Even with a later non-null-safe version', () async {
       await servePackages()
         ..serve(
@@ -211,7 +192,7 @@ The latest published version is 2.0.2.
           // Nothing about null-safety
           '''
 The latest published version is 2.0.1.
-Your version 1.0.0 is earlier than that.'''
+Your version 1.0.0 is earlier than that.''',
         ],
       );
     });
@@ -222,8 +203,7 @@ Your version 1.0.0 is earlier than that.'''
       await expectValidationDeprecated(validator);
     });
 
-    test(
-        'opts in to null-safety, with previous stable version not-null-safe. '
+    test('opts in to null-safety, with previous stable version not-null-safe. '
         'With an in-between non-null-safe prerelease', () async {
       await servePackages()
         ..serve(
@@ -247,31 +227,32 @@ Your version 1.0.0 is earlier than that.'''
   });
 
   group('should warn if ', () {
-    test('opts in to null-safety, with previous version not-null-safe',
-        () async {
-      final server = await servePackages();
-      server.serve(
-        'test_pkg',
-        '0.0.1',
-        pubspec: {
-          'environment': {'sdk': '>=2.9.0<3.0.0'},
-        },
-      );
+    test(
+      'opts in to null-safety, with previous version not-null-safe',
+      () async {
+        final server = await servePackages();
+        server.serve(
+          'test_pkg',
+          '0.0.1',
+          pubspec: {
+            'environment': {'sdk': '>=2.9.0<3.0.0'},
+          },
+        );
 
-      await setup(sdkConstraint: '>=2.12.0 <3.0.0');
-      await expectValidationDeprecated(
-        validator,
-        hints: [
-          '''
+        await setup(sdkConstraint: '>=2.12.0 <3.0.0');
+        await expectValidationDeprecated(
+          validator,
+          hints: [
+            '''
 You're about to publish a package that opts into null safety.
 The previous version (0.0.1) isn't opted in.
-See https://dart.dev/null-safety/migration-guide for best practices.'''
-        ],
-      );
-    });
+See https://dart.dev/null-safety/migration-guide for best practices.''',
+          ],
+        );
+      },
+    );
 
-    test(
-        'opts in to null-safety, with previous version not-null-safe. '
+    test('opts in to null-safety, with previous version not-null-safe. '
         'Even with a later null-safe version', () async {
       await servePackages()
         ..serve(
@@ -299,13 +280,12 @@ Your version 1.0.0 is earlier than that.''',
           '''
 You're about to publish a package that opts into null safety.
 The previous version (0.0.1) isn't opted in.
-See https://dart.dev/null-safety/migration-guide for best practices.'''
+See https://dart.dev/null-safety/migration-guide for best practices.''',
         ],
       );
     });
 
-    test(
-        'is opting in to null-safety with previous null-safe stable version. '
+    test('is opting in to null-safety with previous null-safe stable version. '
         'with an in-between non-null-safe prerelease', () async {
       await servePackages()
         ..serve(
@@ -330,13 +310,12 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
           '''
 You're about to publish a package that opts into null safety.
 The previous version (0.0.2-dev) isn't opted in.
-See https://dart.dev/null-safety/migration-guide for best practices.'''
+See https://dart.dev/null-safety/migration-guide for best practices.''',
         ],
       );
     });
 
-    test(
-        'is opting in to null-safety with no existing stable versions. '
+    test('is opting in to null-safety with no existing stable versions. '
         'With a previous non-null-safe prerelease', () async {
       await setup(sdkConstraint: '>=2.12.0 <3.0.0');
       final server = await servePackages();
@@ -353,7 +332,7 @@ See https://dart.dev/null-safety/migration-guide for best practices.'''
           '''
 You're about to publish a package that opts into null safety.
 The previous version (0.0.2-dev) isn't opted in.
-See https://dart.dev/null-safety/migration-guide for best practices.'''
+See https://dart.dev/null-safety/migration-guide for best practices.''',
         ],
       );
     });

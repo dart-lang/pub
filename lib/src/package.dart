@@ -130,11 +130,11 @@ class Package {
       // If the entire package directory is ignored, don't consider it part of a
       // git repo. `git check-ignore` will return a status code of 0 for
       // ignored, 1 for not ignored, and 128 for not a Git repo.
-      final result = runProcessSync(
-        git.command!,
-        ['check-ignore', '--quiet', '.'],
-        workingDir: dir,
-      );
+      final result = runProcessSync(git.command!, [
+        'check-ignore',
+        '--quiet',
+        '.',
+      ], workingDir: dir);
       return result.exitCode == 1;
     }
   }
@@ -164,7 +164,8 @@ class Package {
       String path, {
       String? expectedName,
       required bool withPubspecOverrides,
-    }) loadPubspec,
+    })
+    loadPubspec,
   }) {
     final pubspec = loadPubspec(
       dir,
@@ -172,24 +173,23 @@ class Package {
       expectedName: expectedName,
     );
 
-    final workspacePackages = pubspec.workspace.map(
-      (workspacePath) {
-        try {
-          return Package.load(
-            p.join(dir, workspacePath),
-            loadPubspec: loadPubspec,
-            withPubspecOverrides: withPubspecOverrides,
-          );
-        } on FileException catch (e) {
-          final pubspecPath = p.join(dir, 'pubspec.yaml');
-          throw FileException(
-            '${e.message}\n'
-            'That was included in the workspace of $pubspecPath.',
-            e.path,
-          );
-        }
-      },
-    ).toList();
+    final workspacePackages =
+        pubspec.workspace.map((workspacePath) {
+          try {
+            return Package.load(
+              p.join(dir, workspacePath),
+              loadPubspec: loadPubspec,
+              withPubspecOverrides: withPubspecOverrides,
+            );
+          } on FileException catch (e) {
+            final pubspecPath = p.join(dir, 'pubspec.yaml');
+            throw FileException(
+              '${e.message}\n'
+              'That was included in the workspace of $pubspecPath.',
+              e.path,
+            );
+          }
+        }).toList();
     for (final package in workspacePackages) {
       if (package.pubspec.resolution != Resolution.workspace) {
         fail('''
@@ -265,13 +265,14 @@ See $workspacesDocUrl for more information.
   }) {
     final packageDir = dir;
     final root = git.repoRoot(packageDir) ?? packageDir;
-    beneath = p
-        .toUri(
-          p.normalize(
-            p.relative(p.join(packageDir, beneath ?? '.'), from: root),
-          ),
-        )
-        .path;
+    beneath =
+        p
+            .toUri(
+              p.normalize(
+                p.relative(p.join(packageDir, beneath ?? '.'), from: root),
+              ),
+            )
+            .path;
     if (beneath == './') beneath = '.';
     String resolve(String path) {
       if (Platform.isWindows) {
@@ -292,9 +293,7 @@ See $workspacesDocUrl for more information.
           if (!link.existsSync()) {
             return;
           }
-          throw DataException(
-            'Could not resolve symbolic link $path. $e',
-          );
+          throw DataException('Could not resolve symbolic link $path. $e');
         }
       }
     }
@@ -310,100 +309,105 @@ See $workspacesDocUrl for more information.
           Directory(path).resolveSymbolicLinksSync();
     }
 
-    final result = Ignore.listFiles(
-      beneath: beneath,
-      listDir: (dir) {
-        final resolvedDir = p.normalize(resolve(dir));
-        verifyLink(resolvedDir);
+    final result =
+        Ignore.listFiles(
+          beneath: beneath,
+          listDir: (dir) {
+            final resolvedDir = p.normalize(resolve(dir));
+            verifyLink(resolvedDir);
 
-        {
-          final canonicalized = p.canonicalize(resolvedDir);
-          final symlinkResolvedDir = resolveDirSymlinks(canonicalized);
-          for (final parent in parentDirs(p.dirname(canonicalized))) {
-            final symlinkResolvedParent = resolveDirSymlinks(parent);
-            if (p.equals(symlinkResolvedDir, symlinkResolvedParent)) {
-              dataError('''
+            {
+              final canonicalized = p.canonicalize(resolvedDir);
+              final symlinkResolvedDir = resolveDirSymlinks(canonicalized);
+              for (final parent in parentDirs(p.dirname(canonicalized))) {
+                final symlinkResolvedParent = resolveDirSymlinks(parent);
+                if (p.equals(symlinkResolvedDir, symlinkResolvedParent)) {
+                  dataError('''
 Pub does not support symlink cycles.
 
 $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
 ''');
+                }
+              }
             }
-          }
-        }
-        var contents = Directory(resolvedDir).listSync(followLinks: false);
+            var contents = Directory(resolvedDir).listSync(followLinks: false);
 
-        if (!recursive) {
-          contents = contents.where((entity) => entity is! Directory).toList();
-        }
-        return contents.map((entity) {
-          final relative = p.relative(entity.path, from: root);
-          if (Platform.isWindows) {
-            return p.posix.joinAll(p.split(relative));
-          }
-          return relative;
-        });
-      },
-      ignoreForDir: (dir) {
-        final pubIgnore = resolve('$dir/.pubignore');
-        final gitIgnore = resolve('$dir/.gitignore');
-        final ignoreFile = fileExists(pubIgnore)
-            ? pubIgnore
-            : (fileExists(gitIgnore) ? gitIgnore : null);
+            if (!recursive) {
+              contents =
+                  contents.where((entity) => entity is! Directory).toList();
+            }
+            return contents.map((entity) {
+              final relative = p.relative(entity.path, from: root);
+              if (Platform.isWindows) {
+                return p.posix.joinAll(p.split(relative));
+              }
+              return relative;
+            });
+          },
+          ignoreForDir: (dir) {
+            final pubIgnore = resolve('$dir/.pubignore');
+            final gitIgnore = resolve('$dir/.gitignore');
+            final ignoreFile =
+                fileExists(pubIgnore)
+                    ? pubIgnore
+                    : (fileExists(gitIgnore) ? gitIgnore : null);
 
-        final rules = [
-          if (dir == beneath) ..._basicIgnoreRules,
-          if (ignoreFile != null) readTextFile(ignoreFile),
-        ];
-        return rules.isEmpty
-            ? null
-            : Ignore(
-                rules,
-                onInvalidPattern: (pattern, exception) {
-                  log.warning(
-                    '$ignoreFile had invalid pattern $pattern. '
-                    '${exception.message}',
-                  );
-                },
-                // Ignore case on macOS and Windows, because `git clone` and
-                // `git init` will set `core.ignoreCase = true` in the local
-                // local `.git/config` file for the repository.
-                //
-                // So on Windows and macOS most users will have case-insensitive
-                // behavior with `.gitignore`, hence, it seems reasonable to do
-                // the same when we interpret `.gitignore` and `.pubignore`.
-                //
-                // There are cases where a user may have case-sensitive behavior
-                // with `.gitignore` on Windows and macOS:
-                //
-                //  (A) The user has manually overwritten the repository
-                //      configuration setting `core.ignoreCase = false`.
-                //
-                //  (B) The git-clone or git-init command that create the
-                //      repository did not deem `core.ignoreCase = true` to be
-                //      appropriate. Documentation for [git-config]][1] implies
-                //      this might depend on whether or not the filesystem is
-                //      case sensitive:
-                //      > If true, this option enables various workarounds to
-                //      > enable Git to work better on filesystems that are not
-                //      > case sensitive, like FAT.
-                //      > ...
-                //      > The default is false, except git-clone[1] or
-                //      > git-init[1] will probe and set core.ignoreCase true
-                //      > if appropriate when the repository is created.
-                //
-                // In either case, it seems likely that users on Windows and
-                // macOS will prefer case-insensitive matching. We specifically
-                // know that some tooling will generate `.PDB` files instead of
-                // `.pdb`, see: [#3003][2]
-                //
-                // [1]: https://git-scm.com/docs/git-config/2.14.6#Documentation/git-config.txt-coreignoreCase
-                // [2]: https://github.com/dart-lang/pub/issues/3003
-                ignoreCase: Platform.isMacOS || Platform.isWindows,
-              );
-      },
-      isDir: (dir) => dirExists(resolve(dir)),
-      includeDirs: includeDirs,
-    ).map(resolve).toList();
+            final rules = [
+              if (dir == beneath) ..._basicIgnoreRules,
+              if (ignoreFile != null) readTextFile(ignoreFile),
+            ];
+            return rules.isEmpty
+                ? null
+                : Ignore(
+                  rules,
+                  onInvalidPattern: (pattern, exception) {
+                    log.warning(
+                      '$ignoreFile had invalid pattern $pattern. '
+                      '${exception.message}',
+                    );
+                  },
+                  // Ignore case on macOS and Windows, because `git clone` and
+                  // `git init` will set `core.ignoreCase = true` in the local
+                  // local `.git/config` file for the repository.
+                  //
+                  // So on Windows and macOS most users will have
+                  // case-insensitive behavior with `.gitignore`, hence, it
+                  // seems reasonable to do the same when we interpret
+                  // `.gitignore` and `.pubignore`.
+                  //
+                  // There are cases where a user may have case-sensitive
+                  // behavior with `.gitignore` on Windows and macOS:
+                  //
+                  //  (A) The user has manually overwritten the repository
+                  //      configuration setting `core.ignoreCase = false`.
+                  //
+                  //  (B) The git-clone or git-init command that create the
+                  //      repository did not deem `core.ignoreCase = true` to be
+                  //      appropriate. Documentation for [git-config]][1]
+                  //      implies this might depend on whether or not the
+                  //      filesystem is case sensitive: > If true, this option
+                  //      enables various workarounds to > enable Git to work
+                  //      better on filesystems that are not > case sensitive,
+                  //      like FAT.
+                  //      > ...
+                  //      > The default is false, except git-clone[1] or
+                  //      > git-init[1] will probe and set core.ignoreCase true
+                  //      > if appropriate when the repository is created.
+                  //
+                  // In either case, it seems likely that users on Windows and
+                  // macOS will prefer case-insensitive matching. We
+                  // specifically know that some tooling will generate `.PDB`
+                  // files instead of `.pdb`, see: [#3003][2]
+                  //
+                  // [1]:
+                  // https://git-scm.com/docs/git-config/2.14.6#Documentation/git-config.txt-coreignoreCase
+                  // [2]: https://github.com/dart-lang/pub/issues/3003
+                  ignoreCase: Platform.isMacOS || Platform.isWindows,
+                );
+          },
+          isDir: (dir) => dirExists(resolve(dir)),
+          includeDirs: includeDirs,
+        ).map(resolve).toList();
     for (final f in result) {
       verifyLink(f);
     }
@@ -412,21 +416,16 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
 
   /// Applies [transform] to each package in the workspace and returns a derived
   /// package.
-  Package transformWorkspace(
-    Pubspec Function(Package) transform,
-  ) {
+  Package transformWorkspace(Pubspec Function(Package) transform) {
     final workspace = {
       for (final package in transitiveWorkspace) package.dir: package,
     };
     return Package.load(
       dir,
       withPubspecOverrides: true,
-      loadPubspec: (
-        path, {
-        expectedName,
-        required withPubspecOverrides,
-      }) =>
-          transform(workspace[path]!),
+      loadPubspec:
+          (path, {expectedName, required withPubspecOverrides}) =>
+              transform(workspace[path]!),
     );
   }
 }
@@ -516,9 +515,9 @@ Package `$override` at `${overriddenWorkspacePackage.presentationDir}` is overri
     p.canonicalize(root.dir),
   };
   for (final package in root.transitiveWorkspace
-      // We don't want to look at the roots parents. The first package is always
-      // the root, so skip that.
-      .skip(1)) {
+  // We don't want to look at the roots parents. The first package is always
+  // the root, so skip that.
+  .skip(1)) {
     // Run through all parent directories until we meet another workspace
     // package.
     for (final dir in parentDirs(package.dir).skip(1)) {

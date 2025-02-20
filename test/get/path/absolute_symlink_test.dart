@@ -9,11 +9,12 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'generates a symlink with an absolute path if the dependency '
+  test('generates a symlink with an absolute path if the dependency '
       'path was absolute', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     final fooPath = d.path('foo');
     await d.dir(appPath, [

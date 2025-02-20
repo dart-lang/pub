@@ -8,52 +8,51 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'upgrades a locked Git package with a new incompatible '
+  test('upgrades a locked Git package with a new incompatible '
       'constraint', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '0.5.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.5.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.dir('cache', [
-          d.gitPackageRepoCacheDir('foo'),
-        ]),
+        d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
         d.gitPackageRevisionCacheDir('foo'),
       ]),
     ]).validate();
 
     final originalFooSpec = packageSpec('foo');
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo', 'foo 2'), d.libPubspec('foo', '1.0.0')],
-    ).commit();
+    await d.git('foo.git', [
+      d.libDir('foo', 'foo 2'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).commit();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git', 'version': '>=1.0.0'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git', 'version': '>=1.0.0'},
+          },
+        )
+        .create();
 
     await pubGet();
 
     await d.dir(cachePath, [
-      d.dir('git', [
-        d.gitPackageRevisionCacheDir('foo', modifier: 2),
-      ]),
+      d.dir('git', [d.gitPackageRevisionCacheDir('foo', modifier: 2)]),
     ]).validate();
 
     expect(packageSpec('foo'), isNot(originalFooSpec));

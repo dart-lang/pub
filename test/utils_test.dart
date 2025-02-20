@@ -118,8 +118,10 @@ b: {}'''),
   });
 
   group('uuid', () {
-    final uuidRegexp = RegExp('^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-'
-        r'[8-9A-B][0-9A-F]{3}-[0-9A-F]{12}$');
+    final uuidRegexp = RegExp(
+      '^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-'
+      r'[8-9A-B][0-9A-F]{3}-[0-9A-F]{12}$',
+    );
 
     test('min value is valid', () {
       final uuid = createUuid(List<int>.filled(16, 0));

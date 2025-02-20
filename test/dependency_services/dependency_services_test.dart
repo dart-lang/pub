@@ -54,12 +54,7 @@ extension on GoldenTestContext {
     buffer.writeln('## Section ${args.join(' ')}');
     final process = await Process.start(
       Platform.resolvedExecutable,
-      [
-        '--enable-asserts',
-        snapshot,
-        '--verbose',
-        ...args,
-      ],
+      ['--enable-asserts', snapshot, '--verbose', ...args],
       environment: {
         ...getPubTestEnvironment(),
         '_PUB_TEST_DEFAULT_HOSTED_URL': globalServer.url,
@@ -106,14 +101,13 @@ Future<void> _listReportApply(
 }) async {
   manifestAndLockfile(context, workspace);
   await context.runDependencyServices(['list'], environment: environment);
-  final report =
-      await context.runDependencyServices(['report'], environment: environment);
+  final report = await context.runDependencyServices([
+    'report',
+  ], environment: environment);
   if (reportAssertions != null) {
     reportAssertions(json.decode(report) as Map);
   }
-  final input = json.encode({
-    'dependencyChanges': upgrades,
-  });
+  final input = json.encode({'dependencyChanges': upgrades});
 
   await context.runDependencyServices(
     ['apply'],
@@ -166,18 +160,17 @@ Future<void> main() async {
   });
 
   testWithGolden('Removing transitive', (context) async {
-    final server = (await servePackages())
-      ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
-      ..serve('foo', '2.2.3')
-      ..serve('transitive', '1.0.0')
-      ..serveContentHashes = true;
+    final server =
+        (await servePackages())
+          ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
+          ..serve('foo', '2.2.3')
+          ..serve('transitive', '1.0.0')
+          ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -186,14 +179,8 @@ Future<void> main() async {
       context,
       [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', null)],
       reportAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'singleBreaking', 'foo'),
-          '2.2.3',
-        );
-        expect(
-          findChangeVersion(report, 'singleBreaking', 'transitive'),
-          null,
-        );
+        expect(findChangeVersion(report, 'singleBreaking', 'foo'), '2.2.3');
+        expect(findChangeVersion(report, 'singleBreaking', 'transitive'), null);
       },
     );
   });
@@ -205,9 +192,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -223,20 +208,18 @@ Future<void> main() async {
         'transitive': ['1.0.0'],
       },
       resultAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'compatible', 'foo'),
-          '1.0.1',
-        );
+        expect(findChangeVersion(report, 'compatible', 'foo'), '1.0.1');
       },
     );
   });
 
   testWithGolden('No pubspec.lock', (context) async {
-    final server = (await servePackages())
-      ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
-      ..serve('foo', '2.2.3')
-      ..serve('transitive', '1.0.0')
-      ..serveContentHashes = true;
+    final server =
+        (await servePackages())
+          ..serve('foo', '1.2.3', deps: {'transitive': '^1.0.0'})
+          ..serve('foo', '2.2.3')
+          ..serve('transitive', '1.0.0')
+          ..serveContentHashes = true;
 
     await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
 
@@ -253,32 +236,26 @@ Future<void> main() async {
     ]).create();
 
     server.dontAllowDownloads();
-    await _listReportApply(
-      context,
-      [
-        _PackageVersion('foo', '2.2.3'),
-        _PackageVersion('transitive', null),
-      ],
-    );
+    await _listReportApply(context, [
+      _PackageVersion('foo', '2.2.3'),
+      _PackageVersion('transitive', null),
+    ]);
   });
 
   testWithGolden('Compatible', (context) async {
-    final server = (await servePackages())
-      ..serve('foo', '1.2.3')
-      ..serve('foo', '2.2.3')
-      ..serve('bar', '1.2.3')
-      ..serve('bar', '2.2.3')
-      ..serve('boo', '1.2.3')
-      ..serveContentHashes = true;
+    final server =
+        (await servePackages())
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '2.2.3')
+          ..serve('bar', '1.2.3')
+          ..serve('bar', '2.2.3')
+          ..serve('boo', '1.2.3')
+          ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-          'boo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0', 'boo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -289,42 +266,32 @@ Future<void> main() async {
 
     await _listReportApply(
       context,
-      [
-        _PackageVersion('foo', '1.2.4'),
-      ],
+      [_PackageVersion('foo', '1.2.4')],
       reportAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'compatible', 'foo'),
-          '1.2.4',
-        );
+        expect(findChangeVersion(report, 'compatible', 'foo'), '1.2.4');
       },
     );
   });
 
   testWithGolden('Preserves no content-hashes', (context) async {
-    final server = (await servePackages())
-      ..serve('foo', '1.2.3')
-      ..serve('foo', '2.2.3')
-      ..serve('bar', '1.2.3')
-      ..serve('bar', '2.2.3')
-      ..serve('boo', '1.2.3')
-      ..serveContentHashes = true;
+    final server =
+        (await servePackages())
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '2.2.3')
+          ..serve('bar', '1.2.3')
+          ..serve('bar', '2.2.3')
+          ..serve('boo', '1.2.3')
+          ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-          'boo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0', 'boo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
     final lockFile = File(path(p.join(appPath, 'pubspec.lock')));
-    final lockFileYaml = YamlEditor(
-      lockFile.readAsStringSync(),
-    );
+    final lockFileYaml = YamlEditor(lockFile.readAsStringSync());
     for (final p in (lockFileYaml.parseAt(['packages']) as YamlMap).entries) {
       lockFileYaml.remove(['packages', p.key, 'description', 'sha256']);
     }
@@ -335,63 +302,53 @@ Future<void> main() async {
 
     server.dontAllowDownloads();
 
-    await _listReportApply(context, [
-      _PackageVersion('foo', '1.2.4'),
-    ]);
+    await _listReportApply(context, [_PackageVersion('foo', '1.2.4')]);
   });
 
   testWithGolden('Preserves pub.dartlang.org as hosted url', (context) async {
-    final server = (await servePackages())
-      ..serve(r'foo', '1.2.3')
-      ..serve(r'bar', '1.2.3')
-      ..serveContentHashes = true;
+    final server =
+        (await servePackages())
+          ..serve(r'foo', '1.2.3')
+          ..serve(r'bar', '1.2.3')
+          ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
     final lockFile = File(path(p.join(appPath, 'pubspec.lock')));
-    final lockFileYaml = YamlEditor(
-      lockFile.readAsStringSync(),
-    );
+    final lockFileYaml = YamlEditor(lockFile.readAsStringSync());
     for (final p in (lockFileYaml.parseAt(['packages']).value as Map).entries) {
-      lockFileYaml.update(
-        ['packages', p.key, 'description', 'url'],
-        'https://pub.dartlang.org',
-      );
+      lockFileYaml.update([
+        'packages',
+        p.key,
+        'description',
+        'url',
+      ], 'https://pub.dartlang.org');
     }
     lockFile.writeAsStringSync(lockFileYaml.toString());
 
     server.serve('foo', '1.2.4');
     server.serve('boo', '1.2.4');
 
-    await _listReportApply(
-      context,
-      [
-        _PackageVersion('foo', '1.2.4'),
-      ],
-    );
+    await _listReportApply(context, [_PackageVersion('foo', '1.2.4')]);
   });
 
   testWithGolden('Adding transitive', (context) async {
-    final server = (await servePackages())
-      ..serve('foo', '1.2.3')
-      ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
-      ..serve('transitive', '1.0.0')
-      ..serveContentHashes = true;
+    final server =
+        (await servePackages())
+          ..serve('foo', '1.2.3')
+          ..serve('foo', '2.2.3', deps: {'transitive': '^1.0.0'})
+          ..serve('transitive', '1.0.0')
+          ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -401,10 +358,7 @@ Future<void> main() async {
       context,
       [_PackageVersion('foo', '2.2.3'), _PackageVersion('transitive', '1.0.0')],
       reportAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'singleBreaking', 'foo'),
-          '2.2.3',
-        );
+        expect(findChangeVersion(report, 'singleBreaking', 'foo'), '2.2.3');
         expect(
           findChangeVersion(report, 'singleBreaking', 'transitive'),
           '1.0.0',
@@ -414,11 +368,12 @@ Future<void> main() async {
   });
 
   testWithGolden('multibreaking', (context) async {
-    final server = (await servePackages())
-      ..serve('foo', '1.0.0')
-      ..serve('bar', '1.0.0')
-      ..serve('baz', '1.0.0')
-      ..serveContentHashes = true;
+    final server =
+        (await servePackages())
+          ..serve('foo', '1.0.0')
+          ..serve('bar', '1.0.0')
+          ..serve('baz', '1.0.0')
+          ..serveContentHashes = true;
 
     await d.dir(appPath, [
       d.pubspec({
@@ -453,14 +408,8 @@ Future<void> main() async {
         _PackageVersion('bar', '2.0.0'),
       ],
       reportAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'multiBreaking', 'foo'),
-          '3.0.1',
-        );
-        expect(
-          findChangeVersion(report, 'multiBreaking', 'bar'),
-          '2.0.0',
-        );
+        expect(findChangeVersion(report, 'multiBreaking', 'foo'), '3.0.1');
+        expect(findChangeVersion(report, 'multiBreaking', 'bar'), '2.0.0');
       },
     );
   });
@@ -470,12 +419,14 @@ Future<void> main() async {
     server.serve('foo', '1.0.0');
     await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': '^1.0.0',
-        'bar': {'path': '../bar'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': '^1.0.0',
+            'bar': {'path': '../bar'},
+          },
+        )
+        .create();
     await pubGet();
     server.serve('foo', '2.0.0');
     await _listReportApply(
@@ -488,10 +439,7 @@ Future<void> main() async {
         ),
       ],
       reportAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'multiBreaking', 'foo'),
-          '2.0.0',
-        );
+        expect(findChangeVersion(report, 'multiBreaking', 'foo'), '2.0.0');
       },
     );
   });
@@ -501,18 +449,20 @@ Future<void> main() async {
     await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
     await d.git('bar.git', [d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {'url': '../foo.git'},
-        },
-        'bar': {
-          // A git dependency with a version constraint.
-          'git': {'url': '../bar.git'},
-          'version': '^1.0.0',
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo.git'},
+            },
+            'bar': {
+              // A git dependency with a version constraint.
+              'git': {'url': '../bar.git'},
+              'version': '^1.0.0',
+            },
+          },
+        )
+        .create();
     await pubGet();
     final secondVersion = d.git('foo.git', [d.libPubspec('foo', '2.0.0')]);
     await secondVersion.commit();
@@ -523,14 +473,9 @@ Future<void> main() async {
 
     await _listReportApply(
       context,
-      [
-        _PackageVersion('foo', newRef),
-      ],
+      [_PackageVersion('foo', newRef)],
       reportAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'multiBreaking', 'foo'),
-          newRef,
-        );
+        expect(findChangeVersion(report, 'multiBreaking', 'foo'), newRef);
       },
     );
   });
@@ -565,8 +510,9 @@ Future<void> main() async {
     );
   });
 
-  testWithGolden('Smallest possible upgrade can upgrade beyond breaking',
-      (context) async {
+  testWithGolden('Smallest possible upgrade can upgrade beyond breaking', (
+    context,
+  ) async {
     final server = await servePackages();
     server.serve('foo', '1.1.1'); // This version will be disallowed.
 
@@ -593,51 +539,52 @@ Future<void> main() async {
   });
 
   testWithGolden(
-      'Smallest possible upgrade can upgrade other packages if needed',
-      (context) async {
-    final server = await servePackages();
-    server.serve('bar', '1.0.0');
-    server.serve('bar', '2.0.0');
-    server.serve('bar', '2.2.0');
+    'Smallest possible upgrade can upgrade other packages if needed',
+    (context) async {
+      final server = await servePackages();
+      server.serve('bar', '1.0.0');
+      server.serve('bar', '2.0.0');
+      server.serve('bar', '2.2.0');
 
-    server.serve(
-      'foo',
-      '1.1.1',
-      deps: {'bar': '^1.0.0'},
-    ); // This version will be disallowed.
+      server.serve(
+        'foo',
+        '1.1.1',
+        deps: {'bar': '^1.0.0'},
+      ); // This version will be disallowed.
 
-    await d.appDir(dependencies: {'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
-    await pubGet();
+      await d.appDir(dependencies: {'foo': '^1.0.0', 'bar': '^1.0.0'}).create();
+      await pubGet();
 
-    server.serve(
-      'foo',
-      '2.0.0',
-      deps: {'bar': '^2.0.0'},
-    ); // This will also be disallowed, a minimal update should not find this.
-    server.serve(
-      'foo',
-      '2.0.1',
-      deps: {'bar': '^2.0.0'},
-    ); // We would like this to be the new version.
-    server.serve(
-      'foo',
-      '2.0.2',
-      deps: {'bar': '^2.0.0'},
-    ); // This version would not be a minimal update.
+      server.serve(
+        'foo',
+        '2.0.0',
+        deps: {'bar': '^2.0.0'},
+      ); // This will also be disallowed, a minimal update should not find this.
+      server.serve(
+        'foo',
+        '2.0.1',
+        deps: {'bar': '^2.0.0'},
+      ); // We would like this to be the new version.
+      server.serve(
+        'foo',
+        '2.0.2',
+        deps: {'bar': '^2.0.0'},
+      ); // This version would not be a minimal update.
 
-    await _reportWithForbidden(
-      context,
-      {
-        'foo': ['1.1.1', '2.0.0'],
-        'bar': ['2.0.0'],
-      },
-      targetPackage: 'foo',
-      resultAssertions: (r) {
-        expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
-        expect(findChangeVersion(r, 'smallestUpdate', 'bar'), '2.2.0');
-      },
-    );
-  });
+      await _reportWithForbidden(
+        context,
+        {
+          'foo': ['1.1.1', '2.0.0'],
+          'bar': ['2.0.0'],
+        },
+        targetPackage: 'foo',
+        resultAssertions: (r) {
+          expect(findChangeVersion(r, 'smallestUpdate', 'foo'), '2.0.1');
+          expect(findChangeVersion(r, 'smallestUpdate', 'bar'), '2.2.0');
+        },
+      );
+    },
+  );
 
   testWithGolden('can upgrade workspaces', (context) async {
     (await servePackages())
@@ -659,10 +606,7 @@ Future<void> main() async {
         extras: {
           'workspace': ['pkgs/a'],
         },
-        deps: {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-        },
+        deps: {'foo': '^1.0.0', 'bar': '^1.0.0'},
         sdk: '^3.5.0',
       ),
       dir('pkgs', [
@@ -671,10 +615,7 @@ Future<void> main() async {
             'a',
             '1.1.1',
             deps: {'bar': '>=1.2.0 <1.5.0', 'only_a': '^1.0.0'},
-            devDeps: {
-              'foo': '^1.2.0',
-              'dev': '^1.0.0',
-            },
+            devDeps: {'foo': '^1.2.0', 'dev': '^1.0.0'},
             resolutionWorkspace: true,
           ),
         ]),
@@ -694,9 +635,7 @@ Future<void> main() async {
 
     expect(
       result.stderr,
-      contains(
-        'Only apply dependency_services to the root of the workspace.',
-      ),
+      contains('Only apply dependency_services to the root of the workspace.'),
     );
     expect(result.exitCode, 1);
 
@@ -713,10 +652,7 @@ Future<void> main() async {
       ],
       workspace: ['.', p.join('pkgs', 'a')],
       reportAssertions: (report) {
-        expect(
-          findChangeVersion(report, 'singleBreaking', 'foo'),
-          '2.2.3',
-        );
+        expect(findChangeVersion(report, 'singleBreaking', 'foo'), '2.2.3');
         expect(
           findChangeVersion(report, 'singleBreaking', 'transitive'),
           '1.0.0',
@@ -728,10 +664,13 @@ Future<void> main() async {
 }
 
 String? findChangeVersion(dynamic json, String updateType, String name) {
-  return dig<String?>(
-    json,
-    ['dependencies', ('name', 'foo'), updateType, ('name', name), 'version'],
-  );
+  return dig<String?>(json, [
+    'dependencies',
+    ('name', 'foo'),
+    updateType,
+    ('name', name),
+    'version',
+  ]);
 }
 
 class _PackageVersion {
@@ -741,10 +680,10 @@ class _PackageVersion {
   _PackageVersion(this.name, this.version, {this.constraint});
 
   Map<String, Object?> toJson() => {
-        'name': name,
-        'version': version,
-        if (constraint != null) 'constraint': constraint.toString(),
-      };
+    'name': name,
+    'version': version,
+    if (constraint != null) 'constraint': constraint.toString(),
+  };
 }
 
 extension on PackageServer {

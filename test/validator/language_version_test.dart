@@ -38,32 +38,30 @@ void main() {
     });
 
     test('opts in to older language versions', () async {
-      await setup(
-        sdkConstraint: '^3.0.0',
-        libraryLanguageVersion: '2.14',
-      );
+      await setup(sdkConstraint: '^3.0.0', libraryLanguageVersion: '2.14');
       await expectValidation();
     });
     test('opts in to same language versions', () async {
-      await setup(
-        sdkConstraint: '^3.0.0',
-        libraryLanguageVersion: '3.0',
-      );
+      await setup(sdkConstraint: '^3.0.0', libraryLanguageVersion: '3.0');
       await expectValidation();
     });
 
-    test('opts in to older language version, with non-range constraint',
-        () async {
-      await setup(sdkConstraint: '3.1.2+3', libraryLanguageVersion: '2.18');
-      await expectValidation();
-    });
+    test(
+      'opts in to older language version, with non-range constraint',
+      () async {
+        await setup(sdkConstraint: '3.1.2+3', libraryLanguageVersion: '2.18');
+        await expectValidation();
+      },
+    );
   });
 
   group('should warn if it', () {
     final currentVersion = Version.parse(Platform.version.split(' ').first);
     final nextLanguageVersion =
-        LanguageVersion(currentVersion.major, currentVersion.minor + 1)
-            .toString();
+        LanguageVersion(
+          currentVersion.major,
+          currentVersion.minor + 1,
+        ).toString();
 
     test('opts in to a newer version.', () async {
       await setup(

@@ -44,8 +44,10 @@ class PubspecFieldValidator extends Validator {
     if (value == null) {
       errors.add('Your pubspec.yaml is missing a "$field" field.');
     } else if (value is! String) {
-      errors.add('Your pubspec.yaml\'s "$field" field must be a string, but '
-          'it was "$value".');
+      errors.add(
+        'Your pubspec.yaml\'s "$field" field must be a string, but '
+        'it was "$value".',
+      );
     }
   }
 
@@ -55,15 +57,19 @@ class PubspecFieldValidator extends Validator {
     if (url == null) return;
 
     if (url is! String) {
-      errors.add('Your pubspec.yaml\'s "$field" field must be a string, but '
-          'it was "$url".');
+      errors.add(
+        'Your pubspec.yaml\'s "$field" field must be a string, but '
+        'it was "$url".',
+      );
       return;
     }
 
     final goodScheme = RegExp(r'^https?:');
     if (!goodScheme.hasMatch(url)) {
-      errors.add('Your pubspec.yaml\'s "$field" field must be an "http:" or '
-          '"https:" URL, but it was "$url".');
+      errors.add(
+        'Your pubspec.yaml\'s "$field" field must be an "http:" or '
+        '"https:" URL, but it was "$url".',
+      );
     }
   }
 }

@@ -26,10 +26,16 @@ void main() {
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
-    final fooVersionsCache =
-        p.join(globalServer.cachingPath, '.cache', 'foo-versions.json');
-    final transitiveVersionsCache =
-        p.join(globalServer.cachingPath, '.cache', 'transitive-versions.json');
+    final fooVersionsCache = p.join(
+      globalServer.cachingPath,
+      '.cache',
+      'foo-versions.json',
+    );
+    final transitiveVersionsCache = p.join(
+      globalServer.cachingPath,
+      '.cache',
+      'transitive-versions.json',
+    );
     expect(fileExists(fooVersionsCache), isTrue);
     expect(fileExists(transitiveVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
@@ -130,8 +136,11 @@ environment:
     // A pub get straight away will not trigger the warning, as we cache
     // responses for a while.
     await pubGet();
-    final fooVersionsCache =
-        p.join(globalServer.cachingPath, '.cache', 'foo-versions.json');
+    final fooVersionsCache = p.join(
+      globalServer.cachingPath,
+      '.cache',
+      'foo-versions.json',
+    );
     expect(fileExists(fooVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
     // We warn only about the direct dependency here:
@@ -207,8 +216,11 @@ Got dependencies!
     server.serve('foo', '1.2.3');
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
     await pubGet();
-    final fooVersionsCache =
-        p.join(globalServer.cachingPath, '.cache', 'foo-versions.json');
+    final fooVersionsCache = p.join(
+      globalServer.cachingPath,
+      '.cache',
+      'foo-versions.json',
+    );
     expect(fileExists(fooVersionsCache), isTrue);
     deleteEntry(fooVersionsCache);
     // Serve 400 on all requests.

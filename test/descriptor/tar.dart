@@ -15,8 +15,8 @@ class TarFileDescriptor extends FileDescriptor {
   final List<Descriptor> contents;
 
   TarFileDescriptor(super.name, Iterable<Descriptor> contents)
-      : contents = contents.toList(),
-        super.protected();
+    : contents = contents.toList(),
+      super.protected();
 
   /// Creates the files and directories within this tar file, then archives
   /// them, compresses them, and saves the result to [parent].

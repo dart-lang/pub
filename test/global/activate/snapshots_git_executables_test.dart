@@ -23,9 +23,10 @@ void main() {
 
     await runPub(
       args: ['global', 'activate', '-sgit', '../foo.git'],
-      output: allOf(
-        [contains('Built foo:hello.'), contains('Built foo:goodbye.')],
-      ),
+      output: allOf([
+        contains('Built foo:hello.'),
+        contains('Built foo:goodbye.'),
+      ]),
     );
 
     await d.dir(cachePath, [

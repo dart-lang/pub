@@ -29,10 +29,7 @@ class RootSource extends Source {
   String get name => 'root';
 
   @override
-  Future<Pubspec> doDescribe(
-    PackageId id,
-    SystemCache cache,
-  ) async {
+  Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async {
     throw UnsupportedError('Cannot describe the root');
   }
 

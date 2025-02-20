@@ -64,11 +64,13 @@ void main() {
       final server = await servePackages();
       server.serve('bar', '1.0.0');
 
-      await d.appDir(
-        dependencies: {
-          'foo': {'path': '../foo'},
-        },
-      ).create();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'path': '../foo'},
+            },
+          )
+          .create();
 
       await d.dir('foo', [
         d.libPubspec('foo', '1.0.0', deps: {'bar': '1.0.0'}),
@@ -87,17 +89,23 @@ void main() {
     });
 
     test("doesn't send metadata headers to a foreign server", () async {
-      final server = await startPackageServer()
-        ..serve('foo', '1.0.0');
+      final server =
+          await startPackageServer()
+            ..serve('foo', '1.0.0');
 
-      await d.appDir(
-        dependencies: {
-          'foo': {
-            'version': '1.0.0',
-            'hosted': {'name': 'foo', 'url': 'http://localhost:${server.port}'},
-          },
-        },
-      ).create();
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'version': '1.0.0',
+                'hosted': {
+                  'name': 'foo',
+                  'url': 'http://localhost:${server.port}',
+                },
+              },
+            },
+          )
+          .create();
 
       await pubCommand(command, silent: isNot(contains('X-Pub-')));
     });
@@ -110,9 +118,7 @@ void main() {
       await pubCommand(
         command,
         silent: isNot(contains('X-Pub-')),
-        environment: {
-          'CI': 'true',
-        },
+        environment: {'CI': 'true'},
       );
     });
   });

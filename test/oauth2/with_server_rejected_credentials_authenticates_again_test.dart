@@ -11,8 +11,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test(
-      'with server-rejected credentials, authenticates again and saves '
+  test('with server-rejected credentials, authenticates again and saves '
       'credentials.json', () async {
     await d.validPackage().create();
     await servePackages();
@@ -28,7 +27,8 @@ void main() {
           'error': {'message': 'your token sucks'},
         }),
         headers: {
-          'www-authenticate': 'Bearer error="invalid_token",'
+          'www-authenticate':
+              'Bearer error="invalid_token",'
               ' error_description="your token sucks"',
         },
       );

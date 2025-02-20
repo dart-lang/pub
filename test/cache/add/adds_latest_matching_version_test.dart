@@ -10,8 +10,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'adds the latest version of the package matching the '
+  test('adds the latest version of the package matching the '
       'version constraint', () async {
     await servePackages()
       ..serve('foo', '1.2.2')

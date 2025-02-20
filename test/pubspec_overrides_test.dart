@@ -26,9 +26,7 @@ void main() {
       final overridesPath = p.join('.', 'pubspec_overrides.yaml');
       await pubCommand(
         command,
-        output: contains(
-          '! lib 2.0.0 (overridden in $overridesPath)',
-        ),
+        output: contains('! lib 2.0.0 (overridden in $overridesPath)'),
       );
 
       await d.dir(appPath, [
@@ -78,8 +76,7 @@ void main() {
       ),
     );
   });
-  test(
-      "An empty pubspec_overrides.yaml doesn't shadow overrides "
+  test("An empty pubspec_overrides.yaml doesn't shadow overrides "
       'from pubspec.yaml', () async {
     await servePackages()
       ..serve('lib', '1.0.0')
@@ -87,9 +84,7 @@ void main() {
 
     await d.dir(appPath, [
       d.appPubspec(
-        dependencies: {
-          'lib': '1.0.0',
-        },
+        dependencies: {'lib': '1.0.0'},
         extras: {
           'dependency_overrides': {'lib': '2.0.0'},
         },
@@ -99,8 +94,6 @@ void main() {
       d.pubspecOverrides({}),
     ]).create();
 
-    await pubGet(
-      output: contains('! lib 2.0.0 (overridden)'),
-    );
+    await pubGet(output: contains('! lib 2.0.0 (overridden)'));
   });
 }

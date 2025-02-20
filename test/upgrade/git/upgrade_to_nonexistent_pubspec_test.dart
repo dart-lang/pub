@@ -11,15 +11,19 @@ void main() {
   test('upgrades Git packages to a nonexistent pubspec', () async {
     ensureGit();
 
-    final repo =
-        d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
+    final repo = d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]);
     await repo.create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -29,8 +33,10 @@ void main() {
     await repo.runGit(['commit', '-m', 'delete']);
 
     await pubUpgrade(
-      error: RegExp(r'Could not find a file named "pubspec.yaml" '
-          r'in [^\n]*\.'),
+      error: RegExp(
+        r'Could not find a file named "pubspec.yaml" '
+        r'in [^\n]*\.',
+      ),
     );
 
     expect(packageSpec('foo'), originalFooSpec);

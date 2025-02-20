@@ -90,7 +90,9 @@ To remove a dependency override of a package prefix the package name with
     final workPubspec = entrypoint.workPackage.pubspec;
     final newPubspec = _removePackagesFromPubspec(workPubspec, targets);
 
-    await entrypoint.withWorkPubspec(newPubspec).acquireDependencies(
+    await entrypoint
+        .withWorkPubspec(newPubspec)
+        .acquireDependencies(
           SolveType.get,
           precompile: !isDryRun && argResults.flag('precompile'),
           dryRun: isDryRun,
@@ -133,21 +135,24 @@ To remove a dependency override of a package prefix the package name with
   void _writeRemovalToPubspec(Iterable<_PackageRemoval> packages) {
     ArgumentError.checkNotNull(packages, 'packages');
 
-    final yamlEditor =
-        YamlEditor(readTextFile(entrypoint.workPackage.pubspecPath));
+    final yamlEditor = YamlEditor(
+      readTextFile(entrypoint.workPackage.pubspecPath),
+    );
 
     for (final package in packages) {
-      final dependencyKeys = package.removeFromOverride
-          ? ['dependency_overrides']
-          : ['dependencies', 'dev_dependencies'];
+      final dependencyKeys =
+          package.removeFromOverride
+              ? ['dependency_overrides']
+              : ['dependencies', 'dev_dependencies'];
       var found = false;
       final name = package.name;
 
       /// There may be packages where the dependency is declared both in
       /// dependencies and dev_dependencies - remove it from both in that case.
       for (final dependencyKey in dependencyKeys) {
-        final dependenciesNode = yamlEditor
-            .parseAt([dependencyKey], orElse: () => YamlScalar.wrap(null));
+        final dependenciesNode = yamlEditor.parseAt([
+          dependencyKey,
+        ], orElse: () => YamlScalar.wrap(null));
 
         if (dependenciesNode is YamlMap && dependenciesNode.containsKey(name)) {
           yamlEditor.remove([dependencyKey, name]);
@@ -161,9 +166,7 @@ To remove a dependency override of a package prefix the package name with
       }
       if (!found) {
         final pubspecPath = entrypoint.workPackage.pubspecPath;
-        log.warning(
-          'Package "$name" was not found in $pubspecPath!',
-        );
+        log.warning('Package "$name" was not found in $pubspecPath!');
       }
     }
 

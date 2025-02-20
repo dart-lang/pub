@@ -16,11 +16,12 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'generates a symlink with a relative path if the dependency '
+  test('generates a symlink with a relative path if the dependency '
       'path was relative', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(

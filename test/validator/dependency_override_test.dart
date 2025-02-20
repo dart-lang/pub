@@ -9,8 +9,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  test(
-      'should consider a package valid if it has dev dependency '
+  test('should consider a package valid if it has dev dependency '
       'overrides', () async {
     final server = await servePackages();
     server.serve('foo', '3.0.0');
@@ -78,10 +77,7 @@ void main() {
         d.validPubspec(
           extras: {
             'dev_dependencies': {'foo': '^1.0.0'},
-            'dependency_overrides': {
-              'foo': '^3.0.0',
-              'bar': '^3.0.0',
-            },
+            'dependency_overrides': {'foo': '^3.0.0', 'bar': '^3.0.0'},
           },
         ),
       ]).create();

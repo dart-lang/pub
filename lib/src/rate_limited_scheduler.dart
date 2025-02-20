@@ -63,8 +63,8 @@ class RateLimitedScheduler<J, V> {
   RateLimitedScheduler(
     Future<V> Function(J) runJob, {
     required int maxConcurrentOperations,
-  })  : _runJob = runJob,
-        _pool = Pool(maxConcurrentOperations);
+  }) : _runJob = runJob,
+       _pool = Pool(maxConcurrentOperations);
 
   /// Pick the next task in [_queue] and run it.
   ///
@@ -82,8 +82,10 @@ class RateLimitedScheduler<J, V> {
 
     // Use an async function to catch sync exceptions from _runJob.
     Future<V> runJob() async {
-      return _results[task.jobId] =
-          await task.zone.runUnary(_runJob, task.jobId);
+      return _results[task.jobId] = await task.zone.runUnary(
+        _runJob,
+        task.jobId,
+      );
     }
 
     completer.complete(runJob());

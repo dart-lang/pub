@@ -107,8 +107,10 @@ void main() {
         ..serve('foo', '1.0.0')
         ..serve('bar', '1.0.0');
 
-      await d
-          .dir('baz', [d.libDir('baz'), d.libPubspec('baz', '0.0.1')]).create();
+      await d.dir('baz', [
+        d.libDir('baz'),
+        d.libPubspec('baz', '0.0.1'),
+      ]).create();
 
       await d.dir(appPath, [
         d.pubspec({

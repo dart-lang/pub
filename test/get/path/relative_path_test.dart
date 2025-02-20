@@ -16,8 +16,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('can use relative path', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(
@@ -65,45 +67,49 @@ void main() {
     ]).validate();
   });
 
-  test('path is relative to containing pubspec when using --directory',
-      () async {
-    await d.dir('relative', [
-      d.dir('foo', [
-        d.libDir('foo'),
-        d.libPubspec(
-          'foo',
-          '0.0.1',
-          deps: {
-            'bar': {'path': '../bar'},
+  test(
+    'path is relative to containing pubspec when using --directory',
+    () async {
+      await d.dir('relative', [
+        d.dir('foo', [
+          d.libDir('foo'),
+          d.libPubspec(
+            'foo',
+            '0.0.1',
+            deps: {
+              'bar': {'path': '../bar'},
+            },
+          ),
+        ]),
+        d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]),
+      ]).create();
+
+      await d.dir(appPath, [
+        d.appPubspec(
+          dependencies: {
+            'foo': {'path': '../relative/foo'},
           },
         ),
-      ]),
-      d.dir('bar', [d.libDir('bar'), d.libPubspec('bar', '0.0.1')]),
-    ]).create();
+      ]).create();
 
-    await d.dir(appPath, [
-      d.appPubspec(
-        dependencies: {
-          'foo': {'path': '../relative/foo'},
-        },
-      ),
-    ]).create();
+      await pubGet(
+        args: ['--directory', appPath],
+        workingDirectory: d.sandbox,
+        output: contains('Changed 2 dependencies in `myapp`!'),
+      );
 
-    await pubGet(
-      args: ['--directory', appPath],
-      workingDirectory: d.sandbox,
-      output: contains('Changed 2 dependencies in `myapp`!'),
-    );
-
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
-      d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
-    ]).validate();
-  });
+      await d.appPackageConfigFile([
+        d.packageConfigEntry(name: 'foo', path: '../relative/foo'),
+        d.packageConfigEntry(name: 'bar', path: '../relative/bar'),
+      ]).validate();
+    },
+  );
 
   test('relative path preserved in the lockfile', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(

@@ -105,8 +105,11 @@ in a directory `foo-<version>`.
     if (parseResult.description is! HostedDescription) {
       fail('Can only fetch hosted packages.');
     }
-    final versions = await parseResult.source
-        .doGetVersions(parseResult.toRef(), null, cache);
+    final versions = await parseResult.source.doGetVersions(
+      parseResult.toRef(),
+      null,
+      cache,
+    );
     final constraint = parseResult.constraint;
     versions.removeWhere((id) => !constraint.allows(id.version));
     if (versions.isEmpty) {
@@ -145,21 +148,17 @@ in a directory `foo-<version>`.
         );
         final buffer = StringBuffer();
         if (pubspec.resolution != Resolution.none) {
-          log.message(
-            '''
+          log.message('''
 This package was developed as part of a workspace.
 
-Creating `pubspec_overrides.yaml` to resolve it alone.''',
-          );
+Creating `pubspec_overrides.yaml` to resolve it alone.''');
           buffer.writeln('resolution:');
         }
         if (pubspec.dependencyOverrides.isNotEmpty) {
-          log.message(
-            '''
+          log.message('''
 This package was developed with dependency_overrides.
 
-Creating `pubspec_overrides.yaml` to resolve it without those overrides.''',
-          );
+Creating `pubspec_overrides.yaml` to resolve it without those overrides.''');
           buffer.writeln('dependency_overrides:');
         }
         if (buffer.isNotEmpty) {
@@ -168,29 +167,23 @@ Creating `pubspec_overrides.yaml` to resolve it without those overrides.''',
             buffer.toString(),
           );
         }
-        final e = Entrypoint(
-          destinationDir,
-          cache,
-        );
+        final e = Entrypoint(destinationDir, cache);
         await e.acquireDependencies(SolveType.get);
       } finally {
         log.message('To explore type: cd $destinationDir');
         final exampleDir = p.join(destinationDir, 'example');
         if (dirExists(exampleDir)) {
-          log.message(
-            'To explore the example type: cd $exampleDir',
-          );
+          log.message('To explore the example type: cd $exampleDir');
         }
       }
     }
   }
 
-  PackageRange _parseDescriptor(
-    String packageName,
-    String? descriptor,
-  ) {
-    late final defaultDescription =
-        HostedDescription(packageName, cache.hosted.defaultUrl);
+  PackageRange _parseDescriptor(String packageName, String? descriptor) {
+    late final defaultDescription = HostedDescription(
+      packageName,
+      cache.hosted.defaultUrl,
+    );
     if (descriptor == null) {
       return PackageRange(
         PackageRef(packageName, defaultDescription),

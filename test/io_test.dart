@@ -59,9 +59,10 @@ void main() {
 
           expect(
             listDir(temp, recursive: true),
-            unorderedEquals(
-              [p.join(temp, 'file1.txt'), p.join(temp, 'file2.txt')],
-            ),
+            unorderedEquals([
+              p.join(temp, 'file1.txt'),
+              p.join(temp, 'file2.txt'),
+            ]),
           );
         }),
         completes,
@@ -298,21 +299,23 @@ void main() {
       );
     });
 
-    test('resolves a symlink that links to a path that needs more resolving',
-        () {
-      expect(
-        _withCanonicalTempDir((temp) {
-          final dir = p.join(temp, 'dir');
-          final linkdir = p.join(temp, 'linkdir');
-          final linkfile = p.join(dir, 'link');
-          _createDir(dir);
-          createSymlink(dir, linkdir);
-          createSymlink(p.join(linkdir, 'file'), linkfile);
-          expect(canonicalize(linkfile), equals(p.join(dir, 'file')));
-        }),
-        completes,
-      );
-    });
+    test(
+      'resolves a symlink that links to a path that needs more resolving',
+      () {
+        expect(
+          _withCanonicalTempDir((temp) {
+            final dir = p.join(temp, 'dir');
+            final linkdir = p.join(temp, 'linkdir');
+            final linkfile = p.join(dir, 'link');
+            _createDir(dir);
+            createSymlink(dir, linkdir);
+            createSymlink(p.join(linkdir, 'file'), linkfile);
+            expect(canonicalize(linkfile), equals(p.join(dir, 'file')));
+          }),
+          completes,
+        );
+      },
+    );
 
     test('resolves a pair of pathologically-recursive symlinks', () {
       expect(
@@ -337,25 +340,25 @@ void main() {
     test('decompresses simple archive', () async {
       await withTempDir((tempDir) async {
         await extractTarGz(
-          Stream.fromIterable(
-            [
-              base64Decode('H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7m'
-                  'aViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
-                  'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZy'
-                  'YvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
-                  '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qo'
-                  'b+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
-                  'AAAAAAAAAAAAgM9dALkoaRMAKAAA'),
-            ],
-          ),
+          Stream.fromIterable([
+            base64Decode(
+              'H4sIAP2weF4AA+3S0QqCMBiG4V2KeAE1nfuF7m'
+              'aViNBqzDyQ6N4z6yCIogOtg97ncAz2wTvfuxCW'
+              'alZ6UFqttIiUYpXObWlzM57fqcyIkcxoU2ZKZy'
+              'YvtErsvLNuuvboYpKotqm7uPUv74XYeBf7Oh66'
+              '8I1dX+LH/qFbt6HaLHrnd9O/cQ0sxZv++UP/Qo'
+              'b+1srQX08/5dmf9z+le+erdJWOHyE9/3oPAAAA'
+              'AAAAAAAAAAAAgM9dALkoaRMAKAAA',
+            ),
+          ]),
           tempDir,
         );
 
-        await d.dir(appPath, [
-          d.rawPubspec({
-            'name': 'myapp',
-          }),
-        ]).validate(tempDir);
+        await d
+            .dir(appPath, [
+              d.rawPubspec({'name': 'myapp'}),
+            ])
+            .validate(tempDir);
       });
     });
 
@@ -363,16 +366,15 @@ void main() {
       await withTempDir((tempDir) async {
         await expectLater(
           () async => await extractTarGz(
-            Stream.fromIterable(
-              [
-                base64Decode(
-                    // Correct Gzip of a faulty tar archive.
-                    'H4sICBKyeF4AA215YXBwLnRhcgDt0sEKgjAAh/GdewrxAWpzbkJvs0pEaDVmHiR699Q6BBJ00Dr0'
-                    '/Y5jsD98850LYSMWJXuFkUJaITNTmEyPR09Caaut0lIXSkils1yKxCy76KFtLi4miWjqqo0H//Ze'
-                    'iLV3saviuQ3f2PUlfkwf2l0Tyv26c/44/xtDYJsP6a0trJn2z1765/3/UMbYvr+cf8rUn/e/pifn'
-                    'y3Sbjh8hvf16DwAAAAAAAAAAAAAAAIDPre4CU/3q/CcAAA=='),
-              ],
-            ),
+            Stream.fromIterable([
+              base64Decode(
+                // Correct Gzip of a faulty tar archive.
+                'H4sICBKyeF4AA215YXBwLnRhcgDt0sEKgjAAh/GdewrxAWpzbkJvs0pEaDVmHiR699Q6BBJ00Dr0'
+                '/Y5jsD98850LYSMWJXuFkUJaITNTmEyPR09Caaut0lIXSkils1yKxCy76KFtLi4miWjqqo0H//Ze'
+                'iLV3saviuQ3f2PUlfkwf2l0Tyv26c/44/xtDYJsP6a0trJn2z1765/3/UMbYvr+cf8rUn/e/pifn'
+                'y3Sbjh8hvf16DwAAAAAAAAAAAAAAAIDPre4CU/3q/CcAAA==',
+              ),
+            ]),
             tempDir,
           ),
           throwsA(isA<TarException>()),
@@ -384,11 +386,9 @@ void main() {
       await withTempDir((tempDir) async {
         await expectLater(
           () async => await extractTarGz(
-            Stream.fromIterable(
-              [
-                [10, 20, 30], // Not a good gz stream.
-              ],
-            ),
+            Stream.fromIterable([
+              [10, 20, 30], // Not a good gz stream.
+            ]),
             tempDir,
           ),
           throwsA(
@@ -463,14 +463,13 @@ void main() {
           tempDir,
         );
 
-        await d.dir(
-          '.',
-          [
-            d.file('lib/main.txt', 'text content'),
-            d.file('bin/main.txt', 'text content'),
-            d.file('test/main.txt', 'text content'),
-          ],
-        ).validate(tempDir);
+        await d
+            .dir('.', [
+              d.file('lib/main.txt', 'text content'),
+              d.file('bin/main.txt', 'text content'),
+              d.file('test/main.txt', 'text content'),
+            ])
+            .validate(tempDir);
       });
     });
 
@@ -495,8 +494,11 @@ void main() {
         await expectLater(
           Directory(tempDir).list(),
           emits(
-            isA<Directory>()
-                .having((e) => p.basename(e.path), 'basename', 'bin'),
+            isA<Directory>().having(
+              (e) => p.basename(e.path),
+              'basename',
+              'bin',
+            ),
           ),
         );
       });
@@ -675,8 +677,7 @@ void testExistencePredicate(
       );
     });
 
-    test(
-        'returns $forMultiLevelDirectorySymlink for a multi-level symlink to '
+    test('returns $forMultiLevelDirectorySymlink for a multi-level symlink to '
         'a directory', () {
       expect(
         withTempDir((temp) {
@@ -709,22 +710,24 @@ void testExistencePredicate(
       );
     });
 
-    test('returns $forMultiLevelBrokenSymlink for a multi-level broken symlink',
-        () {
-      expect(
-        withTempDir((temp) {
-          final targetPath = p.join(temp, 'dir');
-          final symlink1Path = p.join(temp, 'link1dir');
-          final symlink2Path = p.join(temp, 'link2dir');
-          _createDir(targetPath);
-          createSymlink(targetPath, symlink1Path);
-          createSymlink(symlink1Path, symlink2Path);
-          deleteEntry(targetPath);
-          expect(predicate(symlink2Path), equals(forMultiLevelBrokenSymlink));
-        }),
-        completes,
-      );
-    });
+    test(
+      'returns $forMultiLevelBrokenSymlink for a multi-level broken symlink',
+      () {
+        expect(
+          withTempDir((temp) {
+            final targetPath = p.join(temp, 'dir');
+            final symlink1Path = p.join(temp, 'link1dir');
+            final symlink2Path = p.join(temp, 'link2dir');
+            _createDir(targetPath);
+            createSymlink(targetPath, symlink1Path);
+            createSymlink(symlink1Path, symlink2Path);
+            deleteEntry(targetPath);
+            expect(predicate(symlink2Path), equals(forMultiLevelBrokenSymlink));
+          }),
+          completes,
+        );
+      },
+    );
 
     // Windows doesn't support symlinking to files.
     if (!Platform.isWindows) {
@@ -741,8 +744,7 @@ void testExistencePredicate(
         );
       });
 
-      test(
-          'returns $forMultiLevelFileSymlink for a multi-level symlink to a '
+      test('returns $forMultiLevelFileSymlink for a multi-level symlink to a '
           'file', () {
         expect(
           withTempDir((temp) {

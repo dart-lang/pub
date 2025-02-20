@@ -65,10 +65,7 @@ Future<void> main() async {
       ..serve(
         'builder',
         '1.2.3',
-        deps: {
-          'transitive': '^1.0.0',
-          'dev_trans': '^1.0.0',
-        },
+        deps: {'transitive': '^1.0.0', 'dev_trans': '^1.0.0'},
       )
       ..serve('transitive', '1.2.3')
       ..serve('dev_trans', '1.0.0')
@@ -134,11 +131,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -158,11 +151,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -181,9 +170,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -201,9 +188,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -223,10 +208,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -247,9 +229,7 @@ Future<void> main() async {
       d.pubspec({
         'name': 'app',
         'version': '1.0.1',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
 
@@ -264,10 +244,7 @@ Future<void> main() async {
       d.pubspec({
         'name': 'app',
         'version': '1.0.1',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^1.0.0'},
       }),
     ]).create();
 
@@ -291,23 +268,15 @@ Future<void> main() async {
       ..serve('baz', '1.0.0')
       ..serve('baz', '2.0.0');
 
-    await d.git('foo.git', [
-      d.libPubspec('foo', '1.0.1'),
-    ]).create();
+    await d.git('foo.git', [d.libPubspec('foo', '1.0.1')]).create();
 
-    await d.dir('bar', [
-      d.libPubspec('bar', '1.0.1'),
-    ]).create();
+    await d.dir('bar', [d.libPubspec('bar', '1.0.1')]).create();
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
         'version': '1.0.1',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'bar': '^2.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'bar': '^2.0.0', 'baz': '^1.0.0'},
         'dependency_overrides': {
           'foo': {
             'git': {'url': '../foo.git'},
@@ -335,14 +304,8 @@ Future<void> main() async {
       d.pubspec({
         'name': 'app',
         'version': '1.0.1',
-        'dependencies': {
-          'foo': 'any',
-          'bar': 'any',
-        },
-        'dependency_overrides': {
-          'foo': '1.0.0',
-          'bar': '1.0.0',
-        },
+        'dependencies': {'foo': 'any', 'bar': 'any'},
+        'dependency_overrides': {'foo': '1.0.0', 'bar': '1.0.0'},
       }),
     ]).create();
 
@@ -351,27 +314,23 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
-  testWithGolden('overridden dependencies with retraction- no resolution ',
-      (ctx) async {
+  testWithGolden('overridden dependencies with retraction- no resolution ', (
+    ctx,
+  ) async {
     ensureGit();
-    final builder = await servePackages()
-      ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
-      ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
-      ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
-      ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'});
+    final builder =
+        await servePackages()
+          ..serve('foo', '1.0.0', deps: {'bar': '^2.0.0'})
+          ..serve('foo', '2.0.0', deps: {'bar': '^1.0.0'})
+          ..serve('bar', '1.0.0', deps: {'foo': '^1.0.0'})
+          ..serve('bar', '2.0.0', deps: {'foo': '^2.0.0'});
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
         'version': '1.0.1',
-        'dependencies': {
-          'foo': 'any',
-          'bar': 'any',
-        },
-        'dependency_overrides': {
-          'foo': '1.0.0',
-          'bar': '1.0.0',
-        },
+        'dependencies': {'foo': 'any', 'bar': 'any'},
+        'dependency_overrides': {'foo': '1.0.0', 'bar': '1.0.0'},
       }),
     ]).create();
 
@@ -390,9 +349,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
         'ignored_advisories': ['ABCD-1234-5678-9101', '1234-ABCD-EFGH-IJKL'],
       }),
     ]).create();
@@ -402,10 +359,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -414,10 +368,7 @@ Future<void> main() async {
       displayUrl: 'https://github.com/advisories/EFGH-0000-1111-2222',
       aliases: ['1234-ABCD-EFGH-IJKL'],
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -434,9 +385,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
         'ignored_advisories': ['ABCD-1234-5678-9101', '1234-ABCD-EFGH-IJKL'],
       }),
     ]).create();
@@ -446,10 +395,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -458,10 +404,7 @@ Future<void> main() async {
       aliases: ['1234-ABCD-EFGH-IJKL'],
       displayUrl: 'https://github.com/advisories/EFGH-0000-1111-2222',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -469,10 +412,7 @@ Future<void> main() async {
       advisoryId: 'VXYZ-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/VXYZ-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -480,8 +420,9 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
-  testWithGolden('do not show advisories if no version is affected',
-      (ctx) async {
+  testWithGolden('do not show advisories if no version is affected', (
+    ctx,
+  ) async {
     final builder = await servePackages();
     builder
       ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
@@ -490,9 +431,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -501,10 +440,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['0.1.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['0.1.0']),
       ],
     );
 
@@ -521,9 +457,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -532,10 +466,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -543,8 +474,9 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
-  testWithGolden('show advisory - current, same package mentioned twice',
-      (ctx) async {
+  testWithGolden('show advisory - current, same package mentioned twice', (
+    ctx,
+  ) async {
     final builder = await servePackages();
     builder
       ..serve('foo', '1.0.0', deps: {'transitive': '^1.0.0'})
@@ -553,9 +485,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -564,14 +494,8 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['0.0.1'],
-        ),
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['0.0.1']),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -588,9 +512,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -601,10 +523,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -621,9 +540,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -632,10 +549,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.2.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.2.0']),
       ],
     );
 
@@ -652,9 +566,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -664,10 +576,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.2.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.2.0']),
       ],
     );
 
@@ -684,9 +593,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -695,10 +602,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0', '1.2.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0', '1.2.0']),
       ],
     );
 
@@ -715,9 +619,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0'},
       }),
     ]).create();
     await pubGet();
@@ -726,10 +628,7 @@ Future<void> main() async {
       advisoryId: 'ABCD-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/ABCD-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0', '1.2.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0', '1.2.0']),
       ],
     );
 
@@ -737,10 +636,7 @@ Future<void> main() async {
       advisoryId: 'VXYZ-1234-5678-9101',
       displayUrl: 'https://github.com/advisories/VXYZ-1234-5678-9101',
       affectedPackages: [
-        AffectedPackage(
-          name: 'foo',
-          versions: ['1.0.0'],
-        ),
+        AffectedPackage(name: 'foo', versions: ['1.0.0']),
       ],
     );
 
@@ -748,8 +644,7 @@ Future<void> main() async {
     await ctx.runOutdatedTests();
   });
 
-  testWithGolden(
-      'latest version reported while locked on a prerelease '
+  testWithGolden('latest version reported while locked on a prerelease '
       'can be a prerelease', (ctx) async {
     await servePackages()
       ..serve('foo', '0.9.0')
@@ -815,17 +710,13 @@ Future<void> main() async {
       ]),
     ]).create();
 
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-    );
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
 
     server.serve('dep', '0.9.5');
     server.serve('dep_a', '0.9.5');
     server.serve('dev_dep_a', '0.9.5');
 
-    await ctx.runOutdatedTests(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-    );
+    await ctx.runOutdatedTests(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
   });
 
   testWithGolden('Handles SDK dependencies', (ctx) async {
@@ -871,15 +762,11 @@ Future<void> main() async {
         'environment': {'sdk': '>=2.12.0 <3.0.0'},
         'dependencies': {
           'foo': '^1.0.0',
-          'flutter': {
-            'sdk': 'flutter',
-          },
+          'flutter': {'sdk': 'flutter'},
         },
         'dev_dependencies': {
           'foo': '^1.0.0',
-          'flutter_test': {
-            'sdk': 'flutter',
-          },
+          'flutter_test': {'sdk': 'flutter'},
         },
       }),
     ]).create();
@@ -908,14 +795,16 @@ Future<void> main() async {
 
   testWithGolden('Handles packages that are not found on server', (ctx) async {
     await servePackages();
-    await d.appDir(
-      dependencies: {'foo': 'any'},
-      pubspec: {
-        'dependency_overrides': {
-          'foo': {'path': '../foo'},
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {'foo': 'any'},
+          pubspec: {
+            'dependency_overrides': {
+              'foo': {'path': '../foo'},
+            },
+          },
+        )
+        .create();
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
     await ctx.run(['outdated']);
   });

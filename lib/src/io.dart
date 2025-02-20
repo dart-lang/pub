@@ -113,8 +113,9 @@ FileStat statPath(String path) {
 /// directories.
 String canonicalize(String pathString) {
   final seen = <String>{};
-  var components =
-      Queue<String>.from(p.split(p.normalize(p.absolute(pathString))));
+  var components = Queue<String>.from(
+    p.split(p.normalize(p.absolute(pathString))),
+  );
 
   // The canonical path, built incrementally as we iterate through [components].
   var newPath = components.removeFirst();
@@ -124,8 +125,9 @@ String canonicalize(String pathString) {
   // resolved in turn.
   while (components.isNotEmpty) {
     seen.add(p.join(newPath, p.joinAll(components)));
-    final resolvedPath =
-        _resolveLink(p.join(newPath, components.removeFirst()));
+    final resolvedPath = _resolveLink(
+      p.join(newPath, components.removeFirst()),
+    );
     final relative = p.relative(resolvedPath, from: newPath);
 
     // If the resolved path of the component relative to `newPath` is just ".",
@@ -399,10 +401,13 @@ List<String> listDir(
         // file hidden.
 
         if (allowListFilter.any(pathInDir.contains)) {
-          final allowedBasename =
-              allowListFilter.firstWhere(pathInDir.contains);
-          pathInDir =
-              pathInDir.substring(0, pathInDir.length - allowedBasename.length);
+          final allowedBasename = allowListFilter.firstWhere(
+            pathInDir.contains,
+          );
+          pathInDir = pathInDir.substring(
+            0,
+            pathInDir.length - allowedBasename.length,
+          );
         }
 
         if (pathInDir.contains('/.')) return false;
@@ -468,13 +473,17 @@ void _attempt(
       if (reason == null) rethrow;
 
       if (i < maxRetries - 1) {
-        log.io('Pub failed to $description because $reason. '
-            'Retrying in 50ms.');
+        log.io(
+          'Pub failed to $description because $reason. '
+          'Retrying in 50ms.',
+        );
         sleep(const Duration(milliseconds: 50));
       } else {
-        fail('Pub failed to $description because $reason.\n'
-            'This may be caused by a virus scanner or having a file\n'
-            'in the directory open in another application.');
+        fail(
+          'Pub failed to $description because $reason.\n'
+          'This may be caused by a virus scanner or having a file\n'
+          'in the directory open in another application.',
+        );
       }
     }
   }
@@ -504,8 +513,10 @@ void tryDeleteEntry(String path) {
   try {
     deleteEntry(path);
   } catch (error, stackTrace) {
-    log.fine('Pub failed to delete $path: $error\n'
-        '${Chain.forTrace(stackTrace)}');
+    log.fine(
+      'Pub failed to delete $path: $error\n'
+      '${Chain.forTrace(stackTrace)}',
+    );
   }
 }
 
@@ -520,14 +531,10 @@ void cleanDir(String dir) {
 
 /// Renames (i.e. moves) the directory [from] to [to].
 void renameDir(String from, String to) {
-  _attempt(
-    'rename directory',
-    () {
-      log.io('Renaming directory $from to $to.');
-      Directory(from).renameSync(to);
-    },
-    ignoreEmptyDir: true,
-  );
+  _attempt('rename directory', () {
+    log.io('Renaming directory $from to $to.');
+    Directory(from).renameSync(to);
+  }, ignoreEmptyDir: true);
 }
 
 /// Renames directory [from] to [to].
@@ -561,27 +568,27 @@ void renameFile(String from, String to) {
 bool _isDirectoryNotEmptyException(FileSystemException e) {
   final errorCode = e.osError?.errorCode;
   return
-      // On Linux rename will fail with either ENOTEMPTY or EEXISTS if directory
-      // exists: https://man7.org/linux/man-pages/man2/rename.2.html
+  // On Linux rename will fail with either ENOTEMPTY or EEXISTS if directory
+  // exists: https://man7.org/linux/man-pages/man2/rename.2.html
+  // ```
+  // #define  ENOTEMPTY 39  /* Directory not empty */
+  // #define  EEXIST    17  /* File exists */
+  // ```
+  // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno-base.h#n21
+  // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
+  (Platform.isLinux && (errorCode == 39 || errorCode == 17)) ||
+      // On Windows this may fail with ERROR_DIR_NOT_EMPTY or
+      // ERROR_ALREADY_EXISTS
+      // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+      (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
+      // On MacOS rename will fail with ENOTEMPTY if directory exists.
+      // We also catch EEXIST - perhaps that could also be thrown...
       // ```
-      // #define  ENOTEMPTY 39  /* Directory not empty */
-      // #define  EEXIST    17  /* File exists */
+      // #define ENOTEMPTY       66              /* Directory not empty */
+      // #define	EEXIST		17	/* File exists */
       // ```
-      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno-base.h#n21
-      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
-      (Platform.isLinux && (errorCode == 39 || errorCode == 17)) ||
-          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or
-          // ERROR_ALREADY_EXISTS
-          // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
-          (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
-          // On MacOS rename will fail with ENOTEMPTY if directory exists.
-          // We also catch EEXIST - perhaps that could also be thrown...
-          // ```
-          // #define ENOTEMPTY       66              /* Directory not empty */
-          // #define	EEXIST		17	/* File exists */
-          // ```
-          // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
-          (Platform.isMacOS && (errorCode == 66 || errorCode == 17));
+      // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
+      (Platform.isMacOS && (errorCode == 66 || errorCode == 17));
 }
 
 /// Creates a new symlink at path [symlink] that points to [target].
@@ -656,15 +663,17 @@ final bool _assertionsEnabled = () {
 
 final bool runningFromFlutter =
     Platform.environment.containsKey('PUB_ENVIRONMENT') &&
-        (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
+    (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
-final _dartRepoRegExp = RegExp(r'/third_party/pkg/pub/('
-    r'bin/pub\.dart'
-    r'|'
-    r'test/.*_test\.dart'
-    r')$');
+final _dartRepoRegExp = RegExp(
+  r'/third_party/pkg/pub/('
+  r'bin/pub\.dart'
+  r'|'
+  r'test/.*_test\.dart'
+  r')$',
+);
 
 /// Whether pub is running from source in the Dart repo.
 ///
@@ -676,17 +685,19 @@ final bool runningFromDartRepo = Platform.script.path.contains(_dartRepoRegExp);
 ///
 /// This throws a [StateError] if it's called when not running pub from source
 /// in the Dart repo.
-final String dartRepoRoot = (() {
-  if (!runningFromDartRepo) {
-    throw StateError('Not running from source in the Dart repo.');
-  }
+final String dartRepoRoot =
+    (() {
+      if (!runningFromDartRepo) {
+        throw StateError('Not running from source in the Dart repo.');
+      }
 
-  // Get the URL of the repo root in a way that works when either both running
-  // as a test or as a pub executable.
-  final url = Platform.script
-      .replace(path: Platform.script.path.replaceAll(_dartRepoRegExp, ''));
-  return p.fromUri(url);
-})();
+      // Get the URL of the repo root in a way that works when either both
+      // running as a test or as a pub executable.
+      final url = Platform.script.replace(
+        path: Platform.script.path.replaceAll(_dartRepoRegExp, ''),
+      );
+      return p.fromUri(url);
+    })();
 
 /// Displays a message and reads a yes/no confirmation from the user.
 ///
@@ -752,8 +763,10 @@ bool get terminalOutputForStdout {
 /// exited already. This is useful to prevent Future chains from proceeding
 /// after you've decided to exit.
 Future flushThenExit(int status) {
-  return Future.wait([stdout.close(), stderr.close()])
-      .then((_) => exit(status));
+  return Future.wait([
+    stdout.close(),
+    stderr.close(),
+  ]).then((_) => exit(status));
 }
 
 /// Returns a [EventSink] that pipes all data to [consumer] and a [Future] that
@@ -789,8 +802,11 @@ Future<StringProcessResult> runProcess(
   return _descriptorPool.withResource(() async {
     ProcessResult result;
     try {
-      (executable, args) =
-          _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+      (executable, args) = _sanitizeExecutablePath(
+        executable,
+        args,
+        workingDir: workingDir,
+      );
       result = await Process.run(
         executable,
         args,
@@ -834,8 +850,11 @@ Future<PubProcess> startProcess(
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
-      (executable, args) =
-          _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+      (executable, args) = _sanitizeExecutablePath(
+        executable,
+        args,
+        workingDir: workingDir,
+      );
       ioProcess = await Process.start(
         executable,
         args,
@@ -868,8 +887,11 @@ StringProcessResult runProcessSync(
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
-    (executable, args) =
-        _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+    (executable, args) = _sanitizeExecutablePath(
+      executable,
+      args,
+      workingDir: workingDir,
+    );
     result = Process.runSync(
       executable,
       args,
@@ -902,8 +924,11 @@ BytesProcessResult runProcessSyncBytes(
 }) {
   ProcessResult result;
   try {
-    (executable, args) =
-        _sanitizeExecutablePath(executable, args, workingDir: workingDir);
+    (executable, args) = _sanitizeExecutablePath(
+      executable,
+      args,
+      workingDir: workingDir,
+    );
     result = Process.runSync(
       executable,
       args,
@@ -939,9 +964,8 @@ class BytesProcessResult {
   final String stderr;
   final int exitCode;
   BytesProcessResult(List<int> stdout, this.stderr, this.exitCode)
-      :
-        // Not clear that we need to do this, but seems harmless.
-        stdout = stdout is Uint8List ? stdout : Uint8List.fromList(stdout);
+    : // Not clear that we need to do this, but seems harmless.
+      stdout = stdout is Uint8List ? stdout : Uint8List.fromList(stdout);
   bool get success => exitCode == exit_codes.SUCCESS;
 }
 
@@ -1076,9 +1100,10 @@ Future<T> withTempDir<T>(FutureOr<T> Function(String path) fn) async {
 /// If [host] is "localhost", this will automatically listen on both the IPv4
 /// and IPv6 loopback addresses.
 Future<HttpServer> bindServer(String host, int port) async {
-  final server = host == 'localhost'
-      ? await HttpMultiServer.loopback(port)
-      : await HttpServer.bind(host, port);
+  final server =
+      host == 'localhost'
+          ? await HttpMultiServer.loopback(port)
+          : await HttpServer.bind(host, port);
   server.autoCompress = true;
   return server;
 }
@@ -1172,9 +1197,10 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
         break;
       case TypeFlag.symlink:
         // Link to another file in this tar, relative from this entry.
-        final resolvedTarget = p.joinAll(
-          [parentDirectory, ...p.posix.split(entry.header.linkName!)],
-        );
+        final resolvedTarget = p.joinAll([
+          parentDirectory,
+          ...p.posix.split(entry.header.linkName!),
+        ]);
         if (!checkValidTarget(resolvedTarget)) {
           // Don't allow links to files outside of this tar.
           break;
@@ -1214,10 +1240,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
 /// considered to be [baseDir], which defaults to the current working directory.
 ///
 /// Returns a [ByteStream] that emits the contents of the archive.
-ByteStream createTarGz(
-  List<String> contents, {
-  required String baseDir,
-}) {
+ByteStream createTarGz(List<String> contents, {required String baseDir}) {
   final buffer = StringBuffer();
   buffer.write('Creating .tar.gz stream containing:\n');
   contents.forEach(buffer.writeln);
@@ -1245,8 +1268,10 @@ ByteStream createTarGz(
       final name = p.url.joinAll(p.split(relative));
 
       if (stat.type == FileSystemEntityType.link) {
-        log.message('$entry is a link locally, but will be uploaded as a '
-            'duplicate file.');
+        log.message(
+          '$entry is a link locally, but will be uploaded as a '
+          'duplicate file.',
+        );
       }
       if (stat.type == FileSystemEntityType.directory) {
         return TarEntry(

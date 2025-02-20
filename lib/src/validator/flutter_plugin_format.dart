@@ -46,18 +46,22 @@ class FlutterPluginFormatValidator extends Validator {
                   includeMin: true,
                 ),
               ))) {
-        errors.add('pubspec.yaml allows Flutter SDK version 1.9.x, which does '
-            'not support the flutter.plugin.platforms key.\n'
-            'Please consider increasing the Flutter SDK requirement to '
-            '^1.10.0 (environment.sdk.flutter)\n\nSee $_pluginDocsUrl');
+        errors.add(
+          'pubspec.yaml allows Flutter SDK version 1.9.x, which does '
+          'not support the flutter.plugin.platforms key.\n'
+          'Please consider increasing the Flutter SDK requirement to '
+          '^1.10.0 (environment.sdk.flutter)\n\nSee $_pluginDocsUrl',
+        );
         return;
       }
 
       if (usesOldPluginFormat) {
-        errors.add('In pubspec.yaml the '
-            'flutter.plugin.{androidPackage,iosPrefix,pluginClass} keys are '
-            'deprecated. Instead use the flutter.plugin.platforms key '
-            'introduced in Flutter 1.10.0\n\nSee $_pluginDocsUrl');
+        errors.add(
+          'In pubspec.yaml the '
+          'flutter.plugin.{androidPackage,iosPrefix,pluginClass} keys are '
+          'deprecated. Instead use the flutter.plugin.platforms key '
+          'introduced in Flutter 1.10.0\n\nSee $_pluginDocsUrl',
+        );
       }
     } else {
       // Ignore all packages that do not have the `flutter.plugin` property.

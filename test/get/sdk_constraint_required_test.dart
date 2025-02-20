@@ -11,9 +11,7 @@ import '../test_pub.dart';
 void main() {
   test('pub get fails without an SDK constraint', () async {
     await d.dir(appPath, [
-      d.rawPubspec({
-        'name': 'myapp',
-      }),
+      d.rawPubspec({'name': 'myapp'}),
     ]).create();
 
     await pubGet(
@@ -37,12 +35,10 @@ void main() {
 
   test('pub get fails with an non-null-safety SDK constraint', () async {
     await d.dir(appPath, [
-      d.rawPubspec(
-        {
-          'name': 'myapp',
-          'environment': {'sdk': '>=2.9.0 <4.0.0'},
-        },
-      ),
+      d.rawPubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '>=2.9.0 <4.0.0'},
+      }),
     ]).create();
 
     await pubGet(

@@ -160,9 +160,10 @@ abstract class PubCommand extends Command<int> {
   /// Short description of how the arguments should be provided in `invocation`.
   ///
   /// Override for giving a more detailed description.
-  String get argumentsDescription => subcommands.isEmpty
-      ? '<subcommand> [arguments...]'
-      : (takesArguments ? '[arguments...]' : '');
+  String get argumentsDescription =>
+      subcommands.isEmpty
+          ? '<subcommand> [arguments...]'
+          : (takesArguments ? '[arguments...]' : '');
 
   /// If not `null` this overrides the default exit-code [exit_codes.SUCCESS]
   /// when exiting successfully.
@@ -316,17 +317,20 @@ and attaching the relevant parts of that log file.
     if (!argResults.wasParsed('color')) {
       forceColors = ForceColorOption.auto;
     } else {
-      forceColors = argResults.flag('color')
-          ? ForceColorOption.always
-          : ForceColorOption.never;
+      forceColors =
+          argResults.flag('color')
+              ? ForceColorOption.always
+              : ForceColorOption.never;
     }
   }
 
   static void _computeCommand(ArgResults argResults) {
     final list = <String?>[];
-    for (var command = argResults.command;
-        command != null;
-        command = command.command) {
+    for (
+      var command = argResults.command;
+      command != null;
+      command = command.command
+    ) {
       var commandName = command.name;
 
       if (list.isEmpty) {
@@ -356,7 +360,8 @@ abstract class PubTopLevel {
   static void addColorFlag(ArgParser argParser) {
     argParser.addFlag(
       'color',
-      help: 'Use colors in terminal output.\n'
+      help:
+          'Use colors in terminal output.\n'
           'Defaults to color when connected to a '
           'terminal, and no-color otherwise.',
     );

@@ -11,17 +11,11 @@ import '../test_pub.dart';
 void main() {
   test('package validation has a warning and is canceled', () async {
     await d.validPackage().create();
-    final pkg = packageMap(
-      'test_pkg',
-      '1.0.0',
-      null,
-      null,
-      {'sdk': defaultSdkConstraint},
-    );
+    final pkg = packageMap('test_pkg', '1.0.0', null, null, {
+      'sdk': defaultSdkConstraint,
+    });
     pkg['author'] = 'Natalie Weizenbaum';
-    await d.dir(appPath, [
-      d.pubspec(pkg),
-    ]).create();
+    await d.dir(appPath, [d.pubspec(pkg)]).create();
 
     await servePackages();
     final pub = await startPublish(globalServer);

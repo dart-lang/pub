@@ -30,8 +30,9 @@ class BumpSubcommand extends PubCommand {
   }
 
   String? _versionLines(YamlMap map, String text, String prefix) {
-    final entry = map.nodes.entries
-        .firstWhereOrNull((e) => (e.key as YamlNode).value == 'version');
+    final entry = map.nodes.entries.firstWhereOrNull(
+      (e) => (e.key as YamlNode).value == 'version',
+    );
     if (entry == null) return null;
 
     final firstLine = (entry.key as YamlNode).span.start.line;
@@ -50,8 +51,9 @@ class BumpSubcommand extends PubCommand {
 
     final newVersion = updateVersion(currentVersion);
 
-    final originalPubspecText =
-        readTextFile(entrypoint.workPackage.pubspecPath);
+    final originalPubspecText = readTextFile(
+      entrypoint.workPackage.pubspecPath,
+    );
     final yamlEditor = YamlEditor(originalPubspecText);
     yamlEditor.update(['version'], newVersion.toString());
     final updatedPubspecText = yamlEditor.toString();
@@ -81,10 +83,7 @@ class BumpSubcommand extends PubCommand {
         log.message(afterText);
         log.message('\nRemember to update `CHANGELOG.md` before publishing.');
       }
-      writeTextFile(
-        entrypoint.workPackage.pubspecPath,
-        yamlEditor.toString(),
-      );
+      writeTextFile(entrypoint.workPackage.pubspecPath, yamlEditor.toString());
     }
   }
 }

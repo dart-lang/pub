@@ -22,117 +22,106 @@ String? binStub(String executable) {
 }
 
 void main() {
-  test("an outdated binstub runs 'pub global run', which replaces old binstub",
-      () async {
-    final server = await servePackages();
-    server.serve(
-      'foo',
-      '1.0.0',
-      pubspec: {
-        'executables': {
-          'foo-script': 'script',
-          'foo-script2': 'script',
-          'foo-script-not-installed': 'script',
-          'foo-another-script': 'another-script',
-          'foo-another-script-not-installed': 'another-script',
-        },
-      },
-      contents: [
-        d.dir('bin', [
-          d.file('script.dart', r"main(args) => print('ok $args');"),
-          d.file(
-            'another-script.dart',
-            r"main(args) => print('not so good $args');",
-          ),
-        ]),
-      ],
-    );
-
-    await runPub(
-      args: [
-        'global',
-        'activate',
+  test(
+    "an outdated binstub runs 'pub global run', which replaces old binstub",
+    () async {
+      final server = await servePackages();
+      server.serve(
         'foo',
-        '--executable',
-        'foo-script',
-        '--executable',
-        'foo-script2',
-        '--executable',
-        'foo-another-script',
-      ],
-      environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'},
-    );
+        '1.0.0',
+        pubspec: {
+          'executables': {
+            'foo-script': 'script',
+            'foo-script2': 'script',
+            'foo-script-not-installed': 'script',
+            'foo-another-script': 'another-script',
+            'foo-another-script-not-installed': 'another-script',
+          },
+        },
+        contents: [
+          d.dir('bin', [
+            d.file('script.dart', r"main(args) => print('ok $args');"),
+            d.file(
+              'another-script.dart',
+              r"main(args) => print('not so good $args');",
+            ),
+          ]),
+        ],
+      );
 
-    expect(binStub('foo-script'), contains('script.dart-3.0.0.snapshot'));
+      await runPub(
+        args: [
+          'global',
+          'activate',
+          'foo',
+          '--executable',
+          'foo-script',
+          '--executable',
+          'foo-script2',
+          '--executable',
+          'foo-another-script',
+        ],
+        environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'},
+      );
 
-    expect(binStub('foo-script2'), contains('script.dart-3.0.0.snapshot'));
+      expect(binStub('foo-script'), contains('script.dart-3.0.0.snapshot'));
 
-    expect(
-      binStub('foo-script-not-installed'),
-      null,
-    );
+      expect(binStub('foo-script2'), contains('script.dart-3.0.0.snapshot'));
 
-    expect(
-      binStub('foo-another-script'),
-      contains('another-script.dart-3.0.0.snapshot'),
-    );
+      expect(binStub('foo-script-not-installed'), null);
 
-    expect(
-      binStub('foo-another-script-not-installed'),
-      null,
-    );
+      expect(
+        binStub('foo-another-script'),
+        contains('another-script.dart-3.0.0.snapshot'),
+      );
 
-    // Replace the created snapshot with one that really doesn't work with the
-    // current dart.
-    await d.dir(cachePath, [
-      d.dir('global_packages', [
-        d.dir('foo', [
-          d.dir(
-            'bin',
-            [d.outOfDateSnapshot('script.dart-3.0.0.snapshot')],
-          ),
+      expect(binStub('foo-another-script-not-installed'), null);
+
+      // Replace the created snapshot with one that really doesn't work with the
+      // current dart.
+      await d.dir(cachePath, [
+        d.dir('global_packages', [
+          d.dir('foo', [
+            d.dir('bin', [d.outOfDateSnapshot('script.dart-3.0.0.snapshot')]),
+          ]),
         ]),
-      ]),
-    ]).create();
+      ]).create();
 
-    final process = await TestProcess.start(
-      p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
-      ['arg1', 'arg2'],
-      environment: getEnvironment(),
-    );
+      final process = await TestProcess.start(
+        p.join(d.sandbox, cachePath, 'bin', binStubName('foo-script')),
+        ['arg1', 'arg2'],
+        environment: getEnvironment(),
+      );
 
-    expect(await process.stdout.rest.toList(), contains('ok [arg1, arg2]'));
+      expect(await process.stdout.rest.toList(), contains('ok [arg1, arg2]'));
 
-    expect(
-      binStub('foo-script'),
-      contains('script.dart-3.1.2+3.snapshot'),
-    );
+      expect(binStub('foo-script'), contains('script.dart-3.1.2+3.snapshot'));
 
-    expect(
-      binStub('foo-script2'),
-      contains('script.dart-3.1.2+3.snapshot'),
-    );
+      expect(binStub('foo-script2'), contains('script.dart-3.1.2+3.snapshot'));
 
-    expect(
-      binStub('foo-script-not-installed'),
-      null,
-      reason: 'global run recompile should not install new binstubs',
-    );
+      expect(
+        binStub('foo-script-not-installed'),
+        null,
+        reason: 'global run recompile should not install new binstubs',
+      );
 
-    expect(
-      binStub('foo-another-script'),
-      contains('another-script.dart-3.0.0.snapshot'),
-      reason:
-          'global run recompile should not refresh binstubs for other scripts',
-    );
+      expect(
+        binStub('foo-another-script'),
+        contains('another-script.dart-3.0.0.snapshot'),
+        reason:
+            'global run recompile should not '
+            'refresh binstubs for other scripts',
+      );
 
-    expect(
-      binStub('foo-another-script-not-installed'),
-      null,
-      reason:
-          'global run recompile should not install binstubs for other scripts',
-    );
+      expect(
+        binStub('foo-another-script-not-installed'),
+        null,
+        reason:
+            'global run recompile should not '
+            'install binstubs for other scripts',
+      );
 
-    await process.shouldExit();
-  });
+      await process.shouldExit();
+    },
+  );
 }

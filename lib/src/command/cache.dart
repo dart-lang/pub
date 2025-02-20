@@ -23,8 +23,6 @@ class CacheCommand extends PubCommand {
     addSubcommand(CacheListCommand());
     addSubcommand(CacheCleanCommand());
     addSubcommand(CacheRepairCommand());
-    addSubcommand(
-      CachePreloadCommand(),
-    );
+    addSubcommand(CachePreloadCommand());
   }
 }

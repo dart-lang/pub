@@ -56,10 +56,9 @@ void main() {
     await d.dir(cachePath, [
       d.dir('global_packages', [
         d.dir('foo', [
-          d.dir(
-            'bin',
-            [d.file('script.dart-$versionSuffix.snapshot', contains('ok'))],
-          ),
+          d.dir('bin', [
+            d.file('script.dart-$versionSuffix.snapshot', contains('ok')),
+          ]),
         ]),
       ]),
     ]).validate();
@@ -70,9 +69,7 @@ void main() {
     server.serve(
       'foo',
       '1.0.0',
-      deps: {
-        'bar': 'any',
-      },
+      deps: {'bar': 'any'},
       contents: [
         d.dir('bin', [
           d.file('foo.dart', 'import "package:bar/bar.dart"; main() => bar();'),
@@ -84,28 +81,19 @@ void main() {
       'bar',
       '1.0.0',
       contents: [
-        d.dir('lib', [
-          d.file('bar.dart', 'bar() => print("original");'),
-        ]),
+        d.dir('lib', [d.file('bar.dart', 'bar() => print("original");')]),
       ],
     );
 
-    await runPub(
-      args: ['global', 'activate', 'foo'],
-    );
+    await runPub(args: ['global', 'activate', 'foo']);
 
-    await runPub(
-      args: ['global', 'run', 'foo'],
-      output: 'original',
-    );
+    await runPub(args: ['global', 'run', 'foo'], output: 'original');
 
     server.serve(
       'bar',
       '1.0.0',
       contents: [
-        d.dir('lib', [
-          d.file('foo.dart', 'foo() => print("updated");'),
-        ]),
+        d.dir('lib', [d.file('foo.dart', 'foo() => print("updated");')]),
       ],
     );
 
@@ -160,94 +148,92 @@ void main() {
     );
   });
 
-  test('validate resolution before recompilation - updated sdk package',
-      () async {
-    final server = await servePackages();
-    server.serve(
-      'foo',
-      '1.0.0',
-      deps: {
-        'bar': {'sdk': 'dart', 'version': '^1.0.0'},
-      },
-      contents: [
-        d.dir('bin', [
-          d.file('foo.dart', 'main() => print("foo");'),
-        ]),
-      ],
-    );
+  test(
+    'validate resolution before recompilation - updated sdk package',
+    () async {
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        deps: {
+          'bar': {'sdk': 'dart', 'version': '^1.0.0'},
+        },
+        contents: [
+          d.dir('bin', [d.file('foo.dart', 'main() => print("foo");')]),
+        ],
+      );
 
-    await d.dir('dart', [
-      d.dir('packages', [
-        d.dir('bar', [
-          d.libPubspec('bar', '1.0.0', deps: {}),
+      await d.dir('dart', [
+        d.dir('packages', [
+          d.dir('bar', [d.libPubspec('bar', '1.0.0', deps: {})]),
         ]),
-      ]),
-      d.sdkPackagesConfig(
-        SdkPackageConfig(
-          'dart',
-          {'bar': SdkPackage('bar', 'packages/bar')},
-          1,
+        d.sdkPackagesConfig(
+          SdkPackageConfig('dart', {
+            'bar': SdkPackage('bar', 'packages/bar'),
+          }, 1),
         ),
-      ),
-    ]).create();
+      ]).create();
 
-    await runPub(
-      args: ['global', 'activate', 'foo'],
-      environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
-    );
+      await runPub(
+        args: ['global', 'activate', 'foo'],
+        environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
+      );
 
-    await runPub(
-      args: ['global', 'run', 'foo'],
-      environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
-      output: 'foo',
-    );
+      await runPub(
+        args: ['global', 'run', 'foo'],
+        environment: {'DART_ROOT': p.join(d.sandbox, 'dart')},
+        output: 'foo',
+      );
 
-    await d.dir('dart', [
-      d.dir('packages', [
-        d.dir('bar', [
-          // Within constraint, but doesn't satisfy pubspec.lock.
-          d.libPubspec('bar', '1.2.0', deps: {}),
+      await d.dir('dart', [
+        d.dir('packages', [
+          d.dir('bar', [
+            // Within constraint, but doesn't satisfy pubspec.lock.
+            d.libPubspec('bar', '1.2.0', deps: {}),
+          ]),
         ]),
-      ]),
-    ]).create();
+      ]).create();
 
-    await runPub(
-      args: ['global', 'run', 'foo'],
-      environment: {
-        'DART_ROOT': p.join(d.sandbox, 'dart'),
-        '_PUB_TEST_SDK_VERSION': '3.2.1+4',
-      },
-      output: contains('> bar 1.2.0 from sdk dart (was 1.0.0 from sdk dart)'),
-      error: allOf(
-        contains(
-          'The current activation of `foo` is not compatible with your '
-          'current SDK.',
+      await runPub(
+        args: ['global', 'run', 'foo'],
+        environment: {
+          'DART_ROOT': p.join(d.sandbox, 'dart'),
+          '_PUB_TEST_SDK_VERSION': '3.2.1+4',
+        },
+        output: contains('> bar 1.2.0 from sdk dart (was 1.0.0 from sdk dart)'),
+        error: allOf(
+          contains(
+            'The current activation of `foo` is not compatible with your '
+            'current SDK.',
+          ),
+          contains('Try reactivating the package'),
         ),
-        contains('Try reactivating the package'),
-      ),
-      exitCode: DATA,
-    );
+        exitCode: DATA,
+      );
 
-    await d.dir('dart', [
-      d.dir('packages', [
-        d.dir('bar', [
-          // Doesn't fulfill constraint, but doesn't satisfy pubspec.lock.
-          d.libPubspec('bar', '2.0.0', deps: {}),
+      await d.dir('dart', [
+        d.dir('packages', [
+          d.dir('bar', [
+            // Doesn't fulfill constraint, but doesn't satisfy pubspec.lock.
+            d.libPubspec('bar', '2.0.0', deps: {}),
+          ]),
         ]),
-      ]),
-    ]).create();
-    await runPub(
-      args: ['global', 'run', 'foo'],
-      environment: {
-        'DART_ROOT': p.join(d.sandbox, 'dart'),
-        '_PUB_TEST_SDK_VERSION': '3.2.1+4',
-      },
-      error: allOf(
-        contains('Because every version of foo depends on bar ^1.0.0 from sdk'),
-        contains('The package `foo` as currently activated cannot resolve.'),
-        contains('Try reactivating the package'),
-      ),
-      exitCode: 1,
-    );
-  });
+      ]).create();
+      await runPub(
+        args: ['global', 'run', 'foo'],
+        environment: {
+          'DART_ROOT': p.join(d.sandbox, 'dart'),
+          '_PUB_TEST_SDK_VERSION': '3.2.1+4',
+        },
+        error: allOf(
+          contains(
+            'Because every version of foo depends on bar ^1.0.0 from sdk',
+          ),
+          contains('The package `foo` as currently activated cannot resolve.'),
+          contains('Try reactivating the package'),
+        ),
+        exitCode: 1,
+      );
+    },
+  );
 }

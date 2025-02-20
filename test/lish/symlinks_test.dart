@@ -44,9 +44,9 @@ Future<void> main() async {
     await runPub(args: ['publish', '--to-archive=archive.tar.gz']);
 
     final reader = TarReader(
-      File(p.join(d.sandbox, appPath, 'archive.tar.gz'))
-          .openRead()
-          .transform(GZipCodec().decoder),
+      File(
+        p.join(d.sandbox, appPath, 'archive.tar.gz'),
+      ).openRead().transform(GZipCodec().decoder),
     );
 
     while (await reader.moveNext()) {
@@ -56,25 +56,23 @@ Future<void> main() async {
 
     await runPub(args: ['cache', 'preload', 'archive.tar.gz']);
 
-    await d.dir('test_pkg-1.0.0', [
-      ...d.validPackage().contents,
-      d.dir('symlink_to_dir_outside_package', [
-        d.file('aa', 'aaa'),
-      ]),
-      d.dir('symlink_to_dir_outside_package_relative', [
-        d.file('aa', 'aaa'),
-      ]),
-      d.dir('b', [d.file('bb', 'bbb')]),
-      d.dir('symlink_to_dir_inside_package', [
-        d.file('bb', 'bbb'),
-        d.file('l', 'ttt'),
-      ]),
-      d.dir('symlink_to_dir_inside_package_relative', [
-        d.file('bb', 'bbb'),
-        d.file('l', 'ttt'),
-      ]),
-    ]).validate(
-      p.join(d.sandbox, cachePath, 'hosted', 'pub.dev'),
-    );
+    await d
+        .dir('test_pkg-1.0.0', [
+          ...d.validPackage().contents,
+          d.dir('symlink_to_dir_outside_package', [d.file('aa', 'aaa')]),
+          d.dir('symlink_to_dir_outside_package_relative', [
+            d.file('aa', 'aaa'),
+          ]),
+          d.dir('b', [d.file('bb', 'bbb')]),
+          d.dir('symlink_to_dir_inside_package', [
+            d.file('bb', 'bbb'),
+            d.file('l', 'ttt'),
+          ]),
+          d.dir('symlink_to_dir_inside_package_relative', [
+            d.file('bb', 'bbb'),
+            d.file('l', 'ttt'),
+          ]),
+        ])
+        .validate(p.join(d.sandbox, cachePath, 'hosted', 'pub.dev'));
   });
 }
