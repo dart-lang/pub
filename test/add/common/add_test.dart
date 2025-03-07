@@ -2,11 +2,13 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
 import 'dart:io' show File;
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../descriptor.dart' as d;
@@ -1181,5 +1183,27 @@ dependency_overrides:
     await d.appDir().create();
     server.serve('foo', '2.0.0');
     await pubAdd(args: ['foo', '--offline']);
+  });
+
+  test('Uses given path for absolute paths', () async {
+    await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
+
+    await d.appDir(dependencies: {}).create();
+
+    // Explicitly add using a forward slash in absolute path.
+    // This should be preserved in the pubspec.yaml, even on windows.
+    await pubAdd(
+      args: [
+        'foo:${json.encode({'path': '$sandbox/foo'})}',
+      ],
+    );
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'path': '$sandbox/foo'},
+          },
+        )
+        .validate();
   });
 }

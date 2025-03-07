@@ -79,9 +79,11 @@ class PathSource extends Source {
       return PackageRef(
         name,
         PathDescription(
-          p.normalize(
-            p.join(p.absolute(containingDescription.path), description),
-          ),
+          isRelative
+              ? p.normalize(
+                p.join(p.absolute(containingDescription.path), description),
+              )
+              : description,
           isRelative,
         ),
       );
