@@ -266,9 +266,10 @@ void handleGCSError(http.BaseResponse response) {
     final responseBody = response.body;
     if (responseBody.contains('<?xml')) {
       String? getTagText(String tag) {
-        final result = RegExp('<$tag>(.*)</$tag>').firstMatch(responseBody)?[1];
+        final result =
+            RegExp('<$tag>([\\S\\s]*)</$tag>').firstMatch(responseBody)?[1];
         if (result == null) return null;
-        return sanitizeForTerminal(result);
+        return sanitizeForTerminal(result.trim());
       }
 
       final code = getTagText('Code');

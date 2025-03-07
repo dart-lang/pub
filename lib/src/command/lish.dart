@@ -131,7 +131,7 @@ class LishCommand extends PubCommand {
     http.Client client,
     Uri host,
   ) async {
-    Uri? cloudStorageUrl;
+    Uri? uploadUrl;
 
     try {
       await log.progress('Uploading', () async {
@@ -153,13 +153,13 @@ class LishCommand extends PubCommand {
         /// 2. Upload package
         final url = _expectField(parameters, 'url', parametersResponse);
         if (url is! String) invalidServerResponse(parametersResponse);
-        cloudStorageUrl = Uri.parse(url);
+        uploadUrl = Uri.parse(url);
         final uploadResponse = await retryForHttp(
           'uploading package',
           () async {
             // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
             // should report that error and exit.
-            final request = http.MultipartRequest('POST', cloudStorageUrl!);
+            final request = http.MultipartRequest('POST', uploadUrl!);
 
             final fields = _expectField(
               parameters,
@@ -218,11 +218,16 @@ class LishCommand extends PubCommand {
       dataError(msg + log.red('Authentication failed!'));
     } on PubHttpResponseException catch (error) {
       final url = error.response.request!.url;
-      if (url == cloudStorageUrl) {
-        handleGCSError(error.response);
-        fail(log.red('Failed to upload the package.'));
-      } else if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
-        handleJsonError(error.response);
+      if (url == uploadUrl || Uri.parse(url.origin) == Uri.parse(host.origin)) {
+        switch (error.response.headers['content-type']) {
+          case 'application/xml':
+            handleGCSError(error.response);
+            fail(log.red('Failed to upload the package.'));
+          default:
+            // The specified content-type for errors is 'application/vnd.pub.v2+json'
+            // But we show leniency here.
+            handleJsonError(error.response);
+        }
       } else {
         rethrow;
       }
