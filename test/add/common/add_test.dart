@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:io' show File;
+import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
@@ -1191,7 +1192,9 @@ dependency_overrides:
 
     // Explicitly add using a forward slash in absolute path.
     // This should be preserved in the pubspec.yaml, even on windows.
-    await pubAdd(args: ['foo:{"path":"$sandbox/foo"}']);
+    await pubAdd(args: ['foo:${json.encode(
+      {'path': '$sandbox/foo'}
+    )}']);
 
     await d
         .appDir(
