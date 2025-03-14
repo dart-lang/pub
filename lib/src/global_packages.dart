@@ -506,7 +506,12 @@ try:
         try {
           result = await log.spinner(
             'Resolving dependencies',
-            () => resolveVersions(SolveType.get, cache, root),
+            () => resolveVersions(
+              SolveType.get,
+              cache,
+              root,
+              lockFile: entrypoint.lockFile,
+            ),
           );
         } on SolveFailure catch (e) {
           log.error(e.message);

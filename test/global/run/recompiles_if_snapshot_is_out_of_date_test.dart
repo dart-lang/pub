@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart';
@@ -89,6 +91,8 @@ void main() {
 
     await runPub(args: ['global', 'run', 'foo'], output: 'original');
 
+    // Serve an updated version of bar, to validate that the recompilation
+    // validates content hashes.
     server.serve(
       'bar',
       '1.0.0',
@@ -96,6 +100,11 @@ void main() {
         d.dir('lib', [d.file('foo.dart', 'foo() => print("updated");')]),
       ],
     );
+
+    // Delete the existing download of bar to trigger a redownload.
+    Directory(
+      p.join(d.sandbox, d.hostedCachePath(port: server.port), 'bar-1.0.0'),
+    ).deleteSync(recursive: true);
 
     await runPub(
       args: ['global', 'run', 'foo'],
@@ -214,7 +223,7 @@ void main() {
       await d.dir('dart', [
         d.dir('packages', [
           d.dir('bar', [
-            // Doesn't fulfill constraint, but doesn't satisfy pubspec.lock.
+            // Doesn't fulfill constraint.
             d.libPubspec('bar', '2.0.0', deps: {}),
           ]),
         ]),
@@ -227,7 +236,8 @@ void main() {
         },
         error: allOf(
           contains(
-            'Because every version of foo depends on bar ^1.0.0 from sdk',
+            'So, because pub global activate depends on foo 1.0.0 '
+            'which depends on bar ^1.0.0 from sdk',
           ),
           contains('The package `foo` as currently activated cannot resolve.'),
           contains('Try reactivating the package'),
