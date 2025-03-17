@@ -1505,7 +1505,6 @@ class HostedSource extends CachedSource {
         }
         input.close();
         final actualHash = output.value;
-        print('Hash for ${id} was $actualHash');
         if (expectedHash != null && output.value != expectedHash) {
           log.fine(
             'Expected content-hash for ${id.name}-${id.version} $expectedHash '
