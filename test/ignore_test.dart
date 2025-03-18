@@ -44,7 +44,7 @@ void main() {
                 ? null
                 : Ignore(
                   c.patterns[dir]!,
-                  onInvalidPattern: (_, __) => hasWarning = true,
+                  onInvalidPattern: (_, _) => hasWarning = true,
                   ignoreCase: ignoreCase,
                 );
 

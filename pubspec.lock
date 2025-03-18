@@ -98,10 +98,10 @@ packages:
     dependency: "direct dev"
     description:
       name: dart_flutter_team_lints
-      sha256: "241f050cb4d908caffdcc5d4407e1c4e0b1dd449294ef7b6ceb4a9d8bc77dd96"
+      sha256: "4c8f38142598339cd28c0b48a66b6b04434ee0499b6e40baf7c62c76daa1fcad"
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0"
+    version: "3.5.1"
   file:
     dependency: transitive
     description:
