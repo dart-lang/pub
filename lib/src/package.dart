@@ -241,8 +241,9 @@ See $workspacesDocUrl for more information.
 
   static final _includeGitignoreIndicator = RegExp(
     // We look for "#* include .gitignore" at the start of a .pubignore
-    // We don't necessarily care about whitespace
-    r'^\s*#@\s*include\s*\.gitignore\s*?$',
+    // We don't necessarily care about whitespace, just that it's at the start
+    // of the file, at the start of the line, and ends on its own line
+    r'^#\s*@\s*include\s*\.gitignore\s*?\r?\n',
   );
 
   /// Returns a list of files that are considered to be part of this package.
@@ -363,8 +364,11 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
               rules.add(pubIgnoreText);
               usedIgnoreFiles = pubIgnore;
 
+              print(pubIgnoreText.startsWith(_includeGitignoreIndicator));
+
               if (pubIgnoreText.startsWith(_includeGitignoreIndicator) &&
                   fileExists(gitIgnore)) {
+                log.warning('gitignore special');
                 rules.add(readTextFile(gitIgnore));
                 usedIgnoreFiles += ' or $gitIgnore';
               }
@@ -372,6 +376,8 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
               rules.add(readTextFile(gitIgnore));
               usedIgnoreFiles = gitIgnore;
             }
+
+            log.warning(usedIgnoreFiles);
 
             return rules.isEmpty
                 ? null
