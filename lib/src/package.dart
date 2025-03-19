@@ -364,11 +364,8 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
               rules.add(pubIgnoreText);
               usedIgnoreFiles = pubIgnore;
 
-              print(pubIgnoreText.startsWith(_includeGitignoreIndicator));
-
               if (pubIgnoreText.startsWith(_includeGitignoreIndicator) &&
                   fileExists(gitIgnore)) {
-                log.warning('gitignore special');
                 rules.add(readTextFile(gitIgnore));
                 usedIgnoreFiles += ' or $gitIgnore';
               }
@@ -376,8 +373,6 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
               rules.add(readTextFile(gitIgnore));
               usedIgnoreFiles = gitIgnore;
             }
-
-            log.warning(usedIgnoreFiles);
 
             return rules.isEmpty
                 ? null
