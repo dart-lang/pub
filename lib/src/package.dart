@@ -240,7 +240,7 @@ See $workspacesDocUrl for more information.
   ];
 
   static final _includeGitignoreIndicator = RegExp(
-    // We look for "#* include .gitignore" at the start of a .pubignore
+    // We look for "#@ include .gitignore" at the start of a .pubignore
     // We don't necessarily care about whitespace, just that it's at the start
     // of the file, at the start of the line, and ends on its own line
     r'^#\s*@\s*include\s*\.gitignore\s*?\r?\n',
