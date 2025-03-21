@@ -122,7 +122,6 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   "languageVersion": "3.0"
 [E]    |   }
 [E]    |   ],
-[E]    |   "generated": "$TIME",
 [E]    |   "generator": "pub",
 [E]    |   "generatorVersion": "3.1.2+3",
 [E]    |   "pubCache": "file://$SANDBOX/cache"
@@ -309,7 +308,6 @@ FINE: Contents:
    |   "languageVersion": "3.0"
    |   }
    |   ],
-   |   "generated": "$TIME",
    |   "generator": "pub",
    |   "generatorVersion": "3.1.2+3",
    |   "pubCache": "file://$SANDBOX/cache"

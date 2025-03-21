@@ -501,7 +501,6 @@ See $workspacesDocUrl for more information.''',
     final packageConfig = PackageConfig(
       configVersion: 2,
       packages: entries,
-      generated: DateTime.now(),
       generator: 'pub',
       generatorVersion: sdk.version,
       additionalProperties: {
