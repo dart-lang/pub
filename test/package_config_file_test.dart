@@ -2,10 +2,14 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/package_config.dart';
 import 'package:test/test.dart';
+import 'package:test_descriptor/test_descriptor.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
@@ -308,4 +312,42 @@ void main() {
       ]).validate();
     });
   });
+
+  test(
+    'package_config and package_graph are not rewritten if unchanged',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      await d.appDir(dependencies: {'foo': 'any'}).create();
+
+      await pubGet();
+      final packageConfigFile = File(
+        p.join(sandbox, appPath, '.dart_tool', 'package_config.json'),
+      );
+      final packageConfig = jsonDecode(packageConfigFile.readAsStringSync());
+      final packageConfigTimestamp = packageConfigFile.lastModifiedSync();
+      final packageGraphFile = File(
+        p.join(sandbox, appPath, '.dart_tool', 'package_graph.json'),
+      );
+      final packageGraph = jsonDecode(packageGraphFile.readAsStringSync());
+      final packageGraphTimestamp = packageGraphFile.lastModifiedSync();
+      await pubGet(
+        silent: allOf(
+          contains(
+            '`.dart_tool/package_config.json` is unchanged. Not rewriting.',
+          ),
+          contains(
+            '`.dart_tool/package_graph.json` is unchanged. Not rewriting.',
+          ),
+        ),
+      );
+
+      expect(packageConfig, jsonDecode(packageConfigFile.readAsStringSync()));
+      expect(packageConfigFile.lastModifiedSync(), packageConfigTimestamp);
+
+      expect(packageGraph, jsonDecode(packageGraphFile.readAsStringSync()));
+      expect(packageGraphFile.lastModifiedSync(), packageGraphTimestamp);
+    },
+  );
 }

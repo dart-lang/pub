@@ -392,6 +392,9 @@ See $workspacesDocUrl for more information.''',
   /// Writes the .dart_tool/package_config.json file and workspace references to
   /// it.
   ///
+  /// Compares it to the existing .dart_tool/package_config.json and does not
+  /// rewrite it unless it is
+  ///
   /// Also writes the .dart_tool.package_graph.json file.
   ///
   /// If the workspace is non-trivial: For each package in the workspace write:
@@ -399,9 +402,10 @@ See $workspacesDocUrl for more information.''',
   /// package dir.
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
-    writeTextFile(
+
+    _writeJsonIfDifferent(
       packageConfigPath,
-      await _packageConfigFile(
+      await _packageConfigJson(
         cache,
         entrypointSdkConstraint:
             workspaceRoot
@@ -409,8 +413,10 @@ See $workspacesDocUrl for more information.''',
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
       ),
+      ignoredProperties: ['generated'],
     );
-    writeTextFile(packageGraphPath, await _packageGraphFile(cache));
+    _writeJsonIfDifferent(packageGraphPath, await _packageGraphJson(cache));
+
     if (workspaceRoot.workspaceChildren.isNotEmpty) {
       for (final package in workspaceRoot.transitiveWorkspace) {
         final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
@@ -428,8 +434,37 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
-  Future<String> _packageGraphFile(SystemCache cache) async {
-    return const JsonEncoder.withIndent('  ').convert({
+  void _writeJsonIfDifferent(
+    String path,
+    Map<String, dynamic> newContent, {
+    List<String> ignoredProperties = const [],
+  }) {
+    // Compare to the present package_config.json
+    // For purposes of equality we don't care about the `generated` timestamp.
+    dynamic original;
+    try {
+      final originalText = tryReadTextFile(path);
+      original = originalText == null ? null : jsonDecode(originalText);
+    } on FormatException {
+      // nothing
+    }
+    if (original is Map) {
+      for (final property in ignoredProperties) {
+        original[property] = newContent[property];
+      }
+    }
+    if (!const DeepCollectionEquality().equals(original, newContent)) {
+      writeTextFile(
+        path,
+        '${const JsonEncoder.withIndent('  ').convert(newContent)}\n',
+      );
+    } else {
+      log.fine('`$path` is unchanged. Not rewriting.');
+    }
+  }
+
+  Future<Map<String, Object?>> _packageGraphJson(SystemCache cache) async {
+    return {
       'roots':
           workspaceRoot.transitiveWorkspace.map((p) => p.name).toList()..sort(),
       'packages': [
@@ -449,14 +484,14 @@ See $workspacesDocUrl for more information.''',
           },
       ],
       'configVersion': 1,
-    });
+    };
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this entrypoint based on [lockFile].
   ///
   /// If [isCachedGlobal] no entry will be created for [workspaceRoot].
-  Future<String> _packageConfigFile(
+  Future<Map<String, Object?>> _packageConfigJson(
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
   }) async {
@@ -498,7 +533,7 @@ See $workspacesDocUrl for more information.''',
       }
     }
 
-    final packageConfig = PackageConfig(
+    return PackageConfig(
       configVersion: 2,
       packages: entries,
       generated: DateTime.now(),
@@ -512,12 +547,7 @@ See $workspacesDocUrl for more information.''',
         },
         'pubCache': p.toUri(p.absolute(cache.rootDir)).toString(),
       },
-    );
-
-    final jsonText = const JsonEncoder.withIndent(
-      '  ',
-    ).convert(packageConfig.toJson());
-    return '$jsonText\n';
+    ).toJson();
   }
 
   /// Gets all dependencies of the [workspaceRoot] package.
