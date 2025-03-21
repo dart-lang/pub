@@ -413,6 +413,7 @@ See $workspacesDocUrl for more information.''',
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
       ),
+      // Ignore the "generated" timestamp, if it's the only thing that changed.
       ignoredProperties: ['generated'],
     );
     _writeJsonIfDifferent(packageGraphPath, await _packageGraphJson(cache));
