@@ -332,13 +332,14 @@ void main() {
       );
       final packageGraph = jsonDecode(packageGraphFile.readAsStringSync());
       final packageGraphTimestamp = packageGraphFile.lastModifiedSync();
+      final s = p.separator;
       await pubGet(
         silent: allOf(
           contains(
-            '`.dart_tool/package_config.json` is unchanged. Not rewriting.',
+            '`.dart_tool${s}package_config.json` is unchanged. Not rewriting.',
           ),
           contains(
-            '`.dart_tool/package_graph.json` is unchanged. Not rewriting.',
+            '`.dart_tool${s}package_graph.json` is unchanged. Not rewriting.',
           ),
         ),
       );
