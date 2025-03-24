@@ -403,9 +403,9 @@ See $workspacesDocUrl for more information.''',
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
 
-    _writeJsonIfDifferent(
+    _writeIfDifferent(
       packageConfigPath,
-      await _packageConfigJson(
+      await _packageConfigFile(
         cache,
         entrypointSdkConstraint:
             workspaceRoot
@@ -413,10 +413,9 @@ See $workspacesDocUrl for more information.''',
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
       ),
-      // Ignore the "generated" timestamp, if it's the only thing that changed.
       ignoredProperties: ['generated'],
     );
-    _writeJsonIfDifferent(packageGraphPath, await _packageGraphJson(cache));
+    _writeIfDifferent(packageGraphPath, await _packageGraphFile(cache));
 
     if (workspaceRoot.workspaceChildren.isNotEmpty) {
       for (final package in workspaceRoot.transitiveWorkspace) {
@@ -435,37 +434,8 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
-  void _writeJsonIfDifferent(
-    String path,
-    Map<String, dynamic> newContent, {
-    List<String> ignoredProperties = const [],
-  }) {
-    // Compare to the present package_config.json
-    // For purposes of equality we don't care about the `generated` timestamp.
-    dynamic original;
-    try {
-      final originalText = tryReadTextFile(path);
-      original = originalText == null ? null : jsonDecode(originalText);
-    } on FormatException {
-      // nothing
-    }
-    if (original is Map) {
-      for (final property in ignoredProperties) {
-        original[property] = newContent[property];
-      }
-    }
-    if (!const DeepCollectionEquality().equals(original, newContent)) {
-      writeTextFile(
-        path,
-        '${const JsonEncoder.withIndent('  ').convert(newContent)}\n',
-      );
-    } else {
-      log.fine('`$path` is unchanged. Not rewriting.');
-    }
-  }
-
-  Future<Map<String, Object?>> _packageGraphJson(SystemCache cache) async {
-    return {
+  Future<String> _packageGraphFile(SystemCache cache) async {
+    return const JsonEncoder.withIndent('  ').convert({
       'roots':
           workspaceRoot.transitiveWorkspace.map((p) => p.name).toList()..sort(),
       'packages': [
@@ -485,14 +455,14 @@ See $workspacesDocUrl for more information.''',
           },
       ],
       'configVersion': 1,
-    };
+    });
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
   /// from this entrypoint based on [lockFile].
   ///
   /// If [isCachedGlobal] no entry will be created for [workspaceRoot].
-  Future<Map<String, Object?>> _packageConfigJson(
+  Future<String> _packageConfigFile(
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
   }) async {
@@ -534,10 +504,9 @@ See $workspacesDocUrl for more information.''',
       }
     }
 
-    return PackageConfig(
+    final packageConfig = PackageConfig(
       configVersion: 2,
       packages: entries,
-      generated: DateTime.now(),
       generator: 'pub',
       generatorVersion: sdk.version,
       additionalProperties: {
@@ -548,7 +517,26 @@ See $workspacesDocUrl for more information.''',
         },
         'pubCache': p.toUri(p.absolute(cache.rootDir)).toString(),
       },
-    ).toJson();
+    );
+
+    final jsonText = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(packageConfig.toJson());
+    return '$jsonText\n';
+  }
+
+  void _writeIfDifferent(String path, String newContent) {
+    // Compare to the present package_config.json
+    // For purposes of equality we don't care about the `generated` timestamp.
+    final originalText = tryReadTextFile(path);
+    if (originalText != newContent) {
+      writeTextFile(
+        path,
+        '${const JsonEncoder.withIndent('  ').convert(newContent)}\n',
+      );
+    } else {
+      log.fine('`$path` is unchanged. Not rewriting.');
+    }
   }
 
   /// Gets all dependencies of the [workspaceRoot] package.
