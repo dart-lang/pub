@@ -413,7 +413,6 @@ See $workspacesDocUrl for more information.''',
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
       ),
-      ignoredProperties: ['generated'],
     );
     _writeIfDifferent(packageGraphPath, await _packageGraphFile(cache));
 
@@ -530,10 +529,7 @@ See $workspacesDocUrl for more information.''',
     // For purposes of equality we don't care about the `generated` timestamp.
     final originalText = tryReadTextFile(path);
     if (originalText != newContent) {
-      writeTextFile(
-        path,
-        '${const JsonEncoder.withIndent('  ').convert(newContent)}\n',
-      );
+      writeTextFile(path, newContent);
     } else {
       log.fine('`$path` is unchanged. Not rewriting.');
     }
