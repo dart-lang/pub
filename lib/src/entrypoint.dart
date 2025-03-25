@@ -392,6 +392,9 @@ See $workspacesDocUrl for more information.''',
   /// Writes the .dart_tool/package_config.json file and workspace references to
   /// it.
   ///
+  /// Compares it to the existing .dart_tool/package_config.json and does not
+  /// rewrite it unless it is
+  ///
   /// Also writes the .dart_tool.package_graph.json file.
   ///
   /// If the workspace is non-trivial: For each package in the workspace write:
@@ -399,7 +402,8 @@ See $workspacesDocUrl for more information.''',
   /// package dir.
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
-    writeTextFile(
+
+    _writeIfDifferent(
       packageConfigPath,
       await _packageConfigFile(
         cache,
@@ -410,7 +414,8 @@ See $workspacesDocUrl for more information.''',
                 ?.effectiveConstraint,
       ),
     );
-    writeTextFile(packageGraphPath, await _packageGraphFile(cache));
+    _writeIfDifferent(packageGraphPath, await _packageGraphFile(cache));
+
     if (workspaceRoot.workspaceChildren.isNotEmpty) {
       for (final package in workspaceRoot.transitiveWorkspace) {
         final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
@@ -501,7 +506,6 @@ See $workspacesDocUrl for more information.''',
     final packageConfig = PackageConfig(
       configVersion: 2,
       packages: entries,
-      generated: DateTime.now(),
       generator: 'pub',
       generatorVersion: sdk.version,
       additionalProperties: {
@@ -518,6 +522,17 @@ See $workspacesDocUrl for more information.''',
       '  ',
     ).convert(packageConfig.toJson());
     return '$jsonText\n';
+  }
+
+  void _writeIfDifferent(String path, String newContent) {
+    // Compare to the present package_config.json
+    // For purposes of equality we don't care about the `generated` timestamp.
+    final originalText = tryReadTextFile(path);
+    if (originalText != newContent) {
+      writeTextFile(path, newContent);
+    } else {
+      log.fine('`$path` is unchanged. Not rewriting.');
+    }
   }
 
   /// Gets all dependencies of the [workspaceRoot] package.
