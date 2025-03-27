@@ -96,7 +96,7 @@ class Entrypoint {
         pubspec = Pubspec.load(
           dir,
           cache.sources,
-          containingDescription: RootDescription(dir),
+          containingDescription: ResolvedRootDescription.fromDir(dir),
           allowOverridesFile: true,
         );
       } on FileException {
@@ -118,7 +118,7 @@ class Entrypoint {
                 cache.sources,
                 expectedName: expectedName,
                 allowOverridesFile: withPubspecOverrides,
-                containingDescription: RootDescription(path),
+                containingDescription: ResolvedRootDescription.fromDir(path),
               ),
           withPubspecOverrides: true,
         );

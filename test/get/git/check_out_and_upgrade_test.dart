@@ -70,12 +70,12 @@ void main() {
       [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
     );
     await repo.create();
-    await repo.tag('v1');
+    await repo.tag('v1.0.0');
 
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../foo.git', 'tag_pattern': 'v*'},
+          'git': {'url': '../foo.git', 'tag_pattern': 'v{{version}}'},
           'version': '^1.0.0',
         },
       },
@@ -96,7 +96,7 @@ void main() {
       'foo.git',
       [d.libDir('foo'), d.libPubspec('foo', '1.5.0')],
     ).commit();
-    await repo.tag('v1.5');
+    await repo.tag('v1.5.0');
 
     // The untagged version should not be found by `pub upgrade`.
     await d.git(
@@ -109,7 +109,7 @@ void main() {
       'foo.git',
       [d.libDir('foo'), d.libPubspec('foo', '2.0.0')],
     ).commit();
-    await repo.tag('v2');
+    await repo.tag('v2.0.0');
 
     // A version that is not tagged according to the pattern should not be
     // chosen by the `upgrade --major-versions`.

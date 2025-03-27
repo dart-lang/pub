@@ -279,7 +279,8 @@ Specify multiple sdk packages with descriptors.''');
             location: Uri.parse(entrypoint.workPackage.pubspecPath),
             overridesFileContents: overridesFileContents,
             overridesLocation: Uri.file(overridesPath),
-            containingDescription: RootDescription(entrypoint.workPackage.dir),
+            containingDescription:
+                ResolvedRootDescription.fromDir(entrypoint.workPackage.dir),
           ),
         )
         .acquireDependencies(
@@ -563,7 +564,7 @@ Specify multiple sdk packages with descriptors.''');
       ref = cache.sdk.parseRef(
         packageName,
         argResults.sdk,
-        containingDescription: RootDescription(p.current),
+        containingDescription: ResolvedRootDescription.fromDir(p.current),
       );
     } else {
       ref = PackageRef(
@@ -653,7 +654,7 @@ Specify multiple sdk packages with descriptors.''');
             cache.sources,
             // Resolve relative paths relative to current, not where the
             // pubspec.yaml is.
-            containingDescription: RootDescription(p.current),
+            containingDescription: ResolvedRootDescription.fromDir(p.current),
           );
         } on FormatException catch (e) {
           usageException('Failed parsing package specification: ${e.message}');

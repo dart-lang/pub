@@ -141,7 +141,8 @@ in a directory `foo-<version>`.
         final pubspec = Pubspec.load(
           destinationDir,
           cache.sources,
-          containingDescription: RootDescription(destinationDir),
+          containingDescription:
+              ResolvedRootDescription.fromDir(destinationDir),
         );
         final buffer = StringBuffer();
         if (pubspec.resolution != Resolution.none) {
@@ -219,7 +220,7 @@ Creating `pubspec_overrides.yaml` to resolve it without those overrides.''',
           // Resolve relative paths relative to current, not where the
           // pubspec.yaml is.
           location: p.toUri(p.join(p.current, 'descriptor')),
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
       } on FormatException catch (e) {
         usageException('Failed parsing package specification: ${e.message}');

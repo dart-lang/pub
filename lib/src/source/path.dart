@@ -54,7 +54,7 @@ class PathSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
@@ -64,31 +64,31 @@ class PathSource extends Source {
     // Resolve the path relative to the containing file path, and remember
     // whether the original path was relative or absolute.
     final isRelative = p.isRelative(dir);
-
-    if (containingDescription is PathDescription) {
+    if (containingDescription is ResolvedPathDescription) {
       return PackageRef(
         name,
         PathDescription(
           isRelative
-              ? p.join(p.absolute(containingDescription.path), dir)
+              ? p.join(p.absolute(containingDescription.description.path), dir)
               : dir,
           isRelative,
         ),
       );
-    } else if (containingDescription is RootDescription) {
+    } else if (containingDescription is ResolvedRootDescription) {
       return PackageRef(
         name,
         PathDescription(
           p.normalize(
             p.join(
-              p.absolute(containingDescription.path),
+              p.absolute(containingDescription.description.path),
               description,
             ),
           ),
           isRelative,
         ),
       );
-    } else if (containingDescription is GitDescription) {
+    } else if (containingDescription is ResolvedGitDescription) {
+      print('containing: $containingDescription $name ${description} ');
       if (!isRelative) {
         throw FormatException(
           '"$description" is an absolute path, '
@@ -97,7 +97,7 @@ class PathSource extends Source {
       }
       final resolvedPath = p.url.normalize(
         p.url.joinAll([
-          containingDescription.path,
+          containingDescription.description.path,
           ...p.posix.split(dir),
         ]),
       );
@@ -110,10 +110,11 @@ class PathSource extends Source {
       return PackageRef(
         name,
         GitDescription.raw(
-          url: containingDescription.url,
-          relative: containingDescription.relative,
-          ref: containingDescription.ref,
-          tagPattern: containingDescription.tagPattern,
+          url: containingDescription.description.url,
+          relative: containingDescription.description.relative,
+          // Always refer to the same commit as the containing pubspec.
+          ref: containingDescription.resolvedRef,
+          tagPattern: null,
           path: resolvedPath,
         ),
       );
@@ -190,11 +191,12 @@ class PathSource extends Source {
     }
     // There's only one package ID for a given path. We just need to find the
     // version.
-    final pubspec = _loadPubspec(ref, cache);
+    final resolvedDescription = ResolvedPathDescription(description);
+    final pubspec = _loadPubspec(ref, resolvedDescription, cache);
     final id = PackageId(
       ref.name,
       pubspec.version,
-      ResolvedPathDescription(description),
+      resolvedDescription,
     );
     // Store the pubspec in memory if we need to refer to it again.
     cache.cachedPubspecs[id] = pubspec;
@@ -203,14 +205,18 @@ class PathSource extends Source {
 
   @override
   Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async =>
-      _loadPubspec(id.toRef(), cache);
+      _loadPubspec(
+        id.toRef(),
+        id.description as ResolvedPathDescription,
+        cache,
+      );
 
-  Pubspec _loadPubspec(PackageRef ref, SystemCache cache) {
-    final description = ref.description;
-    if (description is! PathDescription) {
-      throw ArgumentError('Wrong source');
-    }
-    final dir = _validatePath(ref.name, description);
+  Pubspec _loadPubspec(
+    PackageRef ref,
+    ResolvedPathDescription description,
+    SystemCache cache,
+  ) {
+    final dir = _validatePath(ref.name, description.description);
     return Pubspec.load(
       dir,
       cache.sources,

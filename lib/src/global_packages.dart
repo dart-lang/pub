@@ -115,7 +115,7 @@ class GlobalPackages {
           if (path != null) 'path': path,
           if (ref != null) 'ref': ref,
         },
-        containingDescription: RootDescription(p.current),
+        containingDescription: ResolvedRootDescription.fromDir(p.current),
       );
     } on FormatException catch (e) {
       throw ApplicationException(e.message);

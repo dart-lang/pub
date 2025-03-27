@@ -20,13 +20,16 @@ void main() {
         sdk: '^3.7.0',
         deps: {
           'bar': {
-            'git': {'url': p.join(d.sandbox, 'bar'), 'tag_pattern': '*'},
+            'git': {
+              'url': p.join(d.sandbox, 'bar'),
+              'tag_pattern': '{{version}}',
+            },
             'version': '^2.0.0',
           },
         },
       ),
     ]).create();
-    await d.git('foo.git', []).tag('a');
+    await d.git('foo.git', []).tag('1.0.0');
 
     await d.git('foo.git', [
       d.libPubspec(
@@ -35,13 +38,16 @@ void main() {
         sdk: '^3.7.0',
         deps: {
           'bar': {
-            'git': {'url': p.join(d.sandbox, 'bar.git'), 'tag_pattern': '*'},
+            'git': {
+              'url': p.join(d.sandbox, 'bar.git'),
+              'tag_pattern': '{{version}}',
+            },
             'version': '^1.0.0',
           },
         },
       ),
     ]).commit();
-    await d.git('foo.git', []).tag('b');
+    await d.git('foo.git', []).tag('2.0.0');
 
     await d.git('bar.git', [
       d.libPubspec(
@@ -50,13 +56,16 @@ void main() {
         sdk: '^3.7.0',
         deps: {
           'foo': {
-            'git': {'url': p.join(d.sandbox, 'bar.git'), 'tag_pattern': '*'},
+            'git': {
+              'url': p.join(d.sandbox, 'bar.git'),
+              'tag_pattern': '{{version}}',
+            },
             'version': '^2.0.0',
           },
         },
       ),
     ]).create();
-    await d.git('bar.git', []).tag('a');
+    await d.git('bar.git', []).tag('1.0.0');
 
     await d.git('bar.git', [
       d.libPubspec(
@@ -65,18 +74,24 @@ void main() {
         sdk: '^3.7.0',
         deps: {
           'foo': {
-            'git': {'url': p.join(d.sandbox, 'foo.git'), 'tag_pattern': '*'},
+            'git': {
+              'url': p.join(d.sandbox, 'foo.git'),
+              'tag_pattern': '{{version}}',
+            },
             'version': '^1.0.0',
           },
         },
       ),
     ]).commit();
-    await d.git('bar.git', []).tag('b');
+    await d.git('bar.git', []).tag('2.0.0');
 
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': p.join(d.sandbox, 'foo.git'), 'tag_pattern': '*'},
+          'git': {
+            'url': p.join(d.sandbox, 'foo.git'),
+            'tag_pattern': '{{version}}',
+          },
           'version': '^1.0.0',
         },
       },
@@ -97,8 +112,8 @@ void main() {
   });
 
   test(
-      'Versions inside a tag_pattern dependency can depend on versions from '
-      'another commit, via path-dependencies', () async {
+      'Versions inside a tag_pattern dependency cannot depend on '
+      'version from another commit via path-dependencies', () async {
     ensureGit();
 
     await d.git('repo.git', [
@@ -121,7 +136,9 @@ void main() {
         ),
       ]),
     ]).create();
-    await d.git('repo.git', []).tag('a');
+    await d.git('repo.git', []).tag('foo-1.0.0');
+    await d.git('repo.git', []).tag('bar-2.0.0');
+
     await d.git('repo.git', [
       d.dir('foo', [
         d.libPubspec(
@@ -142,12 +159,17 @@ void main() {
         ),
       ]),
     ]).commit();
-    await d.git('repo.git', []).tag('b');
+    await d.git('repo.git', []).tag('foo-2.0.0');
+    await d.git('repo.git', []).tag('bar-1.0.0');
 
     await d.appDir(
       dependencies: {
         'foo': {
-          'git': {'url': '../repo.git', 'tag_pattern': '*', 'path': 'foo'},
+          'git': {
+            'url': '../repo.git',
+            'tag_pattern': 'foo-{{version}}',
+            'path': 'foo',
+          },
           'version': '^1.0.0',
         },
       },
@@ -157,10 +179,10 @@ void main() {
     ).create();
 
     await pubGet(
-      output: allOf(
-        contains('+ foo 1.0.0'),
-        contains('+ bar 2.0.0'),
-      ),
+      error: matches(r'Because foo from git ../repo.git at HEAD in foo '
+          r'depends on bar \^2.0.0 from git '
+          r'which depends on foo from git ../repo.git at [a-f0-9]* in foo, '
+          r'foo <2.0.0 from git is forbidden'),
       environment: {
         '_PUB_TEST_SDK_VERSION': '3.7.0',
       },

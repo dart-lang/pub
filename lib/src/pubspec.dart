@@ -61,7 +61,7 @@ class Pubspec extends PubspecBase {
 
   /// It is used to resolve relative paths. And to resolve path-descriptions
   /// from a git dependency as git-descriptions.
-  final Description _containingDescription;
+  final ResolvedDescription _containingDescription;
 
   /// Directories of packages that should resolve together with this package.
   late List<String> workspace = () {
@@ -277,7 +277,7 @@ environment:
     SourceRegistry sources, {
     String? expectedName,
     bool allowOverridesFile = false,
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
   }) {
     final pubspecPath = p.join(packageDir, pubspecYamlFilename);
     final overridesPath = p.join(packageDir, pubspecOverridesFilename);
@@ -322,7 +322,7 @@ environment:
           sources,
           expectedName: expectedName,
           allowOverridesFile: withPubspecOverrides,
-          containingDescription: RootDescription(dir),
+          containingDescription: ResolvedRootDescription.fromDir(dir),
         );
   }
 
@@ -355,7 +355,7 @@ environment:
         _overridesFileFields = null,
         // This is a dummy value. Dependencies should already be resolved, so we
         // never need to do relative resolutions.
-        _containingDescription = RootDescription('.'),
+        _containingDescription = ResolvedRootDescription.fromDir('.'),
         super(
           fields == null ? YamlMap() : YamlMap.wrap(fields),
           name: name,
@@ -375,7 +375,7 @@ environment:
     YamlMap? overridesFields,
     String? expectedName,
     Uri? location,
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
   })  : _overridesFileFields = overridesFields,
         _includeDefaultSdkConstraint = true,
         _givenSdkConstraints = null,
@@ -423,7 +423,7 @@ environment:
     Uri? location,
     String? overridesFileContents,
     Uri? overridesLocation,
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
   }) {
     late final YamlMap pubspecMap;
     YamlMap? overridesFileMap;
@@ -567,7 +567,7 @@ Map<String, PackageRange> _parseDependencies(
   SourceRegistry sources,
   LanguageVersion languageVersion,
   String? packageName,
-  Description containingDescription, {
+  ResolvedDescription containingDescription, {
   _FileType fileType = _FileType.pubspec,
 }) {
   final dependencies = <String, PackageRange>{};
