@@ -14,10 +14,9 @@ import '../test_pub.dart';
 
 void main() {
   forBothPubGetAndUpgrade((command) {
-    test(
-        'fails gracefully '
-        'if the package server responds with broken package listings',
-        () async {
+    test('fails gracefully '
+        'if the package server responds '
+        'with broken package listings', () async {
       final server = await servePackages();
       server.serve('foo', '1.2.3');
       server.expect(

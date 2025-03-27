@@ -80,8 +80,9 @@ class VersionSolver {
 
   /// Names of packages that are overridden in this resolution as a [Set] for
   /// convenience.
-  late final Set<String> _overriddenPackages =
-      MapKeySet(_root.allOverridesInWorkspace);
+  late final Set<String> _overriddenPackages = MapKeySet(
+    _root.allOverridesInWorkspace,
+  );
 
   /// The set of packages for which the lockfile should be ignored.
   final Set<String> _unlock;
@@ -99,18 +100,17 @@ class VersionSolver {
     this._lockFile,
     Iterable<String> unlock, {
     Map<String, Version> sdkOverrides = const {},
-  })  : _sdkOverrides = sdkOverrides,
-        _dependencyOverrides = _root.allOverridesInWorkspace,
-        _unlock = {...unlock};
+  }) : _sdkOverrides = sdkOverrides,
+       _dependencyOverrides = _root.allOverridesInWorkspace,
+       _unlock = {...unlock};
 
   /// Prime the solver with [constraints].
   void addConstraints(Iterable<ConstraintAndCause> constraints) {
     for (final constraint in constraints) {
       _addIncompatibility(
-        Incompatibility(
-          [Term(constraint.range, false)],
-          PackageVersionForbiddenCause(reason: constraint.cause),
-        ),
+        Incompatibility([
+          Term(constraint.range, false),
+        ], PackageVersionForbiddenCause(reason: constraint.cause)),
       );
     }
   }
@@ -120,10 +120,9 @@ class VersionSolver {
   Future<SolveResult> solve() async {
     _stopwatch.start();
     _addIncompatibility(
-      Incompatibility(
-        [Term(PackageRange.root(_root), false)],
-        RootIncompatibilityCause(),
-      ),
+      Incompatibility([
+        Term(PackageRange.root(_root), false),
+      ], RootIncompatibilityCause()),
     );
 
     try {
@@ -138,8 +137,10 @@ class VersionSolver {
       });
     } finally {
       // Gather some solving metrics.
-      log.solver('Version solving took ${_stopwatch.elapsed} seconds.\n'
-          'Tried ${_solution.attemptedSolutions} solutions.');
+      log.solver(
+        'Version solving took ${_stopwatch.elapsed} seconds.\n'
+        'Tried ${_solution.attemptedSolutions} solutions.',
+      );
     }
   }
 
@@ -222,8 +223,10 @@ class VersionSolver {
     // [incompatibility] is satisfied and we have a conflict.
     if (unsatisfied == null) return #conflict;
 
-    _log("derived:${unsatisfied.isPositive ? ' not' : ''} "
-        '${unsatisfied.package}');
+    _log(
+      "derived:${unsatisfied.isPositive ? ' not' : ''} "
+      '${unsatisfied.package}',
+    );
     _solution.derive(
       unsatisfied.package,
       !unsatisfied.isPositive,
@@ -285,8 +288,10 @@ class VersionSolver {
           mostRecentSatisfier = satisfier;
           difference = null;
         } else {
-          previousSatisfierLevel =
-              math.max(previousSatisfierLevel, satisfier.decisionLevel);
+          previousSatisfierLevel = math.max(
+            previousSatisfierLevel,
+            satisfier.decisionLevel,
+          );
         }
 
         if (mostRecentTerm == term) {
@@ -350,8 +355,10 @@ class VersionSolver {
 
       final partially = difference == null ? '' : ' partially';
       final bang = log.red('!');
-      _log('$bang $mostRecentTerm is$partially satisfied by '
-          '$mostRecentSatisfier');
+      _log(
+        '$bang $mostRecentTerm is$partially satisfied by '
+        '$mostRecentSatisfier',
+      );
       _log('$bang which is caused by "${mostRecentSatisfier.cause}"');
       _log('$bang thus: $incompatibility');
     }
@@ -373,10 +380,9 @@ class VersionSolver {
     for (var candidate in unsatisfied) {
       if (candidate.source is! UnknownSource) continue;
       _addIncompatibility(
-        Incompatibility(
-          [Term(candidate.toRef().withConstraint(VersionConstraint.any), true)],
-          UnknownSourceIncompatibilityCause(),
-        ),
+        Incompatibility([
+          Term(candidate.toRef().withConstraint(VersionConstraint.any), true),
+        ], UnknownSourceIncompatibilityCause()),
       );
       return candidate.name;
     }
@@ -395,10 +401,9 @@ class VersionSolver {
       version = await _packageLister(package).bestVersion(package.constraint);
     } on PackageNotFoundException catch (error) {
       _addIncompatibility(
-        Incompatibility(
-          [Term(package.toRef().withConstraint(VersionConstraint.any), true)],
-          PackageNotFoundIncompatibilityCause(error),
-        ),
+        Incompatibility([
+          Term(package.toRef().withConstraint(VersionConstraint.any), true),
+        ], PackageNotFoundIncompatibilityCause(error)),
       );
       return package.name;
     }
@@ -409,31 +414,33 @@ class VersionSolver {
       // any version instead so that the lister gives us more general
       // incompatibilities. This makes error reporting much nicer.
       if (_excludesSingleVersion(package.constraint)) {
-        version =
-            await _packageLister(package).bestVersion(VersionConstraint.any);
+        version = await _packageLister(
+          package,
+        ).bestVersion(VersionConstraint.any);
       } else {
         // If there are no versions that satisfy [package.constraint], add an
         // incompatibility that indicates that.
         _addIncompatibility(
-          Incompatibility(
-            [Term(package, true)],
-            NoVersionsIncompatibilityCause(),
-          ),
+          Incompatibility([
+            Term(package, true),
+          ], NoVersionsIncompatibilityCause()),
         );
         return package.name;
       }
     }
 
     var conflict = false;
-    for (var incompatibility
-        in await _packageLister(package).incompatibilitiesFor(version!)) {
+    for (var incompatibility in await _packageLister(
+      package,
+    ).incompatibilitiesFor(version!)) {
       _addIncompatibility(incompatibility);
 
       // If an incompatibility is already satisfied, then selecting [version]
       // would cause a conflict. We'll continue adding its dependencies, then go
       // back to unit propagation which will guide us to choose a better
       // version.
-      conflict = conflict ||
+      conflict =
+          conflict ||
           incompatibility.terms.every(
             (term) =>
                 term.package.name == package.name || _solution.satisfies(term),
@@ -507,12 +514,13 @@ class VersionSolver {
       // way that doesn't fetch.
       List<PackageId> ids;
       try {
-        ids = package.source is HostedSource
-            ? await _systemCache.getVersions(
-                package.toRef(),
-                maxAge: const Duration(days: 3),
-              )
-            : [package];
+        ids =
+            package.source is HostedSource
+                ? await _systemCache.getVersions(
+                  package.toRef(),
+                  maxAge: const Duration(days: 3),
+                )
+                : [package];
       } on Exception {
         ids = <PackageId>[package];
       }

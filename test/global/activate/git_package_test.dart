@@ -20,14 +20,18 @@ void main() {
     await runPub(
       args: ['global', 'activate', '-sgit', '../foo.git'],
       output: allOf(
-        startsWith('Resolving dependencies...\n'
-            'Downloading packages...\n'
-            '+ foo 1.0.0 from git ..${p.separator}foo.git at '),
+        startsWith(
+          'Resolving dependencies...\n'
+          'Downloading packages...\n'
+          '+ foo 1.0.0 from git ..${p.separator}foo.git at ',
+        ),
         // Specific revision number goes here.
-        endsWith('Building package executables...\n'
-            'Built foo:foo.\n'
-            'Activated foo 1.0.0 from Git repository '
-            '"..${p.separator}foo.git".'),
+        endsWith(
+          'Building package executables...\n'
+          'Built foo:foo.\n'
+          'Activated foo 1.0.0 from Git repository '
+          '"..${p.separator}foo.git".',
+        ),
       ),
     );
   });
@@ -38,31 +42,22 @@ void main() {
     await d.git('foo.git', [
       d.libPubspec('foo', '0.0.0'),
       d.dir('bin', [d.file('foo.dart', "main() => print('0');")]),
-      d.dir(
-        'sub',
-        [
-          d.libPubspec('foo', '1.0.0'),
-          d.dir('bin', [d.file('sub.dart', "main() => print('1');")]),
-        ],
-      ),
+      d.dir('sub', [
+        d.libPubspec('foo', '1.0.0'),
+        d.dir('bin', [d.file('sub.dart', "main() => print('1');")]),
+      ]),
     ]).create();
     await d.git('foo.git', [
-      d.dir(
-        'sub',
-        [
-          d.libPubspec('sub', '2.0.0'),
-          d.dir('bin', [d.file('sub.dart', "main() => print('2');")]),
-        ],
-      ),
+      d.dir('sub', [
+        d.libPubspec('sub', '2.0.0'),
+        d.dir('bin', [d.file('sub.dart', "main() => print('2');")]),
+      ]),
     ]).commit();
     await d.git('foo.git', [
-      d.dir(
-        'sub',
-        [
-          d.libPubspec('sub', '3.0.0'),
-          d.dir('bin', [d.file('sub.dart', "main() => print('3');")]),
-        ],
-      ),
+      d.dir('sub', [
+        d.libPubspec('sub', '3.0.0'),
+        d.dir('bin', [d.file('sub.dart', "main() => print('3');")]),
+      ]),
     ]).commit();
 
     await runPub(
@@ -78,24 +73,21 @@ void main() {
         '--git-path=sub/',
       ],
       output: allOf(
-        startsWith('Resolving dependencies...\n'
-            'Downloading packages...\n'
-            '+ sub 2.0.0 from git ..${p.separator}foo.git at'),
+        startsWith(
+          'Resolving dependencies...\n'
+          'Downloading packages...\n'
+          '+ sub 2.0.0 from git ..${p.separator}foo.git at',
+        ),
         // Specific revision number goes here.
         contains('in sub'),
-        endsWith('Building package executables...\n'
-            'Built sub:sub.\n'
-            'Activated sub 2.0.0 from Git repository '
-            '"..${p.separator}foo.git".'),
+        endsWith(
+          'Building package executables...\n'
+          'Built sub:sub.\n'
+          'Activated sub 2.0.0 from Git repository '
+          '"..${p.separator}foo.git".',
+        ),
       ),
     );
-    await runPub(
-      args: [
-        'global',
-        'run',
-        'sub',
-      ],
-      output: contains('2'),
-    );
+    await runPub(args: ['global', 'run', 'sub'], output: contains('2'));
   });
 }

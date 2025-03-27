@@ -42,8 +42,10 @@ const _secret = 'SWeqj8seoJW0w7_CpEPFLX0K';
 /// The URL from which the pub client will retrieve Google's OIDC endpoint URIs.
 ///
 /// [Google OpenID Connect documentation]: https://developers.google.com/identity/openid-connect/openid-connect#discovery
-final _oidcDiscoveryDocumentEndpoint =
-    Uri.https('accounts.google.com', '/.well-known/openid-configuration');
+final _oidcDiscoveryDocumentEndpoint = Uri.https(
+  'accounts.google.com',
+  '/.well-known/openid-configuration',
+);
 
 /// The URL to which the user will be directed to authorize the pub client to
 /// get an OAuth2 access token.
@@ -52,9 +54,10 @@ final _oidcDiscoveryDocumentEndpoint =
 /// a refresh token from the server. See the [Google OAuth2 documentation][].
 ///
 /// [Google OAuth2 documentation]: https://developers.google.com/accounts/docs/OAuth2WebServer#offline
-final _authorizationEndpoint =
-    Uri.parse('https://accounts.google.com/o/oauth2/auth?access_type=offline'
-        '&approval_prompt=force');
+final _authorizationEndpoint = Uri.parse(
+  'https://accounts.google.com/o/oauth2/auth?access_type=offline'
+  '&approval_prompt=force',
+);
 
 /// The URL from which the pub client will request an access token once it's
 /// been authorized by the user.
@@ -116,32 +119,36 @@ void logout() {
 /// prompting the user for their authorization. It will also re-authorize and
 /// re-run [fn] if a recoverable authorization error is detected.
 Future<T> withClient<T>(Future<T> Function(http.Client) fn) {
-  return _getClient().then((client) {
-    return fn(client).whenComplete(() {
-      // TODO(sigurdm): refactor the http subsystem, so we can close [client]
-      // here.
+  return _getClient()
+      .then((client) {
+        return fn(client).whenComplete(() {
+          // TODO(sigurdm): refactor the http subsystem, so we can close
+          // [client] here.
 
-      // Be sure to save the credentials even when an error happens.
-      _saveCredentials(client.credentials);
-    });
-  }).catchError((Object error) {
-    if (error is _ExpirationException) {
-      log.error("Pub's authorization to upload packages has expired and "
-          "can't be automatically refreshed.");
-      return withClient(fn);
-    } else if (error is _AuthorizationException) {
-      var message = 'OAuth2 authorization failed';
-      if (error.description != null) {
-        message = '$message (${error.description})';
-      }
-      log.error('$message.');
-      _clearCredentials();
-      return withClient(fn);
-    } else {
-      // ignore: only_throw_errors
-      throw error;
-    }
-  });
+          // Be sure to save the credentials even when an error happens.
+          _saveCredentials(client.credentials);
+        });
+      })
+      .catchError((Object error) {
+        if (error is _ExpirationException) {
+          log.error(
+            "Pub's authorization to upload packages has expired and "
+            "can't be automatically refreshed.",
+          );
+          return withClient(fn);
+        } else if (error is _AuthorizationException) {
+          var message = 'OAuth2 authorization failed';
+          if (error.description != null) {
+            message = '$message (${error.description})';
+          }
+          log.error('$message.');
+          _clearCredentials();
+          return withClient(fn);
+        } else {
+          // ignore: only_throw_errors
+          throw error;
+        }
+      });
 }
 
 /// Gets a new OAuth2 client.
@@ -180,8 +187,10 @@ Credentials? loadCredentials() {
 
     final credentials = Credentials.fromJson(readTextFile(path));
     if (credentials.isExpired && !credentials.canRefresh) {
-      log.error("Pub's authorization to upload packages has expired and "
-          "can't be automatically refreshed.");
+      log.error(
+        "Pub's authorization to upload packages has expired and "
+        "can't be automatically refreshed.",
+      );
       return null; // null means re-authorize.
     }
 
@@ -189,8 +198,10 @@ Credentials? loadCredentials() {
   } catch (e) {
     // Don't print the error message itself here. I might be leaking data about
     // credentials.
-    log.error('Warning: could not load the saved OAuth2 credentials.\n'
-        'Obtaining new credentials...');
+    log.error(
+      'Warning: could not load the saved OAuth2 credentials.\n'
+      'Obtaining new credentials...',
+    );
     return null; // null means re-authorize.
   }
 }
@@ -220,7 +231,9 @@ String? _credentialsFile() {
 /// Returns a Future that completes to a fully-authorized [_Client].
 Future<_Client> _authorize() async {
   final grant = _AuthorizationCodeGrant(
-    _identifier, _authorizationEndpoint, tokenEndpoint,
+    _identifier,
+    _authorizationEndpoint,
+    tokenEndpoint,
     secret: _secret,
     // Google's OAuth2 API doesn't support basic auth.
     basicAuth: false,
@@ -242,8 +255,9 @@ Future<_Client> _authorize() async {
     // Closing the server here is safe, since it will wait until the response
     // is sent to actually shut down.
     server.close();
-    completer
-        .complete(grant.handleAuthorizationResponse(queryToMap(queryString)));
+    completer.complete(
+      grant.handleAuthorizationResponse(queryToMap(queryString)),
+    );
 
     return shelf.Response.found('https://pub.dev/authorized');
   });
@@ -254,10 +268,11 @@ Future<_Client> _authorize() async {
   );
 
   log.message(
-      'Pub needs your authorization to upload packages on your behalf.\n'
-      'In a web browser, go to $authUrl\n'
-      'Then click "Allow access".\n\n'
-      'Waiting for your authorization...');
+    'Pub needs your authorization to upload packages on your behalf.\n'
+    'In a web browser, go to $authUrl\n'
+    'Then click "Allow access".\n\n'
+    'Waiting for your authorization...',
+  );
 
   final client = await completer.future;
   log.message('Successfully authorized.\n');
@@ -270,10 +285,12 @@ Future<_Client> _authorize() async {
 /// See https://developers.google.com/identity/openid-connect/openid-connect#discovery
 Future<Map> fetchOidcDiscoveryDocument() async {
   final discoveryResponse = await retryForHttp(
-      'fetching Google\'s OpenID Connect Discovery document', () async {
-    final request = http.Request('GET', _oidcDiscoveryDocumentEndpoint);
-    return await globalHttpClient.fetch(request);
-  });
+    'fetching Google\'s OpenID Connect Discovery document',
+    () async {
+      final request = http.Request('GET', _oidcDiscoveryDocumentEndpoint);
+      return await globalHttpClient.fetch(request);
+    },
+  );
   return parseJsonResponse(discoveryResponse);
 }
 
@@ -419,14 +436,14 @@ class _AuthorizationCodeGrant {
     http.Client? httpClient,
     _CredentialsRefreshedCallback? onCredentialsRefreshed,
     Map<String, dynamic> Function(MediaType? contentType, String body)?
-        getParameters,
+    getParameters,
     String? codeVerifier,
-  })  : _basicAuth = basicAuth,
-        _httpClient = httpClient ?? http.Client(),
-        _delimiter = delimiter ?? ' ',
-        _getParameters = getParameters ?? parseJsonParameters,
-        _onCredentialsRefreshed = onCredentialsRefreshed,
-        _codeVerifier = codeVerifier ?? _createCodeVerifier();
+  }) : _basicAuth = basicAuth,
+       _httpClient = httpClient ?? http.Client(),
+       _delimiter = delimiter ?? ' ',
+       _getParameters = getParameters ?? parseJsonParameters,
+       _onCredentialsRefreshed = onCredentialsRefreshed,
+       _codeVerifier = codeVerifier ?? _createCodeVerifier();
 
   /// Returns the URL to which the resource owner should be redirected to
   /// authorize this client.
@@ -509,13 +526,17 @@ class _AuthorizationCodeGrant {
 
     if (_stateString != null) {
       if (!parameters.containsKey('state')) {
-        throw FormatException('Invalid OAuth response for '
-            '"$authorizationEndpoint": parameter "state" expected to be '
-            '"$_stateString", was missing.');
+        throw FormatException(
+          'Invalid OAuth response for '
+          '"$authorizationEndpoint": parameter "state" expected to be '
+          '"$_stateString", was missing.',
+        );
       } else if (parameters['state'] != _stateString) {
-        throw FormatException('Invalid OAuth response for '
-            '"$authorizationEndpoint": parameter "state" expected to be '
-            '"$_stateString", was "${parameters['state']}".');
+        throw FormatException(
+          'Invalid OAuth response for '
+          '"$authorizationEndpoint": parameter "state" expected to be '
+          '"$_stateString", was "${parameters['state']}".',
+        );
       }
     }
 
@@ -525,9 +546,11 @@ class _AuthorizationCodeGrant {
       final uri = uriString == null ? null : Uri.parse(uriString);
       throw _AuthorizationException(parameters['error']!, description, uri);
     } else if (!parameters.containsKey('code')) {
-      throw FormatException('Invalid OAuth response for '
-          '"$authorizationEndpoint": did not contain required parameter '
-          '"code".');
+      throw FormatException(
+        'Invalid OAuth response for '
+        '"$authorizationEndpoint": did not contain required parameter '
+        '"code".',
+      );
     }
 
     return _handleAuthorizationCode(parameters['code']);
@@ -583,8 +606,11 @@ class _AuthorizationCodeGrant {
       if (secret != null) body['client_secret'] = secret;
     }
 
-    final response =
-        await _httpClient!.post(tokenEndpoint, headers: headers, body: body);
+    final response = await _httpClient!.post(
+      tokenEndpoint,
+      headers: headers,
+      body: body,
+    );
 
     final credentials = _handleAccessTokenResponse(
       response,
@@ -606,7 +632,8 @@ class _AuthorizationCodeGrant {
 
   // Randomly generate a 128 character string to be used as the PKCE code
   // verifier.
-  static String _createCodeVerifier() => List.generate(
+  static String _createCodeVerifier() =>
+      List.generate(
         128,
         (i) => _charset[Random.secure().nextInt(_charset.length)],
       ).join();
@@ -753,9 +780,9 @@ class _Client extends http.BaseClient {
     _CredentialsRefreshedCallback? onCredentialsRefreshed,
     bool basicAuth = true,
     http.Client? httpClient,
-  })  : _basicAuth = basicAuth,
-        _onCredentialsRefreshed = onCredentialsRefreshed,
-        _httpClient = httpClient ?? http.Client() {
+  }) : _basicAuth = basicAuth,
+       _onCredentialsRefreshed = onCredentialsRefreshed,
+       _httpClient = httpClient ?? http.Client() {
     if (identifier == null && secret != null) {
       throw ArgumentError('secret may not be passed without identifier.');
     }
@@ -787,8 +814,9 @@ class _Client extends http.BaseClient {
       return response;
     }
 
-    final challenge = challenges
-        .firstWhereOrNull((challenge) => challenge.scheme == 'bearer');
+    final challenge = challenges.firstWhereOrNull(
+      (challenge) => challenge.scheme == 'bearer',
+    );
     if (challenge == null) return response;
 
     final params = challenge.parameters;
@@ -956,14 +984,14 @@ class Credentials {
     this.expiration,
     String? delimiter,
     Map<String, dynamic> Function(MediaType? mediaType, String body)?
-        getParameters,
-  })  : scopes = UnmodifiableListView(
-          // Explicitly type-annotate the list literal to work around
-          // sdk#24202.
-          scopes == null ? <String>[] : scopes.toList(),
-        ),
-        _delimiter = delimiter ?? ' ',
-        _getParameters = getParameters ?? parseJsonParameters;
+    getParameters,
+  }) : scopes = UnmodifiableListView(
+         // Explicitly type-annotate the list literal to work around
+         // sdk#24202.
+         scopes == null ? <String>[] : scopes.toList(),
+       ),
+       _delimiter = delimiter ?? ' ',
+       _getParameters = getParameters ?? parseJsonParameters;
 
   /// Loads a set of credentials from a JSON-serialized form.
   ///
@@ -1040,13 +1068,13 @@ class Credentials {
   /// Nothing is guaranteed about the output except that it's valid JSON and
   /// compatible with [Credentials.toJson].
   String toJson() => jsonEncode({
-        'accessToken': accessToken,
-        'refreshToken': refreshToken,
-        'idToken': idToken,
-        'tokenEndpoint': tokenEndpoint?.toString(),
-        'scopes': scopes,
-        'expiration': expiration?.millisecondsSinceEpoch,
-      });
+    'accessToken': accessToken,
+    'refreshToken': refreshToken,
+    'idToken': idToken,
+    'tokenEndpoint': tokenEndpoint?.toString(),
+    'scopes': scopes,
+    'expiration': expiration?.millisecondsSinceEpoch,
+  });
 
   /// Returns a new set of refreshed credentials.
   ///
@@ -1079,11 +1107,15 @@ class Credentials {
     final startTime = DateTime.now();
     final tokenEndpoint = this.tokenEndpoint;
     if (refreshToken == null) {
-      throw StateError("Can't refresh credentials without a refresh "
-          'token.');
+      throw StateError(
+        "Can't refresh credentials without a refresh "
+        'token.',
+      );
     } else if (tokenEndpoint == null) {
-      throw StateError("Can't refresh credentials without a token "
-          'endpoint.');
+      throw StateError(
+        "Can't refresh credentials without a token "
+        'endpoint.',
+      );
     }
 
     final headers = <String, String>{};
@@ -1098,8 +1130,11 @@ class Credentials {
       if (secret != null) body['client_secret'] = secret;
     }
 
-    final response =
-        await httpClient.post(tokenEndpoint, headers: headers, body: body);
+    final response = await httpClient.post(
+      tokenEndpoint,
+      headers: headers,
+      body: body,
+    );
     final credentials = _handleAccessTokenResponse(
       response,
       tokenEndpoint,
@@ -1165,7 +1200,7 @@ Credentials _handleAccessTokenResponse(
   List<String>? scopes,
   String delimiter, {
   Map<String, dynamic> Function(MediaType? contentType, String body)?
-      getParameters,
+  getParameters,
 }) {
   getParameters ??= parseJsonParameters;
 
@@ -1179,8 +1214,10 @@ Credentials _handleAccessTokenResponse(
       throw const FormatException('Missing Content-Type string.');
     }
 
-    final parameters =
-        getParameters(MediaType.parse(contentTypeString), response.body);
+    final parameters = getParameters(
+      MediaType.parse(contentTypeString),
+      response.body,
+    );
 
     for (var requiredParameter in ['access_token', 'token_type']) {
       if (!parameters.containsKey(requiredParameter)) {
@@ -1189,8 +1226,9 @@ Credentials _handleAccessTokenResponse(
         );
       } else if (parameters[requiredParameter] is! String) {
         throw FormatException(
-            'required parameter "$requiredParameter" was not a string, was '
-            '"${parameters[requiredParameter]}"');
+          'required parameter "$requiredParameter" was not a string, was '
+          '"${parameters[requiredParameter]}"',
+        );
       }
     }
 
@@ -1232,9 +1270,12 @@ Credentials _handleAccessTokenResponse(
     final scope = parameters['scope'] as String?;
     if (scope != null) scopes = scope.split(delimiter);
 
-    final expiration = expiresIn == null
-        ? null
-        : startTime.add(Duration(seconds: expiresIn as int) - _expirationGrace);
+    final expiration =
+        expiresIn == null
+            ? null
+            : startTime.add(
+              Duration(seconds: expiresIn as int) - _expirationGrace,
+            );
 
     return Credentials(
       parameters['access_token'] as String,
@@ -1245,8 +1286,10 @@ Credentials _handleAccessTokenResponse(
       expiration: expiration,
     );
   } on FormatException catch (e) {
-    throw FormatException('Invalid OAuth response for "$tokenEndpoint": '
-        '${e.message}.\n\n${response.body}');
+    throw FormatException(
+      'Invalid OAuth response for "$tokenEndpoint": '
+      '${e.message}.\n\n${response.body}',
+    );
   }
 }
 
@@ -1266,8 +1309,10 @@ void _handleErrorResponse(
     if (reasonPhrase != null && reasonPhrase.isNotEmpty) {
       reason = ' $reasonPhrase';
     }
-    throw FormatException('OAuth request for "$tokenEndpoint" failed '
-        'with status ${response.statusCode}$reason.\n\n${response.body}');
+    throw FormatException(
+      'OAuth request for "$tokenEndpoint" failed '
+      'with status ${response.statusCode}$reason.\n\n${response.body}',
+    );
   }
 
   final contentTypeString = response.headers['content-type'];
@@ -1279,8 +1324,10 @@ void _handleErrorResponse(
   if (!parameters.containsKey('error')) {
     throw const FormatException('did not contain required parameter "error"');
   } else if (parameters['error'] is! String) {
-    throw FormatException('required parameter "error" was not a string, was '
-        '"${parameters["error"]}"');
+    throw FormatException(
+      'required parameter "error" was not a string, was '
+      '"${parameters["error"]}"',
+    );
   }
 
   for (var name in ['error_description', 'error_uri']) {
@@ -1302,10 +1349,8 @@ void _handleErrorResponse(
 }
 
 /// The type of a callback that parses parameters from an HTTP response.
-typedef _GetParameters = Map<String, dynamic> Function(
-  MediaType? contentType,
-  String body,
-);
+typedef _GetParameters =
+    Map<String, dynamic> Function(MediaType? contentType, String body);
 
 /// Parses parameters from a response with a JSON body, as per the
 /// [OAuth2 spec][].
@@ -1333,8 +1378,8 @@ Map<String, dynamic> parseJsonParameters(MediaType? contentType, String body) {
 /// Adds additional query parameters to [url], overwriting the original
 /// parameters if a name conflict occurs.
 Uri _addQueryParameters(Uri url, Map<String, String> parameters) => url.replace(
-      queryParameters: Map.from(url.queryParameters)..addAll(parameters),
-    );
+  queryParameters: Map.from(url.queryParameters)..addAll(parameters),
+);
 
 String _basicAuthHeader(String identifier, String secret) {
   final userPass = '${Uri.encodeFull(identifier)}:${Uri.encodeFull(secret)}';

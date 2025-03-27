@@ -12,20 +12,24 @@ void main() {
   test('cannot use both --path and --git-<option> flags', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
-    await d
-        .dir('bar', [d.libDir('bar'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
+    await d.dir('bar', [
+      d.libDir('bar'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['foo', '--git-url', '../foo.git', '--path', '../bar'],
       error: allOf([
-        contains('Packages can only have one source, pub add flags '
-            '"--git-url" and "--path" are'),
+        contains(
+          'Packages can only have one source, pub add flags '
+          '"--git-url" and "--path" are',
+        ),
         contains('conflicting.'),
       ]),
       exitCode: exit_codes.USAGE,
@@ -46,8 +50,10 @@ void main() {
     final server = await startPackageServer();
     server.serve('foo', '1.2.3');
 
-    await d
-        .dir('bar', [d.libDir('bar'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('bar', [
+      d.libDir('bar'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
@@ -59,8 +65,10 @@ void main() {
         '../bar',
       ],
       error: allOf([
-        contains('Packages can only have one source, pub add flags '
-            '"--hosted-url" and "--path" are'),
+        contains(
+          'Packages can only have one source, pub add flags '
+          '"--hosted-url" and "--path" are',
+        ),
         contains('conflicting.'),
       ]),
       exitCode: exit_codes.USAGE,
@@ -83,10 +91,10 @@ void main() {
 
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
@@ -98,8 +106,10 @@ void main() {
         '../foo.git',
       ],
       error: allOf([
-        contains('Packages can only have one source, pub add flags '
-            '"--git-url" and "--hosted-url"'),
+        contains(
+          'Packages can only have one source, pub add flags '
+          '"--git-url" and "--hosted-url"',
+        ),
         contains('are conflicting.'),
       ]),
       exitCode: exit_codes.USAGE,

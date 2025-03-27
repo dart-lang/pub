@@ -58,8 +58,10 @@ Remove secret token for package repository at <hosted-url>.''';
         );
       }
     } on FormatException catch (e) {
-      usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'
-          '${e.message}');
+      usageException(
+        'Invalid [hosted-url]: "${argResults.rest.first}"\n'
+        '${e.message}',
+      );
     }
   }
 }

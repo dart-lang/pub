@@ -25,12 +25,7 @@ void main() {
   forBothPubGetAndUpgrade((command) {
     Future<void> testWith(dynamic dependency) async {
       await d.dir(appPath, [
-        d.libPubspec(
-          'app',
-          '1.0.0',
-          deps: {'foo': dependency},
-          sdk: '^2.15.0',
-        ),
+        d.libPubspec('app', '1.0.0', deps: {'foo': dependency}, sdk: '^2.15.0'),
       ]).create();
 
       await pubCommand(

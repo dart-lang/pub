@@ -42,12 +42,10 @@ void main() {
     await runPub(
       args: ['cache', 'preload', archivePath1, archivePath2],
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
-      output: allOf(
-        [
-          contains('Installed $archivePath1 in cache as foo 1.0.0.'),
-          contains('Installed $archivePath2 in cache as foo 2.0.0.'),
-        ],
-      ),
+      output: allOf([
+        contains('Installed $archivePath1 in cache as foo 1.0.0.'),
+        contains('Installed $archivePath2 in cache as foo 2.0.0.'),
+      ]),
     );
     await d.cacheDir({'foo': '1.0.0'}).validate();
     await d.cacheDir({'foo': '2.0.0'}).validate();
@@ -63,8 +61,7 @@ void main() {
     await pubGet(args: ['--offline']);
   });
 
-  test(
-      'installs package according to PUB_HOSTED_URL '
+  test('installs package according to PUB_HOSTED_URL '
       'even on non-official server', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
@@ -105,8 +102,9 @@ void main() {
     await runPub(
       args: ['cache', 'preload', archivePath],
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
-      output:
-          allOf([contains('Installed $archivePath in cache as foo 1.0.0.')]),
+      output: allOf([
+        contains('Installed $archivePath in cache as foo 1.0.0.'),
+      ]),
     );
 
     server.serve('foo', '1.0.0', contents: [file('new-file.txt')]);
@@ -126,8 +124,9 @@ void main() {
     await runPub(
       args: ['cache', 'preload', archivePath],
       environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
-      output:
-          allOf([contains('Installed $archivePath in cache as foo 1.0.0.')]),
+      output: allOf([
+        contains('Installed $archivePath in cache as foo 1.0.0.'),
+      ]),
     );
     await hostedCache([
       dir('foo-1.0.0', [file('new-file.txt'), nothing('old-file.txt')]),
@@ -148,8 +147,9 @@ void main() {
     File(archivePath).writeAsBytesSync('garbage'.codeUnits);
     await runPub(
       args: ['cache', 'preload', archivePath],
-      error:
-          contains('Failed to extract `$archivePath`: Filter error, bad data.'),
+      error: contains(
+        'Failed to extract `$archivePath`: Filter error, bad data.',
+      ),
       exitCode: DATA,
     );
   });
@@ -176,9 +176,9 @@ void main() {
     final archivePath = p.join(sandbox, 'archive');
 
     File(archivePath).writeAsBytesSync(
-      await tarFromDescriptors([d.file('pubspec.yaml', '{}')])
-          .expand((x) => x)
-          .toList(),
+      await tarFromDescriptors([
+        d.file('pubspec.yaml', '{}'),
+      ]).expand((x) => x).toList(),
     );
 
     await runPub(

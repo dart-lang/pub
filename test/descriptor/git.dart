@@ -18,11 +18,7 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     await super.create(parent);
     await _runGitCommands(parent, [
       ['init'],
-      [
-        'config',
-        'core.excludesfile',
-        '',
-      ],
+      ['config', 'core.excludesfile', ''],
       ['add', '.'],
       ['commit', '-m', 'initial commit', '--allow-empty'],
     ]);

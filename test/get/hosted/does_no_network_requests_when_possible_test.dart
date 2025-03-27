@@ -9,10 +9,11 @@ import '../../test_pub.dart';
 
 void main() {
   test('does not request versions if the lockfile is up to date', () async {
-    final server = await servePackages()
-      ..serve('foo', '1.0.0')
-      ..serve('foo', '1.1.0')
-      ..serve('foo', '1.2.0');
+    final server =
+        await servePackages()
+          ..serve('foo', '1.0.0')
+          ..serve('foo', '1.1.0')
+          ..serve('foo', '1.2.0');
 
     await d.appDir(dependencies: {'foo': 'any'}).create();
 

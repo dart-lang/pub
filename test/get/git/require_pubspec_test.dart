@@ -13,15 +13,19 @@ void main() {
 
     await d.git('foo.git', [d.libDir('foo')]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet(
-      error: RegExp(r'Could not find a file named "pubspec\.yaml" '
-          r'in [^\n]\.'),
+      error: RegExp(
+        r'Could not find a file named "pubspec\.yaml" '
+        r'in [^\n]\.',
+      ),
     );
   });
 }

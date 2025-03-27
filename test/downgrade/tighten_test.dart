@@ -8,28 +8,32 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('--tighten will set lower bounds to the actually achieved version',
-      () async {
-    await servePackages()
-      ..serve(
-        'foo',
-        '1.0.0',
-      ) // Because of the bar constraint, this is not achievable.
-      ..serve('foo', '2.0.0')
-      ..serve('foo', '3.0.0')
-      ..serve('bar', '1.0.0', deps: {'foo': '>=2.0.0'});
+  test(
+    '--tighten will set lower bounds to the actually achieved version',
+    () async {
+      await servePackages()
+        ..serve(
+          'foo',
+          '1.0.0',
+        ) // Because of the bar constraint, this is not achievable.
+        ..serve('foo', '2.0.0')
+        ..serve('foo', '3.0.0')
+        ..serve('bar', '1.0.0', deps: {'foo': '>=2.0.0'});
 
-    await d.appDir(dependencies: {'foo': '>=1.0.0', 'bar': '^1.0.0'}).create();
+      await d
+          .appDir(dependencies: {'foo': '>=1.0.0', 'bar': '^1.0.0'})
+          .create();
 
-    await pubGet(output: contains('foo 3.0.0'));
-    await pubDowngrade(
-      args: ['--tighten'],
-      output: allOf(
-        contains('< foo 2.0.0 (was 3.0.0)'),
-        contains('foo: >=1.0.0 -> >=2.0.0'),
-      ),
-    );
-  });
+      await pubGet(output: contains('foo 3.0.0'));
+      await pubDowngrade(
+        args: ['--tighten'],
+        output: allOf(
+          contains('< foo 2.0.0 (was 3.0.0)'),
+          contains('foo: >=1.0.0 -> >=2.0.0'),
+        ),
+      );
+    },
+  );
 
   test('--tighten works for workspace with internal dependencies', () async {
     await servePackages();

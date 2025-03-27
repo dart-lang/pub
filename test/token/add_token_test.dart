@@ -9,32 +9,9 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('with correct server url creates pub-tokens.json that contains token',
-      () async {
-    await d.tokensFile({
-      'version': 1,
-      'hosted': [
-        {'url': 'https://example.com', 'token': 'abc'},
-      ],
-    }).create();
-
-    await runPub(
-      args: ['token', 'add', 'https://server.demo/'],
-      input: ['auth-token'],
-    );
-
-    await d.tokensFile({
-      'version': 1,
-      'hosted': [
-        {'url': 'https://example.com', 'token': 'abc'},
-        {'url': 'https://server.demo', 'token': 'auth-token'},
-      ],
-    }).validate();
-  });
-
-  group('with environment variable creates tokens.json that contains env var',
-      () {
-    test('without environment variable provided', () async {
+  test(
+    'with correct server url creates pub-tokens.json that contains token',
+    () async {
       await d.tokensFile({
         'version': 1,
         'hosted': [
@@ -43,40 +20,67 @@ void main() {
       }).create();
 
       await runPub(
-        args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
-        error: 'Environment variable "TOKEN" is not defined.',
+        args: ['token', 'add', 'https://server.demo/'],
+        input: ['auth-token'],
       );
 
-      await d.tokensFile({
-        'version': 1,
-        'hosted': [
-          {'url': 'https://example.com', 'env': 'TOKEN'},
-        ],
-      }).validate();
-    });
-
-    test('with environment variable provided', () async {
       await d.tokensFile({
         'version': 1,
         'hosted': [
           {'url': 'https://example.com', 'token': 'abc'},
-        ],
-      }).create();
-
-      await runPub(
-        args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
-        environment: {'TOKEN': 'secret'},
-        error: isNot(contains('is not defined.')),
-      );
-
-      await d.tokensFile({
-        'version': 1,
-        'hosted': [
-          {'url': 'https://example.com', 'env': 'TOKEN'},
+          {'url': 'https://server.demo', 'token': 'auth-token'},
         ],
       }).validate();
-    });
-  });
+    },
+  );
+
+  group(
+    'with environment variable creates tokens.json that contains env var',
+    () {
+      test('without environment variable provided', () async {
+        await d.tokensFile({
+          'version': 1,
+          'hosted': [
+            {'url': 'https://example.com', 'token': 'abc'},
+          ],
+        }).create();
+
+        await runPub(
+          args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
+          error: 'Environment variable "TOKEN" is not defined.',
+        );
+
+        await d.tokensFile({
+          'version': 1,
+          'hosted': [
+            {'url': 'https://example.com', 'env': 'TOKEN'},
+          ],
+        }).validate();
+      });
+
+      test('with environment variable provided', () async {
+        await d.tokensFile({
+          'version': 1,
+          'hosted': [
+            {'url': 'https://example.com', 'token': 'abc'},
+          ],
+        }).create();
+
+        await runPub(
+          args: ['token', 'add', 'https://example.com/', '--env-var', 'TOKEN'],
+          environment: {'TOKEN': 'secret'},
+          error: isNot(contains('is not defined.')),
+        );
+
+        await d.tokensFile({
+          'version': 1,
+          'hosted': [
+            {'url': 'https://example.com', 'env': 'TOKEN'},
+          ],
+        }).validate();
+      });
+    },
+  );
 
   test('persists unknown fields on unmodified entries', () async {
     await d.tokensFile({
@@ -86,12 +90,9 @@ void main() {
           'url': 'https://example.com',
           'unknownField': '123',
           'nestedField': [
-            {
-              'username': 'user',
-              'password': 'pass',
-            },
+            {'username': 'user', 'password': 'pass'},
           ],
-        }
+        },
       ],
     }).create();
 
@@ -107,10 +108,7 @@ void main() {
           'url': 'https://example.com',
           'unknownField': '123',
           'nestedField': [
-            {
-              'username': 'user',
-              'password': 'pass',
-            },
+            {'username': 'user', 'password': 'pass'},
           ],
         },
         {'url': 'https://server.demo', 'token': 'auth-token'},
@@ -153,8 +151,7 @@ void main() {
     await configDir([d.nothing('pub-tokens.json')]).validate();
   });
 
-  test(
-      'with non-secure localhost url creates pub-tokens.json '
+  test('with non-secure localhost url creates pub-tokens.json '
       'that contains token', () async {
     await d.dir(configPath).create();
 

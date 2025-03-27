@@ -68,13 +68,15 @@ class FlutterSdk extends Sdk {
       // $FLUTTER_ROOT has been set, but doesn't exist.
       return null;
     }
-    final flutterVersionPath =
-        p.join(rootDirectory, 'bin', 'cache', 'flutter.version.json');
+    final flutterVersionPath = p.join(
+      rootDirectory,
+      'bin',
+      'cache',
+      'flutter.version.json',
+    );
 
     try {
-      final versionJson = jsonDecode(
-        readTextFile(flutterVersionPath),
-      );
+      final versionJson = jsonDecode(readTextFile(flutterVersionPath));
       if (versionJson is! Map) {
         return null;
       }

@@ -12,23 +12,26 @@ import '../descriptor.dart';
 import '../test_pub.dart';
 
 Future<void> main() async {
-  test('Recreates .dart_tool/package_config.json, redownloads archives',
-      () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
-    await appDir(dependencies: {'foo': 'any'}).create();
-    await pubGet();
-    final packageConfig =
-        File(path(p.join(appPath, '.dart_tool', 'package_config.json')));
-    packageConfig.deleteSync();
-    await runPub(args: ['cache', 'clean', '-f']);
-    await pubGet(args: ['--enforce-lockfile']);
-    expect(packageConfig.existsSync(), isTrue);
-    await cacheDir({'foo': '1.0.0'}).validate();
-    await appPackageConfigFile([
-      packageConfigEntry(name: 'foo', version: '1.0.0'),
-    ]).validate();
-  });
+  test(
+    'Recreates .dart_tool/package_config.json, redownloads archives',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+      await appDir(dependencies: {'foo': 'any'}).create();
+      await pubGet();
+      final packageConfig = File(
+        path(p.join(appPath, '.dart_tool', 'package_config.json')),
+      );
+      packageConfig.deleteSync();
+      await runPub(args: ['cache', 'clean', '-f']);
+      await pubGet(args: ['--enforce-lockfile']);
+      expect(packageConfig.existsSync(), isTrue);
+      await cacheDir({'foo': '1.0.0'}).validate();
+      await appPackageConfigFile([
+        packageConfigEntry(name: 'foo', version: '1.0.0'),
+      ]).validate();
+    },
+  );
 
   test('Refuses to get if no lockfile exists', () async {
     await appDir(dependencies: {}).create();
@@ -73,8 +76,9 @@ Try running `dart pub get` to create `pubspec.lock`.
     );
     // Deleting the version-listing cache will cause it to be refetched, and the
     // error will happen.
-    File(p.join(globalServer.cachingPath, '.cache', 'bar-versions.json'))
-        .deleteSync();
+    File(
+      p.join(globalServer.cachingPath, '.cache', 'bar-versions.json'),
+    ).deleteSync();
 
     final example = p.join('.', 'example');
     final examplePubspec = p.join('example', 'pubspec.yaml');
@@ -91,9 +95,11 @@ Try running `dart pub get` to create `pubspec.lock`.
           'Unable to satisfy `$examplePubspec` '
           'using `$examplePubspecLock` in `$example`.',
         ),
-        contains('To update `$examplePubspecLock` run '
-            '`dart pub get` in `$example` without\n'
-            '`--enforce-lockfile`.'),
+        contains(
+          'To update `$examplePubspecLock` run '
+          '`dart pub get` in `$example` without\n'
+          '`--enforce-lockfile`.',
+        ),
       ),
       exitCode: DATA,
     );
@@ -117,68 +123,72 @@ Try running `dart pub get` to create `pubspec.lock`.
     );
   });
 
-  test('Refuses to get if package is locked to version not matching constraint',
-      () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
-    server.serve('foo', '2.0.0');
-    await appDir(dependencies: {'foo': '^1.0.0'}).create();
-    await pubGet();
-    await appDir(dependencies: {'foo': '^2.0.0'}).create();
-    await pubGet(
-      args: ['--enforce-lockfile'],
-      output: allOf([
-        contains('> foo 2.0.0 (was 1.0.0)'),
-        contains('Would have changed 1 dependency.'),
-      ]),
-      error: contains('Unable to satisfy `pubspec.yaml` using `pubspec.lock`.'),
-      exitCode: DATA,
-    );
-  });
-
-  test("Refuses to get if hash on server doesn't correspond to lockfile",
-      () async {
-    final server = await servePackages();
-    server.serveContentHashes = true;
-    server.serve('foo', '1.0.0');
-    await appDir(dependencies: {'foo': '^1.0.0'}).create();
-    await pubGet();
-    server.serve(
-      'foo',
-      '1.0.0',
-      contents: [
-        file('README.md', 'Including this will change the content-hash.'),
-      ],
-    );
-    // Deleting the version-listing cache will cause it to be refetched, and the
-    // error will happen.
-    File(p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'))
-        .deleteSync();
-    await pubGet(
-      args: ['--enforce-lockfile'],
-      output: allOf(
-        contains('~ foo 1.0.0 (was 1.0.0)'),
-        contains('Would have changed 1 dependency.'),
-      ),
-      error: allOf(
-        contains('Cached version of foo-1.0.0 has wrong hash - redownloading.'),
-        contains(
-          'The existing content-hash from pubspec.lock '
-          'doesn\'t match contents for:',
-        ),
-        contains(
-          ' * foo-1.0.0 from "${server.url}"',
-        ),
-        contains(
+  test(
+    'Refuses to get if package is locked to version not matching constraint',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+      server.serve('foo', '2.0.0');
+      await appDir(dependencies: {'foo': '^1.0.0'}).create();
+      await pubGet();
+      await appDir(dependencies: {'foo': '^2.0.0'}).create();
+      await pubGet(
+        args: ['--enforce-lockfile'],
+        output: allOf([
+          contains('> foo 2.0.0 (was 1.0.0)'),
+          contains('Would have changed 1 dependency.'),
+        ]),
+        error: contains(
           'Unable to satisfy `pubspec.yaml` using `pubspec.lock`.',
         ),
-      ),
-      exitCode: DATA,
-    );
-  });
+        exitCode: DATA,
+      );
+    },
+  );
 
   test(
-      'Refuses to get if archive on legacy server '
+    "Refuses to get if hash on server doesn't correspond to lockfile",
+    () async {
+      final server = await servePackages();
+      server.serveContentHashes = true;
+      server.serve('foo', '1.0.0');
+      await appDir(dependencies: {'foo': '^1.0.0'}).create();
+      await pubGet();
+      server.serve(
+        'foo',
+        '1.0.0',
+        contents: [
+          file('README.md', 'Including this will change the content-hash.'),
+        ],
+      );
+      // Deleting the version-listing cache will cause it to be refetched, and
+      // the error will happen.
+      File(
+        p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'),
+      ).deleteSync();
+      await pubGet(
+        args: ['--enforce-lockfile'],
+        output: allOf(
+          contains('~ foo 1.0.0 (was 1.0.0)'),
+          contains('Would have changed 1 dependency.'),
+        ),
+        error: allOf(
+          contains(
+            'Cached version of foo-1.0.0 has wrong hash - redownloading.',
+          ),
+          contains(
+            'The existing content-hash from pubspec.lock '
+            'doesn\'t match contents for:',
+          ),
+          contains(' * foo-1.0.0 from "${server.url}"'),
+          contains('Unable to satisfy `pubspec.yaml` using `pubspec.lock`.'),
+        ),
+        exitCode: DATA,
+      );
+    },
+  );
+
+  test('Refuses to get if archive on legacy server '
       'doesn\'t have hash corresponding to lockfile', () async {
     final server = await servePackages();
     server.serveContentHashes = false;

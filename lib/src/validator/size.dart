@@ -25,11 +25,15 @@ Your package is $sizeInMb MB.
 Consider the impact large downloads can have on the package consumer.''');
 
     if (ignoreExists && !package.inGitRepo) {
-      hint.write('\nYour .gitignore has no effect since your project '
-          'does not appear to be in version control.');
+      hint.write(
+        '\nYour .gitignore has no effect since your project '
+        'does not appear to be in version control.',
+      );
     } else if (!ignoreExists && package.inGitRepo) {
-      hint.write('\nConsider adding a .gitignore to avoid including '
-          'temporary files.');
+      hint.write(
+        '\nConsider adding a .gitignore to avoid including '
+        'temporary files.',
+      );
     }
 
     hints.add(hint.toString());

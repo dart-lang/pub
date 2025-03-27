@@ -31,23 +31,24 @@ void main() {
       ..serve('one_newer_stable', '1.0.1');
 
     // Constraint everything to the first version.
-    await d.appDir(
-      dependencies: {
-        'multiple_newer': '1.0.0',
-        'multiple_newer_stable': '1.0.0',
-        'multiple_newer_unstable': '1.0.0',
-        'multiple_newer_unstable2': '1.0.1-unstable.1',
-        'no_newer': '1.0.0',
-        'one_newer_unstable': '1.0.0',
-        'one_newer_unstable2': '1.0.1-unstable.1',
-        'one_newer_stable': '1.0.0',
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'multiple_newer': '1.0.0',
+            'multiple_newer_stable': '1.0.0',
+            'multiple_newer_unstable': '1.0.0',
+            'multiple_newer_unstable2': '1.0.1-unstable.1',
+            'no_newer': '1.0.0',
+            'one_newer_unstable': '1.0.0',
+            'one_newer_unstable2': '1.0.1-unstable.1',
+            'one_newer_stable': '1.0.0',
+          },
+        )
+        .create();
 
     // Upgrade everything.
     await pubUpgrade(
-      output: RegExp(
-        r'''
+      output: RegExp(r'''
 Resolving dependencies\.\.\..*
 Downloading packages\.\.\..*
 . multiple_newer 1\.0\.0 \(1\.0\.1 available\)
@@ -58,9 +59,7 @@ Downloading packages\.\.\..*
 . one_newer_stable 1\.0\.0 \(1\.0\.1 available\)
 . one_newer_unstable 1\.0\.0
 . one_newer_unstable2 1\.0\.1-unstable\.1 \(1\.0\.1-unstable\.2 available\)
-''',
-        multiLine: true,
-      ),
+''', multiLine: true),
       environment: {'PUB_ALLOW_PRERELEASE_SDK': 'false'},
     );
   });

@@ -34,7 +34,8 @@ class UploaderCommand extends PubCommand {
     );
     argParser.addOption(
       'package',
-      help: 'The package whose uploaders will be modified.\n'
+      help:
+          'The package whose uploaders will be modified.\n'
           '(defaults to the current package)',
     );
     argParser.addOption(

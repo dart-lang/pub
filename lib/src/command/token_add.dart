@@ -42,7 +42,8 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
   TokenAddCommand() {
     argParser.addOption(
       'env-var',
-      help: 'Read the secret token from this environment variable when '
+      help:
+          'Read the secret token from this environment variable when '
           'making requests.',
       valueHelp: 'VARIABLE',
     );
@@ -61,11 +62,16 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
 
     try {
       final hostedUrl = validateAndNormalizeHostedUrl(rawHostedUrl);
-      final isLocalhost =
-          ['localhost', '127.0.0.1', '::1'].contains(hostedUrl.host);
+      final isLocalhost = [
+        'localhost',
+        '127.0.0.1',
+        '::1',
+      ].contains(hostedUrl.host);
       if (!hostedUrl.isScheme('HTTPS') && !isLocalhost) {
-        throw const FormatException('url must be https://, '
-            'insecure repositories cannot use authentication.');
+        throw const FormatException(
+          'url must be https://, '
+          'insecure repositories cannot use authentication.',
+        );
       }
 
       if (envVar == null) {
@@ -74,8 +80,10 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
         await _addEnvVarToken(hostedUrl, envVar!);
       }
     } on FormatException catch (e) {
-      usageException('Invalid [hosted-url]: "$rawHostedUrl"\n'
-          '${e.message}');
+      usageException(
+        'Invalid [hosted-url]: "$rawHostedUrl"\n'
+        '${e.message}',
+      );
     }
   }
 
@@ -86,8 +94,10 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
     }
 
     if (!Credential.isValidBearerToken(token)) {
-      dataError('The entered token is not a valid Bearer token. '
-          'A token may only contain `a-zA-Z0-9._~+/=-`');
+      dataError(
+        'The entered token is not a valid Bearer token. '
+        'A token may only contain `a-zA-Z0-9._~+/=-`',
+      );
     }
 
     tokenStore.addCredential(Credential.token(hostedUrl, token));

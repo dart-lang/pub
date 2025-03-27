@@ -10,8 +10,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'keeps a hosted package locked to the version in the '
+  test('keeps a hosted package locked to the version in the '
       'lockfile', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');

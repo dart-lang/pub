@@ -87,8 +87,10 @@ void main() {
       pub.stdout,
       emits(p.toUri(p.join(d.sandbox, 'myapp/lib/resource.txt')).toString()),
     );
-    final fooResourcePath =
-        p.join(globalServer.pathInCache('foo', '1.0.0'), 'lib/resource.txt');
+    final fooResourcePath = p.join(
+      globalServer.pathInCache('foo', '1.0.0'),
+      'lib/resource.txt',
+    );
     expect(pub.stdout, emits(p.toUri(fooResourcePath).toString()));
     await pub.shouldExit(0);
   });

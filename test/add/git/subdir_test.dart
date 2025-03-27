@@ -38,13 +38,15 @@ void main() {
       ),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'sub': {
-          'git': {'url': '../foo.git', 'path': 'subdir'},
-        },
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'sub': {
+              'git': {'url': '../foo.git', 'path': 'subdir'},
+            },
+          },
+        )
+        .validate();
   });
 
   test('adds a package in a deep subdirectory', () async {
@@ -81,12 +83,14 @@ void main() {
       ),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'sub': {
-          'git': {'url': '../foo.git', 'path': 'sub/dir'},
-        },
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'sub': {
+              'git': {'url': '../foo.git', 'path': 'sub/dir'},
+            },
+          },
+        )
+        .validate();
   });
 }

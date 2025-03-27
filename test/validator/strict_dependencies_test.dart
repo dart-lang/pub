@@ -55,7 +55,7 @@ void main() {
       await expectValidationDeprecated(strictDeps);
     });
 
-// Regression test of https://github.com/dart-lang/pub/issues/4115 .
+    // Regression test of https://github.com/dart-lang/pub/issues/4115 .
     test('imports a dev_dependency in bindings_generator/', () async {
       await d.dir(appPath, [
         d.libPubspec(
@@ -103,8 +103,7 @@ void main() {
           deps = {'silly_monkey': '^1.2.3'};
         }
         for (var devDir in ['benchmark', 'example', 'test', 'tool']) {
-          test(
-              'declares an "$port" as a '
+          test('declares an "$port" as a '
               '${isDev ? 'dev ' : ''}dependency in $devDir/', () async {
             await d.dir(appPath, [
               d.libPubspec(
@@ -201,9 +200,7 @@ void main() {
         d.dir('test', [
           d.dir('data', [
             d.dir('mypkg', [
-              d.dir('lib', [
-                d.file('dummy.dart', '\n'),
-              ]),
+              d.dir('lib', [d.file('dummy.dart', '\n')]),
             ]),
           ]),
         ]),
@@ -243,9 +240,7 @@ linter:
         d.dir('test', [
           d.dir('data', [
             d.dir('mypkg', [
-              d.dir('lib', [
-                d.file('dummy.dart', '\n'),
-              ]),
+              d.dir('lib', [d.file('dummy.dart', '\n')]),
             ]),
           ]),
         ]),
@@ -283,14 +278,11 @@ linter:
     });
 
     test('hook does not declare an "import" as a dependency', () async {
-      await d.dir(
-        p.join(appPath, 'hook'),
-        [
-          d.file('build.dart', r'''
+      await d.dir(p.join(appPath, 'hook'), [
+        d.file('build.dart', r'''
         import 'package:silly_monkey/silly_monkey.dart';
       '''),
-        ],
-      ).create();
+      ]).create();
 
       await expectValidationDeprecated(
         strictDeps,
@@ -301,25 +293,19 @@ linter:
     });
 
     test('hook declares an import as a devDependency for', () async {
-      await d.dir(
-        appPath,
-        [
-          d.libPubspec(
-            'test_pkg',
-            '1.0.0',
-            devDeps: {'silly_monkey': '^1.2.3'},
-            sdk: '>=1.8.0 <2.0.0',
-          ),
-          d.dir(
-            'hook',
-            [
-              d.file('build.dart', r'''
+      await d.dir(appPath, [
+        d.libPubspec(
+          'test_pkg',
+          '1.0.0',
+          devDeps: {'silly_monkey': '^1.2.3'},
+          sdk: '>=1.8.0 <2.0.0',
+        ),
+        d.dir('hook', [
+          d.file('build.dart', r'''
         import 'package:silly_monkey/silly_monkey.dart';
       '''),
-            ],
-          ),
-        ],
-      ).create();
+        ]),
+      ]).create();
 
       await expectValidationDeprecated(
         strictDeps,
@@ -377,27 +363,29 @@ linter:
 
     for (var port in ['import', 'export']) {
       for (var devDir in ['benchmark', 'test', 'tool']) {
-        test('does not declare an "$port" as a dependency in $devDir/',
-            () async {
-          await d.dir(appPath, [
-            d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <2.0.0'),
-            d.dir(devDir, [
-              d.file('library.dart', '''
+        test(
+          'does not declare an "$port" as a dependency in $devDir/',
+          () async {
+            await d.dir(appPath, [
+              d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <2.0.0'),
+              d.dir(devDir, [
+                d.file('library.dart', '''
             $port 'package:silly_monkey/silly_monkey.dart';
           '''),
-            ]),
-          ]).create();
+              ]),
+            ]).create();
 
-          await expectValidationDeprecated(
-            strictDeps,
-            warnings: [
-              matches(
-                'does not have silly_monkey in the '
-                '`dependencies` or `dev_dependencies` section',
-              ),
-            ],
-          );
-        });
+            await expectValidationDeprecated(
+              strictDeps,
+              warnings: [
+                matches(
+                  'does not have silly_monkey in the '
+                  '`dependencies` or `dev_dependencies` section',
+                ),
+              ],
+            );
+          },
+        );
       }
     }
 

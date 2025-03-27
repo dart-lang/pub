@@ -11,10 +11,10 @@ void main() {
   test('adds a package from git', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
@@ -27,20 +27,22 @@ void main() {
       ]),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .validate();
   });
 
   test('adds a package from git with relative url and --directory', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
@@ -57,27 +59,30 @@ void main() {
       ]),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .validate();
   });
 
   test('fails with invalid --git-url', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['foo', '--git-url', ':'],
-      error:
-          contains('The --git-url must be a valid url: Invalid empty scheme.'),
+      error: contains(
+        'The --git-url must be a valid url: Invalid empty scheme.',
+      ),
       exitCode: exit_codes.USAGE,
     );
   });
@@ -85,10 +90,10 @@ void main() {
   test('adds a package from git with version constraint', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
@@ -101,28 +106,31 @@ void main() {
       ]),
     ]).validate();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git', 'version': '1.0.0'},
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git', 'version': '1.0.0'},
+          },
+        )
+        .validate();
   });
 
   test('fails when adding with an invalid version constraint', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
       args: ['foo:2.0.0', '--git-url', '../foo.git'],
       error: equalsIgnoringWhitespace(
-          'Because myapp depends on foo 2.0.0 from git which doesn\'t match '
-          'any versions, version solving failed.'),
+        'Because myapp depends on foo 2.0.0 from git which doesn\'t match '
+        'any versions, version solving failed.',
+      ),
       exitCode: exit_codes.DATA,
     );
 
@@ -140,8 +148,10 @@ void main() {
 
     await pubAdd(
       args: ['foo', '--git-url', '../foo.git'],
-      error: contains('Unable to resolve package "foo" with the given '
-          'git parameters'),
+      error: contains(
+        'Unable to resolve package "foo" with the given '
+        'git parameters',
+      ),
       exitCode: exit_codes.DATA,
     );
 
@@ -174,10 +184,10 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.2');
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
@@ -231,34 +241,33 @@ void main() {
       output: contains('Changed 1 dependency in `myapp`!'),
     );
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {'url': '../foo.git', 'path': 'subdir'},
-        },
-      },
-    ).validate();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo.git', 'path': 'subdir'},
+            },
+          },
+        )
+        .validate();
   });
 
   test('Can add multiple git packages using descriptors', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
-    await d.git(
-      'bar.git',
-      [d.libDir('foo'), d.libPubspec('bar', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
+    await d.git('bar.git', [
+      d.libDir('foo'),
+      d.libPubspec('bar', '1.0.0'),
+    ]).create();
 
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
-      args: [
-        'foo:{"git":"../foo.git"}',
-        'bar:{"git":"../bar.git"}',
-      ],
+      args: ['foo:{"git":"../foo.git"}', 'bar:{"git":"../bar.git"}'],
     );
 
     await d.dir(appPath, [

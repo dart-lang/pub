@@ -135,9 +135,10 @@ Future<T> captureErrors<T>(
 }) {
   final completer = Completer<T>();
   void wrappedCallback() {
-    Future.sync(callback)
-        .then(completer.complete)
-        .catchError((Object e, StackTrace? stackTrace) {
+    Future.sync(callback).then(completer.complete).catchError((
+      Object e,
+      StackTrace? stackTrace,
+    ) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
       if (stackTrace != null) {
@@ -258,13 +259,6 @@ bool isLoopback(String host) {
   return InternetAddress.tryParse(host)?.isLoopback ?? false;
 }
 
-/// Returns a list containing the sorted elements of [iter].
-List<T> ordered<T extends Comparable<T>>(Iterable<T> iter) {
-  final list = iter.toList();
-  list.sort();
-  return list;
-}
-
 /// Given a list of filenames, returns a set of patterns that can be used to
 /// filter for those filenames.
 ///
@@ -302,8 +296,7 @@ Set<String> createDirectoryFilter(Iterable<String> dirs) {
 T maxAll<T extends Comparable>(
   Iterable<T> iter, [
   int Function(T, T) compare = Comparable.compare,
-]) =>
-    iter.reduce((max, element) => compare(element, max) > 0 ? element : max);
+]) => iter.reduce((max, element) => compare(element, max) > 0 ? element : max);
 
 /// Returns the element of [values] for which [orderBy] returns the smallest
 /// value.
@@ -352,12 +345,11 @@ Future<S> foldAsync<S, T>(
   Iterable<T> values,
   S initialValue,
   Future<S> Function(S previous, T element) combine,
-) =>
-    values.fold(
-      Future.value(initialValue),
-      (previousFuture, element) =>
-          previousFuture.then((previous) => combine(previous, element)),
-    );
+) => values.fold(
+  Future.value(initialValue),
+  (previousFuture, element) =>
+      previousFuture.then((previous) => combine(previous, element)),
+);
 
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
@@ -419,9 +411,10 @@ String niceDuration(Duration duration) {
 
   // If we're using verbose logging, be more verbose but more accurate when
   // reporting timing information.
-  final msString = log.verbosity.isLevelVisible(log.Level.fine)
-      ? _padLeft(ms.toString(), 3, '0')
-      : (ms ~/ 100).toString();
+  final msString =
+      log.verbosity.isLevelVisible(log.Level.fine)
+          ? _padLeft(ms.toString(), 3, '0')
+          : (ms ~/ 100).toString();
 
   return "$result${hasMinutes ? _padLeft(s.toString(), 2, '0') : s}"
       '.${msString}s';
@@ -433,11 +426,7 @@ String niceDuration(Duration duration) {
 String _urlDecode(String encoded) =>
     Uri.decodeComponent(encoded.replaceAll('+', ' '));
 
-enum ForceColorOption {
-  always,
-  never,
-  auto,
-}
+enum ForceColorOption { always, never, auto }
 
 /// Change to decide if ANSI colors should be output regardless of terminalD.
 ForceColorOption forceColors = ForceColorOption.auto;
@@ -588,10 +577,11 @@ String createUuid([List<int>? bytes]) {
   bytes[6] = (bytes[6] & 0x0F) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
-  final chars = bytes
-      .map((b) => b.toRadixString(16).padLeft(2, '0'))
-      .join()
-      .toUpperCase();
+  final chars =
+      bytes
+          .map((b) => b.toRadixString(16).padLeft(2, '0'))
+          .join()
+          .toUpperCase();
 
   return ''
       '${chars.substring(0, 8)}-'
@@ -616,34 +606,37 @@ String wordWrap(String text, {String prefix = ''}) {
     return text;
   }
 
-  return text.split('\n').map((originalLine) {
-    final buffer = StringBuffer();
-    var lengthSoFar = 0;
-    var firstLine = true;
-    for (var word in originalLine.split(' ')) {
-      final wordLength = _withoutColors(word).length;
-      if (wordLength > lineLength) {
-        if (lengthSoFar != 0) buffer.writeln();
-        if (!firstLine) buffer.write(prefix);
-        buffer.writeln(word);
-        firstLine = false;
-      } else if (lengthSoFar == 0) {
-        if (!firstLine) buffer.write(prefix);
-        buffer.write(word);
-        lengthSoFar = wordLength + prefix.length;
-      } else if (lengthSoFar + 1 + wordLength > lineLength) {
-        buffer.writeln();
-        buffer.write(prefix);
-        buffer.write(word);
-        lengthSoFar = wordLength + prefix.length;
-        firstLine = false;
-      } else {
-        buffer.write(' $word');
-        lengthSoFar += 1 + wordLength;
-      }
-    }
-    return buffer.toString();
-  }).join('\n');
+  return text
+      .split('\n')
+      .map((originalLine) {
+        final buffer = StringBuffer();
+        var lengthSoFar = 0;
+        var firstLine = true;
+        for (var word in originalLine.split(' ')) {
+          final wordLength = _withoutColors(word).length;
+          if (wordLength > lineLength) {
+            if (lengthSoFar != 0) buffer.writeln();
+            if (!firstLine) buffer.write(prefix);
+            buffer.writeln(word);
+            firstLine = false;
+          } else if (lengthSoFar == 0) {
+            if (!firstLine) buffer.write(prefix);
+            buffer.write(word);
+            lengthSoFar = wordLength + prefix.length;
+          } else if (lengthSoFar + 1 + wordLength > lineLength) {
+            buffer.writeln();
+            buffer.write(prefix);
+            buffer.write(word);
+            lengthSoFar = wordLength + prefix.length;
+            firstLine = false;
+          } else {
+            buffer.write(' $word');
+            lengthSoFar += 1 + wordLength;
+          }
+        }
+        return buffer.toString();
+      })
+      .join('\n');
 }
 
 /// A regular expression matching terminal color codes.
@@ -773,8 +766,8 @@ extension RetrieveFlags on ArgResults {
 /// Only allowd printable ASCII, map anything else to whitespace, take at-most
 /// 1024 characters.
 String sanitizeForTerminal(String input) => String.fromCharCodes(
-      input.runes.map((r) => 32 <= r && r <= 127 ? r : 32).take(1024),
-    );
+  input.runes.map((r) => 32 <= r && r <= 127 ? r : 32).take(1024),
+);
 
 extension ExpectField on YamlMap {
   /// Looks up the [key] in this map, and validates that it is of type [T],
@@ -822,13 +815,13 @@ extension ExpectEntries on YamlList {
   /// Throws a [SourceSpanApplicationException] for the first entry that does
   /// not have a value of type [T].
   List<T> expectElements<T extends Object?>() => [
-        for (var node in nodes)
-          if (node.value case final T value)
-            value
-          else
-            throw SourceSpanApplicationException(
-              'Elements must be of type $T.',
-              node.span,
-            ),
-      ];
+    for (var node in nodes)
+      if (node.value case final T value)
+        value
+      else
+        throw SourceSpanApplicationException(
+          'Elements must be of type $T.',
+          node.span,
+        ),
+  ];
 }

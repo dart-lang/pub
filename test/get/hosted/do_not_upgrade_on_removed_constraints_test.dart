@@ -8,8 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      "doesn't upgrade dependencies whose constraints have been "
+  test("doesn't upgrade dependencies whose constraints have been "
       'removed', () async {
     await servePackages()
       ..serve('foo', '1.0.0', deps: {'shared_dep': 'any'})

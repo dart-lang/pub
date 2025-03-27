@@ -32,9 +32,7 @@ void main() {
 
   group('should consider a package invalid if it', () {
     test('has no CHANGELOG', () async {
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.0'),
-      ]).create();
+      await d.dir(appPath, [d.libPubspec('test_pkg', '1.0.0')]).create();
       await expectValidationDeprecated(changelog, warnings: isNotEmpty);
     });
 
@@ -51,19 +49,21 @@ void main() {
       await expectValidationDeprecated(changelog, warnings: isNotEmpty);
     });
 
-    test('has a CHANGELOG that doesn\'t include the current package version',
-        () async {
-      await d.dir(appPath, [
-        d.libPubspec('test_pkg', '1.0.1'),
-        d.file('CHANGELOG.md', '''
+    test(
+      'has a CHANGELOG that doesn\'t include the current package version',
+      () async {
+        await d.dir(appPath, [
+          d.libPubspec('test_pkg', '1.0.1'),
+          d.file('CHANGELOG.md', '''
 # 1.0.0
 
 * Solves traveling salesman problem in polynomial time.
 * Passes Turing test.
 '''),
-      ]).create();
-      await expectValidationDeprecated(changelog, warnings: isNotEmpty);
-    });
+        ]).create();
+        await expectValidationDeprecated(changelog, warnings: isNotEmpty);
+      },
+    );
 
     test('has a CHANGELOG with invalid utf-8', () async {
       await d.dir(appPath, [

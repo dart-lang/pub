@@ -28,8 +28,9 @@ void main() {
 
     await runPub(
       args: ['global', 'run', 'foo:script'],
-      error:
-          contains("foo as globally activated doesn't support Dart 3.1.2+4."),
+      error: contains(
+        "foo as globally activated doesn't support Dart 3.1.2+4.",
+      ),
       exitCode: exit_codes.DATA,
       environment: {'_PUB_TEST_SDK_VERSION': '3.1.2+4'},
     );
@@ -69,24 +70,19 @@ void main() {
       ..serve(
         'foo',
         '1.0.0',
-        deps: {
-          'bar': '^1.0.0',
-        },
+        deps: {'bar': '^1.0.0'},
         sdk: '^3.0.0',
         contents: [
-          d.dir(
-            'bin',
-            [d.file('script.dart', "main(args) => print('123-OK');")],
-          ),
+          d.dir('bin', [
+            d.file('script.dart', "main(args) => print('123-OK');"),
+          ]),
         ],
       )
       ..serve(
         'bar',
         '1.0.0',
         pubspec: {
-          'environment': {
-            'sdk': '^3.0.1',
-          },
+          'environment': {'sdk': '^3.0.1'},
         },
       );
 
@@ -100,13 +96,11 @@ void main() {
     await runPub(
       environment: {'_PUB_TEST_SDK_VERSION': '3.0.0'},
       args: ['global', 'run', 'foo:script'],
-      error: contains(
-        """
+      error: contains("""
 foo as globally activated doesn't support Dart 3.0.0.
 
 try:
-`dart pub global activate foo` to reactivate.""",
-      ),
+`dart pub global activate foo` to reactivate."""),
       exitCode: exit_codes.DATA,
     );
   });
@@ -118,10 +112,7 @@ try:
       '1.0.0',
       sdk: '^2.19.0',
       contents: [
-        d.dir(
-          'bin',
-          [d.file('script.dart', "main(args) => print('123-OK');")],
-        ),
+        d.dir('bin', [d.file('script.dart', "main(args) => print('123-OK');")]),
       ],
     );
 

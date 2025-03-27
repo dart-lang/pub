@@ -22,7 +22,7 @@ class LockFile {
 
   /// The intersections of all SDK constraints for all locked packages, indexed
   /// by SDK identifier.
-  Map<String, SdkConstraint> sdkConstraints;
+  final Map<String, SdkConstraint> sdkConstraints;
 
   /// Dependency names that appeared in the root package's `dependencies`
   /// section.
@@ -50,15 +50,15 @@ class LockFile {
     Set<String>? devDependencies,
     Set<String>? overriddenDependencies,
   }) : this._(
-          {
-            for (final id in ids)
-              if (!id.isRoot) id.name: id,
-          },
-          sdkConstraints ?? {'dart': SdkConstraint(VersionConstraint.any)},
-          mainDependencies ?? const UnmodifiableSetView.empty(),
-          devDependencies ?? const UnmodifiableSetView.empty(),
-          overriddenDependencies ?? const UnmodifiableSetView.empty(),
-        );
+         {
+           for (final id in ids)
+             if (!id.isRoot) id.name: id,
+         },
+         sdkConstraints ?? {'dart': SdkConstraint(VersionConstraint.any)},
+         mainDependencies ?? const UnmodifiableSetView.empty(),
+         devDependencies ?? const UnmodifiableSetView.empty(),
+         overriddenDependencies ?? const UnmodifiableSetView.empty(),
+       );
 
   LockFile._(
     Map<String, PackageId> packages,
@@ -69,11 +69,11 @@ class LockFile {
   ) : packages = UnmodifiableMapView(packages);
 
   LockFile.empty()
-      : packages = const {},
-        sdkConstraints = {'dart': SdkConstraint(VersionConstraint.any)},
-        mainDependencies = const UnmodifiableSetView.empty(),
-        devDependencies = const UnmodifiableSetView.empty(),
-        overriddenDependencies = const UnmodifiableSetView.empty();
+    : packages = const {},
+      sdkConstraints = {'dart': SdkConstraint(VersionConstraint.any)},
+      mainDependencies = const UnmodifiableSetView.empty(),
+      devDependencies = const UnmodifiableSetView.empty(),
+      overriddenDependencies = const UnmodifiableSetView.empty();
 
   /// Loads a lockfile from [filePath].
   factory LockFile.load(String filePath, SourceRegistry sources) {
@@ -111,8 +111,12 @@ class LockFile {
     );
 
     final sdkConstraints = <String, SdkConstraint>{};
-    final sdkNode =
-        _getEntry<YamlScalar?>(parsed, 'sdk', 'string', required: false);
+    final sdkNode = _getEntry<YamlScalar?>(
+      parsed,
+      'sdk',
+      'string',
+      required: false,
+    );
     if (sdkNode != null) {
       // Lockfiles produced by pub versions from 1.14.0 through 1.18.0 included
       // a top-level "sdk" field which encoded the unified constraint on the
@@ -123,8 +127,12 @@ class LockFile {
       );
     }
 
-    final sdksField =
-        _getEntry<YamlMap?>(parsed, 'sdks', 'map', required: false);
+    final sdksField = _getEntry<YamlMap?>(
+      parsed,
+      'sdks',
+      'map',
+      required: false,
+    );
 
     if (sdksField != null) {
       _parseEachEntry<String, YamlScalar>(
@@ -136,11 +144,12 @@ class LockFile {
           // TODO(sigurdm): push the switching into `SdkConstraint`.
           sdkConstraints[name] = switch (name) {
             'dart' => SdkConstraint.interpretDartSdkConstraint(
-                originalConstraint,
-                defaultUpperBoundConstraint: null,
-              ),
-            'flutter' =>
-              SdkConstraint.interpretFlutterSdkConstraint(originalConstraint),
+              originalConstraint,
+              defaultUpperBoundConstraint: null,
+            ),
+            'flutter' => SdkConstraint.interpretFlutterSdkConstraint(
+              originalConstraint,
+            ),
             _ => SdkConstraint(originalConstraint),
           };
         },
@@ -155,27 +164,38 @@ class LockFile {
     final devDependencies = <String>{};
     final overriddenDependencies = <String>{};
 
-    final packageEntries =
-        _getEntry<YamlMap?>(parsed, 'packages', 'map', required: false);
+    final packageEntries = _getEntry<YamlMap?>(
+      parsed,
+      'packages',
+      'map',
+      required: false,
+    );
 
     if (packageEntries != null) {
       _parseEachEntry<String, YamlMap>(
         packageEntries,
         (name, spec) {
           // Parse the version.
-          final versionEntry =
-              _getEntry<YamlScalar>(spec, 'version', 'version string');
+          final versionEntry = _getEntry<YamlScalar>(
+            spec,
+            'version',
+            'version string',
+          );
           final version = _parseVersion(versionEntry);
 
           // Parse the source.
           final sourceName = _getStringEntry(spec, 'source');
 
-          final descriptionNode =
-              _getEntry<YamlNode>(spec, 'description', 'description');
+          final descriptionNode = _getEntry<YamlNode>(
+            spec,
+            'description',
+            'description',
+          );
 
-          final dynamic description = descriptionNode is YamlScalar
-              ? descriptionNode.value
-              : descriptionNode;
+          final dynamic description =
+              descriptionNode is YamlScalar
+                  ? descriptionNode.value
+                  : descriptionNode;
 
           // Let the source parse the description.
           final source = sources(sourceName);
@@ -238,10 +258,7 @@ class LockFile {
     try {
       return fn();
     } on FormatException catch (e) {
-      throw SourceSpanFormatException(
-        '$description: ${e.message}',
-        span,
-      );
+      throw SourceSpanFormatException('$description: ${e.message}', span);
     }
   }
 
@@ -254,11 +271,7 @@ class LockFile {
   }
 
   static Version _parseVersion(YamlNode node) {
-    return _parseNode(
-      node,
-      'version',
-      parse: Version.parse,
-    );
+    return _parseNode(node, 'version', parse: Version.parse);
   }
 
   static String _getStringEntry(YamlMap map, String key) {
@@ -360,8 +373,9 @@ class LockFile {
       packageMap[id.name] = {
         'version': id.version.toString(),
         'source': id.source.name,
-        'description':
-            id.description.serializeForLockfile(containingDir: packageDir),
+        'description': id.description.serializeForLockfile(
+          containingDir: packageDir,
+        ),
         'dependency': _dependencyType(id.name),
       };
     }
@@ -387,7 +401,8 @@ ${yamlToString(data)}
   ///
   /// Relative paths will be resolved relative to [lockFilePath]
   void writeToFile(String lockFilePath, SystemCache cache) {
-    final windowsLineEndings = fileExists(lockFilePath) &&
+    final windowsLineEndings =
+        fileExists(lockFilePath) &&
         detectWindowsLineEndings(readTextFile(lockFilePath));
 
     final serialized = serialize(p.dirname(lockFilePath), cache);

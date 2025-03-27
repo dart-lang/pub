@@ -31,8 +31,9 @@ class FuchsiaSdk extends Sdk {
   Version? get version {
     if (!_isAvailable) return null;
 
-    _version ??=
-        Version.parse(readTextFile(p.join(_rootDirectory!, 'version')).trim());
+    _version ??= Version.parse(
+      readTextFile(p.join(_rootDirectory!, 'version')).trim(),
+    );
     return _version;
   }
 

@@ -46,14 +46,14 @@ class Credential {
 
   /// Create credential that stores clear text token.
   Credential.token(this.url, this.token)
-      : env = null,
-        unknownFields = const <String, dynamic>{};
+    : env = null,
+      unknownFields = const <String, dynamic>{};
 
   /// Create credential that stores environment variable name that stores token
   /// value.
   Credential.env(this.url, this.env)
-      : token = null,
-        unknownFields = const <String, dynamic>{};
+    : token = null,
+      unknownFields = const <String, dynamic>{};
 
   /// Deserialize [json] into [Credential] type.
   ///
@@ -146,8 +146,10 @@ class Credential {
       tokenValue = token!;
     }
     if (!isValidBearerToken(tokenValue)) {
-      dataError('Credential token for $url is not a valid Bearer token. '
-          'It should match `^[a-zA-Z0-9._~+/=-]+\$`');
+      dataError(
+        'Credential token for $url is not a valid Bearer token. '
+        'It should match `^[a-zA-Z0-9._~+/=-]+\$`',
+      );
     }
 
     return Future.value('Bearer $tokenValue');

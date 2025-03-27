@@ -20,18 +20,16 @@ void main() {
     });
 
     test('has an SDK constraint without ^', () async {
-      await d.dir(
-        appPath,
-        [d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <2.0.0')],
-      ).create();
+      await d.dir(appPath, [
+        d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <2.0.0'),
+      ]).create();
       await expectValidationDeprecated(sdkConstraint);
     });
 
     test('has an SDK constraint with ^', () async {
-      await d.dir(
-        appPath,
-        [d.libPubspec('test_pkg', '1.0.0', sdk: '^1.8.0')],
-      ).create();
+      await d.dir(appPath, [
+        d.libPubspec('test_pkg', '1.0.0', sdk: '^1.8.0'),
+      ]).create();
       await expectValidationDeprecated(sdkConstraint);
     });
 
@@ -42,8 +40,7 @@ void main() {
       await expectValidationDeprecated(sdkConstraint);
     });
 
-    test(
-        'has a Flutter SDK constraint with an appropriate Dart SDK '
+    test('has a Flutter SDK constraint with an appropriate Dart SDK '
         'constraint', () async {
       await d.dir(appPath, [
         d.pubspec({
@@ -55,8 +52,7 @@ void main() {
       await expectValidationDeprecated(sdkConstraint);
     });
 
-    test(
-        'has a Fuchsia SDK constraint with an appropriate Dart SDK '
+    test('has a Fuchsia SDK constraint with an appropriate Dart SDK '
         'constraint', () async {
       await d.dir(appPath, [
         d.pubspec({
@@ -74,10 +70,9 @@ void main() {
 
   group('should consider a package invalid if it', () {
     test('has no upper bound SDK constraint', () async {
-      await d.dir(
-        appPath,
-        [d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0')],
-      ).create();
+      await d.dir(appPath, [
+        d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0'),
+      ]).create();
       await expectValidationDeprecated(
         sdkConstraint,
         errors: anyElement(contains('should have an upper bound constraint')),
@@ -86,10 +81,7 @@ void main() {
 
     test('has no SDK constraint', () async {
       await d.dir(appPath, [
-        d.rawPubspec({
-          'name': 'test_pkg',
-          'version': '1.0.0',
-        }),
+        d.rawPubspec({'name': 'test_pkg', 'version': '1.0.0'}),
       ]).create();
       await expectValidationDeprecated(
         sdkConstraint,
@@ -104,15 +96,12 @@ void main() {
       await expectValidationDeprecated(
         sdkConstraint,
         warnings: anyElement(
-          contains(
-            'consider publishing the package as a pre-release instead',
-          ),
+          contains('consider publishing the package as a pre-release instead'),
         ),
       );
     });
 
-    test(
-        'Gives a hint if package has a <3.0.0 constraint '
+    test('Gives a hint if package has a <3.0.0 constraint '
         'that is interpreted as <4.0.0', () async {
       await d.dir(appPath, [
         d.rawPubspec({
@@ -123,16 +112,14 @@ void main() {
       ]).create();
       await expectValidationDeprecated(
         sdkConstraint,
-        hints: anyElement(
-          '''
+        hints: anyElement('''
 The declared SDK constraint is '^2.19.0', this is interpreted as '>=2.19.0 <4.0.0'.
 
 Consider updating the SDK constraint to:
 
 environment:
   sdk: '>=2.19.0 <4.0.0'
-''',
-        ),
+'''),
       );
     });
   });

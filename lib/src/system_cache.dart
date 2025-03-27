@@ -38,39 +38,39 @@ class SystemCache {
 
   String get tempDir => p.join(rootDir, '_temp');
 
-  static String defaultDir = (() {
-    final envCache = Platform.environment['PUB_CACHE'];
-    if (envCache != null) {
-      return envCache;
-    } else if (Platform.isWindows) {
-      // %LOCALAPPDATA% is used as the cache location over %APPDATA%, because
-      // the latter is synchronised between devices when the user roams between
-      // them, whereas the former is not.
-      final localAppData = Platform.environment['LOCALAPPDATA'];
-      if (localAppData == null) {
-        dataError('''
+  static String defaultDir =
+      (() {
+        final envCache = Platform.environment['PUB_CACHE'];
+        if (envCache != null) {
+          return envCache;
+        } else if (Platform.isWindows) {
+          // %LOCALAPPDATA% is used as the cache location over %APPDATA%,
+          // because the latter is synchronised between devices when the user
+          // roams between them, whereas the former is not.
+          final localAppData = Platform.environment['LOCALAPPDATA'];
+          if (localAppData == null) {
+            dataError('''
 Could not find the pub cache. No `LOCALAPPDATA` environment variable exists.
 Consider setting the `PUB_CACHE` variable manually.
 ''');
-      }
-      return p.join(localAppData, 'Pub', 'Cache');
-    } else {
-      final home = Platform.environment['HOME'];
-      if (home == null) {
-        dataError('''
+          }
+          return p.join(localAppData, 'Pub', 'Cache');
+        } else {
+          final home = Platform.environment['HOME'];
+          if (home == null) {
+            dataError('''
 Could not find the pub cache. No `HOME` environment variable exists.
 Consider setting the `PUB_CACHE` variable manually.
 ''');
-      }
-      return p.join(home, '.pub-cache');
-    }
-  })();
+          }
+          return p.join(home, '.pub-cache');
+        }
+      })();
 
   /// The available sources.
-  late final _sources = Map<String, Source>.fromIterable(
-    [hosted, git, path, sdk],
-    key: (source) => (source as Source).name,
-  );
+  late final _sources = {
+    for (final source in [hosted, git, path, sdk]) source.name: source,
+  };
 
   Source sources(String? name) {
     return name == null
@@ -105,8 +105,8 @@ Consider setting the `PUB_CACHE` variable manually.
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
   SystemCache({String? rootDir, this.isOffline = false})
-      : _rootDir = rootDir,
-        tokenStore = TokenStore(dartConfigDir);
+    : _rootDir = rootDir,
+      tokenStore = TokenStore(dartConfigDir);
 
   /// Loads the package identified by [id].
   ///
@@ -179,23 +179,22 @@ Consider setting the `PUB_CACHE` variable manually.
   }) async {
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
-    versions = (await Future.wait(
-      versions.map((id) async {
-        final packageStatus = await ref.source.status(
-          id.toRef(),
-          id.version,
-          this,
-          maxAge: maxAge,
-        );
-        if (!packageStatus.isRetracted ||
-            id.version == allowedRetractedVersion) {
-          return id;
-        }
-        return null;
-      }),
-    ))
-        .nonNulls
-        .toList();
+    versions =
+        (await Future.wait(
+          versions.map((id) async {
+            final packageStatus = await ref.source.status(
+              id.toRef(),
+              id.version,
+              this,
+              maxAge: maxAge,
+            );
+            if (!packageStatus.isRetracted ||
+                id.version == allowedRetractedVersion) {
+              return id;
+            }
+            return null;
+          }),
+        )).nonNulls.toList();
 
     return versions;
   }
@@ -337,8 +336,10 @@ Consider setting the `PUB_CACHE` variable manually.
     final appData = Platform.environment['APPDATA'];
     if (appData == null) return;
     final legacyCacheLocation = p.join(appData, 'Pub', 'Cache');
-    final legacyCacheDeprecatedFile =
-        p.join(legacyCacheLocation, 'DEPRECATED.md');
+    final legacyCacheDeprecatedFile = p.join(
+      legacyCacheLocation,
+      'DEPRECATED.md',
+    );
     final stat = tryStatFile(legacyCacheDeprecatedFile);
     if ((stat == null ||
             DateTime.now().difference(stat.changed) >

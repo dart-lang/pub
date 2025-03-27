@@ -27,23 +27,24 @@ Future<void> expectValidation(
 
 void main() {
   test(
-      'should consider a package valid '
-      'if it contains no modified files (but contains a newly created one)',
-      () async {
-    await d.git('myapp', [
-      ...d.validPackage().contents,
-      d.file('foo.txt', 'foo'),
-      d.file('.pubignore', 'bob.txt\n'),
-      d.file('bob.txt', 'bob'),
-    ]).create();
+    'should consider a package valid '
+    'if it contains no modified files (but contains a newly created one)',
+    () async {
+      await d.git('myapp', [
+        ...d.validPackage().contents,
+        d.file('foo.txt', 'foo'),
+        d.file('.pubignore', 'bob.txt\n'),
+        d.file('bob.txt', 'bob'),
+      ]).create();
 
-    await d.dir('myapp', [
-      d.file('bar.txt', 'bar'), // Create untracked file.
-      d.file('bob.txt', 'bob2'), // Modify pub-ignored file.
-    ]).create();
+      await d.dir('myapp', [
+        d.file('bar.txt', 'bar'), // Create untracked file.
+        d.file('bob.txt', 'bob2'), // Modify pub-ignored file.
+      ]).create();
 
-    await expectValidation(contains('Package has 0 warnings.'), 0);
-  });
+      await expectValidation(contains('Package has 0 warnings.'), 0);
+    },
+  );
 
   test('Warns if files are modified', () async {
     await d.git('myapp', [
@@ -51,15 +52,12 @@ void main() {
       d.file('foo.txt', 'foo'),
     ]).create();
 
-    await d.dir('myapp', [
-      d.file('foo.txt', 'foo2'),
-    ]).create();
+    await d.dir('myapp', [d.file('foo.txt', 'foo2')]).create();
 
     await expectValidation(
       allOf([
         contains('Package has 1 warning.'),
-        contains(
-          '''
+        contains('''
 * 1 checked-in file is modified in git.
   
   Usually you want to publish from a clean git state.
@@ -70,8 +68,7 @@ void main() {
   
   foo.txt
   
-  Run `git status` for more information.''',
-        ),
+  Run `git status` for more information.'''),
       ]),
       exit_codes.DATA,
     );
@@ -79,10 +76,7 @@ void main() {
     // Stage but do not commit foo.txt. The warning should still be active.
     await d.git('myapp').runGit(['add', 'foo.txt']);
     await expectValidation(
-      allOf([
-        contains('Package has 1 warning.'),
-        contains('foo.txt'),
-      ]),
+      allOf([contains('Package has 1 warning.'), contains('foo.txt')]),
       exit_codes.DATA,
     );
     await d.git('myapp').runGit(['commit', '-m', 'message']);
@@ -98,8 +92,7 @@ void main() {
     await expectValidation(
       allOf([
         contains('Package has 1 warning.'),
-        contains(
-          '''
+        contains('''
 * 1 checked-in file is modified in git.
   
   Usually you want to publish from a clean git state.
@@ -110,8 +103,7 @@ void main() {
   
   bar.txt
   
-  Run `git status` for more information.''',
-        ),
+  Run `git status` for more information.'''),
       ]),
       exit_codes.DATA,
     );
@@ -133,8 +125,7 @@ void main() {
     await expectValidation(
       allOf([
         contains('Package has 1 warning.'),
-        contains(
-          '''
+        contains('''
 * 1 checked-in file is modified in git.
   
   Usually you want to publish from a clean git state.
@@ -145,8 +136,7 @@ void main() {
   
   non_ascii_и.txt
   
-  Run `git status` for more information.''',
-        ),
+  Run `git status` for more information.'''),
       ]),
       exit_codes.DATA,
     );
@@ -179,15 +169,11 @@ void main() {
     ]).create();
 
     await expectValidation(
-      workingDirectory: p.join(
-        d.sandbox,
-        appPath,
-      ),
+      workingDirectory: p.join(d.sandbox, appPath),
       extraArgs: ['-C', 'a'],
       allOf([
         contains('Package has 1 warning.'),
-        contains(
-          '''
+        contains('''
 * 1 checked-in file is modified in git.
   
   Usually you want to publish from a clean git state.
@@ -198,22 +184,16 @@ void main() {
   
   a${p.separator}non_ascii_и.txt
   
-  Run `git status` for more information.''',
-        ),
+  Run `git status` for more information.'''),
       ]),
       exit_codes.DATA,
     );
 
     await expectValidation(
-      workingDirectory: p.join(
-        d.sandbox,
-        appPath,
-        'a',
-      ),
+      workingDirectory: p.join(d.sandbox, appPath, 'a'),
       allOf([
         contains('Package has 1 warning.'),
-        contains(
-          '''
+        contains('''
 * 1 checked-in file is modified in git.
   
   Usually you want to publish from a clean git state.
@@ -224,8 +204,7 @@ void main() {
   
   non_ascii_и.txt
   
-  Run `git status` for more information.''',
-        ),
+  Run `git status` for more information.'''),
       ]),
       exit_codes.DATA,
     );

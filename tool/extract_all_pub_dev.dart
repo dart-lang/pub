@@ -79,8 +79,10 @@ Future<void> main() async {
         log.message('Skipping $packageName - already done');
         continue;
       }
-      log.message('Processing all versions of $packageName '
-          '[+${alreadyDonePackages.length}, - ${failures.length}]');
+      log.message(
+        'Processing all versions of $packageName '
+        '[+${alreadyDonePackages.length}, - ${failures.length}]',
+      );
       final resource = await pool.request();
       scheduleMicrotask(() async {
         try {

@@ -19,9 +19,10 @@ void main() {
 
     await runPub(args: ['token', 'remove', 'https://server.demo']);
 
-    await d.tokensFile(
-      {'version': 1, 'hosted': <Map<String, String>>[]},
-    ).validate();
+    await d.tokensFile({
+      'version': 1,
+      'hosted': <Map<String, String>>[],
+    }).validate();
   });
 
   test('without any matching schemes, does nothing', () async {

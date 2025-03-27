@@ -44,11 +44,11 @@ class _DependencyServicesCommandRunner extends CommandRunner<int>
   }
 
   _DependencyServicesCommandRunner()
-      : super(
-          'dependency_services',
-          'Support for automatic upgrades',
-          usageLineLength: lineLength,
-        ) {
+    : super(
+        'dependency_services',
+        'Support for automatic upgrades',
+        usageLineLength: lineLength,
+      ) {
     argParser.addFlag(
       'verbose',
       abbr: 'v',

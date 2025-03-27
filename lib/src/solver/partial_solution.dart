@@ -154,9 +154,10 @@ class PartialSolution {
         return assignment;
       }
 
-      assignedTerm = assignedTerm == null
-          ? assignment
-          : assignedTerm.intersect(assignment);
+      assignedTerm =
+          assignedTerm == null
+              ? assignment
+              : assignedTerm.intersect(assignment);
 
       // As soon as we have enough assignments to satisfy [term], return them.
       if (assignedTerm!.satisfies(term)) return assignment;

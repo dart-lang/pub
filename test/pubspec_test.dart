@@ -17,8 +17,9 @@ void main() {
   group('parse()', () {
     final sources = SystemCache().sources;
 
-    final throwsPubspecException =
-        throwsA(const TypeMatcher<SourceSpanApplicationException>());
+    final throwsPubspecException = throwsA(
+      const TypeMatcher<SourceSpanApplicationException>(),
+    );
 
     void expectPubspecException(
       String contents,
@@ -61,8 +62,7 @@ void main() {
       );
     });
 
-    test(
-        "eagerly throws an error if the pubspec name doesn't match the "
+    test("eagerly throws an error if the pubspec name doesn't match the "
         'expected name', () {
       expect(
         () => Pubspec.parse(
@@ -75,8 +75,7 @@ void main() {
       );
     });
 
-    test(
-        "eagerly throws an error if the pubspec doesn't have a name and an "
+    test("eagerly throws an error if the pubspec doesn't have a name and an "
         'expected name is passed', () {
       expect(
         () => Pubspec.parse(
@@ -240,77 +239,59 @@ dependencies:
     });
 
     test('throws if it depends on itself', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 name: myapp
 dependencies:
   myapp:
     fake: ok
-''',
-        (pubspec) => pubspec.dependencies,
-      );
+''', (pubspec) => pubspec.dependencies);
     });
 
     test('throws if it has a dev dependency on itself', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 name: myapp
 dev_dependencies:
   myapp:
     fake: ok
-''',
-        (pubspec) => pubspec.devDependencies,
-      );
+''', (pubspec) => pubspec.devDependencies);
     });
 
     test('throws if it has an override on itself', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 name: myapp
 dependency_overrides:
   myapp:
     fake: ok
-''',
-        (pubspec) => pubspec.dependencyOverrides,
-      );
+''', (pubspec) => pubspec.dependencyOverrides);
     });
 
     test("throws if the description isn't valid", () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 name: myapp
 dependencies:
   foo:
     hosted:
       name: foo
       url: '::'
-''',
-        (pubspec) => pubspec.dependencies,
-      );
+''', (pubspec) => pubspec.dependencies);
     });
 
     test('throws if dependency version is not a string', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 dependencies:
   foo:
     fake: ok
     version: 1.2
-''',
-        (pubspec) => pubspec.dependencies,
-      );
+''', (pubspec) => pubspec.dependencies);
     });
 
     test('throws if version is not a version constraint', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 dependencies:
   foo:
     fake: ok
     version: not constraint
-''',
-        (pubspec) => pubspec.dependencies,
-      );
+''', (pubspec) => pubspec.dependencies);
     });
 
     test("throws if 'name' is not a string", () {
@@ -393,7 +374,8 @@ environment:
 workspace: ['a', 'b', 'c']
 ''',
         (p) => p.workspace,
-        expectedContains: '`workspace` and `resolution` '
+        expectedContains:
+            '`workspace` and `resolution` '
             'requires at least language version 3.5',
         hintContains: '''
 Consider updating the SDK constraint to:
@@ -426,7 +408,8 @@ environment:
 resolution: workspace
 ''',
         (p) => p.resolution,
-        expectedContains: '`workspace` and `resolution` '
+        expectedContains:
+            '`workspace` and `resolution` '
             'requires at least language version 3.5',
         hintContains: '''
 Consider updating the SDK constraint to:
@@ -438,35 +421,26 @@ environment:
     });
 
     test('throws if workspace is not a list', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 environment:
   sdk: ^3.5.0
 workspace: 'a string'
-''',
-        (pubspec) => pubspec.workspace,
-      );
+''', (pubspec) => pubspec.workspace);
     });
 
     test('throws if workspace is a list of not-strings', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 environment:
   sdk: ^3.5.0
 workspace: ['a string', 24]
-''',
-        (pubspec) => pubspec.workspace,
-      );
+''', (pubspec) => pubspec.workspace);
     });
 
     test('throws if resolution is not a reasonable string', () {
-      expectPubspecException(
-        '''
+      expectPubspecException('''
 environment:
   sdk: ^3.5.0
-resolution: "sometimes"''',
-        (pubspec) => pubspec.resolution,
-      );
+resolution: "sometimes"''', (pubspec) => pubspec.resolution);
     });
 
     test('allows comment-only files', () {
@@ -522,14 +496,12 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(
-              foo.description as HostedDescription,
-              sha256: null,
-            ).serializeForLockfile(containingDir: null),
-            {
-              'url': 'https://example.org/pub/',
-              'name': 'bar',
-            });
+          ResolvedHostedDescription(
+            foo.description as HostedDescription,
+            sha256: null,
+          ).serializeForLockfile(containingDir: null),
+          {'url': 'https://example.org/pub/', 'name': 'bar'},
+        );
       });
 
       test('with url only', () {
@@ -551,14 +523,12 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(
-              foo.description as HostedDescription,
-              sha256: null,
-            ).serializeForLockfile(containingDir: null),
-            {
-              'url': 'https://example.org/pub/',
-              'name': 'foo',
-            });
+          ResolvedHostedDescription(
+            foo.description as HostedDescription,
+            sha256: null,
+          ).serializeForLockfile(containingDir: null),
+          {'url': 'https://example.org/pub/', 'name': 'foo'},
+        );
       });
 
       test('with url as string', () {
@@ -579,14 +549,12 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(
-              foo.description as HostedDescription,
-              sha256: null,
-            ).serializeForLockfile(containingDir: null),
-            {
-              'url': 'https://example.org/pub/',
-              'name': 'foo',
-            });
+          ResolvedHostedDescription(
+            foo.description as HostedDescription,
+            sha256: null,
+          ).serializeForLockfile(containingDir: null),
+          {'url': 'https://example.org/pub/', 'name': 'foo'},
+        );
       });
 
       test('interprets string description as name for older versions', () {
@@ -607,14 +575,12 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(
-              foo.description as HostedDescription,
-              sha256: null,
-            ).serializeForLockfile(containingDir: null),
-            {
-              'url': 'https://pub.dev',
-              'name': 'bar',
-            });
+          ResolvedHostedDescription(
+            foo.description as HostedDescription,
+            sha256: null,
+          ).serializeForLockfile(containingDir: null),
+          {'url': 'https://pub.dev', 'name': 'bar'},
+        );
       });
 
       test(
@@ -636,8 +602,11 @@ dependencies:
           expect(
             () => pubspec.dependencies,
             throwsA(
-              isA<SourceSpanApplicationException>()
-                  .having((e) => e.span!.text, 'span.text', 'invalid value'),
+              isA<SourceSpanApplicationException>().having(
+                (e) => e.span!.text,
+                'span.text',
+                'invalid value',
+              ),
             ),
           );
         },
@@ -658,14 +627,12 @@ dependencies:
         expect(foo.name, equals('foo'));
         expect(foo.source.name, 'hosted');
         expect(
-            ResolvedHostedDescription(
-              foo.description as HostedDescription,
-              sha256: null,
-            ).serializeForLockfile(containingDir: null),
-            {
-              'url': 'https://pub.dev',
-              'name': 'foo',
-            });
+          ResolvedHostedDescription(
+            foo.description as HostedDescription,
+            sha256: null,
+          ).serializeForLockfile(containingDir: null),
+          {'url': 'https://pub.dev', 'name': 'foo'},
+        );
       });
 
       group('throws without a min SDK constraint', () {
@@ -679,7 +646,8 @@ dependencies:
       url: https://example.org/pub/
 ''',
             (pubspec) => pubspec.dependencies,
-            expectedContains: "The 'name' key must have a "
+            expectedContains:
+                "The 'name' key must have a "
                 'string value without a minimum Dart '
                 'SDK constraint of 2.15.',
           );
@@ -696,7 +664,8 @@ dependencies:
     hosted: http://pub.example.org
 ''',
               (pubspec) => pubspec.dependencies,
-              expectedContains: 'Using `hosted: <url>` is only supported '
+              expectedContains:
+                  'Using `hosted: <url>` is only supported '
                   'with a minimum SDK constraint of 2.15.',
             );
           },
@@ -706,53 +675,41 @@ dependencies:
 
     group('git dependencies', () {
       test('path must be a string', () {
-        expectPubspecException(
-          '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: 12
-''',
-          (pubspec) => pubspec.dependencies,
-        );
+''', (pubspec) => pubspec.dependencies);
       });
 
       test('path must be relative', () {
-        expectPubspecException(
-          '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: git://github.com/dart-lang/foo/bar
-''',
-          (pubspec) => pubspec.dependencies,
-        );
+''', (pubspec) => pubspec.dependencies);
 
-        expectPubspecException(
-          '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: /foo
-''',
-          (pubspec) => pubspec.dependencies,
-        );
+''', (pubspec) => pubspec.dependencies);
       });
 
       test('path must be within the repository', () {
-        expectPubspecException(
-          '''
+        expectPubspecException('''
 dependencies:
   foo:
     git:
       url: git://github.com/dart-lang/foo
       path: foo/../../bar
-''',
-          (pubspec) => pubspec.dependencies,
-        );
+''', (pubspec) => pubspec.dependencies);
       });
     });
 
@@ -804,8 +761,7 @@ dependencies:
         expect(pubspec.sdkConstraints, isNot(contains('fuchsia')));
       });
 
-      test(
-          'default upper constraint for the SDK applies only if compatible '
+      test('default upper constraint for the SDK applies only if compatible '
           'with the lower bound', () {
         final pubspec = Pubspec.parse(
           '''
@@ -1063,13 +1019,10 @@ dependency_overrides:
           );
         }
 
-        expect(
-          () {
-            final pubspec = parsePubspecOverrides(contents);
-            fn(pubspec);
-          },
-          throwsA(expectation),
-        );
+        expect(() {
+          final pubspec = parsePubspecOverrides(contents);
+          fn(pubspec);
+        }, throwsA(expectation));
       }
 
       test('allows empty overrides file', () {
@@ -1119,22 +1072,49 @@ dependency_overrides:
       });
 
       test('throws if overrides contain invalid dependency section', () {
-        expectPubspecOverridesException(
-          '''
+        expectPubspecOverridesException('''
 dependency_overrides: false
-''',
-          (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
-        );
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
       });
 
       test('throws if overrides contain an unknown field', () {
-        expectPubspecOverridesException(
-          '''
+        expectPubspecOverridesException('''
 name: 'foo'
-''',
-          (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
-        );
+''', (pubspecOverrides) => pubspecOverrides.dependencyOverrides);
       });
+    });
+    test('Throws after language 3.7 '
+        'if using unknown keys in dependency description', () {
+      expectPubspecException(
+        '''
+environment:
+  sdk: 3.7.0
+dependencies:
+  foo:
+    hosted:
+      name: 'foo'
+      url: https://pub.dev/
+      someOtherProperty: 'smile'
+''',
+        (pubspec) => pubspec.dependencies,
+        expectedContains: 'Unknown key "someOtherProperty" in description.',
+      );
+
+      expectPubspecException(
+        '''
+environment:
+  sdk: 3.7.0
+dependencies:
+  test:
+    git:
+      ref: 'v1.0.0'
+      url: https://github.com/dart-lang/test
+      path: 'pkgs/test'
+      someOtherProperty: 'smile'
+''',
+        (pubspec) => pubspec.dependencies,
+        expectedContains: 'Unknown key "someOtherProperty" in description.',
+      );
     });
   });
 }

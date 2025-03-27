@@ -28,10 +28,10 @@ void main() {
     await runPub(args: ['global', 'deactivate', 'foo']);
 
     await d.dir(cachePath, [
-      d.dir(
-        'bin',
-        [d.nothing(binStubName('one')), d.nothing(binStubName('two'))],
-      ),
+      d.dir('bin', [
+        d.nothing(binStubName('one')),
+        d.nothing(binStubName('two')),
+      ]),
     ]).validate();
   });
 }

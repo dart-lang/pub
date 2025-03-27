@@ -136,9 +136,7 @@ void main() {
             isA<DataException>().having(
               (e) => e.message,
               'message',
-              contains(
-                'Pub does not support symlink cycles.',
-              ),
+              contains('Pub does not support symlink cycles.'),
             ),
           ),
         );
@@ -253,39 +251,37 @@ void main() {
         );
       });
 
-      test('throws on link to subdirectory of loop back to parent directory',
-          () async {
-        await d.dir('src', [
-          d.dir(appPath, [
-            d.pubspec({'name': 'myapp'}),
-            d.link(
-              'symlink',
-              p.join(d.sandbox, 'source'),
-              forceDirectory: true,
-            ),
-          ]),
-        ]).create();
-        await d
-            .link(
-              'source',
-              p.join(d.sandbox, 'src'),
-              forceDirectory: true,
-            )
-            .create();
+      test(
+        'throws on link to subdirectory of loop back to parent directory',
+        () async {
+          await d.dir('src', [
+            d.dir(appPath, [
+              d.pubspec({'name': 'myapp'}),
+              d.link(
+                'symlink',
+                p.join(d.sandbox, 'source'),
+                forceDirectory: true,
+              ),
+            ]),
+          ]).create();
+          await d
+              .link('source', p.join(d.sandbox, 'src'), forceDirectory: true)
+              .create();
 
-        createEntrypoint(p.join('source', appPath));
+          createEntrypoint(p.join('source', appPath));
 
-        expect(
-          () => entrypoint!.workspaceRoot.listFiles(),
-          throwsA(
-            isA<DataException>().having(
-              (e) => e.message,
-              'message',
-              contains('Pub does not support symlink cycles.'),
+          expect(
+            () => entrypoint!.workspaceRoot.listFiles(),
+            throwsA(
+              isA<DataException>().having(
+                (e) => e.message,
+                'message',
+                contains('Pub does not support symlink cycles.'),
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
 
       test('Does not throw when publishing via symlink', () async {
         await d.dir('src', [
@@ -294,11 +290,7 @@ void main() {
           ]),
         ]).create();
         await d
-            .link(
-              'source',
-              p.join(d.sandbox, 'src'),
-              forceDirectory: true,
-            )
+            .link('source', p.join(d.sandbox, 'src'), forceDirectory: true)
             .create();
 
         createEntrypoint(p.join('source', appPath));
@@ -403,9 +395,7 @@ void main() {
         isA<DataException>().having(
           (e) => e.message,
           'message',
-          contains(
-            'Could not resolve symbolic link',
-          ),
+          contains('Could not resolve symbolic link'),
         ),
       ),
     );
@@ -430,9 +420,7 @@ void main() {
         isA<DataException>().having(
           (e) => e.message,
           'message',
-          contains(
-            'Could not resolve symbolic link',
-          ),
+          contains('Could not resolve symbolic link'),
         ),
       ),
     );
@@ -447,10 +435,12 @@ void main() {
         d.dir('a', [d.file('file')]),
       ]),
     ]).create();
-    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink1'))
-        .createSync('symlink2');
-    Link(p.join(d.sandbox, appPath, 'subdir', 'symlink2'))
-        .createSync('symlink1');
+    Link(
+      p.join(d.sandbox, appPath, 'subdir', 'symlink1'),
+    ).createSync('symlink2');
+    Link(
+      p.join(d.sandbox, appPath, 'subdir', 'symlink2'),
+    ).createSync('symlink1');
     createEntrypoint();
 
     expect(
@@ -522,8 +512,7 @@ void main() {
       });
     });
 
-    test(
-        "ignores files that are gitignored even if the package isn't "
+    test("ignores files that are gitignored even if the package isn't "
         'the repo root', () async {
       await d.dir(appPath, [
         d.file('.gitignore', '*.bak'),
@@ -591,17 +580,14 @@ void main() {
         d.dir('subdir', [d.file('pubspec.lock')]),
       ]).create();
 
-      expect(
-        entrypoint!.workspaceRoot.listFiles(),
-        {p.join(root, 'pubspec.yaml')},
-      );
+      expect(entrypoint!.workspaceRoot.listFiles(), {
+        p.join(root, 'pubspec.yaml'),
+      });
     });
 
     test('allows pubspec.lock directories', () async {
       await d.dir(appPath, [
-        d.dir('pubspec.lock', [
-          d.file('file.txt', 'contents'),
-        ]),
+        d.dir('pubspec.lock', [d.file('file.txt', 'contents')]),
       ]).create();
 
       expect(entrypoint!.workspaceRoot.listFiles(), {
@@ -719,9 +705,7 @@ void main() {
             d.dir('nested', [
               d.file('.gitignore', '/bin/'),
               d.appPubspec(),
-              d.dir('bin', [
-                d.file('run.dart'),
-              ]),
+              d.dir('bin', [d.file('run.dart')]),
             ]),
           ]),
         ]);
@@ -780,9 +764,7 @@ void main() {
               d.dir('bin', [
                 d.file('.gitignore', '/run.dart'),
                 d.file('run.dart'),
-                d.dir('nested_again', [
-                  d.file('run.dart'),
-                ]),
+                d.dir('nested_again', [d.file('run.dart')]),
               ]),
             ]),
           ]),
@@ -805,9 +787,7 @@ void main() {
               d.dir('bin', [
                 d.file('.gitignore', '!/run.dart'),
                 d.file('run.dart'),
-                d.dir('nested_again', [
-                  d.file('run.dart'),
-                ]),
+                d.dir('nested_again', [d.file('run.dart')]),
               ]),
             ]),
           ]),
@@ -832,9 +812,7 @@ void main() {
             d.appPubspec(),
             d.dir('bin', [
               d.file('run.dart'),
-              d.dir('nested_again', [
-                d.file('run.dart'),
-              ]),
+              d.dir('nested_again', [d.file('run.dart')]),
             ]),
           ]),
         ]),
@@ -856,9 +834,7 @@ void main() {
             d.appPubspec(),
             d.dir('bin', [
               d.file('run.dart'),
-              d.dir('nested_again', [
-                d.file('run.dart'),
-              ]),
+              d.dir('nested_again', [d.file('run.dart')]),
             ]),
           ]),
         ]),

@@ -79,10 +79,7 @@ class SdkSource extends Source {
   }
 
   @override
-  Future<Pubspec> doDescribe(
-    PackageId id,
-    SystemCache cache,
-  ) async =>
+  Future<Pubspec> doDescribe(PackageId id, SystemCache cache) async =>
       _loadPubspec(id.toRef(), cache);
 
   /// Loads the pubspec for the SDK package named [ref].
@@ -101,8 +98,9 @@ class SdkSource extends Source {
     /// Validate that there are no non-sdk dependencies if the SDK does not
     /// allow them.
     if (ref.description case final SdkDescription description) {
-      if (sdks[description.sdk]
-          case Sdk(allowsNonSdkDepsInSdkPackages: false)) {
+      if (sdks[description.sdk] case Sdk(
+        allowsNonSdkDepsInSdkPackages: false,
+      )) {
         for (var dep in pubspec.dependencies.entries) {
           if (dep.value.source is! SdkSource) {
             throw UnsupportedError(

@@ -18,16 +18,18 @@ void main() {
   test('checks out a package from Git', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -37,7 +39,8 @@ void main() {
     expect(
       dig<String>(lockfile, ['packages', 'foo', 'description', 'url']),
       '../foo.git',
-      reason: 'The relative path should be preserved, '
+      reason:
+          'The relative path should be preserved, '
           'and be a url (forward slashes on all platforms)',
     );
 
@@ -49,6 +52,36 @@ void main() {
     ]).validate();
 
     expect(packageSpec('foo'), isNotNull);
+  });
+
+  test('checks out a package from Git with relative pub cache', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
+
+    await pubGet(environment: {'PUB_CACHE': './pub_cache/'});
+
+    await d.dir(appPath, [
+      d.dir('pub_cache', [
+        d.dir('git', [
+          d.dir('cache', [d.gitPackageRepoCacheDir('foo')]),
+          d.gitPackageRevisionCacheDir('foo'),
+        ]),
+      ]),
+    ]).validate();
+
+    expect(packageSpec('foo')['rootUri'], startsWith('../pub_cache/git/foo-'));
   });
 
   test('checks out a package from Git using non-json YAML', () async {
@@ -63,39 +96,44 @@ environment:
 '''),
     ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
   });
 
-  test(
-      'checks out a package from Git with a name that is not a valid '
+  test('checks out a package from Git with a name that is not a valid '
       'file name in the url', () async {
     ensureGit();
 
-    final descriptor =
-        d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
+    final descriptor = d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]);
 
     await descriptor.create();
-    await runProcess(
-      'git',
-      ['update-server-info'],
-      workingDir: descriptor.io.path,
-    );
+    await runProcess('git', [
+      'update-server-info',
+    ], workingDir: descriptor.io.path);
     const funkyName = '@:+*foo';
 
-    final server =
-        await _serveDirectory(p.join(descriptor.io.path, '.git'), funkyName);
+    final server = await _serveDirectory(
+      p.join(descriptor.io.path, '.git'),
+      funkyName,
+    );
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': 'http://localhost:${server.url.port}/$funkyName'},
+          },
+        )
+        .create();
 
     await pubGet();
 

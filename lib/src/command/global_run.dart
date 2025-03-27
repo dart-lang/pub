@@ -30,7 +30,8 @@ class GlobalRunCommand extends PubCommand {
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption(
       'enable-experiment',
-      help: 'Runs the executable in a VM with the given experiments enabled. '
+      help:
+          'Runs the executable in a VM with the given experiments enabled. '
           '(Will disable snapshotting, resulting in slower startup).',
       valueHelp: 'experiment',
     );
@@ -64,8 +65,10 @@ class GlobalRunCommand extends PubCommand {
 
     final args = argResults.rest.skip(1).toList();
     if (p.split(executable).length > 1) {
-      usageException('Cannot run an executable in a subdirectory of a global '
-          'package.');
+      usageException(
+        'Cannot run an executable in a subdirectory of a global '
+        'package.',
+      );
     }
 
     if (argResults.wasParsed('mode')) {
@@ -81,9 +84,10 @@ class GlobalRunCommand extends PubCommand {
       vmArgs: vmArgs,
       enableAsserts:
           argResults.flag('enable-asserts') || argResults.flag('checked'),
-      recompile: (executable) => log.errorsOnlyUnlessTerminal(
-        () => globalEntrypoint.precompileExecutable(executable),
-      ),
+      recompile:
+          (executable) => log.errorsOnlyUnlessTerminal(
+            () => globalEntrypoint.precompileExecutable(executable),
+          ),
       alwaysUseSubprocess: alwaysUseSubprocess,
     );
     overrideExitCode(exitCode);

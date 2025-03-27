@@ -10,8 +10,9 @@ import '../test_pub.dart';
 
 void main() {
   test('pub get succeeds despite of "invalid" flutter upper bound', () async {
-    final fakeFlutterRoot =
-        d.dir('fake_flutter_root', [d.flutterVersion('1.23.0')]);
+    final fakeFlutterRoot = d.dir('fake_flutter_root', [
+      d.flutterVersion('1.23.0'),
+    ]);
     await fakeFlutterRoot.create();
     await d.dir(appPath, [
       d.pubspec({

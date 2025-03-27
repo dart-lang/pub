@@ -20,10 +20,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
 
@@ -39,8 +36,39 @@ Future<void> main() async {
   });
 
   testWithGolden(
-      'no advisories to show - a single advisory with no pub packages',
-      (ctx) async {
+    'no advisories to show - a single advisory with no pub packages',
+    (ctx) async {
+      final server = await servePackages();
+      server
+        ..serve('foo', '1.0.0')
+        ..serve('foo', '1.2.3')
+        ..serve('baz', '1.0.0');
+
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'app',
+          'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
+        }),
+      ]).create();
+
+      server.addAdvisory(
+        advisoryId: '123',
+        displayUrl: 'https://github.com/advisories/123',
+        affectedPackages: [
+          AffectedPackage(
+            name: 'foo',
+            ecosystem: 'NotPub',
+            versions: ['1.2.3'],
+          ),
+        ],
+      );
+      await ctx.run(['get']);
+    },
+  );
+
+  testWithGolden('several advisories, one of which has no pub packages', (
+    ctx,
+  ) async {
     final server = await servePackages();
     server
       ..serve('foo', '1.0.0')
@@ -50,38 +78,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
-      }),
-    ]).create();
-
-    server.addAdvisory(
-      advisoryId: '123',
-      displayUrl: 'https://github.com/advisories/123',
-      affectedPackages: [
-        AffectedPackage(name: 'foo', ecosystem: 'NotPub', versions: ['1.2.3']),
-      ],
-    );
-    await ctx.run(['get']);
-  });
-
-  testWithGolden('several advisories, one of which has no pub packages',
-      (ctx) async {
-    final server = await servePackages();
-    server
-      ..serve('foo', '1.0.0')
-      ..serve('foo', '1.2.3')
-      ..serve('baz', '1.0.0');
-
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
 
@@ -112,10 +109,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
 
@@ -138,10 +132,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
 
@@ -172,10 +163,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
 
@@ -241,10 +229,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
     server.addAdvisory(
@@ -267,10 +252,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
 
@@ -295,10 +277,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'no_advisory_pkg': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'no_advisory_pkg': '^1.0.0'},
       }),
     ]).create();
 
@@ -331,10 +310,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'no_advisory_pkg': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'no_advisory_pkg': '^1.0.0'},
       }),
     ]).create();
 
@@ -364,10 +340,7 @@ Future<void> main() async {
     await d.dir(appPath, [
       d.pubspec({
         'name': 'app',
-        'dependencies': {
-          'foo': '^1.0.0',
-          'baz': '^1.0.0',
-        },
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
       }),
     ]).create();
 
@@ -396,16 +369,11 @@ Future<void> main() async {
       ..serve('baz', '1.0.0');
 
     await d.dir(appPath, [
-      d.pubspec(
-        {
-          'name': 'app',
-          'dependencies': {
-            'foo': '^1.0.0',
-            'baz': '^1.0.0',
-          },
-          'ignored_advisories': ['123'],
-        },
-      ),
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
+        'ignored_advisories': ['123'],
+      }),
     ]).create();
     server.addAdvisory(
       advisoryId: '123',
@@ -432,16 +400,11 @@ Future<void> main() async {
       ..serve('baz', '1.0.0');
 
     await d.dir(appPath, [
-      d.pubspec(
-        {
-          'name': 'app',
-          'dependencies': {
-            'foo': '^1.0.0',
-            'baz': '^1.0.0',
-          },
-          'ignored_advisories': ['abc'],
-        },
-      ),
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {'foo': '^1.0.0', 'baz': '^1.0.0'},
+        'ignored_advisories': ['abc'],
+      }),
     ]).create();
 
     server.addAdvisory(

@@ -18,27 +18,21 @@ foo() {
 }
   ''');
 
-FileDescriptor workingMain = file(
-  'main.dart',
-  '''
+FileDescriptor workingMain = file('main.dart', '''
 import 'foo.dart';
 
 main() async {
   foo();
 }
-''',
-);
+''');
 
-FileDescriptor brokenMain = file(
-  'main.dart',
-  '''
+FileDescriptor brokenMain = file('main.dart', '''
 import 'foo.dart';
 yadda yadda
 main() asyncc {
   foo();
 }
-''',
-);
+''');
 
 Future<Duration> timeCompilation(
   String executable, {
@@ -65,47 +59,41 @@ Future<Duration> timeCompilation(
 }
 
 void main() {
-  test('Precompilation is much faster second time and removes old artifacts',
-      () async {
-    await dir('app', [
-      workingMain,
-      foo,
-      packageConfigFile([]),
-    ]).create();
-    final first = await timeCompilation(path('app/main.dart'));
-    check(
-      because: 'Should not leave a stray directory.',
-      File(incrementalDillPath()).existsSync(),
-    ).isFalse();
-    check(File(outputPath()).existsSync()).isTrue();
+  test(
+    'Precompilation is much faster second time and removes old artifacts',
+    () async {
+      await dir('app', [workingMain, foo, packageConfigFile([])]).create();
+      final first = await timeCompilation(path('app/main.dart'));
+      check(
+        because: 'Should not leave a stray directory.',
+        File(incrementalDillPath()).existsSync(),
+      ).isFalse();
+      check(File(outputPath()).existsSync()).isTrue();
 
-    // Do a second compilation to compare the compile times, it should be much
-    // faster because it can reuse the compiled data in the dill file.
-    final second = await timeCompilation(path('app/main.dart'));
-    check(first).isGreaterThan(second * 2);
+      // Do a second compilation to compare the compile times, it should be much
+      // faster because it can reuse the compiled data in the dill file.
+      final second = await timeCompilation(path('app/main.dart'));
+      check(first).isGreaterThan(second * 2);
 
-    // Now create an error to test that the output is placed at a different
-    // location.
-    await dir('app', [
-      brokenMain,
-      foo,
-      packageConfigFile([]),
-    ]).create();
-    final afterErrors =
-        await timeCompilation(path('app/main.dart'), fails: true);
-    check(File(incrementalDillPath()).existsSync()).isTrue();
-    check(File(outputPath()).existsSync()).isFalse();
-    check(first).isGreaterThan(afterErrors * 2);
+      // Now create an error to test that the output is placed at a different
+      // location.
+      await dir('app', [brokenMain, foo, packageConfigFile([])]).create();
+      final afterErrors = await timeCompilation(
+        path('app/main.dart'),
+        fails: true,
+      );
+      check(File(incrementalDillPath()).existsSync()).isTrue();
+      check(File(outputPath()).existsSync()).isFalse();
+      check(first).isGreaterThan(afterErrors * 2);
 
-    // Fix the error, and check that we still use the cached output to improve
-    // compile times.
-    await dir('app', [
-      workingMain,
-    ]).create();
-    final afterFix = await timeCompilation(path('app/main.dart'));
-    // The output from the failed compilation should now be gone.
-    check(File('${outputPath()}.incremental').existsSync()).isFalse();
-    check(File(outputPath()).existsSync()).isTrue();
-    check(first).isGreaterThan(afterFix * 2);
-  });
+      // Fix the error, and check that we still use the cached output to improve
+      // compile times.
+      await dir('app', [workingMain]).create();
+      final afterFix = await timeCompilation(path('app/main.dart'));
+      // The output from the failed compilation should now be gone.
+      check(File('${outputPath()}.incremental').existsSync()).isFalse();
+      check(File(outputPath()).existsSync()).isTrue();
+      check(first).isGreaterThan(afterFix * 2);
+    },
+  );
 }

@@ -42,20 +42,17 @@ class WorkspaceListCommand extends PubCommand {
         }),
       );
     } else {
-      for (final line in renderTable(
-        [
-          [format('Package', bold), format('Path', bold)],
-          for (final package in entrypoint.workspaceRoot.transitiveWorkspace)
-            [
-              format(package.name, (x) => x),
-              format(
-                '${p.relative(p.absolute(package.dir))}${p.separator}',
-                (x) => x,
-              ),
-            ],
-        ],
-        canUseAnsiCodes,
-      )) {
+      for (final line in renderTable([
+        [format('Package', bold), format('Path', bold)],
+        for (final package in entrypoint.workspaceRoot.transitiveWorkspace)
+          [
+            format(package.name, (x) => x),
+            format(
+              '${p.relative(p.absolute(package.dir))}${p.separator}',
+              (x) => x,
+            ),
+          ],
+      ], canUseAnsiCodes)) {
         message(line);
       }
     }

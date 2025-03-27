@@ -30,15 +30,13 @@ class RunCommand extends PubCommand {
   final bool deprecated;
   final bool alwaysUseSubprocess;
 
-  RunCommand({
-    this.deprecated = false,
-    this.alwaysUseSubprocess = false,
-  }) {
+  RunCommand({this.deprecated = false, this.alwaysUseSubprocess = false}) {
     argParser.addFlag('enable-asserts', help: 'Enable assert statements.');
     argParser.addFlag('checked', abbr: 'c', hide: true);
     argParser.addMultiOption(
       'enable-experiment',
-      help: 'Runs the executable in a VM with the given experiments enabled.\n'
+      help:
+          'Runs the executable in a VM with the given experiments enabled.\n'
           '(Will disable snapshotting, resulting in slower startup).',
       valueHelp: 'experiment',
     );
@@ -105,9 +103,10 @@ class RunCommand extends PubCommand {
       args,
       enableAsserts:
           argResults.flag('enable-asserts') || argResults.flag('checked'),
-      recompile: (executable) => log.errorsOnlyUnlessTerminal(
-        () => entrypoint.precompileExecutable(executable),
-      ),
+      recompile:
+          (executable) => log.errorsOnlyUnlessTerminal(
+            () => entrypoint.precompileExecutable(executable),
+          ),
       vmArgs: vmArgs,
       alwaysUseSubprocess: alwaysUseSubprocess,
     );

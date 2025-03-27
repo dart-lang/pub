@@ -23,34 +23,18 @@ void main() {
           alwaysIncludeMaxPreRelease: true,
         ),
       ),
-      equals(
-        (
-          Version.parse('1.2.4-0'),
-          false,
-        ),
-      ),
+      equals((Version.parse('1.2.4-0'), false)),
     );
     expect(
       reformatMax(
-        [
-          PackageId(
-            'abc',
-            Version.parse('1.2.4-3'),
-            description,
-          ),
-        ],
+        [PackageId('abc', Version.parse('1.2.4-3'), description)],
         VersionRange(
           min: Version.parse('0.2.4'),
           max: Version.parse('1.2.4'),
           alwaysIncludeMaxPreRelease: true,
         ),
       ),
-      equals(
-        (
-          Version.parse('1.2.4-3'),
-          true,
-        ),
-      ),
+      equals((Version.parse('1.2.4-3'), true)),
     );
     expect(
       reformatMax(

@@ -19,12 +19,7 @@ class DevtoolsExtensionValidator extends Validator {
       if (!files.any(
             (f) => p.equals(
               f,
-              p.join(
-                package.dir,
-                'extension',
-                'devtools',
-                'config.yaml',
-              ),
+              p.join(package.dir, 'extension', 'devtools', 'config.yaml'),
             ),
           ) ||
           !files.any(

@@ -24,36 +24,41 @@ void main() {
         '1.0.0',
         deps: {
           'bar': {
-            'git': p
-                .toUri(p.absolute(d.sandbox, appPath, '../bar.git'))
-                .toString(),
+            'git':
+                p
+                    .toUri(p.absolute(d.sandbox, appPath, '../bar.git'))
+                    .toString(),
           },
         },
       ),
     ]).create();
 
-    await d.git(
-      'bar.git',
-      [d.libDir('bar'), d.libPubspec('bar', '1.0.0')],
-    ).create();
+    await d.git('bar.git', [
+      d.libDir('bar'),
+      d.libPubspec('bar', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git':
-              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString(),
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git':
+                  p
+                      .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
+                      .toString(),
+            },
+          },
+        )
+        .create();
 
     await pubGet();
 
     await d.dir(cachePath, [
       d.dir('git', [
-        d.dir(
-          'cache',
-          [d.gitPackageRepoCacheDir('foo'), d.gitPackageRepoCacheDir('bar')],
-        ),
+        d.dir('cache', [
+          d.gitPackageRepoCacheDir('foo'),
+          d.gitPackageRepoCacheDir('bar'),
+        ]),
         d.gitPackageRevisionCacheDir('foo'),
         d.gitPackageRevisionCacheDir('bar'),
       ]),
@@ -77,19 +82,23 @@ void main() {
       ),
     ]).create();
 
-    await d.git(
-      'bar.git',
-      [d.libDir('bar'), d.libPubspec('bar', '1.0.0')],
-    ).create();
+    await d.git('bar.git', [
+      d.libDir('bar'),
+      d.libPubspec('bar', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git':
-              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString(),
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git':
+                  p
+                      .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
+                      .toString(),
+            },
+          },
+        )
+        .create();
 
     await pubGet(
       error: contains(
@@ -117,18 +126,21 @@ void main() {
       ]),
     ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {
-            'url': p
-                .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
-                .toString(),
-            'path': 'pkgs/foo',
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {
+                'url':
+                    p
+                        .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
+                        .toString(),
+                'path': 'pkgs/foo',
+              },
+            },
           },
-        },
-      },
-    ).create();
+        )
+        .create();
 
     await pubGet();
     final lockFile = loadYaml(
@@ -141,8 +153,7 @@ void main() {
     );
   });
 
-  test(
-      'can have relative path dependencies '
+  test('can have relative path dependencies '
       'to the repo root dir transitively from Git', () async {
     ensureGit();
 
@@ -159,24 +170,26 @@ void main() {
       d.libPubspec('bar', '1.0.0'),
     ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {
-            'url': p
-                .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
-                .toString(),
-            'path': 'foo/',
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {
+                'url':
+                    p
+                        .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
+                        .toString(),
+                'path': 'foo/',
+              },
+            },
           },
-        },
-      },
-    ).create();
+        )
+        .create();
 
     await pubGet();
   });
 
-  test(
-      'cannot have relative path dependencies transitively from Git '
+  test('cannot have relative path dependencies transitively from Git '
       'to outside the repo', () async {
     ensureGit();
 
@@ -192,14 +205,18 @@ void main() {
 
     await d.dir('bar', [d.libPubspec('bar', '1.0.0')]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git':
-              p.toUri(p.absolute(d.sandbox, appPath, '../foo.git')).toString(),
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git':
+                  p
+                      .toUri(p.absolute(d.sandbox, appPath, '../foo.git'))
+                      .toString(),
+            },
+          },
+        )
+        .create();
 
     await pubGet(
       exitCode: DATA,

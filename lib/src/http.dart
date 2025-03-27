@@ -60,8 +60,9 @@ class _PubHttpClient extends http.BaseClient {
       // This prevents conflicts where the same port is occupied by the same
       // port on localhost.
       final resolutions = await InternetAddress.lookup('localhost');
-      final ipv4Address = resolutions
-          .firstWhereOrNull((a) => a.type == InternetAddressType.IPv4);
+      final ipv4Address = resolutions.firstWhereOrNull(
+        (a) => a.type == InternetAddressType.IPv4,
+      );
       if (ipv4Address != null) {
         request = _OverrideUrlRequest(
           request.url.replace(host: ipv4Address.host),
@@ -91,8 +92,9 @@ class _PubHttpClient extends http.BaseClient {
   void _logRequest(http.BaseRequest request) {
     final requestLog = StringBuffer();
     requestLog.writeln('HTTP ${request.method} ${request.url}');
-    request.headers
-        .forEach((name, value) => requestLog.writeln(_logField(name, value)));
+    request.headers.forEach(
+      (name, value) => requestLog.writeln(_logField(name, value)),
+    );
 
     if (request.method == 'POST') {
       final contentTypeString = request.headers[HttpHeaders.contentTypeHeader];
@@ -130,11 +132,14 @@ class _PubHttpClient extends http.BaseClient {
     final responseLog = StringBuffer();
     final request = response.request!;
     final stopwatch = _requestStopwatches.remove(request)!..stop();
-    responseLog.writeln('HTTP response ${response.statusCode} '
-        '${response.reasonPhrase} for ${request.method} ${request.url}');
+    responseLog.writeln(
+      'HTTP response ${response.statusCode} '
+      '${response.reasonPhrase} for ${request.method} ${request.url}',
+    );
     responseLog.writeln('took ${stopwatch.elapsed}');
-    response.headers
-        .forEach((name, value) => responseLog.writeln(_logField(name, value)));
+    response.headers.forEach(
+      (name, value) => responseLog.writeln(_logField(name, value)),
+    );
 
     log.io(responseLog.toString().trim());
   }
@@ -243,11 +248,10 @@ void handleJsonError(http.BaseResponse response) {
       error['message'] is! String) {
     invalidServerResponse(response);
   }
-  final formattedMessage =
-      log.red(sanitizeForTerminal(error['message'] as String));
-  fail(
-    'Message from server: $formattedMessage',
+  final formattedMessage = log.red(
+    sanitizeForTerminal(error['message'] as String),
   );
+  fail('Message from server: $formattedMessage');
 }
 
 /// Handles an unsuccessful XML-formatted response from google cloud storage.
@@ -330,7 +334,8 @@ class PubHttpResponseException extends PubHttpException {
 
   @override
   String toString() {
-    var temp = 'PubHttpResponseException: HTTP error ${response.statusCode} '
+    var temp =
+        'PubHttpResponseException: HTTP error ${response.statusCode} '
         '${response.reasonPhrase}';
     if (message != '') {
       temp += ': $message';
@@ -364,13 +369,15 @@ final _httpPool = Pool(16);
 Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
   return await retry(
     () async => await _httpPool.withResource(() async => await fn()),
-    retryIf: (e) async =>
-        (e is PubHttpException && e.isIntermittent) ||
-        e is TimeoutException ||
-        e is http.ClientException ||
-        isHttpIOException(e),
-    onRetry: (exception, attemptNumber) async =>
-        log.io('Attempt #$attemptNumber for $operation'),
+    retryIf:
+        (e) async =>
+            (e is PubHttpException && e.isIntermittent) ||
+            e is TimeoutException ||
+            e is http.ClientException ||
+            isHttpIOException(e),
+    onRetry:
+        (exception, attemptNumber) async =>
+            log.io('Attempt #$attemptNumber for $operation'),
     maxAttempts: math.max(
       1, // Having less than 1 attempt doesn't make sense.
       int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
@@ -403,9 +410,11 @@ extension Throwing on http.BaseResponse {
       return;
     } else if (statusCode == HttpStatus.notAcceptable &&
         request?.headers['Accept'] == pubApiHeaders['Accept']) {
-      fail('Pub ${sdk.version} is incompatible with the current version of '
-          '${request?.url.host}.\n'
-          'Upgrade pub to the latest version and try again.');
+      fail(
+        'Pub ${sdk.version} is incompatible with the current version of '
+        '${request?.url.host}.\n'
+        'Upgrade pub to the latest version and try again.',
+      );
     } else if (statusCode >= 500 ||
         statusCode == HttpStatus.requestTimeout ||
         statusCode == HttpStatus.tooManyRequests) {

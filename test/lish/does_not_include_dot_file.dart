@@ -15,15 +15,15 @@ import 'utils.dart';
 
 /// Describes a package with dot-files in tree.
 td.DirectoryDescriptor get validPackageWithDotFiles => d.dir(appPath, [
-      d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
-      td.dir('.dart_tool', [td.file('package_config.json')]),
-      td.dir('.github', [td.file('ignored.yml')]),
-      td.file('.gitignore'),
-      td.file('LICENSE', 'Eh, do what you want.'),
-      td.file('README.md', "This package isn't real."),
-      td.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
-      td.dir('lib', [td.file('test_pkg.dart', 'int i = 1;')]),
-    ]);
+  d.libPubspec('test_pkg', '1.0.0', sdk: '>=1.8.0 <=2.0.0'),
+  td.dir('.dart_tool', [td.file('package_config.json')]),
+  td.dir('.github', [td.file('ignored.yml')]),
+  td.file('.gitignore'),
+  td.file('LICENSE', 'Eh, do what you want.'),
+  td.file('README.md', "This package isn't real."),
+  td.file('CHANGELOG.md', '# 1.0.0\nFirst version\n'),
+  td.dir('lib', [td.file('test_pkg.dart', 'int i = 1;')]),
+]);
 
 void main() {
   setUp(validPackageWithDotFiles.create);

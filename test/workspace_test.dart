@@ -47,13 +47,10 @@ void main() {
       File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
     expect(dig<Map>(lockfile, ['packages']).keys, <String>{'dev_dep'});
-    await appPackageConfigFile(
-      [
-        packageConfigEntry(name: 'dev_dep', version: '1.0.0'),
-        packageConfigEntry(name: 'a', path: './pkgs/a'),
-      ],
-      generatorVersion: '3.5.0',
-    ).validate();
+    await appPackageConfigFile([
+      packageConfigEntry(name: 'dev_dep', version: '1.0.0'),
+      packageConfigEntry(name: 'a', path: './pkgs/a'),
+    ], generatorVersion: '3.5.0').validate();
     final workspaceRefA = jsonDecode(
       File(
         p.join(
@@ -69,59 +66,58 @@ void main() {
     );
     expect(workspaceRefA, {'workspaceRoot': p.join('..', '..', '..', '..')});
     final workspaceRefMyApp = jsonDecode(
-      File(p.join(sandbox, appPath, '.dart_tool', 'pub', 'workspace_ref.json'))
-          .readAsStringSync(),
+      File(
+        p.join(sandbox, appPath, '.dart_tool', 'pub', 'workspace_ref.json'),
+      ).readAsStringSync(),
     );
     expect(workspaceRefMyApp, {'workspaceRoot': p.join('..', '..')});
   });
 
   test(
-      'allows dependencies between workspace members, the source is overridden',
-      () async {
-    await servePackages();
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        extras: {
-          'workspace': ['pkgs/a', 'pkgs/b'],
-        },
-        sdk: '^3.5.0',
-      ),
-      dir('pkgs', [
-        dir('a', [
-          libPubspec(
-            'a',
-            '1.1.1',
-            deps: {'b': '^2.0.0'},
-            resolutionWorkspace: true,
-          ),
+    'allows dependencies between workspace members, the source is overridden',
+    () async {
+      await servePackages();
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a', 'pkgs/b'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('pkgs', [
+          dir('a', [
+            libPubspec(
+              'a',
+              '1.1.1',
+              deps: {'b': '^2.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+          dir('b', [
+            libPubspec(
+              'b',
+              '2.1.1',
+              deps: {
+                'myapp': {'git': 'somewhere'},
+              },
+              resolutionWorkspace: true,
+            ),
+          ]),
         ]),
-        dir('b', [
-          libPubspec(
-            'b',
-            '2.1.1',
-            deps: {
-              'myapp': {'git': 'somewhere'},
-            },
-            resolutionWorkspace: true,
-          ),
-        ]),
-      ]),
-    ]).create();
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
-    final lockfile = loadYaml(
-      File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
-    );
-    expect(dig<Map>(lockfile, ['packages']).keys, <String>{});
-    await appPackageConfigFile(
-      [
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+      final lockfile = loadYaml(
+        File(p.join(sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+      );
+      expect(dig<Map>(lockfile, ['packages']).keys, <String>{});
+      await appPackageConfigFile([
         packageConfigEntry(name: 'a', path: './pkgs/a'),
         packageConfigEntry(name: 'b', path: './pkgs/b'),
-      ],
-      generatorVersion: '3.5.0',
-    ).validate();
-  });
+      ], generatorVersion: '3.5.0').validate();
+    },
+  );
 
   test('allows nested workspaces', () async {
     final server = await servePackages();
@@ -164,13 +160,10 @@ void main() {
     );
     expect(dig<Map>(lockfile, ['packages']).keys, <String>{});
 
-    await appPackageConfigFile(
-      [
-        packageConfigEntry(name: 'a', path: './pkgs/a'),
-        packageConfigEntry(name: 'example', path: './pkgs/a/example'),
-      ],
-      generatorVersion: '3.5.0',
-    ).validate();
+    await appPackageConfigFile([
+      packageConfigEntry(name: 'a', path: './pkgs/a'),
+      packageConfigEntry(name: 'example', path: './pkgs/a/example'),
+    ], generatorVersion: '3.5.0').validate();
   });
 
   test('checks constraints between workspace members', () async {
@@ -204,8 +197,7 @@ void main() {
     );
   });
 
-  test(
-      'ignores the source of dependencies on root packages. '
+  test('ignores the source of dependencies on root packages. '
       '(Uses the local version instead)', () async {
     await dir(appPath, [
       libPubspec(
@@ -309,12 +301,7 @@ void main() {
         sdk: '^3.5.0',
       ),
       dir('pkgs', [
-        dir('a', [
-          libPubspec(
-            'a',
-            '1.1.1',
-          ),
-        ]),
+        dir('a', [libPubspec('a', '1.1.1')]),
       ]),
     ]).create();
     final s = p.separator;
@@ -355,9 +342,7 @@ void main() {
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       workingDirectory: p.join(sandbox, appPath, 'pkgs'),
       output: allOf(
-        contains(
-          'Resolving dependencies in `$absoluteAppPath`...',
-        ),
+        contains('Resolving dependencies in `$absoluteAppPath`...'),
         contains('Got dependencies in `$absoluteAppPath`'),
       ),
     );
@@ -379,11 +364,7 @@ void main() {
     await pubGet(
       args: ['-C..'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      workingDirectory: p.join(
-        sandbox,
-        appPath,
-        'pkgs',
-      ),
+      workingDirectory: p.join(sandbox, appPath, 'pkgs'),
       output: contains(
         'Resolving dependencies in `${p.join(sandbox, appPath)}`...',
       ),
@@ -486,8 +467,7 @@ void main() {
     await runPub(
       args: ['deps'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
+      output: contains('''
 Dart SDK 3.5.0
 a 1.1.1
 ├── both...
@@ -499,8 +479,7 @@ b 1.1.1
 └── myapp...
 myapp 1.2.3
 ├── b...
-└── both 1.0.0''',
-      ),
+└── both 1.0.0'''),
     );
 
     await runPub(
@@ -724,13 +703,7 @@ foo:foomain''',
         sdk: '^3.5.0',
       ),
       dir('pkgs', [
-        dir('a', [
-          libPubspec(
-            'a',
-            '1.1.1',
-            resolutionWorkspace: true,
-          ),
-        ]),
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
       ]),
     ]).create();
 
@@ -791,13 +764,7 @@ foo:foomain''',
     );
     await dir(appPath, [
       dir('pkgs', [
-        dir('a', [
-          libPubspec(
-            'a',
-            '1.1.1',
-            resolutionWorkspace: true,
-          ),
-        ]),
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
       ]),
     ]).validate();
     // Only when removing it from the root it shows the update.
@@ -809,51 +776,122 @@ foo:foomain''',
     );
   });
 
-  test('Removes lock files and package configs from workspace members',
-      () async {
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        extras: {
-          'workspace': ['pkgs/a'],
-        },
-        sdk: '^3.5.0',
-      ),
-      dir('pkgs', [
-        dir(
-          'a',
-          [
-            libPubspec('a', '1.1.1', resolutionWorkspace: true),
-          ],
+  test(
+    'Reports error if pubspec inside workspace is not part of the workspace',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a', 'pkgs/a/example'],
+          },
+          sdk: '^3.5.0',
         ),
-      ]),
-    ]).create();
-    final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
-    final pkgsDir = p.join(sandbox, appPath, 'pkgs');
-    final strayLockFile = File(p.join(aDir, 'pubspec.lock'));
-    final strayPackageConfig =
-        File(p.join(aDir, '.dart_tool', 'package_config.json'));
+        dir('pkgs', [
+          libPubspec('not_in_workspace', '1.0.0'),
+          dir('a', [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            dir('example', [
+              libPubspec('example', '0.0.0', resolutionWorkspace: true),
+            ]),
+          ]),
+        ]),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        error: contains(
+          'The file `.${s}pkgs${s}pubspec.yaml` '
+          'is located in a directory between the workspace root',
+        ),
+      );
+    },
+  );
 
-    final unmanagedLockFile = File(p.join(pkgsDir, 'pubspec.lock'));
-    final unmanagedPackageConfig =
-        File(p.join(pkgsDir, '.dart_tool', 'package_config.json'));
-    strayPackageConfig.createSync(recursive: true);
-    strayLockFile.createSync(recursive: true);
+  test(
+    'Removes lock files and package configs from inside the workspace',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a', 'pkgs/b'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('pkgs', [
+          dir('a', [
+            libPubspec('a', '1.1.1', resolutionWorkspace: true),
+            dir('test_data', []),
+          ]),
+          dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      // Directories outside the workspace should not be affected.
+      final outideWorkpace = sandbox;
+      // Directories of worksace packages should be cleaned.
+      final aDir = p.join(sandbox, appPath, 'pkgs', 'a');
+      // Directories between workspace root and workspace packages should
+      // be cleaned.
+      final pkgsDir = p.join(sandbox, appPath, 'pkgs');
+      // Directories inside a workspace package should not be cleaned.
+      final inside = p.join(aDir, 'test_data');
 
-    unmanagedPackageConfig.createSync(recursive: true);
-    unmanagedLockFile.createSync(recursive: true);
+      void createLockFileAndPackageConfig(String dir) {
+        File(p.join(dir, 'pubspec.lock')).createSync(recursive: true);
+        File(
+          p.join(dir, '.dart_tool', 'package_config.json'),
+        ).createSync(recursive: true);
+      }
 
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+      void validateLockFileAndPackageConfig(
+        String dir,
+        FileSystemEntityType state,
+      ) {
+        expect(File(p.join(dir, 'pubspec.lock')).statSync().type, state);
+        expect(
+          File(
+            p.join(dir, '.dart_tool', 'package_config.json'),
+          ).statSync().type,
+          state,
+        );
+      }
 
-    expect(strayLockFile.statSync().type, FileSystemEntityType.notFound);
-    expect(strayPackageConfig.statSync().type, FileSystemEntityType.notFound);
+      createLockFileAndPackageConfig(sandbox);
+      createLockFileAndPackageConfig(aDir);
+      createLockFileAndPackageConfig(pkgsDir);
+      createLockFileAndPackageConfig(inside);
 
-    // We only delete stray files from directories that contain an actual
-    // package.
-    expect(unmanagedLockFile.statSync().type, FileSystemEntityType.file);
-    expect(unmanagedPackageConfig.statSync().type, FileSystemEntityType.file);
-  });
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        warning: allOf(
+          contains('Deleting old lock-file: `.${s}pkgs/a${s}pubspec.lock'),
+          isNot(contains('.${s}pkgs/b${s}pubspec.lock')),
+          contains(
+            'Deleting old package config: '
+            '`.${s}pkgs/a$s.dart_tool${s}package_config.json`',
+          ),
+          contains('Deleting old lock-file: `.${s}pkgs${s}pubspec.lock'),
+          contains(
+            'Deleting old package config: '
+            '`.${s}pkgs$s.dart_tool${s}package_config.json`',
+          ),
+          contains(
+            'See https://dart.dev/go/workspaces-stray-files for details.',
+          ),
+        ),
+      );
+
+      validateLockFileAndPackageConfig(
+        outideWorkpace,
+        FileSystemEntityType.file,
+      );
+      validateLockFileAndPackageConfig(aDir, FileSystemEntityType.notFound);
+      validateLockFileAndPackageConfig(pkgsDir, FileSystemEntityType.notFound);
+      validateLockFileAndPackageConfig(inside, FileSystemEntityType.file);
+    },
+  );
 
   test('Reports error if workspace doesn\'t form a tree.', () async {
     await dir(appPath, [
@@ -874,12 +912,7 @@ foo:foomain''',
             'workspace': ['a'],
           },
         ),
-        dir(
-          'a',
-          [
-            libPubspec('a', '1.1.1', resolutionWorkspace: true),
-          ],
-        ),
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
       ]),
     ]).create();
     final s = p.separator;
@@ -913,12 +946,7 @@ Packages can only be included in the workspace once.
             'workspace': ['a'],
           },
         ),
-        dir(
-          'a',
-          [
-            libPubspec('a', '1.1.1', resolutionWorkspace: true),
-          ],
-        ),
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
       ]),
     ]).create();
     final s = p.separator;
@@ -931,8 +959,7 @@ Packages can only be included in the workspace once.
     );
   });
 
-  test(
-      'Reports a failure if a workspace pubspec is not nested '
+  test('Reports a failure if a workspace pubspec is not nested '
       'inside the parent dir', () async {
     await dir(appPath, [
       libPubspec(
@@ -969,24 +996,26 @@ Packages can only be included in the workspace once.
     );
   });
 
-  test('Reports a failure if a workspace pubspec is not a relative path',
-      () async {
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        sdk: '^3.5.0',
-        extras: {
-          'workspace': [p.join(sandbox, appPath, 'a')],
-        },
-      ),
-    ]).create();
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: contains('"workspace" members must be relative paths'),
-      exitCode: DATA,
-    );
-  });
+  test(
+    'Reports a failure if a workspace pubspec is not a relative path',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          sdk: '^3.5.0',
+          extras: {
+            'workspace': [p.join(sandbox, appPath, 'a')],
+          },
+        ),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        error: contains('"workspace" members must be relative paths'),
+        exitCode: DATA,
+      );
+    },
+  );
 
   test('`upgrade` upgrades all workspace', () async {
     final server = await servePackages();
@@ -1016,11 +1045,9 @@ Packages can only be included in the workspace once.
     server.serve('bar', '1.5.0');
     await pubUpgrade(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
+      output: contains('''
 > bar 1.5.0 (was 1.0.0)
-> foo 1.5.0 (was 1.0.0)''',
-      ),
+> foo 1.5.0 (was 1.0.0)'''),
     );
   });
 
@@ -1057,15 +1084,13 @@ Packages can only be included in the workspace once.
     await pubUpgrade(
       args: ['--major-versions'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
+      output: contains('''
 Changed 2 constraints in pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
   bar: 1.0.0 -> ^2.0.0
 
 Changed 1 constraint in a${s}pubspec.yaml:
-  foo: 1.5.0 -> ^2.0.0''',
-      ),
+  foo: 1.5.0 -> ^2.0.0'''),
     );
 
     await dir(appPath, [
@@ -1088,87 +1113,83 @@ Changed 1 constraint in a${s}pubspec.yaml:
       ]),
     ]).validate();
   });
-  test('`upgrade --major-versions foo` upgrades foo in all workspace',
-      () async {
-    final server = await servePackages();
-    server.serve('foo', '1.5.0');
-    server.serve('foo', '2.0.0');
-    server.serve('bar', '1.0.0');
-    server.serve('bar', '2.0.0');
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        deps: {'foo': '^1.0.0', 'bar': '1.0.0'},
-        sdk: '^3.5.0',
-        extras: {
-          'workspace': ['a'],
-        },
-      ),
-      dir('a', [
+  test(
+    '`upgrade --major-versions foo` upgrades foo in all workspace',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.5.0');
+      server.serve('foo', '2.0.0');
+      server.serve('bar', '1.0.0');
+      server.serve('bar', '2.0.0');
+      await dir(appPath, [
         libPubspec(
-          'a',
-          '1.0.0',
-          deps: {'foo': '1.5.0'},
-          resolutionWorkspace: true,
+          'myapp',
+          '1.2.3',
+          deps: {'foo': '^1.0.0', 'bar': '1.0.0'},
+          sdk: '^3.5.0',
+          extras: {
+            'workspace': ['a'],
+          },
         ),
-      ]),
-    ]).create();
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.0.0',
+            deps: {'foo': '1.5.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]).create();
 
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains('+ foo 1.5.0'),
-    );
-    await pubUpgrade(
-      args: ['--major-versions', 'foo'],
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        output: contains('+ foo 1.5.0'),
+      );
+      await pubUpgrade(
+        args: ['--major-versions', 'foo'],
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        output: contains('''
 Changed 1 constraint in pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
 
 Changed 1 constraint in a${s}pubspec.yaml:
-  foo: 1.5.0 -> ^2.0.0''',
-      ),
-    );
-    // Second run should mention "any pubspec.yaml".
-    await pubUpgrade(
-      args: ['--major-versions', 'foo'],
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
-No changes to any pubspec.yaml!''',
-      ),
-    );
-    await pubUpgrade(
-      args: ['--major-versions', 'foo', '--dry-run'],
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
-No changes would be made to any pubspec.yaml!''',
-      ),
-    );
+  foo: 1.5.0 -> ^2.0.0'''),
+      );
+      // Second run should mention "any pubspec.yaml".
+      await pubUpgrade(
+        args: ['--major-versions', 'foo'],
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        output: contains('''
+No changes to any pubspec.yaml!'''),
+      );
+      await pubUpgrade(
+        args: ['--major-versions', 'foo', '--dry-run'],
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        output: contains('''
+No changes would be made to any pubspec.yaml!'''),
+      );
 
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        deps: {'foo': '^2.0.0', 'bar': '1.0.0'},
-        sdk: '^3.5.0',
-        extras: {
-          'workspace': ['a'],
-        },
-      ),
-      dir('a', [
+      await dir(appPath, [
         libPubspec(
-          'a',
-          '1.0.0',
-          deps: {'foo': '^2.0.0'},
-          resolutionWorkspace: true,
+          'myapp',
+          '1.2.3',
+          deps: {'foo': '^2.0.0', 'bar': '1.0.0'},
+          sdk: '^3.5.0',
+          extras: {
+            'workspace': ['a'],
+          },
         ),
-      ]),
-    ]).validate();
-  });
+        dir('a', [
+          libPubspec(
+            'a',
+            '1.0.0',
+            deps: {'foo': '^2.0.0'},
+            resolutionWorkspace: true,
+          ),
+        ]),
+      ]).validate();
+    },
+  );
 
   test('`upgrade --tighten` updates all workspace', () async {
     final server = await servePackages();
@@ -1209,15 +1230,13 @@ No changes would be made to any pubspec.yaml!''',
     await pubUpgrade(
       args: ['--tighten'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
+      output: contains('''
 Changed 2 constraints in pubspec.yaml:
   foo: ^1.0.0 -> ^1.5.0
   bar: ^1.0.0 -> ^1.5.0
 
 Changed 1 constraint in a${s}pubspec.yaml:
-  foo: ^1.0.0 -> ^1.5.0''',
-      ),
+  foo: ^1.0.0 -> ^1.5.0'''),
     );
 
     await dir(appPath, [
@@ -1289,8 +1308,7 @@ Changed 1 constraint in a${s}pubspec.yaml:
     await pubUpgrade(
       args: ['--tighten', '--major-versions'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      output: contains(
-        '''
+      output: contains('''
 Changed 2 constraints in pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
   bar: ^1.0.0 -> ^1.5.0
@@ -1299,8 +1317,7 @@ Changed 1 constraint in a${s}pubspec.yaml:
   foo: ^1.0.0 -> ^2.0.0
 
 Changed 1 constraint in b${s}pubspec.yaml:
-  bar: ^1.0.0 -> ^1.5.0''',
-      ),
+  bar: ^1.0.0 -> ^1.5.0'''),
     );
   });
 
@@ -1321,18 +1338,13 @@ Changed 1 constraint in b${s}pubspec.yaml:
         sdk: '^3.5.0',
       ),
       dir('pkgs', [
-        dir('a', [
-          libPubspec(
-            'a',
-            '1.0.0',
-            resolutionWorkspace: true,
-          ),
-        ]),
+        dir('a', [libPubspec('a', '1.0.0', resolutionWorkspace: true)]),
       ]),
     ]).create();
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: 'Because myapp depends on both a 2.0.0 and a, '
+      error:
+          'Because myapp depends on both a 2.0.0 and a, '
           'version solving failed.',
     );
   });
@@ -1349,13 +1361,7 @@ Changed 1 constraint in b${s}pubspec.yaml:
         },
         sdk: '^3.5.0',
       ),
-      dir('a', [
-        libPubspec(
-          'a',
-          '1.0.0',
-          resolutionWorkspace: true,
-        ),
-      ]),
+      dir('a', [libPubspec('a', '1.0.0', resolutionWorkspace: true)]),
       dir('b', [
         libPubspec(
           'a', // Has same name as sibling.
@@ -1372,41 +1378,88 @@ Workspace members must have unique names.
     );
   });
 
-  test('Reports error if two members of workspace override the same package',
-      () async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        deps: {'foo': 'any'},
-        extras: {
-          'dependency_overrides': {
-            'foo': {'path': '../foo'},
-          },
-          'workspace': ['a'],
-        },
-        sdk: '^3.5.0',
-      ),
-      dir('a', [
+  test(
+    'Reports error if two members of workspace override the same package',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+      await dir(appPath, [
         libPubspec(
-          'a',
-          '1.0.0',
-          resolutionWorkspace: true,
+          'myapp',
+          '1.2.3',
+          deps: {'foo': 'any'},
+          extras: {
+            'dependency_overrides': {
+              'foo': {'path': '../foo'},
+            },
+            'workspace': ['a'],
+          },
+          sdk: '^3.5.0',
         ),
-        pubspecOverrides({
-          'dependency_overrides': {'foo': '2.0.0'},
-        }),
-      ]),
-    ]).create();
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: '''
+        dir('a', [
+          libPubspec('a', '1.0.0', resolutionWorkspace: true),
+          pubspecOverrides({
+            'dependency_overrides': {'foo': '2.0.0'},
+          }),
+        ]),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        error: '''
 The package `foo` is overridden in both:
 package `myapp` at `.` and 'a' at `.${s}a`.
 
 Consider removing one of the overrides.''',
+      );
+    },
+  );
+
+  test(
+    'rejects workspace with non-workspace between root and workspace package',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('pkgs', [
+          libPubspec('in_the_way', '1.0.0'),
+          dir('a', [libPubspec('a', '1.0.0', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+        error: contains(
+          'The file `.${s}pkgs${s}pubspec.yaml` is located in a directory '
+          'between the workspace root at',
+        ),
+      );
+    },
+  );
+
+  test('Doesn\t complain about pubspecs above the workspace', () async {
+    // Regression test for https://github.com/dart-lang/pub/issues/4463
+    await dir(appPath, [
+      libPubspec('not_in_the_way', '1.0.0'),
+      dir('pkgs', [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('a', [libPubspec('a', '1.0.0', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      workingDirectory: p.join(sandbox, appPath, 'pkgs'),
     );
   });
 
@@ -1496,8 +1549,7 @@ Consider removing one of the overrides.''',
     await pub.shouldExit(SUCCESS);
   });
 
-  test(
-      'published packages with `resolution: workspace` '
+  test('published packages with `resolution: workspace` '
       'and `workspace` sections can be consumed out of context.', () async {
     final server = await servePackages();
     server.serve(
@@ -1536,9 +1588,7 @@ Consider removing one of the overrides.''',
         sdk: '^3.5.0',
       ),
       dir('pkgs', [
-        dir('a', [
-          libPubspec('a', '1.1.1', resolutionWorkspace: true),
-        ]),
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
       ]),
     ]).create();
     await pubGet(
@@ -1572,13 +1622,7 @@ Consider removing one of the overrides.''',
               'workspace': ['b'],
             },
           ),
-          dir('b', [
-            libPubspec(
-              'b',
-              '1.2.2',
-              resolutionWorkspace: true,
-            ),
-          ]),
+          dir('b', [libPubspec('b', '1.2.2', resolutionWorkspace: true)]),
         ]),
       ]),
     ]).create();
@@ -1611,8 +1655,9 @@ b        a${s}b$s
       String? part4,
       String? part5,
     ]) {
-      return json
-          .encode(p.canonicalize(p.join(part1, part2, part3, part4, part5)));
+      return json.encode(
+        p.canonicalize(p.join(part1, part2, part3, part4, part5)),
+      );
     }
 
     await runPub(
@@ -1639,54 +1684,47 @@ b        a${s}b$s
     );
   });
 
-  test(
-    '"workspace" and "resolution" fields can be overridden by '
-    '`pubspec_overrides`',
-    () async {
-      final server = await servePackages();
-      server.serve('foo', '1.0.0');
-      server.serve('bar', '1.0.0');
-      await dir(appPath, [
-        libPubspec(
-          'myapp',
-          '1.2.3',
-          extras: {
-            'workspace': ['pkgs/a'],
-          },
-          sdk: '^3.5.0',
-        ),
-        dir('pkgs', [
-          dir('a', [
-            libPubspec('a', '1.1.1', sdk: '^3.5.0', deps: {'foo': '^1.0.0'}),
-            file('pubspec_overrides.yaml', 'resolution: workspace'),
-          ]),
-          dir(
+  test('"workspace" and "resolution" fields can be overridden by '
+      '`pubspec_overrides`', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    server.serve('bar', '1.0.0');
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec('a', '1.1.1', sdk: '^3.5.0', deps: {'foo': '^1.0.0'}),
+          file('pubspec_overrides.yaml', 'resolution: workspace'),
+        ]),
+        dir('b', [
+          libPubspec(
             'b',
-            [
-              libPubspec(
-                'b',
-                '1.0.0',
-                deps: {'bar': '^1.0.0'},
-                resolutionWorkspace: true,
-              ),
-            ],
+            '1.0.0',
+            deps: {'bar': '^1.0.0'},
+            resolutionWorkspace: true,
           ),
         ]),
-      ]).create();
-      await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        output: contains('+ foo'),
-      );
-      await dir(
-        appPath,
-        [file('pubspec_overrides.yaml', 'workspace: ["pkgs/b/"]')],
-      ).create();
-      await pubGet(
-        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        output: contains('+ bar'),
-      );
-    },
-  );
+      ]),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('+ foo'),
+    );
+    await dir(appPath, [
+      file('pubspec_overrides.yaml', 'workspace: ["pkgs/b/"]'),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: contains('+ bar'),
+    );
+  });
 }
 
 final s = p.separator;

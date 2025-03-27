@@ -11,16 +11,18 @@ void main() {
   test('checks out a package from Git twice', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
 

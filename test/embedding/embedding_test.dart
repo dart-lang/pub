@@ -54,8 +54,9 @@ Future<void> runEmbeddingToBuffer(
       '\$ $_commandRunner ${args.join(' ')}',
       if (stdoutLines.isNotEmpty) _filter(stdoutLines.join('\n')),
       if (stderrLines.isNotEmpty)
-        _filter(stderrLines.join('\n'))
-            .replaceAll(RegExp('^', multiLine: true), '[E] '),
+        _filter(
+          stderrLines.join('\n'),
+        ).replaceAll(RegExp('^', multiLine: true), '[E] '),
     ].join('\n'),
   );
   buffer.write('\n');
@@ -87,10 +88,10 @@ Future<void> main() async {
   setUpAll(() async {
     final tempDir = Directory.systemTemp.createTempSync();
     snapshot = p.join(tempDir.path, 'command_runner.dart.snapshot');
-    final r = Process.runSync(
-      Platform.resolvedExecutable,
-      ['--snapshot=$snapshot', _commandRunner],
-    );
+    final r = Process.runSync(Platform.resolvedExecutable, [
+      '--snapshot=$snapshot',
+      _commandRunner,
+    ]);
     expect(r.exitCode, 0, reason: r.stderr as String);
   });
 
@@ -109,9 +110,7 @@ Future<void> main() async {
       ],
     );
 
-    await d.appDir(
-      dependencies: {'flutter_gen': '^1.0.0'},
-    ).create();
+    await d.appDir(dependencies: {'flutter_gen': '^1.0.0'}).create();
     await pubGet();
     final buffer = StringBuffer();
 
@@ -138,10 +137,7 @@ main() {
 '''),
       ]),
     ]).create();
-    await ctx.runEmbedding(
-      ['pub', 'get'],
-      workingDirectory: d.path(appPath),
-    );
+    await ctx.runEmbedding(['pub', 'get'], workingDirectory: d.path(appPath));
     await ctx.runEmbedding(
       ['pub', 'run', 'bin/main.dart'],
       exitCode: 123,
@@ -150,45 +146,39 @@ main() {
   });
 
   testWithGolden(
-      'logfile is written with --verbose and on unexpected exceptions',
-      (context) async {
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
-    await d.appDir(dependencies: {'foo': 'any'}).create();
+    'logfile is written with --verbose and on unexpected exceptions',
+    (context) async {
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+      await d.appDir(dependencies: {'foo': 'any'}).create();
 
-    // TODO(sigurdm) This logs the entire verbose trace to a golden file.
-    //
-    // This is fragile, and can break for all sorts of small reasons. We think
-    // this might be worth while having to have at least minimal testing of the
-    // verbose stack trace.
-    //
-    // But if you, future contributor, think this test is annoying: feel free to
-    // remove it, or rewrite it to filter out the stack-trace itself, only
-    // testing for creation of the file.
-    //
-    //  It is a fragile test, and we acknowledge that it's usefulness can be
-    //  debated...
-    await context.runEmbedding(
-      ['pub', '--verbose', 'get'],
-      workingDirectory: d.path(appPath),
-    );
-    context.expectNextSection(
-      _filter(
-        File(logFile).readAsStringSync(),
-      ),
-    );
-    await d.dir('empty').create();
-    await context.runEmbedding(
-      ['pub', 'fail'],
-      workingDirectory: d.path('empty'),
-      exitCode: 1,
-    );
-    context.expectNextSection(
-      _filter(
-        File(logFile).readAsStringSync(),
-      ),
-    );
-  });
+      // TODO(sigurdm) This logs the entire verbose trace to a golden file.
+      //
+      // This is fragile, and can break for all sorts of small reasons. We think
+      // this might be worth while having to have at least minimal testing of
+      // the verbose stack trace.
+      //
+      // But if you, future contributor, think this test is annoying: feel free
+      // to remove it, or rewrite it to filter out the stack-trace itself, only
+      // testing for creation of the file.
+      //
+      //  It is a fragile test, and we acknowledge that it's usefulness can be
+      //  debated...
+      await context.runEmbedding([
+        'pub',
+        '--verbose',
+        'get',
+      ], workingDirectory: d.path(appPath));
+      context.expectNextSection(_filter(File(logFile).readAsStringSync()));
+      await d.dir('empty').create();
+      await context.runEmbedding(
+        ['pub', 'fail'],
+        workingDirectory: d.path('empty'),
+        exitCode: 1,
+      );
+      context.expectNextSection(_filter(File(logFile).readAsStringSync()));
+    },
+  );
 
   test('`embedding --verbose pub` is verbose', () async {
     await servePackages();
@@ -199,10 +189,10 @@ main() {
 
   testWithGolden('--help', (context) async {
     await servePackages();
-    await context.runEmbedding(
-      ['pub', '--help'],
-      workingDirectory: d.path('.'),
-    );
+    await context.runEmbedding([
+      'pub',
+      '--help',
+    ], workingDirectory: d.path('.'));
   });
 
   testWithGolden('--color forces colors', (context) async {
@@ -243,9 +233,7 @@ main() {
         'environment': {'sdk': '^2.18.0'},
         'dependencies': {'foo': '^1.0.0'},
       }),
-      d.dir('bin', [
-        d.file('myapp.dart', 'main() {print(42);}'),
-      ]),
+      d.dir('bin', [d.file('myapp.dart', 'main() {print(42);}')]),
     ]).create();
 
     final server = await servePackages();
@@ -260,8 +248,9 @@ main() {
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '2.18.3'});
     // Deleting the version-listing cache will cause it to be refetched, and the
     // warning will happen.
-    File(p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'))
-        .deleteSync();
+    File(
+      p.join(globalServer.cachingPath, '.cache', 'foo-versions.json'),
+    ).deleteSync();
     server.serve(
       'foo',
       '1.0.1',
@@ -305,70 +294,63 @@ main() {
     );
   });
 
-  test('`embedding run` does not have output when successful and no terminal',
-      () async {
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'dependencies': {'foo': '^1.0.0'},
-      }),
-      d.dir('bin', [
-        d.file('myapp.dart', 'main() {print(42);}'),
-      ]),
-    ]).create();
-
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
-
-    final buffer = StringBuffer();
-    await runEmbeddingToBuffer(
-      ['run', 'myapp'],
-      buffer,
-      workingDirectory: d.path(appPath),
-      environment: {EnvironmentKeys.forceTerminalOutput: '0'},
-    );
-
-    expect(
-      buffer.toString(),
-      allOf(
-        isNot(contains('Resolving dependencies...')),
-        contains('42'),
-      ),
-    );
-  });
-  test('`embedding run` outputs info when successful and has a terminal',
-      () async {
-    await d.dir(appPath, [
-      d.pubspec({
-        'name': 'myapp',
-        'dependencies': {'foo': '^1.0.0'},
-      }),
-      d.dir('bin', [
-        d.file('myapp.dart', 'main() {print(42);}'),
-      ]),
-    ]).create();
-
-    final server = await servePackages();
-    server.serve('foo', '1.0.0');
-
-    final buffer = StringBuffer();
-    await runEmbeddingToBuffer(
-      ['run', 'myapp'],
-      buffer,
-      workingDirectory: d.path(appPath),
-      environment: {EnvironmentKeys.forceTerminalOutput: '1'},
-    );
-    expect(
-      buffer.toString(),
-      allOf(
-        contains('Resolving dependencies'),
-        contains('42'),
-      ),
-    );
-  });
-
   test(
-      '`embedding run` does not recompile executables '
+    '`embedding run` does not have output when successful and no terminal',
+    () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '^1.0.0'},
+        }),
+        d.dir('bin', [d.file('myapp.dart', 'main() {print(42);}')]),
+      ]).create();
+
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      final buffer = StringBuffer();
+      await runEmbeddingToBuffer(
+        ['run', 'myapp'],
+        buffer,
+        workingDirectory: d.path(appPath),
+        environment: {EnvironmentKeys.forceTerminalOutput: '0'},
+      );
+
+      expect(
+        buffer.toString(),
+        allOf(isNot(contains('Resolving dependencies...')), contains('42')),
+      );
+    },
+  );
+  test(
+    '`embedding run` outputs info when successful and has a terminal',
+    () async {
+      await d.dir(appPath, [
+        d.pubspec({
+          'name': 'myapp',
+          'dependencies': {'foo': '^1.0.0'},
+        }),
+        d.dir('bin', [d.file('myapp.dart', 'main() {print(42);}')]),
+      ]).create();
+
+      final server = await servePackages();
+      server.serve('foo', '1.0.0');
+
+      final buffer = StringBuffer();
+      await runEmbeddingToBuffer(
+        ['run', 'myapp'],
+        buffer,
+        workingDirectory: d.path(appPath),
+        environment: {EnvironmentKeys.forceTerminalOutput: '1'},
+      );
+      expect(
+        buffer.toString(),
+        allOf(contains('Resolving dependencies'), contains('42')),
+      );
+    },
+  );
+
+  test('`embedding run` does not recompile executables '
       'from packages depending on sdk packages', () async {
     final server = await servePackages();
     server.serve(
@@ -384,25 +366,18 @@ main() {
     await d.dir('flutter', [
       d.dir('bin', [
         d.dir('cache', [
-          d.file(
-            'flutter.version.json',
-            '{"flutterVersion": "1.2.3"}',
-          ),
+          d.file('flutter.version.json', '{"flutterVersion": "1.2.3"}'),
         ]),
       ]),
       d.dir('packages', [
-        d.dir('foo', [
-          d.libPubspec('foo', '1.2.3'),
-        ]),
+        d.dir('foo', [d.libPubspec('foo', '1.2.3')]),
       ]),
     ]).create();
 
     await d.dir(appPath, [
       d.pubspec({
         'name': 'myapp',
-        'dependencies': {
-          'hosted': '^1.0.0',
-        },
+        'dependencies': {'hosted': '^1.0.0'},
       }),
     ]).create();
 
@@ -419,10 +394,7 @@ main() {
 
     expect(
       buffer.toString(),
-      allOf(
-        contains('Built hosted:hosted'),
-        contains('42'),
-      ),
+      allOf(contains('Built hosted:hosted'), contains('42')),
     );
 
     final buffer2 = StringBuffer();
@@ -437,10 +409,7 @@ main() {
     );
     expect(
       buffer2.toString(),
-      allOf(
-        isNot(contains('Built hosted:hosted')),
-        contains('42'),
-      ),
+      allOf(isNot(contains('Built hosted:hosted')), contains('42')),
     );
   });
 
@@ -457,10 +426,7 @@ main() {
       );
       expect(
         buffer.toString(),
-        allOf(
-          contains('Did you mean one of these?'),
-          contains('  pub'),
-        ),
+        allOf(contains('Did you mean one of these?'), contains('  pub')),
       );
     }
   });
@@ -476,10 +442,7 @@ String _filter(String input) {
       .replaceAll(Platform.pathSeparator, '/')
       .replaceAll(Platform.operatingSystem, r'$OS')
       .replaceAll(globalServer.port.toString(), r'$PORT')
-      .replaceAll(
-        RegExp(r'^Created:(.*)$', multiLine: true),
-        r'Created: $TIME',
-      )
+      .replaceAll(RegExp(r'^Created:(.*)$', multiLine: true), r'Created: $TIME')
       .replaceAll(
         RegExp(r'Generated by pub on (.*)$', multiLine: true),
         r'Generated by pub on $TIME',
@@ -488,14 +451,8 @@ String _filter(String input) {
         RegExp(r'X-Pub-Session-ID(.*)$', multiLine: true),
         r'X-Pub-Session-ID: $ID',
       )
-      .replaceAll(
-        RegExp(r'took (.*)$', multiLine: true),
-        r'took: $TIME',
-      )
-      .replaceAll(
-        RegExp(r'date: (.*)$', multiLine: true),
-        r'date: $TIME',
-      )
+      .replaceAll(RegExp(r'took (.*)$', multiLine: true), r'took: $TIME')
+      .replaceAll(RegExp(r'date: (.*)$', multiLine: true), r'date: $TIME')
       .replaceAll(
         RegExp(r'Creating (.*) from stream\.$', multiLine: true),
         r'Creating $FILE from stream',
@@ -562,14 +519,8 @@ String _filter(String input) {
         ),
         r' tool/test-bin/pub_command_runner.dart',
       )
-      .replaceAll(
-        RegExp(r'[ ]{4,}', multiLine: true),
-        r'   ',
-      )
-      .replaceAll(
-        RegExp(r' [\d]+:[\d]+ +', multiLine: true),
-        r' $LINE:$COL ',
-      )
+      .replaceAll(RegExp(r'[ ]{4,}', multiLine: true), r'   ')
+      .replaceAll(RegExp(r' [\d]+:[\d]+ +', multiLine: true), r' $LINE:$COL ')
       .replaceAll(
         RegExp(r'Writing \d+ characters', multiLine: true),
         r'Writing $N characters',
@@ -595,7 +546,6 @@ String _filter(String input) {
         RegExp(r'"archive_sha256":"[0-9a-f]{64}"', multiLine: true),
         r'"archive_sha256":"$SHA256"',
       )
-
       /// TODO(sigurdm): This hack suppresses differences in stack-traces
       /// between dart 2.17 and 2.18. Remove when 2.18 is stable.
       .replaceAllMapped(

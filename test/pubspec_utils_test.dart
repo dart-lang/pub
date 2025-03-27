@@ -59,12 +59,14 @@ void main() {
     });
 
     test(
-        'returns the empty version constraint when an empty version constraint '
-        'is provided', () {
-      final constraint = VersionConstraint.empty;
+      'returns the empty version constraint when an empty version constraint '
+      'is provided',
+      () {
+        final constraint = VersionConstraint.empty;
 
-      expect(stripUpperBound(constraint), VersionConstraint.empty);
-    });
+        expect(stripUpperBound(constraint), VersionConstraint.empty);
+      },
+    );
 
     test('returns the empty version constraint on empty version union', () {
       final constraint = VersionUnion.fromRanges([]);

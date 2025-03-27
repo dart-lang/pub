@@ -24,13 +24,8 @@ void main() {
     ]).create();
 
     await runPub(
-      args: [
-        'cache',
-        'list',
-      ],
-      outputJson: {
-        'packages': <String, Object>{},
-      },
+      args: ['cache', 'list'],
+      outputJson: {'packages': <String, Object>{}},
     );
   });
 

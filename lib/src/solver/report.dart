@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -61,9 +62,9 @@ class SolveReport {
     required bool dryRun,
     required bool enforceLockfile,
     required bool quiet,
-  })  : _dryRun = dryRun,
-        _quiet = quiet,
-        _enforceLockfile = enforceLockfile;
+  }) : _dryRun = dryRun,
+       _quiet = quiet,
+       _enforceLockfile = enforceLockfile;
 
   /// Displays a report of the results of the version resolution in
   /// [_newLockFile] relative to the [_previousLockFile] file.
@@ -225,7 +226,7 @@ $contentHashesDocumentationUrl
     removed.remove(_rootPubspec.name); // Never consider root.
     if (removed.isNotEmpty) {
       output.writeln('These packages are no longer being depended on:');
-      for (var name in ordered(removed)) {
+      for (var name in removed.sorted()) {
         await _reportPackage(name, output, alwaysShow: true);
         changes += 1;
       }
@@ -265,17 +266,19 @@ $contentHashesDocumentationUrl
   /// Displays a two-line message, number of outdated packages and an
   /// instruction to run `pub outdated` if outdated packages are detected.
   void reportOutdated() {
-    final outdatedPackagesCount = _newLockFile.packages.values.where((id) {
-      final versions = _availableVersions[id.name]!;
-      // A version is counted:
-      // - if there is a newer version which is not a pre-release and current
-      // version is also not a pre-release or,
-      // - if the current version is pre-release then any upgraded version is
-      // considered.
-      return versions.any(
-        (v) => v > id.version && (id.version.isPreRelease || !v.isPreRelease),
-      );
-    }).length;
+    final outdatedPackagesCount =
+        _newLockFile.packages.values.where((id) {
+          final versions = _availableVersions[id.name]!;
+          // A version is counted:
+          // - if there is a newer version which is not a pre-release and
+          //   current version is also not a pre-release or,
+          // - if the current version is pre-release then any upgraded version
+          //   is considered.
+          return versions.any(
+            (v) =>
+                v > id.version && (id.version.isPreRelease || !v.isPreRelease),
+          );
+        }).length;
 
     if (outdatedPackagesCount > 0) {
       String packageCountString;
@@ -284,21 +287,23 @@ $contentHashesDocumentationUrl
       } else {
         packageCountString = '$outdatedPackagesCount packages have';
       }
-      message('$packageCountString newer versions incompatible with '
-          'dependency constraints.\n'
-          'Try `$topLevelProgram pub outdated` for more information.');
+      message(
+        '$packageCountString newer versions incompatible with '
+        'dependency constraints.\n'
+        'Try `$topLevelProgram pub outdated` for more information.',
+      );
     }
   }
 
   void reportAdvisories() {
     if (advisoryDisplayHandles.isNotEmpty) {
       message('Dependencies are affected by security advisories:');
-      for (var footnote = 0;
-          footnote < advisoryDisplayHandles.length;
-          footnote++) {
-        message(
-          '  [^$footnote]: ${advisoryDisplayHandles[footnote]}',
-        );
+      for (
+        var footnote = 0;
+        footnote < advisoryDisplayHandles.length;
+        footnote++
+      ) {
+        message('  [^$footnote]: ${advisoryDisplayHandles[footnote]}');
       }
     }
   }
@@ -307,8 +312,8 @@ $contentHashesDocumentationUrl
       lockFile.mainDependencies.contains(name)
           ? DependencyType.direct
           : lockFile.devDependencies.contains(name)
-              ? DependencyType.dev
-              : DependencyType.none;
+          ? DependencyType.dev
+          : DependencyType.none;
 
   String? _constructAdvisoriesMessage(
     List<int> footnotes,
@@ -427,10 +432,11 @@ $contentHashesDocumentationUrl
         final advisoryFootnotes = <int>[];
         final reportedAdvisories = advisories
             .where(
-              (adv) => _rootPubspec.ignoredAdvisories.intersection({
-                ...adv.aliases,
-                adv.id,
-              }).isEmpty,
+              (adv) =>
+                  _rootPubspec.ignoredAdvisories.intersection({
+                    ...adv.aliases,
+                    adv.id,
+                  }).isEmpty,
             )
             .take(maxAdvisoryFootnotesPerLine);
         for (final adv in reportedAdvisories) {
@@ -453,21 +459,17 @@ $contentHashesDocumentationUrl
             'retracted, ${maxAll(versions, Version.prioritize)} available',
           );
         } else if (newId.version.isPreRelease && newerUnstable) {
-          notes.add(
-            'retracted, ${maxAll(versions)} available',
-          );
+          notes.add('retracted, ${maxAll(versions)} available');
         } else {
-          notes.add(
-            'retracted',
-          );
+          notes.add('retracted');
         }
       } else if (status.isDiscontinued &&
-          [DependencyType.direct, DependencyType.dev]
-              .contains(_rootPubspec.dependencyType(name))) {
+          [
+            DependencyType.direct,
+            DependencyType.dev,
+          ].contains(_rootPubspec.dependencyType(name))) {
         if (status.discontinuedReplacedBy == null) {
-          notes.add(
-            'discontinued',
-          );
+          notes.add('discontinued');
         } else {
           notes.add(
             'discontinued replaced by ${status.discontinuedReplacedBy}',
@@ -475,16 +477,12 @@ $contentHashesDocumentationUrl
         }
       } else if (newerStable) {
         // If there are newer stable versions, only show those.
-        notes.add(
-          '${maxAll(versions, Version.prioritize)} available',
-        );
+        notes.add('${maxAll(versions, Version.prioritize)} available');
       } else if (
-          // Only show newer prereleases for versions where a prerelease is
-          // already chosen.
-          newId.version.isPreRelease && newerUnstable) {
-        notes.add(
-          '${maxAll(versions)} available',
-        );
+      // Only show newer prereleases for versions where a prerelease is
+      // already chosen.
+      newId.version.isPreRelease && newerUnstable) {
+        notes.add('${maxAll(versions)} available');
       }
 
       message = notes.isEmpty ? null : '(${notes.join(', ')})';
@@ -493,7 +491,8 @@ $contentHashesDocumentationUrl
     final oldDependencyType = dependencyType(_previousLockFile, name);
     final newDependencyType = dependencyType(_newLockFile, name);
 
-    final dependencyTypeChanged = oldId != null &&
+    final dependencyTypeChanged =
+        oldId != null &&
         newId != null &&
         oldDependencyType != newDependencyType;
 
@@ -558,13 +557,11 @@ $contentHashesDocumentationUrl
 
   void _writeDependencyType(DependencyType t, StringBuffer output) {
     output.write(
-      log.bold(
-        switch (t) {
-          DependencyType.direct => 'direct',
-          DependencyType.dev => 'dev',
-          DependencyType.none => 'transitive',
-        },
-      ),
+      log.bold(switch (t) {
+        DependencyType.direct => 'direct',
+        DependencyType.dev => 'dev',
+        DependencyType.none => 'transitive',
+      }),
     );
   }
 

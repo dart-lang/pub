@@ -38,13 +38,14 @@ class PackageGraph {
   ) {
     final packages = {
       for (final id in result.packages)
-        id.name: id.isRoot
-            ? entrypoint.workspaceRoot
-            : Package(
-                result.pubspecs[id.name]!,
-                entrypoint.cache.getDirectory(id),
-                [],
-              ),
+        id.name:
+            id.isRoot
+                ? entrypoint.workspaceRoot
+                : Package(
+                  result.pubspecs[id.name]!,
+                  entrypoint.cache.getDirectory(id),
+                  [],
+                ),
     };
 
     return PackageGraph(entrypoint, packages);
@@ -68,13 +69,13 @@ class PackageGraph {
       final closure = transitiveClosure(graph.keys, (n) => graph[n]!);
       _transitiveDependencies =
           mapMap<String, Set<String>, String, Set<Package>>(
-        closure,
-        value: (depender, names) {
-          final set = names.map((name) => packages[name]!).toSet();
-          set.add(packages[depender]!);
-          return set;
-        },
-      );
+            closure,
+            value: (depender, names) {
+              final set = names.map((name) => packages[name]!).toSet();
+              set.add(packages[depender]!);
+              return set;
+            },
+          );
     }
     return _transitiveDependencies![package]!;
   }
@@ -96,7 +97,8 @@ class PackageGraph {
   bool isPackageMutable(String package) {
     if (!_isPackageFromImmutableSource(package)) return true;
 
-    return transitiveDependencies(package)
-        .any((dep) => !_isPackageFromImmutableSource(dep.name));
+    return transitiveDependencies(
+      package,
+    ).any((dep) => !_isPackageFromImmutableSource(dep.name));
   }
 }

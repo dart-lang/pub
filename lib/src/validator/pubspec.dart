@@ -15,8 +15,10 @@ import '../validator.dart';
 class PubspecValidator extends Validator {
   @override
   Future validate() async {
-    if (!filesBeneath('.', recursive: false)
-        .any((file) => p.basename(file) == 'pubspec.yaml')) {
+    if (!filesBeneath(
+      '.',
+      recursive: false,
+    ).any((file) => p.basename(file) == 'pubspec.yaml')) {
       errors.add('The pubspec is hidden, probably by .gitignore or pubignore.');
     }
   }

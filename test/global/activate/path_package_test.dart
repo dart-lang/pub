@@ -24,42 +24,44 @@ void main() {
   });
 
   // Regression test for #1751
-  test('activates a package at a local path with a relative path dependency',
-      () async {
-    await d.dir('foo', [
-      d.libPubspec(
-        'foo',
-        '1.0.0',
-        deps: {
-          'bar': {'path': '../bar'},
-        },
-      ),
-      d.dir('bin', [
-        d.file('foo.dart', """
+  test(
+    'activates a package at a local path with a relative path dependency',
+    () async {
+      await d.dir('foo', [
+        d.libPubspec(
+          'foo',
+          '1.0.0',
+          deps: {
+            'bar': {'path': '../bar'},
+          },
+        ),
+        d.dir('bin', [
+          d.file('foo.dart', """
         import 'package:bar/bar.dart';
 
         main() => print(value);
       """),
-      ]),
-    ]).create();
+        ]),
+      ]).create();
 
-    await d.dir('bar', [
-      d.libPubspec('bar', '1.0.0'),
-      d.dir('lib', [d.file('bar.dart', "final value = 'ok';")]),
-    ]).create();
+      await d.dir('bar', [
+        d.libPubspec('bar', '1.0.0'),
+        d.dir('lib', [d.file('bar.dart', "final value = 'ok';")]),
+      ]).create();
 
-    final path = canonicalize(p.join(d.sandbox, 'foo'));
-    await runPub(
-      args: ['global', 'activate', '--source', 'path', '../foo'],
-      output: endsWith('Activated foo 1.0.0 at path "$path".'),
-    );
+      final path = canonicalize(p.join(d.sandbox, 'foo'));
+      await runPub(
+        args: ['global', 'activate', '--source', 'path', '../foo'],
+        output: endsWith('Activated foo 1.0.0 at path "$path".'),
+      );
 
-    await runPub(
-      args: ['global', 'run', 'foo'],
-      output: endsWith('ok'),
-      workingDirectory: p.current,
-    );
-  });
+      await runPub(
+        args: ['global', 'run', 'foo'],
+        output: endsWith('ok'),
+        workingDirectory: p.current,
+      );
+    },
+  );
 
   test("Doesn't precompile binaries when activating from path", () async {
     final server = await servePackages();
@@ -78,9 +80,10 @@ void main() {
 
     await runPub(
       args: ['global', 'activate', '--source', 'path', '../foo'],
-      output: allOf(
-        [contains('Activated foo 1.0.0 at path'), isNot(contains('Built'))],
-      ),
+      output: allOf([
+        contains('Activated foo 1.0.0 at path'),
+        isNot(contains('Built')),
+      ]),
     );
   });
 }

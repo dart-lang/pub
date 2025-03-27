@@ -27,14 +27,16 @@ class AnalyzeValidator extends Validator {
     final entries = _entriesToAnalyze
         .map((dir) => p.join(package.dir, dir))
         .where(entryExists);
-    final result = await runProcess(
-      Platform.resolvedExecutable,
-      ['analyze', ...entries, p.join(package.dir, 'pubspec.yaml')],
-    );
+    final result = await runProcess(Platform.resolvedExecutable, [
+      'analyze',
+      ...entries,
+      p.join(package.dir, 'pubspec.yaml'),
+    ]);
     if (result.exitCode != 0) {
       final limitedOutput = limitLength(result.stdout, 1000);
-      warnings
-          .add('`dart analyze` found the following issue(s):\n$limitedOutput');
+      warnings.add(
+        '`dart analyze` found the following issue(s):\n$limitedOutput',
+      );
     }
   }
 }

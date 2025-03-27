@@ -13,13 +13,15 @@ import '../validator.dart';
 class DependencyOverrideValidator extends Validator {
   @override
   Future<void> validate() async {
-    final overridden =
-        MapKeySet(context.entrypoint.workspaceRoot.allOverridesInWorkspace);
+    final overridden = MapKeySet(
+      context.entrypoint.workspaceRoot.allOverridesInWorkspace,
+    );
     final dev = MapKeySet(package.devDependencies);
     if (overridden.difference(dev).isNotEmpty) {
-      final overridesFile = package.pubspec.dependencyOverridesFromOverridesFile
-          ? package.pubspecOverridesPath
-          : package.pubspecPath;
+      final overridesFile =
+          package.pubspec.dependencyOverridesFromOverridesFile
+              ? package.pubspecOverridesPath
+              : package.pubspecPath;
 
       hints.add('''
 Non-dev dependencies are overridden in $overridesFile.

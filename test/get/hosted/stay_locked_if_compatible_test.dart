@@ -8,8 +8,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      "doesn't upgrade a locked pub server package with a new "
+  test("doesn't upgrade a locked pub server package with a new "
       'compatible constraint', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');

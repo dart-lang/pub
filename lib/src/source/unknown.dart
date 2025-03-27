@@ -39,8 +39,7 @@ class UnknownSource extends Source {
     Object? description, {
     required ResolvedDescription containingDescription,
     LanguageVersion? languageVersion,
-  }) =>
-      PackageRef(name, UnknownDescription(description, this));
+  }) => PackageRef(name, UnknownDescription(description, this));
 
   @override
   PackageId parseId(
@@ -48,12 +47,11 @@ class UnknownSource extends Source {
     Version version,
     Object? description, {
     String? containingDir,
-  }) =>
-      PackageId(
-        name,
-        version,
-        ResolvedUnknownDescription(UnknownDescription(description, this)),
-      );
+  }) => PackageId(
+    name,
+    version,
+    ResolvedUnknownDescription(UnknownDescription(description, this)),
+  );
 
   @override
   Future<List<PackageId>> doGetVersions(

@@ -36,8 +36,6 @@ void main() {
     server.serve('foo', '1.0.0');
     await d.appDir(dependencies: {'foo': 'any'}).create();
 
-    await pubGet(
-      environment: {'PUB_HOSTED_URL': '${globalServer.url}/'},
-    );
+    await pubGet(environment: {'PUB_HOSTED_URL': '${globalServer.url}/'});
   });
 }

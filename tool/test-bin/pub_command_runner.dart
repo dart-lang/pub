@@ -99,15 +99,11 @@ class RunCommand extends Command<int> {
       return -1;
     }
     final packageConfig = executable.packageConfig;
-    final process = await Process.start(
-      Platform.executable,
-      [
-        if (packageConfig != null) '--packages=$packageConfig',
-        executable.executable,
-        ...argResults!.rest.skip(1),
-      ],
-      mode: ProcessStartMode.inheritStdio,
-    );
+    final process = await Process.start(Platform.executable, [
+      if (packageConfig != null) '--packages=$packageConfig',
+      executable.executable,
+      ...argResults!.rest.skip(1),
+    ], mode: ProcessStartMode.inheritStdio);
 
     return await process.exitCode;
   }
@@ -118,9 +114,7 @@ class Runner extends CommandRunner<int> {
 
   Runner() : super('pub_command_runner', 'Tests the embeddable pub command.') {
     addCommand(
-      pubCommand(
-        isVerbose: () => _results.flag('verbose'),
-      )
+      pubCommand(isVerbose: () => _results.flag('verbose'))
         ..addSubcommand(ThrowingCommand())
         ..addSubcommand(EnsurePubspecResolvedCommand())
         ..addSubcommand(GetExecutableForCommandCommand()),

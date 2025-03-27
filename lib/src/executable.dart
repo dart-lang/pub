@@ -56,14 +56,18 @@ Future<int> runExecutable(
 
   // Make sure the package is an immediate dependency of the entrypoint or the
   // entrypoint itself.
-  if (entrypoint.workspaceRoot.name != executable.package &&
-      !entrypoint.workspaceRoot.immediateDependencies.containsKey(package)) {
+  if (entrypoint.workPackage.name != executable.package &&
+      !entrypoint.workPackage.immediateDependencies.containsKey(package)) {
     if ((await entrypoint.packageGraph).packages.containsKey(package)) {
-      dataError('Package "$package" is not an immediate dependency.\n'
-          'Cannot run executables in transitive dependencies.');
+      dataError(
+        'Package "$package" is not an immediate dependency.\n'
+        'Cannot run executables in transitive dependencies.',
+      );
     } else {
-      dataError('Could not find package "$package". Did you forget to add a '
-          'dependency?');
+      dataError(
+        'Could not find package "$package". Did you forget to add a '
+        'dependency?',
+      );
     }
   }
 
@@ -189,17 +193,13 @@ Future<int> _runDartProgram(
     // semantics without `fork` for starting the subprocess.
     // https://github.com/dart-lang/sdk/issues/41966.
     final subscription = ProcessSignal.sigint.watch().listen((e) {});
-    final process = await Process.start(
-      Platform.resolvedExecutable,
-      [
-        '--packages=$packageConfig',
-        ...vmArgs,
-        if (enableAsserts) '--enable-asserts',
-        p.toUri(path).toString(),
-        ...args,
-      ],
-      mode: ProcessStartMode.inheritStdio,
-    );
+    final process = await Process.start(Platform.resolvedExecutable, [
+      '--packages=$packageConfig',
+      ...vmArgs,
+      if (enableAsserts) '--enable-asserts',
+      p.toUri(path).toString(),
+      ...args,
+    ], mode: ProcessStartMode.inheritStdio);
 
     final exitCode = await process.exitCode;
     await subscription.cancel();
@@ -312,8 +312,10 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   final String workspaceRootDir;
   try {
     final String workspaceRootRelativeToCwd;
-    (packageConfig: packageConfig, rootDir: workspaceRootRelativeToCwd) =
-        await Entrypoint.ensureUpToDate(
+    (
+      packageConfig: packageConfig,
+      rootDir: workspaceRootRelativeToCwd,
+    ) = await Entrypoint.ensureUpToDate(
       rootOrCurrent,
       cache: SystemCache(rootDir: pubCacheDir),
     );
@@ -326,33 +328,41 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   // Find the first directory from [rootOrCurrent] to [workspaceRootDir] (both
   // inclusive) that contains a package from the package config.
-  final packageConfigDir =
-      p.join(workspaceRootDir, '.dart_tool', 'package_config.json');
+  final packageConfigDir = p.join(
+    workspaceRootDir,
+    '.dart_tool',
+    'package_config.json',
+  );
 
-  final rootPackageName = maxBy<(String, String), int>(
-    packageConfig.packages.map((package) {
-      final packageRootDir =
-          p.canonicalize(package.resolvedRootDir(packageConfigDir));
-      if (p.equals(packageRootDir, rootOrCurrent) ||
-          p.isWithin(packageRootDir, rootOrCurrent)) {
-        return (package.name, packageRootDir);
-      } else {
-        return null;
-      }
-    }).nonNulls,
-    (tuple) => tuple.$2.length,
-  )?.$1;
+  final rootPackageName =
+      maxBy<(String, String), int>(
+        packageConfig.packages.map((package) {
+          final packageRootDir = p.canonicalize(
+            package.resolvedRootDir(packageConfigDir),
+          );
+          if (p.equals(packageRootDir, rootOrCurrent) ||
+              p.isWithin(packageRootDir, rootOrCurrent)) {
+            return (package.name, packageRootDir);
+          } else {
+            return null;
+          }
+        }).nonNulls,
+        (tuple) => tuple.$2.length,
+      )?.$1;
 
   if (rootPackageName == null) {
-    final packageConfigPath =
-        p.join(workspaceRootDir, '.dart_tool', 'package_config.json');
+    final packageConfigPath = p.join(
+      workspaceRootDir,
+      '.dart_tool',
+      'package_config.json',
+    );
     throw CommandResolutionFailedException._(
       '$packageConfigPath did not contain its own root package',
       CommandResolutionIssue.fileNotFound,
     );
   }
-  late final String command;
-  String package;
+  final String command;
+  final String package;
   if (descriptor.contains(':')) {
     final parts = descriptor.split(':');
     if (parts.length > 2) {
@@ -361,12 +371,11 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
         CommandResolutionIssue.parseError,
       );
     }
-    package = parts[0];
-    if (package.isEmpty) package = rootPackageName;
+    final packageName = parts[0];
+    package = packageName.isNotEmpty ? packageName : rootPackageName;
     command = parts[1];
   } else {
-    package = descriptor;
-    if (package.isEmpty) package = rootPackageName;
+    package = descriptor.isNotEmpty ? descriptor : rootPackageName;
     command = package;
   }
 
@@ -487,7 +496,7 @@ class Executable {
 
   /// Adapts the program-name following conventions of dart run
   Executable.adaptProgramName(this.package, String program)
-      : relativePath = _adaptProgramToPath(program);
+    : relativePath = _adaptProgramToPath(program);
 
   Executable(this.package, this.relativePath);
 

@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
@@ -107,19 +108,18 @@ class Entrypoint {
       if (pubspec.resolution == Resolution.none) {
         root = Package.load(
           dir,
-          loadPubspec: (
-            path, {
-            expectedName,
-            required withPubspecOverrides,
-          }) =>
-              pubspecsMet[p.canonicalize(path)] ??
-              Pubspec.load(
-                path,
-                cache.sources,
-                expectedName: expectedName,
-                allowOverridesFile: withPubspecOverrides,
-                containingDescription: ResolvedRootDescription.fromDir(path),
-              ),
+          loadPubspec:
+              (path, {expectedName, required withPubspecOverrides}) =>
+                  pubspecsMet[p.canonicalize(path)] ??
+                  Pubspec.load(
+                    path,
+                    cache.sources,
+                    expectedName: expectedName,
+                    allowOverridesFile: withPubspecOverrides,
+                    containingDescription: ResolvedRootDescription.fromDir(
+                      path,
+                    ),
+                  ),
           withPubspecOverrides: true,
         );
         for (final package in root.transitiveWorkspace) {
@@ -217,7 +217,8 @@ See $workspacesDocUrl for more information.''',
           e.message,
           e.span,
           explanation: 'Failed parsing lock file:',
-          hint: 'Consider deleting the file and running '
+          hint:
+              'Consider deleting the file and running '
               '`$topLevelProgram pub get` to recreate it.',
         );
       }
@@ -236,11 +237,13 @@ See $workspacesDocUrl for more information.''',
 
   static PackageConfig _loadPackageConfig(String packageConfigPath) {
     Never badPackageConfig() {
-      dataError('The "$packageConfigPath" file is not recognized by '
-          '"pub" version, please run "$topLevelProgram pub get".');
+      dataError(
+        'The "$packageConfigPath" file is not recognized by '
+        '"pub" version, please run "$topLevelProgram pub get".',
+      );
     }
 
-    late String packageConfigRaw;
+    final String packageConfigRaw;
     try {
       packageConfigRaw = readTextFile(packageConfigPath);
     } on FileException {
@@ -249,11 +252,9 @@ See $workspacesDocUrl for more information.''',
         'please run "$topLevelProgram pub get".',
       );
     }
-    late PackageConfig result;
+    final PackageConfig result;
     try {
-      result = PackageConfig.fromJson(
-        json.decode(packageConfigRaw) as Object?,
-      );
+      result = PackageConfig.fromJson(json.decode(packageConfigRaw) as Object?);
     } on FormatException {
       badPackageConfig();
     }
@@ -297,8 +298,12 @@ See $workspacesDocUrl for more information.''',
 
   /// The path to the entrypoint's ".dart_tool/package_config.json" file
   /// relative to the current working directory .
-  late String packageConfigPath = p.relative(
+  late final String packageConfigPath = p.relative(
     p.normalize(p.join(workspaceRoot.dir, '.dart_tool', 'package_config.json')),
+  );
+
+  late final String packageGraphPath = p.relative(
+    p.normalize(p.join(workspaceRoot.dir, '.dart_tool', 'package_graph.json')),
   );
 
   /// The path to the entrypoint workspace's lockfile.
@@ -307,11 +312,11 @@ See $workspacesDocUrl for more information.''',
 
   /// The path to the directory containing dependency executable snapshots.
   String get _snapshotPath => p.join(
-        isCachedGlobal
-            ? workspaceRoot.dir
-            : p.join(workspaceRoot.dir, '.dart_tool/pub'),
-        'bin',
-      );
+    isCachedGlobal
+        ? workspaceRoot.dir
+        : p.join(workspaceRoot.dir, '.dart_tool/pub'),
+    'bin',
+  );
 
   Entrypoint._(
     this.workingDir,
@@ -328,11 +333,8 @@ See $workspacesDocUrl for more information.''',
   /// If [checkInCache] is `true` (the default) an error will be thrown if
   /// [workingDir] is located inside [cache]`.rootDir`.
 
-  Entrypoint(
-    this.workingDir,
-    this.cache, {
-    bool checkInCache = true,
-  }) : isCachedGlobal = false {
+  Entrypoint(this.workingDir, this.cache, {bool checkInCache = true})
+    : isCachedGlobal = false {
     if (checkInCache && p.isWithin(cache.rootDir, workingDir)) {
       fail('Cannot operate on packages inside the cache.');
     }
@@ -344,17 +346,13 @@ See $workspacesDocUrl for more information.''',
     final newWorkspaceRoot = workspaceRoot.transformWorkspace(
       (package) => updatedPubspecs[package] ?? package.pubspec,
     );
-    final newWorkPackage = newWorkspaceRoot.transitiveWorkspace
-        .firstWhere((package) => package.dir == workPackage.dir);
-    return Entrypoint._(
-      workingDir,
-      _lockFile,
-      _example,
-      _packageGraph,
-      cache,
-      (root: newWorkspaceRoot, work: newWorkPackage),
-      isCachedGlobal,
+    final newWorkPackage = newWorkspaceRoot.transitiveWorkspace.firstWhere(
+      (package) => package.dir == workPackage.dir,
     );
+    return Entrypoint._(workingDir, _lockFile, _example, _packageGraph, cache, (
+      root: newWorkspaceRoot,
+      work: newWorkPackage,
+    ), isCachedGlobal);
   }
 
   /// Creates an entrypoint at the same location, that will use [pubspec] for
@@ -370,12 +368,13 @@ See $workspacesDocUrl for more information.''',
     this._lockFile,
     this.cache, {
     SolveResult? solveResult,
-  })  : _packages = (root: package, work: package),
-        workingDir = package.dir,
-        isCachedGlobal = true {
+  }) : _packages = (root: package, work: package),
+       workingDir = package.dir,
+       isCachedGlobal = true {
     if (solveResult != null) {
-      _packageGraph =
-          Future.value(PackageGraph.fromSolveResult(this, solveResult));
+      _packageGraph = Future.value(
+        PackageGraph.fromSolveResult(this, solveResult),
+      );
     }
   }
 
@@ -395,34 +394,64 @@ See $workspacesDocUrl for more information.''',
   /// Writes the .dart_tool/package_config.json file and workspace references to
   /// it.
   ///
+  /// Also writes the .dart_tool.package_graph.json file.
+  ///
   /// If the workspace is non-trivial: For each package in the workspace write:
   /// `.dart_tool/pub/workspace_ref.json` with a pointer to the workspace root
   /// package dir.
-  Future<void> writePackageConfigFile() async {
+  Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
     writeTextFile(
       packageConfigPath,
       await _packageConfigFile(
         cache,
-        entrypointSdkConstraint: workspaceRoot
-            .pubspec.sdkConstraints[sdk.identifier]?.effectiveConstraint,
+        entrypointSdkConstraint:
+            workspaceRoot
+                .pubspec
+                .sdkConstraints[sdk.identifier]
+                ?.effectiveConstraint,
       ),
     );
+    writeTextFile(packageGraphPath, await _packageGraphFile(cache));
     if (workspaceRoot.workspaceChildren.isNotEmpty) {
       for (final package in workspaceRoot.transitiveWorkspace) {
         final workspaceRefDir = p.join(package.dir, '.dart_tool', 'pub');
         final workspaceRefPath = p.join(workspaceRefDir, 'workspace_ref.json');
         ensureDir(workspaceRefDir);
-        final relativeRootPath =
-            p.relative(workspaceRoot.dir, from: workspaceRefDir);
-        writeTextFile(
-          workspaceRefPath,
-          '${const JsonEncoder.withIndent('  ').convert({
-                'workspaceRoot': relativeRootPath,
-              })}\n',
+        final relativeRootPath = p.relative(
+          workspaceRoot.dir,
+          from: workspaceRefDir,
         );
+        final workspaceRef = const JsonEncoder.withIndent(
+          '  ',
+        ).convert({'workspaceRoot': relativeRootPath});
+        writeTextFile(workspaceRefPath, '$workspaceRef\n');
       }
     }
+  }
+
+  Future<String> _packageGraphFile(SystemCache cache) async {
+    return const JsonEncoder.withIndent('  ').convert({
+      'roots':
+          workspaceRoot.transitiveWorkspace.map((p) => p.name).toList()..sort(),
+      'packages': [
+        for (final p in workspaceRoot.transitiveWorkspace)
+          {
+            'name': p.name,
+            'version': p.version.toString(),
+            'dependencies': p.dependencies.keys.toList()..sort(),
+            'devDependencies': p.devDependencies.keys.toList()..sort(),
+          },
+        for (final p in lockFile.packages.values)
+          {
+            'name': p.name,
+            'version': p.version.toString(),
+            'dependencies':
+                (await cache.describe(p)).dependencies.keys.toList()..sort(),
+          },
+      ],
+      'configVersion': 1,
+    });
   }
 
   /// Returns the contents of the `.dart_tool/package_config` file generated
@@ -434,19 +463,21 @@ See $workspacesDocUrl for more information.''',
     VersionConstraint? entrypointSdkConstraint,
   }) async {
     final entries = <PackageConfigEntry>[];
-    late final relativeFromPath = p.join(workspaceRoot.dir, '.dart_tool');
-    for (final name in ordered(lockFile.packages.keys)) {
-      final id = lockFile.packages[name]!;
-      final rootPath = cache.getDirectory(id, relativeFrom: relativeFromPath);
-      final pubspec = await cache.describe(id);
-      entries.add(
-        PackageConfigEntry(
-          name: name,
-          rootUri: p.toUri(rootPath),
-          packageUri: p.toUri('lib/'),
-          languageVersion: pubspec.languageVersion,
-        ),
-      );
+    if (lockFile.packages.isNotEmpty) {
+      final relativeFromPath = p.join(workspaceRoot.dir, '.dart_tool');
+      for (final name in lockFile.packages.keys.sorted()) {
+        final id = lockFile.packages[name]!;
+        final rootPath = cache.getDirectory(id, relativeFrom: relativeFromPath);
+        final pubspec = await cache.describe(id);
+        entries.add(
+          PackageConfigEntry(
+            name: name,
+            rootUri: p.toUri(rootPath),
+            packageUri: p.toUri('lib/'),
+            languageVersion: pubspec.languageVersion,
+          ),
+        );
+      }
     }
 
     if (!isCachedGlobal) {
@@ -485,8 +516,9 @@ See $workspacesDocUrl for more information.''',
       },
     );
 
-    final jsonText =
-        const JsonEncoder.withIndent('  ').convert(packageConfig.toJson());
+    final jsonText = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(packageConfig.toJson());
     return '$jsonText\n';
   }
 
@@ -523,9 +555,10 @@ See $workspacesDocUrl for more information.''',
   }) async {
     workspaceRoot; // This will throw early if pubspec.yaml could not be found.
     summaryOnly = summaryOnly || _summaryOnlyEnvironment;
-    final suffix = workspaceRoot.dir == '.'
-        ? ''
-        : ' in `${workspaceRoot.presentationDir}`';
+    final suffix =
+        workspaceRoot.dir == '.'
+            ? ''
+            : ' in `${workspaceRoot.presentationDir}`';
 
     if (enforceLockfile && !fileExists(lockFilePath)) {
       throw ApplicationException('''
@@ -602,7 +635,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       /// have to reload and reparse all the pubspecs.
       _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
 
-      await writePackageConfigFile();
+      await writePackageConfigFiles();
 
       try {
         if (precompile) {
@@ -627,11 +660,13 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// the package itself if they are immutable.
   Future<List<Executable>> get _builtExecutables async {
     final graph = await packageGraph;
-    final r = workspaceRoot.immediateDependencies.keys.expand((packageName) {
-      final package = graph.packages[packageName]!;
-      return package.executablePaths
-          .map((path) => Executable(packageName, path));
-    }).toList();
+    final r =
+        workspaceRoot.immediateDependencies.keys.expand((packageName) {
+          final package = graph.packages[packageName]!;
+          return package.executablePaths.map(
+            (path) => Executable(packageName, path),
+          );
+        }).toList();
     return r;
   }
 
@@ -797,8 +832,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         final pubspecPath = p.normalize(p.join(dir, 'pubspec.yaml'));
 
         log.fine(
-            'The $pubspecPath file has changed since the $lockFilePath file '
-            'was generated.');
+          'The $pubspecPath file has changed since the $lockFilePath file '
+          'was generated.',
+        );
         return false;
       }
 
@@ -809,7 +845,11 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         if (source is CachedSource) continue;
 
         try {
-          if (cache.load(id).dependencies.values.every(
+          if (cache
+              .load(id)
+              .dependencies
+              .values
+              .every(
                 (dep) =>
                     root.allOverridesInWorkspace.containsKey(dep.name) ||
                     isDependencyUpToDate(dep),
@@ -820,10 +860,14 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           // If we can't load the pubspec, the user needs to re-run "pub get".
         }
 
-        final relativePubspecPath =
-            p.join(cache.getDirectory(id, relativeFrom: '.'), 'pubspec.yaml');
-        log.fine('$relativePubspecPath has '
-            'changed since the $lockFilePath file was generated.');
+        final relativePubspecPath = p.join(
+          cache.getDirectory(id, relativeFrom: '.'),
+          'pubspec.yaml',
+        );
+        log.fine(
+          '$relativePubspecPath has '
+          'changed since the $lockFilePath file was generated.',
+        );
         return false;
       }
       return true;
@@ -851,10 +895,11 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         // Check that [packagePathsMapping] does not contain more packages than
         // what is required. This could lead to import statements working, when
         // they are not supposed to work.
-        final hasExtraMappings = !packagePathsMapping.keys.every((packageName) {
-          return packageName == root.name ||
-              lockFile.packages.containsKey(packageName);
-        });
+        final hasExtraMappings =
+            !packagePathsMapping.keys.every((packageName) {
+              return packageName == root.name ||
+                  lockFile.packages.containsKey(packageName);
+            });
         if (hasExtraMappings) {
           return false;
         }
@@ -908,17 +953,21 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           );
           return false;
         }
-        packagePathsMapping[pkg.name] =
-            root.path('.dart_tool', p.fromUri(pkg.rootUri));
+        packagePathsMapping[pkg.name] = root.path(
+          '.dart_tool',
+          p.fromUri(pkg.rootUri),
+        );
       }
       if (!isPackagePathsMappingUpToDateWithLockfile(
         packagePathsMapping,
         packageConfigPath: packageConfigPath,
         lockFilePath: lockFilePath,
       )) {
-        log.fine('The $lockFilePath file has changed since the '
-            '$packageConfigPath file '
-            'was generated, please run "$topLevelProgram pub get" again.');
+        log.fine(
+          'The $lockFilePath file has changed since the '
+          '$packageConfigPath file '
+          'was generated, please run "$topLevelProgram pub get" again.',
+        );
         return false;
       }
 
@@ -952,13 +1001,17 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
               cache.getDirectory(id, relativeFrom: '.'),
               'pubspec.yaml',
             );
-            log.fine('$relativePubspecPath has '
-                'changed since the $lockFilePath file was generated.');
+            log.fine(
+              '$relativePubspecPath has '
+              'changed since the $lockFilePath file was generated.',
+            );
             return false;
           }
         } on FileException {
-          log.fine('Failed to read pubspec.yaml for "${pkg.name}", perhaps the '
-              'entry is missing.');
+          log.fine(
+            'Failed to read pubspec.yaml for "${pkg.name}", perhaps the '
+            'entry is missing.',
+          );
           return false;
         }
       }
@@ -1007,8 +1060,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       late final String packageConfigPath;
       late final String rootDir;
       for (final parent in parentDirs(dir)) {
-        final potentialPackageConfigPath =
-            p.normalize(p.join(parent, '.dart_tool', 'package_config.json'));
+        final potentialPackageConfigPath = p.normalize(
+          p.join(parent, '.dart_tool', 'package_config.json'),
+        );
         packageConfigStat = tryStatFile(potentialPackageConfigPath);
 
         if (packageConfigStat != null) {
@@ -1016,8 +1070,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           rootDir = parent;
           break;
         }
-        final potentialPubspacPath = p.join(parent, 'pubspec.yaml');
-        if (tryStatFile(potentialPubspacPath) == null) {
+        final potentialPubspecPath = p.join(parent, 'pubspec.yaml');
+        if (tryStatFile(potentialPubspecPath) == null) {
           // No package at [parent] continue to next dir.
           continue;
         }
@@ -1029,14 +1083,15 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         final workspaceRefText = tryReadTextFile(potentialWorkspaceRefPath);
         if (workspaceRefText == null) {
           log.fine(
-            '`$potentialPubspacPath` exists without corresponding '
-            '`$potentialPubspacPath` or `$potentialWorkspaceRefPath`.',
+            '`$potentialPubspecPath` exists without corresponding '
+            '`$potentialPubspecPath` or `$potentialWorkspaceRefPath`.',
           );
           return null;
         } else {
           try {
-            if (jsonDecode(workspaceRefText)
-                case {'workspaceRoot': final String path}) {
+            if (jsonDecode(workspaceRefText) case {
+              'workspaceRoot': final String path,
+            }) {
               final potentialPackageConfigPath2 = relativeIfNeeded(
                 p.normalize(
                   p.absolute(
@@ -1061,10 +1116,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
                 rootDir = relativeIfNeeded(
                   p.normalize(
                     p.absolute(
-                      p.join(
-                        p.dirname(potentialWorkspaceRefPath),
-                        path,
-                      ),
+                      p.join(p.dirname(potentialWorkspaceRefPath), path),
                     ),
                   ),
                 );
@@ -1079,9 +1131,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
               return null;
             }
           } on FormatException catch (e) {
-            log.fine(
-              '`$potentialWorkspaceRefPath` not valid json: $e.',
-            );
+            log.fine('`$potentialWorkspaceRefPath` not valid json: $e.');
             return null;
           }
         }
@@ -1093,7 +1143,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
         return null;
       }
       final lockFilePath = p.normalize(p.join(rootDir, 'pubspec.lock'));
-      late final packageConfig = _loadPackageConfig(packageConfigPath);
+      final packageConfig = _loadPackageConfig(packageConfigPath);
       if (p.isWithin(cache.rootDir, packageConfigPath)) {
         // We always consider a global package (inside the cache) up-to-date.
         return (packageConfig, rootDir);
@@ -1117,9 +1167,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       // sdk-packages, and therefore do a new resolution.
       //
       // This also counts if Flutter was introduced or removed.
-      final flutterRoot = flutter.rootDirectory == null
-          ? null
-          : p.toUri(p.absolute(flutter.rootDirectory!)).toString();
+      final flutterRoot =
+          flutter.rootDirectory == null
+              ? null
+              : p.toUri(p.absolute(flutter.rootDirectory!)).toString();
       if (packageConfig.additionalProperties['flutterRoot'] != flutterRoot) {
         log.fine('Flutter has moved since last invocation.');
         return null;
@@ -1182,8 +1233,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
           lockfileNewerThanPubspecs = false;
           break;
         }
-        final pubspecOverridesPath =
-            p.join(package.rootUri.path, 'pubspec_overrides.yaml');
+        final pubspecOverridesPath = p.join(
+          package.rootUri.path,
+          'pubspec_overrides.yaml',
+        );
         final pubspecOverridesStat = tryStatFile(pubspecOverridesPath);
         if (pubspecOverridesStat != null) {
           // This will wrongly require you to reresolve if a
@@ -1229,13 +1282,16 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       return (packageConfig, rootDir);
     }
 
-    if (isResolutionUpToDate()
-        case (final PackageConfig packageConfig, final String rootDir)) {
+    if (isResolutionUpToDate() case (
+      final PackageConfig packageConfig,
+      final String rootDir,
+    )) {
       log.fine('Package Config up to date.');
       return (packageConfig: packageConfig, rootDir: rootDir);
     }
     final entrypoint = Entrypoint(
-      dir, cache,
+      dir,
+      cache,
       // [ensureUpToDate] is also used for entries in 'global_packages/'
       checkInCache: false,
     );
@@ -1255,10 +1311,8 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     return (
       packageConfig: entrypoint.packageConfig,
       rootDir: relativeIfNeeded(
-        p.normalize(
-          p.absolute(entrypoint.workspaceRoot.dir),
-        ),
-      )
+        p.normalize(p.absolute(entrypoint.workspaceRoot.dir)),
+      ),
     );
   }
 
@@ -1292,8 +1346,9 @@ environment:
 See https://dart.dev/go/sdk-constraint
 ''');
     }
-    if (!LanguageVersion.fromSdkConstraint(dartSdkConstraint)
-        .supportsNullSafety) {
+    if (!LanguageVersion.fromSdkConstraint(
+      dartSdkConstraint,
+    ).supportsNullSafety) {
       throw DataException('''
 The lower bound of "sdk: '$dartSdkConstraint'" must be 2.12.0'
 or higher to enable null safety.
@@ -1306,11 +1361,12 @@ For details, see https://dart.dev/null-safety
     for (final sdk in pubspec.sdkConstraints.keys) {
       if (!sdks.containsKey(sdk)) {
         final environment = pubspec.fields.nodes['environment'] as YamlMap;
-        final keyNode = environment.nodes.entries
-            .firstWhere((e) => (e.key as YamlNode).value == sdk)
-            .key as YamlNode;
-        throw SourceSpanApplicationException(
-          '''
+        final keyNode =
+            environment.nodes.entries
+                    .firstWhere((e) => (e.key as YamlNode).value == sdk)
+                    .key
+                as YamlNode;
+        throw SourceSpanApplicationException('''
 $pubspecPath refers to an unknown sdk '$sdk'.
 
 Did you mean to add it as a dependency?
@@ -1319,9 +1375,7 @@ Either remove the constraint, or upgrade to a version of pub that supports the
 given sdk.
 
 See https://dart.dev/go/sdk-constraint
-''',
-          keyNode.span,
-        );
+''', keyNode.span);
       }
     }
   }
@@ -1335,14 +1389,45 @@ See https://dart.dev/go/sdk-constraint
   /// Remove any `pubspec.lock` or `.dart_tool/package_config.json` files in
   /// workspace packages that are not the root package.
   ///
+  /// Also remove from directories between the workspace package and the
+  /// workspace root, to prevent stray package configs from shadowing the shared
+  /// workspace package config.
+  ///
   /// This is to avoid surprises if a package is turned into a workspace member
   /// but still has an old package config or lockfile.
   void _removeStrayLockAndConfigFiles() {
+    final visited = <String>{
+      // By adding this to visited we will never go above the workspaceRoot.dir.
+      p.canonicalize(workspaceRoot.dir),
+    };
+    var deletedAny = false;
     for (final package in workspaceRoot.transitiveWorkspace) {
       if (package.pubspec.resolution == Resolution.workspace) {
-        deleteEntry(p.join(package.dir, 'pubspec.lock'));
-        deleteEntry(p.join(package.dir, '.dart_tool', 'package_config.json'));
+        for (final dir in parentDirs(package.dir)) {
+          if (!visited.add(p.canonicalize(dir))) {
+            // No reason to delete from the same directory twice.
+            break;
+          }
+          void deleteIfPresent(String path, String type) {
+            if (fileExists(path)) {
+              log.warning('Deleting old $type: `$path`.');
+              deleteEntry(path);
+              deletedAny = true;
+            }
+          }
+
+          deleteIfPresent(p.join(dir, 'pubspec.lock'), 'lock-file');
+          deleteIfPresent(
+            p.join(dir, '.dart_tool', 'package_config.json'),
+            'package config',
+          );
+        }
       }
+    }
+    if (deletedAny) {
+      log.warning(
+        'See https://dart.dev/go/workspaces-stray-files for details.',
+      );
     }
   }
 
@@ -1382,7 +1467,8 @@ See https://dart.dev/go/sdk-constraint
         }
       } else {
         for (final packageToUpgrade in packagesToUpgrade) {
-          final range = package.dependencies[packageToUpgrade] ??
+          final range =
+              package.dependencies[packageToUpgrade] ??
               package.devDependencies[packageToUpgrade];
           if (range != null) {
             toTighten.add((package, range));
@@ -1397,24 +1483,24 @@ See https://dart.dev/go/sdk-constraint
 
       final resolvedVersion =
           (packageVersions?.firstWhere((p) => p.name == range.name) ??
-                      lockFile.packages[range.name])
-                  ?.version ??
-              workspaceVersions[range.name]!;
+                  lockFile.packages[range.name])
+              ?.version ??
+          workspaceVersions[range.name]!;
       if (range.source is HostedSource && constraint.isAny) {
-        changesForPackage[range] = range
-            .toRef()
-            .withConstraint(VersionConstraint.compatibleWith(resolvedVersion));
+        changesForPackage[range] = range.toRef().withConstraint(
+          VersionConstraint.compatibleWith(resolvedVersion),
+        );
       } else if (constraint is VersionRange) {
         final min = constraint.min;
         if (min != null && min < resolvedVersion) {
           changesForPackage[range] = range.toRef().withConstraint(
-                VersionRange(
-                  min: resolvedVersion,
-                  max: constraint.max,
-                  includeMin: true,
-                  includeMax: constraint.includeMax,
-                ).asCompatibleWithIfPossible(),
-              );
+            VersionRange(
+              min: resolvedVersion,
+              max: constraint.max,
+              includeMin: true,
+              includeMax: constraint.includeMax,
+            ).asCompatibleWithIfPossible(),
+          );
         }
       }
     }
@@ -1439,10 +1525,10 @@ See https://dart.dev/go/sdk-constraint
         for (final change in changesForPackage.values) {
           final section =
               deps.contains(change.name) ? 'dependencies' : 'dev_dependencies';
-          yamlEditor.update(
-            [section, change.name],
-            pubspecDescription(change, cache, package),
-          );
+          yamlEditor.update([
+            section,
+            change.name,
+          ], pubspecDescription(change, cache, package));
         }
         writeTextFile(package.pubspecPath, yamlEditor.toString());
       }
@@ -1451,10 +1537,7 @@ See https://dart.dev/go/sdk-constraint
   }
 
   /// Outputs a summary of [changeSet].
-  void _outputChangeSummary(
-    ChangeSet changeSet, {
-    required bool dryRun,
-  }) {
+  void _outputChangeSummary(ChangeSet changeSet, {required bool dryRun}) {
     if (workspaceRoot.workspaceChildren.isEmpty) {
       final changesToWorkspaceRoot = changeSet[workspaceRoot] ?? {};
       if (changesToWorkspaceRoot.isEmpty) {
@@ -1462,10 +1545,14 @@ See https://dart.dev/go/sdk-constraint
         log.message('\nNo changes $wouldBe pubspec.yaml!');
       } else {
         final changed = dryRun ? 'Would change' : 'Changed';
-        final constraints =
-            pluralize('constraint', changesToWorkspaceRoot.length);
-        log.message('\n$changed ${changesToWorkspaceRoot.length} '
-            '$constraints in pubspec.yaml:');
+        final constraints = pluralize(
+          'constraint',
+          changesToWorkspaceRoot.length,
+        );
+        log.message(
+          '\n$changed ${changesToWorkspaceRoot.length} '
+          '$constraints in pubspec.yaml:',
+        );
         changesToWorkspaceRoot.forEach((from, to) {
           log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
         });
@@ -1480,8 +1567,10 @@ See https://dart.dev/go/sdk-constraint
         if (changesToPackage.isEmpty) continue;
         final changed = dryRun ? 'Would change' : 'Changed';
         final constraints = pluralize('constraint', changesToPackage.length);
-        log.message('\n$changed ${changesToPackage.length} '
-            '$constraints in ${package.pubspecPath}:');
+        log.message(
+          '\n$changed ${changesToPackage.length} '
+          '$constraints in ${package.pubspecPath}:',
+        );
         changesToPackage.forEach((from, to) {
           log.message('  ${from.name}: ${from.constraint} -> ${to.constraint}');
         });

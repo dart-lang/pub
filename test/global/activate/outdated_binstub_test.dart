@@ -27,10 +27,9 @@ void main() {
         'executables': {'foo-script': 'script'},
       },
       contents: [
-        d.dir(
-          'bin',
-          [d.file('script.dart', "main(args) => print('ok \$args');")],
-        ),
+        d.dir('bin', [
+          d.file('script.dart', "main(args) => print('ok \$args');"),
+        ]),
       ],
     );
 

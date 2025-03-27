@@ -78,17 +78,18 @@ class PathSource extends Source {
       return PackageRef(
         name,
         PathDescription(
-          p.normalize(
-            p.join(
-              p.absolute(containingDescription.description.path),
-              description,
-            ),
-          ),
+          isRelative
+              ? p.normalize(
+                p.join(
+                  p.absolute(containingDescription.description.path),
+                  description,
+                ),
+              )
+              : description,
           isRelative,
         ),
       );
     } else if (containingDescription is ResolvedGitDescription) {
-      print('containing: $containingDescription $name ${description} ');
       if (!isRelative) {
         throw FormatException(
           '"$description" is an absolute path, '
@@ -120,13 +121,17 @@ class PathSource extends Source {
       );
     } else if (containingDescription is HostedDescription) {
       if (isRelative) {
-        throw FormatException('"$description" is a relative path, but this '
-            'isn\'t a local pubspec.');
+        throw FormatException(
+          '"$description" is a relative path, but this '
+          'isn\'t a local pubspec.',
+        );
       }
       return PackageRef(name, PathDescription(dir, false));
     } else {
-      throw FormatException('"$description" is a path, but this '
-          'isn\'t a local pubspec.');
+      throw FormatException(
+        '"$description" is a path, but this '
+        'isn\'t a local pubspec.',
+      );
     }
   }
 
@@ -142,13 +147,17 @@ class PathSource extends Source {
     }
     var path = description['path'];
     if (path is! String) {
-      throw const FormatException("The 'path' field of the description must "
-          'be a string.');
+      throw const FormatException(
+        "The 'path' field of the description must "
+        'be a string.',
+      );
     }
     final relative = description['relative'];
     if (relative is! bool) {
-      throw const FormatException("The 'relative' field of the description "
-          'must be a boolean.');
+      throw const FormatException(
+        "The 'relative' field of the description "
+        'must be a boolean.',
+      );
     }
 
     // Resolve the path relative to the containing file path.
@@ -156,13 +165,13 @@ class PathSource extends Source {
       // Relative paths coming from lockfiles that are not on the local file
       // system aren't allowed.
       if (containingDir == null) {
-        throw FormatException('"$description" is a relative path, but this '
-            'isn\'t a local pubspec.');
+        throw FormatException(
+          '"$description" is a relative path, but this '
+          'isn\'t a local pubspec.',
+        );
       }
 
-      path = p.normalize(
-        p.absolute(p.join(containingDir, path)),
-      );
+      path = p.normalize(p.absolute(p.join(containingDir, path)));
     }
 
     return PackageId(
@@ -193,11 +202,7 @@ class PathSource extends Source {
     // version.
     final resolvedDescription = ResolvedPathDescription(description);
     final pubspec = _loadPubspec(ref, resolvedDescription, cache);
-    final id = PackageId(
-      ref.name,
-      pubspec.version,
-      resolvedDescription,
-    );
+    final id = PackageId(ref.name, pubspec.version, resolvedDescription);
     // Store the pubspec in memory if we need to refer to it again.
     cache.cachedPubspecs[id] = pubspec;
     return [id];
@@ -277,6 +282,9 @@ class PathDescription extends Description {
   final String path;
   final bool relative;
 
+  // Canonicalization is rather slow - cache the result;
+  late final String _canonicalizedPath = canonicalize(path);
+
   PathDescription(this.path, this.relative) : assert(!p.isRelative(path));
   @override
   String format() {
@@ -290,8 +298,8 @@ class PathDescription extends Description {
   }) {
     return relative
         ? PathSource.relativePathWithPosixSeparators(
-            p.relative(path, from: containingDir),
-          )
+          p.relative(path, from: containingDir),
+        )
         : path;
   }
 
@@ -301,11 +309,11 @@ class PathDescription extends Description {
   @override
   bool operator ==(Object other) {
     return other is PathDescription &&
-        canonicalize(path) == canonicalize(other.path);
+        _canonicalizedPath == other._canonicalizedPath;
   }
 
   @override
-  int get hashCode => canonicalize(path).hashCode;
+  int get hashCode => _canonicalizedPath.hashCode;
 
   @override
   bool get hasMultipleVersions => false;

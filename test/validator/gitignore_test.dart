@@ -27,8 +27,7 @@ Future<void> expectValidation(
 }
 
 void main() {
-  test(
-      'should consider a package valid '
+  test('should consider a package valid '
       'if it contains no checked in otherwise ignored files', () async {
     await d.git('myapp', [
       ...d.validPackage().contents,
@@ -37,9 +36,7 @@ void main() {
 
     await expectValidation(contains('Package has 0 warnings.'), 0);
 
-    await d.dir('myapp', [
-      d.file('.gitignore', '*.txt'),
-    ]).create();
+    await d.dir('myapp', [d.file('.gitignore', '*.txt')]).create();
 
     await expectValidation(
       allOf([
@@ -90,13 +87,7 @@ void main() {
 
   test('Should also consider gitignores from above the package root', () async {
     await d.git('reporoot', [
-      d.dir(
-        'myapp',
-        [
-          d.file('foo.txt'),
-          ...d.validPackage().contents,
-        ],
-      ),
+      d.dir('myapp', [d.file('foo.txt'), ...d.validPackage().contents]),
     ]).create();
     final packageRoot = p.join(d.sandbox, 'reporoot', 'myapp');
     await pubGet(workingDirectory: packageRoot);
@@ -107,9 +98,7 @@ void main() {
       workingDirectory: packageRoot,
     );
 
-    await d.dir('reporoot', [
-      d.file('.gitignore', '*.txt'),
-    ]).create();
+    await d.dir('reporoot', [d.file('.gitignore', '*.txt')]).create();
 
     await expectValidation(
       allOf([
@@ -126,16 +115,13 @@ void main() {
   });
 
   test('Should not follow symlinks', () async {
-    await d.git('myapp', [
-      ...d.validPackage().contents,
-    ]).create();
+    await d.git('myapp', [...d.validPackage().contents]).create();
     final packageRoot = p.join(d.sandbox, 'myapp');
     await pubGet(workingDirectory: packageRoot);
 
-    Link(p.join(packageRoot, '.abc', 'itself')).createSync(
-      packageRoot,
-      recursive: true,
-    );
+    Link(
+      p.join(packageRoot, '.abc', 'itself'),
+    ).createSync(packageRoot, recursive: true);
 
     await expectValidation(
       contains('Package has 0 warnings.'),
@@ -144,20 +130,15 @@ void main() {
     );
   });
 
-  test(
-      'Should consider symlinks to be valid files and not list '
+  test('Should consider symlinks to be valid files and not list '
       'them as gitignored', () async {
     final git = d.git(appPath, [
       ...d.validPackage().contents,
-      d.dir('dir_with_symlink', [
-        d.file('.pubignore', 'symlink'),
-      ]),
+      d.dir('dir_with_symlink', [d.file('.pubignore', 'symlink')]),
     ]);
     await git.create();
     final packageRoot = p.join(d.sandbox, appPath);
-    await pubGet(
-      workingDirectory: packageRoot,
-    );
+    await pubGet(workingDirectory: packageRoot);
     await d
         .link(
           p.join(d.sandbox, appPath, 'dir_with_symlink', 'symlink'),

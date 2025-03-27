@@ -25,9 +25,7 @@ void main() {
         command,
         error: contains('url scheme must be https:// or http://'),
         exitCode: exit_codes.DATA,
-        environment: {
-          'PUB_MAX_HTTP_RETRIES': '2',
-        },
+        environment: {'PUB_MAX_HTTP_RETRIES': '2'},
       );
     });
     test('fails gracefully if the url has querystring', () async {
@@ -45,9 +43,7 @@ void main() {
         command,
         error: contains('querystring'),
         exitCode: exit_codes.DATA,
-        environment: {
-          'PUB_MAX_HTTP_RETRIES': '2',
-        },
+        environment: {'PUB_MAX_HTTP_RETRIES': '2'},
       );
     });
 
@@ -66,9 +62,7 @@ void main() {
         command,
         error: contains('fragment'),
         exitCode: exit_codes.DATA,
-        environment: {
-          'PUB_MAX_HTTP_RETRIES': '2',
-        },
+        environment: {'PUB_MAX_HTTP_RETRIES': '2'},
       );
     });
 
@@ -87,9 +81,7 @@ void main() {
         command,
         error: contains('user-info'),
         exitCode: exit_codes.DATA,
-        environment: {
-          'PUB_MAX_HTTP_RETRIES': '2',
-        },
+        environment: {'PUB_MAX_HTTP_RETRIES': '2'},
       );
     });
 
@@ -108,9 +100,7 @@ void main() {
         command,
         error: contains('user-info'),
         exitCode: exit_codes.DATA,
-        environment: {
-          'PUB_MAX_HTTP_RETRIES': '2',
-        },
+        environment: {'PUB_MAX_HTTP_RETRIES': '2'},
       );
     });
   });

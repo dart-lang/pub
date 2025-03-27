@@ -42,33 +42,32 @@ FileDescriptor validPubspec({Map<String, Object?>? extras}) =>
 DirectoryDescriptor validPackage({
   String version = '1.0.0',
   Map<String, Object?>? pubspecExtras,
-}) =>
-    dir(appPath, [
-      validPubspec(extras: {'version': version, ...?pubspecExtras}),
-      file('LICENSE', 'Eh, do what you want.'),
-      file('README.md', "This package isn't real."),
-      file('CHANGELOG.md', '# $version\nFirst version\n'),
-      dir('lib', [file('test_pkg.dart', 'int i = 1;')]),
-    ]);
+}) => dir(appPath, [
+  validPubspec(extras: {'version': version, ...?pubspecExtras}),
+  file('LICENSE', 'Eh, do what you want.'),
+  file('README.md', "This package isn't real."),
+  file('CHANGELOG.md', '# $version\nFirst version\n'),
+  dir('lib', [file('test_pkg.dart', 'int i = 1;')]),
+]);
 
 /// Returns a descriptor of a snapshot that can't be run by the current VM.
 ///
 /// This snapshot was generated using version 2.0.0-dev.58.0 of the VM.
 FileDescriptor outOfDateSnapshot(String name) => file(
-      name,
-      base64.decode(
-        'kKvN7wAAAAYBAAEAAQAAAAAAAAABBgMBBh8AAQEAAAABA'
-        'wofAAAAAAAAAFwBShABHhAGAQABJwIAAAAAEwAAAAAAAA'
-        'AVAAAAOQAAAAEAAAACAAAAJWZpbGU6Ly8vVXNlcnMvcm5'
-        '5c3Ryb20vdGVtcC90ZW1wLmRhcnQgdm9pZCBtYWluKCkg'
-        'PT4gcHJpbnQoJ2hlbGxvIScpOwoDACABAAAAUQAAAFQGA'
-        'AMBBAIBAAUEBAUGAAAAAAcABAovN0BFbWFpbmhlbGxvIW'
-        'ZpbGU6Ly8vVXNlcnMvcm55c3Ryb20vdGVtcC90ZW1wLmR'
-        'hcnRAbWV0aG9kc2RhcnQ6Y29yZXByaW50AAAAAE0AAACn'
-        'AAAAtAAAALQAAAC4AAABBQAAAAMAAAAJAAAATQAAAAEAA'
-        'AEy',
-      ),
-    );
+  name,
+  base64.decode(
+    'kKvN7wAAAAYBAAEAAQAAAAAAAAABBgMBBh8AAQEAAAABA'
+    'wofAAAAAAAAAFwBShABHhAGAQABJwIAAAAAEwAAAAAAAA'
+    'AVAAAAOQAAAAEAAAACAAAAJWZpbGU6Ly8vVXNlcnMvcm5'
+    '5c3Ryb20vdGVtcC90ZW1wLmRhcnQgdm9pZCBtYWluKCkg'
+    'PT4gcHJpbnQoJ2hlbGxvIScpOwoDACABAAAAUQAAAFQGA'
+    'AMBBAIBAAUEBAUGAAAAAAcABAovN0BFbWFpbmhlbGxvIW'
+    'ZpbGU6Ly8vVXNlcnMvcm55c3Ryb20vdGVtcC90ZW1wLmR'
+    'hcnRAbWV0aG9kc2RhcnQ6Y29yZXByaW50AAAAAE0AAACn'
+    'AAAAtAAAALQAAAC4AAABBQAAAAMAAAAJAAAATQAAAAEAA'
+    'AEy',
+  ),
+);
 
 /// Describes a file named `pubspec.yaml` with the given YAML-serialized
 /// [contents], which should be a serializable object.
@@ -76,16 +75,16 @@ FileDescriptor outOfDateSnapshot(String name) => file(
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
 FileDescriptor pubspec(Map<String, Object?> contents) => YamlDescriptor(
-      'pubspec.yaml',
-      yaml({
-        ...contents,
-        // TODO: Copy-pasting this into all call-sites, or use d.libPubspec
-        'environment': {
-          'sdk': defaultSdkConstraint,
-          ...(contents['environment'] ?? {}) as Map,
-        },
-      }),
-    );
+  'pubspec.yaml',
+  yaml({
+    ...contents,
+    // TODO: Copy-pasting this into all call-sites, or use d.libPubspec
+    'environment': {
+      'sdk': defaultSdkConstraint,
+      ...(contents['environment'] ?? {}) as Map,
+    },
+  }),
+);
 
 Descriptor rawPubspec(Map<String, Object> contents) =>
     YamlDescriptor('pubspec.yaml', yaml(contents));
@@ -93,10 +92,7 @@ Descriptor rawPubspec(Map<String, Object> contents) =>
 /// Describes a file named `pubspec.yaml` for an application package with the
 /// given [dependencies].
 Descriptor appPubspec({Map? dependencies, Map<String, Object>? extras}) {
-  final map = <String, Object>{
-    'name': 'myapp',
-    ...?extras,
-  };
+  final map = <String, Object>{'name': 'myapp', ...?extras};
   if (dependencies != null) map['dependencies'] = dependencies;
   return pubspec(map);
 }
@@ -123,13 +119,11 @@ FileDescriptor libPubspec(
   if (sdk != null) {
     map['environment'] = {'sdk': sdk};
   }
-  return pubspec(
-    {
-      ...map,
-      if (resolutionWorkspace) 'resolution': 'workspace',
-      ...extras ?? {},
-    },
-  );
+  return pubspec({
+    ...map,
+    if (resolutionWorkspace) 'resolution': 'workspace',
+    ...extras ?? {},
+  });
 }
 
 /// Describes a file named `pubspec_overrides.yaml` by default, with the given
@@ -137,10 +131,8 @@ FileDescriptor libPubspec(
 ///
 /// [contents] may contain [Future]s that resolve to serializable objects,
 /// which may in turn contain [Future]s recursively.
-Descriptor pubspecOverrides(Map<String, Object> contents) => YamlDescriptor(
-      'pubspec_overrides.yaml',
-      yaml(contents),
-    );
+Descriptor pubspecOverrides(Map<String, Object> contents) =>
+    YamlDescriptor('pubspec_overrides.yaml', yaml(contents));
 
 /// Describes a directory named `lib` containing a single dart file named
 /// `<name>.dart` that contains a line of Dart code.
@@ -153,9 +145,9 @@ Descriptor libDir(String name, [String? code]) {
 /// Describes a directory whose name ends with a hyphen followed by an
 /// alphanumeric hash.
 Descriptor hashDir(String name, Iterable<Descriptor> contents) => pattern(
-      RegExp("$name${r'-[a-f0-9]+'}"),
-      (dirName) => dir(dirName, contents),
-    );
+  RegExp("$name${r'-[a-f0-9]+'}"),
+  (dirName) => dir(dirName, contents),
+);
 
 /// Describes a directory for a Git repo with a dart package.
 /// This directory is of the form found in the revision cache of the global
@@ -229,10 +221,9 @@ Descriptor hostedCache(Iterable<Descriptor> contents, {int? port}) {
 /// that this cache represents. It defaults to `globalServer.port`.
 Descriptor hostedHashesCache(Iterable<Descriptor> contents, {int? port}) {
   return dir(cachePath, [
-    dir(
-      'hosted-hashes',
-      [dir('localhost%58${port ?? globalServer.port}', contents)],
-    ),
+    dir('hosted-hashes', [
+      dir('localhost%58${port ?? globalServer.port}', contents),
+    ]),
   ]);
 }
 
@@ -248,19 +239,17 @@ Descriptor credentialsFile(
   String? refreshToken,
   DateTime? expiration,
 }) {
-  return configDir(
-    [
-      file(
-        'pub-credentials.json',
-        _credentialsFileContent(
-          server,
-          accessToken,
-          refreshToken: refreshToken,
-          expiration: expiration,
-        ),
+  return configDir([
+    file(
+      'pub-credentials.json',
+      _credentialsFileContent(
+        server,
+        accessToken,
+        refreshToken: refreshToken,
+        expiration: expiration,
       ),
-    ],
-  );
+    ),
+  ]);
 }
 
 Descriptor legacyCredentialsFile(
@@ -269,20 +258,17 @@ Descriptor legacyCredentialsFile(
   String? refreshToken,
   DateTime? expiration,
 }) {
-  return dir(
-    cachePath,
-    [
-      file(
-        'credentials.json',
-        _credentialsFileContent(
-          server,
-          accessToken,
-          refreshToken: refreshToken,
-          expiration: expiration,
-        ),
+  return dir(cachePath, [
+    file(
+      'credentials.json',
+      _credentialsFileContent(
+        server,
+        accessToken,
+        refreshToken: refreshToken,
+        expiration: expiration,
       ),
-    ],
-  );
+    ),
+  ]);
 }
 
 String _credentialsFileContent(
@@ -295,10 +281,7 @@ String _credentialsFileContent(
       accessToken,
       refreshToken: refreshToken,
       tokenEndpoint: Uri.parse(server.url).resolve('/token'),
-      scopes: [
-        'openid',
-        'https://www.googleapis.com/auth/userinfo.email',
-      ],
+      scopes: ['openid', 'https://www.googleapis.com/auth/userinfo.email'],
       expiration: expiration,
     ).toJson();
 
@@ -326,39 +309,27 @@ Descriptor packageConfigFile(
   String? pubCache,
   String? flutterVersion,
   String? flutterRoot,
-}) =>
-    PackageConfigFileDescriptor(
-      packages,
-      generatorVersion,
-      pubCache ??
-          p.join(
-            sandbox,
-            cachePath,
-          ),
-      flutterRoot,
-      flutterVersion,
-    );
+}) => PackageConfigFileDescriptor(
+  packages,
+  generatorVersion,
+  pubCache ?? p.join(sandbox, cachePath),
+  flutterRoot,
+  flutterVersion,
+);
 
 Descriptor appPackageConfigFile(
   List<PackageConfigEntry> packages, {
   String generatorVersion = '3.1.2+3',
   String? flutterRoot,
   String? flutterVersion,
-}) =>
-    dir(
-      appPath,
-      [
-        packageConfigFile(
-          [
-            packageConfigEntry(name: 'myapp', path: '.'),
-            ...packages,
-          ],
-          generatorVersion: generatorVersion,
-          flutterRoot: flutterRoot,
-          flutterVersion: flutterVersion,
-        ),
-      ],
-    );
+}) => dir(appPath, [
+  packageConfigFile(
+    [packageConfigEntry(name: 'myapp', path: '.'), ...packages],
+    generatorVersion: generatorVersion,
+    flutterRoot: flutterRoot,
+    flutterVersion: flutterVersion,
+  ),
+]);
 
 /// Create a [PackageConfigEntry] which assumes package with [name] is either
 /// a cached package with given [version] or a path dependency at given [path].
@@ -393,10 +364,9 @@ PackageConfigEntry packageConfigEntry({
 
 Descriptor flutterVersion(String version) {
   return dir('bin', [
-    dir(
-      'cache',
-      [file('flutter.version.json', '{"flutterVersion":"$version"}')],
-    ),
+    dir('cache', [
+      file('flutter.version.json', '{"flutterVersion":"$version"}'),
+    ]),
   ]);
 }
 

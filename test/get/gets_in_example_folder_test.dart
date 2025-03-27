@@ -17,50 +17,52 @@ final dotExample = p.join('.', 'example');
 void main() {
   forBothPubGetAndUpgrade((command) {
     test(
-        'pub ${command.name} --example also retrieves dependencies in example/',
-        () async {
-      await d.dir(appPath, [
-        d.appPubspec(),
-        d.dir('example', [
-          d.pubspec({
-            'name': 'app_example',
-            'dependencies': {
-              'myapp': {'path': '..'},
-            },
-          }),
-        ]),
-      ]).create();
+      'pub ${command.name} --example also retrieves dependencies in example/',
+      () async {
+        await d.dir(appPath, [
+          d.appPubspec(),
+          d.dir('example', [
+            d.pubspec({
+              'name': 'app_example',
+              'dependencies': {
+                'myapp': {'path': '..'},
+              },
+            }),
+          ]),
+        ]).create();
 
-      await pubCommand(command, args: ['--no-example']);
-      final lockFile = File(p.join(d.sandbox, appPath, 'pubspec.lock'));
-      final exampleLockFile = File(
-        p.join(d.sandbox, appPath, 'example', 'pubspec.lock'),
-      );
+        await pubCommand(command, args: ['--no-example']);
+        final lockFile = File(p.join(d.sandbox, appPath, 'pubspec.lock'));
+        final exampleLockFile = File(
+          p.join(d.sandbox, appPath, 'example', 'pubspec.lock'),
+        );
 
-      expect(lockFile.existsSync(), true);
-      expect(exampleLockFile.existsSync(), false);
-      await pubCommand(
-        command,
-        args: ['--example'],
-        output: command.name == 'get'
-            ? '''
+        expect(lockFile.existsSync(), true);
+        expect(exampleLockFile.existsSync(), false);
+        await pubCommand(
+          command,
+          args: ['--example'],
+          output:
+              command.name == 'get'
+                  ? '''
 Resolving dependencies...
 Downloading packages...
 Got dependencies!
 Resolving dependencies in `$dotExample`...
 Downloading packages...
 Got dependencies in `$dotExample`.'''
-            : '''
+                  : '''
 Resolving dependencies... 
 Downloading packages...
 No dependencies changed.
 Resolving dependencies in `$dotExample`...
 Downloading packages...
 Got dependencies in `$dotExample`.''',
-      );
-      expect(lockFile.existsSync(), true);
-      expect(exampleLockFile.existsSync(), true);
-    });
+        );
+        expect(lockFile.existsSync(), true);
+        expect(exampleLockFile.existsSync(), true);
+      },
+    );
 
     test('Failures are not summarized', () async {
       await d.dir(appPath, [

@@ -14,10 +14,12 @@ import '../../test_pub.dart';
 /// empty-directory.
 void _invalidateGitCache(String repo) {
   final cacheDir = p.join(d.sandbox, p.joinAll([cachePath, 'git', 'cache']));
-  final fooCacheDir = Directory(cacheDir).listSync().firstWhere((entity) {
-    return entity is Directory &&
-        entity.path.split(Platform.pathSeparator).last.startsWith(repo);
-  }) as Directory;
+  final fooCacheDir =
+      Directory(cacheDir).listSync().firstWhere((entity) {
+            return entity is Directory &&
+                entity.path.split(Platform.pathSeparator).last.startsWith(repo);
+          })
+          as Directory;
 
   fooCacheDir.deleteSync(recursive: true);
   fooCacheDir.createSync();
@@ -27,16 +29,18 @@ void main() {
   test('Clean-up invalid git repo cache', () async {
     ensureGit();
 
-    await d.git(
-      'foo.git',
-      [d.libDir('foo'), d.libPubspec('foo', '1.0.0')],
-    ).create();
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
 
-    await d.appDir(
-      dependencies: {
-        'foo': {'git': '../foo.git'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {'git': '../foo.git'},
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -55,18 +59,22 @@ void main() {
   test('Clean-up invalid git repo cache at a specific branch', () async {
     ensureGit();
 
-    final repo =
-        d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
+    final repo = d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]);
     await repo.create();
     await repo.runGit(['branch', 'old']);
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {'url': '../foo.git', 'ref': 'old'},
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo.git', 'ref': 'old'},
+            },
+          },
+        )
+        .create();
 
     await pubGet();
 
@@ -85,18 +93,22 @@ void main() {
   test('Clean-up invalid git repo cache at a specific commit', () async {
     ensureGit();
 
-    final repo =
-        d.git('foo.git', [d.libDir('foo'), d.libPubspec('foo', '1.0.0')]);
+    final repo = d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]);
     await repo.create();
     final commit = await repo.revParse('HEAD');
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {'url': '../foo.git', 'ref': commit},
-        },
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo.git', 'ref': commit},
+            },
+          },
+        )
+        .create();
 
     await pubGet();
 

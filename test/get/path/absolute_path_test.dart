@@ -10,8 +10,10 @@ import '../../test_pub.dart';
 
 void main() {
   test('path dependency with absolute path', () async {
-    await d
-        .dir('foo', [d.libDir('foo'), d.libPubspec('foo', '0.0.1')]).create();
+    await d.dir('foo', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '0.0.1'),
+    ]).create();
 
     await d.dir(appPath, [
       d.appPubspec(

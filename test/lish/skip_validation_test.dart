@@ -15,8 +15,7 @@ import '../test_pub.dart';
 import 'utils.dart';
 
 void main() {
-  test(
-      'with --skip-validation dependency resolution '
+  test('with --skip-validation dependency resolution '
       'and validations are skipped.', () async {
     await servePackages();
     await d.validPackage().create();

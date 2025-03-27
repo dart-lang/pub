@@ -8,8 +8,7 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test(
-      "downgrades one locked hosted package's dependencies if it's "
+  test("downgrades one locked hosted package's dependencies if it's "
       'necessary', () async {
     final server = await servePackages();
     server.serve('foo', '2.0.0', deps: {'foo_dep': 'any'});
