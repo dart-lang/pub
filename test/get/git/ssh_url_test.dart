@@ -23,6 +23,11 @@ void main() {
         ref: 'main',
         path: 'abc/',
         containingDir: null,
+        tagPattern: null,
+      );
+      expect(
+        description.format(),
+        'git@github.com:dart-lang/pub.git at main in abc/',
       );
       expect(
         description.format(),

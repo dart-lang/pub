@@ -174,7 +174,7 @@ class PackageRange {
   bool get _showVersionConstraint {
     if (isRoot) return false;
     if (!constraint.isAny) return true;
-    return description.source.hasMultipleVersions;
+    return description.hasMultipleVersions;
   }
 
   /// Returns a copy of `this` with the same semantics, but with a `^`-style

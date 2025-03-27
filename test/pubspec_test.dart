@@ -26,7 +26,7 @@ void main() {
       void Function(Pubspec) fn, {
       String? expectedContains,
       String? hintContains,
-      Description? containingDescription,
+      ResolvedDescription? containingDescription,
     }) {
       var expectation = const TypeMatcher<SourceSpanApplicationException>();
       if (expectedContains != null) {
@@ -47,7 +47,8 @@ void main() {
       final pubspec = Pubspec.parse(
         contents,
         sources,
-        containingDescription: containingDescription ?? RootDescription('.'),
+        containingDescription:
+            containingDescription ?? ResolvedRootDescription.fromDir('.'),
       );
       expect(() => fn(pubspec), throwsA(expectation));
     }
@@ -57,7 +58,7 @@ void main() {
       Pubspec.parse(
         'version: not a semver',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
     });
 
@@ -68,7 +69,7 @@ void main() {
           'name: foo',
           sources,
           expectedName: 'bar',
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         ),
         throwsPubspecException,
       );
@@ -81,7 +82,7 @@ void main() {
           '{}',
           sources,
           expectedName: 'bar',
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         ),
         throwsPubspecException,
       );
@@ -98,7 +99,7 @@ dependencies:
     version: ">=1.2.3 <3.4.5"
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       final foo = pubspec.dependencies['foo']!;
@@ -119,7 +120,7 @@ dependencies:
     version: ">=1.2.3 <0.0.0"
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       final foo = pubspec.dependencies['foo']!;
@@ -133,7 +134,7 @@ dependencies:
 dependencies:
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       expect(pubspec.dependencies, isEmpty);
@@ -150,7 +151,7 @@ dev_dependencies:
     version: ">=1.2.3 <3.4.5"
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       final foo = pubspec.devDependencies['foo']!;
@@ -166,7 +167,7 @@ dev_dependencies:
 dev_dependencies:
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       expect(pubspec.devDependencies, isEmpty);
@@ -183,7 +184,7 @@ dependency_overrides:
     version: ">=1.2.3 <3.4.5"
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       final foo = pubspec.dependencyOverrides['foo']!;
@@ -199,7 +200,7 @@ dependency_overrides:
 dependency_overrides:
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       expect(pubspec.dependencyOverrides, isEmpty);
@@ -213,7 +214,7 @@ dependencies:
     unknown: blah
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       final foo = pubspec.dependencies['foo']!;
@@ -229,7 +230,7 @@ dependencies:
     version: 1.2.3
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
 
       final foo = pubspec.dependencies['foo']!;
@@ -344,7 +345,7 @@ environment:
 workspace: ['a', 'b', 'c']
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         ).workspace,
         ['a', 'b', 'c'],
       );
@@ -359,7 +360,7 @@ environment:
 resolution: workspace
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         ).resolution,
         Resolution.workspace,
       );
@@ -393,7 +394,7 @@ environment:
 resolution: workspace
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         ).name,
         'foo',
       );
@@ -451,7 +452,7 @@ resolution: "sometimes"''', (pubspec) => pubspec.resolution);
 # See https://dart.dev/tools/pub/cmd for details
 ''',
         sources,
-        containingDescription: RootDescription('.'),
+        containingDescription: ResolvedRootDescription.fromDir('.'),
       );
       expect(pubspec.version, equals(Version.none));
       expect(pubspec.dependencies, isEmpty);
@@ -464,13 +465,15 @@ name: pkg
 dependencies:
   from_path: {path: non_local_path}
 ''',
-        containingDescription: HostedDescription('foo', 'https://pub.dev'),
+        containingDescription: ResolvedHostedDescription(
+          HostedDescription('foo', 'https://pub.dev'),
+          sha256: null,
+        ),
         (pubspec) => pubspec.dependencies,
         expectedContains:
             'Invalid description in the "pkg" pubspec on the "from_path" '
-            'dependency: "non_local_path" is a relative path, '
-            'but this isn\'t a '
-            'local pubspec.',
+            'dependency: "non_local_path" is a path, but '
+            'this isn\'t a local pubspec.',
       );
     });
 
@@ -486,7 +489,7 @@ dependencies:
       name: bar
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
 
         final foo = pubspec.dependencies['foo']!;
@@ -513,7 +516,7 @@ dependencies:
       url: https://example.org/pub/
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
 
         final foo = pubspec.dependencies['foo']!;
@@ -539,7 +542,7 @@ dependencies:
     hosted: https://example.org/pub/
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
 
         final foo = pubspec.dependencies['foo']!;
@@ -565,7 +568,7 @@ dependencies:
     hosted: bar
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
 
         final foo = pubspec.dependencies['foo']!;
@@ -593,7 +596,7 @@ dependencies:
     hosted: https://example.org/pub/
 ''',
             sources,
-            containingDescription: RootDescription('.'),
+            containingDescription: ResolvedRootDescription.fromDir('.'),
           );
 
           expect(
@@ -617,7 +620,7 @@ dependencies:
   foo:
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
 
         final foo = pubspec.dependencies['foo']!;
@@ -715,7 +718,7 @@ dependencies:
         final pubspec = Pubspec.parse(
           'name: testing',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(
           pubspec.dartSdkConstraint.effectiveConstraint,
@@ -730,7 +733,7 @@ dependencies:
         final pubspec = Pubspec.parse(
           '',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(
           pubspec.dartSdkConstraint.effectiveConstraint,
@@ -748,7 +751,7 @@ dependencies:
     sdk: ">1.0.0"
   ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(
           pubspec.dartSdkConstraint.effectiveConstraint,
@@ -766,7 +769,7 @@ dependencies:
     sdk: ">3.0.0"
   ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(
           pubspec.sdkConstraints,
@@ -795,7 +798,7 @@ environment:
   fuchsia: ^5.6.7
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(
           pubspec.sdkConstraints,
@@ -859,7 +862,7 @@ environment:
         final pubspec = Pubspec.parse(
           '',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(pubspec.publishTo, isNull);
       });
@@ -877,7 +880,7 @@ environment:
 publish_to: http://example.com
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(pubspec.publishTo, equals('http://example.com'));
       });
@@ -888,7 +891,7 @@ publish_to: http://example.com
 publish_to: none
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(pubspec.publishTo, equals('none'));
       });
@@ -913,7 +916,7 @@ publish_to: none
         final pubspec = Pubspec.parse(
           '',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(pubspec.executables, isEmpty);
       });
@@ -925,7 +928,7 @@ executables:
   abcDEF-123_: "abc DEF-123._"
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(pubspec.executables['abcDEF-123_'], equals('abc DEF-123._'));
       });
@@ -979,7 +982,7 @@ executables:
   command:
 ''',
           sources,
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
         expect(pubspec.executables['command'], equals('command'));
       });
@@ -998,7 +1001,7 @@ dependency_overrides:
           sources,
           overridesFileContents: overridesContents,
           overridesLocation: Uri.parse('file:///pubspec_overrides.yaml'),
-          containingDescription: RootDescription('.'),
+          containingDescription: ResolvedRootDescription.fromDir('.'),
         );
       }
 
