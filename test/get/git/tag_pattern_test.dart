@@ -9,8 +9,7 @@ import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
 
 void main() {
-  test(
-      'Versions inside a tag_pattern dependency can depend on versions from '
+  test('Versions inside a tag_pattern dependency can depend on versions from '
       'another commit', () async {
     ensureGit();
     await d.git('foo.git', [
@@ -85,34 +84,30 @@ void main() {
     ]).commit();
     await d.git('bar.git', []).tag('2.0.0');
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {
-            'url': p.join(d.sandbox, 'foo.git'),
-            'tag_pattern': '{{version}}',
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {
+                'url': p.join(d.sandbox, 'foo.git'),
+                'tag_pattern': '{{version}}',
+              },
+              'version': '^1.0.0',
+            },
           },
-          'version': '^1.0.0',
-        },
-      },
-      pubspec: {
-        'environment': {'sdk': '^3.7.0'},
-      },
-    ).create();
+          pubspec: {
+            'environment': {'sdk': '^3.7.0'},
+          },
+        )
+        .create();
 
     await pubGet(
-      output: allOf(
-        contains('+ foo 1.0.0'),
-        contains('+ bar 2.0.0'),
-      ),
-      environment: {
-        '_PUB_TEST_SDK_VERSION': '3.7.0',
-      },
+      output: allOf(contains('+ foo 1.0.0'), contains('+ bar 2.0.0')),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
     );
   });
 
-  test(
-      'Versions inside a tag_pattern dependency cannot depend on '
+  test('Versions inside a tag_pattern dependency cannot depend on '
       'version from another commit via path-dependencies', () async {
     ensureGit();
 
@@ -162,30 +157,32 @@ void main() {
     await d.git('repo.git', []).tag('foo-2.0.0');
     await d.git('repo.git', []).tag('bar-1.0.0');
 
-    await d.appDir(
-      dependencies: {
-        'foo': {
-          'git': {
-            'url': '../repo.git',
-            'tag_pattern': 'foo-{{version}}',
-            'path': 'foo',
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {
+                'url': '../repo.git',
+                'tag_pattern': 'foo-{{version}}',
+                'path': 'foo',
+              },
+              'version': '^1.0.0',
+            },
           },
-          'version': '^1.0.0',
-        },
-      },
-      pubspec: {
-        'environment': {'sdk': '^3.7.0'},
-      },
-    ).create();
+          pubspec: {
+            'environment': {'sdk': '^3.7.0'},
+          },
+        )
+        .create();
 
     await pubGet(
-      error: matches(r'Because foo from git ../repo.git at HEAD in foo '
-          r'depends on bar \^2.0.0 from git '
-          r'which depends on foo from git ../repo.git at [a-f0-9]* in foo, '
-          r'foo <2.0.0 from git is forbidden'),
-      environment: {
-        '_PUB_TEST_SDK_VERSION': '3.7.0',
-      },
+      error: matches(
+        r'Because foo from git ../repo.git at HEAD in foo '
+        r'depends on bar \^2.0.0 from git '
+        r'which depends on foo from git ../repo.git at [a-f0-9]* in foo, '
+        r'foo <2.0.0 from git is forbidden',
+      ),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
     );
   });
 }

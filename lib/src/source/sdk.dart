@@ -91,8 +91,9 @@ class SdkSource extends Source {
       _verifiedPackagePath(ref),
       cache.sources,
       expectedName: ref.name,
-      containingDescription:
-          ResolvedSdkDescription(ref.description as SdkDescription),
+      containingDescription: ResolvedSdkDescription(
+        ref.description as SdkDescription,
+      ),
     );
 
     /// Validate that there are no non-sdk dependencies if the SDK does not

@@ -144,8 +144,9 @@ in a directory `foo-<version>`.
         final pubspec = Pubspec.load(
           destinationDir,
           cache.sources,
-          containingDescription:
-              ResolvedRootDescription.fromDir(destinationDir),
+          containingDescription: ResolvedRootDescription.fromDir(
+            destinationDir,
+          ),
         );
         final buffer = StringBuffer();
         if (pubspec.resolution != Resolution.none) {

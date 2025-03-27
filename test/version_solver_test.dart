@@ -533,12 +533,14 @@ Because myapp depends on foo ^1.0.0 which doesn't match any versions, version so
       ..serve('foo', '1.0.0', deps: {'shared': '1.0.0'})
       ..serve('shared', '1.0.0');
 
-    await d.appDir(
-      dependencies: {
-        'foo': '1.0.0',
-        'bar': {'path': '../bar'},
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': '1.0.0',
+            'bar': {'path': '../bar'},
+          },
+        )
+        .create();
     await expectResolves(
       error: equalsIgnoringWhitespace('''
  Because every version of bar from path depends on shared
@@ -904,13 +906,7 @@ void backtracking() {
       ..serve('a', '1.0.0')
       ..serve('a', '2.0.0')
       ..serve('b', '1.0.0', deps: {'a': 'any'})
-      ..serve(
-        'b',
-        '2.0.0',
-        deps: {
-          'a': '^2.0.0',
-        },
-      )
+      ..serve('b', '2.0.0', deps: {'a': '^2.0.0'})
       ..serve('c', '1.0.0')
       ..serve('c', '2.0.0')
       ..serve('c', '3.0.0')
@@ -918,7 +914,8 @@ void backtracking() {
       ..serve('c', '5.0.0');
 
     await d
-        .appDir(dependencies: {'a': '1.0.0', 'b': 'any', 'c': 'any'}).create();
+        .appDir(dependencies: {'a': '1.0.0', 'b': 'any', 'c': 'any'})
+        .create();
     await expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'c': '5.0.0'});
   });
 
@@ -971,13 +968,15 @@ void backtracking() {
       ..serve('c', '4.0.0')
       ..serve('c', '5.0.0');
 
-    await d.appDir(
-      dependencies: {
-        'a': 'any',
-        'b': {'path': '../b'},
-        'c': 'any',
-      },
-    ).create();
+    await d
+        .appDir(
+          dependencies: {
+            'a': 'any',
+            'b': {'path': '../b'},
+            'c': 'any',
+          },
+        )
+        .create();
     await expectResolves(
       error: equalsIgnoringWhitespace('''
 Because every version of b from path depends on a from path 

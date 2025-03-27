@@ -280,8 +280,9 @@ Specify multiple sdk packages with descriptors.''');
             location: Uri.parse(entrypoint.workPackage.pubspecPath),
             overridesFileContents: overridesFileContents,
             overridesLocation: Uri.file(overridesPath),
-            containingDescription:
-                ResolvedRootDescription.fromDir(entrypoint.workPackage.dir),
+            containingDescription: ResolvedRootDescription.fromDir(
+              entrypoint.workPackage.dir,
+            ),
           ),
         )
         .acquireDependencies(

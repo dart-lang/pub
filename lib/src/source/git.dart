@@ -93,7 +93,7 @@ class GitSource extends CachedSource {
             tagPattern = descriptionTagPattern;
           default:
             throw const FormatException(
-              "The 'tagPattern' field of the description "
+              "The 'tag_pattern' field of the description "
               'must be a string or null.',
             );
         }
@@ -101,12 +101,12 @@ class GitSource extends CachedSource {
 
       if (ref != null && tagPattern != null) {
         throw const FormatException(
-          'A git description cannot have both a ref and a `tagPattern`.',
+          'A git description cannot have both a ref and a `tag_pattern`.',
         );
       }
       if (languageVersion.forbidsUnknownDescriptionKeys) {
         for (final key in description.keys) {
-          if (!['url', 'ref', 'path', 'tagPattern'].contains(key)) {
+          if (!['url', 'ref', 'path', 'tag_pattern'].contains(key)) {
             throw FormatException('Unknown key "$key" in description.');
           }
         }
