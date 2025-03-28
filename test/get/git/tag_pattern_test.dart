@@ -17,7 +17,7 @@ void main() {
       d.libPubspec(
         'foo',
         '1.0.0',
-        sdk: '^3.7.0',
+        sdk: '^3.9.0',
         deps: {
           'bar': {
             'git': {
@@ -35,7 +35,7 @@ void main() {
       d.libPubspec(
         'foo',
         '2.0.0',
-        sdk: '^3.7.0',
+        sdk: '^3.9.0',
         deps: {
           'bar': {
             'git': {
@@ -53,7 +53,7 @@ void main() {
       d.libPubspec(
         'bar',
         '1.0.0',
-        sdk: '^3.7.0',
+        sdk: '^3.9.0',
         deps: {
           'foo': {
             'git': {
@@ -71,7 +71,7 @@ void main() {
       d.libPubspec(
         'bar',
         '2.0.0',
-        sdk: '^3.7.0',
+        sdk: '^3.9.0',
         deps: {
           'foo': {
             'git': {
@@ -97,14 +97,14 @@ void main() {
             },
           },
           pubspec: {
-            'environment': {'sdk': '^3.7.0'},
+            'environment': {'sdk': '^3.9.0'},
           },
         )
         .create();
 
     await pubGet(
       output: allOf(contains('+ foo 1.0.0'), contains('+ bar 2.0.0')),
-      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
     );
   });
 
@@ -171,7 +171,7 @@ void main() {
             },
           },
           pubspec: {
-            'environment': {'sdk': '^3.7.0'},
+            'environment': {'sdk': '^3.9.0'},
           },
         )
         .create();
@@ -183,7 +183,7 @@ void main() {
         r'which depends on foo from git ../repo.git at [a-f0-9]* in foo, '
         r'foo <2.0.0 from git is forbidden',
       ),
-      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
     );
   });
 
@@ -196,13 +196,13 @@ void main() {
             },
           },
           pubspec: {
-            'environment': {'sdk': '^3.7.0'},
+            'environment': {'sdk': '^3.9.0'},
           },
         )
         .create();
 
     await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.8.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
       error: contains(
         'Invalid description in the "myapp" pubspec on the "foo" dependency: '
         'The `tag_pattern` must contain "{{version}" '

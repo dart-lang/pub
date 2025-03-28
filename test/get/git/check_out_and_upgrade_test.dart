@@ -81,14 +81,14 @@ void main() {
             },
           },
           pubspec: {
-            'environment': {'sdk': '^3.7.0'},
+            'environment': {'sdk': '^3.9.0'},
           },
         )
         .create();
 
     await pubGet(
       output: contains('+ foo 1.0.0'),
-      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
     );
 
     // This should be found by `pub upgrade`.
