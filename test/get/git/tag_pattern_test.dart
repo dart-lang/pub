@@ -175,12 +175,12 @@ void main() {
           },
         )
         .create();
-
+    final s = p.separator;
     await pubGet(
       error: matches(
-        r'Because foo from git ../repo.git at HEAD in foo '
+        r'Because foo from git ..${s}repo.git at HEAD in foo '
         r'depends on bar \^2.0.0 from git '
-        r'which depends on foo from git ../repo.git at [a-f0-9]* in foo, '
+        r'which depends on foo from git ..${s}repo.git at [a-f0-9]* in foo, '
         r'foo <2.0.0 from git is forbidden',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
