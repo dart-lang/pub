@@ -91,6 +91,8 @@ class GitSource extends CachedSource {
         switch (description['tag_pattern']) {
           case final String descriptionTagPattern:
             tagPattern = descriptionTagPattern;
+            // Do an early compilation to validate the format.
+            compileTagPattern(tagPattern);
           default:
             throw const FormatException(
               "The 'tag_pattern' field of the description "
@@ -773,6 +775,8 @@ class GitSource extends CachedSource {
       'tag',
       '--list',
       '--format',
+      // We can use space here, as it is not allowed in a git tag
+      // https://git-scm.com/docs/git-check-ref-format
       '%(refname:lstrip=2) %(objectname)',
     ], workingDir: path);
     final lines = output.trim().split('\n');
@@ -1079,10 +1083,17 @@ const versionPattern =
     r'(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?' // Pre-release.
     r'(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?'; // build
 
+/// Takes a [tagPattern] and returns a [RegExp] matching the relevant tags.
+///
+/// The tagPattern should contain '{{version}}' which will match a pub_semver
+/// version. The rest of the tagPattern is matched verbatim.
 RegExp compileTagPattern(String tagPattern) {
   final match = tagPatternPattern.firstMatch(tagPattern);
   if (match == null) {
-    throw const FormatException('Tag patterns must contain {{version})');
+    throw const FormatException(
+      'The `tag_pattern` must contain "{{version}" '
+      'to match different versions',
+    );
   }
   final before = RegExp.escape(match[1]!);
   final after = RegExp.escape(match[2]!);

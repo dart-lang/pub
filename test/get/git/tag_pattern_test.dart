@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -183,6 +184,31 @@ void main() {
         r'foo <2.0.0 from git is forbidden',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+    );
+  });
+
+  test('tag_pattern must contain "{{version}}"', () async {
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': 'some/git/path', 'tag_pattern': 'v100'},
+            },
+          },
+          pubspec: {
+            'environment': {'sdk': '^3.7.0'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.8.0'},
+      error: contains(
+        'Invalid description in the "myapp" pubspec on the "foo" dependency: '
+        'The `tag_pattern` must contain "{{version}" '
+        'to match different versions',
+      ),
+      exitCode: DATA,
     );
   });
 }
