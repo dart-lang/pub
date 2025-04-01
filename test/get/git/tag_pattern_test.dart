@@ -178,10 +178,10 @@ void main() {
     final s = p.separator;
     await pubGet(
       error: matches(
-        r'Because foo from git ..${s}repo.git at HEAD in foo '
-        r'depends on bar \^2.0.0 from git '
-        r'which depends on foo from git ..${s}repo.git at [a-f0-9]* in foo, '
-        r'foo <2.0.0 from git is forbidden',
+        'Because foo from git ..${s}repo.git at HEAD in foo '
+        'depends on bar \\^2.0.0 from git '
+        'which depends on foo from git ..${s}repo.git at [a-f0-9]+ in foo, '
+        'foo <2.0.0 from git is forbidden',
       ),
       environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
     );
