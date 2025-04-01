@@ -175,7 +175,7 @@ void main() {
           },
         )
         .create();
-    final s = p.separator;
+    final s = RegExp.escape(p.separator);
     await pubGet(
       error: matches(
         'Because foo from git ..${s}repo.git at HEAD in foo '
