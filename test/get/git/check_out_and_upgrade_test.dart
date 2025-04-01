@@ -121,7 +121,7 @@ void main() {
 
     await pubUpgrade(
       output: allOf(contains('> foo 1.5.0'), contains('Changed 1 dependency!')),
-      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
     );
 
     await pubUpgrade(
@@ -131,7 +131,7 @@ void main() {
         contains('foo: ^1.0.0 -> ^2.0.0'),
         contains('Changed 1 dependency!'),
       ),
-      environment: {'_PUB_TEST_SDK_VERSION': '3.7.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
     );
   });
 }
