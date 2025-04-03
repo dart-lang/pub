@@ -424,6 +424,7 @@ class DependencyServicesApplyCommand extends PubCommand {
         } else if (targetRevision != null &&
             (lockFileYaml['packages'] as Map).containsKey(targetPackage)) {
           final ref = entrypoint.lockFile.packages[targetPackage]!.toRef();
+
           final currentDescription = ref.description as GitDescription;
           final updatedRef = PackageRef(
             targetPackage,
@@ -432,6 +433,7 @@ class DependencyServicesApplyCommand extends PubCommand {
               path: currentDescription.path,
               ref: targetRevision,
               containingDir: directory,
+              tagPattern: currentDescription.tagPattern,
             ),
           );
           final versions = await cache.getVersions(updatedRef);
@@ -480,7 +482,9 @@ class DependencyServicesApplyCommand extends PubCommand {
           updatedPubspecs[package.dir].toString(),
           cache.sources,
           location: toUri(package.pubspecPath),
-          containingDescription: RootDescription(package.dir),
+          containingDescription: ResolvedRootDescription(
+            RootDescription(package.dir),
+          ),
         ),
       );
       // Resolve versions, this will update transitive dependencies that were

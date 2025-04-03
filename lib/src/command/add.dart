@@ -118,6 +118,11 @@ For example (follow the same format including spaces):
       hide: true,
     );
     argParser.addOption(
+      'git-tag-pattern',
+      help: 'The tag-pattern to search for versions in repository',
+      hide: true,
+    );
+    argParser.addOption(
       'hosted-url',
       help: 'URL of package host server',
       hide: true,
@@ -275,7 +280,9 @@ Specify multiple sdk packages with descriptors.''');
             location: Uri.parse(entrypoint.workPackage.pubspecPath),
             overridesFileContents: overridesFileContents,
             overridesLocation: Uri.file(overridesPath),
-            containingDescription: RootDescription(entrypoint.workPackage.dir),
+            containingDescription: ResolvedRootDescription.fromDir(
+              entrypoint.workPackage.dir,
+            ),
           ),
         )
         .acquireDependencies(
@@ -541,6 +548,11 @@ Specify multiple sdk packages with descriptors.''');
       if (gitUrl == null) {
         usageException('The `--git-url` is required for git dependencies.');
       }
+      if (argResults.gitRef != null && argResults.tagPattern != null) {
+        usageException(
+          'Cannot provide both `--git-ref` and `--git-tag-pattern`.',
+        );
+      }
 
       /// Process the git options to return the simplest representation to be
       /// added to the pubspec.
@@ -552,6 +564,7 @@ Specify multiple sdk packages with descriptors.''');
             containingDir: p.current,
             ref: argResults.gitRef,
             path: argResults.gitPath,
+            tagPattern: argResults.tagPattern,
           ),
         );
       } on FormatException catch (e) {
@@ -566,7 +579,7 @@ Specify multiple sdk packages with descriptors.''');
       ref = cache.sdk.parseRef(
         packageName,
         argResults.sdk,
-        containingDescription: RootDescription(p.current),
+        containingDescription: ResolvedRootDescription.fromDir(p.current),
       );
     } else {
       ref = PackageRef(
@@ -652,7 +665,7 @@ Specify multiple sdk packages with descriptors.''');
             cache.sources,
             // Resolve relative paths relative to current, not where the
             // pubspec.yaml is.
-            containingDescription: RootDescription(p.current),
+            containingDescription: ResolvedRootDescription.fromDir(p.current),
           );
         } on FormatException catch (e) {
           usageException('Failed parsing package specification: ${e.message}');
@@ -787,6 +800,8 @@ extension on ArgResults {
   bool get isDryRun => flag('dry-run');
   String? get gitUrl => this['git-url'] as String?;
   String? get gitPath => this['git-path'] as String?;
+  String? get tagPattern => this['git-tag-pattern'] as String?;
+
   String? get gitRef => this['git-ref'] as String?;
   String? get hostedUrl => this['hosted-url'] as String?;
   String? get path => this['path'] as String?;
