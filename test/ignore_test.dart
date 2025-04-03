@@ -823,6 +823,9 @@ final testData = [
     'src/file.txt': true,
     'folder/other.txt': true,
     'sub/folder/file.txt': true,
+    'f': true,
+    'f/a': true,
+    'a/f': true,
   }),
   TestData.single('*f', {
     'file.txt': false,
