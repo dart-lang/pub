@@ -123,8 +123,6 @@ class HostedSource extends CachedSource {
 
   @override
   final name = 'hosted';
-  @override
-  final hasMultipleVersions = true;
 
   static String pubDevUrl = 'https://pub.dev';
   static String pubDartlangUrl = 'https://pub.dartlang.org';
@@ -229,7 +227,7 @@ class HostedSource extends CachedSource {
   PackageRef parseRef(
     String name,
     Object? description, {
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
     required LanguageVersion languageVersion,
   }) {
     return PackageRef(
@@ -416,17 +414,22 @@ class HostedSource extends CachedSource {
       if (pubspecData is! Map) {
         throw const FormatException('pubspec must be a map');
       }
+
+      final archiveSha256 = map['archive_sha256'];
+      if (archiveSha256 != null && archiveSha256 is! String) {
+        throw const FormatException('archive_sha256 must be a String');
+      }
+      final parsedContentHash = _parseContentHash(archiveSha256 as String?);
       final pubspec = Pubspec.fromMap(
         pubspecData,
         cache.sources,
         expectedName: ref.name,
         location: location,
-        containingDescription: description,
+        containingDescription: ResolvedHostedDescription(
+          description,
+          sha256: parsedContentHash,
+        ),
       );
-      final archiveSha256 = map['archive_sha256'];
-      if (archiveSha256 != null && archiveSha256 is! String) {
-        throw const FormatException('archive_sha256 must be a String');
-      }
       final archiveUrl = map['archive_url'];
       if (archiveUrl is! String) {
         throw const FormatException('archive_url must be a String');
@@ -451,7 +454,6 @@ class HostedSource extends CachedSource {
         }
         advisoriesDate = DateTime.parse(advisoriesUpdated);
       }
-
       final status = PackageStatus(
         isDiscontinued: isDiscontinued,
         discontinuedReplacedBy: replacedBy,
@@ -463,7 +465,7 @@ class HostedSource extends CachedSource {
         pubspec,
         Uri.parse(archiveUrl),
         status,
-        _parseContentHash(archiveSha256 as String?),
+        parsedContentHash,
       );
     }).toList();
   }
@@ -543,16 +545,20 @@ class HostedSource extends CachedSource {
       if (listing == null || listing.isEmpty) return;
       final latestVersion =
           maxBy<_VersionInfo, Version>(listing, (e) => e.version)!;
-      final dependencies = latestVersion.pubspec.dependencies.values;
-      unawaited(
-        withDependencyType(DependencyType.none, () async {
-          for (final packageRange in dependencies) {
-            if (packageRange.source is HostedSource) {
-              preschedule!(_RefAndCache(packageRange.toRef(), cache));
+      try {
+        final dependencies = latestVersion.pubspec.dependencies.values;
+        unawaited(
+          withDependencyType(DependencyType.none, () async {
+            for (final packageRange in dependencies) {
+              if (packageRange.source is HostedSource) {
+                preschedule!(_RefAndCache(packageRange.toRef(), cache));
+              }
             }
-          }
-        }),
-      );
+          }),
+        );
+      } on FormatException {
+        // Ignore malformed dependencies.
+      }
     }
 
     final cache = refAndCache.cache;
@@ -1640,7 +1646,7 @@ See $contentHashesDocumentationUrl.
           containingDescription:
           // Dummy description. As we never use the dependencies, they don't
           // need to be resolved.
-          RootDescription('.'),
+          ResolvedRootDescription.fromDir('.'),
         );
         final errors = pubspec.dependencyErrors;
         if (errors.isNotEmpty) {
@@ -1813,6 +1819,9 @@ class HostedDescription extends Description {
 
   @override
   HostedSource get source => HostedSource.instance;
+
+  @override
+  bool get hasMultipleVersions => true;
 }
 
 class ResolvedHostedDescription extends ResolvedDescription {
