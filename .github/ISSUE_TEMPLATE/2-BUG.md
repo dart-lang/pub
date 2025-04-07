@@ -15,6 +15,9 @@ Describe anything relevant to the issue you are seeing. Consider including:
   and adding the output.
 - Are you using the Chinese community mirror or a corporate firewall?
 
+Please use [code fences](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks) 
+when posting logs or code, for large log files please attach them or use a [gist](https://gist.github.com/)
+
   Resources:
   https://flutter.dev/community/china
   https://www.dart.dev/tools/pub/troubleshoot#pub-get-fails-from-behind-a-corporate-firewall
