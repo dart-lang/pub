@@ -53,7 +53,9 @@ when posting logs or code, for large log files please attach them or use a [gist
 ## `--verbose` output
 
 <!--
-Consider attaching the full output run with `--verbose` if relevant.
+Consider attaching parts of or the full output run with `--verbose` if relevant.
+
+Please use [code fences](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks), for large log files please attach them or use a [gist](https://gist.github.com/)
 
 https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files
 -->
