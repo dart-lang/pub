@@ -13,6 +13,11 @@ void main() {
       expect(yamlToString(null), equals('null'));
     });
 
+    test('bool', () {
+      expect(yamlToString(true), equals('true'));
+      expect(yamlToString(false), equals('false'));
+    });
+
     test('numbers', () {
       expect(yamlToString(123), equals('123'));
       expect(yamlToString(12.34), equals('12.34'));
@@ -23,16 +28,26 @@ void main() {
       expect(yamlToString('some-string'), equals('some-string'));
       expect(yamlToString('hey123CAPS'), equals('hey123CAPS'));
       expect(yamlToString('_under_score'), equals('_under_score'));
+      expect(yamlToString('1abc'), equals('1abc'));
     });
 
     test('quotes other strings', () {
       expect(yamlToString(''), equals('""'));
       expect(yamlToString('123'), equals('"123"'));
+      expect(yamlToString('12.34'), equals('"12.34"'));
+      expect(yamlToString('12.34'), equals('"12.34"'));
+      expect(yamlToString('+.34e20'), equals('"+.34e20"'));
+      expect(yamlToString('-01.'), equals('"-01."'));
       expect(yamlToString('white space'), equals('"white space"'));
       expect(yamlToString('"quote"'), equals(r'"\"quote\""'));
       expect(yamlToString("apostrophe'"), equals('"apostrophe\'"'));
       expect(yamlToString('new\nline'), equals(r'"new\nline"'));
       expect(yamlToString('?unctu@t!on'), equals(r'"?unctu@t!on"'));
+      expect(yamlToString('null'), equals('"null"'));
+      expect(yamlToString('false'), equals('"false"'));
+      expect(yamlToString('False'), equals('"False"'));
+      expect(yamlToString('FALSE'), equals('"FALSE"'));
+      expect(yamlToString('falSE'), equals('falSE'));
     });
 
     test('lists use JSON style', () {
@@ -84,7 +99,7 @@ no: 1
         yamlToString(map),
         equals('''
 123: num
-null: null
+null: "null"
 true: bool'''),
       );
     });
