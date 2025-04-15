@@ -4,26 +4,33 @@
 
 import 'dart:async';
 
-import 'package:collection/collection.dart';
-
 import '../validator.dart';
 
-/// A validator that validates a package's dependencies overrides (or the
-/// absence thereof).
+/// Complains (with a hint) if any of the transitive dependencies of a package's
+/// non-dev dependencies are overridden anywhere in the workspace.
 class DependencyOverrideValidator extends Validator {
   @override
   Future<void> validate() async {
-    final overridden = MapKeySet(
-      context.entrypoint.workspaceRoot.allOverridesInWorkspace,
-    );
-    final dev = MapKeySet(package.devDependencies);
-    if (overridden.difference(dev).isNotEmpty) {
-      final overridesFile =
-          package.pubspec.dependencyOverridesFromOverridesFile
-              ? package.pubspecOverridesPath
-              : package.pubspecPath;
+    final graph = await context.entrypoint.packageGraph;
+    final transitiveNonDevDependencies = <String>{};
+    final toVisit = [package.name];
+    while (toVisit.isNotEmpty) {
+      final next = toVisit.removeLast();
+      if (transitiveNonDevDependencies.add(next)) {
+        toVisit.addAll(graph.packages[next]!.dependencies.keys);
+      }
+    }
 
-      hints.add('''
+    for (final workspacePackage
+        in context.entrypoint.workspaceRoot.transitiveWorkspace) {
+      for (final override
+          in workspacePackage.pubspec.dependencyOverrides.keys) {
+        if (transitiveNonDevDependencies.contains(override)) {
+          final overridesFile =
+              workspacePackage.pubspec.dependencyOverridesFromOverridesFile
+                  ? workspacePackage.pubspecOverridesPath
+                  : workspacePackage.pubspecPath;
+          hints.add('''
 Non-dev dependencies are overridden in $overridesFile.
 
 This indicates you are not testing your package against the same versions of its
@@ -32,6 +39,8 @@ dependencies that users will have when they use it.
 This might be necessary for packages with cyclic dependencies.
 
 Please be extra careful when publishing.''');
+        }
+      }
     }
   }
 }
