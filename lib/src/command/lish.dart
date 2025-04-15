@@ -395,7 +395,9 @@ the \$PUB_HOSTED_URL environment variable.''');
           ),
         ),
         cache.sources,
-        containingDescription: RootDescription(p.dirname(archive)),
+        containingDescription: ResolvedRootDescription.fromDir(
+          p.dirname(archive),
+        ),
       );
     } on FormatException catch (e) {
       dataError('Failed to read pubspec.yaml from archive: ${e.message}');
