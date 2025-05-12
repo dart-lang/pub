@@ -1044,8 +1044,11 @@ class ResolvedGitDescription extends ResolvedDescription {
             : description.url;
     return {
       'url': url,
-      'ref': description.ref,
-      if (description.tagPattern != null) 'tag-pattern': description.tagPattern,
+
+      if (description.tagPattern == null)
+        'ref': description.ref
+      else
+        'tag-pattern': description.tagPattern,
       'resolved-ref': resolvedRef,
       'path': description.path,
     };
