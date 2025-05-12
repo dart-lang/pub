@@ -766,7 +766,8 @@ class GitSource extends CachedSource {
   String _packageListPath(String revisionCachePath) =>
       p.join(revisionCachePath, '.git/pub-packages');
 
-  ///
+  /// List all tags in [path] and returns all versions matching
+  /// [compiledTagPattern].
   Future<List<TaggedVersion>> _listTaggedVersions(
     String path,
     RegExp compiledTagPattern,
