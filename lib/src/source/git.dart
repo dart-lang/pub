@@ -301,7 +301,7 @@ class GitSource extends CachedSource {
       ref: ref,
       path: path,
       containingDir: relativeTo,
-      tagPattern: tagPattern, // TODO
+      tagPattern: tagPattern,
     );
     return await _pool.withResource(() async {
       await _ensureRepoCache(description, cache);
