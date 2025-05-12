@@ -229,4 +229,59 @@ void main() {
       exitCode: DATA,
     );
   });
+
+  test(
+    'tagged version must contain the correct version of dependency',
+    () async {
+      await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
+      await d.git('foo.git', []).tag('v1.0.0');
+      await d.git('foo.git', [d.libPubspec('foo', '2.0.0')]).commit();
+      await d.git('foo.git', []).tag('v3.0.0'); // Wrong tag, will not be found.
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {'url': '../foo', 'tag_pattern': 'v{{version}}'},
+              },
+            },
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+        output: contains('+ foo 1.0.0'),
+      );
+    },
+  );
+
+  test('Reasonable error when no tagged versions exist', () async {
+    await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
+    await d.git('foo.git', [d.libPubspec('foo', '2.0.0')]).commit();
+
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {'url': '../foo', 'tag_pattern': 'v{{version}}'},
+            },
+          },
+          pubspec: {
+            'environment': {'sdk': '^3.9.0'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      exitCode: UNAVAILABLE,
+      error: contains(
+        'Because myapp depends on foo any from git which doesn\'t exist '
+        '(Bad output from `git tag --list`)',
+      ),
+    );
+  });
 }
