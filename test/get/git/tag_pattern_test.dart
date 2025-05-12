@@ -2,9 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart';
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
@@ -106,6 +109,21 @@ void main() {
       output: allOf(contains('+ foo 1.0.0'), contains('+ bar 2.0.0')),
       environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
     );
+    final pubspec = loadYaml(
+      File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+    );
+    final foo = ((pubspec as Map)['packages'] as Map)['foo'];
+    expect(foo, {
+      'dependency': 'direct main',
+      'description': {
+        'path': '.',
+        'resolved-ref': isA<String>(),
+        'tag-pattern': '{{version}}',
+        'url': '${d.sandbox}/foo.git',
+      },
+      'source': 'git',
+      'version': '1.0.0',
+    });
   });
 
   test('Versions inside a tag_pattern dependency cannot depend on '
