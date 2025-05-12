@@ -112,6 +112,7 @@ void main() {
     final pubspec = loadYaml(
       File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
+    final s = Platform.pathSeparator;
     final foo = ((pubspec as Map)['packages'] as Map)['foo'];
     expect(foo, {
       'dependency': 'direct main',
@@ -119,7 +120,7 @@ void main() {
         'path': '.',
         'resolved-ref': isA<String>(),
         'tag-pattern': '{{version}}',
-        'url': '${d.sandbox}/foo.git',
+        'url': '${d.sandbox}${s}foo.git',
       },
       'source': 'git',
       'version': '1.0.0',
