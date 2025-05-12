@@ -1091,7 +1091,7 @@ RegExp compileTagPattern(String tagPattern) {
   final match = tagPatternPattern.firstMatch(tagPattern);
   if (match == null) {
     throw const FormatException(
-      'The `tag_pattern` must contain "{{version}" '
+      'The `tag_pattern` must contain "{{version}}" '
       'to match different versions',
     );
   }
