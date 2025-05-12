@@ -205,7 +205,7 @@ void main() {
       environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
       error: contains(
         'Invalid description in the "myapp" pubspec on the "foo" dependency: '
-        'The `tag_pattern` must contain "{{version}" '
+        'The `tag_pattern` must contain "{{version}}" '
         'to match different versions',
       ),
       exitCode: DATA,
