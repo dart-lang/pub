@@ -969,7 +969,7 @@ class GitDescription extends Description {
               from: p.toUri(p.normalize(p.absolute(containingDir))).toString(),
             )
             : url;
-    if (ref == 'HEAD' && path == '.') return relativeUrl;
+    if (ref == 'HEAD' && path == '.' && tagPattern == null) return relativeUrl;
     return {
       'url': relativeUrl,
       if (ref != 'HEAD') 'ref': ref,
