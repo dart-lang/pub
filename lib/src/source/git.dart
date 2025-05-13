@@ -37,7 +37,7 @@ class GitSource extends CachedSource {
   PackageRef parseRef(
     String name,
     Object? description, {
-    Description? containingDescription,
+    ResolvedDescription? containingDescription,
     required LanguageVersion languageVersion,
   }) {
     String url;
@@ -86,7 +86,7 @@ class GitSource extends CachedSource {
       }
     }
 
-    final containingDir = switch (containingDescription) {
+    final containingDir = switch (containingDescription?.description) {
       RootDescription(path: final path) => path,
       PathDescription(path: final path) => path,
       _ => null,
@@ -267,7 +267,7 @@ class GitSource extends CachedSource {
       return Pubspec.parse(
         await _showFileAtRevision(resolvedDescription, 'pubspec.yaml', cache),
         cache.sources,
-        containingDescription: description,
+        containingDescription: resolvedDescription,
       ).name;
     });
   }
@@ -338,15 +338,25 @@ class GitSource extends CachedSource {
   /// Since we don't have an easy way to read from a remote Git repo, this
   /// just installs [id] into the system cache, then describes it from there.
   @override
-  Future<Pubspec> describeUncached(PackageId id, SystemCache cache) {
+  Future<Pubspec> describeUncached(PackageId id, SystemCache cache) async {
     final description = id.description;
     if (description is! ResolvedGitDescription) {
       throw StateError('Called with wrong ref');
     }
-    return _pool.withResource(
+    final pubspec = await _pool.withResource(
       () => _describeUncached(id.toRef(), description.resolvedRef, cache),
     );
+    if (pubspec.version != id.version) {
+      throw PackageNotFoundException(
+        'Expected ${id.name} version ${id.version} '
+        'at commit ${description.resolvedRef}, '
+        'found ${pubspec.version}.',
+      );
+    }
+    return pubspec;
   }
+
+  final Map<(PackageRef, String), Pubspec> _pubspecAtRevisionCache = {};
 
   /// Like [describeUncached], but takes a separate [ref] and Git [revision]
   /// rather than a single ID.
@@ -359,18 +369,16 @@ class GitSource extends CachedSource {
     if (description is! GitDescription) {
       throw ArgumentError('Wrong source');
     }
-    await _ensureRevision(description, revision, cache);
-
-    return Pubspec.parse(
-      await _showFileAtRevision(
-        ResolvedGitDescription(description, revision),
-        'pubspec.yaml',
-        cache,
-      ),
-      cache.sources,
-      expectedName: ref.name,
-      containingDescription: ref.description,
-    );
+    return _pubspecAtRevisionCache[(ref, revision)] ??= await () async {
+      await _ensureRevision(description, revision, cache);
+      final resolvedDescription = ResolvedGitDescription(description, revision);
+      return Pubspec.parse(
+        await _showFileAtRevision(resolvedDescription, 'pubspec.yaml', cache),
+        cache.sources,
+        expectedName: ref.name,
+        containingDescription: resolvedDescription,
+      );
+    }();
   }
 
   /// Clones a Git repo to the local filesystem.

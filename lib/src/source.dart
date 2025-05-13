@@ -81,7 +81,7 @@ abstract class Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
     required LanguageVersion languageVersion,
   });
 

@@ -32,7 +32,7 @@ abstract class CachedSource extends Source {
         packageDir,
         cache.sources,
         expectedName: id.name,
-        containingDescription: id.description.description,
+        containingDescription: id.description,
       );
     }
 

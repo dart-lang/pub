@@ -29,7 +29,7 @@ class SdkSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
     LanguageVersion? languageVersion,
   }) {
     if (description is! String) {
@@ -91,7 +91,9 @@ class SdkSource extends Source {
       _verifiedPackagePath(ref),
       cache.sources,
       expectedName: ref.name,
-      containingDescription: ref.description,
+      containingDescription: ResolvedSdkDescription(
+        ref.description as SdkDescription,
+      ),
     );
 
     /// Validate that there are no non-sdk dependencies if the SDK does not
