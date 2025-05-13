@@ -58,11 +58,13 @@ Future<void> expectValidationHint(
   String hint, {
   int count = 1,
   Map<String, String> environment = const {},
+  String? workingDirectory,
 }) async {
   final s = count == 1 ? '' : 's';
   await expectValidation(
     message: allOf([contains(hint), contains('and $count hint$s')]),
     environment: environment,
+    workingDirectory: workingDirectory,
   );
 }
 

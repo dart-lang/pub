@@ -28,7 +28,6 @@ class PackageConfigFileDescriptor extends Descriptor {
       packages: _packages,
       generatorVersion: Version.parse(_generatorVersion),
       generator: 'pub',
-      generated: DateTime.now().toUtc(),
       additionalProperties: {
         'pubCache': p.toUri(_pubCache).toString(),
         if (_flutterRoot != null)
@@ -94,9 +93,6 @@ class PackageConfigFileDescriptor extends Descriptor {
     );
 
     final expected = PackageConfig.fromJson(_config.toJson());
-    // omit generated date-time and packages
-    expected.generated = null; // comparing timestamps is unnecessary.
-    config.generated = null;
     expected.packages = []; // Already compared packages (ignoring ordering)
     config.packages = [];
     expect(

@@ -44,7 +44,7 @@ void main() {
                 ? null
                 : Ignore(
                   c.patterns[dir]!,
-                  onInvalidPattern: (_, __) => hasWarning = true,
+                  onInvalidPattern: (_, _) => hasWarning = true,
                   ignoreCase: ignoreCase,
                 );
 
@@ -823,6 +823,9 @@ final testData = [
     'src/file.txt': true,
     'folder/other.txt': true,
     'sub/folder/file.txt': true,
+    'f': true,
+    'f/a': true,
+    'a/f': true,
   }),
   TestData.single('*f', {
     'file.txt': false,

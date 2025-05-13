@@ -37,15 +37,14 @@ class PackageGraph {
     SolveResult result,
   ) {
     final packages = {
-      for (final id in result.packages)
-        id.name:
-            id.isRoot
-                ? entrypoint.workspaceRoot
-                : Package(
-                  result.pubspecs[id.name]!,
-                  entrypoint.cache.getDirectory(id),
-                  [],
-                ),
+      for (final package in entrypoint.workspaceRoot.transitiveWorkspace)
+        package.name: package,
+      for (final id in result.packages.where((p) => !p.isRoot))
+        id.name: Package(
+          result.pubspecs[id.name]!,
+          entrypoint.cache.getDirectory(id),
+          [],
+        ),
     };
 
     return PackageGraph(entrypoint, packages);

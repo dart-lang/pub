@@ -19,11 +19,6 @@ class PackageConfig {
   /// Packages configured.
   List<PackageConfigEntry> packages;
 
-  /// Date-time the `.dart_tool/package_config.json` file was generated.
-  ///
-  /// `null` if not given.
-  DateTime? generated;
-
   /// Tool that generated the `.dart_tool/package_config.json` file.
   ///
   /// For `pub` this is always `'pub'`.
@@ -46,7 +41,6 @@ class PackageConfig {
   PackageConfig({
     required this.configVersion,
     required this.packages,
-    this.generated,
     this.generator,
     this.generatorVersion,
     Map<String, dynamic>? additionalProperties,
@@ -98,16 +92,6 @@ class PackageConfig {
       packages.add(PackageConfigEntry.fromJson(entry as Object));
     }
 
-    // Read the 'generated' property
-    DateTime? generated;
-    final generatedRaw = root['generated'];
-    if (generatedRaw != null) {
-      if (generatedRaw is! String) {
-        throwFormatException('generated', 'must be a string, if given');
-      }
-      generated = DateTime.parse(generatedRaw);
-    }
-
     // Read the 'generator' property
     final generator = root['generator'];
     if (generator is! String?) {
@@ -136,7 +120,6 @@ class PackageConfig {
     return PackageConfig(
       configVersion: configVersion,
       packages: packages,
-      generated: generated,
       generator: generator,
       generatorVersion: generatorVersion,
       additionalProperties: Map.fromEntries(
@@ -158,7 +141,6 @@ class PackageConfig {
   Map<String, Object?> toJson() => {
     'configVersion': configVersion,
     'packages': packages.map((p) => p.toJson()).toList(),
-    'generated': generated?.toUtc().toIso8601String(),
     'generator': generator,
     'generatorVersion': generatorVersion?.toString(),
   }..addAll(additionalProperties);

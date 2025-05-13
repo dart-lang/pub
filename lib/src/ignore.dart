@@ -363,7 +363,7 @@ Iterable<_IgnoreRule> _parseIgnorePatterns(
 }) sync* {
   ArgumentError.checkNotNull(patterns, 'patterns');
   ArgumentError.checkNotNull(ignoreCase, 'ignoreCase');
-  onInvalidPattern ??= (_, __) {};
+  onInvalidPattern ??= (_, _) {};
 
   final parsedPatterns = patterns
       .expand((s) => s.split(_lineBreakPattern))
@@ -404,6 +404,7 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
 
   var current = first;
   String? peekChar() => current >= end ? null : pattern[current];
+  String? previous() => current < 2 ? null : pattern[current - 2];
 
   var expr = '';
 
@@ -477,8 +478,8 @@ _IgnoreParseResult _parseIgnorePattern(String pattern, bool ignoreCase) {
         } else {
           expr += '.*';
         }
-      } else if (peekChar() == '/' || peekChar() == null) {
-        // /a/* should not match '/a/'
+      } else if ((previous() == '/') && peekChar() == null) {
+        // /a/* should not match '/a/', so we require at least one character
         expr += '[^/]+';
       } else {
         // Handle a single '*'
