@@ -66,7 +66,7 @@ class RootSource extends Source {
   PackageRef parseRef(
     String name,
     Object? description, {
-    required Description containingDescription,
+    required ResolvedDescription containingDescription,
     required LanguageVersion languageVersion,
   }) {
     throw UnsupportedError('Trying to parse a root package description.');
@@ -78,6 +78,7 @@ class ResolvedRootDescription extends ResolvedDescription {
   RootDescription get description => super.description as RootDescription;
 
   ResolvedRootDescription(RootDescription super.description);
+  ResolvedRootDescription.fromDir(String dir) : super(RootDescription(dir));
 
   @override
   Object? serializeForLockfile({required String? containingDir}) {

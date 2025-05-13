@@ -520,26 +520,34 @@ Because myapp depends on foo ^1.0.0 which doesn't match any versions, version so
 
   test('mismatched sources', () async {
     await d.dir('shared', [d.libPubspec('shared', '1.0.0')]).create();
-
-    await servePackages()
-      ..serve('foo', '1.0.0', deps: {'shared': '1.0.0'})
-      ..serve(
+    await d.dir('bar', [
+      d.libPubspec(
         'bar',
         '1.0.0',
         deps: {
           'shared': {'path': p.join(d.sandbox, 'shared')},
         },
-      )
+      ),
+    ]).create();
+    await servePackages()
+      ..serve('foo', '1.0.0', deps: {'shared': '1.0.0'})
       ..serve('shared', '1.0.0');
 
-    await d.appDir(dependencies: {'foo': '1.0.0', 'bar': '1.0.0'}).create();
+    await d
+        .appDir(
+          dependencies: {
+            'foo': '1.0.0',
+            'bar': {'path': '../bar'},
+          },
+        )
+        .create();
     await expectResolves(
       error: equalsIgnoringWhitespace('''
-      Because every version of bar depends on shared from path and every
-        version of foo depends on shared from hosted, bar is incompatible with
-        foo.
-      So, because myapp depends on both foo 1.0.0 and bar 1.0.0, version
-        solving failed.
+ Because every version of bar from path depends on shared
+ from path and every version of foo depends on shared from hosted,
+ bar from path is incompatible with foo.
+So, because myapp depends on both foo 1.0.0 and bar from path,
+version solving failed.
     '''),
     );
   });
@@ -888,7 +896,7 @@ void backtracking() {
   // dependencies are traversed breadth-first (all of myapps's immediate deps
   // before any other their deps).
   //
-  // This means it doesn't discover the source conflict until after selecting
+  // This means it doesn't discover the version conflict until after selecting
   // c. When that happens, it should backjump past c instead of trying older
   // versions of it since they aren't related to the conflict.
   test('successful backjump to conflicting source', () async {
@@ -896,21 +904,18 @@ void backtracking() {
 
     await servePackages()
       ..serve('a', '1.0.0')
+      ..serve('a', '2.0.0')
       ..serve('b', '1.0.0', deps: {'a': 'any'})
-      ..serve(
-        'b',
-        '2.0.0',
-        deps: {
-          'a': {'path': p.join(d.sandbox, 'a')},
-        },
-      )
+      ..serve('b', '2.0.0', deps: {'a': '^2.0.0'})
       ..serve('c', '1.0.0')
       ..serve('c', '2.0.0')
       ..serve('c', '3.0.0')
       ..serve('c', '4.0.0')
       ..serve('c', '5.0.0');
 
-    await d.appDir(dependencies: {'a': 'any', 'b': 'any', 'c': 'any'}).create();
+    await d
+        .appDir(dependencies: {'a': '1.0.0', 'b': 'any', 'c': 'any'})
+        .create();
     await expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'c': '5.0.0'});
   });
 
@@ -945,29 +950,39 @@ void backtracking() {
   // fail in this case with no backtracking.
   test('failing backjump to conflicting source', () async {
     await d.dir('a', [d.libPubspec('a', '1.0.0')]).create();
-
-    await servePackages()
-      ..serve('a', '1.0.0')
-      ..serve(
+    await d.dir('b', [
+      d.libPubspec(
         'b',
         '1.0.0',
         deps: {
           'a': {'path': p.join(d.sandbox, 'shared')},
         },
-      )
+      ),
+    ]).create();
+
+    await servePackages()
+      ..serve('a', '1.0.0')
       ..serve('c', '1.0.0')
       ..serve('c', '2.0.0')
       ..serve('c', '3.0.0')
       ..serve('c', '4.0.0')
       ..serve('c', '5.0.0');
 
-    await d.appDir(dependencies: {'a': 'any', 'b': 'any', 'c': 'any'}).create();
+    await d
+        .appDir(
+          dependencies: {
+            'a': 'any',
+            'b': {'path': '../b'},
+            'c': 'any',
+          },
+        )
+        .create();
     await expectResolves(
       error: equalsIgnoringWhitespace('''
-      Because every version of b depends on a from path and myapp depends on
-        a from hosted, b is forbidden.
-      So, because myapp depends on b any, version solving failed.
-    '''),
+Because every version of b from path depends on a from path 
+and myapp depends on a from hosted, b from path is forbidden.
+So, because myapp depends on b from path, version solving failed.
+'''),
     );
   });
 
@@ -1983,7 +1998,7 @@ Future expectResolves({
   final resultPubspec = Pubspec.fromMap(
     {'dependencies': result},
     registry,
-    containingDescription: RootDescription('.'),
+    containingDescription: ResolvedRootDescription.fromDir('.'),
   );
 
   final ids = {...lockFile.packages};

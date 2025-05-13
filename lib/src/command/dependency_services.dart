@@ -480,7 +480,9 @@ class DependencyServicesApplyCommand extends PubCommand {
           updatedPubspecs[package.dir].toString(),
           cache.sources,
           location: toUri(package.pubspecPath),
-          containingDescription: RootDescription(package.dir),
+          containingDescription: ResolvedRootDescription(
+            RootDescription(package.dir),
+          ),
         ),
       );
       // Resolve versions, this will update transitive dependencies that were
