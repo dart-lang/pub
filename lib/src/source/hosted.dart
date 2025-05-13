@@ -123,8 +123,6 @@ class HostedSource extends CachedSource {
 
   @override
   final name = 'hosted';
-  @override
-  final hasMultipleVersions = true;
 
   static String pubDevUrl = 'https://pub.dev';
   static String pubDartlangUrl = 'https://pub.dartlang.org';
@@ -1818,6 +1816,9 @@ class HostedDescription extends Description {
 
   @override
   HostedSource get source => HostedSource.instance;
+
+  @override
+  bool get hasMultipleVersions => true;
 }
 
 class ResolvedHostedDescription extends ResolvedDescription {

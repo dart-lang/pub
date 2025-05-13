@@ -892,6 +892,9 @@ class GitDescription extends Description {
     }
     return p.prettyUri(url);
   }
+
+  @override
+  bool get hasMultipleVersions => false;
 }
 
 class ResolvedGitDescription extends ResolvedDescription {
