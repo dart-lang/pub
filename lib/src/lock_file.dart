@@ -147,9 +147,6 @@ class LockFile {
               originalConstraint,
               defaultUpperBoundConstraint: null,
             ),
-            'flutter' => SdkConstraint.interpretFlutterSdkConstraint(
-              originalConstraint,
-            ),
             _ => SdkConstraint(originalConstraint),
           };
         },

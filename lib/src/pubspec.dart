@@ -251,10 +251,7 @@ environment:
           _packageName,
           _FileType.pubspec,
         );
-        constraints[name] =
-            name == 'flutter'
-                ? SdkConstraint.interpretFlutterSdkConstraint(constraint)
-                : SdkConstraint(constraint);
+        constraints[name] = SdkConstraint(constraint);
       });
     }
     return constraints;
@@ -814,21 +811,6 @@ class SdkConstraint {
       );
     }
     return SdkConstraint(constraint, originalConstraint: originalConstraint);
-  }
-
-  // Flutter constraints get special treatment, as Flutter won't be using
-  // semantic versioning to mark breaking releases. We simply ignore upper
-  // bounds.
-  factory SdkConstraint.interpretFlutterSdkConstraint(
-    VersionConstraint constraint,
-  ) {
-    if (constraint is VersionRange) {
-      return SdkConstraint(
-        VersionRange(min: constraint.min, includeMin: constraint.includeMin),
-        originalConstraint: constraint,
-      );
-    }
-    return SdkConstraint(constraint);
   }
 
   /// The language version of a constraint is determined from how it is written.
