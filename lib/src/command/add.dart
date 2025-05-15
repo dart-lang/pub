@@ -118,11 +118,6 @@ For example (follow the same format including spaces):
       hide: true,
     );
     argParser.addOption(
-      'git-tag-pattern',
-      help: 'The tag-pattern to search for versions in repository',
-      hide: true,
-    );
-    argParser.addOption(
       'hosted-url',
       help: 'URL of package host server',
       hide: true,
