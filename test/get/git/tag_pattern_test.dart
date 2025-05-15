@@ -224,7 +224,35 @@ void main() {
       environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
       error: contains(
         'Invalid description in the "myapp" pubspec on the "foo" dependency: '
-        'The `tag_pattern` must contain "{{version}}" '
+        'The `tag_pattern` must contain a single "{{version}}" '
+        'to match different versions',
+      ),
+      exitCode: DATA,
+    );
+  });
+
+  test('tag_pattern must contain at most one "{{version}}"', () async {
+    await d
+        .appDir(
+          dependencies: {
+            'foo': {
+              'git': {
+                'url': 'some/git/path',
+                'tag_pattern': 'v{{version}}{{version}}',
+              },
+            },
+          },
+          pubspec: {
+            'environment': {'sdk': '^3.9.0'},
+          },
+        )
+        .create();
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      error: contains(
+        'Invalid description in the "myapp" pubspec on the "foo" dependency: '
+        'The `tag_pattern` must contain a single "{{version}}" '
         'to match different versions',
       ),
       exitCode: DATA,

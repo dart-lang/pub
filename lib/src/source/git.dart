@@ -80,23 +80,24 @@ class GitSource extends CachedSource {
       }
       path = descriptionPath;
 
-      final tagPattern = description['tag_pattern'];
+      final descriptionTagPattern = description['tag_pattern'];
 
-      if (tagPattern is! String?) {
+      if (descriptionTagPattern is! String?) {
         throw const FormatException(
           "The 'tag_pattern' field of the description "
           'must be a string or null.',
         );
       } else {
-        if (!languageVersion.supportsTagPattern) {
-          throw FormatException(
-            'Using `git: {tagPattern: }` is only supported with a minimum SDK '
-            'constraint of ${LanguageVersion.firstVersionWithTagPattern}.',
-          );
+        if (descriptionTagPattern != null) {
+          if (!languageVersion.supportsTagPattern) {
+            throw FormatException(
+              'Using `git: {tagPattern: }` is only supported with a minimum SDK '
+              'constraint of ${LanguageVersion.firstVersionWithTagPattern}.',
+            );
+          }
+          validateTagPattern(descriptionTagPattern);
         }
-        if (tagPattern != null) {
-          validateTagPattern(tagPattern);
-        }
+        tagPattern = descriptionTagPattern;
       }
 
       if (ref != null && tagPattern != null) {
@@ -1087,7 +1088,7 @@ String _gitDirArg(String path) {
   return '--git-dir=$forwardSlashPath';
 }
 
-final tagPatternPattern = RegExp(r'^(.*){{version}}(.*)$');
+const String tagPatternVersionMarker = '{{version}}';
 
 // Adapted from pub_semver-2.1.4/lib/src/version.dart
 const versionPattern =
@@ -1095,12 +1096,13 @@ const versionPattern =
     r'(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?' // Pre-release.
     r'(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?'; // build
 
-/// Throws [FormatException] if it doesn't match [tagPatternPattern].
+/// Throws [FormatException] if it doesn't contain a single instance of
+/// [tagPatternVersionMarker].
 void validateTagPattern(String tagPattern) {
-  final match = tagPatternPattern.firstMatch(tagPattern);
-  if (match == null) {
+  final parts = tagPattern.split(tagPatternVersionMarker);
+  if (parts.length != 2) {
     throw const FormatException(
-      'The `tag_pattern` must contain "{{version}}" '
+      'The `tag_pattern` must contain a single "{{version}}" '
       'to match different versions',
     );
   }
@@ -1111,11 +1113,11 @@ void validateTagPattern(String tagPattern) {
 /// The tagPattern should contain '{{version}}' which will match a pub_semver
 /// version. The rest of the tagPattern is matched verbatim.
 ///
-/// Assumes that [tagPattern] matches [tagPatternPattern]
+/// Assumes that [tagPattern] has a single occurence of [tagPatternVersionMarker]
 RegExp compileTagPattern(String tagPattern) {
-  final match = tagPatternPattern.firstMatch(tagPattern)!;
-  final before = RegExp.escape(match[1]!);
-  final after = RegExp.escape(match[2]!);
+  final parts = tagPattern.split(tagPatternVersionMarker);
+  final before = parts[0];
+  final after = parts[1];
 
   return RegExp(
     r'^'
