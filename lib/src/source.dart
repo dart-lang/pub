@@ -177,11 +177,17 @@ abstract class Source {
 ///
 /// For a hosted package this would be the host url.
 ///
-/// For a git package this would be the repo url and a ref and a path inside
-/// the repo.
+/// For a git package this would be the repo url and a ref and a path inside the
+/// repo.
+///
+/// For a path package it is the path.
 ///
 /// This is the information that goes into a `pubspec.yaml` dependency together
 /// with a version constraint.
+///
+/// After resolution we might know more about the specifics of the package that
+/// pins the content down (sucb as its content-hash or git commit id) this is
+/// represented by a [ResolvedDescription].
 abstract class Description {
   Source get source;
 
