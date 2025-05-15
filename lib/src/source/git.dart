@@ -91,7 +91,8 @@ class GitSource extends CachedSource {
         if (descriptionTagPattern != null) {
           if (!languageVersion.supportsTagPattern) {
             throw FormatException(
-              'Using `git: {tagPattern: }` is only supported with a minimum SDK '
+              'Using `git: {tagPattern: }` '
+              'is only supported with a minimum SDK '
               'constraint of ${LanguageVersion.firstVersionWithTagPattern}.',
             );
           }
@@ -912,9 +913,8 @@ class GitDescription extends Description {
   /// not allow strings of the form: 'git@github.com:dart-lang/pub.git'.
   final String url;
 
-  /// A string of the form of [tagPatternPattern] used to match version numbers
-  /// in a git tag.
-  /// For example "v{{version}}".
+  /// A string containing [tagPatternVersionMarker] used to match version
+  /// numbers in a git tag. For example "v{{version}}".
   ///
   /// Only one of [ref] and [tagPattern] can be non-`null` at a time.
   final String? tagPattern;
@@ -1113,7 +1113,8 @@ void validateTagPattern(String tagPattern) {
 /// The tagPattern should contain '{{version}}' which will match a pub_semver
 /// version. The rest of the tagPattern is matched verbatim.
 ///
-/// Assumes that [tagPattern] has a single occurence of [tagPatternVersionMarker]
+/// Assumes that [tagPattern] has a single occurence of
+/// [tagPatternVersionMarker].
 RegExp compileTagPattern(String tagPattern) {
   final parts = tagPattern.split(tagPatternVersionMarker);
   final before = parts[0];
