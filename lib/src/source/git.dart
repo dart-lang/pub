@@ -80,24 +80,22 @@ class GitSource extends CachedSource {
       }
       path = descriptionPath;
 
-      // TODO: can we avoid relying on key presence?
-      if (description.containsKey('tag_pattern')) {
+      final tagPattern = description['tag_pattern'];
+
+      if (tagPattern is! String?) {
+        throw const FormatException(
+          "The 'tag_pattern' field of the description "
+          'must be a string or null.',
+        );
+      } else {
         if (!languageVersion.supportsTagPattern) {
           throw FormatException(
             'Using `git: {tagPattern: }` is only supported with a minimum SDK '
             'constraint of ${LanguageVersion.firstVersionWithTagPattern}.',
           );
         }
-        switch (description['tag_pattern']) {
-          case final String descriptionTagPattern:
-            tagPattern = descriptionTagPattern;
-            // Do an early compilation to validate the format.
-            compileTagPattern(tagPattern);
-          default:
-            throw const FormatException(
-              "The 'tag_pattern' field of the description "
-              'must be a string or null.',
-            );
+        if (tagPattern != null) {
+          validateTagPattern(tagPattern);
         }
       }
 
@@ -293,9 +291,10 @@ class GitSource extends CachedSource {
     required String relativeTo,
     required String? tagPattern,
   }) async {
-    if (ref != null && tagPattern != null) {
-      fail('Cannot have both a `tagPattern` and a `ref`');
-    }
+    assert(
+      !(ref != null && tagPattern != null),
+      'Cannot have both a `tagPattern` and a `ref`',
+    );
     final description = GitDescription(
       url: url,
       ref: ref,
@@ -309,10 +308,7 @@ class GitSource extends CachedSource {
 
       final revision =
           tagPattern != null
-              ? (await _listTaggedVersions(
-                path,
-                compileTagPattern(tagPattern),
-              )).last.commitId
+              ? (await _listTaggedVersions(path, tagPattern)).last.commitId
               : await _firstRevision(path, description.ref);
       final resolvedDescription = ResolvedGitDescription(description, revision);
 
@@ -376,10 +372,7 @@ class GitSource extends CachedSource {
       final path = _repoCachePath(description, cache);
       final result = <PackageId>[];
       if (description.tagPattern case final String tagPattern) {
-        final versions = await _listTaggedVersions(
-          path,
-          compileTagPattern(tagPattern),
-        );
+        final versions = await _listTaggedVersions(path, tagPattern);
         for (final version in versions) {
           result.add(
             PackageId(
@@ -767,10 +760,10 @@ class GitSource extends CachedSource {
       p.join(revisionCachePath, '.git/pub-packages');
 
   /// List all tags in [path] and returns all versions matching
-  /// [compiledTagPattern].
+  /// [tagPattern].
   Future<List<TaggedVersion>> _listTaggedVersions(
     String path,
-    RegExp compiledTagPattern,
+    String tagPattern,
   ) async {
     final output = await git.run([
       'tag',
@@ -782,6 +775,7 @@ class GitSource extends CachedSource {
     ], workingDir: path);
     final lines = output.trim().split('\n');
     final result = <TaggedVersion>[];
+    final compiledTagPattern = compileTagPattern(tagPattern);
     for (final line in lines) {
       final parts = line.split(' ');
       if (parts.length != 2) {
@@ -789,7 +783,16 @@ class GitSource extends CachedSource {
       }
       final match = compiledTagPattern.firstMatch(parts[0]);
       if (match == null) continue;
-      final version = Version.parse(match[1]!);
+
+      final Version version;
+
+      try {
+        version = Version.parse(match[1]!);
+      } on FormatException catch (e) {
+        throw StateError(
+          'Matched part ${Version.parse(match[1]!)} did not match version $e.',
+        );
+      }
       result.add((version: version, commitId: parts[1]));
     }
     return result;
@@ -908,6 +911,11 @@ class GitDescription extends Description {
   /// not allow strings of the form: 'git@github.com:dart-lang/pub.git'.
   final String url;
 
+  /// A string of the form of [tagPatternPattern] used to match version numbers
+  /// in a git tag.
+  /// For example "v{{version}}".
+  ///
+  /// Only one of [ref] and [tagPattern] can be non-`null` at a time.
   final String? tagPattern;
 
   /// `true` if [url] was parsed from a relative url.
@@ -1087,11 +1095,8 @@ const versionPattern =
     r'(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?' // Pre-release.
     r'(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?'; // build
 
-/// Takes a [tagPattern] and returns a [RegExp] matching the relevant tags.
-///
-/// The tagPattern should contain '{{version}}' which will match a pub_semver
-/// version. The rest of the tagPattern is matched verbatim.
-RegExp compileTagPattern(String tagPattern) {
+/// Throws [FormatException] if it doesn't match [tagPatternPattern].
+void validateTagPattern(String tagPattern) {
   final match = tagPatternPattern.firstMatch(tagPattern);
   if (match == null) {
     throw const FormatException(
@@ -1099,6 +1104,16 @@ RegExp compileTagPattern(String tagPattern) {
       'to match different versions',
     );
   }
+}
+
+/// Takes a [tagPattern] and returns a [RegExp] matching the relevant tags.
+///
+/// The tagPattern should contain '{{version}}' which will match a pub_semver
+/// version. The rest of the tagPattern is matched verbatim.
+///
+/// Assumes that [tagPattern] matches [tagPatternPattern]
+RegExp compileTagPattern(String tagPattern) {
+  final match = tagPatternPattern.firstMatch(tagPattern)!;
   final before = RegExp.escape(match[1]!);
   final after = RegExp.escape(match[2]!);
 
