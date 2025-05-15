@@ -714,7 +714,7 @@ Specify multiple sdk packages with descriptors.''');
       final description = pubspecDescription(
         ref.withConstraint(
           constraint ??
-              (ref.source is HostedSource
+              (ref.description.hasMultipleVersions
                   ? VersionConstraint.compatibleWith(resultId.version)
                   : VersionConstraint.any),
         ),
