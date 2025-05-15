@@ -186,7 +186,7 @@ abstract class Source {
 /// with a version constraint.
 ///
 /// After resolution we might know more about the specifics of the package that
-/// pins the content down (sucb as its content-hash or git commit id) this is
+/// pins the content down (such as its content-hash or git commit id) this is
 /// represented by a [ResolvedDescription].
 abstract class Description {
   Source get source;
