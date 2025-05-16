@@ -60,8 +60,8 @@ class GitRepoDescriptor extends DirectoryDescriptor {
       'GIT_COMMITTER_NAME': 'Pub Test',
       'GIT_COMMITTER_EMAIL': 'pub@dartlang.org',
       // To make stable commits ids we fix the date.
-      'GIT_COMMITTER_DATE': DateTime(1970).toIso8601String(),
-      'GIT_AUTHOR_DATE': DateTime(1970).toIso8601String(),
+      'GIT_COMMITTER_DATE': DateTime.utc(1970).toIso8601String(),
+      'GIT_AUTHOR_DATE': DateTime.utc(1970).toIso8601String(),
     };
 
     return git.run(
