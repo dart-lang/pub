@@ -115,6 +115,7 @@ class PathSource extends Source {
           relative: containingDescription.description.relative,
           // Always refer to the same commit as the containing pubspec.
           ref: containingDescription.resolvedRef,
+          tagPattern: null,
           path: resolvedPath,
         ),
       );

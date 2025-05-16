@@ -280,4 +280,51 @@ void main() {
       }),
     ]).validate();
   });
+
+  test('Can add git tag_pattern using descriptors', () async {
+    ensureGit();
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '1.0.0'),
+    ]).create();
+
+    await d.git('foo.git').tag('v1.0.0');
+
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '2.0.0'),
+    ]).commit();
+    await d.git('foo.git').tag('v2.0.0');
+    await d.git('foo.git', [
+      d.libDir('foo'),
+      d.libPubspec('foo', '3.0.0'),
+    ]).commit(); // Not tagged, we won't get this.
+    await d
+        .appDir(
+          dependencies: {},
+          pubspec: {
+            'environment': {'sdk': '^3.9.0'},
+          },
+        )
+        .create();
+
+    await pubAdd(
+      args: ['foo:{"git":{"url": "../foo.git", "tag_pattern":"v{{version}}"}}'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+    );
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'myapp',
+        'environment': {'sdk': '^3.9.0'},
+        'dependencies': {
+          'foo': {
+            'git': {'url': '../foo.git', 'tag_pattern': 'v{{version}}'},
+            'version': '^2.0.0',
+          },
+        },
+      }),
+    ]).validate();
+  });
 }

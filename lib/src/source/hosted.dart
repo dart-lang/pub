@@ -454,7 +454,6 @@ class HostedSource extends CachedSource {
         }
         advisoriesDate = DateTime.parse(advisoriesUpdated);
       }
-
       final status = PackageStatus(
         isDiscontinued: isDiscontinued,
         discontinuedReplacedBy: replacedBy,

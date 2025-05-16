@@ -93,6 +93,7 @@ class GlobalPackages {
     required bool overwriteBinStubs,
     String? path,
     String? ref,
+    String? tagPattern,
   }) async {
     final name = await cache.git.getPackageNameFromRepo(
       repo,
@@ -100,6 +101,7 @@ class GlobalPackages {
       path,
       cache,
       relativeTo: p.current,
+      tagPattern: tagPattern,
     );
 
     // TODO(nweiz): Add some special handling for git repos that contain path

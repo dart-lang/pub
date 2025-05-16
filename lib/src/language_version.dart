@@ -65,6 +65,8 @@ class LanguageVersion implements Comparable<LanguageVersion> {
 
   bool get supportsWorkspaces => this >= firstVersionWithWorkspaces;
 
+  bool get supportsTagPattern => this >= firstVersionWithTagPattern;
+
   bool get forbidsUnknownDescriptionKeys =>
       this >= firstVersionForbidingUnknownDescriptionKeys;
 
@@ -105,6 +107,7 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   static const firstVersionWithNullSafety = LanguageVersion(2, 12);
   static const firstVersionWithShorterHostedSyntax = LanguageVersion(2, 15);
   static const firstVersionWithWorkspaces = LanguageVersion(3, 5);
+  static const firstVersionWithTagPattern = LanguageVersion(3, 9);
   static const firstVersionForbidingUnknownDescriptionKeys = LanguageVersion(
     3,
     7,

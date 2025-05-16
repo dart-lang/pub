@@ -36,6 +36,15 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     ]);
   }
 
+  /// Adds a tag named [tag] to the repo described by `this`.
+  ///
+  /// [parent] defaults to [sandbox].
+  Future tag(String tag, [String? parent]) async {
+    await _runGitCommands(parent, [
+      ['tag', '-a', tag, '-m', 'Some message'],
+    ]);
+  }
+
   /// Return a Future that completes to the commit in the git repository
   /// referred to by [ref].
   ///
