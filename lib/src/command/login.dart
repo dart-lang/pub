@@ -53,26 +53,33 @@ class LoginCommand extends PubCommand {
     return await oauth2.withClient((client) async {
       final discovery = await oauth2.fetchOidcDiscoveryDocument();
       final userInfoEndpoint = discovery['userinfo_endpoint'];
+
       if (userInfoEndpoint is! String) {
-        log.fine('Bad discovery document. userinfo_endpoint not a String');
+        log.fine(
+          'Invalid discovery document: userinfo_endpoint is not a String',
+        );
         return null;
       }
-      final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
-      if (userInfoRequest.statusCode != 200) return null;
+
+      final response = await client.get(Uri.parse(userInfoEndpoint));
+      if (response.statusCode != 200) {
+        log.fine('Failed to fetch user info: HTTP ${response.statusCode}');
+        return null;
+      }
+
       try {
-        switch (json.decode(userInfoRequest.body)) {
-          case {'name': final String? name, 'email': final String email}:
-            return _UserInfo(name, email);
-          default:
-            log.fine(
-              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
-            );
-            return null;
+        final decoded = json.decode(response.body);
+        if (decoded case {
+          'name': final String? name,
+          'email': final String email,
+        }) {
+          return _UserInfo(name, email);
+        } else {
+          log.fine('Unexpected user info format: ${response.body}');
+          return null;
         }
       } on FormatException catch (e) {
-        log.fine(
-          'Bad response from $userInfoEndpoint ($e): ${userInfoRequest.body}',
-        );
+        log.fine('Failed to decode user info: $e\nResponse: ${response.body}');
         return null;
       }
     });
