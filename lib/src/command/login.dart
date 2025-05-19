@@ -24,30 +24,28 @@ class LoginCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     final credentials = oauth2.loadCredentials();
+    final userInfo = await _retrieveUserInfo();
+
     if (credentials == null) {
-      final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning(
-          'Could not retrieve your user-details.\n'
-          'You might have to run `$topLevelProgram pub logout` '
-          'to delete your credentials and try again.',
+          'Could not retrieve your user details.\n'
+          'Run `$topLevelProgram pub logout` to delete credentials and try '
+          'again.',
         );
       } else {
         log.message('You are now logged in as $userInfo');
       }
     } else {
-      final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning(
-          'Your credentials seems broken.\n'
-          'Run `$topLevelProgram pub logout` '
-          'to delete your credentials and try again.',
+          'Your credentials seem to be broken.\n'
+          'Run `$topLevelProgram pub logout` to delete credentials and try '
+          'again.',
         );
+      } else {
+        log.message('You are already logged in as $userInfo');
       }
-      log.warning(
-        'You are already logged in as $userInfo\n'
-        'Run `$topLevelProgram pub logout` to log out and try again.',
-      );
     }
   }
 
