@@ -257,6 +257,17 @@ void writeTextFile(
   File(file).writeAsStringSync(contents, encoding: encoding);
 }
 
+void writeTextFilesIfDifferent(String path, String newContent) {
+  // Compare to the present package_config.json
+  // For purposes of equality we don't care about the `generated` timestamp.
+  final originalText = tryReadTextFile(path);
+  if (originalText != newContent) {
+    writeTextFile(path, newContent);
+  } else {
+    log.fine('`$path` is unchanged. Not rewriting.');
+  }
+}
+
 /// Reads the contents of the binary file [file].
 void writeBinaryFile(String file, Uint8List data) {
   log.io('Writing ${data.length} bytes to file $file.');

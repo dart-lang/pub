@@ -405,7 +405,7 @@ See $workspacesDocUrl for more information.''',
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
 
-    _writeIfDifferent(
+    writeTextFilesIfDifferent(
       packageConfigPath,
       await _packageConfigFile(
         cache,
@@ -416,7 +416,7 @@ See $workspacesDocUrl for more information.''',
                 ?.effectiveConstraint,
       ),
     );
-    _writeIfDifferent(packageGraphPath, await _packageGraphFile(cache));
+    writeTextFilesIfDifferent(packageGraphPath, await _packageGraphFile(cache));
 
     if (workspaceRoot.workspaceChildren.isNotEmpty) {
       for (final package in workspaceRoot.transitiveWorkspace) {
@@ -524,17 +524,6 @@ See $workspacesDocUrl for more information.''',
       '  ',
     ).convert(packageConfig.toJson());
     return '$jsonText\n';
-  }
-
-  void _writeIfDifferent(String path, String newContent) {
-    // Compare to the present package_config.json
-    // For purposes of equality we don't care about the `generated` timestamp.
-    final originalText = tryReadTextFile(path);
-    if (originalText != newContent) {
-      writeTextFile(path, newContent);
-    } else {
-      log.fine('`$path` is unchanged. Not rewriting.');
-    }
   }
 
   /// Gets all dependencies of the [workspaceRoot] package.
