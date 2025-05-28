@@ -405,7 +405,7 @@ See $workspacesDocUrl for more information.''',
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
 
-    writeTextFilesIfDifferent(
+    writeTextFileIfDifferent(
       packageConfigPath,
       await _packageConfigFile(
         cache,
@@ -416,7 +416,7 @@ See $workspacesDocUrl for more information.''',
                 ?.effectiveConstraint,
       ),
     );
-    writeTextFilesIfDifferent(packageGraphPath, await _packageGraphFile(cache));
+    writeTextFileIfDifferent(packageGraphPath, await _packageGraphFile(cache));
 
     if (workspaceRoot.workspaceChildren.isNotEmpty) {
       for (final package in workspaceRoot.transitiveWorkspace) {
@@ -430,7 +430,7 @@ See $workspacesDocUrl for more information.''',
         final workspaceRef = const JsonEncoder.withIndent(
           '  ',
         ).convert({'workspaceRoot': relativeRootPath});
-        writeTextFile(workspaceRefPath, '$workspaceRef\n');
+        writeTextFileIfDifferent(workspaceRefPath, '$workspaceRef\n');
       }
     }
   }

@@ -257,7 +257,7 @@ void writeTextFile(
   File(file).writeAsStringSync(contents, encoding: encoding);
 }
 
-void writeTextFilesIfDifferent(String path, String newContent) {
+void writeTextFileIfDifferent(String path, String newContent) {
   // Compare to the present package_config.json
   // For purposes of equality we don't care about the `generated` timestamp.
   final originalText = tryReadTextFile(path);
