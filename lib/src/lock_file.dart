@@ -406,7 +406,7 @@ ${yamlToString(data)}
         detectWindowsLineEndings(readTextFile(lockFilePath));
 
     final serialized = serialize(p.dirname(lockFilePath), cache);
-    writeTextFile(
+    writeTextFileIfDifferent(
       lockFilePath,
       windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized,
     );

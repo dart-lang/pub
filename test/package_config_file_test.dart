@@ -313,42 +313,67 @@ void main() {
     });
   });
 
-  test(
-    'package_config and package_graph are not rewritten if unchanged',
-    () async {
-      final server = await servePackages();
-      server.serve('foo', '1.0.0');
+  test('pubspec.lock, package_config, package_graph and workspace_ref '
+      'are not rewritten if unchanged', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
 
-      await d.appDir(dependencies: {'foo': 'any'}).create();
+    await d.dir(appPath, [
+      d.appPubspec(
+        dependencies: {'foo': 'any'},
+        extras: {
+          'workspace': ['foo'],
+          'environment': {'sdk': '^3.5.0'},
+        },
+      ),
+      d.dir('foo', [d.libPubspec('foo', '1.0.0', resolutionWorkspace: true)]),
+    ]).create();
 
-      await pubGet();
-      final packageConfigFile = File(
-        p.join(sandbox, appPath, '.dart_tool', 'package_config.json'),
-      );
-      final packageConfig = jsonDecode(packageConfigFile.readAsStringSync());
-      final packageConfigTimestamp = packageConfigFile.lastModifiedSync();
-      final packageGraphFile = File(
-        p.join(sandbox, appPath, '.dart_tool', 'package_graph.json'),
-      );
-      final packageGraph = jsonDecode(packageGraphFile.readAsStringSync());
-      final packageGraphTimestamp = packageGraphFile.lastModifiedSync();
-      final s = p.separator;
-      await pubGet(
-        silent: allOf(
-          contains(
-            '`.dart_tool${s}package_config.json` is unchanged. Not rewriting.',
-          ),
-          contains(
-            '`.dart_tool${s}package_graph.json` is unchanged. Not rewriting.',
-          ),
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    final packageConfigFile = File(
+      p.join(sandbox, appPath, '.dart_tool', 'package_config.json'),
+    );
+    final packageConfig = jsonDecode(packageConfigFile.readAsStringSync());
+    final packageConfigTimestamp = packageConfigFile.lastModifiedSync();
+    final lockFile = File(p.join(sandbox, appPath, 'pubspec.lock'));
+    final lockfileTimestamp = lockFile.lastModifiedSync();
+    final packageGraphFile = File(
+      p.join(sandbox, appPath, '.dart_tool', 'package_graph.json'),
+    );
+    final packageGraph = jsonDecode(packageGraphFile.readAsStringSync());
+    final packageGraphTimestamp = packageGraphFile.lastModifiedSync();
+    final workspaceRefFile = File(
+      p.join(
+        sandbox,
+        appPath,
+        'foo',
+        '.dart_tool',
+        'pub',
+        'workspace_ref.json',
+      ),
+    );
+    final workspaceRefTimestamp = workspaceRefFile.lastModifiedSync();
+    final s = p.separator;
+    await pubGet(
+      silent: allOf(
+        contains(
+          '`.dart_tool${s}package_config.json` is unchanged. Not rewriting.',
         ),
-      );
+        contains(
+          '`.dart_tool${s}package_graph.json` is unchanged. Not rewriting.',
+        ),
+      ),
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+    );
+    // The resolution of timestamps is not that good.
+    await Future<Null>.delayed(const Duration(seconds: 1));
+    expect(packageConfig, jsonDecode(packageConfigFile.readAsStringSync()));
+    expect(packageConfigFile.lastModifiedSync(), packageConfigTimestamp);
 
-      expect(packageConfig, jsonDecode(packageConfigFile.readAsStringSync()));
-      expect(packageConfigFile.lastModifiedSync(), packageConfigTimestamp);
+    expect(packageGraph, jsonDecode(packageGraphFile.readAsStringSync()));
+    expect(packageGraphFile.lastModifiedSync(), packageGraphTimestamp);
 
-      expect(packageGraph, jsonDecode(packageGraphFile.readAsStringSync()));
-      expect(packageGraphFile.lastModifiedSync(), packageGraphTimestamp);
-    },
-  );
+    expect(lockFile.lastModifiedSync(), lockfileTimestamp);
+    expect(workspaceRefFile.lastModifiedSync(), workspaceRefTimestamp);
+  });
 }
