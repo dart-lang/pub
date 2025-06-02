@@ -242,7 +242,7 @@ In order to be able to prune the cache (`dart pub cache gc`) pub keeps a tally o
 each time it writes a `.dart_tool/package_config.json` file (an activation).
 
 The directory is laid out such that each file-name is the hex-encoded sha256
-hash of the absolute file-uri of the path the the package config.
+hash of the absolute file-uri of the path of the package config.
 
 The first two bytes are used for a subdirectory, to prevent too many files in
 one directory.
