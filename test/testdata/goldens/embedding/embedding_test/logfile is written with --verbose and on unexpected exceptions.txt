@@ -149,6 +149,9 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    |   ],
 [E]    |   "configVersion": 1
 [E]    | }
+[E] IO  : Writing $N characters to text file $SANDBOX/cache/active_packages/2b/4cac0adeb65fd767481ef7e665228a6707acea19b855fc1a840422690a63d9.
+[E] FINE: Contents:
+[E]    | {"package_config":"file://$SANDBOX/myapp/.dart_tool/package_config.json"}
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/log/pub_log.txt.
 
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -335,6 +338,9 @@ FINE: Contents:
    |   ],
    |   "configVersion": 1
    | }
+IO  : Writing $N characters to text file $SANDBOX/cache/active_packages/2b/4cac0adeb65fd767481ef7e665228a6707acea19b855fc1a840422690a63d9.
+FINE: Contents:
+   | {"package_config":"file://$SANDBOX/myapp/.dart_tool/package_config.json"}
 ---- End log transcript ----
 -------------------------------- END OF OUTPUT ---------------------------------
 
