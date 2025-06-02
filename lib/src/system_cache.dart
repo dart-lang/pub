@@ -2,8 +2,10 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -79,6 +81,8 @@ Consider setting the `PUB_CACHE` variable manually.
   }
 
   Source get defaultSource => hosted;
+
+  late final Iterable<CachedSource> cachedSources = [hosted, git];
 
   /// The built-in Git source.
   GitSource get git => GitSource.instance;
@@ -400,6 +404,74 @@ https://dart.dev/go/pub-cache
   }
 
   bool _hasMaintainedCache = false;
+
+  late final _activePackagesDir = p.join(rootDir, 'active_packages');
+
+  /// Returns the paths of all packages_configs registered in
+  /// [_activePackagesDir].
+  List<String> activePackages() {
+    final List<String> files;
+    try {
+      files = listDir(_activePackagesDir, includeDirs: false, recursive: true);
+    } on IOException {
+      return [];
+    }
+    final activePackages = <String>[];
+    for (final file in files) {
+      final Object? decoded;
+      try {
+        decoded = jsonDecode(readTextFile(file));
+      } on IOException catch (e) {
+        log.fine('Could not read $file $e - deleting');
+        tryDeleteEntry(file);
+        continue;
+      } on FormatException catch (e) {
+        log.fine('Could not decode $file $e - deleting');
+        tryDeleteEntry(file);
+        continue;
+      }
+      if (decoded is! Map<String, Object?>) {
+        log.fine('Faulty $file - deleting');
+        tryDeleteEntry(file);
+        continue;
+      }
+      final uriText = decoded['package_config'];
+      if (uriText is! String) {
+        log.fine('Faulty $file - deleting');
+        tryDeleteEntry(file);
+        continue;
+      }
+      final uri = Uri.tryParse(uriText);
+      if (uri == null || !uri.isScheme('file')) {
+        log.fine('Faulty $file - deleting');
+        tryDeleteEntry(file);
+        continue;
+      }
+      activePackages.add(uri.toFilePath());
+    }
+    return activePackages;
+  }
+
+  /// Adds a file to the `PUB_CACHE/active_packages/` dir indicating
+  /// [packageConfigPath] is active.
+  void markPackageActive(String packageConfigPath) {
+    final canonicalFileUri =
+        p.toUri(p.canonicalize(packageConfigPath)).toString();
+
+    final hash = hexEncode(sha256.convert(utf8.encode(canonicalFileUri)).bytes);
+
+    final firstTwo = hash.substring(0, 2);
+    final theRest = hash.substring(2);
+
+    final dir = p.join(_activePackagesDir, firstTwo);
+    ensureDir(dir);
+
+    final filename = p.join(dir, theRest);
+    writeTextFileIfDifferent(
+      filename,
+      '${jsonEncode({'package_config': canonicalFileUri})}\n',
+    );
+  }
 }
 
 typedef SourceRegistry = Source Function(String? name);

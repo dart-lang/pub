@@ -402,6 +402,8 @@ See $workspacesDocUrl for more information.''',
   /// If the workspace is non-trivial: For each package in the workspace write:
   /// `.dart_tool/pub/workspace_ref.json` with a pointer to the workspace root
   /// package dir.
+  ///
+  /// Also marks the package active in `PUB_CACHE/active_packages/`.
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
 
@@ -432,6 +434,9 @@ See $workspacesDocUrl for more information.''',
         ).convert({'workspaceRoot': relativeRootPath});
         writeTextFileIfDifferent(workspaceRefPath, '$workspaceRef\n');
       }
+    }
+    if (lockFile.packages.values.any((id) => id.source is CachedSource)) {
+      cache.markPackageActive(packageConfigPath);
     }
   }
 

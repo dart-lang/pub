@@ -293,10 +293,14 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
       lockFile.writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
+      final packageDir = _packageDir(name);
+      tryDeleteEntry(packageDir);
+      tryRenameDir(tempDir, packageDir);
+
       // Load the package graph from [result] so we don't need to re-parse all
       // the pubspecs.
       final entrypoint = Entrypoint.global(
-        root,
+        packageForConstraint(dep, packageDir),
         lockFile,
         cache,
         solveResult: result,
@@ -305,9 +309,6 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       await entrypoint.writePackageConfigFiles();
 
       await entrypoint.precompileExecutables();
-
-      tryDeleteEntry(_packageDir(name));
-      tryRenameDir(tempDir, _packageDir(name));
     }
 
     final entrypoint = Entrypoint.global(

@@ -34,6 +34,7 @@ Here are the top-level folders you can find in a Pub cache.
 ```plaintext
 $PUB_CACHE/
 ├── global_packages/  # Globally activated packages
+├── active_packages/  # Information about packages that this cache caches for.
 ├── bin/              # Executables compiled from globally activated packages.
 ├── git/              # Cloned git packages
 ├── hosted/           # Hosted package downloads
@@ -232,6 +233,28 @@ $PUB_CACHE/bin/
 ├── mono_repo
 └── stagehand
 ```
+
+# Active packages
+$PUB_CACHE/active_packages/
+└── active_packages
+
+In order to be able to prune the cache (`dart pub cache gc`) pub keeps a tally of
+each time it writes a `.dart_tool/package_config.json` file (an activation).
+
+The directory is laid out such that each file-name is the hex-encoded sha256
+hash of the absolute file-uri of the path the the package config.
+
+The first two bytes are used for a subdirectory, to prevent too many files in
+one directory.
+
+When implemented `dart pub cache gc` will look through all the package configs,
+and mark all cached packages in the cache used by those projects `alive`. If a
+package config doesn't exist, it is ignored.
+
+All other packages in the cache are removed.
+
+Packages that are installed in the cache within 1 hour are not deleted. This is
+to minimize the potential for race-conditions.
 
 ## Logs
 
