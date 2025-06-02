@@ -248,11 +248,11 @@ one directory.
 
 When implemented `dart pub cache gc` will look through all the package configs,
 and mark all cached packages in the cache used by those projects `alive`. If a
-package config doesn't exist, it is ignored.
+package config doesn't exist, it is ignored, and the file marking it is deleted.
 
 All other packages in the cache are removed.
 
-Packages that are installed in the cache within 1 hour are not deleted. This is
+Packages that are installed in the cache within 1 day are not deleted. This is
 to minimize the risk of race-conditions.  
 
 ## Logs
