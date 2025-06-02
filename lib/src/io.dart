@@ -257,6 +257,10 @@ void writeTextFile(
   File(file).writeAsStringSync(contents, encoding: encoding);
 }
 
+/// Reads the file at [path] and writes [newContent] to it, if it is different
+/// from [newContent].
+///
+/// If the file doesn't exist it is always written.
 void writeTextFileIfDifferent(String path, String newContent) {
   // Compare to the present package_config.json
   // For purposes of equality we don't care about the `generated` timestamp.
