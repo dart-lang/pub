@@ -254,7 +254,7 @@ package config doesn't exist, it is ignored.
 All other packages in the cache are removed.
 
 Packages that are installed in the cache within 1 hour are not deleted. This is
-to minimize the potential for race-conditions.
+to minimize the risk of race-conditions.
 
 ## Logs
 
