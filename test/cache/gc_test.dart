@@ -73,16 +73,22 @@ void main() async {
     expect(
       SystemCache(rootDir: p.join(d.sandbox, cachePath)).activePackages(),
       {
-        p.join(d.sandbox, 'app_hosted', '.dart_tool', 'package_config.json'),
-        p.join(d.sandbox, 'app_git', '.dart_tool', 'package_config.json'),
+        p.canonicalize(
+          p.join(d.sandbox, 'app_hosted', '.dart_tool', 'package_config.json'),
+        ),
+        p.canonicalize(
+          p.join(d.sandbox, 'app_git', '.dart_tool', 'package_config.json'),
+        ),
 
-        p.join(
-          d.sandbox,
-          cachePath,
-          'global_packages',
-          'foo',
-          '.dart_tool',
-          'package_config.json',
+        p.canonicalize(
+          p.join(
+            d.sandbox,
+            cachePath,
+            'global_packages',
+            'foo',
+            '.dart_tool',
+            'package_config.json',
+          ),
         ),
       },
     );
