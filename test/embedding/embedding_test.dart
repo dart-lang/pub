@@ -546,6 +546,10 @@ String _filter(String input) {
         RegExp(r'"archive_sha256":"[0-9a-f]{64}"', multiLine: true),
         r'"archive_sha256":"$SHA256"',
       )
+      .replaceAll(
+        RegExp(r'active_packages/[0-9a-f]{2}/[0-9a-f]{62}', multiLine: true),
+        r'active_packages/$HH/$HASH',
+      )
       /// TODO(sigurdm): This hack suppresses differences in stack-traces
       /// between dart 2.17 and 2.18. Remove when 2.18 is stable.
       .replaceAllMapped(
