@@ -53,7 +53,7 @@ void main() async {
 
     final markingFiles =
         Directory(
-          p.join(d.sandbox, cachePath, 'active_packages'),
+          p.join(d.sandbox, cachePath, 'active_roots'),
         ).listSync(recursive: true).whereType<File>().toList();
 
     expect(markingFiles, hasLength(3));
@@ -70,27 +70,24 @@ void main() async {
 
     expect(markingFiles, hasLength(3));
 
-    expect(
-      SystemCache(rootDir: p.join(d.sandbox, cachePath)).activePackages(),
-      {
-        p.canonicalize(
-          p.join(d.sandbox, 'app_hosted', '.dart_tool', 'package_config.json'),
-        ),
-        p.canonicalize(
-          p.join(d.sandbox, 'app_git', '.dart_tool', 'package_config.json'),
-        ),
+    expect(SystemCache(rootDir: p.join(d.sandbox, cachePath)).activeRoots(), {
+      p.canonicalize(
+        p.join(d.sandbox, 'app_hosted', '.dart_tool', 'package_config.json'),
+      ),
+      p.canonicalize(
+        p.join(d.sandbox, 'app_git', '.dart_tool', 'package_config.json'),
+      ),
 
-        p.canonicalize(
-          p.join(
-            d.sandbox,
-            cachePath,
-            'global_packages',
-            'foo',
-            '.dart_tool',
-            'package_config.json',
-          ),
+      p.canonicalize(
+        p.join(
+          d.sandbox,
+          cachePath,
+          'global_packages',
+          'foo',
+          '.dart_tool',
+          'package_config.json',
         ),
-      },
-    );
+      ),
+    });
   });
 }

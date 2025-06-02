@@ -405,18 +405,18 @@ https://dart.dev/go/pub-cache
 
   bool _hasMaintainedCache = false;
 
-  late final _activePackagesDir = p.join(rootDir, 'active_packages');
+  late final _activeRootsDir = p.join(rootDir, 'active_roots');
 
   /// Returns the paths of all packages_configs registered in
-  /// [_activePackagesDir].
-  List<String> activePackages() {
+  /// [_activeRootsDir].
+  List<String> activeRoots() {
     final List<String> files;
     try {
-      files = listDir(_activePackagesDir, includeDirs: false, recursive: true);
+      files = listDir(_activeRootsDir, includeDirs: false, recursive: true);
     } on IOException {
       return [];
     }
-    final activePackages = <String>[];
+    final activeRoots = <String>[];
     for (final file in files) {
       final Object? decoded;
       try {
@@ -447,14 +447,14 @@ https://dart.dev/go/pub-cache
         tryDeleteEntry(file);
         continue;
       }
-      activePackages.add(uri.toFilePath());
+      activeRoots.add(uri.toFilePath());
     }
-    return activePackages;
+    return activeRoots;
   }
 
-  /// Adds a file to the `PUB_CACHE/active_packages/` dir indicating
+  /// Adds a file to the `PUB_CACHE/active_roots/` dir indicating
   /// [packageConfigPath] is active.
-  void markPackageActive(String packageConfigPath) {
+  void markRootActive(String packageConfigPath) {
     final canonicalFileUri =
         p.toUri(p.canonicalize(packageConfigPath)).toString();
 
@@ -463,7 +463,7 @@ https://dart.dev/go/pub-cache
     final firstTwo = hash.substring(0, 2);
     final theRest = hash.substring(2);
 
-    final dir = p.join(_activePackagesDir, firstTwo);
+    final dir = p.join(_activeRootsDir, firstTwo);
     ensureDir(dir);
 
     final filename = p.join(dir, theRest);

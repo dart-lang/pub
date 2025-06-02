@@ -403,7 +403,7 @@ See $workspacesDocUrl for more information.''',
   /// `.dart_tool/pub/workspace_ref.json` with a pointer to the workspace root
   /// package dir.
   ///
-  /// Also marks the package active in `PUB_CACHE/active_packages/`.
+  /// Also marks the package active in `PUB_CACHE/active_roots/`.
   Future<void> writePackageConfigFiles() async {
     ensureDir(p.dirname(packageConfigPath));
 
@@ -436,7 +436,7 @@ See $workspacesDocUrl for more information.''',
       }
     }
     if (lockFile.packages.values.any((id) => id.source is CachedSource)) {
-      cache.markPackageActive(packageConfigPath);
+      cache.markRootActive(packageConfigPath);
     }
   }
 
