@@ -811,10 +811,7 @@ environment:
           pubspec.sdkConstraints,
           containsPair(
             'flutter',
-            SdkConstraint(
-              VersionConstraint.parse('>=0.1.2'),
-              originalConstraint: VersionConstraint.parse('^0.1.2'),
-            ),
+            SdkConstraint(VersionConstraint.parse('^0.1.2')),
           ),
         );
         expect(

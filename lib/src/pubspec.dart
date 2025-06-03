@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:collection/collection.dart' hide mapMap;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -253,7 +255,10 @@ environment:
         );
         constraints[name] =
             name == 'flutter'
-                ? SdkConstraint.interpretFlutterSdkConstraint(constraint)
+                ? SdkConstraint.interpretFlutterSdkConstraint(
+                  constraint,
+                  isRoot: _containingDescription is ResolvedRootDescription,
+                )
                 : SdkConstraint(constraint);
       });
     }
@@ -818,11 +823,18 @@ class SdkConstraint {
 
   // Flutter constraints get special treatment, as Flutter won't be using
   // semantic versioning to mark breaking releases. We simply ignore upper
-  // bounds.
+  // bounds for dependencies.
+  //
+  // For root packages we use the upper bound, allowing app developers to
+  // constrain the Flutter version.
   factory SdkConstraint.interpretFlutterSdkConstraint(
-    VersionConstraint constraint,
-  ) {
-    if (constraint is VersionRange) {
+    VersionConstraint constraint, {
+    required bool isRoot,
+  }) {
+    if ((!isRoot ||
+            (Platform.environment['PUB_IGNORE_FLUTTER_UPPER_BOUND'] ?? '')
+                .isNotEmpty) &&
+        constraint is VersionRange) {
       return SdkConstraint(
         VersionRange(min: constraint.min, includeMin: constraint.includeMin),
         originalConstraint: constraint,
