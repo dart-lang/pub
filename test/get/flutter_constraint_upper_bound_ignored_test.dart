@@ -9,28 +9,31 @@ import '../descriptor.dart' as d;
 import '../test_pub.dart';
 
 void main() {
-  test('pub get succeeds despite of "invalid" flutter upper bound', () async {
-    final fakeFlutterRoot = d.dir('fake_flutter_root', [
-      d.flutterVersion('1.23.0'),
-    ]);
-    await fakeFlutterRoot.create();
+  test(
+    'pub get succeeds despite of "invalid" flutter upper bound in dependency',
+    () async {
+      final fakeFlutterRoot = d.dir('fake_flutter_root', [
+        d.flutterVersion('1.23.0'),
+      ]);
+      await fakeFlutterRoot.create();
 
-    final server = await servePackages();
-    server.serve(
-      'foo',
-      '1.0.0',
-      pubspec: {
-        'environment': {'sdk': '^$testVersion', 'flutter': '>=0.5.0 <1.0.0'},
-      },
-    );
+      final server = await servePackages();
+      server.serve(
+        'foo',
+        '1.0.0',
+        pubspec: {
+          'environment': {'sdk': '^$testVersion', 'flutter': '>=0.5.0 <1.0.0'},
+        },
+      );
 
-    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+      await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
-    await pubGet(
-      exitCode: exit_codes.SUCCESS,
-      environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path},
-    );
-  });
+      await pubGet(
+        exitCode: exit_codes.SUCCESS,
+        environment: {'FLUTTER_ROOT': fakeFlutterRoot.io.path},
+      );
+    },
+  );
 
   test('pub get respects the bound of the root package', () async {
     final fakeFlutterRoot = d.dir('fake_flutter_root', [
@@ -58,6 +61,35 @@ void main() {
       ),
     );
   });
+
+  test(
+    'pub get ignores the bound of the root package if env-var is set',
+    () async {
+      final fakeFlutterRoot = d.dir('fake_flutter_root', [
+        d.flutterVersion('1.23.0'),
+      ]);
+      await fakeFlutterRoot.create();
+
+      await d
+          .appDir(
+            pubspec: {
+              'environment': {
+                'sdk': '^$testVersion',
+                'flutter': '>=0.5.0 <1.0.0',
+              },
+            },
+          )
+          .create();
+
+      await pubGet(
+        exitCode: 0,
+        environment: {
+          'FLUTTER_ROOT': fakeFlutterRoot.io.path,
+          'PUB_IGNORE_FLUTTER_UPPER_BOUND': 'true',
+        },
+      );
+    },
+  );
 
   test('pub get respects the bound of a workspace root package', () async {
     final fakeFlutterRoot = d.dir('fake_flutter_root', [

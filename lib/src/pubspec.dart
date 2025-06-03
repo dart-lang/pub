@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:collection/collection.dart' hide mapMap;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
@@ -829,7 +831,10 @@ class SdkConstraint {
     VersionConstraint constraint, {
     required bool isRoot,
   }) {
-    if (!isRoot && constraint is VersionRange) {
+    if ((!isRoot ||
+            (Platform.environment['PUB_IGNORE_FLUTTER_UPPER_BOUND'] ?? '')
+                .isNotEmpty) &&
+        constraint is VersionRange) {
       return SdkConstraint(
         VersionRange(min: constraint.min, includeMin: constraint.includeMin),
         originalConstraint: constraint,
