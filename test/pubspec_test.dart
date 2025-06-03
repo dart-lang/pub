@@ -812,8 +812,7 @@ environment:
           containsPair(
             'flutter',
             SdkConstraint(
-              VersionConstraint.parse('>=0.1.2'),
-              originalConstraint: VersionConstraint.parse('^0.1.2'),
+              VersionConstraint.parse('^0.1.2'),
             ),
           ),
         );

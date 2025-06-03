@@ -253,7 +253,10 @@ environment:
         );
         constraints[name] =
             name == 'flutter'
-                ? SdkConstraint.interpretFlutterSdkConstraint(constraint)
+                ? SdkConstraint.interpretFlutterSdkConstraint(
+                  constraint,
+                  isRoot: _containingDescription is ResolvedRootDescription,
+                )
                 : SdkConstraint(constraint);
       });
     }
@@ -818,11 +821,15 @@ class SdkConstraint {
 
   // Flutter constraints get special treatment, as Flutter won't be using
   // semantic versioning to mark breaking releases. We simply ignore upper
-  // bounds.
+  // bounds for dependencies.
+  //
+  // For root packages we use the upper bound, allowing app developers to
+  // constrain the Flutter version.
   factory SdkConstraint.interpretFlutterSdkConstraint(
-    VersionConstraint constraint,
-  ) {
-    if (constraint is VersionRange) {
+    VersionConstraint constraint, {
+    required bool isRoot,
+  }) {
+    if (!isRoot && constraint is VersionRange) {
       return SdkConstraint(
         VersionRange(min: constraint.min, includeMin: constraint.includeMin),
         originalConstraint: constraint,
