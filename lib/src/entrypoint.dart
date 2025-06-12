@@ -282,7 +282,7 @@ See $workspacesDocUrl for more information.''',
     // an up-to-date package-config.
     await ensureUpToDate(workspaceRoot.dir, cache: cache);
     final packages = {
-      for (var packageEntry in packageConfig.nonInjectedPackages)
+      for (var packageEntry in packageConfig.packages)
         packageEntry.name: Package.load(
           packageEntry.resolvedRootDir(packageConfigPath),
           expectedName: packageEntry.name,
@@ -952,7 +952,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
       final packagePathsMapping = <String, String>{};
 
-      final packagesToCheck = packageConfig.nonInjectedPackages;
+      final packagesToCheck = packageConfig.packages;
       for (final pkg in packagesToCheck) {
         // Pub always makes a packageUri of lib/
         if (pkg.packageUri == null || pkg.packageUri.toString() != 'lib/') {
@@ -982,7 +982,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
 
       // Check if language version specified in the `package_config.json` is
       // correct. This is important for path dependencies as these can mutate.
-      for (final pkg in packageConfig.nonInjectedPackages) {
+      for (final pkg in packageConfig.packages) {
         if (pkg.name == root.name) continue;
         final id = lockFile.packages[pkg.name];
         if (id == null) {

@@ -144,21 +144,7 @@ class PackageConfig {
     'generator': generator,
     'generatorVersion': generatorVersion?.toString(),
   }..addAll(additionalProperties);
-
-  // We allow the package called 'flutter_gen' to be injected into
-  // package_config.
-  //
-  // This is somewhat a hack. But it allows flutter to generate code in a
-  // package as it likes.
-  //
-  // See https://github.com/flutter/flutter/issues/73870 .
-  Iterable<PackageConfigEntry> get nonInjectedPackages =>
-      packages.where((package) => !_isInjectedFlutterGenPackage(package));
 }
-
-bool _isInjectedFlutterGenPackage(PackageConfigEntry package) =>
-    package.name == 'flutter_gen' &&
-    package.rootUri.toString() == 'flutter_gen';
 
 class PackageConfigEntry {
   /// Package name.
