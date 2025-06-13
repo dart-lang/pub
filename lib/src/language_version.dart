@@ -70,6 +70,9 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   bool get forbidsUnknownDescriptionKeys =>
       this >= firstVersionForbidingUnknownDescriptionKeys;
 
+  bool get respectsFlutterBoundInRoots =>
+      this >= firstVersionRespectingFlutterBoundInRoots;
+
   /// Minimum language version at which short hosted syntax is supported.
   ///
   /// This allows `hosted` dependencies to be expressed as:
@@ -111,6 +114,10 @@ class LanguageVersion implements Comparable<LanguageVersion> {
   static const firstVersionForbidingUnknownDescriptionKeys = LanguageVersion(
     3,
     7,
+  );
+  static const firstVersionRespectingFlutterBoundInRoots = LanguageVersion(
+    3,
+    9,
   );
 
   /// Transform language version to string that can be parsed with

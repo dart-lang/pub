@@ -793,7 +793,7 @@ dependencies:
         final pubspec = Pubspec.parse(
           '''
 environment:
-  sdk: ">=1.2.3 <2.3.4"
+  sdk: ">=3.10.3 <3.11.4"
   flutter: ^0.1.2
   fuchsia: ^5.6.7
 ''',
@@ -804,17 +804,14 @@ environment:
           pubspec.sdkConstraints,
           containsPair(
             'dart',
-            SdkConstraint(VersionConstraint.parse('>=1.2.3 <2.3.4')),
+            SdkConstraint(VersionConstraint.parse('>=3.10.3 <3.11.4')),
           ),
         );
         expect(
           pubspec.sdkConstraints,
           containsPair(
             'flutter',
-            SdkConstraint(
-              VersionConstraint.parse('>=0.1.2'),
-              originalConstraint: VersionConstraint.parse('^0.1.2'),
-            ),
+            SdkConstraint(VersionConstraint.parse('^0.1.2')),
           ),
         );
         expect(
