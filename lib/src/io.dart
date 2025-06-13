@@ -577,7 +577,9 @@ void copyFile(String from, String to) {
 
 void renameFile(String from, String to) {
   log.io('Renaming "$from" to "$to".');
-  File(from).renameSync(to);
+  _attempt('Renaming `$from` to `$to`', () {
+    File(from).renameSync(to);
+  });
 }
 
 bool _isDirectoryNotEmptyException(FileSystemException e) {
