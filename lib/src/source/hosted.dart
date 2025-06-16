@@ -13,6 +13,7 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
+import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -1348,32 +1349,40 @@ class HostedSource extends CachedSource {
 
         packages.sort(Package.orderByNameAndVersion);
 
+        final pool = Pool(10);
         return results..addAll(
           await Future.wait(
             packages.map((package) async {
-              final id = PackageId(
-                package.name,
-                package.version,
-                ResolvedHostedDescription(
-                  HostedDescription._(package.name, url),
-                  sha256: null,
-                ),
-              );
-              try {
-                deleteEntry(package.dir);
-                await _download(id, package.dir, cache);
-                return RepairResult(id.name, id.version, this, success: true);
-              } catch (error, stackTrace) {
-                var message =
-                    'Failed to repair ${log.bold(package.name)} '
-                    '${package.version}';
-                if (url != defaultUrl) message += ' from $url';
-                log.error('$message. Error:\n$error');
-                log.fine(stackTrace.toString());
+              return await pool.withResource(() async {
+                final id = PackageId(
+                  package.name,
+                  package.version,
+                  ResolvedHostedDescription(
+                    HostedDescription._(package.name, url),
+                    sha256: null,
+                  ),
+                );
+                try {
+                  deleteEntry(package.dir);
+                  await _download(id, package.dir, cache);
+                  return RepairResult(id.name, id.version, this, success: true);
+                } catch (error, stackTrace) {
+                  var message =
+                      'Failed to repair ${log.bold(package.name)} '
+                      '${package.version}';
+                  if (url != defaultUrl) message += ' from $url';
+                  log.error('$message. Error:\n$error');
+                  log.fine(stackTrace.toString());
 
-                tryDeleteEntry(package.dir);
-                return RepairResult(id.name, id.version, this, success: false);
-              }
+                  tryDeleteEntry(package.dir);
+                  return RepairResult(
+                    id.name,
+                    id.version,
+                    this,
+                    success: false,
+                  );
+                }
+              });
             }),
           ),
         );
