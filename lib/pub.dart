@@ -22,8 +22,10 @@ export 'src/executable.dart'
 ///
 /// [isVerbose] should return `true` (after argument resolution) if the
 /// embedding top-level is in verbose mode.
-Command<int> pubCommand({required bool Function() isVerbose}) =>
-    PubEmbeddableCommand(isVerbose);
+Command<int> pubCommand({
+  required bool Function() isVerbose,
+  String category = '',
+}) => PubEmbeddableCommand(isVerbose, category);
 
 /// Makes sure that [dir]/pubspec.yaml is resolved such that pubspec.lock and
 /// .dart_tool/package_config.json are up-to-date and all packages are
