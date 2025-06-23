@@ -24,30 +24,28 @@ class LoginCommand extends PubCommand {
   @override
   Future<void> runProtected() async {
     final credentials = oauth2.loadCredentials();
+    final userInfo = await _retrieveUserInfo();
+
     if (credentials == null) {
-      final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning(
-          'Could not retrieve your user-details.\n'
-          'You might have to run `$topLevelProgram pub logout` '
-          'to delete your credentials and try again.',
+          'Could not retrieve your user details.\n'
+          'Run `$topLevelProgram pub logout` to delete credentials and try '
+          'again.',
         );
       } else {
         log.message('You are now logged in as $userInfo');
       }
     } else {
-      final userInfo = await _retrieveUserInfo();
       if (userInfo == null) {
         log.warning(
-          'Your credentials seems broken.\n'
-          'Run `$topLevelProgram pub logout` '
-          'to delete your credentials and try again.',
+          'Your credentials seem to be broken.\n'
+          'Run `$topLevelProgram pub logout` to delete credentials and try '
+          'again.',
         );
+      } else {
+        log.message('You are already logged in as $userInfo');
       }
-      log.warning(
-        'You are already logged in as $userInfo\n'
-        'Run `$topLevelProgram pub logout` to log out and try again.',
-      );
     }
   }
 
@@ -55,26 +53,33 @@ class LoginCommand extends PubCommand {
     return await oauth2.withClient((client) async {
       final discovery = await oauth2.fetchOidcDiscoveryDocument();
       final userInfoEndpoint = discovery['userinfo_endpoint'];
+
       if (userInfoEndpoint is! String) {
-        log.fine('Bad discovery document. userinfo_endpoint not a String');
+        log.fine(
+          'Invalid discovery document: userinfo_endpoint is not a String',
+        );
         return null;
       }
-      final userInfoRequest = await client.get(Uri.parse(userInfoEndpoint));
-      if (userInfoRequest.statusCode != 200) return null;
+
+      final response = await client.get(Uri.parse(userInfoEndpoint));
+      if (response.statusCode != 200) {
+        log.fine('Failed to fetch user info: HTTP ${response.statusCode}');
+        return null;
+      }
+
       try {
-        switch (json.decode(userInfoRequest.body)) {
-          case {'name': final String? name, 'email': final String email}:
-            return _UserInfo(name, email);
-          default:
-            log.fine(
-              'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
-            );
-            return null;
+        final decoded = json.decode(response.body);
+        if (decoded case {
+          'name': final String? name,
+          'email': final String email,
+        }) {
+          return _UserInfo(name, email);
+        } else {
+          log.fine('Unexpected user info format: ${response.body}');
+          return null;
         }
       } on FormatException catch (e) {
-        log.fine(
-          'Bad response from $userInfoEndpoint ($e): ${userInfoRequest.body}',
-        );
+        log.fine('Failed to decode user info: $e\nResponse: ${response.body}');
         return null;
       }
     });
