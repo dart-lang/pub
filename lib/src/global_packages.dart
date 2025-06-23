@@ -174,6 +174,23 @@ class GlobalPackages {
     );
   }
 
+  void _testForHooks(Package package, String activatedPackageName) {
+    final prelude =
+        (package.name == activatedPackageName)
+            ? 'Package $activatedPackageName uses hooks.'
+            : 'The dependency of $activatedPackageName, '
+                '${package.name} uses hooks.';
+    if (fileExists(p.join(package.dir, 'hooks', 'build.dart'))) {
+      fail('''
+$prelude
+
+You currently cannot `global activate` packages relying on hooks.
+
+Follow progress in https://github.com/dart-lang/sdk/issues/60889.
+''');
+    }
+  }
+
   /// Makes the local package at [path] globally active.
   ///
   /// [executables] is the names of the executables that should have binstubs.
@@ -192,14 +209,12 @@ class GlobalPackages {
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.get);
-    for (final package in (await entrypoint.packageGraph)
-        .transitiveDependencies(entrypoint.workPackage.name)) {
-      if (fileExists(p.join(package.dir, 'hooks', 'build.dart'))) {
-        fail('Cannot `global activate` packages with hooks.');
-      }
-    }
     final activatedPackage = entrypoint.workPackage;
     final name = activatedPackage.name;
+    for (final package in (await entrypoint.packageGraph)
+        .transitiveDependencies(name, followDevDependenciesFromRoot: false)) {
+      _testForHooks(package, name);
+    }
     _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
@@ -274,14 +289,17 @@ class GlobalPackages {
 
     // Because we know that the dummy package never is a workspace we can
     // iterate all packages.
-    // TODO(sigurdm): refactor PackageGraph to make it possible to query without
-    // loading entrypoint.
     for (final package in result.packages) {
-      if (fileExists(
-        p.join(cache.getDirectory(package), 'hooks', 'build.dart'),
-      )) {
-        fail('Cannot `global activate` packages with hooks.');
-      }
+      _testForHooks(
+        // TODO(sigurdm): refactor PackageGraph to make it possible to query
+        // without loading the entrypoint.
+        Package(
+          result.pubspecs[package.name]!,
+          cache.getDirectory(package),
+          [],
+        ),
+        name,
+      );
     }
 
     final sameVersions =

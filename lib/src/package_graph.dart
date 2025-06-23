@@ -49,7 +49,10 @@ class PackageGraph {
   /// For the entrypoint this returns all packages in [packages], which includes
   /// dev and override. For any other package, it ignores dev and override
   /// dependencies.
-  Set<Package> transitiveDependencies(String package) {
+  Set<Package> transitiveDependencies(
+    String package, {
+    required bool followDevDependenciesFromRoot,
+  }) {
     final result = <Package>{};
 
     final stack = [package];
@@ -60,7 +63,7 @@ class PackageGraph {
       final currentPackage = packages[current]!;
       result.add(currentPackage);
       stack.addAll(currentPackage.dependencies.keys);
-      if (current == package) {
+      if (followDevDependenciesFromRoot && current == package) {
         stack.addAll(currentPackage.devDependencies.keys);
       }
     }
@@ -86,6 +89,7 @@ class PackageGraph {
 
     return transitiveDependencies(
       package,
+      followDevDependenciesFromRoot: true,
     ).any((dep) => !_isPackageFromImmutableSource(dep.name));
   }
 }

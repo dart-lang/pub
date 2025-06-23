@@ -417,7 +417,12 @@ class DepsCommand extends PubCommand {
       ],
     ];
     return nonDevDependencies
-        .expand(graph.transitiveDependencies)
+        .expand(
+          (p) => graph.transitiveDependencies(
+            p,
+            followDevDependenciesFromRoot: false,
+          ),
+        )
         .map((package) => package.name)
         .toSet();
   }

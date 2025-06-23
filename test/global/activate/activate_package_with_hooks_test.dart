@@ -27,7 +27,11 @@ void main() {
           'foo',
           '1.2.3',
           extras: {
-            'workspace': ['pkgs/foo_hooks', 'pkgs/foo_no_hooks'],
+            'workspace': [
+              'pkgs/foo_hooks',
+              'pkgs/foo_dev_hooks',
+              'pkgs/foo_no_hooks',
+            ],
           },
           sdk: '^3.5.0',
         ),
@@ -35,6 +39,14 @@ void main() {
           dir('foo_hooks', [
             libPubspec(
               'foo_hooks',
+              '1.1.1',
+              deps: {'hooks': '^1.0.0'},
+              resolutionWorkspace: true,
+            ),
+          ]),
+          dir('foo_dev_hooks', [
+            libPubspec(
+              'foo_dev_hooks',
               '1.1.1',
               devDeps: {'hooks': '^1.0.0'},
               resolutionWorkspace: true,
@@ -54,8 +66,18 @@ void main() {
       await runPub(
         args: ['global', 'activate', '-spath', p.join('pkgs', 'foo_hooks')],
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-        error: 'Cannot `global activate` packages with hooks.',
+        error: '''
+The dependency of foo_hooks, hooks uses hooks.
+
+You currently cannot `global activate` packages relying on hooks.
+
+Follow progress in https://github.com/dart-lang/sdk/issues/60889.''',
         exitCode: 1,
+      );
+
+      await runPub(
+        args: ['global', 'activate', '-spath', p.join('pkgs', 'foo_dev_hooks')],
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       );
 
       await runPub(
@@ -87,14 +109,24 @@ void main() {
     await runPub(
       args: ['global', 'activate', 'hooks'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: 'Cannot `global activate` packages with hooks.',
+      error: '''
+Package hooks uses hooks.
+
+You currently cannot `global activate` packages relying on hooks.
+
+Follow progress in https://github.com/dart-lang/sdk/issues/60889.''',
       exitCode: 1,
     );
 
     await runPub(
       args: ['global', 'activate', 'foo_hooks'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: 'Cannot `global activate` packages with hooks.',
+      error: '''
+The dependency of foo_hooks, hooks uses hooks.
+
+You currently cannot `global activate` packages relying on hooks.
+
+Follow progress in https://github.com/dart-lang/sdk/issues/60889.''',
       exitCode: 1,
     );
 
