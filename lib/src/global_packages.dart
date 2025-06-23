@@ -192,6 +192,12 @@ class GlobalPackages {
 
     // Get the package's dependencies.
     await entrypoint.acquireDependencies(SolveType.get);
+    for (final package in (await entrypoint.packageGraph)
+        .transitiveDependencies(entrypoint.workPackage.name)) {
+      if (fileExists(p.join(package.dir, 'hooks', 'build.dart'))) {
+        fail('Cannot `global activate` packages with hooks.');
+      }
+    }
     final activatedPackage = entrypoint.workPackage;
     final name = activatedPackage.name;
     _describeActive(name, cache);
@@ -260,10 +266,24 @@ class GlobalPackages {
       }
       rethrow;
     }
+
     // We want the entrypoint to be rooted at 'dep' not the dummy-package.
     result.packages.removeWhere((id) => id.name == 'pub global activate');
 
     final lockFile = await result.downloadCachedPackages(cache);
+
+    // Because we know that the dummy package never is a workspace we can
+    // iterate all packages.
+    // TODO(sigurdm): refactor PackageGraph to make it possible to query without
+    // loading entrypoint.
+    for (final package in result.packages) {
+      if (fileExists(
+        p.join(cache.getDirectory(package), 'hooks', 'build.dart'),
+      )) {
+        fail('Cannot `global activate` packages with hooks.');
+      }
+    }
+
     final sameVersions =
         originalLockFile != null && originalLockFile.samePackageIds(lockFile);
 
