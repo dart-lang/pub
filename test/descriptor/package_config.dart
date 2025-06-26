@@ -18,6 +18,7 @@ class PackageConfigFileDescriptor extends Descriptor {
   final String _pubCache;
   final String? _flutterRoot;
   final String? _flutterVersion;
+  final List<String> experiments;
 
   /// A map describing the packages in this `package_config.json` file.
   final List<PackageConfigEntry> _packages;
@@ -28,6 +29,7 @@ class PackageConfigFileDescriptor extends Descriptor {
       packages: _packages,
       generatorVersion: Version.parse(_generatorVersion),
       generator: 'pub',
+      experiments: experiments,
       additionalProperties: {
         'pubCache': p.toUri(_pubCache).toString(),
         if (_flutterRoot != null)
@@ -45,8 +47,9 @@ class PackageConfigFileDescriptor extends Descriptor {
     this._generatorVersion,
     this._pubCache,
     this._flutterRoot,
-    this._flutterVersion,
-  ) : super('.dart_tool/package_config.json');
+    this._flutterVersion, {
+    this.experiments = const [],
+  }) : super('.dart_tool/package_config.json');
 
   @override
   Future<void> create([String? parent]) async {

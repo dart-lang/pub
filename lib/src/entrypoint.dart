@@ -423,7 +423,9 @@ See $workspacesDocUrl for more information.''',
   /// package dir.
   ///
   /// Also marks the package active in `PUB_CACHE/active_roots/`.
-  Future<void> writePackageConfigFiles() async {
+  Future<void> writePackageConfigFiles({
+    required List<String> experiments,
+  }) async {
     ensureDir(p.dirname(packageConfigPath));
 
     writeTextFileIfDifferent(
@@ -435,6 +437,7 @@ See $workspacesDocUrl for more information.''',
                 .pubspec
                 .sdkConstraints[sdk.identifier]
                 ?.effectiveConstraint,
+        experiments: experiments,
       ),
       dependencies: [lockFilePath],
     );
@@ -498,6 +501,7 @@ See $workspacesDocUrl for more information.''',
   Future<String> _packageConfigFile(
     SystemCache cache, {
     VersionConstraint? entrypointSdkConstraint,
+    required List<String> experiments,
   }) async {
     final entries = <PackageConfigEntry>[];
     if (lockFile.packages.isNotEmpty) {
@@ -542,6 +546,7 @@ See $workspacesDocUrl for more information.''',
       packages: entries,
       generator: 'pub',
       generatorVersion: sdk.version,
+      experiments: experiments,
       additionalProperties: {
         if (FlutterSdk().isAvailable) ...{
           'flutterRoot':
@@ -653,6 +658,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
       lockFile,
       newLockFile,
       result.availableVersions,
+      result.experiments,
       cache,
       dryRun: dryRun,
       enforceLockfile: enforceLockfile,
@@ -686,7 +692,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       /// have to reload and reparse all the pubspecs.
       _packageGraph = Future.value(packageGraph);
 
-      await writePackageConfigFiles();
+      await writePackageConfigFiles(experiments: result.experiments);
 
       try {
         if (precompile) {

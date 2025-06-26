@@ -11,6 +11,7 @@ import '../log.dart' as log;
 import '../package_name.dart';
 import '../path.dart';
 import '../pubspec.dart';
+import '../sdk.dart';
 import '../source/hosted.dart';
 import '../source/root.dart';
 import '../system_cache.dart';
@@ -61,6 +62,8 @@ class SolveReport {
   static const maxAdvisoryFootnotesPerLine = 5;
   final advisoryDisplayHandles = <String>[];
 
+  final List<String> experiments;
+
   SolveReport(
     this._type,
     this._location,
@@ -69,6 +72,7 @@ class SolveReport {
     this._previousLockFile,
     this._newLockFile,
     this._availableVersions,
+    this.experiments,
     this._cache, {
     required bool dryRun,
     required bool enforceLockfile,
@@ -87,6 +91,7 @@ class SolveReport {
     final changes = await _reportChanges();
     _checkContentHashesMatchOldLockfile();
     if (summary) await summarize(changes);
+    reportExperiments();
   }
 
   void _checkContentHashesMatchOldLockfile() {
@@ -333,6 +338,19 @@ $contentHashesDocumentationUrl
       ) {
         message('  [^$footnote]: ${advisoryDisplayHandles[footnote]}');
       }
+    }
+  }
+
+  void reportExperiments() {
+    if (experiments.isNotEmpty) {
+      message('The following experiments have been enabled:');
+
+      for (final experimentName in experiments) {
+        final experiment = availableExperiments[experimentName]!;
+        message('* ${experiment.name} (see ${experiment.docUrl})');
+      }
+
+      message('See (https://dart.dev/go/experiments for more information).');
     }
   }
 

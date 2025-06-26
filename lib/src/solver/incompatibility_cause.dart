@@ -68,6 +68,52 @@ class NoVersionsIncompatibilityCause extends IncompatibilityCause {
   const NoVersionsIncompatibilityCause._();
 }
 
+/// The incompatibility indicates that the uses an experiment not allowed by the
+/// roots.
+class ExperimentIncompatibilityCause extends IncompatibilityCause {
+  final String experiment;
+  final Iterable<String> allowedExperiments;
+
+  ExperimentIncompatibilityCause(this.experiment, this.allowedExperiments);
+
+  @override
+  String? get hint {
+    if (!availableExperiments.containsKey(experiment)) {
+      final availableExperimentsDescription =
+          availableExperiments.isEmpty
+              ? '''There are no available experiments.'''
+              : '''
+Available experiments are:
+${availableExperiments.values.map((experiment) => '* ${experiment.name}: ${experiment.description}, ${experiment.docUrl}').join('\n')}''';
+      return '''
+$experiment is not a known experiment.
+
+$availableExperimentsDescription
+
+Read more about experiments at https://dart.dev/go/experiments.''';
+    } else {
+      final enabledExperimentsDescription =
+          allowedExperiments.isEmpty
+              ? 'Currently no experiments are enabled.'
+              : 'Currently the following experiments are enabled: '
+                  '${allowedExperiments.join(', ')}';
+      return '''
+The experiment `$experiment` has not been enabled.
+
+$enabledExperimentsDescription
+
+To enable it add to your pubspec.yaml:
+
+```
+experiments:
+  - $experiment
+```
+
+Read more about experiments at https://dart.dev/go/experiments.''';
+    }
+  }
+}
+
 /// The incompatibility indicates that the package has an unknown source.
 class UnknownSourceIncompatibilityCause extends IncompatibilityCause {
   factory UnknownSourceIncompatibilityCause() =>

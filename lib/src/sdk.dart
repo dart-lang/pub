@@ -3,12 +3,18 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:collection';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
 
+import 'experiment.dart';
+import 'io.dart';
+import 'log.dart';
 import 'sdk/dart.dart';
 import 'sdk/flutter.dart';
 import 'sdk/fuchsia.dart';
+import 'utils.dart';
 
 /// An SDK that can provide packages and on which pubspecs can express version
 /// constraints.
@@ -47,6 +53,41 @@ abstract class Sdk {
   /// package with the given name.
   String? packagePath(String name);
 
+  String get experimentsPath;
+
+  late final Map<String, Experiment> experiments = _loadExperiments();
+
+  Map<String, Experiment> _loadExperiments() {
+    if (!isAvailable) return {};
+    final Object? json;
+    try {
+      json = jsonDecode(readTextFile(experimentsPath));
+    } on IOException catch (e) {
+      fine('Could not load $experimentsPath $e');
+      // Most likely the file doesn't exist, return empty map.
+      return {};
+    } on FormatException catch (e) {
+      fail('Failed to parse $experimentsPath. $e');
+    }
+    final result = <String, Experiment>{};
+    if (json case {'experiments': final List<Object?> experiments}) {
+      for (final experiment in experiments) {
+        if (experiment case {
+          'name': final String name,
+          'description': final String description,
+          'docUrl': final String url,
+        }) {
+          result[name] = Experiment(name, description, url);
+        } else {
+          fail('Malformed experiments file $experimentsPath');
+        }
+      }
+    } else {
+      fail('Malformed experiments file $experimentsPath');
+    }
+    return result;
+  }
+
   @override
   String toString() => name;
 }
@@ -58,6 +99,12 @@ final sdks = UnmodifiableMapView<String, Sdk>({
   'flutter': FlutterSdk(),
   'fuchsia': FuchsiaSdk(),
 });
+
+/// The experiments available
+final Map<String, Experiment> availableExperiments = {
+  for (final sdk in sdks.values.where((sdk) => sdk.isAvailable))
+    ...sdk.experiments,
+};
 
 /// The core Dart SDK.
 final sdk = DartSdk();
