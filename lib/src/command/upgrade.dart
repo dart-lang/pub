@@ -121,8 +121,12 @@ class UpgradeCommand extends PubCommand {
       final graph = await entrypoint.packageGraph;
       return argResults.rest
           .expand(
-            (package) =>
-                graph.transitiveDependencies(package).map((p) => p.name),
+            (package) => graph
+                .transitiveDependencies(
+                  package,
+                  followDevDependenciesFromRoot: true,
+                )
+                .map((p) => p.name),
           )
           .toSet()
           .toList();
