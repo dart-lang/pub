@@ -14,13 +14,13 @@ void main() {
     () async {
       final server = await servePackages();
       server.serve(
-        'hooks',
+        'uses_hooks',
         '1.0.0',
         contents: [
           dir('hooks', [file('build.dart')]),
         ],
       );
-      server.serve('no_hooks', '1.0.0');
+      server.serve('uses_no_hooks', '1.0.0');
 
       await dir(appPath, [
         libPubspec(
@@ -40,7 +40,7 @@ void main() {
             libPubspec(
               'foo_hooks',
               '1.1.1',
-              deps: {'hooks': '^1.0.0'},
+              deps: {'uses_hooks': '^1.0.0'},
               resolutionWorkspace: true,
             ),
           ]),
@@ -48,7 +48,7 @@ void main() {
             libPubspec(
               'foo_dev_hooks',
               '1.1.1',
-              devDeps: {'hooks': '^1.0.0'},
+              devDeps: {'uses_hooks': '^1.0.0'},
               resolutionWorkspace: true,
             ),
           ]),
@@ -56,7 +56,7 @@ void main() {
             libPubspec(
               'foo_no_hooks',
               '1.1.1',
-              deps: {'no_hooks': '^1.0.0'},
+              deps: {'uses_no_hooks': '^1.0.0'},
               resolutionWorkspace: true,
             ),
           ]),
@@ -67,7 +67,7 @@ void main() {
         args: ['global', 'activate', '-spath', p.join('pkgs', 'foo_hooks')],
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         error: '''
-The dependency of foo_hooks, hooks uses hooks.
+The dependency of foo_hooks, uses_hooks uses hooks.
 
 You currently cannot `global activate` packages relying on hooks.
 
@@ -87,30 +87,30 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.''',
     },
   );
 
-  test('activating a hosted package gives error if package uses hooks in any'
+  test('activating a hosted package gives error if package uses hooks in direct'
       ' dependency', () async {
     final server = await servePackages();
     server.serve(
-      'hooks',
+      'uses_hooks',
       '1.0.0',
       contents: [
         dir('hooks', [file('build.dart')]),
       ],
     );
-    server.serve('foo_hooks', '1.1.1', deps: {'hooks': '^1.0.0'});
+    server.serve('foo_hooks', '1.1.1', deps: {'uses_hooks': '^1.0.0'});
     server.serve(
       'foo_hooks_in_dev_deps',
       '1.0.0',
       pubspec: {
-        'dev_dependencies': {'hooks': '^1.0.0'},
+        'dev_dependencies': {'uses_hooks': '^1.0.0'},
       },
     );
 
     await runPub(
-      args: ['global', 'activate', 'hooks'],
+      args: ['global', 'activate', 'uses_hooks'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: '''
-Package hooks uses hooks.
+Package uses_hooks uses hooks.
 
 You currently cannot `global activate` packages relying on hooks.
 
@@ -122,7 +122,7 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.''',
       args: ['global', 'activate', 'foo_hooks'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: '''
-The dependency of foo_hooks, hooks uses hooks.
+The dependency of foo_hooks, uses_hooks uses hooks.
 
 You currently cannot `global activate` packages relying on hooks.
 
