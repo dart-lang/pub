@@ -62,21 +62,27 @@ void main() {
 
     expect(
       graph
-          .transitiveDependencies('foo', followDevDependenciesFromRoots: true)
+          .transitiveDependencies('foo', followDevDependenciesFromPackage: true)
           .map((p) => p.name),
       {'foo', 'transitive'},
     );
 
     expect(
       graph
-          .transitiveDependencies('foo', followDevDependenciesFromRoots: false)
+          .transitiveDependencies(
+            'foo',
+            followDevDependenciesFromPackage: false,
+          )
           .map((p) => p.name),
       {'foo', 'transitive'},
     );
 
     expect(
       graph
-          .transitiveDependencies('myapp', followDevDependenciesFromRoots: true)
+          .transitiveDependencies(
+            'myapp',
+            followDevDependenciesFromPackage: true,
+          )
           .map((p) => p.name),
       {'myapp', 'foo', 'dev_dep', 'dev_dep_transitive', 'transitive'},
     );
@@ -85,7 +91,7 @@ void main() {
       graph
           .transitiveDependencies(
             'myapp',
-            followDevDependenciesFromRoots: false,
+            followDevDependenciesFromPackage: false,
           )
           .map((p) => p.name),
       {'myapp', 'foo', 'transitive'},

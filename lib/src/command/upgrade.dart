@@ -124,7 +124,7 @@ class UpgradeCommand extends PubCommand {
             (package) => graph
                 .transitiveDependencies(
                   package,
-                  followDevDependenciesFromRoots: true,
+                  followDevDependenciesFromPackage: true,
                 )
                 .map((p) => p.name),
           )

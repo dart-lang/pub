@@ -420,7 +420,7 @@ class DepsCommand extends PubCommand {
         .expand(
           (p) => graph.transitiveDependencies(
             p,
-            followDevDependenciesFromRoots: false,
+            followDevDependenciesFromPackage: false,
           ),
         )
         .map((package) => package.name)

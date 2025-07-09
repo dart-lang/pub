@@ -212,7 +212,10 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
     final activatedPackage = entrypoint.workPackage;
     final name = activatedPackage.name;
     for (final package in (await entrypoint.packageGraph)
-        .transitiveDependencies(name, followDevDependenciesFromRoots: false)) {
+        .transitiveDependencies(
+          name,
+          followDevDependenciesFromPackage: false,
+        )) {
       _testForHooks(package, name);
     }
     _describeActive(name, cache);
