@@ -41,19 +41,33 @@ void main() {
     );
     server.serve('dev_dep_transitive', '1.0.0');
     server.serve('transitive', '1.0.0');
-    await d
-        .appDir(
-          dependencies: {
-            'foo': {'hosted': globalServer.url},
+    server.serve('a_dev_dep', '1.0.0');
+    await d.dir(appPath, [
+      d.appPubspec(
+        dependencies: {
+          'a': null,
+          'foo': {'hosted': globalServer.url},
+        },
+        extras: {
+          'environment': {'sdk': '^3.5.0'},
+          'workspace': ['a'],
+          'dev_dependencies': {
+            'dev_dep': {'hosted': globalServer.url},
           },
-          pubspec: {
-            'dev_dependencies': {
-              'dev_dep': {'hosted': globalServer.url},
-            },
+        },
+      ),
+      d.dir('a', [
+        d.libPubspec(
+          'a',
+          '1.0.0',
+          resolutionWorkspace: true,
+          devDeps: {
+            'a_dev_dep': {'hosted': globalServer.url},
           },
-        )
-        .create();
-    await pubGet();
+        ),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
     final entrypoint = Entrypoint(
       p.join(d.sandbox, appPath),
       SystemCache(rootDir: p.join(d.sandbox, cachePath)),
@@ -84,7 +98,7 @@ void main() {
             followDevDependenciesFromPackage: true,
           )
           .map((p) => p.name),
-      {'myapp', 'foo', 'dev_dep', 'dev_dep_transitive', 'transitive'},
+      {'myapp', 'foo', 'dev_dep', 'dev_dep_transitive', 'transitive', 'a'},
     );
 
     expect(
@@ -94,7 +108,7 @@ void main() {
             followDevDependenciesFromPackage: false,
           )
           .map((p) => p.name),
-      {'myapp', 'foo', 'transitive'},
+      {'myapp', 'foo', 'transitive', 'a'},
     );
   });
 }
