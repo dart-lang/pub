@@ -46,12 +46,11 @@ class PackageGraph {
 
   /// Returns all transitive dependencies of [package].
   ///
-  /// For the entrypoint this returns all packages in [packages], which includes
-  /// dev and override. For any other package, it ignores dev and override
-  /// dependencies.
+  /// If [package] is a root, this will explore the dev_dependencies of
+  /// [package] if [followDevDependenciesFromPackage] is true.
   Set<Package> transitiveDependencies(
     String package, {
-    required bool followDevDependenciesFromRoot,
+    required bool followDevDependenciesFromPackage,
   }) {
     final result = <Package>{};
 
@@ -63,7 +62,11 @@ class PackageGraph {
       final currentPackage = packages[current]!;
       result.add(currentPackage);
       stack.addAll(currentPackage.dependencies.keys);
-      if (followDevDependenciesFromRoot && current == package) {
+      if (followDevDependenciesFromPackage &&
+          current == package &&
+          entrypoint.workspaceRoot.transitiveWorkspace.any(
+            (p) => p.name == current,
+          )) {
         stack.addAll(currentPackage.devDependencies.keys);
       }
     }
@@ -89,7 +92,9 @@ class PackageGraph {
 
     return transitiveDependencies(
       package,
-      followDevDependenciesFromRoot: true,
+      // If package is a root package it is not immutable itself, and we don't
+      // need to consider its dev_dependencies.
+      followDevDependenciesFromPackage: false,
     ).any((dep) => !_isPackageFromImmutableSource(dep.name));
   }
 }
