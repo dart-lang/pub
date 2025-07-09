@@ -92,7 +92,9 @@ class PackageGraph {
 
     return transitiveDependencies(
       package,
-      followDevDependenciesFromPackage: true,
+      // If package is a root package it is not immutable itself, and we don't
+      // need to consider its dev_dependencies.
+      followDevDependenciesFromPackage: false,
     ).any((dep) => !_isPackageFromImmutableSource(dep.name));
   }
 }
