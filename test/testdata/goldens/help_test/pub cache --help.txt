@@ -10,6 +10,7 @@ Usage: pub cache [arguments...]
 Available subcommands:
   add      Install a package.
   clean    Clears the global PUB_CACHE.
+  path     Prints the path to the global PUB_CACHE.
   repair   Reinstall cached packages.
 
 Run "pub help" to see global options.
