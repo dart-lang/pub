@@ -8,6 +8,7 @@ import 'src/entrypoint.dart';
 import 'src/exceptions.dart';
 import 'src/http.dart';
 import 'src/pub_embeddable_command.dart';
+import 'src/source/git.dart';
 import 'src/system_cache.dart';
 
 export 'src/executable.dart'
@@ -66,4 +67,27 @@ Future<void> ensurePubspecResolved(
 class ResolutionFailedException implements Exception {
   String message;
   ResolutionFailedException._(this.message);
+}
+
+/// Given a Git repo that contains a pub package, gets the name of the pub
+/// package.
+///
+/// Will download the repo to the system cache under the assumption that the
+/// package will be downloaded afterwards.
+Future<String> getPackageNameFromGitRepo(
+  String url, {
+  String? ref,
+  String? path,
+  String? tagPattern,
+  String? relativeTo,
+  bool isOffline = false,
+}) async {
+  return await GitSource.instance.getPackageNameFromRepo(
+    url,
+    ref,
+    path,
+    SystemCache(isOffline: isOffline),
+    relativeTo: relativeTo,
+    tagPattern: tagPattern,
+  );
 }
