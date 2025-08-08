@@ -75,11 +75,14 @@ class ResolutionFailedException implements Exception {
 /// Will download the repo to the system cache under the assumption that the
 /// package will be downloaded afterwards.
 ///
-/// [url] points to the git repository. If it is a relative url it is resolved as a file url relative to the path [relativeTo].
+/// [url] points to the git repository. If it is a relative url it is resolved
+/// as a file url relative to the path [relativeTo].
 ///
-/// [ref] is the commit-ish where the package should be looked up when fetching the name. If omitted 'HEAD' is used.
+/// [ref] is the commit-ish where the package should be looked up when fetching
+/// the name. If omitted 'HEAD' is used.
 ///
-/// [tagPattern] is a string containing `'{{version}}'` as a substring, the latest tag matching the pattern will be used for fetching the name.
+/// [tagPattern] is a string containing `'{{version}}'` as a substring, the
+/// latest tag matching the pattern will be used for fetching the name.
 ///
 /// Only one of [ref] and [tagPattern] can be used.
 ///
