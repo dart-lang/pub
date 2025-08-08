@@ -56,7 +56,6 @@ class GetCommand extends PubCommand {
       'example',
       defaultsTo: true,
       help: 'Also run in `example/` (if it exists).',
-      hide: true,
     );
 
     argParser.addOption(
