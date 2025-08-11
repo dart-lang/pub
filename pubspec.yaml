@@ -13,7 +13,7 @@ dependencies:
   crypto: ^3.0.6
   frontend_server_client: ^4.0.0
   graphs: ^2.3.2
-  http: ^1.4.0
+  http: ^1.5.0
   http_multi_server: ^3.2.2
   http_parser: ^4.1.2
   meta: ^1.17.0
