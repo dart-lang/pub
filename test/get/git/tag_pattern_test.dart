@@ -313,4 +313,70 @@ void main() {
       ),
     );
   });
+
+  // Regression test for https://github.com/dart-lang/pub/issues/4644.
+  test(
+    'Lockfile persists tag-pattern when `pub get`ing already locked file',
+    () async {
+      ensureGit();
+      await d.git('foo.git', [
+        d.libPubspec('foo', '1.0.0', sdk: '^3.9.0'),
+      ]).create();
+      await d.git('foo.git', []).tag('1.0.0');
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {
+                  'url': p.join(d.sandbox, 'foo.git'),
+                  'tag_pattern': '{{version}}',
+                },
+              },
+            },
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+
+      await pubGet(
+        output: allOf(contains('+ foo 1.0.0')),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+      final lockfile = loadYaml(
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+      );
+      final s = Platform.pathSeparator;
+      final foo = ((lockfile as Map)['packages'] as Map)['foo'];
+      expect(foo, {
+        'dependency': 'direct main',
+        'description': {
+          'path': '.',
+          'resolved-ref': isA<String>(),
+          'tag-pattern': '{{version}}',
+          'url': '${d.sandbox}${s}foo.git',
+        },
+        'source': 'git',
+        'version': '1.0.0',
+      });
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'});
+      final lockfile2 = loadYaml(
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+      );
+      final foo2 = ((lockfile2 as Map)['packages'] as Map)['foo'];
+
+      expect(foo2, {
+        'dependency': 'direct main',
+        'description': {
+          'path': '.',
+          'resolved-ref': isA<String>(),
+          'tag-pattern': '{{version}}',
+          'url': '${d.sandbox}${s}foo.git',
+        },
+        'source': 'git',
+        'version': '1.0.0',
+      });
+    },
+  );
 }
