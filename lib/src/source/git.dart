@@ -290,7 +290,7 @@ class GitSource extends CachedSource {
     String? ref,
     String? path,
     SystemCache cache, {
-    required String? relativeTo,
+    required String relativeTo,
     required String? tagPattern,
   }) async {
     assert(

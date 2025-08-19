@@ -12,8 +12,6 @@ Usage: pub get
                           has changed.
                           Useful for CI or deploying to production.
     --[no-]precompile     Build executables in immediate dependencies.
-    --[no-]example        Also run in `example/` (if it exists).
-                          (defaults to on)
 -C, --directory=<dir>     Run this in the directory <dir>.
 
 Run "pub help" to see global options.

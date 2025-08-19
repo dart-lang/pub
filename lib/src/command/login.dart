@@ -64,9 +64,7 @@ class LoginCommand extends PubCommand {
       try {
         switch (json.decode(userInfoRequest.body)) {
           case {'name': final String? name, 'email': final String email}:
-            return _UserInfo(name: name, email: email);
-          case {'email': final String email}:
-            return _UserInfo(name: null, email: email);
+            return _UserInfo(name, email);
           default:
             log.fine(
               'Bad response from $userInfoEndpoint: ${userInfoRequest.body}',
@@ -86,7 +84,7 @@ class LoginCommand extends PubCommand {
 class _UserInfo {
   final String? name;
   final String email;
-  _UserInfo({required this.name, required this.email});
+  _UserInfo(this.name, this.email);
   @override
   String toString() => ['<$email>', name ?? ''].join(' ');
 }

@@ -12,8 +12,6 @@ Usage: pub upgrade [dependencies...]
     --tighten              Updates lower bounds in pubspec.yaml to match the resolved version.
     --unlock-transitive    Also upgrades the transitive dependencies of the listed [dependencies]
     --major-versions       Upgrades packages to their latest resolvable versions, and updates pubspec.yaml.
-    --[no-]example         Also run in `example/` (if it exists).
-                           (defaults to on)
 -C, --directory=<dir>      Run this in the directory <dir>.
 
 Run "pub help" to see global options.

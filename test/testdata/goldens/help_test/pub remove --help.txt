@@ -16,8 +16,6 @@ Usage: pub remove <package1> [<package2>...]
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change any.
     --[no-]precompile    Precompile executables in immediate dependencies.
-    --[no-]example       Also update dependencies in `example/` (if it exists).
-                         (defaults to on)
 -C, --directory=<dir>    Run this in the directory <dir>.
 
 Run "pub help" to see global options.
