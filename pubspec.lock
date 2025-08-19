@@ -45,10 +45,10 @@ packages:
     dependency: "direct dev"
     description:
       name: checks
-      sha256: aad431b45a8ae2fa26db8c22e385b9cdec73f72986a1d9d9f2017f4c39ecf5c9
+      sha256: "016871c84732c1ac9856b8940236d5a5802ba638b3bd3e0ea7027b51a35f7aa7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   cli_config:
     dependency: transitive
     description:
