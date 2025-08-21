@@ -87,6 +87,11 @@ class Package {
       ...package.pubspec.dependencyOverrides,
   };
 
+  /// A collection of the union of all experiments used in the workspace.
+  late final Set<String> allExperimentsInWorkspace = {
+    for (final package in transitiveWorkspace) ...package.pubspec.experiments,
+  };
+
   /// The immediate dependencies this package specifies in its pubspec.
   Map<String, PackageRange> get dependencies => pubspec.dependencies;
 
