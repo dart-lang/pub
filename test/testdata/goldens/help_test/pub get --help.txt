@@ -7,6 +7,14 @@ Get the current package's dependencies.
 Usage: pub get
 -h, --help                Print this usage information.
     --[no-]offline        Use cached packages instead of accessing the network.
+    --check-up-to-date    Do a fast timestamp-based check to see resolution is up-to-date and internally
+                          consistent.
+                          
+                          If timestamps are correctly ordered, exit 0, and do not check the external sources for
+                          newer versions.
+                          
+                          Combined with --dry-run will output non-zero if the resolution seems not up-to-date.
+                          Otherwise redo the resolution.
 -n, --dry-run             Report what dependencies would change but don't change any.
     --enforce-lockfile    Enforce pubspec.lock. Fail `pub get` if the current `pubspec.lock` does not exactly specify a valid resolution of `pubspec.yaml` or if any content hash of a hosted package
                           has changed.
