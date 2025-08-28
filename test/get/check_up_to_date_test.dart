@@ -22,6 +22,9 @@ void main() {
       output: contains('Resolution is up-to-date'),
     );
 
+    // Wait for timestamps to align.
+    await Future<Null>.delayed(const Duration(seconds: 1));
+
     await d.appDir(dependencies: {'foo': '2.0.0'}).create();
 
     await pubGet(args: ['--check-up-to-date'], output: contains('> foo 2.0.0'));
