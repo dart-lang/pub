@@ -13,6 +13,7 @@ import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
 import 'command/bump.dart';
 import 'command/cache.dart';
+import 'command/check_resolution_up_to_date.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
 import 'command/get.dart';
@@ -151,6 +152,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(OutdatedCommand());
     addCommand(RemoveCommand());
     addCommand(RunCommand());
+    addCommand(CheckResolutionUpToDateCommand());
     addCommand(UpgradeCommand());
     addCommand(UnpackCommand());
     addCommand(UploaderCommand());

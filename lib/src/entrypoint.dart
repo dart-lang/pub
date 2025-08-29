@@ -775,23 +775,47 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
     }
   }
 
-  /// Does a fast-pass check to see if the resolution is up-to-date. If not, run
-  /// a resolution with `pub get` semantics.
+  /// The [PackageConfig] object representing `.dart_tool/package_config.json`
+  /// along with the dir where it resides, if it and `pubspec.lock` exist and
+  /// are up to date with respect to pubspec.yaml and its dependencies. Or
+  /// `null` if it is outdated.
   ///
-  /// If [summaryOnly] is `true` (the default) only a short summary is shown of
-  /// the solve.
+  /// Always returns `null` if `.dart_tool/package_config.json` was generated
+  /// with a different PUB_CACHE location, a different $FLUTTER_ROOT or a
+  /// different Dart or Flutter SDK version.
   ///
-  /// If [onlyOutputWhenTerminal] is `true` (the default) there will be no
-  /// output if no terminal is attached.
+  /// Otherwise first the `modified` timestamps are compared, and if
+  /// `.dart_tool/package_config.json` is newer than `pubspec.lock` that is
+  /// newer than all pubspec.yamls of all packages in
+  /// `.dart_tool/package_config.json` we short-circuit and return true.
   ///
-  /// When succesfull returns the found/created `PackageConfig` and the
-  /// directory containing it.
-  static Future<({PackageConfig packageConfig, String rootDir})> ensureUpToDate(
-    String dir, {
-    required SystemCache cache,
-    bool summaryOnly = true,
-    bool onlyOutputWhenTerminal = true,
-  }) async {
+  /// If any of the timestamps are out of order, the resolution in
+  /// pubspec.lock is validated against constraints of all pubspec.yamls, and
+  /// the packages of `.dart_tool/package_config.json` is validated against
+  /// pubspec.lock. We do this extra round of checking to accomodate for cases
+  /// where version control or other processes mess up the timestamp order.
+  ///
+  /// If the resolution is still valid, the timestamps are updated and this
+  /// returns the package configuration and the root dir. Otherwise this
+  /// returns `null`.
+  ///
+  /// This check is on the fast-path of `dart run` and should do as little
+  /// work as possible. Specifically we avoid parsing any yaml when the
+  /// timestamps are in the right order.
+  ///
+  /// `.dart_tool/package_config.json` is read parsed. In the case of `dart
+  /// run` this is acceptable: we speculate that it brings it to the file
+  /// system cache and the dart VM is going to read the file anyways.
+  ///
+  /// Note this procedure will give false positives if the timestamps are
+  /// artificially brought in the "right" order. (eg. by manually running
+  /// `touch pubspec.lock; touch .dart_tool/package_config.json`) - that is
+  /// hard to avoid, but also unlikely to happen by accident because
+  /// `.dart_tool/package_config.json` is not checked into version control.
+  static (PackageConfig, String)? isResolutionUpToDate(
+    String dir,
+    SystemCache cache,
+  ) {
     late final wasRelative = p.isRelative(dir);
     String relativeIfNeeded(String path) =>
         wasRelative ? p.relative(path) : path;
@@ -1027,271 +1051,254 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       return true;
     }
 
-    /// The [PackageConfig] object representing `.dart_tool/package_config.json`
-    /// along with the dir where it resides, if it and `pubspec.lock` exist and
-    /// are up to date with respect to pubspec.yaml and its dependencies. Or
-    /// `null` if it is outdated.
-    ///
-    /// Always returns `null` if `.dart_tool/package_config.json` was generated
-    /// with a different PUB_CACHE location, a different $FLUTTER_ROOT or a
-    /// different Dart or Flutter SDK version.
-    ///
-    /// Otherwise first the `modified` timestamps are compared, and if
-    /// `.dart_tool/package_config.json` is newer than `pubspec.lock` that is
-    /// newer than all pubspec.yamls of all packages in
-    /// `.dart_tool/package_config.json` we short-circuit and return true.
-    ///
-    /// If any of the timestamps are out of order, the resolution in
-    /// pubspec.lock is validated against constraints of all pubspec.yamls, and
-    /// the packages of `.dart_tool/package_config.json` is validated against
-    /// pubspec.lock. We do this extra round of checking to accomodate for cases
-    /// where version control or other processes mess up the timestamp order.
-    ///
-    /// If the resolution is still valid, the timestamps are updated and this
-    /// returns the package configuration and the root dir. Otherwise this
-    /// returns `null`.
-    ///
-    /// This check is on the fast-path of `dart run` and should do as little
-    /// work as possible. Specifically we avoid parsing any yaml when the
-    /// timestamps are in the right order.
-    ///
-    /// `.dart_tool/package_config.json` is read parsed. In the case of `dart
-    /// run` this is acceptable: we speculate that it brings it to the file
-    /// system cache and the dart VM is going to read the file anyways.
-    ///
-    /// Note this procedure will give false positives if the timestamps are
-    /// artificially brought in the "right" order. (eg. by manually running
-    /// `touch pubspec.lock; touch .dart_tool/package_config.json`) - that is
-    /// hard to avoid, but also unlikely to happen by accident because
-    /// `.dart_tool/package_config.json` is not checked into version control.
-    (PackageConfig, String)? isResolutionUpToDate() {
-      FileStat? packageConfigStat;
-      late final String packageConfigPath;
-      late final String rootDir;
-      for (final parent in parentDirs(dir)) {
-        final potentialPackageConfigPath = p.normalize(
-          p.join(parent, '.dart_tool', 'package_config.json'),
+    FileStat? packageConfigStat;
+    late final String packageConfigPath;
+    late final String rootDir;
+    for (final parent in parentDirs(dir)) {
+      final potentialPackageConfigPath = p.normalize(
+        p.join(parent, '.dart_tool', 'package_config.json'),
+      );
+      packageConfigStat = tryStatFile(potentialPackageConfigPath);
+
+      if (packageConfigStat != null) {
+        packageConfigPath = potentialPackageConfigPath;
+        rootDir = parent;
+        break;
+      }
+      final potentialPubspecPath = p.join(parent, 'pubspec.yaml');
+      if (tryStatFile(potentialPubspecPath) == null) {
+        // No package at [parent] continue to next dir.
+        continue;
+      }
+
+      final potentialWorkspaceRefPath = p.normalize(
+        p.join(parent, '.dart_tool', 'pub', 'workspace_ref.json'),
+      );
+
+      final workspaceRefText = tryReadTextFile(potentialWorkspaceRefPath);
+      if (workspaceRefText == null) {
+        log.fine(
+          '`$potentialPubspecPath` exists without corresponding '
+          '`$potentialPubspecPath` or `$potentialWorkspaceRefPath`.',
         );
-        packageConfigStat = tryStatFile(potentialPackageConfigPath);
-
-        if (packageConfigStat != null) {
-          packageConfigPath = potentialPackageConfigPath;
-          rootDir = parent;
-          break;
-        }
-        final potentialPubspecPath = p.join(parent, 'pubspec.yaml');
-        if (tryStatFile(potentialPubspecPath) == null) {
-          // No package at [parent] continue to next dir.
-          continue;
-        }
-
-        final potentialWorkspaceRefPath = p.normalize(
-          p.join(parent, '.dart_tool', 'pub', 'workspace_ref.json'),
-        );
-
-        final workspaceRefText = tryReadTextFile(potentialWorkspaceRefPath);
-        if (workspaceRefText == null) {
-          log.fine(
-            '`$potentialPubspecPath` exists without corresponding '
-            '`$potentialPubspecPath` or `$potentialWorkspaceRefPath`.',
-          );
-          return null;
-        } else {
-          try {
-            if (jsonDecode(workspaceRefText) case {
-              'workspaceRoot': final String path,
-            }) {
-              final potentialPackageConfigPath2 = relativeIfNeeded(
+        return null;
+      } else {
+        try {
+          if (jsonDecode(workspaceRefText) case {
+            'workspaceRoot': final String path,
+          }) {
+            final potentialPackageConfigPath2 = relativeIfNeeded(
+              p.normalize(
+                p.absolute(
+                  p.join(
+                    p.dirname(potentialWorkspaceRefPath),
+                    path,
+                    '.dart_tool',
+                    'package_config.json',
+                  ),
+                ),
+              ),
+            );
+            packageConfigStat = tryStatFile(potentialPackageConfigPath2);
+            if (packageConfigStat == null) {
+              log.fine(
+                '`$potentialWorkspaceRefPath` points to non-existing '
+                '`$potentialPackageConfigPath2`',
+              );
+              return null;
+            } else {
+              packageConfigPath = potentialPackageConfigPath2;
+              rootDir = relativeIfNeeded(
                 p.normalize(
                   p.absolute(
-                    p.join(
-                      p.dirname(potentialWorkspaceRefPath),
-                      path,
-                      '.dart_tool',
-                      'package_config.json',
-                    ),
+                    p.join(p.dirname(potentialWorkspaceRefPath), path),
                   ),
                 ),
               );
-              packageConfigStat = tryStatFile(potentialPackageConfigPath2);
-              if (packageConfigStat == null) {
-                log.fine(
-                  '`$potentialWorkspaceRefPath` points to non-existing '
-                  '`$potentialPackageConfigPath2`',
-                );
-                return null;
-              } else {
-                packageConfigPath = potentialPackageConfigPath2;
-                rootDir = relativeIfNeeded(
-                  p.normalize(
-                    p.absolute(
-                      p.join(p.dirname(potentialWorkspaceRefPath), path),
-                    ),
-                  ),
-                );
 
-                break;
-              }
-            } else {
-              log.fine(
-                '`$potentialWorkspaceRefPath` '
-                'is missing "workspaceRoot" property',
-              );
-              return null;
+              break;
             }
-          } on FormatException catch (e) {
-            log.fine('`$potentialWorkspaceRefPath` not valid json: $e.');
+          } else {
+            log.fine(
+              '`$potentialWorkspaceRefPath` '
+              'is missing "workspaceRoot" property',
+            );
             return null;
           }
-        }
-      }
-      if (packageConfigStat == null) {
-        log.fine(
-          'Found no .dart_tool/package_config.json - no existing resolution.',
-        );
-        return null;
-      }
-      final lockFilePath = p.normalize(p.join(rootDir, 'pubspec.lock'));
-      final packageConfig = _loadPackageConfig(packageConfigPath);
-      if (p.isWithin(cache.rootDir, packageConfigPath)) {
-        // We always consider a global package (inside the cache) up-to-date.
-        return (packageConfig, rootDir);
-      }
-
-      /// Whether or not the `.dart_tool/package_config.json` file is was
-      /// generated by a different sdk down to changes in minor versions.
-      bool isPackageConfigGeneratedBySameDartSdk() {
-        final generatorVersion = packageConfig.generatorVersion;
-        if (generatorVersion == null ||
-            generatorVersion.major != sdk.version.major ||
-            generatorVersion.minor != sdk.version.minor) {
-          log.fine('The Dart SDK was updated since last package resolution.');
-          return false;
-        }
-        return true;
-      }
-
-      final flutter = FlutterSdk();
-      // If Flutter has moved since last invocation, we want to have new
-      // sdk-packages, and therefore do a new resolution.
-      //
-      // This also counts if Flutter was introduced or removed.
-      final flutterRoot =
-          flutter.rootDirectory == null
-              ? null
-              : p.toUri(p.absolute(flutter.rootDirectory!)).toString();
-      if (packageConfig.additionalProperties['flutterRoot'] != flutterRoot) {
-        log.fine('Flutter has moved since last invocation.');
-        return null;
-      }
-      if (packageConfig.additionalProperties['flutterVersion'] !=
-          (flutter.isAvailable ? flutter.version.toString() : null)) {
-        log.fine('Flutter has updated since last invocation.');
-        return null;
-      }
-      // If the pub cache was moved we should have a new resolution.
-      final rootCacheUrl = p.toUri(p.absolute(cache.rootDir)).toString();
-      if (packageConfig.additionalProperties['pubCache'] != rootCacheUrl) {
-        final previousPubCachePath =
-            packageConfig.additionalProperties['pubCache'];
-        log.fine(
-          'The pub cache has moved from $previousPubCachePath to $rootCacheUrl '
-          'since last invocation.',
-        );
-        return null;
-      }
-      // If the Dart sdk was updated we want a new resolution.
-      if (!isPackageConfigGeneratedBySameDartSdk()) {
-        return null;
-      }
-      final lockFileStat = tryStatFile(lockFilePath);
-      if (lockFileStat == null) {
-        log.fine('No $lockFilePath file found.');
-        return null;
-      }
-
-      final lockFileModified = lockFileStat.modified;
-      var lockfileNewerThanPubspecs = true;
-
-      // Check that all packages in packageConfig exist and their pubspecs have
-      // not been updated since the lockfile was written.
-      for (var package in packageConfig.packages) {
-        final pubspecPath = p.normalize(
-          p.join(
-            rootDir,
-            '.dart_tool',
-            package.rootUri
-                // Important to use `toFilePath()` here rather than `path`, as
-                // it handles Url-decoding.
-                .toFilePath(),
-            'pubspec.yaml',
-          ),
-        );
-        if (p.isWithin(cache.rootDir, pubspecPath)) {
-          continue;
-        }
-        final pubspecStat = tryStatFile(pubspecPath);
-        if (pubspecStat == null) {
-          log.fine('Could not find `$pubspecPath`');
-          // A dependency is missing - do a full new resolution.
+        } on FormatException catch (e) {
+          log.fine('`$potentialWorkspaceRefPath` not valid json: $e.');
           return null;
         }
-
-        if (pubspecStat.modified.isAfter(lockFileModified)) {
-          log.fine('`$pubspecPath` is newer than `$lockFilePath`');
-          lockfileNewerThanPubspecs = false;
-          break;
-        }
-        final pubspecOverridesPath = p.join(
-          package.rootUri.path,
-          'pubspec_overrides.yaml',
-        );
-        final pubspecOverridesStat = tryStatFile(pubspecOverridesPath);
-        if (pubspecOverridesStat != null) {
-          // This will wrongly require you to reresolve if a
-          // `pubspec_overrides.yaml` in a path-dependency is updated. That
-          // seems acceptable.
-          if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
-            log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
-            lockfileNewerThanPubspecs = false;
-          }
-        }
       }
-      var touchedLockFile = false;
-      late final lockFile = _loadLockFile(lockFilePath, cache);
-      late final root = Package.load(
-        dir,
-        loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+    }
+    if (packageConfigStat == null) {
+      log.fine(
+        'Found no .dart_tool/package_config.json - no existing resolution.',
       );
-
-      if (!lockfileNewerThanPubspecs) {
-        if (isLockFileUpToDate(lockFile, root, lockFilePath: lockFilePath)) {
-          touch(lockFilePath);
-          touchedLockFile = true;
-        } else {
-          return null;
-        }
-      }
-
-      if (touchedLockFile ||
-          lockFileModified.isAfter(packageConfigStat.modified)) {
-        log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
-        if (isPackageConfigUpToDate(
-          packageConfig,
-          lockFile,
-          root,
-          packageConfigPath: packageConfigPath,
-          lockFilePath: lockFilePath,
-        )) {
-          touch(packageConfigPath);
-        } else {
-          return null;
-        }
-      }
+      return null;
+    }
+    final lockFilePath = p.normalize(p.join(rootDir, 'pubspec.lock'));
+    final packageConfig = _loadPackageConfig(packageConfigPath);
+    if (p.isWithin(cache.rootDir, packageConfigPath)) {
+      // We always consider a global package (inside the cache) up-to-date.
       return (packageConfig, rootDir);
     }
 
-    if (isResolutionUpToDate() case (
+    /// Whether or not the `.dart_tool/package_config.json` file is was
+    /// generated by a different sdk down to changes in minor versions.
+    bool isPackageConfigGeneratedBySameDartSdk() {
+      final generatorVersion = packageConfig.generatorVersion;
+      if (generatorVersion == null ||
+          generatorVersion.major != sdk.version.major ||
+          generatorVersion.minor != sdk.version.minor) {
+        log.fine('The Dart SDK was updated since last package resolution.');
+        return false;
+      }
+      return true;
+    }
+
+    final flutter = FlutterSdk();
+    // If Flutter has moved since last invocation, we want to have new
+    // sdk-packages, and therefore do a new resolution.
+    //
+    // This also counts if Flutter was introduced or removed.
+    final flutterRoot =
+        flutter.rootDirectory == null
+            ? null
+            : p.toUri(p.absolute(flutter.rootDirectory!)).toString();
+    if (packageConfig.additionalProperties['flutterRoot'] != flutterRoot) {
+      log.fine('Flutter has moved since last invocation.');
+      return null;
+    }
+    if (packageConfig.additionalProperties['flutterVersion'] !=
+        (flutter.isAvailable ? flutter.version.toString() : null)) {
+      log.fine('Flutter has updated since last invocation.');
+      return null;
+    }
+    // If the pub cache was moved we should have a new resolution.
+    final rootCacheUrl = p.toUri(p.absolute(cache.rootDir)).toString();
+    if (packageConfig.additionalProperties['pubCache'] != rootCacheUrl) {
+      final previousPubCachePath =
+          packageConfig.additionalProperties['pubCache'];
+      log.fine(
+        'The pub cache has moved from $previousPubCachePath to $rootCacheUrl '
+        'since last invocation.',
+      );
+      return null;
+    }
+    // If the Dart sdk was updated we want a new resolution.
+    if (!isPackageConfigGeneratedBySameDartSdk()) {
+      return null;
+    }
+    final lockFileStat = tryStatFile(lockFilePath);
+    if (lockFileStat == null) {
+      log.fine('No $lockFilePath file found.');
+      return null;
+    }
+
+    final lockFileModified = lockFileStat.modified;
+    var lockfileNewerThanPubspecs = true;
+
+    // Check that all packages in packageConfig exist and their pubspecs have
+    // not been updated since the lockfile was written.
+    for (var package in packageConfig.packages) {
+      final pubspecPath = p.normalize(
+        p.join(
+          rootDir,
+          '.dart_tool',
+          package.rootUri
+              // Important to use `toFilePath()` here rather than `path`, as
+              // it handles Url-decoding.
+              .toFilePath(),
+          'pubspec.yaml',
+        ),
+      );
+      if (p.isWithin(cache.rootDir, pubspecPath)) {
+        continue;
+      }
+      final pubspecStat = tryStatFile(pubspecPath);
+      if (pubspecStat == null) {
+        log.fine('Could not find `$pubspecPath`');
+        // A dependency is missing - do a full new resolution.
+        return null;
+      }
+
+      if (pubspecStat.modified.isAfter(lockFileModified)) {
+        log.fine('`$pubspecPath` is newer than `$lockFilePath`');
+        lockfileNewerThanPubspecs = false;
+        break;
+      }
+      final pubspecOverridesPath = p.join(
+        package.rootUri.path,
+        'pubspec_overrides.yaml',
+      );
+      final pubspecOverridesStat = tryStatFile(pubspecOverridesPath);
+      if (pubspecOverridesStat != null) {
+        // This will wrongly require you to reresolve if a
+        // `pubspec_overrides.yaml` in a path-dependency is updated. That
+        // seems acceptable.
+        if (pubspecOverridesStat.modified.isAfter(lockFileModified)) {
+          log.fine('`$pubspecOverridesPath` is newer than `$lockFilePath`');
+          lockfileNewerThanPubspecs = false;
+        }
+      }
+    }
+    var touchedLockFile = false;
+    late final lockFile = _loadLockFile(lockFilePath, cache);
+    late final root = Package.load(
+      dir,
+      loadPubspec: Pubspec.loadRootWithSources(cache.sources),
+    );
+
+    if (!lockfileNewerThanPubspecs) {
+      if (isLockFileUpToDate(lockFile, root, lockFilePath: lockFilePath)) {
+        touch(lockFilePath);
+        touchedLockFile = true;
+      } else {
+        return null;
+      }
+    }
+
+    if (touchedLockFile ||
+        lockFileModified.isAfter(packageConfigStat.modified)) {
+      log.fine('`$lockFilePath` is newer than `$packageConfigPath`');
+      if (isPackageConfigUpToDate(
+        packageConfig,
+        lockFile,
+        root,
+        packageConfigPath: packageConfigPath,
+        lockFilePath: lockFilePath,
+      )) {
+        touch(packageConfigPath);
+      } else {
+        return null;
+      }
+    }
+    return (packageConfig, rootDir);
+  }
+
+  /// Does a fast-pass check to see if the resolution is up-to-date. If not, run
+  /// a resolution with `pub get` semantics.
+  ///
+  /// If [summaryOnly] is `true` (the default) only a short summary is shown of
+  /// the solve.
+  ///
+  /// If [onlyOutputWhenTerminal] is `true` (the default) there will be no
+  /// output if no terminal is attached.
+  ///
+  /// When succesfull returns the found/created `PackageConfig` and the
+  /// directory containing it.
+  static Future<({PackageConfig packageConfig, String rootDir})> ensureUpToDate(
+    String dir, {
+    required SystemCache cache,
+    bool summaryOnly = true,
+    bool onlyOutputWhenTerminal = true,
+  }) async {
+    late final wasRelative = p.isRelative(dir);
+    String relativeIfNeeded(String path) =>
+        wasRelative ? p.relative(path) : path;
+
+    if (isResolutionUpToDate(dir, cache) case (
       final PackageConfig packageConfig,
       final String rootDir,
     )) {
