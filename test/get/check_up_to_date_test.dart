@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -60,6 +61,66 @@ void main() {
 
     await pubGet(
       args: ['--check-up-to-date', '--dry-run'],
+      error: contains('Resolution needs updating. Run `dart pub get`'),
+      exitCode: 1,
+    );
+  });
+
+  test('Works in a workspace', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        deps: {'foo': '1.0.0'},
+        extras: {
+          'workspace': ['pkg'],
+        },
+      ),
+      d.dir('pkg', [d.libPubspec('pkg', '1.0.0', resolutionWorkspace: true)]),
+    ]).create();
+
+    await pubGet(
+      args: ['--check-up-to-date', '--dry-run'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      workingDirectory: p.join(d.sandbox, appPath, 'pkg'),
+      error: contains('Resolution needs updating. Run `dart pub get`'),
+      exitCode: 1,
+    );
+
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      workingDirectory: p.join(d.sandbox, appPath, 'pkg'),
+      output: contains('+ foo 1.0.0'),
+    );
+
+    await pubGet(
+      args: ['--check-up-to-date', '--dry-run'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      workingDirectory: p.join(d.sandbox, appPath, 'pkg'),
+      output: contains('Resolution is up-to-date'),
+      exitCode: 0,
+    );
+
+    await d.dir(appPath, [
+      d.libPubspec(
+        'myapp',
+        '1.0.0',
+        sdk: '^3.5.0',
+        deps: {'foo': '1.0.0'},
+        extras: {
+          'workspace': ['pkg'],
+        },
+      ),
+    ]).create();
+
+    await pubGet(
+      args: ['--check-up-to-date', '--dry-run'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      workingDirectory: p.join(d.sandbox, appPath, 'pkg'),
       error: contains('Resolution needs updating. Run `dart pub get`'),
       exitCode: 1,
     );
