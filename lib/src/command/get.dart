@@ -5,11 +5,8 @@
 import 'dart:async';
 
 import '../command.dart';
-import '../command_runner.dart';
-import '../entrypoint.dart';
 import '../log.dart' as log;
 import '../solver.dart';
-import '../utils.dart';
 
 /// Handles the `get` pub command.
 class GetCommand extends PubCommand {
@@ -28,21 +25,6 @@ class GetCommand extends PubCommand {
     argParser.addFlag(
       'offline',
       help: 'Use cached packages instead of accessing the network.',
-    );
-
-    argParser.addFlag(
-      'check-up-to-date',
-      negatable: false,
-      help: '''
-Do a fast timestamp-based check to see resolution is up-to-date and internally
-consistent.
-
-If timestamps are correctly ordered, exit 0, and do not check the external sources for
-newer versions.
-
-Combined with --dry-run will output non-zero if the resolution seems not up-to-date.
-Otherwise redo the resolution.
-''',
     );
 
     argParser.addFlag(
@@ -92,24 +74,6 @@ Otherwise redo the resolution.
           'The --packages-dir flag is no longer used and does nothing.',
         ),
       );
-    }
-
-    if (argResults.flag('check-up-to-date') &&
-        argResults.flag('enforce-lockfile')) {
-      // TODO(sigurdm): could we support this?
-      fail('Cannot combine --check-up-to-date and --enforce-lockfile.');
-    }
-
-    if (argResults.flag('check-up-to-date')) {
-      final result = Entrypoint.isResolutionUpToDate(directory, cache);
-      if (result == null) {
-        if (argResults.flag('dry-run')) {
-          fail('Resolution needs updating. Run `$topLevelProgram pub get`');
-        }
-      } else {
-        log.message('Resolution is up-to-date');
-        return;
-      }
     }
 
     await entrypoint.acquireDependencies(
