@@ -47,8 +47,8 @@ class AnalysisContextManager {
     path = p.normalize(p.absolute(path));
     final parseResult = _session.getParsedUnit(path);
     if (parseResult is ParsedUnitResult) {
-      if (parseResult.errors.isNotEmpty) {
-        throw AnalyzerErrorGroup(parseResult.errors);
+      if (parseResult.diagnostics.isNotEmpty) {
+        throw AnalyzerErrorGroup(parseResult.diagnostics);
       }
       return parseResult.unit;
     } else {
