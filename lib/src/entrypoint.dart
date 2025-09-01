@@ -792,7 +792,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// If any of the timestamps are out of order, the resolution in
   /// pubspec.lock is validated against constraints of all pubspec.yamls, and
   /// the packages of `.dart_tool/package_config.json` is validated against
-  /// pubspec.lock. We do this extra round of checking to accomodate for cases
+  /// pubspec.lock. We do this extra round of checking to accommodate for cases
   /// where version control or other processes mess up the timestamp order.
   ///
   /// If the resolution is still valid, the timestamps are updated and this
