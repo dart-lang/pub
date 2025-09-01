@@ -162,10 +162,16 @@ class PackageLister {
   /// Returns the best version of this package that matches [constraint]
   /// according to the solver's prioritization scheme, or `null` if no versions
   /// match.
+  /// If [allowPrereleases] is false, this will only consider non-prerelease
+  /// versions unless there are no non-prerelease versions that match
+  /// [constraint].
   ///
   /// Throws a [PackageNotFoundException] if this lister's package doesn't
   /// exist.
-  Future<PackageId?> bestVersion(VersionConstraint constraint) async {
+  Future<PackageId?> bestVersion(
+    VersionConstraint constraint, {
+    bool allowPrereleases = true,
+  }) async {
     final locked = _locked;
     if (locked != null && constraint.allows(locked.version)) return locked;
 
@@ -192,13 +198,14 @@ class PackageLister {
       if (isPastLimit(id.version)) break;
 
       if (!constraint.allows(id.version)) continue;
+      if (!allowPrereleases && id.version.isPreRelease) continue;
       if (!id.version.isPreRelease) {
         return id;
       }
       bestPrerelease ??= id;
     }
 
-    return bestPrerelease;
+    return allowPrereleases ? bestPrerelease : null;
   }
 
   /// Returns incompatibilities that encapsulate [id]'s dependencies, or that

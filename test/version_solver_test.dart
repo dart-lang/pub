@@ -1666,6 +1666,20 @@ void prerelease() {
     await d.appDir(dependencies: {'a': '^1.0.0'}).create();
     await expectResolves(tries: 2);
   });
+
+  // This is a regression test for #4659.
+  test('not upgrading to prerelease when constrained to stable', () async {
+    await servePackages()
+      ..serve('a', '1.0.0', deps: {'c': '^1.0.0'})
+      ..serve('b', '1.0.0', deps: {'c': '^1.0.0'})
+      ..serve('c', '1.0.0')
+      ..serve('a', '2.0.0', deps: {'c': '^2.0.0'})
+      ..serve('b', '2.0.0-dev', deps: {'c': '^2.0.0'})
+      ..serve('c', '2.0.0');
+
+    await d.appDir(dependencies: {'a': '^1.0.0', 'b': '^1.0.0'}).create();
+    await expectResolves(result: {'a': '1.0.0', 'b': '1.0.0', 'c': '1.0.0'});
+  });
 }
 
 void override() {
