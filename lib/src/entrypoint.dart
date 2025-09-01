@@ -803,7 +803,7 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
   /// work as possible. Specifically we avoid parsing any yaml when the
   /// timestamps are in the right order.
   ///
-  /// `.dart_tool/package_config.json` is read parsed. In the case of `dart
+  /// `.dart_tool/package_config.json` is read and parsed. In the case of `dart
   /// run` this is acceptable: we speculate that it brings it to the file
   /// system cache and the dart VM is going to read the file anyways.
   ///
