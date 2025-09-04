@@ -168,6 +168,7 @@ Usage: create_version_tags_from_sdk [--create] [--push] [--sdk-dir <path>]
             'origin',
             // Don't run any hooks before pushing.
             '--no-verify',
+            'tag',
             'SDK-$sdkTag',
           ], workingDirectory: Directory.current.path);
           if (pushResult.exitCode != 0) {
