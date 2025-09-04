@@ -97,6 +97,7 @@ class Incompatibility {
   /// for packages with the given names.
   @override
   String toString([Map<String, PackageDetail>? details]) {
+    final cause = this.cause;
     if (cause is DependencyIncompatibilityCause) {
       assert(terms.length == 2);
 
@@ -107,11 +108,15 @@ class Incompatibility {
 
       return '${_terse(depender, details, allowEvery: true)} depends on '
           '${_terse(dependee, details)}';
+    } else if (cause is ExperimentIncompatibilityCause) {
+      assert(terms.length == 1);
+      final dependee = terms.first;
+      return '${_terse(dependee, details, allowEvery: true)} depends on '
+          'the experiment ${cause.experiment}';
     } else if (cause is SdkIncompatibilityCause) {
       assert(terms.length == 1);
       assert(terms.first.isPositive);
 
-      final cause = this.cause as SdkIncompatibilityCause;
       final buffer = StringBuffer(
         _terse(terms.first, details, allowEvery: true),
       );
@@ -440,16 +445,17 @@ class Incompatibility {
 
     final latterCause = latter.cause;
     if (latterCause is SdkIncompatibilityCause) {
-      final cause = latter.cause as SdkIncompatibilityCause;
-      if (cause.noNullSafetyCause) {
+      if (latterCause.noNullSafetyCause) {
         buffer.write('which doesn\'t support null safety');
       } else {
         buffer.write('which requires ');
-        if (!cause.sdk.isAvailable) {
-          buffer.write('the ${cause.sdk.name} SDK');
+        if (!latterCause.sdk.isAvailable) {
+          buffer.write('the ${latterCause.sdk.name} SDK');
         } else {
-          if (cause.sdk.name != 'Dart') buffer.write('${cause.sdk.name} ');
-          buffer.write('SDK version ${cause.constraint}');
+          if (latterCause.sdk.name != 'Dart') {
+            buffer.write('${latterCause.sdk.name} ');
+          }
+          buffer.write('SDK version ${latterCause.constraint}');
         }
       }
     } else if (latterCause is NoVersionsIncompatibilityCause) {
@@ -459,6 +465,10 @@ class Incompatibility {
       buffer.write(
         "which doesn't exist "
         '($exceptionMessage)',
+      );
+    } else if (latterCause is ExperimentIncompatibilityCause) {
+      buffer.write(
+        'which requires enabling the experiment `${latterCause.experiment}`',
       );
     } else {
       buffer.write('which is forbidden');
