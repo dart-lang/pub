@@ -93,6 +93,8 @@ class VersionSolver {
 
   final _stopwatch = Stopwatch();
 
+  final Set<String> _allowedExperiments;
+
   VersionSolver(
     this._type,
     this._systemCache,
@@ -102,7 +104,8 @@ class VersionSolver {
     Map<String, Version> sdkOverrides = const {},
   }) : _sdkOverrides = sdkOverrides,
        _dependencyOverrides = _root.allOverridesInWorkspace,
-       _unlock = {...unlock};
+       _unlock = {...unlock},
+       _allowedExperiments = _root.allExperimentsInWorkspace;
 
   /// Prime the solver with [constraints].
   void addConstraints(Iterable<ConstraintAndCause> constraints) {
@@ -541,6 +544,7 @@ class VersionSolver {
           _systemCache,
           overriddenPackages: _overriddenPackages,
           sdkOverrides: _sdkOverrides,
+          allowedExperiments: _root.allExperimentsInWorkspace,
         );
       }
 
@@ -566,6 +570,7 @@ class VersionSolver {
         _getAllowedRetracted(ref.name),
         downgrade: _type == SolveType.downgrade,
         sdkOverrides: _sdkOverrides,
+        allowedExperiments: _allowedExperiments,
       );
     });
   }
