@@ -205,7 +205,7 @@ class PackageLister {
       bestPrerelease ??= id;
     }
 
-    return allowPrereleases ? bestPrerelease : null;
+    return bestPrerelease;
   }
 
   /// Returns incompatibilities that encapsulate [id]'s dependencies, or that
