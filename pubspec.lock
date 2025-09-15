@@ -349,10 +349,10 @@ packages:
     dependency: "direct main"
     description:
       name: tar
-      sha256: "8e67ab1baa07d3ef2c5d52cfb84e7ed4742799141e9e2ac3d0801a1a7ccb7575"
+      sha256: b2f7bb01fa95e21e7197cd0dc3c087e6e4551c5d698b3e88d6398b2124c566d6
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "2.0.1"
   term_glyph:
     dependency: transitive
     description:
