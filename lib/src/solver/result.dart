@@ -48,6 +48,9 @@ class SolveResult {
   /// The wall clock time the resolution took.
   final Duration resolutionTime;
 
+  /// The experiments enabled for this solve.
+  List<String> get experiments => _root.allExperimentsInWorkspace.toList();
+
   /// Downloads all the cached packages selected by this version resolution.
   ///
   /// If some already cached package differs from what is provided by the server
