@@ -99,7 +99,7 @@ void main() {
     ]).create();
 
     // Timestamp resolution is rather poor especially on windows.
-    await Future<Null>.delayed(const Duration(seconds: 1));
+    await Future<Null>.delayed(const Duration(seconds: 2));
 
     await runPub(
       args: ['check-resolution-up-to-date'],
