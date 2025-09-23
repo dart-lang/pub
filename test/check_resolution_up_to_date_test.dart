@@ -87,7 +87,7 @@ void main() {
     );
 
     // Timestamp resolution is rather poor especially on windows.
-    await Future<Null>.delayed(const Duration(seconds: 2));
+    await Future<Null>.delayed(const Duration(seconds: 1));
 
     await d.dir(appPath, [
       d.libPubspec(
