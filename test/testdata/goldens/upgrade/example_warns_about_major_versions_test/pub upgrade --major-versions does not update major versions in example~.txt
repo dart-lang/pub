@@ -12,7 +12,7 @@ Changed 1 dependency!
 Resolving dependencies in `./example`...
 Downloading packages...
 Got dependencies in `./example`.
-[STDERR] Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory example/` separately.
+[STDERR] Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory ./example` separately.
 
 -------------------------------- END OF OUTPUT ---------------------------------
 
