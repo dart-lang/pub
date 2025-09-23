@@ -23,6 +23,10 @@ class FuchsiaSdk extends Sdk {
       Platform.environment['FUCHSIA_DART_SDK_ROOT'];
 
   @override
+  String get experimentsPath =>
+      p.join(_rootDirectory!, '.sdk_experiments.json');
+
+  @override
   String get installMessage =>
       'Please set the FUCHSIA_DART_SDK_ROOT environment variable to point to '
       'the root of the Fuchsia SDK for Dart.';

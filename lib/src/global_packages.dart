@@ -90,6 +90,7 @@ class GlobalPackages {
   Future<void> activateGit(
     String repo,
     List<String>? executables, {
+    required List<String> allowedExperiments,
     required bool overwriteBinStubs,
     String? path,
     String? ref,
@@ -127,10 +128,15 @@ class GlobalPackages {
       packageRef.withConstraint(VersionConstraint.any),
       executables,
       overwriteBinStubs: overwriteBinStubs,
+      allowedExperiments: allowedExperiments,
     );
   }
 
-  Package packageForConstraint(PackageRange dep, String dir) {
+  Package packageForConstraint(
+    PackageRange dep,
+    String dir,
+    List<String> allowedExperiments,
+  ) {
     return Package(
       Pubspec(
         'pub global activate',
@@ -142,6 +148,7 @@ class GlobalPackages {
             defaultUpperBoundConstraint: null,
           ),
         },
+        experiments: allowedExperiments,
       ),
       dir,
       [],
@@ -164,12 +171,14 @@ class GlobalPackages {
   Future<void> activateHosted(
     PackageRange range,
     List<String>? executables, {
+    required List<String> allowedExperiments,
     required bool overwriteBinStubs,
     String? url,
   }) async {
     await _installInCache(
       range,
       executables,
+      allowedExperiments: allowedExperiments,
       overwriteBinStubs: overwriteBinStubs,
     );
   }
@@ -255,6 +264,7 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
   Future<void> _installInCache(
     PackageRange dep,
     List<String>? executables, {
+    required List<String> allowedExperiments,
     required bool overwriteBinStubs,
     bool silent = false,
   }) async {
@@ -263,7 +273,7 @@ Follow progress in https://github.com/dart-lang/sdk/issues/60889.
 
     final tempDir = cache.createTempDir();
     // Create a dummy package with just [dep] so we can do resolution on it.
-    final root = packageForConstraint(dep, tempDir);
+    final root = packageForConstraint(dep, tempDir, allowedExperiments);
 
     // Resolve it and download its dependencies.
     SolveResult result;
@@ -325,6 +335,7 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
           originalLockFile ?? LockFile.empty(),
           lockFile,
           result.availableVersions,
+          result.experiments,
           cache,
           dryRun: false,
           quiet: false,
@@ -341,19 +352,19 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       // Load the package graph from [result] so we don't need to re-parse all
       // the pubspecs.
       final entrypoint = Entrypoint.global(
-        packageForConstraint(dep, packageDir),
+        packageForConstraint(dep, packageDir, result.experiments),
         lockFile,
         cache,
         solveResult: result,
       );
 
-      await entrypoint.writePackageConfigFiles();
+      await entrypoint.writePackageConfigFiles(experiments: result.experiments);
 
       await entrypoint.precompileExecutables();
     }
 
     final entrypoint = Entrypoint.global(
-      packageForConstraint(dep, _packageDir(dep.name)),
+      packageForConstraint(dep, _packageDir(dep.name), allowedExperiments),
       lockFile,
       cache,
       solveResult: result,
@@ -468,7 +479,11 @@ Consider `$topLevelProgram pub global deactivate $name`''');
       // For cached sources, the package itself is in the cache and the
       // lockfile is the one we just loaded.
       entrypoint = Entrypoint.global(
-        packageForConstraint(id.toRange(), _packageDir(id.name)),
+        packageForConstraint(
+          id.toRange(),
+          _packageDir(id.name),
+          [], // XXX load experiments here
+        ),
         lockFile,
         cache,
       );
@@ -577,6 +592,7 @@ Try reactivating the package.
           entrypoint.lockFile,
           newLockFile,
           result.availableVersions,
+          result.experiments,
           cache,
           dryRun: true,
           enforceLockfile: true,
@@ -719,6 +735,7 @@ Try reactivating the package.
               id.toRange(),
               packageExecutables,
               overwriteBinStubs: true,
+              allowedExperiments: [], // XXX
               silent: true,
             );
           } else {

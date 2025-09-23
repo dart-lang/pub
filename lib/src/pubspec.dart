@@ -143,6 +143,51 @@ environment:
         _containingDescription,
       );
 
+  List<String>? _experiments;
+  List<String> get experiments => _experiments ??= parseExperiments();
+
+  List<String> parseExperiments() {
+    final experimentsNode = fields.nodes['experiments'];
+    if (experimentsNode == null || experimentsNode.value == null) {
+      return [];
+    }
+    if (experimentsNode is! YamlList) {
+      _error('`experiments` must be a list of strings', experimentsNode.span);
+    }
+    final result = <String>[];
+    for (final e in experimentsNode.nodes) {
+      final value = e.value;
+      if (value is! String) {
+        _error('`experiments` must be a list of strings', e.span);
+      }
+
+      /// For root packages, validate that all experiments are known by at least
+      /// one of the current sdks.
+      ///
+      /// Dependencies will only be chosen by the solver if their experiments
+      /// are a subset of those of the root packages, so we don't filter here.
+      if (_containingDescription is ResolvedRootDescription &&
+          !availableExperiments.containsKey(value)) {
+        final availableExperimentsDescription =
+            availableExperiments.isEmpty
+                ? '''There are no available experiments.'''
+                : '''
+Available experiments are:
+${availableExperiments.values.map((experiment) => '* ${experiment.name}: ${experiment.description}, ${experiment.docUrl}').join('\n')}''';
+        _error('''
+$value is not a known experiment.
+
+$availableExperimentsDescription
+
+Read more about experiments at https://dart.dev/go/experiments.
+''', e.span);
+      } else {
+        result.add(value);
+      }
+    }
+    return result;
+  }
+
   Map<String, PackageRange>? _dependencies;
 
   /// The packages this package depends on when it is the root package.
@@ -341,6 +386,7 @@ environment:
     this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
     this.resolution = Resolution.none,
+    List<String> experiments = const <String>[],
   }) : _dependencies =
            dependencies == null
                ? null
@@ -364,6 +410,7 @@ environment:
        // This is a dummy value. Dependencies should already be resolved, so we
        // never need to do relative resolutions.
        _containingDescription = ResolvedRootDescription.fromDir('.'),
+       _experiments = experiments,
        super(
          fields == null ? YamlMap() : YamlMap.wrap(fields),
          name: name,

@@ -40,6 +40,9 @@ class DartSdk extends Sdk {
     return aboveExecutable;
   }();
 
+  @override
+  String get experimentsPath => p.join(_rootDirectory, '.sdk_experiments.json');
+
   /// The loaded `sdk_packages.yaml` file if present.
   static final SdkPackageConfig? _sdkPackages = () {
     final path = p.join(_rootDirectory, 'sdk_packages.yaml');
