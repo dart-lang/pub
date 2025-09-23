@@ -146,13 +146,14 @@ Usage: create_version_tags_from_sdk [--create] [--push] [--sdk-dir <path>]
         stdout.writeln('$sdkTag uses pub: $pubRev');
         if (create) {
           final tagResult = Process.runSync('git', [
+            '-c', 'user.email=support@pub.dev', //
+            '-c', 'user.name=Pub tagging bot', //
             'tag',
             'SDK-$sdkTag',
             pubRev,
-            '-a',
-            '-f',
-            '-m',
-            'SDK $sdkTag',
+            '--annotate',
+            '--force',
+            '--message', 'SDK $sdkTag', //
           ], workingDirectory: Directory.current.path);
           if (tagResult.exitCode != 0) {
             stderr.writeln(
