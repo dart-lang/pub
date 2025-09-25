@@ -1759,12 +1759,14 @@ b        a${s}b$s
       ]),
     ]).create();
 
+    final s = p.separator;
+
     await runPub(
       args: ['get', '--example'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `./pkgs/a/example`.'),
-        isNot(contains('Got dependencies in `./pkgs/b/example`.')),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
     );
 
@@ -1772,8 +1774,8 @@ b        a${s}b$s
       args: ['upgrade', '--example'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `./pkgs/a/example`.'),
-        isNot(contains('Got dependencies in `./pkgs/b/example`.')),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
     );
 
@@ -1781,8 +1783,8 @@ b        a${s}b$s
       args: ['upgrade', '--example', '--tighten'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `./pkgs/a/example`.'),
-        isNot(contains('Got dependencies in `./pkgs/b/example`.')),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
       error: contains(
         'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory ./pkgs/a/example` separately.',
@@ -1793,8 +1795,8 @@ b        a${s}b$s
       args: ['upgrade', '--example', '--major-versions'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `./pkgs/a/example`.'),
-        isNot(contains('Got dependencies in `./pkgs/b/example`.')),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
       ),
       error: contains(
         'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory ./pkgs/a/example` separately.',
@@ -1806,8 +1808,8 @@ b        a${s}b$s
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
         contains('+ foo 1.5.0'),
-        contains('Got dependencies in `./pkgs/a/example`.'),
-        isNot(contains('Got dependencies in `./pkgs/b/example`.')),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
       ),
     );
 
@@ -1816,8 +1818,8 @@ b        a${s}b$s
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
         contains('< foo 1.0.0'),
-        contains('Got dependencies in `./pkgs/a/example`.'),
-        isNot(contains('Got dependencies in `./pkgs/b/example`.')),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
     );
   });
