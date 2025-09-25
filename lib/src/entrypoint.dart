@@ -321,7 +321,7 @@ See $workspacesDocUrl for more information.''',
   Entrypoint._(
     this.workingDir,
     this._lockFile,
-    this._example,
+    this._examples,
     this._packageGraph,
     this.cache,
     this._packages,
@@ -349,10 +349,15 @@ See $workspacesDocUrl for more information.''',
     final newWorkPackage = newWorkspaceRoot.transitiveWorkspace.firstWhere(
       (package) => package.dir == workPackage.dir,
     );
-    return Entrypoint._(workingDir, _lockFile, _example, _packageGraph, cache, (
-      root: newWorkspaceRoot,
-      work: newWorkPackage,
-    ), isCachedGlobal);
+    return Entrypoint._(
+      workingDir,
+      _lockFile,
+      _examples,
+      _packageGraph,
+      cache,
+      (root: newWorkspaceRoot, work: newWorkPackage),
+      isCachedGlobal,
+    );
   }
 
   /// Creates an entrypoint at the same location, that will use [pubspec] for
@@ -378,18 +383,30 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
-  /// Gets the [Entrypoint] package for the current working directory.
+  /// Gets  [Entrypoint]s for examples of any workspace packages.
   ///
-  /// This will be null if the example folder doesn't have a `pubspec.yaml`.
-  Entrypoint? get example {
-    if (_example != null) return _example;
-    if (!fileExists(workspaceRoot.path('example', 'pubspec.yaml'))) {
-      return null;
+  /// Does not return examples that are already in the workspace
+  ///
+  /// This will be empty if the example folder doesn't have a `pubspec.yaml`.
+  List<Entrypoint> get examples {
+    if (_examples case final List<Entrypoint> examples) return examples;
+    final directoriesInWorkspace = <String>{};
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      directoriesInWorkspace.add(p.canonicalize(package.dir));
     }
-    return _example = Entrypoint(workspaceRoot.path('example'), cache);
+    final result = <Entrypoint>[];
+    for (final package in workspaceRoot.transitiveWorkspace) {
+      final examplePath = package.path('example');
+
+      if (!directoriesInWorkspace.contains(p.canonicalize(examplePath)) &&
+          fileExists(p.join(examplePath, 'pubspec.yaml'))) {
+        result.add(Entrypoint(examplePath, cache));
+      }
+    }
+    return _examples = result;
   }
 
-  Entrypoint? _example;
+  List<Entrypoint>? _examples;
 
   /// Writes the .dart_tool/package_config.json file and workspace references to
   /// it.

@@ -81,21 +81,27 @@ class DowngradeCommand extends PubCommand {
       unlock: argResults.rest,
       dryRun: _dryRun,
     );
-    final example = entrypoint.example;
-    if (argResults.flag('example') && example != null) {
-      await example.acquireDependencies(
-        SolveType.get,
-        unlock: argResults.rest,
-        dryRun: _dryRun,
-        summaryOnly: true,
-      );
+    if (_example) {
+      for (final example in entrypoint.examples) {
+        await example.acquireDependencies(
+          SolveType.get,
+          unlock: argResults.rest,
+          dryRun: _dryRun,
+          summaryOnly: true,
+        );
+      }
     }
 
     if (_tighten) {
-      if (_example && entrypoint.example != null) {
-        log.warning(
-          'Running `downgrade --tighten` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
-        );
+      if (_example && entrypoint.examples.isNotEmpty) {
+        for (final example in entrypoint.examples) {
+          log.warning(
+            'Running `downgrade --tighten` only in '
+            '`${entrypoint.workspaceRoot.dir}`. '
+            'Run `$topLevelProgram pub downgrade --tighten '
+            '--directory ${example.workspaceRoot.presentationDir}` separately.',
+          );
+        }
       }
       final changes = entrypoint.tighten();
       entrypoint.applyChanges(changes, _dryRun);
