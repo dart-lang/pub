@@ -1787,7 +1787,7 @@ b        a${s}b$s
         isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
       error: contains(
-        'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory ./pkgs/a/example` separately.',
+        'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory .${s}pkgs/a${s}example` separately.',
       ),
     );
 
@@ -1799,7 +1799,7 @@ b        a${s}b$s
         isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
       ),
       error: contains(
-        'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory ./pkgs/a/example` separately.',
+        'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory .${s}pkgs/a${s}example` separately.',
       ),
     );
 
