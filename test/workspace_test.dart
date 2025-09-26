@@ -392,17 +392,14 @@ void main() {
         ),
       ]),
     ]).create();
-    final appABPath = p.join(sandbox, appPath, 'a', 'b');
     final aPubspecPath = p.join('.', 'a', 'pubspec.yaml');
-    final pubspecPath = p.join('.', 'pubspec.yaml');
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Could not find a file named "pubspec.yaml" in "$appABPath".\n'
-        'That was included in the workspace of $aPubspecPath.\n'
-        'That was included in the workspace of $pubspecPath.',
+        'No workspace packages matching `b` - '
+        'that was included in the workspace of `$aPubspecPath`',
       ),
-      exitCode: NO_INPUT,
+      exitCode: 1,
     );
   });
 
@@ -1724,6 +1721,51 @@ b        a${s}b$s
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: contains('+ bar'),
     );
+  });
+
+  test('bad globs are handled gracefully', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/{*'],
+        },
+        sdk: '^3.5.0',
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: contains(
+        'Failed to parse glob `pkgs/{*`. '
+        'Error on line 1, column 8: expected ",".',
+      ),
+    );
+  });
+
+  test('globs are resolved', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/*'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    await dir(appPath, [
+      packageConfigFile([
+        packageConfigEntry(name: 'myapp', path: '.'),
+        packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        packageConfigEntry(name: 'b', path: 'pkgs/b'),
+      ], generatorVersion: '3.5.0'),
+    ]).validate();
   });
 }
 
