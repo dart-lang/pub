@@ -1723,49 +1723,6 @@ b        a${s}b$s
     );
   });
 
-  test('bad globs are handled gracefully', () async {
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        extras: {
-          'workspace': ['pkgs/{*'],
-        },
-        sdk: '^3.5.0',
-      ),
-    ]).create();
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
-      error: contains(
-        'Failed to parse glob `pkgs/{*`. '
-        'Error on line 1, column 8: expected ",".',
-      ),
-    );
-  });
-
-  test('globs are resolved', () async {
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        extras: {
-          'workspace': ['pkgs/*'],
-        },
-        sdk: '^3.5.0',
-      ),
-      dir('pkgs', [
-        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
-        dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
-      ]),
-    ]).create();
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
-    await dir(appPath, [
-      packageConfigFile([
-        packageConfigEntry(name: 'myapp', path: '.'),
-        packageConfigEntry(name: 'a', path: 'pkgs/a'),
-        packageConfigEntry(name: 'b', path: 'pkgs/b'),
-      ], generatorVersion: '3.5.0'),
-    ]).validate();
   test('`--example` gets all (non-workspace) examples in workspace', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
@@ -1862,6 +1819,51 @@ b        a${s}b$s
         isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
     );
+  });
+
+  test('bad globs are handled gracefully', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/{*'],
+        },
+        sdk: '^3.5.0',
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      error: contains(
+        'Failed to parse glob `pkgs/{*`. '
+        'Error on line 1, column 8: expected ",".',
+      ),
+    );
+  });
+
+  test('globs are resolved', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/*'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    await dir(appPath, [
+      packageConfigFile([
+        packageConfigEntry(name: 'myapp', path: '.'),
+        packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        packageConfigEntry(name: 'b', path: 'pkgs/b'),
+      ], generatorVersion: '3.5.0'),
+    ]).validate();
   });
 }
 
