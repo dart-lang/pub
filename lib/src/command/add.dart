@@ -290,14 +290,14 @@ Specify multiple sdk packages with descriptors.''');
           precompile: !argResults.isDryRun && argResults.shouldPrecompile,
         );
 
-    if (!argResults.isDryRun &&
-        argResults.example &&
-        entrypoint.example != null) {
-      await entrypoint.example!.acquireDependencies(
-        SolveType.get,
-        precompile: argResults.shouldPrecompile,
-        summaryOnly: true,
-      );
+    if (!argResults.isDryRun && argResults.example) {
+      for (final example in entrypoint.examples) {
+        await example.acquireDependencies(
+          SolveType.get,
+          precompile: argResults.shouldPrecompile,
+          summaryOnly: true,
+        );
+      }
     }
 
     if (isOffline) {

@@ -154,19 +154,30 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     }
 
     if (_upgradeMajorVersions) {
-      if (argResults.flag('example') && entrypoint.example != null) {
-        log.warning(
-          'Running `upgrade --major-versions` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --major-versions --directory example/` separately.',
-        );
+      if (argResults.flag('example')) {
+        for (final example in entrypoint.examples) {
+          log.warning(
+            'Running `upgrade --major-versions` only in '
+            '`${entrypoint.workspaceRoot.dir}`. '
+            'Run `$topLevelProgram pub upgrade --major-versions '
+            '--directory ${example.workspaceRoot.presentationDir}` separately.',
+          );
+        }
       }
       await _runUpgradeMajorVersions();
     } else {
       await _runUpgrade(entrypoint);
       if (_tighten) {
-        if (argResults.flag('example') && entrypoint.example != null) {
-          log.warning(
-            'Running `upgrade --tighten` only in `${entrypoint.workspaceRoot.dir}`. Run `$topLevelProgram pub upgrade --tighten --directory example/` separately.',
-          );
+        if (argResults.flag('example')) {
+          for (final example in entrypoint.examples) {
+            log.warning(
+              'Running `upgrade --tighten` only in '
+              '`${entrypoint.workspaceRoot.dir}`. '
+              'Run `$topLevelProgram pub upgrade --tighten '
+              '--directory ${example.workspaceRoot.presentationDir}` '
+              'separately.',
+            );
+          }
         }
         final changes = entrypoint.tighten(
           packagesToUpgrade: await _packagesToUpgrade,
@@ -174,11 +185,10 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         entrypoint.applyChanges(changes, _dryRun);
       }
     }
-    if (argResults.flag('example') && entrypoint.example != null) {
-      // Reload the entrypoint to ensure we pick up potential changes that has
-      // been made.
-      final exampleEntrypoint = Entrypoint(directory, cache).example!;
-      await _runUpgrade(exampleEntrypoint, onlySummary: true);
+    if (argResults.flag('example')) {
+      for (final example in entrypoint.examples) {
+        await _runUpgrade(example, onlySummary: true);
+      }
     }
   }
 

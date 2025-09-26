@@ -86,6 +86,9 @@ void main() {
       exitCode: 0,
     );
 
+    // Timestamp resolution is rather poor especially on windows.
+    await Future<Null>.delayed(const Duration(seconds: 1));
+
     await d.dir(appPath, [
       d.libPubspec(
         'myapp',
@@ -97,9 +100,6 @@ void main() {
         },
       ),
     ]).create();
-
-    // Timestamp resolution is rather poor especially on windows.
-    await Future<Null>.delayed(const Duration(seconds: 1));
 
     await runPub(
       args: ['check-resolution-up-to-date'],

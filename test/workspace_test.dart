@@ -1766,6 +1766,102 @@ b        a${s}b$s
         packageConfigEntry(name: 'b', path: 'pkgs/b'),
       ], generatorVersion: '3.5.0'),
     ]).validate();
+  test('`--example` gets all (non-workspace) examples in workspace', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.0.0');
+    server.serve('foo', '1.5.0');
+
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a'],
+        },
+        sdk: '^3.5.0',
+      ),
+      dir('pkgs', [
+        dir('a', [
+          libPubspec('a', '1.0.0', resolutionWorkspace: true),
+          dir('example', [libPubspec('example_b', '1.0.0')]),
+        ]),
+        dir('b', [
+          libPubspec(
+            'b',
+            '1.0.0',
+            resolutionWorkspace: true,
+            extras: {
+              'workspace': ['example'],
+            },
+          ),
+          dir('example', [libPubspec('example_b', '1.0.0')]),
+        ]),
+      ]),
+    ]).create();
+
+    final s = p.separator;
+
+    await runPub(
+      args: ['get', '--example'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: allOf(
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+      ),
+    );
+
+    await runPub(
+      args: ['upgrade', '--example'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: allOf(
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+      ),
+    );
+
+    await runPub(
+      args: ['upgrade', '--example', '--tighten'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: allOf(
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+      ),
+      error: contains(
+        'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory .${s}pkgs/a${s}example` separately.',
+      ),
+    );
+
+    await runPub(
+      args: ['upgrade', '--example', '--major-versions'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: allOf(
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
+      ),
+      error: contains(
+        'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory .${s}pkgs/a${s}example` separately.',
+      ),
+    );
+
+    await runPub(
+      args: ['add', 'foo:^1.0.0', '--example'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: allOf(
+        contains('+ foo 1.5.0'),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
+      ),
+    );
+
+    await runPub(
+      args: ['downgrade', '--example'],
+      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      output: allOf(
+        contains('< foo 1.0.0'),
+        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+      ),
+    );
   });
 }
 
