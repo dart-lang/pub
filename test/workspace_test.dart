@@ -1771,8 +1771,8 @@ b        a${s}b$s
       args: ['upgrade', '--example'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.`.')),
       ),
     );
 
@@ -1792,11 +1792,11 @@ b        a${s}b$s
       args: ['upgrade', '--example', '--major-versions'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.')),
       ),
       error: contains(
-        'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory .${s}pkgs/a${s}example` separately.',
+        'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory .${s}pkgs${s}a${s}example` separately.',
       ),
     );
 
@@ -1805,8 +1805,8 @@ b        a${s}b$s
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
         contains('+ foo 1.5.0'),
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.')),
       ),
     );
 
@@ -1815,8 +1815,8 @@ b        a${s}b$s
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
         contains('< foo 1.0.0'),
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.`.')),
       ),
     );
   });
