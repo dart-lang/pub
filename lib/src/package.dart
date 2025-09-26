@@ -4,6 +4,8 @@
 
 import 'dart:io';
 
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
@@ -174,21 +176,31 @@ class Package {
     );
 
     final workspacePackages =
-        pubspec.workspace.map((workspacePath) {
+        pubspec.workspace.expand((workspacePath) {
+          final Glob glob;
           try {
-            return Package.load(
-              p.join(dir, workspacePath),
-              loadPubspec: loadPubspec,
-              withPubspecOverrides: withPubspecOverrides,
-            );
-          } on FileException catch (e) {
-            final pubspecPath = p.join(dir, 'pubspec.yaml');
-            throw FileException(
-              '${e.message}\n'
-              'That was included in the workspace of $pubspecPath.',
-              e.path,
+            glob = Glob(workspacePath);
+          } on FormatException catch (e) {
+            fail('Failed to parse glob `$workspacePath`. $e');
+          }
+          final packages = <Package>[];
+          for (final globResult in glob.listSync(root: dir)) {
+            final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
+            if (!fileExists(pubspecPath)) continue;
+            packages.add(
+              Package.load(
+                globResult.path,
+                loadPubspec: loadPubspec,
+                withPubspecOverrides: withPubspecOverrides,
+              ),
             );
           }
+          if (packages.isEmpty) {
+            fail('''
+No workspace packages matching `$workspacePath` - that was included in the workspace of `${p.join(dir, 'pubspec.yaml')}`.
+''');
+          }
+          return packages;
         }).toList();
     for (final package in workspacePackages) {
       if (package.pubspec.resolution != Resolution.workspace) {
