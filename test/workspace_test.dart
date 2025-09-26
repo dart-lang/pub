@@ -1780,11 +1780,11 @@ b        a${s}b$s
       args: ['upgrade', '--example', '--tighten'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
         isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
       error: contains(
-        'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory .${s}pkgs/a${s}example` separately.',
+        'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory .${s}pkgs${s}a${s}example` separately.',
       ),
     );
 
