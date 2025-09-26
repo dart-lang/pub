@@ -863,8 +863,8 @@ foo:foomain''',
       await pubGet(
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         warning: allOf(
-          contains('Deleting old lock-file: `.${s}pkgs/a${s}pubspec.lock'),
-          isNot(contains('.${s}pkgs/b${s}pubspec.lock')),
+          contains('Deleting old lock-file: `.${s}pkgs${s}a${s}pubspec.lock'),
+          isNot(contains('.${s}pkgs${s}b${s}pubspec.lock')),
           contains(
             'Deleting old package config: '
             '`.${s}pkgs/a$s.dart_tool${s}package_config.json`',
@@ -951,7 +951,7 @@ Packages can only be included in the workspace once.
       error: '''
 Packages can only be included in the workspace once.
 
-`.${s}pkgs/a/pubspec.yaml` is included twice into the workspace of `.${s}pubspec.yaml`''',
+`.${s}pkgs${s}a${s}pubspec.yaml` is included twice into the workspace of `.${s}pubspec.yaml`''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
