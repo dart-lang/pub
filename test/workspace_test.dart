@@ -1796,7 +1796,9 @@ b        a${s}b$s
         isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.')),
       ),
       error: contains(
-        'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory .${s}pkgs${s}a${s}example` separately.',
+        'Running `upgrade --major-versions` only in `.`. '
+        'Run `dart pub upgrade --major-versions '
+        '--directory .${s}pkgs${s}a${s}example` separately.',
       ),
     );
 
