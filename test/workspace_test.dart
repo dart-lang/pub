@@ -1784,7 +1784,9 @@ b        a${s}b$s
         isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
       error: contains(
-        'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory .${s}pkgs${s}a${s}example` separately.',
+        'Running `upgrade --tighten` only in `.`. '
+        'Run `dart pub upgrade --tighten '
+        '--directory .${s}pkgs${s}a${s}example` separately.',
       ),
     );
 
