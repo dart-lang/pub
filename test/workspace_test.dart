@@ -867,7 +867,7 @@ foo:foomain''',
           isNot(contains('.${s}pkgs${s}b${s}pubspec.lock')),
           contains(
             'Deleting old package config: '
-            '`.${s}pkgs/a$s.dart_tool${s}package_config.json`',
+            '`.${s}pkgs${s}a$s.dart_tool${s}package_config.json`',
           ),
           contains('Deleting old lock-file: `.${s}pkgs${s}pubspec.lock'),
           contains(
@@ -1593,7 +1593,7 @@ Consider removing one of the overrides.''',
       error: allOf(
         contains('Cannot override workspace packages'),
         contains(
-          'Package `a` at `.${s}pkgs/a` is overridden in `pubspec.yaml`.',
+          'Package `a` at `.${s}pkgs${s}a` is overridden in `pubspec.yaml`.',
         ),
       ),
     );
@@ -1762,8 +1762,8 @@ b        a${s}b$s
       args: ['get', '--example'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.`.')),
       ),
     );
 
