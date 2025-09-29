@@ -90,4 +90,112 @@ void main() async {
       ),
     });
   });
+
+  test('gcing and empty cache behaves well', () async {
+    await runPub(
+      args: ['cache', 'gc', '--force'],
+      output: allOf(
+        contains('Found no active projects.'),
+        contains('No unused cache entries found.'),
+      ),
+    );
+  });
+
+  test('Can gc cache entries', () async {
+    final server = await servePackages();
+
+    server.serve('hosted1', '1.0.0');
+    server.serve('hosted2', '1.0.0');
+
+    await d.git('git1', [d.libPubspec('git1', '1.0.0')]).create();
+    await d.git('git2', [d.libPubspec('git2', '1.0.0')]).create();
+
+    await d.git('git_with_path1', [
+      d.dir('pkg', [d.libPubspec('git_with_path1', '1.0.0')]),
+    ]).create();
+    await d.git('git_with_path2', [
+      d.dir('pkg', [d.libPubspec('git_with_path2', '1.0.0')]),
+    ]).create();
+
+    await d
+        .appDir(
+          dependencies: {
+            'hosted1': '1.0.0',
+            'git1': {'git': '../git1'},
+            'git_with_path1': {
+              'git': {'url': '../git_with_path1', 'path': 'pkg'},
+            },
+          },
+        )
+        .create();
+    await pubGet();
+    await d
+        .appDir(
+          dependencies: {
+            'hosted2': '1.0.0',
+            'git2': {'git': '../git2'},
+            'git_with_path2': {
+              'git': {'url': '../git_with_path2', 'path': 'pkg'},
+            },
+          },
+        )
+        .create();
+    await pubGet(output: contains('- hosted1'));
+
+    await runPub(
+      args: ['cache', 'gc', '--force'],
+      output: allOf(
+        contains('* ${p.join(d.sandbox, appPath)}'),
+        contains('No unused cache entries found'),
+      ),
+    );
+    await Future<void>.delayed(const Duration(seconds: 2));
+
+    await runPub(
+      args: ['cache', 'gc', '--force'],
+      output: allOf(
+        contains('* ${p.join(d.sandbox, appPath)}'),
+        contains(RegExp('Will recover [0-9]{3} KB.')),
+      ),
+      silent: allOf([
+        contains(RegExp('Deleting directory .*git.*cache/git1-.*')),
+        contains(RegExp('Deleting directory .*git.*cache/git_with_path1-.*')),
+        contains(RegExp('Deleting directory .*git.*git1-.*')),
+        contains(RegExp('Deleting directory .*git.*git_with_path1-.*')),
+        contains(
+          RegExp('Deleting file .*hosted-hashes.*hosted1-1.0.0.sha256.'),
+        ),
+        contains(RegExp('Deleting directory .*hosted.*hosted1-1.0.0.')),
+        isNot(contains(RegExp('Deleting.*hosted2'))),
+        isNot(contains(RegExp('Deleting.*git2'))),
+        isNot(contains(RegExp('Deleting.*git_with_path2'))),
+      ]),
+    );
+    expect(
+      Directory(
+        p.join(d.sandbox, d.hostedCachePath(), 'hosted1-1.0.0'),
+      ).existsSync(),
+      isFalse,
+    );
+    expect(
+      Directory(
+        p.join(d.sandbox, d.hostedCachePath(), 'hosted2-1.0.0'),
+      ).existsSync(),
+      isTrue,
+    );
+
+    expect(
+      Directory(
+        p.join(d.sandbox, cachePath, 'git'),
+      ).listSync().map((f) => p.basename(f.path)),
+      {'cache', matches(RegExp('git2.*')), matches(RegExp('git_with_path2.*'))},
+    );
+
+    expect(
+      Directory(
+        p.join(d.sandbox, cachePath, 'git', 'cache'),
+      ).listSync().map((f) => p.basename(f.path)),
+      {matches(RegExp('git2.*')), matches(RegExp('git_with_path2.*'))},
+    );
+  });
 }

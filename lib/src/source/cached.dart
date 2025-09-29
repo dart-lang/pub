@@ -76,6 +76,14 @@ abstract class CachedSource extends Source {
   /// Returns a list of results indicating for each if that package was
   /// successfully repaired.
   Future<Iterable<RepairResult>> repairCachedPackages(SystemCache cache);
+
+  /// Return all files directories inside this source  that can be removed while
+  /// preserving the packages given by [alivePackages] a list of package root
+  /// directories. They should all be canonicalized.
+  Future<List<String>> entriesToGc(
+    SystemCache cache,
+    Set<String> alivePackages,
+  );
 }
 
 /// The result of repairing a single cache entry.

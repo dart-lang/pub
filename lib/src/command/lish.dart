@@ -359,7 +359,7 @@ the \$PUB_HOSTED_URL environment variable.''');
           baseDir: entrypoint.workPackage.dir,
         ).toBytes();
 
-    final size = _readableFileSize(packageBytes.length);
+    final size = readableFileSize(packageBytes.length);
     log.message('\nTotal compressed archive size: $size.\n');
 
     final validationResult =
@@ -523,18 +523,6 @@ the \$PUB_HOSTED_URL environment variable.''');
   dynamic _expectField(Map map, String key, http.Response response) {
     if (map.containsKey(key)) return map[key];
     invalidServerResponse(response);
-  }
-}
-
-String _readableFileSize(int size) {
-  if (size >= 1 << 30) {
-    return '${size ~/ (1 << 30)} GB';
-  } else if (size >= 1 << 20) {
-    return '${size ~/ (1 << 20)} MB';
-  } else if (size >= 1 << 10) {
-    return '${size ~/ (1 << 10)} KB';
-  } else {
-    return '<1 KB';
   }
 }
 

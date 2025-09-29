@@ -825,3 +825,15 @@ extension ExpectEntries on YamlList {
         ),
   ];
 }
+
+String readableFileSize(int size) {
+  if (size >= 1 << 30) {
+    return '${size ~/ (1 << 30)} GB';
+  } else if (size >= 1 << 20) {
+    return '${size ~/ (1 << 20)} MB';
+  } else if (size >= 1 << 10) {
+    return '${size ~/ (1 << 10)} KB';
+  } else {
+    return '<1 KB';
+  }
+}
