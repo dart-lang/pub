@@ -83,15 +83,16 @@ class GetCommand extends PubCommand {
       enforceLockfile: argResults.flag('enforce-lockfile'),
     );
 
-    final example = entrypoint.example;
-    if ((argResults.flag('example')) && example != null) {
-      await example.acquireDependencies(
-        SolveType.get,
-        dryRun: argResults.flag('dry-run'),
-        precompile: argResults.flag('precompile'),
-        summaryOnly: true,
-        enforceLockfile: argResults.flag('enforce-lockfile'),
-      );
+    if (argResults.flag('example')) {
+      for (final example in entrypoint.examples) {
+        await example.acquireDependencies(
+          SolveType.get,
+          dryRun: argResults.flag('dry-run'),
+          precompile: argResults.flag('precompile'),
+          summaryOnly: true,
+          enforceLockfile: argResults.flag('enforce-lockfile'),
+        );
+      }
     }
   }
 }
