@@ -145,7 +145,7 @@ void main() async {
     await runPub(
       args: ['cache', 'gc', '--force'],
       output: allOf(
-        contains('* ${p.join(d.sandbox, appPath)}'),
+        contains('* ${p.join(d.sandbox, appPath).toLowerCase()}'),
         contains('No unused cache entries found'),
       ),
     );
@@ -154,7 +154,7 @@ void main() async {
     await runPub(
       args: ['cache', 'gc', '--force'],
       output: allOf(
-        contains('* ${p.join(d.sandbox, appPath)}'),
+        contains('* ${p.join(d.sandbox, appPath).toLowerCase()}'),
         contains(RegExp('Will recover [0-9]{3} KB.')),
       ),
       silent: allOf([
