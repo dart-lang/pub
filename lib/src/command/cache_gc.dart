@@ -1,4 +1,4 @@
-// Copyright (c) 2013, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2025, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -14,7 +14,6 @@ import '../log.dart' as log;
 import '../package_config.dart';
 import '../utils.dart';
 
-/// Handles the `cache list` pub command.
 class CacheGcCommand extends PubCommand {
   @override
   String get name => 'gc';
@@ -99,7 +98,7 @@ class CacheGcCommand extends PubCommand {
             parts[parts.length - 1] == 'package_config.json') {
           projectDir = p.joinAll(parts.sublist(0, parts.length - 2));
         }
-        log.message('* $projectDir'); // TODO(write if it is a workspace).
+        log.message('* $projectDir');
       }
     }
     var sum = 0;
