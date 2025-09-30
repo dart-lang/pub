@@ -18,7 +18,7 @@ dependencies:
   http_parser: ^4.1.2
   meta: ^1.17.0
   path: ^1.9.1
-  pool: ^1.5.1
+  pool: ^1.0.0
   pub_semver: ^2.2.0
   shelf: ^1.4.2
   source_span: ^1.10.1
