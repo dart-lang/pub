@@ -1864,29 +1864,33 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
     );
   });
 
-  test('globs are not resolved in older language versions', () async {
-    await dir(appPath, [
-      libPubspec(
-        'myapp',
-        '1.2.3',
-        extras: {
-          'workspace': ['pkgs/*'],
-        },
-        sdk: '^3.6.0',
-      ),
-      dir('pkgs', [
-        dir('*', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
-        dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
-      ]),
-    ]).create();
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
-    await dir(appPath, [
-      packageConfigFile([
-        packageConfigEntry(name: 'myapp', path: '.'),
-        packageConfigEntry(name: 'a', path: 'pkgs/*'),
-      ], generatorVersion: '3.11.0'),
-    ]).validate();
-  });
+  test(
+    'globs are not resolved in older language versions',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/8'],
+          },
+          sdk: '^3.6.0',
+        ),
+        dir('pkgs', [
+          dir('', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+          dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'a', path: 'pkgs/*'),
+        ], generatorVersion: '3.11.0'),
+      ]).validate();
+    },
+    skip: Platform.isWindows, // Cannot create directory named "*" on Windows.
+  );
 
   test('globs are resolved with newer language versions', () async {
     await dir(appPath, [
