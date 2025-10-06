@@ -13,6 +13,7 @@ import 'exceptions.dart';
 import 'git.dart' as git;
 import 'ignore.dart';
 import 'io.dart';
+import 'language_version.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
 import 'pubspec.dart';
@@ -179,7 +180,11 @@ class Package {
         pubspec.workspace.expand((workspacePath) {
           final Glob glob;
           try {
-            glob = Glob(workspacePath);
+            glob = Glob(
+              pubspec.languageVersion.supportsWorkspaceGlobs
+                  ? workspacePath
+                  : Glob.quote(workspacePath),
+            );
           } on FormatException catch (e) {
             fail('Failed to parse glob `$workspacePath`. $e');
           }
@@ -196,8 +201,17 @@ class Package {
             );
           }
           if (packages.isEmpty) {
+            final globHint =
+                !pubspec.languageVersion.supportsWorkspaceGlobs &&
+                        _looksLikeGlob(workspacePath)
+                    ? '''
+\n\nGlob syntax is only supported from language version ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
+Consider changing the language version of ${p.join(dir, 'pubspec.yaml')} to ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
+'''
+                    : '';
             fail('''
-No workspace packages matching `$workspacePath` - that was included in the workspace of `${p.join(dir, 'pubspec.yaml')}`.
+No workspace packages matching `$workspacePath`.
+That was included in the workspace of `${p.join(dir, 'pubspec.yaml')}`.$globHint
 ''');
           }
           return packages;
@@ -558,3 +572,5 @@ See https://dart.dev/go/workspaces-stray-files for details.
     }
   }
 }
+
+bool _looksLikeGlob(String s) => Glob.quote(s) != s;

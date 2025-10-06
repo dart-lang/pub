@@ -1837,7 +1837,26 @@ b        a${s}b$s
       ),
     ]).create();
     await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
+      error: contains('''
+No workspace packages matching `pkgs/{*`.
+That was included in the workspace of `.${s}pubspec.yaml`.
+
+Glob syntax is only supported from language version 3.11.
+Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
+    );
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/{*'],
+        },
+        sdk: '^3.11.0',
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
       error: contains(
         'Failed to parse glob `pkgs/{*`. '
         'Error on line 1, column 8: expected ",".',
@@ -1845,7 +1864,7 @@ b        a${s}b$s
     );
   });
 
-  test('globs are resolved', () async {
+  test('globs are not resolved in older language versions', () async {
     await dir(appPath, [
       libPubspec(
         'myapp',
@@ -1853,20 +1872,44 @@ b        a${s}b$s
         extras: {
           'workspace': ['pkgs/*'],
         },
-        sdk: '^3.5.0',
+        sdk: '^3.6.0',
+      ),
+      dir('pkgs', [
+        dir('*', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+    await dir(appPath, [
+      packageConfigFile([
+        packageConfigEntry(name: 'myapp', path: '.'),
+        packageConfigEntry(name: 'a', path: 'pkgs/*'),
+      ], generatorVersion: '3.11.0'),
+    ]).validate();
+  });
+
+  test('globs are resolved with newer language versions', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/*'],
+        },
+        sdk: '^3.11.0',
       ),
       dir('pkgs', [
         dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
         dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
       ]),
     ]).create();
-    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
     await dir(appPath, [
       packageConfigFile([
         packageConfigEntry(name: 'myapp', path: '.'),
         packageConfigEntry(name: 'a', path: 'pkgs/a'),
         packageConfigEntry(name: 'b', path: 'pkgs/b'),
-      ], generatorVersion: '3.5.0'),
+      ], generatorVersion: '3.11.0'),
     ]).validate();
   });
 }
