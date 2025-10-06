@@ -73,7 +73,7 @@ class LoginCommand extends PubCommand {
           'name': final String? name,
           'email': final String email,
         }) {
-          return _UserInfo(name, email);
+          return _UserInfo(name:name, email:email);
         } else {
           log.fine('Unexpected user info format: ${response.body}');
           return null;
