@@ -1872,12 +1872,12 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
           'myapp',
           '1.2.3',
           extras: {
-            'workspace': ['pkgs/8'],
+            'workspace': ['pkgs/*'],
           },
           sdk: '^3.6.0',
         ),
         dir('pkgs', [
-          dir('', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+          dir('*', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
           dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
         ]),
       ]).create();
