@@ -59,7 +59,6 @@ To remove a dependency override of a package prefix the package name with
       'example',
       defaultsTo: true,
       help: 'Also update dependencies in `example/` (if it exists).',
-      hide: true,
     );
 
     argParser.addOption(
@@ -98,13 +97,14 @@ To remove a dependency override of a package prefix the package name with
           dryRun: isDryRun,
         );
 
-    final example = entrypoint.example;
-    if (!isDryRun && argResults.flag('example') && example != null) {
-      await example.acquireDependencies(
-        SolveType.get,
-        precompile: argResults.flag('precompile'),
-        summaryOnly: true,
-      );
+    if (!isDryRun && argResults.flag('example')) {
+      for (final example in entrypoint.examples) {
+        await example.acquireDependencies(
+          SolveType.get,
+          precompile: argResults.flag('precompile'),
+          summaryOnly: true,
+        );
+      }
     }
   }
 

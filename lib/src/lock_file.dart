@@ -10,6 +10,7 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
+import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
@@ -149,6 +150,8 @@ class LockFile {
             ),
             'flutter' => SdkConstraint.interpretFlutterSdkConstraint(
               originalConstraint,
+              isRoot: false,
+              languageVersion: LanguageVersion.defaultLanguageVersion,
             ),
             _ => SdkConstraint(originalConstraint),
           };
@@ -406,7 +409,7 @@ ${yamlToString(data)}
         detectWindowsLineEndings(readTextFile(lockFilePath));
 
     final serialized = serialize(p.dirname(lockFilePath), cache);
-    writeTextFile(
+    writeTextFileIfDifferent(
       lockFilePath,
       windowsLineEndings ? serialized.replaceAll('\n', '\r\n') : serialized,
     );

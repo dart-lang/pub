@@ -174,6 +174,23 @@ class GlobalPackages {
     );
   }
 
+  void _testForHooks(Package package, String activatedPackageName) {
+    final prelude =
+        (package.name == activatedPackageName)
+            ? 'Package $activatedPackageName uses hooks.'
+            : 'The dependency of $activatedPackageName, '
+                '${package.name} uses hooks.';
+    if (fileExists(p.join(package.dir, 'hooks', 'build.dart'))) {
+      fail('''
+$prelude
+
+You currently cannot `global activate` packages relying on hooks.
+
+Follow progress in https://github.com/dart-lang/sdk/issues/60889.
+''');
+    }
+  }
+
   /// Makes the local package at [path] globally active.
   ///
   /// [executables] is the names of the executables that should have binstubs.
@@ -194,6 +211,13 @@ class GlobalPackages {
     await entrypoint.acquireDependencies(SolveType.get);
     final activatedPackage = entrypoint.workPackage;
     final name = activatedPackage.name;
+    for (final package in (await entrypoint.packageGraph)
+        .transitiveDependencies(
+          name,
+          followDevDependenciesFromPackage: false,
+        )) {
+      _testForHooks(package, name);
+    }
     _describeActive(name, cache);
 
     // Write a lockfile that points to the local package.
@@ -260,10 +284,27 @@ class GlobalPackages {
       }
       rethrow;
     }
+
     // We want the entrypoint to be rooted at 'dep' not the dummy-package.
     result.packages.removeWhere((id) => id.name == 'pub global activate');
 
     final lockFile = await result.downloadCachedPackages(cache);
+
+    // Because we know that the dummy package never is a workspace we can
+    // iterate all packages.
+    for (final package in result.packages) {
+      _testForHooks(
+        // TODO(sigurdm): refactor PackageGraph to make it possible to query
+        // without loading the entrypoint.
+        Package(
+          result.pubspecs[package.name]!,
+          cache.getDirectory(package),
+          [],
+        ),
+        name,
+      );
+    }
+
     final sameVersions =
         originalLockFile != null && originalLockFile.samePackageIds(lockFile);
 
@@ -293,10 +334,14 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
 
       lockFile.writeToFile(p.join(tempDir, 'pubspec.lock'), cache);
 
+      final packageDir = _packageDir(name);
+      tryDeleteEntry(packageDir);
+      tryRenameDir(tempDir, packageDir);
+
       // Load the package graph from [result] so we don't need to re-parse all
       // the pubspecs.
       final entrypoint = Entrypoint.global(
-        root,
+        packageForConstraint(dep, packageDir),
         lockFile,
         cache,
         solveResult: result,
@@ -305,9 +350,6 @@ To recompile executables, first run `$topLevelProgram pub global deactivate $nam
       await entrypoint.writePackageConfigFiles();
 
       await entrypoint.precompileExecutables();
-
-      tryDeleteEntry(_packageDir(name));
-      tryRenameDir(tempDir, _packageDir(name));
     }
 
     final entrypoint = Entrypoint.global(

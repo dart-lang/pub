@@ -225,15 +225,12 @@ environment:
         _FileType.pubspec,
       );
     }
-    final constraints = {
-      'dart': SdkConstraint.interpretDartSdkConstraint(
-        originalDartSdkConstraint,
-        defaultUpperBoundConstraint:
-            _includeDefaultSdkConstraint
-                ? _defaultUpperBoundSdkConstraint
-                : null,
-      ),
-    };
+    final dartConstraint = SdkConstraint.interpretDartSdkConstraint(
+      originalDartSdkConstraint,
+      defaultUpperBoundConstraint:
+          _includeDefaultSdkConstraint ? _defaultUpperBoundSdkConstraint : null,
+    );
+    final constraints = {'dart': dartConstraint};
 
     if (yaml is YamlMap) {
       yaml.nodes.forEach((nameNode, constraintNode) {
@@ -253,7 +250,11 @@ environment:
         );
         constraints[name] =
             name == 'flutter'
-                ? SdkConstraint.interpretFlutterSdkConstraint(constraint)
+                ? SdkConstraint.interpretFlutterSdkConstraint(
+                  constraint,
+                  isRoot: _containingDescription is ResolvedRootDescription,
+                  languageVersion: dartConstraint.languageVersion,
+                )
                 : SdkConstraint(constraint);
       });
     }
@@ -816,17 +817,26 @@ class SdkConstraint {
     return SdkConstraint(constraint, originalConstraint: originalConstraint);
   }
 
-  // Flutter constraints get special treatment, as Flutter won't be using
-  // semantic versioning to mark breaking releases. We simply ignore upper
-  // bounds.
+  /// Flutter constraints get special treatment, as Flutter won't be using
+  /// semantic versioning to mark breaking releases. We simply ignore upper
+  /// bounds for dependencies.
+  ///
+  /// After language version
+  /// [LanguageVersion.firstVersionRespectingFlutterBoundInRoots] for root
+  /// packages we use the upper bound, allowing app developers to constrain the
+  /// Flutter version.
   factory SdkConstraint.interpretFlutterSdkConstraint(
-    VersionConstraint constraint,
-  ) {
+    VersionConstraint constraint, {
+    required bool isRoot,
+    required LanguageVersion languageVersion,
+  }) {
     if (constraint is VersionRange) {
-      return SdkConstraint(
-        VersionRange(min: constraint.min, includeMin: constraint.includeMin),
-        originalConstraint: constraint,
-      );
+      if (!(isRoot && languageVersion.respectsFlutterBoundInRoots)) {
+        return SdkConstraint(
+          VersionRange(min: constraint.min, includeMin: constraint.includeMin),
+          originalConstraint: constraint,
+        );
+      }
     }
     return SdkConstraint(constraint);
   }

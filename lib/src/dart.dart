@@ -12,7 +12,7 @@ import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/error/error.dart';
+import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
 import 'package:path/path.dart' as p;
 
@@ -47,8 +47,8 @@ class AnalysisContextManager {
     path = p.normalize(p.absolute(path));
     final parseResult = _session.getParsedUnit(path);
     if (parseResult is ParsedUnitResult) {
-      if (parseResult.errors.isNotEmpty) {
-        throw AnalyzerErrorGroup(parseResult.errors);
+      if (parseResult.diagnostics.isNotEmpty) {
+        throw AnalyzerErrorGroup(parseResult.diagnostics);
       }
       return parseResult.unit;
     } else {
@@ -71,9 +71,9 @@ class AnalysisContextManager {
   }
 }
 
-/// An error class that contains multiple [AnalysisError]s.
+/// An error class that contains multiple [Diagnostic]s.
 class AnalyzerErrorGroup implements Exception {
-  final List<AnalysisError> errors;
+  final List<Diagnostic> errors;
 
   AnalyzerErrorGroup(this.errors);
 

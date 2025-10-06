@@ -7,6 +7,7 @@ import 'command.dart';
 import 'command/add.dart';
 import 'command/bump.dart';
 import 'command/cache.dart';
+import 'command/check_resolution_up_to_date.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
 import 'command/get.dart';
@@ -45,7 +46,10 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
 
   final bool Function() isVerbose;
 
-  PubEmbeddableCommand(this.isVerbose) : super() {
+  @override
+  final String category;
+
+  PubEmbeddableCommand(this.isVerbose, this.category) : super() {
     // This flag was never honored in the embedding but since it was accepted we
     // leave it as a hidden flag to avoid breaking clients that pass it.
     argParser.addFlag('trace', hide: true);
@@ -80,6 +84,7 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     addSubcommand(LishCommand());
     addSubcommand(OutdatedCommand());
     addSubcommand(RemoveCommand());
+    addSubcommand(CheckResolutionUpToDateCommand());
     addSubcommand(RunCommand(deprecated: true, alwaysUseSubprocess: true));
     addSubcommand(UnpackCommand());
     addSubcommand(UpgradeCommand());

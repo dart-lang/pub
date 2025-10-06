@@ -7,7 +7,6 @@
 // embedding_test.dart
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -36,45 +35,6 @@ void testEnsurePubspecResolved() {
 
       await pubGet();
     });
-
-    test(
-      'does not require a pub get '
-      'if a `flutter_gen` package is injected into package_config.json',
-      () async {
-        await d.dir('bar', [
-          d.pubspec({'name': 'bar'}),
-        ]).create();
-        await d.dir(appPath, [
-          d.appPubspec(
-            dependencies: {
-              'bar': {'path': '../bar'},
-            },
-          ),
-        ]).create();
-
-        await pubGet();
-
-        final packageConfig = p.join(
-          d.sandbox,
-          'myapp',
-          '.dart_tool',
-          'package_config.json',
-        );
-        final contents =
-            json.decode(File(packageConfig).readAsStringSync()) as Map;
-        (contents['packages'] as List).add({
-          'name': 'flutter_gen',
-          'rootUri': 'flutter_gen',
-          'languageVersion': '2.8',
-        });
-        writeTextFile(packageConfig, json.encode(contents));
-
-        await runPub(
-          args: ['run', 'bin/script.dart'],
-          output: endsWith('hello!'),
-        );
-      },
-    );
 
     group('Does an implicit pub get if', () {
       test("there's no lockfile", () async {

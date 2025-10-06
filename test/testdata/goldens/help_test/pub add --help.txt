@@ -43,6 +43,8 @@ Usage: pub add [options] [<section>:]<package>[:descriptor] [<section>:]<package
 -n, --dry-run            Report what dependencies would change but don't change any.
     --[no-]precompile    Build executables in immediate dependencies.
 -C, --directory=<dir>    Run this in the directory <dir>.
+    --[no-]example       Also update dependencies in `example/` after modifying pubspec.yaml in the root package (if it exists).
+                         (defaults to on)
 
 Run "pub help" to see global options.
 See https://dart.dev/tools/pub/cmd/pub-add for detailed documentation.

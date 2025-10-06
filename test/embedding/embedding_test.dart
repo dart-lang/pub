@@ -99,30 +99,6 @@ Future<void> main() async {
     File(snapshot).parent.deleteSync(recursive: true);
   });
 
-  test('Can depend on package:flutter_gen', () async {
-    // Regression test for https://github.com/dart-lang/pub/issues/3314.
-    final server = await servePackages();
-    server.serve(
-      'flutter_gen',
-      '1.0.0',
-      contents: [
-        d.dir('bin', [d.file('flutter_gen.dart', 'main() {print("hi");}')]),
-      ],
-    );
-
-    await d.appDir(dependencies: {'flutter_gen': '^1.0.0'}).create();
-    await pubGet();
-    final buffer = StringBuffer();
-
-    await runEmbeddingToBuffer(
-      ['run', 'flutter_gen'],
-      buffer,
-      workingDirectory: d.path(appPath),
-      environment: getPubTestEnvironment(),
-    );
-    expect(buffer.toString(), contains('hi'));
-  });
-
   testWithGolden('run works, though hidden', (ctx) async {
     await servePackages();
     await d.dir(appPath, [
@@ -437,7 +413,13 @@ main() {
 
 String _filter(String input) {
   return input
-      .replaceAll(p.toUri(d.sandbox).toString(), r'file://$SANDBOX')
+      .replaceAll(
+        RegExp(
+          RegExp.escape(p.toUri(d.sandbox).toString()),
+          caseSensitive: false,
+        ),
+        r'file://$SANDBOX',
+      )
       .replaceAll(d.sandbox, r'$SANDBOX')
       .replaceAll(Platform.pathSeparator, '/')
       .replaceAll(Platform.operatingSystem, r'$OS')
@@ -545,6 +527,10 @@ String _filter(String input) {
       .replaceAll(
         RegExp(r'"archive_sha256":"[0-9a-f]{64}"', multiLine: true),
         r'"archive_sha256":"$SHA256"',
+      )
+      .replaceAll(
+        RegExp(r'active_roots/[0-9a-f]{2}/[0-9a-f]{62}', multiLine: true),
+        r'active_roots/$HH/$HASH',
       )
       /// TODO(sigurdm): This hack suppresses differences in stack-traces
       /// between dart 2.17 and 2.18. Remove when 2.18 is stable.

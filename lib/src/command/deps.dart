@@ -99,7 +99,12 @@ class DepsCommand extends PubCommand {
       ];
       final toVisit = [...workspacePackageNames];
       final packagesJson = <dynamic>[];
-      final graph = await entrypoint.packageGraph;
+
+      // Avoid polluting stdout when outputting json.
+      final graph = await log.errorsOnlyUnlessTerminal(
+        () async => await entrypoint.packageGraph,
+      );
+
       while (toVisit.isNotEmpty) {
         final current = toVisit.removeLast();
         if (visited.contains(current)) continue;
@@ -412,7 +417,12 @@ class DepsCommand extends PubCommand {
       ],
     ];
     return nonDevDependencies
-        .expand(graph.transitiveDependencies)
+        .expand(
+          (p) => graph.transitiveDependencies(
+            p,
+            followDevDependenciesFromPackage: false,
+          ),
+        )
         .map((package) => package.name)
         .toSet();
   }

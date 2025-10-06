@@ -257,6 +257,21 @@ void writeTextFile(
   File(file).writeAsStringSync(contents, encoding: encoding);
 }
 
+/// Reads the file at [path] and writes [newContent] to it, if it is different
+/// from [newContent].
+///
+/// If the file doesn't exist it is always written.
+void writeTextFileIfDifferent(String path, String newContent) {
+  // Compare to the present package_config.json
+  // For purposes of equality we don't care about the `generated` timestamp.
+  final originalText = tryReadTextFile(path);
+  if (originalText != newContent) {
+    writeTextFile(path, newContent);
+  } else {
+    log.fine('`$path` is unchanged. Not rewriting.');
+  }
+}
+
 /// Reads the contents of the binary file [file].
 void writeBinaryFile(String file, Uint8List data) {
   log.io('Writing ${data.length} bytes to file $file.');
@@ -562,7 +577,9 @@ void copyFile(String from, String to) {
 
 void renameFile(String from, String to) {
   log.io('Renaming "$from" to "$to".');
-  File(from).renameSync(to);
+  _attempt('Renaming `$from` to `$to`', () {
+    File(from).renameSync(to);
+  });
 }
 
 bool _isDirectoryNotEmptyException(FileSystemException e) {

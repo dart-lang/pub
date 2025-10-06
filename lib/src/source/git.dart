@@ -171,7 +171,7 @@ class GitSource extends CachedSource {
       );
     }
 
-    final tagPattern = description['tag_pattern'];
+    final tagPattern = description['tag-pattern'];
     if (tagPattern is! String?) {
       throw const FormatException(
         "The 'tag_pattern' field of the description "
@@ -290,7 +290,7 @@ class GitSource extends CachedSource {
     String? ref,
     String? path,
     SystemCache cache, {
-    required String relativeTo,
+    required String? relativeTo,
     required String? tagPattern,
   }) async {
     assert(
