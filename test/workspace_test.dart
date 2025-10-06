@@ -396,8 +396,8 @@ void main() {
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'No workspace packages matching `b` - '
-        'that was included in the workspace of `$aPubspecPath`',
+        'No workspace packages matching `b`.\n'
+        'That was included in the workspace of `$aPubspecPath`',
       ),
       exitCode: 1,
     );
