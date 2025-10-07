@@ -5,6 +5,7 @@
 import '../command.dart';
 import 'cache_add.dart';
 import 'cache_clean.dart';
+import 'cache_gc.dart';
 import 'cache_list.dart';
 import 'cache_preload.dart';
 import 'cache_repair.dart';
@@ -24,5 +25,6 @@ class CacheCommand extends PubCommand {
     addSubcommand(CacheCleanCommand());
     addSubcommand(CacheRepairCommand());
     addSubcommand(CachePreloadCommand());
+    addSubcommand(CacheGcCommand());
   }
 }
