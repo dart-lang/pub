@@ -392,17 +392,14 @@ void main() {
         ),
       ]),
     ]).create();
-    final appABPath = p.join(sandbox, appPath, 'a', 'b');
     final aPubspecPath = p.join('.', 'a', 'pubspec.yaml');
-    final pubspecPath = p.join('.', 'pubspec.yaml');
     await pubGet(
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       error: contains(
-        'Could not find a file named "pubspec.yaml" in "$appABPath".\n'
-        'That was included in the workspace of $aPubspecPath.\n'
-        'That was included in the workspace of $pubspecPath.',
+        'No workspace packages matching `b`.\n'
+        'That was included in the workspace of `$aPubspecPath`',
       ),
-      exitCode: NO_INPUT,
+      exitCode: 1,
     );
   });
 
@@ -866,11 +863,11 @@ foo:foomain''',
       await pubGet(
         environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
         warning: allOf(
-          contains('Deleting old lock-file: `.${s}pkgs/a${s}pubspec.lock'),
-          isNot(contains('.${s}pkgs/b${s}pubspec.lock')),
+          contains('Deleting old lock-file: `.${s}pkgs${s}a${s}pubspec.lock'),
+          isNot(contains('.${s}pkgs${s}b${s}pubspec.lock')),
           contains(
             'Deleting old package config: '
-            '`.${s}pkgs/a$s.dart_tool${s}package_config.json`',
+            '`.${s}pkgs${s}a$s.dart_tool${s}package_config.json`',
           ),
           contains('Deleting old lock-file: `.${s}pkgs${s}pubspec.lock'),
           contains(
@@ -954,7 +951,7 @@ Packages can only be included in the workspace once.
       error: '''
 Packages can only be included in the workspace once.
 
-`.${s}pkgs/a/pubspec.yaml` is included twice into the workspace of `.${s}pubspec.yaml`''',
+`.${s}pkgs${s}a${s}pubspec.yaml` is included twice into the workspace of `.${s}pubspec.yaml`''',
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
@@ -1596,7 +1593,7 @@ Consider removing one of the overrides.''',
       error: allOf(
         contains('Cannot override workspace packages'),
         contains(
-          'Package `a` at `.${s}pkgs/a` is overridden in `pubspec.yaml`.',
+          'Package `a` at `.${s}pkgs${s}a` is overridden in `pubspec.yaml`.',
         ),
       ),
     );
@@ -1765,8 +1762,8 @@ b        a${s}b$s
       args: ['get', '--example'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.`.')),
       ),
     );
 
@@ -1774,8 +1771,8 @@ b        a${s}b$s
       args: ['upgrade', '--example'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.`.')),
       ),
     );
 
@@ -1783,11 +1780,13 @@ b        a${s}b$s
       args: ['upgrade', '--example', '--tighten'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
         isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
       ),
       error: contains(
-        'Running `upgrade --tighten` only in `.`. Run `dart pub upgrade --tighten --directory .${s}pkgs/a${s}example` separately.',
+        'Running `upgrade --tighten` only in `.`. '
+        'Run `dart pub upgrade --tighten '
+        '--directory .${s}pkgs${s}a${s}example` separately.',
       ),
     );
 
@@ -1795,11 +1794,13 @@ b        a${s}b$s
       args: ['upgrade', '--example', '--major-versions'],
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.')),
       ),
       error: contains(
-        'Running `upgrade --major-versions` only in `.`. Run `dart pub upgrade --major-versions --directory .${s}pkgs/a${s}example` separately.',
+        'Running `upgrade --major-versions` only in `.`. '
+        'Run `dart pub upgrade --major-versions '
+        '--directory .${s}pkgs${s}a${s}example` separately.',
       ),
     );
 
@@ -1808,8 +1809,8 @@ b        a${s}b$s
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
         contains('+ foo 1.5.0'),
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.')),
       ),
     );
 
@@ -1818,10 +1819,102 @@ b        a${s}b$s
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
       output: allOf(
         contains('< foo 1.0.0'),
-        contains('Got dependencies in `.${s}pkgs/a${s}example`.'),
-        isNot(contains('Got dependencies in `.${s}pkgs/b${s}example`.`.')),
+        contains('Got dependencies in `.${s}pkgs${s}a${s}example`.'),
+        isNot(contains('Got dependencies in `.${s}pkgs${s}b${s}example`.`.')),
       ),
     );
+  });
+
+  test('bad globs are handled gracefully', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/{*'],
+        },
+        sdk: '^3.5.0',
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
+      error: contains('''
+No workspace packages matching `pkgs/{*`.
+That was included in the workspace of `.${s}pubspec.yaml`.
+
+Glob syntax is only supported from language version 3.11.
+Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
+    );
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/{*'],
+        },
+        sdk: '^3.11.0',
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
+      error: contains(
+        'Failed to parse glob `pkgs/{*`. '
+        'Error on line 1, column 8: expected ",".',
+      ),
+    );
+  });
+
+  test(
+    'globs are not resolved in older language versions',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/*'],
+          },
+          sdk: '^3.6.0',
+        ),
+        dir('pkgs', [
+          dir('*', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+          dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'a', path: 'pkgs/*'),
+        ], generatorVersion: '3.11.0'),
+      ]).validate();
+    },
+    skip: Platform.isWindows, // Cannot create directory named "*" on Windows.
+  );
+
+  test('globs are resolved with newer language versions', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/*'],
+        },
+        sdk: '^3.11.0',
+      ),
+      dir('pkgs', [
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+    await dir(appPath, [
+      packageConfigFile([
+        packageConfigEntry(name: 'myapp', path: '.'),
+        packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        packageConfigEntry(name: 'b', path: 'pkgs/b'),
+      ], generatorVersion: '3.11.0'),
+    ]).validate();
   });
 }
 
