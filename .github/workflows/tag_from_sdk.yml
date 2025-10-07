@@ -3,9 +3,12 @@ on:
   schedule:
     # Run every day at 00:00
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   tag_from_sdk:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
