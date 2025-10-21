@@ -101,7 +101,7 @@ void main() async {
     );
   });
 
-  test('Can gc cache entries', () async {
+  test('can gc cache entries', () async {
     final server = await servePackages();
 
     server.serve('hosted1', '1.0.0');
@@ -145,7 +145,12 @@ void main() async {
     await runPub(
       args: ['cache', 'gc', '--force'],
       output: allOf(
-        contains('* ${p.join(d.sandbox, appPath).toLowerCase()}'),
+        matches(
+          RegExp(
+            RegExp.escape('* ${p.join(d.sandbox, appPath)}'),
+            caseSensitive: false,
+          ),
+        ),
         contains('No unused cache entries found'),
       ),
     );
