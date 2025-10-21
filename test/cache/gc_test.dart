@@ -93,7 +93,7 @@ void main() async {
 
   test('gcing an empty cache behaves well', () async {
     await runPub(
-      args: ['cache', 'gc', '--force'],
+      args: ['cache', 'gc', '--force', '--ignore-timestamp'],
       output: allOf(
         contains('Found no active projects.'),
         contains('No unused cache entries found.'),
@@ -141,25 +141,22 @@ void main() async {
         )
         .create();
     await pubGet(output: contains('- hosted1'));
-
-    await runPub(
-      args: ['cache', 'gc', '--force'],
-      output: allOf(
-        matches(
-          RegExp(
-            RegExp.escape('* ${p.join(d.sandbox, appPath)}'),
-            caseSensitive: false,
-          ),
-        ),
-        contains('No unused cache entries found'),
+    final matchesAppPath = matches(
+      RegExp(
+        RegExp.escape('* ${p.join(d.sandbox, appPath)}'),
+        caseSensitive: false,
       ),
     );
-    await Future<void>.delayed(const Duration(seconds: 2));
-
+    // First cache gc run finds nothing because the entries are recent.
     await runPub(
       args: ['cache', 'gc', '--force'],
+      output: allOf(matchesAppPath, contains('No unused cache entries found')),
+    );
+
+    await runPub(
+      args: ['cache', 'gc', '--force', '--ignore-timestamp'],
       output: allOf(
-        contains('* ${p.join(d.sandbox, appPath).toLowerCase()}'),
+        matchesAppPath,
         contains(RegExp('Will recover [0-9]{3} KB.')),
       ),
       silent: allOf([

@@ -22,14 +22,19 @@ class CacheGcCommand extends PubCommand {
   @override
   bool get takesArguments => false;
 
-  final dontRemoveFilesOlderThan =
-      runningFromTest ? const Duration(seconds: 2) : const Duration(hours: 2);
+  final dontRemoveFilesOlderThan = const Duration(hours: 2);
 
   CacheGcCommand() {
     argParser.addFlag(
       'force',
       abbr: 'f',
       help: 'Prune cache without confirmation',
+      hideNegatedUsage: true,
+    );
+    argParser.addFlag(
+      'ignore-timestamp',
+      help: 'Also delete recent files',
+      hideNegatedUsage: true,
     );
   }
 
@@ -84,6 +89,7 @@ class CacheGcCommand extends PubCommand {
           // conditions with ongoing `pub get` processes.
           final s = statPath(path);
           if (s.type == FileSystemEntityType.notFound) return false;
+          if (argResults.flag('ignore-timestamp')) return true;
           return now.difference(s.modified) > dontRemoveFilesOlderThan;
         }).toList();
     if (validActiveRoots.isEmpty) {
