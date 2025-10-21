@@ -91,7 +91,7 @@ void main() async {
     });
   });
 
-  test('gcing and empty cache behaves well', () async {
+  test('gcing an empty cache behaves well', () async {
     await runPub(
       args: ['cache', 'gc', '--force'],
       output: allOf(
