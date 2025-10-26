@@ -396,9 +396,44 @@ class VersionSolver {
       return null; // when unsatisfied.isEmpty
     }
 
+    // Prereleases are allowed only if the dependency is transitive, or if
+    // the constraint explicitly allows prereleases.
+    bool shouldAllowPrereleases(String packageName) {
+      final workspaces = [_root, ..._root.workspaceChildren];
+      bool constraintContainsPrerelease(VersionConstraint? constraint) {
+        if (constraint is Version) {
+          return constraint.isPreRelease;
+        }
+        if (constraint is VersionRange) {
+          return (constraint.min != null && constraint.min!.isPreRelease) ||
+              (constraint.max != null && constraint.max!.isPreRelease) ||
+              constraint.isAny;
+        }
+        return false;
+      }
+
+      var isDirectOrDev = false;
+      for (final workspace in workspaces) {
+        final directDep = workspace.dependencies[packageName];
+        if (directDep != null &&
+            constraintContainsPrerelease(directDep.constraint)) {
+          return true;
+        }
+        final devDep = workspace.devDependencies[packageName];
+        if (devDep != null && constraintContainsPrerelease(devDep.constraint)) {
+          return true;
+        }
+        isDirectOrDev = isDirectOrDev || directDep != null || devDep != null;
+      }
+      return !isDirectOrDev;
+    }
+
     PackageId? version;
     try {
-      version = await _packageLister(package).bestVersion(package.constraint);
+      final allowPrereleases = shouldAllowPrereleases(package.name);
+      version = await _packageLister(
+        package,
+      ).bestVersion(package.constraint, allowPrereleases: allowPrereleases);
     } on PackageNotFoundException catch (error) {
       _addIncompatibility(
         Incompatibility([
