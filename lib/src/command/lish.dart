@@ -306,7 +306,9 @@ the \$PUB_HOSTED_URL environment variable.''');
     }
 
     if (argResults.wasParsed('fatal-warnings') && !dryRun) {
-      usageException('`--no-fatal-warnings` can only be used with `--dry-run`.');
+      usageException(
+        '`--no-fatal-warnings` can only be used with `--dry-run`.',
+      );
     }
   }
 
