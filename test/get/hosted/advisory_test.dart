@@ -2,7 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
+import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
 import '../../golden_file.dart';
@@ -425,5 +429,35 @@ Future<void> main() async {
     );
 
     await ctx.run(['get']);
+  });
+
+  test('do not fetch advisories when.`--offline`', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {'foo': '^1.0.0'},
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: '123',
+      displayUrl: 'https://github.com/advisories/123',
+      aliases: ['abc', 'def'],
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
+    );
+
+    await pubGet();
+    server.serveErrors(); // Ensures that the server gets no requests
+
+    File(
+      p.join(d.sandbox, d.hostedCachePath(), '.cache', 'foo-advisories.json'),
+    ).deleteSync();
+    File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
+    await pubGet(args: ['--offline']);
   });
 }

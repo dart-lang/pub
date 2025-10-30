@@ -581,6 +581,10 @@ class HostedSource extends CachedSource {
     PackageRef ref,
     SystemCache cache,
   ) async {
+    if (cache.isOffline) {
+      // Don't attempt to fetch advisories in `--offline` mode.
+      return null;
+    }
     final description = ref.description;
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
