@@ -124,6 +124,11 @@ class LishCommand extends PubCommand {
       help: 'Run this in the directory <dir>.',
       valueHelp: 'dir',
     );
+    argParser.addFlag(
+      'ignore-warnings',
+      help: 'Do not treat warnings as fatal.',
+      negatable: false,
+    );
   }
 
   Future<void> _publishUsingClient(
@@ -298,6 +303,10 @@ the \$PUB_HOSTED_URL environment variable.''');
 
     if (_toArchive != null && force) {
       usageException('Cannot use both --to-archive and --force.');
+    }
+
+    if (argResults.wasParsed('ignore-warnings') && !dryRun) {
+      usageException('`--ignore-warnings` can only be used with `--dry-run`.');
     }
   }
 
@@ -490,7 +499,8 @@ the \$PUB_HOSTED_URL environment variable.''');
             : _publicationFromArchive(_fromArchive));
     if (dryRun) {
       log.message(publication.warningsCountMessage);
-      if (publication.warningCount != 0) {
+      if (publication.warningCount != 0 &&
+          !argResults.flag('ignore-warnings')) {
         overrideExitCode(DATA);
       }
       return;
