@@ -125,9 +125,9 @@ class LishCommand extends PubCommand {
       valueHelp: 'dir',
     );
     argParser.addFlag(
-      'fatal-warnings',
-      help: 'When disabled, exit 0 even if there are warnings in --dry-run',
-      defaultsTo: true,
+      'ignore-warnings',
+      help: 'Do not treat warnings as fatal.',
+      negatable: false,
     );
   }
 
@@ -305,10 +305,8 @@ the \$PUB_HOSTED_URL environment variable.''');
       usageException('Cannot use both --to-archive and --force.');
     }
 
-    if (argResults.wasParsed('fatal-warnings') && !dryRun) {
-      usageException(
-        '`--no-fatal-warnings` can only be used with `--dry-run`.',
-      );
+    if (argResults.wasParsed('ignore-warnings') && !dryRun) {
+      usageException('`--ignore-warnings` can only be used with `--dry-run`.');
     }
   }
 
@@ -501,7 +499,8 @@ the \$PUB_HOSTED_URL environment variable.''');
             : _publicationFromArchive(_fromArchive));
     if (dryRun) {
       log.message(publication.warningsCountMessage);
-      if (publication.warningCount != 0 && argResults.flag('fatal-warnings')) {
+      if (publication.warningCount != 0 &&
+          !argResults.flag('ignore-warnings')) {
         overrideExitCode(DATA);
       }
       return;

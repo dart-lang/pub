@@ -27,7 +27,7 @@ void main() {
   });
 
   test(
-    'dry-run with --no-fatal-warnings and warnings exits with SUCCESS',
+    'dry-run with --ignore-warnings and warnings exits with SUCCESS',
     () async {
       (await servePackages()).serve('foo', '1.0.0');
       await d
@@ -39,14 +39,14 @@ void main() {
           .create();
 
       await runPub(
-        args: ['publish', '--dry-run', '--no-fatal-warnings'],
+        args: ['publish', '--dry-run', '--ignore-warnings'],
         output: contains('Package has 1 warning.'),
         exitCode: exit_codes.SUCCESS,
       );
     },
   );
 
-  test('--no-fatal-warnings without --dry-run is a usage error', () async {
+  test('--ignore-warnings without --dry-run is a usage error', () async {
     (await servePackages()).serve('foo', '1.0.0');
     await d
         .validPackage(
@@ -57,10 +57,8 @@ void main() {
         .create();
 
     await runPub(
-      args: ['publish', '--no-fatal-warnings'],
-      error: contains(
-        '`--no-fatal-warnings` can only be used with `--dry-run`.',
-      ),
+      args: ['publish', '--ignore-warnings'],
+      error: contains('`--ignore-warnings` can only be used with `--dry-run`.'),
       exitCode: exit_codes.USAGE,
     );
   });

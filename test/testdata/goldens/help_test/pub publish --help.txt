@@ -10,7 +10,7 @@ Usage: pub publish [options]
 -f, --force                  Publish without confirmation if there are no errors.
     --skip-validation        Publish without validation and resolution (this will ignore errors).
 -C, --directory=<dir>        Run this in the directory <dir>.
-    --[no-]fatal-warnings    Treat warnings as fatal.
+    --[no-]fatal-warnings    When disabled, exit 0 even if there are warnings in --dry-run
                              (defaults to on)
 
 Run "pub help" to see global options.
