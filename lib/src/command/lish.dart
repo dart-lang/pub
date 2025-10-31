@@ -126,7 +126,7 @@ class LishCommand extends PubCommand {
     );
     argParser.addFlag(
       'fatal-warnings',
-      help: 'Treat warnings as fatal.',
+      help: 'When disabled, exit 0 even if there are warnings in --dry-run',
       defaultsTo: true,
     );
   }
