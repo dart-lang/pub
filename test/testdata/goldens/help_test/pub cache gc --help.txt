@@ -5,8 +5,9 @@ $ pub cache gc --help
 Prunes unused packages from the system cache.
 
 Usage: pub cache gc <subcommand> [arguments...]
--h, --help          Print this usage information.
--f, --[no-]force    Prune cache without confirmation
+-h, --help                Print this usage information.
+-f, --force               Prune cache without confirmation
+    --ignore-timestamp    Also delete recent files
 
 Run "pub help" to see global options.
 
