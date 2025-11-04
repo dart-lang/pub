@@ -265,6 +265,13 @@ See $workspacesDocUrl for more information.
     '/pubspec_overrides.yaml',
   ];
 
+  static final _includeGitignoreIndicator = RegExp(
+    // We look for "#@ include .gitignore" at the start of a .pubignore
+    // We don't necessarily care about whitespace, just that it's at the start
+    // of the file, at the start of the line, and ends on its own line
+    r'^#\s*@\s*include\s*\.gitignore\s*?\r?\n',
+  );
+
   /// Returns a list of files that are considered to be part of this package.
   ///
   /// If [beneath] is passed, this will only return files beneath that path,
@@ -371,24 +378,35 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
             });
           },
           ignoreForDir: (dir) {
+            final rules = [if (dir == beneath) ..._basicIgnoreRules];
+            var usedIgnoreFiles = '';
+
             final pubIgnore = resolve('$dir/.pubignore');
             final gitIgnore = resolve('$dir/.gitignore');
-            final ignoreFile =
-                fileExists(pubIgnore)
-                    ? pubIgnore
-                    : (fileExists(gitIgnore) ? gitIgnore : null);
 
-            final rules = [
-              if (dir == beneath) ..._basicIgnoreRules,
-              if (ignoreFile != null) readTextFile(ignoreFile),
-            ];
+            if (fileExists(pubIgnore)) {
+              final pubIgnoreText = readTextFile(pubIgnore);
+
+              rules.add(pubIgnoreText);
+              usedIgnoreFiles = pubIgnore;
+
+              if (pubIgnoreText.startsWith(_includeGitignoreIndicator) &&
+                  fileExists(gitIgnore)) {
+                rules.add(readTextFile(gitIgnore));
+                usedIgnoreFiles += ' or $gitIgnore';
+              }
+            } else if (fileExists(gitIgnore)) {
+              rules.add(readTextFile(gitIgnore));
+              usedIgnoreFiles = gitIgnore;
+            }
+
             return rules.isEmpty
                 ? null
                 : Ignore(
                   rules,
                   onInvalidPattern: (pattern, exception) {
                     log.warning(
-                      '$ignoreFile had invalid pattern $pattern. '
+                      '$usedIgnoreFiles had invalid pattern $pattern. '
                       '${exception.message}',
                     );
                   },
