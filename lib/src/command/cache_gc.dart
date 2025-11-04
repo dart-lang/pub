@@ -62,7 +62,9 @@ class CacheGcCommand extends PubCommand {
         continue;
       }
       for (final package in packageConfig.packages) {
-        final rootUri = package.resolvedRootDir(packageConfigPath);
+        final rootUri = p.canonicalize(
+          package.resolvedRootDir(packageConfigPath),
+        );
         if (p.isWithin(cache.rootDir, rootUri)) {
           paths.add(rootUri);
         }
