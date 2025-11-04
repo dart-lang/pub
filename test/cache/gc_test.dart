@@ -152,7 +152,7 @@ void main() async {
       args: ['cache', 'gc', '--force'],
       output: allOf(matchesAppPath, contains('No unused cache entries found')),
     );
-
+    final s = RegExp.escape(p.separator);
     await runPub(
       args: ['cache', 'gc', '--force', '--ignore-timestamp'],
       output: allOf(
@@ -160,8 +160,10 @@ void main() async {
         contains(RegExp('Will recover [0-9]{3} KB.')),
       ),
       silent: allOf([
-        contains(RegExp('Deleting directory .*git.*cache/git1-.*')),
-        contains(RegExp('Deleting directory .*git.*cache/git_with_path1-.*')),
+        contains(RegExp('Deleting directory .*git.*cache${s}git1-.*')),
+        contains(
+          RegExp('Deleting directory .*git.*cache${s}git_with_path1-.*'),
+        ),
         contains(RegExp('Deleting directory .*git.*git1-.*')),
         contains(RegExp('Deleting directory .*git.*git_with_path1-.*')),
         contains(
