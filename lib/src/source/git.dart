@@ -900,6 +900,74 @@ class GitSource extends CachedSource {
     }
     return name;
   }
+
+  @override
+  Future<List<String>> entriesToGc(
+    SystemCache cache,
+    Set<String> alivePackages,
+  ) async {
+    final rootDir = p.canonicalize(cache.rootDirForSource(this));
+    if (!entryExists(rootDir)) return const [];
+
+    final gitDirsToRemove = <String>{};
+    // First enumerate all git repos inside [rootDir].
+    for (final entry in listDir(rootDir)) {
+      final gitEntry = p.join(entry, '.git');
+      if (!entryExists(gitEntry)) continue;
+      gitDirsToRemove.add(p.canonicalize(entry));
+    }
+    final cacheDirsToRemove = <String>{};
+    try {
+      cacheDirsToRemove.addAll(
+        listDir(p.join(rootDir, 'cache')).map(p.canonicalize),
+      );
+    } on IOException {
+      // Most likely the directory didn't exist.
+      // ignore.
+    }
+    // For each package walk up parent directories to find the containing git
+    // repo, and mark it alive by removing from `gitDirsToRemove`.
+    for (final alivePackage in alivePackages) {
+      var candidate = p.canonicalize(alivePackage);
+      while (!p.equals(candidate, rootDir)) {
+        if (gitDirsToRemove.remove(candidate)) {
+          // Package is alive, now also retain its cachedir.
+          //
+          // TODO(sigurdm): Should we just GC all cache-dirs? They are not
+          // needed for consuming packages, and most likely will be recreated
+          // when needed.
+          final gitEntry = p.join(candidate, '.git');
+          try {
+            if (dirExists(gitEntry)) {
+              final path =
+                  (await git.run([
+                    'remote',
+                    'get-url',
+                    'origin',
+                  ], workingDir: candidate)).split('\n').first;
+              cacheDirsToRemove.remove(p.canonicalize(path));
+            } else if (fileExists(gitEntry)) {
+              // Potential future - using worktrees.
+              final path =
+                  (await git.run([
+                    'worktree',
+                    'list',
+                    '--porcelain',
+                  ], workingDir: candidate)).split('\n').first.split(' ').last;
+              cacheDirsToRemove.remove(p.canonicalize(path));
+            }
+          } on git.GitException catch (e) {
+            log.fine('Failed to find canonical cache for $candidate, $e');
+          }
+          break;
+        }
+        // Try the parent directory
+        candidate = p.dirname(candidate);
+      }
+    }
+
+    return [...cacheDirsToRemove, ...gitDirsToRemove];
+  }
 }
 
 class GitDescription extends Description {
