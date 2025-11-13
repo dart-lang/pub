@@ -772,8 +772,9 @@ class GitSource extends CachedSource {
       '--list',
       '--format',
       // We can use space here, as it is not allowed in a git tag
-      // https://git-scm.com/docs/git-check-ref-format
-      '%(refname:lstrip=2) %(objectname)',
+      // https://git-scm.com/docs/git-check-ref-format The `*` means we list the
+      // hash of the tagged object, not the tag itself.
+      '%(refname:lstrip=2) %(*objectname)',
     ], workingDir: path);
     final lines = output.trim().split('\n');
     final result = <TaggedVersion>[];
