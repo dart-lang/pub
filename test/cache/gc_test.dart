@@ -154,6 +154,22 @@ void main() async {
     );
     final s = RegExp.escape(p.separator);
     await runPub(
+      args: ['cache', 'gc', '--force', '--ignore-timestamp', '--dry-run'],
+      output: allOf([
+        matchesAppPath,
+        contains(RegExp('Would recover [0-9]{3} KB.')),
+        contains(RegExp('.*git.*cache${s}git1-.*')),
+        contains(RegExp('.*git.*cache${s}git_with_path1-.*')),
+        contains(RegExp('.*git.*git1-.*')),
+        contains(RegExp('.*git.*git_with_path1-.*')),
+        contains(RegExp('.*hosted-hashes.*hosted1-1.0.0.sha256')),
+        contains(RegExp('.*hosted.*hosted1-1.0.0.')),
+        isNot(contains(RegExp('.*hosted2'))),
+        isNot(contains(RegExp('.*git2'))),
+        isNot(contains(RegExp('.*git_with_path2'))),
+      ]),
+    );
+    await runPub(
       args: ['cache', 'gc', '--force', '--ignore-timestamp'],
       output: allOf(
         matchesAppPath,
@@ -166,9 +182,7 @@ void main() async {
         ),
         contains(RegExp('Deleting directory .*git.*git1-.*')),
         contains(RegExp('Deleting directory .*git.*git_with_path1-.*')),
-        contains(
-          RegExp('Deleting file .*hosted-hashes.*hosted1-1.0.0.sha256.'),
-        ),
+        contains(RegExp('Deleting file .*hosted-hashes.*hosted1-1.0.0.sha256')),
         contains(RegExp('Deleting directory .*hosted.*hosted1-1.0.0.')),
         isNot(contains(RegExp('Deleting.*hosted2'))),
         isNot(contains(RegExp('Deleting.*git2'))),

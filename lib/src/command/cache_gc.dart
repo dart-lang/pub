@@ -36,10 +36,16 @@ class CacheGcCommand extends PubCommand {
       help: 'Also delete recent files',
       hideNegatedUsage: true,
     );
+    argParser.addFlag(
+      'dry-run',
+      help: 'Print list of files that would be deleted',
+      hideNegatedUsage: true,
+    );
   }
 
   @override
   Future<void> runProtected() async {
+    final dryRun = argResults.flag('dry-run');
     final activeRoots = cache.activeRoots();
     final validActiveRoots = <String>[];
     final paths = <String>{};
@@ -131,11 +137,17 @@ class CacheGcCommand extends PubCommand {
     log.message('');
     log.message(
       '''
-All other projects will need to run `$topLevelProgram pub get` again to work correctly.''',
+All other projects ${dryRun ? 'would' : 'will'} need to run `$topLevelProgram pub get` again to work correctly.''',
     );
-    log.message('Will recover ${readableFileSize(sum)}.');
-
-    if (argResults.flag('force') ||
+    log.message(
+      '${dryRun ? 'Would' : 'Will'} recover ${readableFileSize(sum)}.',
+    );
+    if (dryRun) {
+      log.message('Would delete:');
+      for (final path in allPathsToGC..sort()) {
+        log.message(path);
+      }
+    } else if (argResults.flag('force') ||
         await confirm('Are you sure you want to continue?')) {
       await log.progress('Deleting unused cache entries', () async {
         for (final path in allPathsToGC..sort()) {
