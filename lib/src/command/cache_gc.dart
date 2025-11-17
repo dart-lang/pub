@@ -32,7 +32,7 @@ class CacheGcCommand extends PubCommand {
       hideNegatedUsage: true,
     );
     argParser.addFlag(
-      'ignore-timestamp',
+      'collect-recent',
       help: 'Also delete recent files',
       hideNegatedUsage: true,
     );
@@ -47,7 +47,11 @@ class CacheGcCommand extends PubCommand {
   Future<void> runProtected() async {
     final dryRun = argResults.flag('dry-run');
     final activeRoots = cache.activeRoots();
+    // All the `activeRoots` that we could read and parse a
+    // .dart_tool/packageConfig.json from.
     final validActiveRoots = <String>[];
+    // All the rootUri paths to cached packages included from
+    // `validActiveRoots`.
     final paths = <String>{};
     for (final packageConfigPath in activeRoots) {
       late final PackageConfig packageConfig;
@@ -97,7 +101,7 @@ class CacheGcCommand extends PubCommand {
           // conditions with ongoing `pub get` processes.
           final s = statPath(path);
           if (s.type == FileSystemEntityType.notFound) return false;
-          if (argResults.flag('ignore-timestamp')) return true;
+          if (argResults.flag('collect-recent')) return true;
           return now.difference(s.modified) > dontRemoveFilesOlderThan;
         }).toList();
     if (validActiveRoots.isEmpty) {

@@ -93,7 +93,7 @@ void main() async {
 
   test('gcing an empty cache behaves well', () async {
     await runPub(
-      args: ['cache', 'gc', '--force', '--ignore-timestamp'],
+      args: ['cache', 'gc', '--force', '--collect-recent'],
       output: allOf(
         contains('Found no active projects.'),
         contains('No unused cache entries found.'),
@@ -154,7 +154,7 @@ void main() async {
     );
     final s = RegExp.escape(p.separator);
     await runPub(
-      args: ['cache', 'gc', '--force', '--ignore-timestamp', '--dry-run'],
+      args: ['cache', 'gc', '--force', '--collect-recent', '--dry-run'],
       output: allOf([
         matchesAppPath,
         contains(RegExp('Would recover [0-9]{3} KB.')),
@@ -170,7 +170,7 @@ void main() async {
       ]),
     );
     await runPub(
-      args: ['cache', 'gc', '--force', '--ignore-timestamp'],
+      args: ['cache', 'gc', '--force', '--collect-recent'],
       output: allOf(
         matchesAppPath,
         contains(RegExp('Will recover [0-9]{3} KB.')),
