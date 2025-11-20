@@ -1892,6 +1892,29 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
     skip: Platform.isWindows, // Cannot create directory named "*" on Windows.
   );
 
+  test('preglob workspace entries can use the platform separator', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': [p.join('pkgs', 'foo')],
+        },
+        sdk: '^3.6.0',
+      ),
+      dir('pkgs', [
+        dir('foo', [libPubspec('foo', '1.1.1', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+    await dir(appPath, [
+      packageConfigFile([
+        packageConfigEntry(name: 'myapp', path: '.'),
+        packageConfigEntry(name: 'foo', path: 'pkgs/foo'),
+      ], generatorVersion: '3.11.0'),
+    ]).validate();
+  });
+
   test('globs are resolved with newer language versions', () async {
     await dir(appPath, [
       libPubspec(
