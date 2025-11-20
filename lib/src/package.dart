@@ -210,7 +210,7 @@ Consider changing the language version of ${p.join(dir, 'pubspec.yaml')} to ${La
             } else {
               packages.add(
                 Package.load(
-                  p.join(dir, _toPosixIfNeeded(workspacePath)),
+                  p.join(dir, _useBackSlashesOnWindows(workspacePath)),
                   loadPubspec: loadPubspec,
                   withPubspecOverrides: withPubspecOverrides,
                 ),
@@ -583,9 +583,9 @@ See https://dart.dev/go/workspaces-stray-files for details.
 }
 
 bool _looksLikeGlob(String s) => Glob.quote(s) != s;
-String _toPosixIfNeeded(String path) {
+String _useBackSlashesOnWindows(String path) {
   if (Platform.isWindows) {
-    return p.posix.joinAll(p.split(path));
+    return p.joinAll(p.split(path));
   }
   return path;
 }
