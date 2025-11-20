@@ -178,37 +178,46 @@ class Package {
 
     final workspacePackages =
         pubspec.workspace.expand((workspacePath) {
-          final Glob glob;
-          try {
-            glob = Glob(
-              pubspec.languageVersion.supportsWorkspaceGlobs
-                  ? workspacePath
-                  : Glob.quote(workspacePath),
-            );
-          } on FormatException catch (e) {
-            fail('Failed to parse glob `$workspacePath`. $e');
-          }
           final packages = <Package>[];
-          for (final globResult in glob.listSync(root: dir)) {
-            final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
-            if (!fileExists(pubspecPath)) continue;
-            packages.add(
-              Package.load(
-                globResult.path,
-                loadPubspec: loadPubspec,
-                withPubspecOverrides: withPubspecOverrides,
-              ),
-            );
-          }
-          if (packages.isEmpty) {
-            final globHint =
-                !pubspec.languageVersion.supportsWorkspaceGlobs &&
-                        _looksLikeGlob(workspacePath)
-                    ? '''
+          var globHint = '';
+          if (pubspec.languageVersion.supportsWorkspaceGlobs) {
+            final Glob glob;
+            try {
+              glob = Glob(workspacePath);
+            } on FormatException catch (e) {
+              fail('Failed to parse glob `$workspacePath`. $e');
+            }
+            for (final globResult in glob.listSync(root: dir)) {
+              final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
+              if (!fileExists(pubspecPath)) continue;
+              packages.add(
+                Package.load(
+                  globResult.path,
+                  loadPubspec: loadPubspec,
+                  withPubspecOverrides: withPubspecOverrides,
+                ),
+              );
+            }
+          } else {
+            final pubspecPath = p.join(dir, workspacePath, 'pubspec.yaml');
+            if (!fileExists(pubspecPath)) {
+              if (_looksLikeGlob(workspacePath)) {
+                globHint = '''
 \n\nGlob syntax is only supported from language version ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
 Consider changing the language version of ${p.join(dir, 'pubspec.yaml')} to ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
-'''
-                    : '';
+''';
+              }
+            } else {
+              packages.add(
+                Package.load(
+                  p.join(dir, _useBackSlashesOnWindows(workspacePath)),
+                  loadPubspec: loadPubspec,
+                  withPubspecOverrides: withPubspecOverrides,
+                ),
+              );
+            }
+          }
+          if (packages.isEmpty) {
             fail('''
 No workspace packages matching `$workspacePath`.
 That was included in the workspace of `${p.join(dir, 'pubspec.yaml')}`.$globHint
@@ -574,3 +583,9 @@ See https://dart.dev/go/workspaces-stray-files for details.
 }
 
 bool _looksLikeGlob(String s) => Glob.quote(s) != s;
+String _useBackSlashesOnWindows(String path) {
+  if (Platform.isWindows) {
+    return p.joinAll(p.split(path));
+  }
+  return path;
+}
