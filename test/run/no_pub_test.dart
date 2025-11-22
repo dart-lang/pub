@@ -1,4 +1,4 @@
-// Copyright (c) 2024, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2025, the Dart project authors.  Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -13,9 +13,7 @@ void main() {
     await d.dir(appPath, [
       d.appPubspec(),
       d.dir('bin', [d.file('script.dart', 'main() => print("ok");')]),
-      d.packageConfigFile(
-        [d.packageConfigEntry(name: 'myapp', path: '.')],
-      ),
+      d.packageConfigFile([d.packageConfigEntry(name: 'myapp', path: '.')]),
     ]).create();
 
     final pub = await pubRun(args: ['--no-pub', 'bin/script']);
@@ -24,9 +22,7 @@ void main() {
     await pub.shouldExit(0);
   });
 
-  test(
-      'fails with --no-pub if package_config.json is missing',
-      () async {
+  test('fails with --no-pub if package_config.json is missing', () async {
     await d.dir(appPath, [
       d.appPubspec(),
       d.dir('bin', [d.file('script.dart', 'main() => print("ok");')]),
@@ -50,9 +46,7 @@ void main() {
         d.file('script.dart', 'import "package:foo/foo.dart"; main() {}'),
       ]),
       // Create a package config that doesn't include 'foo'
-      d.packageConfigFile(
-        [d.packageConfigEntry(name: 'myapp', path: '.')],
-      ),
+      d.packageConfigFile([d.packageConfigEntry(name: 'myapp', path: '.')]),
     ]).create();
 
     final pub = await pubRun(args: ['--no-pub', 'bin/script']);
