@@ -52,6 +52,11 @@ class RunCommand extends PubCommand {
       help: 'Run this in the directory <dir>.',
       valueHelp: 'dir',
     );
+    argParser.addFlag(
+      'pub',
+      defaultsTo: true,
+      help: 'Whether to run "pub get" before running the executable.',
+    );
   }
 
   @override
@@ -61,7 +66,12 @@ class RunCommand extends PubCommand {
         log.message('Deprecated. Use `dart run` instead.');
       });
     }
-    await Entrypoint.ensureUpToDate(entrypoint.workspaceRoot.dir, cache: cache);
+    if (argResults.flag('pub')) {
+      await Entrypoint.ensureUpToDate(
+        entrypoint.workspaceRoot.dir,
+        cache: cache,
+      );
+    }
     if (argResults.rest.isEmpty) {
       usageException('Must specify an executable to run.');
     }
