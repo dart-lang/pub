@@ -462,8 +462,8 @@ void main() {
         'dependency': 'transitive',
         'description': {
           'path': 'two',
+          'ref': ref,
           'resolved-ref': ref,
-          'tag-pattern': '{{version}}',
           'url': '../foo.git',
         },
         'source': 'git',
@@ -474,8 +474,8 @@ void main() {
         'dependency': 'transitive',
         'description': {
           'path': 'three',
+          'ref': ref,
           'resolved-ref': ref,
-          'tag-pattern': '{{version}}',
           'url': '../foo.git',
         },
         'source': 'git',
