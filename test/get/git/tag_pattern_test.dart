@@ -379,4 +379,108 @@ void main() {
       });
     },
   );
+
+  test(
+    'multiple path dependencies to same package work (regression https://github.com/dart-lang/pub/issues/4706)',
+    () async {
+      await d.git('foo.git', [
+        d.dir('one', [
+          d.libPubspec(
+            'one',
+            '1.0.0',
+            sdk: '^3.9.0',
+            deps: {
+              'two': {'path': '../two'},
+              'three': {'path': '../three'},
+            },
+          ),
+        ]),
+        d.dir('two', [
+          d.libPubspec(
+            'two',
+            '1.0.0',
+            sdk: '^3.9.0',
+            deps: {
+              'three': {'path': '../three'},
+            },
+          ),
+        ]),
+        d.dir('three', [d.libPubspec('three', '1.0.0', sdk: '^3.9.0')]),
+      ]).create();
+      final g = d.git('foo.git', []);
+      await g.tag('1.0.0');
+      final ref = await g.revParse('HEAD');
+
+      await d
+          .appDir(
+            dependencies: {
+              'one': {
+                'git': {
+                  'url': '../foo.git',
+                  'path': 'one',
+                  'tag_pattern': '{{version}}',
+                },
+                'version': '^1.0.0',
+              },
+            },
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+
+      await pubGet(
+        output: allOf(
+          contains('+ one 1.0.0'),
+          contains('+ two 1.0.0'),
+          contains('+ three 1.0.0'),
+        ),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+      final lockfile =
+          loadYaml(
+                File(
+                  p.join(d.sandbox, appPath, 'pubspec.lock'),
+                ).readAsStringSync(),
+              )
+              as Map;
+      final packages = lockfile['packages'] as Map;
+      final one = packages['one'];
+      expect(one, {
+        'dependency': 'direct main',
+        'description': {
+          'path': 'one',
+          'resolved-ref': ref,
+          'tag-pattern': '{{version}}',
+          'url': '../foo.git',
+        },
+        'source': 'git',
+        'version': '1.0.0',
+      });
+      final two = packages['two'];
+      expect(two, {
+        'dependency': 'transitive',
+        'description': {
+          'path': 'two',
+          'ref': ref,
+          'resolved-ref': ref,
+          'url': '../foo.git',
+        },
+        'source': 'git',
+        'version': '1.0.0',
+      });
+      final three = packages['three'];
+      expect(three, {
+        'dependency': 'transitive',
+        'description': {
+          'path': 'three',
+          'ref': ref,
+          'resolved-ref': ref,
+          'url': '../foo.git',
+        },
+        'source': 'git',
+        'version': '1.0.0',
+      });
+    },
+  );
 }
