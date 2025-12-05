@@ -21,6 +21,26 @@ void main() {
     await pubUpgrade(output: contains('< foo 1.0.0'));
   });
 
+  test('Versions pinned in dependency_overrides are allowed', () async {
+    final server = await servePackages();
+
+    server.serve('foo', '1.0.0');
+    server.serve('foo', '1.5.0');
+
+    await d
+        .appDir(
+          dependencies: {'foo': '^1.0.0'},
+          pubspec: {
+            'dependency_overrides': {'foo': '1.5.0'},
+          },
+        )
+        .create();
+
+    await pubGet(output: contains('! foo 1.5.0 (overridden)'));
+    server.retractPackageVersion('foo', '1.5.0');
+    await pubUpgrade(output: contains('! foo 1.5.0 (overridden) (retracted)'));
+  });
+
   test(
     'upgrade will not downgrade if current version is not unlocked',
     () async {

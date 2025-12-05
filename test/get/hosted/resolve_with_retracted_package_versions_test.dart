@@ -45,11 +45,6 @@ void main() {
     );
   });
 
-  // Currently retraction does not affect prioritization. I.e., if
-  // pubspec.lock already contains a retracted version, which is the newest
-  // satisfying the dependency constraint we will not choose to downgrade.
-  // In this case we expect a newer version to be published at some point which
-  // will then cause pub upgrade to choose that one.
   test('Allow retracted version when it was already in pubspec.lock', () async {
     final server =
         await servePackages()
@@ -66,27 +61,11 @@ void main() {
     ]).validate();
 
     server.retractPackageVersion('bar', '1.1.0');
-    await pubUpgrade();
+    await pubGet();
     await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'foo', version: '1.0.0'),
       d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-    ]).validate();
-
-    server.serve('bar', '2.0.0');
-    await pubUpgrade();
-    await d.cacheDir({'foo': '1.0.0', 'bar': '1.1.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.1.0'),
-    ]).validate();
-
-    server.serve('bar', '1.2.0');
-    await pubUpgrade();
-    await d.cacheDir({'foo': '1.0.0', 'bar': '1.2.0'}).validate();
-    await d.appPackageConfigFile([
-      d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-      d.packageConfigEntry(name: 'bar', version: '1.2.0'),
     ]).validate();
   });
 
@@ -124,10 +103,9 @@ void main() {
 
       await pubUpgrade(args: ['--offline']);
 
-      // We choose bar 1.1.0 since we already have it in pubspec.lock
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.0.0'),
-        d.packageConfigEntry(name: 'bar', version: '1.1.0'),
+        d.packageConfigEntry(name: 'bar', version: '1.0.0'),
       ]).validate();
 
       // Delete lockfile so that retracted versions are not considered.
@@ -183,7 +161,7 @@ void main() {
 
       await pubUpgrade();
       await d.appPackageConfigFile([
-        d.packageConfigEntry(name: 'foo', version: '3.0.0'),
+        d.packageConfigEntry(name: 'foo', version: '1.0.0'),
       ]).validate();
 
       await d.dir(appPath, [
