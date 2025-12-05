@@ -610,6 +610,9 @@ class VersionSolver {
         return range.constraint as Version?;
       }
     }
+    if (_type == SolveType.upgrade) {
+      return null;
+    }
     return _lockFile.packages[package]?.version;
   }
 
