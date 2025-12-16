@@ -106,7 +106,7 @@ sdks:
         );
         expect(
           lockFile.sdkConstraints['flutter']!.effectiveConstraint,
-          VersionConstraint.parse('>=0.1.2'),
+          VersionConstraint.parse('^0.1.2'),
         );
         expect(
           lockFile.sdkConstraints['fuchsia']!.effectiveConstraint,
