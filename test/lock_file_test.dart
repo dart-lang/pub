@@ -114,6 +114,17 @@ sdks:
         );
       });
 
+      test('don\t reinterpret upper bounds of flutter constraints', () {
+        final lockFile = LockFile.parse('''
+sdks:
+  flutter: 0.1.2
+''', sources);
+        expect(
+          lockFile.sdkConstraints['flutter']!.effectiveConstraint,
+          VersionConstraint.parse('0.1.2'),
+        );
+      });
+
       test('throws if the top level is not a map', () {
         expect(() {
           LockFile.parse('''
