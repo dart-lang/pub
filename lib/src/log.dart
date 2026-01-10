@@ -57,6 +57,8 @@ final _gray = getAnsi('\u001b[38;5;245m');
 final _none = getAnsi('\u001b[0m');
 final _noColor = getAnsi('\u001b[39m');
 final _bold = getAnsi('\u001b[1m');
+final _link = getAnsi('\u001b]8;;');
+final _esc = getAnsi('\u001b\\');
 
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
@@ -499,6 +501,12 @@ void unmuteProgress() {
   _numMutes--;
 }
 
+/// Wraps [text] in the ANSI escape codes to make it a hyperlink to [url] when
+/// on a platform that supports that.
+///
+/// Use this to provide clickable links in terminal output.
+String link(String text, String url) => '$_link$url$_esc$text$_link$_esc';
+
 /// Wraps [text] in the ANSI escape codes to make it bold when on a platform
 /// that supports that.
 ///
@@ -716,4 +724,22 @@ List<String> renderTable(List<List<FormattedString>> rows, bool useColors) {
     result.add(b.toString());
   }
   return result;
+}
+
+class FormattedLink extends FormattedString {
+  final String url;
+  FormattedLink(
+    super.value, {
+    required this.url,
+    super.format,
+    super.prefix,
+    super.suffix,
+  });
+
+  @override
+  String formatted({required bool useColors}) {
+    if (!useColors) return _prefix + value + _suffix;
+    // Apply formatting to value, wrap with an OSC 8 hyperlink and add prefix/suffix.
+    return '$_prefix${link(_format(value), url)}$_suffix';
+  }
 }

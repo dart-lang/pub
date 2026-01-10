@@ -558,10 +558,18 @@ Future<void> _outputHuman(
     await mode.markVersionDetails(rows),
   );
 
-  List<FormattedString> formatted(_PackageDetails package) => [
-    FormattedString(package.name),
-    ...markedRows[package]!.map((m) => m.toHuman()),
-  ];
+  List<FormattedString> formatted(_PackageDetails package) {
+    // Link to pub.dev only if the package is hosted on pub.dev.
+    final isFromPubDev = _isHostedOnPubDev(package);
+    final packageName =
+        isFromPubDev
+            ? FormattedLink(
+              package.name,
+              url: 'https://pub.dev/packages/${package.name}',
+            )
+            : FormattedString(package.name);
+    return [packageName, ...markedRows[package]!.map((m) => m.toHuman())];
+  }
 
   if (!showAll) {
     rows.removeWhere((row) => row.isLatest);
@@ -785,6 +793,17 @@ Future<void> _outputHuman(
       }
     }
   }
+}
+
+bool _isHostedOnPubDev(_PackageDetails package) {
+  final details =
+      package.latest ??
+      package.resolvable ??
+      package.upgradable ??
+      package.current;
+  return details != null &&
+      details._id.source is HostedSource &&
+      HostedSource.isFromPubDev(details._id);
 }
 
 abstract class _Mode {
