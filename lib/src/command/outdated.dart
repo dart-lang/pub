@@ -561,14 +561,14 @@ Future<void> _outputHuman(
   List<FormattedString> formatted(_PackageDetails package) {
     // Link to pub.dev only if the package is hosted on pub.dev.
     final isFromPubDev = _isHostedOnPubDev(package);
-    final packageName =
-        isFromPubDev
-            ? FormattedLink(
-              package.name,
-              url: 'https://pub.dev/packages/${package.name}',
-            )
-            : FormattedString(package.name);
-    return [packageName, ...markedRows[package]!.map((m) => m.toHuman())];
+
+    return [
+      FormattedString(
+        package.name,
+        format: isFromPubDev ? _linkToPubDev(package.name) : null,
+      ),
+      ...markedRows[package]!.map((m) => m.toHuman()),
+    ];
   }
 
   if (!showAll) {
@@ -804,6 +804,11 @@ bool _isHostedOnPubDev(_PackageDetails package) {
   return details != null &&
       details._id.source is HostedSource &&
       HostedSource.isFromPubDev(details._id);
+}
+
+String Function(String) _linkToPubDev(String packageName) {
+  return (String name) =>
+      log.link(name, 'https://pub.dev/packages/$packageName');
 }
 
 abstract class _Mode {

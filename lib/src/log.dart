@@ -725,21 +725,3 @@ List<String> renderTable(List<List<FormattedString>> rows, bool useColors) {
   }
   return result;
 }
-
-class FormattedLink extends FormattedString {
-  final String url;
-  FormattedLink(
-    super.value, {
-    required this.url,
-    super.format,
-    super.prefix,
-    super.suffix,
-  });
-
-  @override
-  String formatted({required bool useColors}) {
-    if (!useColors) return _prefix + value + _suffix;
-    // Apply formatting to value, wrap with an OSC 8 hyperlink and add prefix/suffix.
-    return '$_prefix${link(_format(value), url)}$_suffix';
-  }
-}
