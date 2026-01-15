@@ -525,6 +525,7 @@ Future<PubProcess> startPub({
   final mergedEnvironment = {
     if (includeParentHomeAndPath) ...{
       'HOME': Platform.environment['HOME'] ?? '',
+      'LOCALAPPDATA': Platform.environment['LOCALAPPDATA'] ?? '',
       'PATH': Platform.environment['PATH'] ?? '',
     },
     // These seem to be needed for networking to work.
