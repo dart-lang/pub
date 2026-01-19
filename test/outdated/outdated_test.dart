@@ -808,4 +808,28 @@ Future<void> main() async {
     await d.dir('foo', [d.libPubspec('foo', '1.0.0')]).create();
     await ctx.run(['outdated']);
   });
+
+  testWithGolden('outputs package names as links', colors: true, (ctx) async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+
+    await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
+    await pubGet();
+
+    server.serve('foo', '1.3.0');
+    // Treat the local test server as the official pub.dev server so names
+    // render as hyperlinks.
+    await ctx.run(
+      ['outdated', '--color'],
+      environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
+    );
+    await ctx.run(
+      ['outdated', '--no-color'],
+      environment: {'_PUB_TEST_DEFAULT_HOSTED_URL': server.url},
+    );
+
+    // Don't treat the local test server as pub.dev so names
+    // do not render as hyperlinks.
+    await ctx.run(['outdated', '--color']);
+  });
 }

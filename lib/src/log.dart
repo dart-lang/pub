@@ -57,6 +57,8 @@ final _gray = getAnsi('\u001b[38;5;245m');
 final _none = getAnsi('\u001b[0m');
 final _noColor = getAnsi('\u001b[39m');
 final _bold = getAnsi('\u001b[1m');
+final _link = getAnsi('\u001b]8;;');
+final _esc = getAnsi('\u001b\\');
 
 /// An enum type for defining the different logging levels a given message can
 /// be associated with.
@@ -498,6 +500,12 @@ void unmuteProgress() {
   assert(_numMutes > 0);
   _numMutes--;
 }
+
+/// Wraps [text] in the ANSI escape codes to make it a hyperlink to [url] when
+/// on a platform that supports that.
+///
+/// Use this to provide clickable links in terminal output.
+String link(String text, String url) => '$_link$url$_esc$text$_link$_esc';
 
 /// Wraps [text] in the ANSI escape codes to make it bold when on a platform
 /// that supports that.
