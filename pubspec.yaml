@@ -17,7 +17,7 @@ dependencies:
   http: ^1.6.0
   http_multi_server: ^3.2.2
   http_parser: ^4.1.2
-  meta: ^1.17.0
+  meta: ^1.18.0
   path: ^1.9.1
   pool: ^1.0.0
   pub_semver: ^2.2.0
