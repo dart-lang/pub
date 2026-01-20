@@ -44,6 +44,9 @@ class PackageServer {
   // Setting this to false will disable automatic calculation of checksums.
   bool serveChecksums = true;
 
+  /// The Content-Type header to use for API responses.
+  String contentType = 'application/vnd.pub.v2+json';
+
   PackageServer._(this._inner) {
     final outerZone = Zone.current;
     _inner.mount((request) {
@@ -119,10 +122,7 @@ class PackageServer {
           if (package.discontinuedReplacementText != null)
             'replacedBy': package.discontinuedReplacementText,
         }),
-        headers: {
-          HttpHeaders.contentTypeHeader:
-              package.contentType ?? 'application/vnd.pub.v2+json',
-        },
+        headers: {HttpHeaders.contentTypeHeader: server.contentType},
       );
     });
 
@@ -165,10 +165,7 @@ class PackageServer {
               },
           ],
         }),
-        headers: {
-          HttpHeaders.contentTypeHeader:
-              package.contentType ?? 'application/vnd.pub.v2+json',
-        },
+        headers: {HttpHeaders.contentTypeHeader: server.contentType},
       );
     });
 
@@ -275,11 +272,6 @@ class PackageServer {
   ///
   /// If [contents] is passed, it's used as the contents of the package. By
   /// default, a package just contains a dummy lib directory.
-  ///
-  /// If [contentType] is passed, it sets the Content-Type header for API
-  /// responses for this package. A null value does not modify any previously
-  /// configured content type (last non-null wins). Defaults to
-  /// 'application/vnd.pub.v2+json'.
   void serve(
     String name,
     String version, {
@@ -288,7 +280,6 @@ class PackageServer {
     List<d.Descriptor>? contents,
     String? sdk,
     Map<String, List<String>>? headers,
-    String? contentType,
   }) {
     final pubspecFields = <String, dynamic>{
       'name': name,
@@ -302,9 +293,6 @@ class PackageServer {
     contents = [d.file('pubspec.yaml', yaml(pubspecFields)), ...contents];
 
     final package = _packages.putIfAbsent(name, _ServedPackage.new);
-    if (contentType != null) {
-      package.contentType = contentType;
-    }
     package.versions[version] = _ServedPackageVersion(
       pubspecFields,
       headers: headers,
@@ -406,7 +394,6 @@ class _ServedPackage {
   String? discontinuedReplacementText;
   DateTime? advisoriesUpdated;
   final advisories = <String, _ServedAdvisory>{};
-  String? contentType;
 }
 
 /// A package that's intended to be served.

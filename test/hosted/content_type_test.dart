@@ -10,7 +10,8 @@ import '../test_pub.dart';
 void main() {
   test('gets a package from a server that returns application/json', () async {
     final server = await servePackages();
-    server.serve('foo', '1.2.3', contentType: 'application/json');
+    server.contentType = 'application/json';
+    server.serve('foo', '1.2.3');
 
     await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
@@ -23,11 +24,8 @@ void main() {
     'gets a package from a server that returns application/json with charset',
     () async {
       final server = await servePackages();
-      server.serve(
-        'foo',
-        '1.2.3',
-        contentType: 'application/json; charset=utf-8',
-      );
+      server.contentType = 'application/json; charset=utf-8';
+      server.serve('foo', '1.2.3');
 
       await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
@@ -41,8 +39,9 @@ void main() {
     'gets multiple versions from a server that returns application/json',
     () async {
       final server = await servePackages();
-      server.serve('foo', '1.0.0', contentType: 'application/json');
-      server.serve('foo', '1.2.3', contentType: 'application/json');
+      server.contentType = 'application/json';
+      server.serve('foo', '1.0.0');
+      server.serve('foo', '1.2.3');
 
       await d.appDir(dependencies: {'foo': '1.2.3'}).create();
 
@@ -56,13 +55,9 @@ void main() {
     'gets a package with dependencies from a server returning application/json',
     () async {
       final server = await servePackages();
-      server.serve(
-        'foo',
-        '1.0.0',
-        deps: {'bar': '^1.0.0'},
-        contentType: 'application/json',
-      );
-      server.serve('bar', '1.0.0', contentType: 'application/json');
+      server.contentType = 'application/json';
+      server.serve('foo', '1.0.0', deps: {'bar': '^1.0.0'});
+      server.serve('bar', '1.0.0');
 
       await d.appDir(dependencies: {'foo': '^1.0.0'}).create();
 
