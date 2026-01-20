@@ -44,6 +44,9 @@ class PackageServer {
   // Setting this to false will disable automatic calculation of checksums.
   bool serveChecksums = true;
 
+  /// The Content-Type header to use for API responses.
+  String contentType = 'application/vnd.pub.v2+json';
+
   PackageServer._(this._inner) {
     final outerZone = Zone.current;
     _inner.mount((request) {
@@ -119,7 +122,7 @@ class PackageServer {
           if (package.discontinuedReplacementText != null)
             'replacedBy': package.discontinuedReplacementText,
         }),
-        headers: {HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'},
+        headers: {HttpHeaders.contentTypeHeader: server.contentType},
       );
     });
 
@@ -162,7 +165,7 @@ class PackageServer {
               },
           ],
         }),
-        headers: {HttpHeaders.contentTypeHeader: 'application/vnd.pub.v2+json'},
+        headers: {HttpHeaders.contentTypeHeader: server.contentType},
       );
     });
 
