@@ -19,6 +19,7 @@ import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
 import 'global_packages.dart';
 import 'http.dart';
+import 'io.dart';
 import 'log.dart' as log;
 import 'pub_embeddable_command.dart';
 import 'sdk.dart';
@@ -40,7 +41,7 @@ const pubCommandAliases = {
 final lineLength = _lineLength();
 
 int _lineLength() {
-  final fromEnv = Platform.environment['_PUB_TEST_TERMINAL_COLUMNS'];
+  final fromEnv = platform.environment['_PUB_TEST_TERMINAL_COLUMNS'];
   if (fromEnv != null) {
     final parsed = int.tryParse(fromEnv);
     if (parsed != null && parsed > 0) return parsed;

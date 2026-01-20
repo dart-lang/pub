@@ -15,6 +15,7 @@ import 'package:pool/pool.dart';
 import 'package:source_span/source_span.dart';
 
 import '../ignore.dart';
+import '../io.dart';
 import '../validator.dart';
 
 /// All recognized secrets fit in ASCII (first seven bits). So for speed we
@@ -32,7 +33,7 @@ final class LeakDetectionValidator extends Validator {
     // Load `false_secrets` from `pubspec.yaml`.
     final falseSecrets = Ignore(
       package.pubspec.falseSecrets,
-      ignoreCase: Platform.isWindows || Platform.isMacOS,
+      ignoreCase: platform.isWindows || platform.isMacOS,
     );
 
     final pool = Pool(20); // don't read more than 20 files concurrently!

@@ -267,7 +267,7 @@ bool isLoopback(String host) {
 Set<String> createFileFilter(Iterable<String> files) {
   return files.expand<String>((file) {
     final result = ['/$file'];
-    if (Platform.isWindows) result.add('\\$file');
+    if (platform.isWindows) result.add('\\$file');
     return result;
   }).toSet();
 }
@@ -280,7 +280,7 @@ Set<String> createFileFilter(Iterable<String> files) {
 Set<String> createDirectoryFilter(Iterable<String> dirs) {
   return dirs.expand<String>((dir) {
     final result = ['/$dir/'];
-    if (Platform.isWindows) {
+    if (platform.isWindows) {
       result
         ..add('/$dir\\')
         ..add('\\$dir/')
@@ -444,7 +444,7 @@ bool get canUseAnsiCodes {
     case ForceColorOption.never:
       return false;
     case ForceColorOption.auto:
-      return (!Platform.environment.containsKey('NO_COLOR')) &&
+      return (!platform.environment.containsKey('NO_COLOR')) &&
           terminalOutputForStdout &&
           stdout.supportsAnsiEscapes;
   }
@@ -467,8 +467,8 @@ bool get canUseUnicode =>
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
     !terminalOutputForStdout ||
-    !Platform.isWindows ||
-    Platform.environment.containsKey('WT_SESSION');
+    !platform.isWindows ||
+    platform.environment.containsKey('WT_SESSION');
 
 /// Prepends each line in [text] with [prefix].
 ///
