@@ -25,7 +25,7 @@ void main() {
     ]).create();
 
     await runPub(
-      args: ['cache', 'repair'],
+      args: ['cache', 'repair', '--all'],
       error: contains('Error reading binstub for "script":'),
     );
   });

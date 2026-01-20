@@ -51,7 +51,7 @@ void main() {
 
       // Repair them.
       await runPub(
-        args: ['cache', 'repair'],
+        args: ['cache', 'repair', '--all'],
         output: '''
           Resetting Git repository for foo 1.0.0...
           Resetting Git repository for foo 1.0.1...
@@ -82,7 +82,7 @@ void main() {
       }
 
       await runPub(
-        args: ['cache', 'repair'],
+        args: ['cache', 'repair', '--all'],
         error: allOf([
           contains('Failed to load package:'),
           contains('Could not find a file named "pubspec.yaml" in '),
@@ -113,7 +113,7 @@ void main() {
       }
 
       await runPub(
-        args: ['cache', 'repair'],
+        args: ['cache', 'repair', '--all'],
         error: allOf([
           contains('Failed to load package:'),
           contains('Error on line 1, column 2 of '),
@@ -173,7 +173,7 @@ void main() {
 
       // Repair them.
       await runPub(
-        args: ['cache', 'repair'],
+        args: ['cache', 'repair', '--all'],
         output: '''
           Resetting Git repository for sub 1.0.0...
           Resetting Git repository for sub 1.0.1...
@@ -206,7 +206,7 @@ void main() {
       }
 
       await runPub(
-        args: ['cache', 'repair'],
+        args: ['cache', 'repair', '--all'],
         error: allOf([
           contains('Failed to load package:'),
           contains('Could not find a file named "pubspec.yaml" in '),

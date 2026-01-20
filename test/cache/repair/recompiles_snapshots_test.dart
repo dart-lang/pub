@@ -27,7 +27,7 @@ void main() {
     ]).create();
 
     await runPub(
-      args: ['cache', 'repair'],
+      args: ['cache', 'repair', '--all'],
       output: '''
           Reinstalled 1 package.
           Reactivating foo 1.0.0...

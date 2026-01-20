@@ -4,10 +4,15 @@
 
 import 'dart:async';
 
+import 'package:pub_semver/pub_semver.dart';
+
 import '../command.dart';
 import '../exit_codes.dart' as exit_codes;
+import '../io.dart';
 import '../log.dart' as log;
-import '../source/cached.dart';
+import '../package_name.dart';
+import '../source/git.dart';
+import '../source/hosted.dart';
 import '../utils.dart';
 
 /// Handles the `cache repair` pub command.
@@ -21,17 +26,64 @@ class CacheRepairCommand extends PubCommand {
   @override
   bool get takesArguments => false;
 
+  CacheRepairCommand() {
+    argParser.addFlag(
+      'all',
+      help:
+          'Repair all cached packages instead of only packages in the '
+          'current pubspec.lock.',
+      negatable: false,
+    );
+  }
+
   @override
   Future<void> runProtected() async {
+    final repairAll = argResults.flag('all');
+
+    // Get the filters for packages to repair (from lockfile if not --all).
+    bool Function(String, Version)? hostedPackageFilter;
+    bool Function(String, Version)? gitPackageFilter;
+    if (!repairAll) {
+      if (!entrypoint.canFindWorkspaceRoot) {
+        log.message(
+          'No pubspec.yaml found. '
+          'Run from a Dart project or use --all to repair all cached packages.',
+        );
+        return;
+      }
+
+      if (!fileExists(entrypoint.lockFilePath)) {
+        log.message(
+          'No pubspec.lock found. '
+          'Run "pub get" first or use --all to repair all cached packages.',
+        );
+        return;
+      }
+
+      final lockFile = entrypoint.lockFile;
+      final packages = lockFile.packages.values.toList();
+      if (packages.isEmpty) {
+        log.message('No packages found in pubspec.lock.');
+        return;
+      }
+
+      (hostedPackageFilter, gitPackageFilter) = _buildPackageFilters(packages);
+    }
+
     // Delete any eventual temp-files left in the cache.
     cache.deleteTempDir();
+
     // Repair every cached source.
-    final repairResults = (await Future.wait(
-      <CachedSource>[
-        cache.hosted,
-        cache.git,
-      ].map((source) => source.repairCachedPackages(cache)),
-    )).expand((x) => x);
+    final repairResults = [
+      ...await cache.hosted.repairCachedPackages(
+        cache,
+        packageFilter: hostedPackageFilter,
+      ),
+      ...await cache.git.repairCachedPackages(
+        cache,
+        packageFilter: gitPackageFilter,
+      ),
+    ];
 
     final successes = repairResults.where((result) => result.success);
     final failures = repairResults.where((result) => !result.success);
@@ -83,11 +135,34 @@ class CacheRepairCommand extends PubCommand {
     }
 
     if (successes.isEmpty && failures.isEmpty) {
-      log.message('No packages in cache, so nothing to repair.');
+      if (repairAll) {
+        log.message('No packages in cache, so nothing to repair.');
+      } else {
+        log.message('No packages from pubspec.lock found in cache.');
+      }
     }
 
     if (failures.isNotEmpty || repairFailures.isNotEmpty) {
       overrideExitCode(exit_codes.UNAVAILABLE);
     }
+  }
+
+  /// Builds source-specific package filters from the lockfile packages.
+  ///
+  /// Returns a tuple of (hostedFilter, gitFilter).
+  /// - Hosted filter: matches by name AND version.
+  /// - Git filter: matches by name only (version isn't reliably derivable from
+  ///   cache directory names).
+  (bool Function(String, Version), bool Function(String, Version))
+  _buildPackageFilters(List<PackageId> packages) {
+    final hostedPackages =
+        packages.where((p) => p.source is HostedSource).toList();
+    final gitPackages = packages.where((p) => p.source is GitSource).toList();
+
+    return (
+      (name, version) =>
+          hostedPackages.any((p) => p.name == name && p.version == version),
+      (name, version) => gitPackages.any((p) => p.name == name),
+    );
   }
 }

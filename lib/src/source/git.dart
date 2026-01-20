@@ -532,8 +532,14 @@ class GitSource extends CachedSource {
 
   /// Resets all cached packages back to the pristine state of the Git
   /// repository at the revision they are pinned to.
+  ///
+  /// If [packageFilter] is provided, only packages whose names are in the set
+  /// will be repaired.
   @override
-  Future<Iterable<RepairResult>> repairCachedPackages(SystemCache cache) async {
+  Future<Iterable<RepairResult>> repairCachedPackages(
+    SystemCache cache, {
+    bool Function(String name, Version version)? packageFilter,
+  }) async {
     final rootDir = cache.rootDirForSource(this);
     if (!dirExists(rootDir)) return [];
 
@@ -550,13 +556,22 @@ class GitSource extends CachedSource {
 
                 final packageDir = p.join(revisionCachePath, relative);
                 try {
-                  return Package.load(
+                  final package = Package.load(
                     packageDir,
                     loadPubspec: Pubspec.loadRootWithSources(cache.sources),
                   );
+                  if (packageFilter != null &&
+                      !packageFilter(package.name, package.version)) {
+                    return null;
+                  }
+                  return package;
                 } catch (error, stackTrace) {
-                  log.error('Failed to load package', error, stackTrace);
                   final name = p.basename(revisionCachePath).split('-').first;
+                  if (packageFilter != null &&
+                      !packageFilter(name, Version.none)) {
+                    return null;
+                  }
+                  log.error('Failed to load package', error, stackTrace);
                   result.add(
                     RepairResult(name, Version.none, this, success: false),
                   );
