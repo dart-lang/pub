@@ -29,6 +29,7 @@ import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
 import 'utils.dart';
+import 'gzip/gzip.dart';
 
 export 'package:http/http.dart' show ByteStream;
 
@@ -1141,7 +1142,7 @@ Future<Uint8List> extractFileFromTarGz(
   Stream<List<int>> stream,
   String filename,
 ) async {
-  final reader = TarReader(stream.transform(gzip.decoder));
+  final reader = TarReader(stream.transform(gzipDecoder));
   filename = p.posix.normalize(filename);
   while (await reader.moveNext()) {
     final entry = reader.current;
@@ -1160,7 +1161,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
 
   destination = p.absolute(destination);
-  final reader = TarReader(stream.transform(gzip.decoder));
+  final reader = TarReader(stream.transform(gzipDecoder));
   final paths = <String>{};
   while (await reader.moveNext()) {
     final entry = reader.current;
@@ -1342,7 +1343,7 @@ final String? dartConfigDir = () {
   }
   try {
     return applicationConfigHome('dart');
-  } on EnvironmentNotFoundException {
+  } catch (e) {
     return null;
   }
 }();

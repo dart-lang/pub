@@ -62,7 +62,7 @@ Future<void> ensurePubspecResolved(
     // TODO(https://github.com/dart-lang/pub/issues/4200)
     // This is a bit of a hack.
     // We should most likely take a client here.
-    globalHttpClient.close();
+    //globalHttpClient.close();
   }
 }
 
