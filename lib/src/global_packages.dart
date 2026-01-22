@@ -942,7 +942,7 @@ Try reactivating the package.
     required bool isRefreshingBinstub,
   }) {
     var binStubPath = p.join(_binStubDir, executable);
-    if (Platform.isWindows) binStubPath += '.bat';
+    if (platform.isWindows) binStubPath += '.bat';
 
     String? previousPackage;
     if (!isRefreshingBinstub && fileExists(binStubPath)) {
@@ -957,7 +957,7 @@ Try reactivating the package.
     // When running tests we want the binstub to invoke the current pub, not the
     // one from the sdk.
     final pubInvocation =
-        runningFromTest ? Platform.script.toFilePath() : 'pub';
+        runningFromTest ? platform.script.toFilePath() : 'pub';
 
     final String binstub;
     // We need an absolute path since relative ones won't be relative to the
@@ -970,7 +970,7 @@ Try reactivating the package.
     // 260 is the maximal short path length on Windows. Hopefully that is
     // enough.
     final padding = ' ' * (260 - snapshot.length);
-    if (Platform.isWindows) {
+    if (platform.isWindows) {
       binstub = '''
 @echo off
 rem This file was created by pub v${sdk.version}.
@@ -1028,7 +1028,7 @@ fi
       // path names.
       writeTextFile(tmpPath, binstub, encoding: const SystemEncoding());
 
-      if (Platform.isLinux || Platform.isMacOS) {
+      if (platform.isLinux || platform.isMacOS) {
         // Make it executable.
         final result = Process.runSync('chmod', ['+x', tmpPath]);
         if (result.exitCode != 0) {
@@ -1072,7 +1072,7 @@ fi
   /// [installed] should be the name of an installed executable that can be used
   /// to test whether accessing it on the path works.
   void _suggestIfNotOnPath(String installed) {
-    if (Platform.isWindows) {
+    if (platform.isWindows) {
       // See if the shell can find one of the binstubs.
       // "\q" means return exit code 0 if found or 1 if not.
       final result = runProcessSync('where', [r'\q', '$installed.bat']);
@@ -1097,14 +1097,14 @@ fi
       if (result.exitCode == 0) return;
 
       var binDir = _binStubDir;
-      if (binDir.startsWith(Platform.environment['HOME']!)) {
+      if (binDir.startsWith(platform.environment['HOME']!)) {
         binDir = p.join(
           r'$HOME',
-          p.relative(binDir, from: Platform.environment['HOME']),
+          p.relative(binDir, from: platform.environment['HOME']),
         );
       }
       final shellConfigFiles =
-          Platform.isMacOS
+          platform.isMacOS
               // zsh is default on mac - mention that first.
               ? '(.zshrc, .bashrc, .bash_profile, etc.)'
               : '(.bashrc, .bash_profile, .zshrc etc.)';
