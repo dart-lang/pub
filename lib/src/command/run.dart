@@ -86,7 +86,7 @@ class RunCommand extends PubCommand {
         );
       }
     } else if (onlyIdentifierRegExp.hasMatch(executable)) {
-      // "pub run foo" means the same thing as "pub run foo:foo" as long as
+      // "dart run foo" means the same thing as "dart run foo:foo" as long as
       // "foo" is a valid Dart identifier (and thus package name).
       package = executable;
     }

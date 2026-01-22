@@ -35,7 +35,7 @@ void main() {
     await pubGet(args: ['--no-precompile']);
   }
 
-  test('`pub run` precompiles script', () async {
+  test('`dart run` precompiles script', () async {
     await setupForPubRunToPrecompile();
     final pub = await pubRun(args: ['test']);
     await pub.shouldExit(0);
@@ -44,7 +44,7 @@ void main() {
     expect(lines, contains('hello'));
   });
 
-  test("`pub run` doesn't write about precompilation "
+  test("`dart run` doesn't write about precompilation "
       'when a terminal is not attached', () async {
     await setupForPubRunToPrecompile();
 
@@ -56,7 +56,7 @@ void main() {
   });
 
   // Regression test of https://github.com/dart-lang/pub/issues/2483
-  test('`pub run` precompiles script with relative PUB_CACHE', () async {
+  test('`dart run` precompiles script with relative PUB_CACHE', () async {
     await d.dir(appPath, [
       d.appPubspec(dependencies: {'test': '1.0.0'}),
     ]).create();

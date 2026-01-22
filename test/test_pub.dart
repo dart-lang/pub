@@ -298,9 +298,9 @@ Future<void> pubRemove({
 /// expected startup output.
 ///
 /// If [global] is `true`, this invokes "pub global run", otherwise it does
-/// "pub run".
+/// "dart run".
 ///
-/// Returns the `pub run` process.
+/// Returns the `dart run` process.
 Future<PubProcess> pubRun({
   bool global = false,
   required Iterable<String> args,

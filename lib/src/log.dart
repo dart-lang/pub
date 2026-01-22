@@ -363,7 +363,7 @@ String limitLength(String input, int limit) {
 void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
   final buffer = StringBuffer();
   buffer.writeln('''
-Information about the latest pub run.
+Information about the latest dart run.
 
 If you believe something is not working right, you can go to
 https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
