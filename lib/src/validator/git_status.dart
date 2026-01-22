@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart' as p;
 
 import '../git.dart' as git;
 import '../log.dart' as log;

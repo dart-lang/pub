@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart' show IterableExtension;
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart' as p;
 
 import '../command.dart';
 import '../command_runner.dart';

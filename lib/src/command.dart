@@ -10,7 +10,7 @@ import 'package:args/command_runner.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart' as p;
 
 import 'authentication/token_store.dart';
 import 'entrypoint.dart';

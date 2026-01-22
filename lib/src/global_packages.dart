@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'command_runner.dart';

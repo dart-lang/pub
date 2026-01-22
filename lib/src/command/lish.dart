@@ -8,7 +8,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart' as p;
 
 import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';

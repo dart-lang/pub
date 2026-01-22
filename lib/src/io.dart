@@ -18,7 +18,7 @@ import 'package:collection/collection.dart';
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart' as p;
 import 'package:platform/platform.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';

@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart' as p;
 
 import '../git.dart' as git;
 import '../ignore.dart';
