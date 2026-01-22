@@ -375,8 +375,8 @@ class DependencyServicesApplyCommand extends PubCommand {
             }
           }
         }
-        updatedPubspecs[package.dir] = pubspecEditor;
       }
+      updatedPubspecs[package.dir] = pubspecEditor;
     }
     final lockFile =
         fileExists(entrypoint.lockFilePath)

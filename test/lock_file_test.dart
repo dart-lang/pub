@@ -106,11 +106,22 @@ sdks:
         );
         expect(
           lockFile.sdkConstraints['flutter']!.effectiveConstraint,
-          VersionConstraint.parse('>=0.1.2'),
+          VersionConstraint.parse('^0.1.2'),
         );
         expect(
           lockFile.sdkConstraints['fuchsia']!.effectiveConstraint,
           VersionConstraint.parse('^5.6.7'),
+        );
+      });
+
+      test('don\t reinterpret upper bounds of flutter constraints', () {
+        final lockFile = LockFile.parse('''
+sdks:
+  flutter: 0.1.2
+''', sources);
+        expect(
+          lockFile.sdkConstraints['flutter']!.effectiveConstraint,
+          VersionConstraint.parse('0.1.2'),
         );
       });
 

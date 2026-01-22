@@ -10,7 +10,6 @@ import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
 
 import 'io.dart';
-import 'language_version.dart';
 import 'package_name.dart';
 import 'pubspec.dart';
 import 'system_cache.dart';
@@ -139,22 +138,9 @@ class LockFile {
       _parseEachEntry<String, YamlScalar>(
         sdksField,
         (name, constraint) {
-          final originalConstraint = _parseVersionConstraint(constraint);
-          // Reinterpret the sdk constraints here, in case they were written by
-          // an old sdk that did not do reinterpretations.
-          // TODO(sigurdm): push the switching into `SdkConstraint`.
-          sdkConstraints[name] = switch (name) {
-            'dart' => SdkConstraint.interpretDartSdkConstraint(
-              originalConstraint,
-              defaultUpperBoundConstraint: null,
-            ),
-            'flutter' => SdkConstraint.interpretFlutterSdkConstraint(
-              originalConstraint,
-              isRoot: false,
-              languageVersion: LanguageVersion.defaultLanguageVersion,
-            ),
-            _ => SdkConstraint(originalConstraint),
-          };
+          sdkConstraints[name] = SdkConstraint(
+            _parseVersionConstraint(constraint),
+          );
         },
         'string',
         'string',

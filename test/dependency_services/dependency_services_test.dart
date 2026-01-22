@@ -661,6 +661,37 @@ Future<void> main() async {
       environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
     );
   });
+  testWithGolden('applying with no changes is a no-op', (context) async {
+    await servePackages();
+    await d
+        .appDir(
+          pubspec: {
+            'environment': {'sdk': '^3.10.0', 'flutter': '4.0.0'},
+          },
+        )
+        .create();
+
+    await d.dir('flutter', [flutterVersion('4.0.0')]).create();
+    await pubGet(
+      environment: {
+        '_PUB_TEST_SDK_VERSION': '3.10.0',
+        'FLUTTER_ROOT': d.path('flutter'),
+      },
+    );
+    await context.runDependencyServices(
+      ['apply'],
+      stdin: jsonEncode({'dependencyChanges': <Object?>[]}),
+      environment: {
+        '_PUB_TEST_SDK_VERSION': '3.10.0',
+        'FLUTTER_ROOT': d.path('flutter'),
+      },
+    );
+    final lockfile =
+        loadYaml(File(path(p.join(appPath, 'pubspec.lock'))).readAsStringSync())
+            as Map;
+    // Regression test for https://github.com/dependabot/dependabot-core/issues/13461
+    expect((lockfile['sdks'] as Map)['flutter'], '4.0.0');
+  });
 }
 
 String? findChangeVersion(dynamic json, String updateType, String name) {
