@@ -24,7 +24,7 @@ void main() {
     ]).create();
 
     await runPub(
-      args: ['cache', 'repair'],
+      args: ['cache', 'repair', '--all'],
       error: allOf([
         contains('Binstubs exist for non-activated packages:'),
         contains('From foo: foo-script'),

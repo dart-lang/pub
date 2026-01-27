@@ -10,7 +10,7 @@ void main() {
   test('does nothing if the cache is empty', () {
     // Repair them.
     return runPub(
-      args: ['cache', 'repair'],
+      args: ['cache', 'repair', '--all'],
       output: 'No packages in cache, so nothing to repair.',
     );
   });

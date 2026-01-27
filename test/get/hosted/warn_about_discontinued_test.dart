@@ -78,7 +78,7 @@ Downloading packages...
 Got dependencies!''',
     );
     // Repairing the cache should reset the package listing caches.
-    await runPub(args: ['cache', 'repair']);
+    await runPub(args: ['cache', 'repair', '--all']);
     await pubGet(
       output: '''
 Resolving dependencies...
@@ -179,7 +179,7 @@ Downloading packages...
 Got dependencies!''',
     );
     // Repairing the cache should reset the package listing caches.
-    await runPub(args: ['cache', 'repair']);
+    await runPub(args: ['cache', 'repair', '--all']);
     await pubGet(
       output: '''
 Resolving dependencies...

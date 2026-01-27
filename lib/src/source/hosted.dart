@@ -1307,8 +1307,14 @@ class HostedSource extends CachedSource {
 
   /// Re-downloads all packages that have been previously downloaded into the
   /// system cache from any server.
+  ///
+  /// If [packageFilter] is provided, only packages whose names are in the set
+  /// will be repaired.
   @override
-  Future<Iterable<RepairResult>> repairCachedPackages(SystemCache cache) async {
+  Future<Iterable<RepairResult>> repairCachedPackages(
+    SystemCache cache, {
+    bool Function(String name, Version version)? packageFilter,
+  }) async {
     final rootDir = cache.rootDirForSource(this);
     if (!dirExists(rootDir)) return [];
 
@@ -1331,16 +1337,19 @@ class HostedSource extends CachedSource {
         final results = <RepairResult>[];
         final packages = <Package>[];
         for (var entry in listDir(serverDir)) {
+          final id = _idForBasename(p.basename(entry), url);
+          if (packageFilter != null && !packageFilter(id.name, id.version)) {
+            continue;
+          }
+
           try {
-            packages.add(
-              Package.load(
-                entry,
-                loadPubspec: Pubspec.loadRootWithSources(cache.sources),
-              ),
+            final package = Package.load(
+              entry,
+              loadPubspec: Pubspec.loadRootWithSources(cache.sources),
             );
+            packages.add(package);
           } catch (error, stackTrace) {
             log.error('Failed to load package', error, stackTrace);
-            final id = _idForBasename(p.basename(entry), url);
             results.add(
               RepairResult(id.name, id.version, this, success: false),
             );

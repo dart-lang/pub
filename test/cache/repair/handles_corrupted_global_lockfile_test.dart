@@ -15,7 +15,7 @@ void main() {
     ]).create();
 
     await runPub(
-      args: ['cache', 'repair'],
+      args: ['cache', 'repair', '--all'],
       error: contains('Failed to reactivate foo:'),
       output: contains(
         'Failed to reactivate 1 package:\n'

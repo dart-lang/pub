@@ -73,9 +73,15 @@ abstract class CachedSource extends Source {
   /// Reinstalls all packages that have been previously installed into the
   /// system cache by this source.
   ///
+  /// If [packageFilter] is provided, only packages for which the filter returns
+  /// `true` will be repaired. The filter receives the package name and version.
+  ///
   /// Returns a list of results indicating for each if that package was
   /// successfully repaired.
-  Future<Iterable<RepairResult>> repairCachedPackages(SystemCache cache);
+  Future<Iterable<RepairResult>> repairCachedPackages(
+    SystemCache cache, {
+    bool Function(String name, Version version)? packageFilter,
+  });
 
   /// Return all directories inside this source that can be removed while
   /// preserving the packages given by [alivePackages] a list of package root
