@@ -355,6 +355,20 @@ bool isHttpIOException(Object e) {
       e is WebSocketException;
 }
 
+/// Whether [e] indicates a transient network failure where we might want to
+/// fall back to cached data.
+///
+/// This includes socket errors, TLS/handshake failures, timeouts, and HTTP
+/// client exceptions that wrap network failures. It does NOT include HTTP
+/// response errors (4xx, 5xx) since those indicate the server was reachable.
+bool isTransientNetworkError(Object e) {
+  return e is SocketException ||
+      e is TlsException ||
+      e is HandshakeException ||
+      e is TimeoutException ||
+      e is http.ClientException;
+}
+
 /// Program-wide limiter for concurrent network requests.
 final _httpPool = Pool(16);
 
