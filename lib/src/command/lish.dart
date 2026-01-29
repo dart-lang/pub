@@ -249,8 +249,8 @@ class LishCommand extends PubCommand {
         // explicitly have to define mock servers as official server to test
         // publish command with oauth2 credentials.
         if (runningFromTest &&
-            Platform.environment.containsKey('_PUB_TEST_DEFAULT_HOSTED_URL'))
-          Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'],
+            platform.environment.containsKey('_PUB_TEST_DEFAULT_HOSTED_URL'))
+          platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'],
       };
 
       // Using OAuth2 authentication client for the official pub servers

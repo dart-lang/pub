@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -65,7 +64,7 @@ final _authorizationEndpoint = Uri.parse(
 /// This can be controlled externally by setting the `_PUB_TEST_TOKEN_ENDPOINT`
 /// environment variable.
 Uri get tokenEndpoint {
-  final tokenEndpoint = Platform.environment['_PUB_TEST_TOKEN_ENDPOINT'];
+  final tokenEndpoint = platform.environment['_PUB_TEST_TOKEN_ENDPOINT'];
   if (tokenEndpoint != null) {
     return Uri.parse(tokenEndpoint);
   } else {

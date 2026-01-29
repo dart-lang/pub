@@ -115,7 +115,7 @@ Future<void> precompile({
   String? nativeAssets,
 }) async {
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
-  final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
+  final sdkRoot = p.relative(p.dirname(p.dirname(platform.resolvedExecutable)));
   String? tempDir;
   FrontendServerClient? client;
   try {
