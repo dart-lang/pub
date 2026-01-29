@@ -13,12 +13,8 @@ $ pub outdated --json
       "current": {
         "version": "1.0.0"
       },
-      "upgradable": {
-        "version": "1.0.0"
-      },
-      "resolvable": {
-        "version": "1.0.0"
-      },
+      "upgradable": null,
+      "resolvable": null,
       "latest": null
     },
     {
@@ -30,12 +26,8 @@ $ pub outdated --json
       "current": {
         "version": "1.0.0"
       },
-      "upgradable": {
-        "version": "1.2.0"
-      },
-      "resolvable": {
-        "version": "1.2.0"
-      },
+      "upgradable": null,
+      "resolvable": null,
       "latest": {
         "version": "1.2.0"
       }
@@ -50,14 +42,12 @@ $ pub outdated --no-color
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           *1.0.0 (retracted)  *1.0.0 (retracted)  *1.0.0 (retracted)  -       (discontinued)  
-foo           *1.0.0 (retracted)  1.2.0               1.2.0               1.2.0   (discontinued)  
-
-1 upgradable dependency is locked (in pubspec.lock) to an older version.
-To update it, use `dart pub upgrade`.
+bar           *1.0.0 (retracted)  -           -           -       (discontinued)  
+foo           *1.0.0 (retracted)  -           -           1.2.0   (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 bar
     Package bar has been discontinued. See https://dart.dev/go/package-discontinue
@@ -73,14 +63,12 @@ $ pub outdated --no-color --no-transitive
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           *1.0.0 (retracted)  *1.0.0 (retracted)  *1.0.0 (retracted)  -       (discontinued)  
-foo           *1.0.0 (retracted)  1.2.0               1.2.0               1.2.0   (discontinued)  
-
-1 upgradable dependency is locked (in pubspec.lock) to an older version.
-To update it, use `dart pub upgrade`.
+bar           *1.0.0 (retracted)  -           -           -       (discontinued)  
+foo           *1.0.0 (retracted)  -           -           1.2.0   (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 bar
     Package bar has been discontinued. See https://dart.dev/go/package-discontinue
@@ -96,17 +84,15 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           *1.0.0 (retracted)  *1.0.0 (retracted)  *1.0.0 (retracted)  -       (discontinued)  
-foo           *1.0.0 (retracted)  1.2.0               1.2.0               1.2.0   (discontinued)  
+bar           *1.0.0 (retracted)  -           -           -       (discontinued)  
+foo           *1.0.0 (retracted)  -           -           1.2.0   (discontinued)  
 
 transitive dependencies:
-transitive    1.2.3               1.2.3               1.2.3               1.2.3   
-
-1 upgradable dependency is locked (in pubspec.lock) to an older version.
-To update it, use `dart pub upgrade`.
+transitive    1.2.3               -           -           1.2.3   
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 bar
     Package bar has been discontinued. See https://dart.dev/go/package-discontinue
@@ -122,14 +108,12 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           *1.0.0 (retracted)  *1.0.0 (retracted)  *1.0.0 (retracted)  -       (discontinued)  
-foo           *1.0.0 (retracted)  1.2.0               1.2.0               1.2.0   (discontinued)  
-
-1 upgradable dependency is locked (in pubspec.lock) to an older version.
-To update it, use `dart pub upgrade`.
+bar           *1.0.0 (retracted)  -           -           -       (discontinued)  
+foo           *1.0.0 (retracted)  -           -           1.2.0   (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 bar
     Package bar has been discontinued. See https://dart.dev/go/package-discontinue
@@ -145,14 +129,12 @@ $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           *1.0.0 (retracted)  *1.0.0 (retracted)  *1.0.0 (retracted)  -       (discontinued)  
-foo           *1.0.0 (retracted)  1.2.0               1.2.0               1.2.0   (discontinued)  
-
-1 upgradable dependency is locked (in pubspec.lock) to an older version.
-To update it, use `dart pub upgrade`.
+bar           *1.0.0 (retracted)  -           -           -       (discontinued)  
+foo           *1.0.0 (retracted)  -           -           1.2.0   (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 bar
     Package bar has been discontinued. See https://dart.dev/go/package-discontinue
@@ -168,14 +150,12 @@ $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           *1.0.0 (retracted)  *1.0.0 (retracted)  *1.0.0 (retracted)  -       (discontinued)  
-foo           *1.0.0 (retracted)  1.2.0               1.2.0               1.2.0   (discontinued)  
-
-1 upgradable dependency is locked (in pubspec.lock) to an older version.
-To update it, use `dart pub upgrade`.
+bar           *1.0.0 (retracted)  -           -           -       (discontinued)  
+foo           *1.0.0 (retracted)  -           -           1.2.0   (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 bar
     Package bar has been discontinued. See https://dart.dev/go/package-discontinue
@@ -199,12 +179,8 @@ $ pub outdated --json --no-dev-dependencies
       "current": {
         "version": "1.0.0"
       },
-      "upgradable": {
-        "version": "1.0.0"
-      },
-      "resolvable": {
-        "version": "1.0.0"
-      },
+      "upgradable": null,
+      "resolvable": null,
       "latest": null
     },
     {
@@ -216,12 +192,8 @@ $ pub outdated --json --no-dev-dependencies
       "current": {
         "version": "1.0.0"
       },
-      "upgradable": {
-        "version": "1.2.0"
-      },
-      "resolvable": {
-        "version": "1.2.0"
-      },
+      "upgradable": null,
+      "resolvable": null,
       "latest": {
         "version": "1.2.0"
       }
