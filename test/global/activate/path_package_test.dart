@@ -5,9 +5,11 @@
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
 import 'package:test/test.dart';
+import 'package:test_process/test_process.dart';
 
 import '../../descriptor.dart' as d;
 import '../../test_pub.dart';
+import '../binstubs/utils.dart';
 
 void main() {
   test('activates a package at a local path', () async {
@@ -63,7 +65,7 @@ void main() {
     },
   );
 
-  test("Doesn't precompile binaries when activating from path", () async {
+  test("Doesn't precompile the path package's own binaries", () async {
     final server = await servePackages();
     server.serve(
       'bar',
@@ -82,8 +84,46 @@ void main() {
       args: ['global', 'activate', '--source', 'path', '../foo'],
       output: allOf([
         contains('Activated foo 1.0.0 at path'),
-        isNot(contains('Built')),
+        isNot(contains('Built foo:foo')),
       ]),
     );
   });
+
+  // Regression test for #4409
+  test(
+    'path-activated binstub picks up source changes without reactivation',
+    () async {
+      await d.dir('foo', [
+        d.pubspec({
+          'name': 'foo',
+          'executables': {'foo': 'foo'},
+        }),
+        d.dir('bin', [d.file('foo.dart', "main() => print('first');")]),
+      ]).create();
+
+      await runPub(args: ['global', 'activate', '--source', 'path', '../foo']);
+
+      final binstub = p.join(d.sandbox, cachePath, 'bin', binStubName('foo'));
+
+      var process = await TestProcess.start(
+        binstub,
+        [],
+        environment: getEnvironment(),
+      );
+      expect(process.stdout, emitsThrough('first'));
+      await process.shouldExit();
+
+      await d.dir('foo', [
+        d.dir('bin', [d.file('foo.dart', "main() => print('second');")]),
+      ]).create();
+
+      process = await TestProcess.start(
+        binstub,
+        [],
+        environment: getEnvironment(),
+      );
+      expect(process.stdout, emitsThrough('second'));
+      await process.shouldExit();
+    },
+  );
 }
