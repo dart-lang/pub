@@ -43,7 +43,7 @@ class DepsCommand extends PubCommand {
       'style',
       abbr: 's',
       help: 'How output should be displayed.',
-      allowed: ['compact', 'tree', 'list'],
+      allowed: ['compact', 'tree', 'list', 'mermaid'],
       defaultsTo: 'tree',
     );
 
@@ -182,12 +182,15 @@ class DepsCommand extends PubCommand {
       if (argResults.flag('executables')) {
         await _outputExecutables(buffer);
       } else {
-        for (var sdk in sdks.values) {
-          if (!sdk.isAvailable) continue;
-          buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
+        final style = argResults.optionWithDefault('style');
+        if (style != 'mermaid') {
+          for (var sdk in sdks.values) {
+            if (!sdk.isAvailable) continue;
+            buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
+          }
         }
 
-        switch (argResults.optionWithDefault('style')) {
+        switch (style) {
           case 'compact':
             await _outputCompact(buffer);
             break;
@@ -196,6 +199,9 @@ class DepsCommand extends PubCommand {
             break;
           case 'tree':
             await _outputTree(buffer);
+            break;
+          case 'mermaid':
+            await _outputMermaid(buffer);
             break;
         }
       }
@@ -384,6 +390,337 @@ class DepsCommand extends PubCommand {
       }
     }
     buffer.write(tree.fromMap(packageTree));
+  }
+
+  /// Generates a mermaid dependency graph for the root package.
+  ///
+  /// Outputs a mermaid graph format showing all package dependencies
+  /// with edges representing the dependency relationships, organized by
+  /// dependency type (direct, dev, override, transitive).
+  Future<void> _outputMermaid(StringBuffer buffer) async {
+    final workspacePackageNames = [
+      ...entrypoint.workspaceRoot.transitiveWorkspace.map((p) => p.name),
+    ];
+    final rootPackage = entrypoint.workspaceRoot;
+
+    // Get direct dependencies (sorted alphabetically)
+    final directDeps = rootPackage.dependencies.keys.toList()..sort();
+
+    // Get dev dependencies
+    final devDeps =
+        _includeDev
+            ? (rootPackage.devDependencies.keys.toList()..sort())
+            : <String>[];
+
+    // Get dependency overrides
+    final overrideDeps =
+        rootPackage.pubspec.dependencyOverrides.keys.toList()..sort();
+
+    // Collect all packages and edges
+    final allPackages = <String, Package>{};
+    final allEdges = <({String from, String to})>[];
+    final toVisit = <String>[...workspacePackageNames];
+    final visited = <String>{};
+
+    while (toVisit.isNotEmpty) {
+      final name = toVisit.removeLast();
+      if (visited.contains(name)) continue;
+      visited.add(name);
+
+      final package = await _getPackage(name);
+      allPackages[name] = package;
+
+      final isRoot = workspacePackageNames.contains(name);
+      final children = [
+        ...isRoot
+            ? package.immediateDependencies.keys
+            : package.dependencies.keys,
+      ];
+      if (!_includeDev && isRoot) {
+        children.removeWhere(package.devDependencies.keys.contains);
+      }
+
+      for (var depName in children) {
+        if (!visited.contains(depName)) {
+          toVisit.add(depName);
+        }
+        allEdges.add((from: name, to: depName));
+      }
+    }
+
+    // Categorize packages
+    final rootPkgs = workspacePackageNames.toList()..sort();
+    final directPkgs = directDeps.toSet();
+    final devPkgs = devDeps.toSet();
+    final overridePkgs = overrideDeps.toSet();
+    final transitivePkgs =
+        allPackages.keys
+            .where(
+              (name) =>
+                  !rootPkgs.contains(name) &&
+                  !directPkgs.contains(name) &&
+                  !devPkgs.contains(name) &&
+                  !overridePkgs.contains(name),
+            )
+            .toList()
+          ..sort();
+
+    // Categorize edges
+    final rootToDirect = <({String from, String to})>[];
+    final rootToDev = <({String from, String to})>[];
+    final rootToOverride = <({String from, String to})>[];
+    final normalChainEdges = <({String from, String to})>[];
+    final devChainEdges = <({String from, String to})>[];
+    final transitiveChainEdges = <({String from, String to})>[];
+
+    // Detect circular dependencies
+    final circularPairs = <({String a, String b})>{};
+    for (var edge in allEdges) {
+      final reverse = allEdges.firstWhereOrNull(
+        (e) => e.from == edge.to && e.to == edge.from,
+      );
+      if (reverse != null) {
+        final pair =
+            edge.from.compareTo(edge.to) < 0
+                ? (a: edge.from, b: edge.to)
+                : (a: edge.to, b: edge.from);
+        circularPairs.add(pair);
+      }
+    }
+
+    for (var edge in allEdges) {
+      final isFromRoot = rootPkgs.contains(edge.from);
+      final isToDirect = directPkgs.contains(edge.to);
+      final isToDev = devPkgs.contains(edge.to);
+      final isToOverride = overridePkgs.contains(edge.to);
+      final isFromDirect = directPkgs.contains(edge.from);
+      final isFromDev = devPkgs.contains(edge.from);
+      final isFromTransitive = transitivePkgs.contains(edge.from);
+
+      if (isFromRoot && isToDirect) {
+        rootToDirect.add(edge);
+        // Also add to override edges if it's an override
+        if (isToOverride) {
+          rootToOverride.add(edge);
+        }
+      } else if (isFromRoot && isToDev) {
+        rootToDev.add(edge);
+      } else if (isFromRoot && isToOverride) {
+        rootToOverride.add(edge);
+      } else if (isFromDirect && !isFromRoot) {
+        normalChainEdges.add(edge);
+      } else if (isFromDev && !isFromRoot) {
+        devChainEdges.add(edge);
+      } else if (isFromTransitive) {
+        transitiveChainEdges.add(edge);
+      }
+    }
+
+    // Separate circular edges from transitive chains
+    final circularEdges = <({String from, String to})>[];
+    final nonCircularTransitive = <({String from, String to})>[];
+
+    for (var edge in transitiveChainEdges) {
+      final pair =
+          edge.from.compareTo(edge.to) < 0
+              ? (a: edge.from, b: edge.to)
+              : (a: edge.to, b: edge.from);
+      if (circularPairs.contains(pair)) {
+        circularEdges.add(edge);
+      } else {
+        nonCircularTransitive.add(edge);
+      }
+    }
+
+    // Output mermaid format
+    // Output SDK info as comments
+    for (var sdk in sdks.values) {
+      if (!sdk.isAvailable) continue;
+      buffer.writeln('%% ${sdk.name} SDK ${sdk.version}');
+    }
+    buffer.writeln('graph LR');
+
+    // Output root packages
+    buffer.writeln('  %% Root');
+    for (var name in rootPkgs) {
+      final package = allPackages[name]!;
+      final nodeId = _sanitizeNodeId(name);
+      final label = '$name ${package.version}';
+      buffer.writeln('  $nodeId["$label"]');
+    }
+    buffer.writeln();
+
+    // Output direct dependencies
+    buffer.writeln('  %% Direct dependencies');
+    for (var name in directDeps) {
+      final package = allPackages[name]!;
+      final nodeId = _sanitizeNodeId(name);
+      final label = '$name ${package.version}';
+      buffer.writeln('  $nodeId["$label"]');
+    }
+    buffer.writeln();
+
+    // Output edges from root to direct dependencies (in dependency order)
+    for (var depName in directDeps) {
+      final edge = rootToDirect.firstWhere((e) => e.to == depName);
+      final fromId = _sanitizeNodeId(edge.from);
+      final toId = _sanitizeNodeId(edge.to);
+      buffer.writeln('  $fromId --> $toId');
+    }
+    buffer.writeln();
+
+    // Output dev dependencies (if included)
+    if (_includeDev && devDeps.isNotEmpty) {
+      buffer.writeln('  %% Dev dependencies');
+      for (var name in devDeps) {
+        final package = allPackages[name]!;
+        final nodeId = _sanitizeNodeId(name);
+        final label = '$name ${package.version}';
+        buffer.writeln('  $nodeId["$label"]');
+      }
+      buffer.writeln();
+
+      // Output edges from root to dev dependencies (in dependency order)
+      for (var depName in devDeps) {
+        final edge = rootToDev.firstWhere((e) => e.to == depName);
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId -. dev .-> $toId');
+      }
+      buffer.writeln();
+    }
+
+    // Output dependency overrides (only packages not in direct deps)
+    buffer.writeln('  %% Dependency overrides');
+    final overrideOnlyDeps =
+        overrideDeps.where((name) => !directPkgs.contains(name)).toList()
+          ..sort();
+    for (var name in overrideOnlyDeps) {
+      final package = allPackages[name]!;
+      final nodeId = _sanitizeNodeId(name);
+      final label = '$name ${package.version}';
+      buffer.writeln('  $nodeId["$label"]');
+    }
+    buffer.writeln();
+
+    // Output edges from root to override dependencies (in override list order)
+    for (var depName in overrideDeps) {
+      if (rootToOverride.any((e) => e.to == depName)) {
+        final edge = rootToOverride.firstWhere((e) => e.to == depName);
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId -. override .-> $toId');
+      }
+    }
+    buffer.writeln();
+
+    // Output transitive dependencies
+    buffer.writeln('  %% Transitive dependencies');
+    for (var name in transitivePkgs) {
+      final package = allPackages[name]!;
+      final nodeId = _sanitizeNodeId(name);
+      final label = '$name ${package.version}';
+      buffer.writeln('  $nodeId["$label"]');
+    }
+    buffer.writeln();
+
+    // Output normal dependency chain edges (only with --dev)
+    if (_includeDev && normalChainEdges.isNotEmpty) {
+      buffer.writeln('  %% Normal dependency chain');
+      normalChainEdges.sort((a, b) {
+        final fromCompare = a.from.compareTo(b.from);
+        if (fromCompare != 0) return fromCompare;
+        return a.to.compareTo(b.to);
+      });
+      for (var edge in normalChainEdges) {
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId --> $toId');
+      }
+      buffer.writeln();
+    }
+
+    // Output dev dependency chain edges (if included)
+    if (_includeDev && devChainEdges.isNotEmpty) {
+      buffer.writeln('  %% Dev dependency chain');
+      devChainEdges.sort((a, b) {
+        final fromCompare = a.from.compareTo(b.from);
+        if (fromCompare != 0) return fromCompare;
+        return a.to.compareTo(b.to);
+      });
+      for (var edge in devChainEdges) {
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId --> $toId');
+      }
+      buffer.writeln();
+    }
+
+    // Output transitive chain edges from direct deps (only with --no-dev)
+    if (!_includeDev && normalChainEdges.isNotEmpty) {
+      buffer.writeln('  %% Transitive chains from direct deps');
+      normalChainEdges.sort((a, b) {
+        final fromCompare = a.from.compareTo(b.from);
+        if (fromCompare != 0) return fromCompare;
+        return a.to.compareTo(b.to);
+      });
+      for (var edge in normalChainEdges) {
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId --> $toId');
+      }
+      buffer.writeln();
+    }
+
+    // Output circular dependencies
+    if (circularEdges.isNotEmpty) {
+      buffer.writeln('  %% Circular dependencies');
+      circularEdges.sort((a, b) {
+        final fromCompare = a.from.compareTo(b.from);
+        if (fromCompare != 0) return fromCompare;
+        return a.to.compareTo(b.to);
+      });
+      for (var edge in circularEdges) {
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId --> $toId');
+      }
+      buffer.writeln();
+    }
+
+    // Output transitive dependency chains
+    if (!_includeDev && nonCircularTransitive.isNotEmpty) {
+      buffer.writeln('  %% Transitive dependency chains');
+      nonCircularTransitive.sort((a, b) {
+        final fromCompare = b.from.compareTo(a.from); // Reverse alphabetical
+        if (fromCompare != 0) return fromCompare;
+        return a.to.compareTo(b.to);
+      });
+      for (var edge in nonCircularTransitive) {
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId --> $toId');
+      }
+    } else if (_includeDev && nonCircularTransitive.isNotEmpty) {
+      buffer.writeln('  %% Transitive chains');
+      nonCircularTransitive.sort((a, b) {
+        final fromCompare = b.from.compareTo(a.from); // Reverse alphabetical
+        if (fromCompare != 0) return fromCompare;
+        return a.to.compareTo(b.to);
+      });
+      for (var edge in nonCircularTransitive) {
+        final fromId = _sanitizeNodeId(edge.from);
+        final toId = _sanitizeNodeId(edge.to);
+        buffer.writeln('  $fromId --> $toId');
+      }
+    }
+  }
+
+  /// Sanitizes a package name to be a valid mermaid node ID.
+  ///
+  /// Replaces hyphens and dots with underscores to create a valid identifier.
+  String _sanitizeNodeId(String packageName) {
+    return packageName.replaceAll('-', '_').replaceAll('.', '_');
   }
 
   String _labelPackage(Package package) =>

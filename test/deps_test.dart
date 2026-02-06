@@ -142,6 +142,65 @@ void main() {
           ''',
       );
     });
+
+    test('in mermaid form', () async {
+      await pubGet();
+      await runPub(
+        args: ['deps', '-s', 'mermaid'],
+        output: '''
+          %% Dart SDK 3.1.2+3
+          graph LR
+            %% Root
+            myapp["myapp 0.0.0"]
+
+            %% Direct dependencies
+            from_path["from_path 1.2.3"]
+            normal["normal 1.2.3"]
+            overridden["overridden 2.0.0"]
+
+            myapp --> from_path
+            myapp --> normal
+            myapp --> overridden
+
+            %% Dev dependencies
+            unittest["unittest 1.2.3"]
+          
+            myapp -. dev .-> unittest
+
+            %% Dependency overrides
+            override_only["override_only 1.2.3"]
+          
+            myapp -. override .-> overridden
+            myapp -. override .-> override_only
+
+            %% Transitive dependencies
+            circular_a["circular_a 1.2.3"]
+            circular_b["circular_b 1.2.3"]
+            dev_only["dev_only 1.2.3"]
+            other["other 1.0.0"]
+            shared["shared 1.2.3"]
+            transitive["transitive 1.2.3"]
+
+            %% Normal dependency chain
+            normal --> circular_a
+            normal --> transitive
+
+            %% Dev dependency chain
+            unittest --> dev_only
+            unittest --> shared
+          
+            %% Circular dependencies
+            circular_a --> circular_b
+            circular_b --> circular_a
+          
+            %% Transitive chains
+            transitive --> shared
+            shared --> other
+            other --> myapp
+          ''',
+      );
+    });
+
     test('in json form', () async {
       await pubGet();
       await runPub(
@@ -407,6 +466,54 @@ void main() {
           ├── overridden 2.0.0
           └── override_only 1.2.3
           ''',
+      );
+    });
+
+    test('in mermaid form', () async {
+      await pubGet();
+      await runPub(
+        args: ['deps', '-s', 'mermaid', '--no-dev'],
+        output: '''
+          %% Dart SDK 3.1.2+3
+          graph LR
+            %% Root
+            myapp["myapp 0.0.0"]
+
+            %% Direct dependencies
+            from_path["from_path 1.2.3"]
+            normal["normal 1.2.3"]
+            overridden["overridden 2.0.0"]
+
+            myapp --> from_path
+            myapp --> normal
+            myapp --> overridden
+
+            %% Dependency overrides
+            override_only["override_only 1.2.3"]
+
+            myapp -. override .-> overridden
+            myapp -. override .-> override_only
+
+            %% Transitive dependencies
+            circular_a["circular_a 1.2.3"]
+            circular_b["circular_b 1.2.3"]
+            other["other 1.0.0"]
+            shared["shared 1.2.3"]
+            transitive["transitive 1.2.3"]
+
+            %% Transitive chains from direct deps
+            normal --> circular_a
+            normal --> transitive
+
+            %% Circular dependencies
+            circular_a --> circular_b
+            circular_b --> circular_a
+
+            %% Transitive dependency chains
+            transitive --> shared
+            shared --> other
+            other --> myapp
+        ''',
       );
     });
   });
