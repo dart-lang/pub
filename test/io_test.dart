@@ -552,6 +552,41 @@ void main() {
       });
     });
 
+    test('avoid zip slip using combined symlink and ../', () {
+      return withTempDir((tempDir) async {
+        final entry = Stream<TarEntry>.fromIterable([
+          TarEntry.data(
+            TarHeader(
+              name: 'nested/bad_link',
+              typeFlag: TypeFlag.symlink,
+              linkName: '../nested',
+              mode: _defaultMode,
+            ),
+            const [],
+          ),
+          TarEntry.data(
+            TarHeader(
+              name: 'nested/bad_link/../../payload.txt',
+              typeFlag: TypeFlag.reg,
+              mode: _defaultMode,
+            ),
+            utf8.encode('text content'),
+          ),
+        ]);
+
+        await extractTarGz(
+          entry.transform(tarWriter).transform(gzip.encoder),
+          tempDir,
+        );
+        // Make sure that the payload did not slip outside the destination via
+        // the symlink.
+        expect(
+          Directory(tempDir).listSync().map((x) => x.path),
+          contains(endsWith('payload.txt')),
+        );
+      });
+    });
+
     test('skips hardlinks escaping the tar file', () {
       return withTempDir((tempDir) async {
         final entry = Stream<TarEntry>.value(
