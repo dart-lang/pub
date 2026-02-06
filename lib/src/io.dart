@@ -1159,11 +1159,13 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   while (await reader.moveNext()) {
     final entry = reader.current;
 
-    final filePath = p.joinAll([
-      destination,
-      // Tar file names always use forward slashes
-      ...p.posix.split(entry.name),
-    ]);
+    final filePath = p.normalize(
+      p.joinAll([
+        destination,
+        // Tar file names always use forward slashes
+        ...p.posix.split(entry.name),
+      ]),
+    );
     if (!paths.add(filePath)) {
       // The tar file contained the same entry twice. Assume it is broken.
       await reader.cancel();
