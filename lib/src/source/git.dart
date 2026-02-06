@@ -340,7 +340,7 @@ class GitSource extends CachedSource {
     );
 
     // Git doesn't recognize backslashes in paths, even on Windows.
-    if (Platform.isWindows) pathInCache = pathInCache.replaceAll('\\', '/');
+    if (platform.isWindows) pathInCache = pathInCache.replaceAll('\\', '/');
 
     final repoPath = _repoCachePath(description, cache);
     final revision = resolvedDescription.resolvedRef;
@@ -1168,7 +1168,7 @@ class _ValidatedUrl {
 String _gitDirArg(String path) {
   path = p.absolute(path);
   final forwardSlashPath =
-      Platform.isWindows ? path.replaceAll('\\', '/') : path;
+      platform.isWindows ? path.replaceAll('\\', '/') : path;
   return '--git-dir=$forwardSlashPath';
 }
 

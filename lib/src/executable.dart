@@ -104,7 +104,7 @@ Future<int> runExecutable(
   }
   // We use an absolute path here not because the VM insists but because it's
   // helpful for the subprocess to be able to spawn Dart with
-  // Platform.executableArguments and have that work regardless of the working
+  // platform.executableArguments and have that work regardless of the working
   // directory.
   final packageConfigAbsolute = p.absolute(entrypoint.packageConfigPath);
 
@@ -193,7 +193,7 @@ Future<int> _runDartProgram(
     // semantics without `fork` for starting the subprocess.
     // https://github.com/dart-lang/sdk/issues/41966.
     final subscription = ProcessSignal.sigint.watch().listen((e) {});
-    final process = await Process.start(Platform.resolvedExecutable, [
+    final process = await Process.start(platform.resolvedExecutable, [
       '--packages=$packageConfig',
       ...vmArgs,
       if (enableAsserts) '--enable-asserts',
@@ -446,7 +446,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
 
 bool _looksLikeFile(String candidate) {
   return candidate.contains('/') ||
-      (Platform.isWindows && candidate.contains(r'\')) ||
+      (platform.isWindows && candidate.contains(r'\')) ||
       candidate.endsWith('.dart') ||
       candidate.endsWith('.snapshot');
 }
