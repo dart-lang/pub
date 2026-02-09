@@ -791,9 +791,12 @@ Try reactivating the package.
           binStubScript,
           overwrite: true,
           isRefreshingBinstub: true,
-          snapshot: executable.pathOfGlobalSnapshot(
-            entrypoint.workspaceRoot.dir,
-          ),
+          snapshot:
+              entrypoint.isCachedGlobal
+                  ? executable.pathOfGlobalSnapshot(
+                    entrypoint.workspaceRoot.dir,
+                  )
+                  : null,
         );
       }
     }
@@ -849,9 +852,12 @@ Try reactivating the package.
         script,
         overwrite: overwriteBinStubs,
         isRefreshingBinstub: false,
-        snapshot: entrypoint.pathOfSnapshot(
-          exec.Executable.adaptProgramName(package.name, script),
-        ),
+        snapshot:
+            entrypoint.isCachedGlobal
+                ? entrypoint.pathOfSnapshot(
+                  exec.Executable.adaptProgramName(package.name, script),
+                )
+                : null,
       );
       if (previousPackage != null) {
         collided[executable] = previousPackage;
@@ -927,9 +933,10 @@ Try reactivating the package.
   /// If [overwrite] is `true`, this will replace an existing binstub with that
   /// name for another package.
   ///
-  /// [snapshot] is a path to a snapshot file. If that snapshot exists the
-  /// binstub will invoke that directly. Otherwise, it will run
-  /// `pub global run`.
+  /// If [snapshot] is provided, the binstub will check for its existence and
+  /// invoke it directly if present. Otherwise, it will run `pub global run`.
+  /// If [snapshot] is `null`, the binstub will always run `pub global run`
+  /// (used for path-activated packages where snapshots would become stale).
   ///
   /// If a collision occurs, returns the name of the package that owns the
   /// existing binstub. Otherwise returns `null`.
@@ -938,7 +945,7 @@ Try reactivating the package.
     String executable,
     String script, {
     required bool overwrite,
-    required String snapshot,
+    required String? snapshot,
     required bool isRefreshingBinstub,
   }) {
     var binStubPath = p.join(_binStubDir, executable);
@@ -959,50 +966,63 @@ Try reactivating the package.
     final pubInvocation =
         runningFromTest ? Platform.script.toFilePath() : 'pub';
 
+    final runPubGlobal = '${package.name}:$script';
+
     final String binstub;
-    // We need an absolute path since relative ones won't be relative to the
-    // right directory when the user runs this.
-    snapshot = p.absolute(snapshot);
-    // Batch files behave in funky ways if they are modified while updating.
-    // To ensure that the byte-offsets of everything stays the same even if the
-    // snapshot filename changes we insert some padding in lines containing the
-    // snapshot.
-    // 260 is the maximal short path length on Windows. Hopefully that is
-    // enough.
-    final padding = ' ' * (260 - snapshot.length);
     if (Platform.isWindows) {
-      binstub = '''
+      final header = '''
 @echo off
 rem This file was created by pub v${sdk.version}.
 rem Package: ${package.name}
 rem Version: ${package.version}
 rem Executable: $executable
 rem Script: $script
-if exist "$snapshot" $padding(
+''';
+      if (snapshot != null) {
+        // We need an absolute path since relative ones won't be relative to the
+        // right directory when the user runs this.
+        snapshot = p.absolute(snapshot);
+        // Batch files behave in funky ways if they are modified while updating.
+        // To ensure that the byte-offsets of everything stays the same even if
+        // the snapshot filename changes we insert some padding in lines
+        // containing the snapshot.
+        // 260 is the maximal short path length on Windows.
+        final padding = ' ' * (260 - snapshot.length);
+        binstub = '''
+${header}if exist "$snapshot" $padding(
   call dart "$snapshot" $padding%*
   rem The VM exits with code 253 if the snapshot version is out-of-date.
   rem If it is, we need to delete it and run "pub global" manually.
   if not errorlevel 253 (
     goto error
   )
-  call dart $pubInvocation global run ${package.name}:$script %*
+  call dart $pubInvocation global run $runPubGlobal %*
 ) else (
-  call dart $pubInvocation global run ${package.name}:$script %*
+  call dart $pubInvocation global run $runPubGlobal %*
 )
 goto eof
 :error
 exit /b %errorlevel%
 :eof
 ''';
+      } else {
+        binstub = '''
+${header}call dart $pubInvocation global run $runPubGlobal %*
+''';
+      }
     } else {
-      binstub = '''
+      final header = '''
 #!/usr/bin/env sh
 # This file was created by pub v${sdk.version}.
 # Package: ${package.name}
 # Version: ${package.version}
 # Executable: $executable
 # Script: $script
-if [ -f $snapshot ]; then
+''';
+      if (snapshot != null) {
+        snapshot = p.absolute(snapshot);
+        binstub = '''
+${header}if [ -f $snapshot ]; then
   dart "$snapshot" "\$@"
   # The VM exits with code 253 if the snapshot version is out-of-date.
   # If it is, we need to delete it and run "pub global" manually.
@@ -1010,11 +1030,16 @@ if [ -f $snapshot ]; then
   if [ \$exit_code != 253 ]; then
     exit \$exit_code
   fi
-  dart $pubInvocation -v global run ${package.name}:$script "\$@"
+  dart $pubInvocation -v global run $runPubGlobal "\$@"
 else
-  dart $pubInvocation global run ${package.name}:$script "\$@"
+  dart $pubInvocation global run $runPubGlobal "\$@"
 fi
 ''';
+      } else {
+        binstub = '''
+${header}dart $pubInvocation global run $runPubGlobal "\$@"
+''';
+      }
     }
 
     // Write the binstub to a temporary location, make it executable and move
