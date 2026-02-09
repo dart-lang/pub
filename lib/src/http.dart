@@ -15,6 +15,7 @@ import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
 import 'command.dart';
+import 'io.dart';
 import 'log.dart' as log;
 import 'pubspec.dart';
 import 'sdk.dart';
@@ -198,11 +199,11 @@ extension AttachHeaders on http.Request {
       return;
     }
 
-    headers['X-Pub-OS'] = Platform.operatingSystem;
+    headers['X-Pub-OS'] = platform.operatingSystem;
     headers['X-Pub-Command'] = PubCommand.command;
     headers['X-Pub-Session-ID'] = _sessionId;
 
-    final environment = Platform.environment['PUB_ENVIRONMENT'];
+    final environment = platform.environment['PUB_ENVIRONMENT'];
     if (environment != null) {
       headers['X-Pub-Environment'] = environment;
     }
@@ -380,7 +381,7 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
             log.io('Attempt #$attemptNumber for $operation'),
     maxAttempts: math.max(
       1, // Having less than 1 attempt doesn't make sense.
-      int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
+      int.tryParse(platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
     ),
   );
 }

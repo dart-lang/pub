@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import '../exceptions.dart';
+import '../io.dart';
 import '../source/hosted.dart';
 import '../utils.dart';
 
@@ -134,7 +133,7 @@ class Credential {
     final String tokenValue;
     final environment = env;
     if (environment != null) {
-      final value = Platform.environment[environment];
+      final value = platform.environment[environment];
       if (value == null) {
         dataError(
           'Saved credential for "$url" pub repository requires environment '

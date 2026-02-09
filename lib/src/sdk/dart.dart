@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
@@ -27,7 +25,7 @@ class DartSdk extends Sdk {
 
   static final String _rootDirectory = () {
     // If DART_ROOT is specified, then this always points to the Dart SDK
-    if (Platform.environment['DART_ROOT'] case final root?) {
+    if (platform.environment['DART_ROOT'] case final root?) {
       return root;
     }
 
@@ -35,7 +33,7 @@ class DartSdk extends Sdk {
 
     // The Dart executable is in "/path/to/sdk/bin/dart", so two levels up is
     // "/path/to/sdk".
-    final aboveExecutable = p.dirname(p.dirname(Platform.resolvedExecutable));
+    final aboveExecutable = p.dirname(p.dirname(platform.resolvedExecutable));
     assert(fileExists(p.join(aboveExecutable, 'version')));
     return aboveExecutable;
   }();
@@ -64,8 +62,8 @@ class DartSdk extends Sdk {
     // tests on the bots are not run from a built SDK so this lets us avoid
     // parsing the missing version file.
     final sdkVersion =
-        Platform.environment['_PUB_TEST_SDK_VERSION'] ??
-        Platform.version.split(' ').first;
+        platform.environment['_PUB_TEST_SDK_VERSION'] ??
+        platform.version.split(' ').first;
 
     return Version.parse(sdkVersion);
   }();

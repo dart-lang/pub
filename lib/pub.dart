@@ -18,6 +18,8 @@ export 'src/executable.dart'
         DartExecutableWithPackageConfig,
         getExecutableForCommand;
 
+export 'src/io.dart' show overridePlatform;
+
 /// Returns a [Command] for pub functionality that can be used by an embedding
 /// CommandRunner.
 ///
