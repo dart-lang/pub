@@ -91,10 +91,14 @@ environment:
       if (value is! String) {
         _error('"workspace" must be a list of strings', t.span);
       }
-      if (!p.isRelative(value)) {
+      final valueToValidate =
+          languageVersion.supportsWorkspaceGlobs && value.startsWith('!')
+              ? value.substring(1)
+              : value;
+      if (!p.isRelative(valueToValidate)) {
         _error('"workspace" members must be relative paths', t.span);
       }
-      if (p.equals(value, '.') || !p.isWithin('.', value)) {
+      if (p.equals(valueToValidate, '.') || !p.isWithin('.', valueToValidate)) {
         _error('"workspace" members must be subdirectories', t.span);
       }
       result.add(value);

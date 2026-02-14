@@ -1014,6 +1014,64 @@ Packages can only be included in the workspace once.
     },
   );
 
+  test('Reports a failure if a negated workspace pubspec is not nested '
+      'inside the parent dir', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.11.0',
+        extras: {
+          'workspace': ['!../'],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
+      error: contains('"workspace" members must be subdirectories'),
+      exitCode: DATA,
+    );
+  });
+
+  test('Reports a failure if a negated workspace includes "."', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        sdk: '^3.11.0',
+        extras: {
+          'workspace': ['!.'],
+        },
+      ),
+    ]).create();
+    await pubGet(
+      environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
+      error: contains('"workspace" members must be subdirectories'),
+      exitCode: DATA,
+    );
+  });
+
+  test(
+    'Reports a failure if a negated workspace pubspec is not a relative path',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          sdk: '^3.11.0',
+          extras: {
+            'workspace': ['!${p.join(sandbox, appPath, 'a')}'],
+          },
+        ),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
+        error: contains('"workspace" members must be relative paths'),
+        exitCode: DATA,
+      );
+    },
+  );
+
   test('`upgrade` upgrades all workspace', () async {
     final server = await servePackages();
     server.serve('foo', '1.0.0');
@@ -1939,6 +1997,141 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
       ], generatorVersion: '3.11.0'),
     ]).validate();
   });
+
+  test('negated glob patterns exclude workspace members', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/*', '!pkgs/c'],
+        },
+        sdk: '^3.11.0',
+      ),
+      dir('pkgs', [
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        dir('b', [libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+        dir('c', [libPubspec('c', '0.0.1', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+    await dir(appPath, [
+      packageConfigFile([
+        packageConfigEntry(name: 'myapp', path: '.'),
+        packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        packageConfigEntry(name: 'b', path: 'pkgs/b'),
+      ], generatorVersion: '3.11.0'),
+    ]).validate();
+  });
+
+  test(
+    'negated workspace members can be re-included by later patterns',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a', '!pkgs/a', 'pkgs/a'],
+          },
+          sdk: '^3.11.0',
+        ),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        ], generatorVersion: '3.11.0'),
+      ]).validate();
+    },
+  );
+
+  test(
+    'negated glob pattern with wildcard excludes multiple packages',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/*', '!pkgs/test_*'],
+          },
+          sdk: '^3.11.0',
+        ),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+          dir('test_a', [
+            libPubspec('test_a', '0.0.1', resolutionWorkspace: true),
+          ]),
+          dir('test_b', [
+            libPubspec('test_b', '0.0.1', resolutionWorkspace: true),
+          ]),
+        ]),
+      ]).create();
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+      await dir(appPath, [
+        packageConfigFile([
+          packageConfigEntry(name: 'myapp', path: '.'),
+          packageConfigEntry(name: 'a', path: 'pkgs/a'),
+        ], generatorVersion: '3.11.0'),
+      ]).validate();
+    },
+  );
+
+  test('negated pattern that does not match anything is a no-op', () async {
+    await dir(appPath, [
+      libPubspec(
+        'myapp',
+        '1.2.3',
+        extras: {
+          'workspace': ['pkgs/a', '!pkgs/non_existent'],
+        },
+        sdk: '^3.11.0',
+      ),
+      dir('pkgs', [
+        dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+      ]),
+    ]).create();
+    await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'});
+    await dir(appPath, [
+      packageConfigFile([
+        packageConfigEntry(name: 'myapp', path: '.'),
+        packageConfigEntry(name: 'a', path: 'pkgs/a'),
+      ], generatorVersion: '3.11.0'),
+    ]).validate();
+  });
+
+  test(
+    'negated patterns in older language versions are treated as literal paths',
+    () async {
+      await dir(appPath, [
+        libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['!pkgs/a'],
+          },
+          sdk: '^3.5.0',
+        ),
+        dir('pkgs', [
+          dir('a', [libPubspec('a', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.11.0'},
+        error: contains('''
+No workspace packages matching `!pkgs/a`.
+That was included in the workspace of `.${s}pubspec.yaml`.
+
+Glob syntax is only supported from language version 3.11.
+Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
+      );
+    },
+  );
 }
 
 final s = p.separator;

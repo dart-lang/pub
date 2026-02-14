@@ -176,32 +176,57 @@ class Package {
       expectedName: expectedName,
     );
 
-    final workspacePackages =
-        pubspec.workspace.expand((workspacePath) {
-          final packages = <Package>[];
-          var globHint = '';
-          if (pubspec.languageVersion.supportsWorkspaceGlobs) {
-            final Glob glob;
-            try {
-              glob = Glob(workspacePath);
-            } on FormatException catch (e) {
-              fail('Failed to parse glob `$workspacePath`. $e');
-            }
-            for (final globResult in glob.listSync(root: dir)) {
-              final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
-              if (!fileExists(pubspecPath)) continue;
-              packages.add(
-                Package.load(
-                  globResult.path,
-                  loadPubspec: loadPubspec,
-                  withPubspecOverrides: withPubspecOverrides,
-                ),
-              );
-            }
-          } else {
+    final List<Package> workspacePackages;
+    if (pubspec.languageVersion.supportsWorkspaceGlobs) {
+      final packagesByDir = <String, Package>{};
+      for (final workspacePath in pubspec.workspace) {
+        final isNegated = _isNegatedGlob(workspacePath);
+        final pattern = isNegated ? workspacePath.substring(1) : workspacePath;
+        final Glob glob;
+        try {
+          glob = Glob(pattern);
+        } on FormatException catch (e) {
+          fail('Failed to parse glob `$workspacePath`. $e');
+        }
+        if (isNegated) {
+          final matchedDirs = <String>{};
+          for (final globResult in glob.listSync(root: dir)) {
+            matchedDirs.add(p.canonicalize(globResult.path));
+          }
+          packagesByDir.removeWhere(
+            (canonicalDir, _) => matchedDirs.contains(canonicalDir),
+          );
+        } else {
+          var found = false;
+          for (final globResult in glob.listSync(root: dir)) {
+            final pubspecPath = p.join(globResult.path, 'pubspec.yaml');
+            if (!fileExists(pubspecPath)) continue;
+            found = true;
+            final canonicalDir = p.canonicalize(globResult.path);
+            packagesByDir[canonicalDir] ??= Package.load(
+              globResult.path,
+              loadPubspec: loadPubspec,
+              withPubspecOverrides: withPubspecOverrides,
+            );
+          }
+          if (!found) {
+            fail('''
+No workspace packages matching `$workspacePath`.
+That was included in the workspace of `${p.join(dir, 'pubspec.yaml')}`.
+''');
+          }
+        }
+      }
+      workspacePackages = packagesByDir.values.toList();
+    } else {
+      workspacePackages =
+          pubspec.workspace.expand((workspacePath) {
+            final packages = <Package>[];
+            var globHint = '';
             final pubspecPath = p.join(dir, workspacePath, 'pubspec.yaml');
             if (!fileExists(pubspecPath)) {
-              if (_looksLikeGlob(workspacePath)) {
+              if (_looksLikeGlob(workspacePath) ||
+                  _isNegatedGlob(workspacePath)) {
                 globHint = '''
 \n\nGlob syntax is only supported from language version ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
 Consider changing the language version of ${p.join(dir, 'pubspec.yaml')} to ${LanguageVersion.firstVersionWithWorkspaceGlobs}.
@@ -216,15 +241,15 @@ Consider changing the language version of ${p.join(dir, 'pubspec.yaml')} to ${La
                 ),
               );
             }
-          }
-          if (packages.isEmpty) {
-            fail('''
+            if (packages.isEmpty) {
+              fail('''
 No workspace packages matching `$workspacePath`.
 That was included in the workspace of `${p.join(dir, 'pubspec.yaml')}`.$globHint
 ''');
-          }
-          return packages;
-        }).toList();
+            }
+            return packages;
+          }).toList();
+    }
     for (final package in workspacePackages) {
       if (package.pubspec.resolution != Resolution.workspace) {
         fail('''
@@ -583,6 +608,7 @@ See https://dart.dev/go/workspaces-stray-files for details.
 }
 
 bool _looksLikeGlob(String s) => Glob.quote(s) != s;
+bool _isNegatedGlob(String s) => s.startsWith('!');
 String _useBackSlashesOnWindows(String path) {
   if (Platform.isWindows) {
     return p.joinAll(p.split(path));
