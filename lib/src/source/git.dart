@@ -501,6 +501,10 @@ class GitSource extends CachedSource {
             revisionCachePath,
             cache,
           );
+          await git.run(
+            ['config', 'remote.origin.lfsurl', description.url],
+            workingDir: revisionCachePath,
+          );
           await _checkOut(revisionCachePath, resolvedRef);
           _writePackageList(revisionCachePath, [path]);
           didUpdate = true;
@@ -851,7 +855,12 @@ class GitSource extends CachedSource {
     // Git on Windows does not seem to automatically create the destination
     // directory.
     ensureDir(to);
-    final args = ['clone', if (mirror) '--mirror', from, to];
+    final args = [
+      'clone',
+      if (mirror) '--mirror' else '--no-checkout',
+      from,
+      to,
+    ];
 
     await git.run(args);
   }
