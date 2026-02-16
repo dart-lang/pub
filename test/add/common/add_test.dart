@@ -21,7 +21,7 @@ void main() {
     await d.appDir(dependencies: {}).create();
 
     await pubAdd(
-      args: ['bad name!:1.2.3'],
+      args: ['bad name!@1.2.3'],
       error: contains('Not a valid package name: "bad name!"'),
       exitCode: exit_codes.USAGE,
     );
@@ -39,7 +39,7 @@ void main() {
 
     await d.appDir(dependencies: {}).create();
 
-    await pubAdd(args: ['fo_o1.a:{"path":"../foo"}']);
+    await pubAdd(args: ['fo_o1.a@{"path":"../foo"}']);
 
     await d.appPackageConfigFile([
       d.packageConfigEntry(name: 'fo_o1.a', path: '../foo'),
@@ -60,7 +60,7 @@ void main() {
 
       await d.appDir(dependencies: {}).create();
 
-      await pubAdd(args: ['foo:1.2.3']);
+      await pubAdd(args: ['foo@1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackageConfigFile([
@@ -77,7 +77,7 @@ void main() {
 
       await d.appDir(dependencies: {}).create();
 
-      await pubAdd(args: ['foo:1.2.3', 'bar:1.1.0', 'baz:2.5.3']);
+      await pubAdd(args: ['foo@1.2.3', 'bar@1.1.0', 'baz@2.5.3']);
 
       await d.cacheDir({
         'foo': '1.2.3',
@@ -114,7 +114,7 @@ void main() {
         '''),
       ]).create();
 
-      await pubAdd(args: ['foo:1.2.3']);
+      await pubAdd(args: ['foo@1.2.3']);
 
       await d.cacheDir({'foo': '1.2.3'}).validate();
       await d.appPackageConfigFile([
@@ -139,7 +139,7 @@ void main() {
         await d.appDir(dependencies: {}).create();
 
         await pubAdd(
-          args: ['foo:1.2.3', '--dry-run'],
+          args: ['foo@1.2.3', '--dry-run'],
           output: allOf([
             contains('Would change 1 dependency'),
             contains('+ foo 1.2.3'),
@@ -167,7 +167,7 @@ environment:
 '''),
       ]).create();
 
-      await pubAdd(args: ['foo:1.2.3']);
+      await pubAdd(args: ['foo@1.2.3']);
       final yaml = loadYaml(
         File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync(),
       );
@@ -197,7 +197,7 @@ environment:
           ),
         ]).create();
 
-        await pubAdd(args: ['foo:1.2.3']);
+        await pubAdd(args: ['foo@1.2.3']);
 
         final yaml = loadYaml(
           File(p.join(d.sandbox, appPath, 'pubspec.yaml')).readAsStringSync(),
@@ -244,7 +244,7 @@ environment:
         await d.appDir(dependencies: {'foo': '1.2.2'}).create();
 
         await pubAdd(
-          args: ['foo:1.2.3'],
+          args: ['foo@1.2.3'],
           output: contains(
             '"foo" is already in "dependencies". '
             'Will try to update the constraint.',
@@ -262,7 +262,7 @@ environment:
         await d.appDir(dependencies: {'foo': '1.2.2'}).create();
 
         await pubAdd(
-          args: ['foo:>=1.2.2'],
+          args: ['foo@>=1.2.2'],
           output: contains(
             '"foo" is already in "dependencies". '
             'Will try to update the constraint.',
@@ -291,7 +291,7 @@ environment:
       ]).create();
       await pubGet();
       await pubAdd(
-        args: ['foo:1.2.3'],
+        args: ['foo@1.2.3'],
         output: allOf(
           contains(
             '"foo" was found in dev_dependencies. Removing "foo" and '
@@ -336,7 +336,7 @@ environment:
         await pubGet();
 
         await pubAdd(
-          args: ['foo:1.2.3'],
+          args: ['foo@1.2.3'],
           output: allOf(
             contains(
               '"foo" was found in dev_dependencies. Removing "foo" and '
@@ -409,7 +409,7 @@ environment:
           }),
         ]).create();
 
-        await pubAdd(args: ['foo:1.2.3']);
+        await pubAdd(args: ['foo@1.2.3']);
 
         await d.dir(appPath, [
           d.pubspec({
@@ -440,7 +440,7 @@ environment:
           }),
         ]).create();
 
-        await pubAdd(args: ['foo:1.2.2']);
+        await pubAdd(args: ['foo@1.2.2']);
 
         await d.dir(appPath, [
           d.pubspec({
@@ -462,7 +462,7 @@ environment:
         ]).create();
 
         await pubAdd(
-          args: ['foo:one-two-three'],
+          args: ['foo@one-two-three'],
           exitCode: exit_codes.DATA,
           error: contains(
             'Invalid version constraint: Could '
@@ -491,7 +491,7 @@ environment:
         ]).create();
 
         await pubAdd(
-          args: ['foo:1.2.3'],
+          args: ['foo@1.2.3'],
           exitCode: exit_codes.DATA,
           error: contains(
             '"foo" resolved to "1.2.2" which does not satisfy constraint '
@@ -530,7 +530,7 @@ environment:
         ]).create();
 
         await pubAdd(
-          args: ['foo:1.2.3'],
+          args: ['foo@1.2.3'],
           exitCode: exit_codes.DATA,
           error: contains(
             '"foo" resolved to "1.0.0" which does not satisfy constraint '
@@ -572,7 +572,7 @@ environment:
           ]).create();
 
           await pubAdd(
-            args: ['foo:1.2.2'],
+            args: ['foo@1.2.2'],
             exitCode: exit_codes.DATA,
             error: contains(
               '"foo" resolved to "1.0.0" which does not satisfy constraint '
@@ -618,7 +618,7 @@ environment:
         d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
       ]).create();
 
-      await pubAdd(args: ['--dev', 'foo:1.2.3']);
+      await pubAdd(args: ['--dev', 'foo@1.2.3']);
 
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.2.3'),
@@ -640,7 +640,7 @@ environment:
       ]).create();
 
       await pubAdd(
-        args: ['--dev', 'foo:{"path":../foo}'],
+        args: ['--dev', 'foo@{"path":../foo}'],
         error: contains(
           '--dev, --path, --sdk, --git-url, --git-path and --git-ref '
           'cannot be combined',
@@ -659,7 +659,7 @@ environment:
           d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
         ]).create();
 
-        await pubAdd(args: ['dev:foo:1.2.3']);
+        await pubAdd(args: ['dev:foo@1.2.3']);
 
         await d.appPackageConfigFile([
           d.packageConfigEntry(name: 'foo', version: '1.2.3'),
@@ -682,7 +682,7 @@ environment:
       ]).create();
 
       await pubAdd(
-        args: ['--dev', 'dev:foo:1.2.3'],
+        args: ['--dev', 'dev:foo@1.2.3'],
         error: contains("Cannot combine 'dev:' with --dev"),
         exitCode: exit_codes.USAGE,
       );
@@ -697,7 +697,7 @@ environment:
         d.pubspec({'name': 'myapp', 'dev_dependencies': {}}),
       ]).create();
 
-      await pubAdd(args: ['dev:foo:1.2.3', 'bar:1.2.3']);
+      await pubAdd(args: ['dev:foo@1.2.3', 'bar:1.2.3']);
 
       await d.appPackageConfigFile([
         d.packageConfigEntry(name: 'foo', version: '1.2.3'),
@@ -755,7 +755,7 @@ environment:
         ]).create();
 
         await pubAdd(
-          args: ['foo:1.2.3', '--dev'],
+          args: ['foo@1.2.3', '--dev'],
           output: contains(
             '"foo" is already in "dev_dependencies". '
             'Will try to update the constraint.',
@@ -783,7 +783,7 @@ environment:
         ]).create();
 
         await pubAdd(
-          args: ['foo:>=1.2.2', '--dev'],
+          args: ['foo@>=1.2.2', '--dev'],
           output: contains(
             '"foo" is already in "dev_dependencies". '
             'Will try to update the constraint.',
@@ -846,7 +846,7 @@ environment:
           }),
         ]).create();
 
-        await pubAdd(args: ['foo:1.2.3', '--dev']);
+        await pubAdd(args: ['foo@1.2.3', '--dev']);
 
         await d.dir(appPath, [
           d.pubspec({
@@ -877,7 +877,7 @@ environment:
           }),
         ]).create();
 
-        await pubAdd(args: ['foo:1.2.2', '--dev']);
+        await pubAdd(args: ['foo@1.2.2', '--dev']);
 
         await d.dir(appPath, [
           d.pubspec({
@@ -904,7 +904,7 @@ environment:
         ]).create();
 
         await pubAdd(
-          args: ['foo:1.2.3', '--dev'],
+          args: ['foo@1.2.3', '--dev'],
           exitCode: exit_codes.DATA,
           error: contains(
             '"foo" resolved to "1.2.2" which does not satisfy constraint '
@@ -943,7 +943,7 @@ environment:
         ]).create();
 
         await pubAdd(
-          args: ['foo:1.2.3'],
+          args: ['foo@1.2.3'],
           exitCode: exit_codes.DATA,
           error: contains(
             '"foo" resolved to "1.0.0" which does not satisfy constraint '
@@ -986,7 +986,7 @@ environment:
           ]).create();
 
           await pubAdd(
-            args: ['foo:1.2.2', '--dev'],
+            args: ['foo@1.2.2', '--dev'],
             exitCode: exit_codes.DATA,
             error: contains(
               '"foo" resolved to "1.0.0" which does not satisfy constraint '
@@ -1024,7 +1024,7 @@ environment:
       ]).create();
 
       await pubAdd(
-        args: ['foo:1.2.3', '--dev'],
+        args: ['foo@1.2.3', '--dev'],
         error: contains(
           '"foo" is already in "dependencies". Use '
           '"pub remove foo" to remove it before adding it to '
@@ -1130,7 +1130,7 @@ environment:
     );
 
     // Can override a transitive dependency.
-    await pubAdd(args: ['override:bar:2.0.0']);
+    await pubAdd(args: ['override:bar@2.0.0']);
     await d.dir(appPath, [
       d.file(
         'pubspec.yaml',
@@ -1142,7 +1142,7 @@ dependency_overrides:
     ]).validate();
 
     // Can override with a descriptor:
-    await pubAdd(args: ['override:foo:{"path": "../local_foo"}']);
+    await pubAdd(args: ['override:foo@{"path": "../local_foo"}']);
 
     await d.dir(appPath, [
       d.file(
@@ -1205,5 +1205,11 @@ dependency_overrides:
           },
         )
         .validate();
+  });
+  test('still supports : as separator', () async {
+    (await servePackages()).serve('foo', '1.0.0');
+    await d.appDir(dependencies: {}).create();
+    await pubAdd(args: ['foo:1.0.0']);
+    await d.appDir(dependencies: {'foo': '1.0.0'}).validate();
   });
 }

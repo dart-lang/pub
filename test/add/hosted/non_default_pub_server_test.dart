@@ -23,7 +23,7 @@ void main() {
 
     final url = server.url;
 
-    await pubAdd(args: ['foo:1.2.3', '--hosted-url', url]);
+    await pubAdd(args: ['foo@1.2.3', '--hosted-url', url]);
 
     await d.cacheDir({'foo': '1.2.3'}, port: server.port).validate();
 
@@ -59,7 +59,7 @@ void main() {
 
     final url = server.url;
 
-    await pubAdd(args: ['foo:1.2.3', '--hosted-url', url]);
+    await pubAdd(args: ['foo@1.2.3', '--hosted-url', url]);
 
     await d
         .appDir(
@@ -92,7 +92,7 @@ void main() {
     final url = server.url;
 
     await pubAdd(
-      args: ['foo:1.2.3', 'bar:3.2.3', 'baz:1.3.5', '--hosted-url', url],
+      args: ['foo@1.2.3', 'bar:3.2.3', 'baz:1.3.5', '--hosted-url', url],
     );
 
     await d.cacheDir({
