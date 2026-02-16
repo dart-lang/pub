@@ -34,7 +34,7 @@ void main() {
 
     await d.appDir(dependencies: {}).create();
 
-    await pubAdd(args: ['foo:1.2.3']);
+    await pubAdd(args: ['foo@1.2.3']);
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
     await d.appPackageConfigFile([
@@ -149,7 +149,7 @@ void main() {
       await d.appDir(dependencies: {'bar': '2.0.3'}).create();
 
       await pubAdd(
-        args: ['foo:1.2.3'],
+        args: ['foo@1.2.3'],
         error: contains(
           'Because every version of foo depends on bar 2.0.4 and myapp '
           'depends on bar 2.0.3, foo is forbidden.',

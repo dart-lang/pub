@@ -11,7 +11,7 @@ For example:
 Downloads and extracts the latest stable version of package:foo from pub.dev
 in a directory `foo-<version>`.
 
-  dart pub unpack foo:1.2.3-pre --no-resolve
+  dart pub unpack foo@1.2.3-pre --no-resolve
 
 Downloads and extracts package:foo version 1.2.3-pre in a directory
 `foo-1.2.3-pre` without running implicit `pub get`.
@@ -21,13 +21,13 @@ Downloads and extracts package:foo version 1.2.3-pre in a directory
 Downloads and extracts the latest stable version of package:foo in a directory
 `archives/foo-<version>`.
 
-  dart pub unpack 'foo:{hosted:"https://my_repo.org"}'
+  dart pub unpack 'foo@{hosted:"https://my_repo.org"}'
 
 Downloads and extracts the latest stable version of package:foo from my_repo.org
 in a directory `foo-<version>`.
 
 
-Usage: pub unpack package-name[:descriptor]
+Usage: pub unpack package-name[@<descriptor>]
 -h, --help          Print this usage information.
 -f, --[no-]force    Overwrite the target directory if it already exists.
 -o, --output        Download and extract the package in the specified directory.

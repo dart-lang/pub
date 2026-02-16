@@ -56,7 +56,7 @@ Add to dev_dependencies by prefixing with "dev:".
 Make dependency overrides by prefixing with "override:".
 
 Add packages with specific constraints or other sources by giving a descriptor
-after a colon.
+after an `@`.
 
 For example (follow the same format including spaces):
   * Add a hosted dependency at newest compatible stable version:
@@ -64,27 +64,27 @@ For example (follow the same format including spaces):
   * Add a hosted dev dependency at newest compatible stable version:
     `$topLevelProgram pub add dev:foo`
   * Add a hosted dependency with the given constraint
-    `$topLevelProgram pub add foo:^1.2.3`
+    `$topLevelProgram pub add foo@^1.2.3`
   * Add multiple dependencies:
     `$topLevelProgram pub add foo dev:bar`
   * Add a dependency override:
-    `$topLevelProgram pub add override:foo:1.0.0`
+    `$topLevelProgram pub add override:foo@1.0.0`
   * Add a path dependency:
-    `$topLevelProgram pub add "foo:{path: ../foo}"`
+    `$topLevelProgram pub add "foo@{path: ../foo}"`
   * Add a hosted dependency:
-    `$topLevelProgram pub add "foo:{hosted: https://my-pub.dev}"`
+    `$topLevelProgram pub add "foo@{hosted: https://my-pub.dev}"`
   * Add an sdk dependency:
-    `$topLevelProgram pub add "foo:{sdk: flutter}"`
+    `$topLevelProgram pub add "foo@{sdk: flutter}"`
   * Add a git dependency:
-    `$topLevelProgram pub add "foo:{git: https://github.com/foo/foo}"`
+    `$topLevelProgram pub add "foo@{git: https://github.com/foo/foo}"`
   * Add a git dependency with a path and ref specified:
     `$topLevelProgram pub add \\
-      "foo:{git:{url: ../foo.git, ref: <branch>, path: <subdir>}}"`''';
+      "foo@{git:{url: ../foo.git, ref: <branch>, path: <subdir>}}"`''';
 
   @override
   String get argumentsDescription =>
-      '[options] [<section>:]<package>[:descriptor] '
-      '[<section>:]<package2>[:descriptor] ...]';
+      '[options] [<section>:]<package>[@<descriptor>] '
+      '[<section>:]<package2>[@<descriptor>] ...]';
 
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
@@ -384,13 +384,13 @@ Specify multiple sdk packages with descriptors.''');
   static final _argRegExp = RegExp(
     r'^(?:(?<prefix>dev|override):)?'
     r'(?<name>[a-zA-Z0-9_.]+)'
-    r'(?::(?<descriptor>.*))?$',
+    r'(?:[:@](?<descriptor>.*))?$',
   );
 
   static final _lenientArgRegExp = RegExp(
     r'^(?:(?<prefix>[^:]*):)?'
-    r'(?<name>[^:]*)'
-    r'(?::(?<descriptor>.*))?$',
+    r'(?<name>[^:@]*)'
+    r'(?:[:@](?<descriptor>.*))?$',
   );
 
   /// Split [arg] on ':' and interpret it with the flags in [argResults] either

@@ -12,7 +12,7 @@ Add to dev_dependencies by prefixing with "dev:".
 Make dependency overrides by prefixing with "override:".
 
 Add packages with specific constraints or other sources by giving a descriptor
-after a colon.
+after an `@`.
 
 For example (follow the same format including spaces):
   * Add a hosted dependency at newest compatible stable version:
@@ -20,24 +20,24 @@ For example (follow the same format including spaces):
   * Add a hosted dev dependency at newest compatible stable version:
     `dart pub add dev:foo`
   * Add a hosted dependency with the given constraint
-    `dart pub add foo:^1.2.3`
+    `dart pub add foo@^1.2.3`
   * Add multiple dependencies:
     `dart pub add foo dev:bar`
   * Add a dependency override:
-    `dart pub add override:foo:1.0.0`
+    `dart pub add override:foo@1.0.0`
   * Add a path dependency:
-    `dart pub add "foo:{path: ../foo}"`
+    `dart pub add "foo@{path: ../foo}"`
   * Add a hosted dependency:
-    `dart pub add "foo:{hosted: https://my-pub.dev}"`
+    `dart pub add "foo@{hosted: https://my-pub.dev}"`
   * Add an sdk dependency:
-    `dart pub add "foo:{sdk: flutter}"`
+    `dart pub add "foo@{sdk: flutter}"`
   * Add a git dependency:
-    `dart pub add "foo:{git: https://github.com/foo/foo}"`
+    `dart pub add "foo@{git: https://github.com/foo/foo}"`
   * Add a git dependency with a path and ref specified:
     `dart pub add \
-      "foo:{git:{url: ../foo.git, ref: <branch>, path: <subdir>}}"`
+      "foo@{git:{url: ../foo.git, ref: <branch>, path: <subdir>}}"`
 
-Usage: pub add [options] [<section>:]<package>[:descriptor] [<section>:]<package2>[:descriptor] ...]
+Usage: pub add [options] [<section>:]<package>[@<descriptor>] [<section>:]<package2>[@<descriptor>] ...]
 -h, --help               Print this usage information.
     --[no-]offline       Use cached packages instead of accessing the network.
 -n, --dry-run            Report what dependencies would change but don't change any.

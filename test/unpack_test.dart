@@ -19,7 +19,7 @@ void main() {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
     await runPub(
-      args: ['unpack', 'foo:1:2:3'],
+      args: ['unpack', 'foo@1:2:3'],
       error: contains(
         'Error on line 1, column 1 of descriptor: Invalid version constraint: '
         'Could not parse version "1:2:3". Unknown text at "1:2:3".',
@@ -28,7 +28,7 @@ void main() {
     );
 
     await runPub(
-      args: ['unpack', 'foo:1.0'],
+      args: ['unpack', 'foo@1.0'],
       error:
           'Error on line 1, column 1 of descriptor: '
           'A dependency specification must be a string or a mapping.',
@@ -94,7 +94,7 @@ Resolving dependencies in `.${s}foo-1.2.3`...
     );
 
     await runPub(
-      args: ['unpack', 'foo:1.2.3-pre', '--output=../'],
+      args: ['unpack', 'foo@1.2.3-pre', '--output=../'],
       output: allOf(
         contains('''
 Downloading foo 1.2.3-pre to `../foo-1.2.3-pre`...
@@ -110,7 +110,7 @@ Resolving dependencies in `../foo-1.2.3-pre`...
     );
 
     await runPub(
-      args: ['unpack', 'foo:^0.1.0'],
+      args: ['unpack', 'foo@^0.1.0'],
       output: contains('Downloading foo 0.1.1 to `.${s}foo-0.1.1`...'),
     );
   });
@@ -121,7 +121,7 @@ Resolving dependencies in `../foo-1.2.3-pre`...
     server.serve('foo', '1.0.0');
     server.serve('foo', '1.2.3');
     await runPub(
-      args: ['unpack', 'foo:{"hosted":"${server.url}", "version":"1.0.0"}'],
+      args: ['unpack', 'foo@{"hosted":"${server.url}", "version":"1.0.0"}'],
       output: contains('Downloading foo 1.0.0 to `.${s}foo-1.0.0`...'),
     );
   });
@@ -152,7 +152,7 @@ Resolving dependencies in `../foo-1.2.3-pre`...
       ],
     );
     await runPub(
-      args: ['unpack', 'foo:1.0.0'],
+      args: ['unpack', 'foo@1.0.0'],
       output: allOf(
         contains('Downloading foo 1.0.0 to `.${s}foo-1.0.0`...'),
         contains('+ bar'),
@@ -162,5 +162,15 @@ Resolving dependencies in `../foo-1.2.3-pre`...
     await d.dir(appPath, [
       d.dir('foo-1.0.0', [d.file('pubspec_overrides.yaml', 'resolution:\n')]),
     ]).validate();
+  });
+
+  test('still supports : as separator', () async {
+    await d.dir(appPath).create();
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+    await runPub(
+      args: ['unpack', 'foo:1.2.3'],
+      output: contains('Downloading foo 1.2.3 to `.${s}foo-1.2.3`...'),
+    );
   });
 }
