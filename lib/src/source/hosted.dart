@@ -517,6 +517,19 @@ class HostedSource extends CachedSource {
         cache,
       );
     } on Exception catch (error, stackTrace) {
+      // On transient network errors, try to fall back to cached version
+      // listing if available. This allows offline operation when the cache
+      // contains sufficient data.
+      if (isTransientNetworkError(error)) {
+        final cached = await _cachedVersionListingResponse(ref, cache);
+        if (cached != null) {
+          log.warning(
+            'Unable to fetch available versions for $packageName from '
+            '$hostedUrl; using cached versions. Results may be outdated.',
+          );
+          return cached;
+        }
+      }
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
 
@@ -1725,16 +1738,34 @@ See $contentHashesDocumentationUrl.
         stackTrace,
       );
     } else if (error is io.SocketException) {
-      fail(
+      throw PackageNotFoundException(
         'Got socket error trying to find package $package at $hostedUrl.',
-        error,
-        stackTrace,
+        innerError: error,
+        innerTrace: stackTrace,
+        hint:
+            'Check your internet connection. '
+            'If you are offline, try running with --offline flag, or '
+            'run `dart pub get` once while online to populate the cache.',
       );
     } else if (error is io.TlsException) {
-      fail(
+      throw PackageNotFoundException(
         'Got TLS error trying to find package $package at $hostedUrl.',
-        error,
-        stackTrace,
+        innerError: error,
+        innerTrace: stackTrace,
+        hint:
+            'Check your internet connection. '
+            'If you are offline, try running with --offline flag, or '
+            'run `dart pub get` once while online to populate the cache.',
+      );
+    } else if (error is TimeoutException) {
+      throw PackageNotFoundException(
+        'Timed out trying to find package $package at $hostedUrl.',
+        innerError: error,
+        innerTrace: stackTrace,
+        hint:
+            'Check your internet connection. '
+            'If you are offline, try running with --offline flag, or '
+            'run `dart pub get` once while online to populate the cache.',
       );
     } else if (error is AuthenticationException) {
       String? hint;
