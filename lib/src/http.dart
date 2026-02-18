@@ -17,7 +17,6 @@ import 'package:pool/pool.dart';
 import 'log.dart' as log;
 import 'pubspec.dart';
 import 'sdk.dart';
-import 'source/hosted.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
