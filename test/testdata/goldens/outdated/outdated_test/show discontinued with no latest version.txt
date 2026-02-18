@@ -13,12 +13,8 @@ $ pub outdated --json
       "current": {
         "version": "1.2.3"
       },
-      "upgradable": {
-        "version": "1.2.3"
-      },
-      "resolvable": {
-        "version": "1.2.3"
-      },
+      "upgradable": null,
+      "resolvable": null,
       "latest": null
     }
   ]
@@ -31,12 +27,11 @@ $ pub outdated --no-color
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+foo           *1.2.3 (retracted)  -           -           -       (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
@@ -49,12 +44,11 @@ $ pub outdated --no-color --no-transitive
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+foo           *1.2.3 (retracted)  -           -           -       (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
@@ -67,17 +61,16 @@ $ pub outdated --no-color --up-to-date
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-bar           1.0.0               1.0.0               1.0.0               1.0.0   
-baz           1.0.0               1.0.0               1.0.0               1.0.0   (discontinued)  
-foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
+bar           1.0.0               -           -           1.0.0   
+baz           1.0.0               -           -           1.0.0   (discontinued)  
+foo           *1.2.3 (retracted)  -           -           -       (discontinued)  
 
 transitive dependencies:
-transitive    1.2.3               1.2.3               1.2.3               1.2.3   
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+transitive    1.2.3               -           -           1.2.3   
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 baz
     Package baz has been discontinued, replaced by newbaz. See https://dart.dev/go/package-discontinue
@@ -92,12 +85,11 @@ $ pub outdated --no-color --prereleases
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+foo           *1.2.3 (retracted)  -           -           -       (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
@@ -110,12 +102,11 @@ $ pub outdated --no-color --no-dev-dependencies
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+foo           *1.2.3 (retracted)  -           -           -       (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
@@ -128,12 +119,11 @@ $ pub outdated --no-color --no-dependency-overrides
 Showing outdated packages.
 [*] indicates versions that are not the latest available.
 
-Package Name  Current             Upgradable          Resolvable          Latest  
+Package Name  Current             Upgradable  Resolvable  Latest  
 
 direct dependencies:
-foo           *1.2.3 (retracted)  *1.2.3 (retracted)  *1.2.3 (retracted)  -       (discontinued)  
-You are already using the newest resolvable versions listed in the 'Resolvable' column.
-Newer versions, listed in 'Latest', may not be mutually compatible.
+foo           *1.2.3 (retracted)  -           -           -       (discontinued)  
+No resolution was found. Try running `dart pub upgrade --dry-run` to explore why.
 
 foo
     Package foo has been discontinued. See https://dart.dev/go/package-discontinue
@@ -154,12 +144,8 @@ $ pub outdated --json --no-dev-dependencies
       "current": {
         "version": "1.2.3"
       },
-      "upgradable": {
-        "version": "1.2.3"
-      },
-      "resolvable": {
-        "version": "1.2.3"
-      },
+      "upgradable": null,
+      "resolvable": null,
       "latest": null
     }
   ]
