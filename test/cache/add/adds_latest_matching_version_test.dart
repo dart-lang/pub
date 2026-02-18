@@ -25,7 +25,6 @@ void main() {
         contains('X-Pub-OS: ${Platform.operatingSystem}'),
         contains('X-Pub-Command: cache add'),
         contains('X-Pub-Session-ID:'),
-        contains('X-Pub-Environment: test-environment'),
         isNot(contains('X-Pub-Reason')),
       ]),
     );

@@ -202,11 +202,6 @@ extension AttachHeaders on http.Request {
     headers['X-Pub-Command'] = PubCommand.command;
     headers['X-Pub-Session-ID'] = _sessionId;
 
-    final environment = Platform.environment['PUB_ENVIRONMENT'];
-    if (environment != null) {
-      headers['X-Pub-Environment'] = environment;
-    }
-
     final type = Zone.current[#_dependencyType];
     if (type != null && type != DependencyType.none) {
       headers['X-Pub-Reason'] = type.toString();

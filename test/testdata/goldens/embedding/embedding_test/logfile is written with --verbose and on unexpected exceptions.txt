@@ -18,7 +18,6 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | X-Pub-OS: $OS
 [E]    | X-Pub-Command: get
 [E]    | X-Pub-Session-ID: $ID
-[E]    | X-Pub-Environment: test-environment
 [E]    | X-Pub-Reason: direct
 [E]    | user-agent: Dart pub 3.1.2+3
 [E] IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
@@ -44,7 +43,6 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E]    | X-Pub-OS: $OS
 [E]    | X-Pub-Command: get
 [E]    | X-Pub-Session-ID: $ID
-[E]    | X-Pub-Environment: test-environment
 [E]    | X-Pub-Reason: direct
 [E]    | user-agent: Dart pub 3.1.2+3
 [E] IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
@@ -204,7 +202,6 @@ IO  : HTTP GET http://localhost:$PORT/api/packages/foo
    | X-Pub-OS: $OS
    | X-Pub-Command: get
    | X-Pub-Session-ID: $ID
-   | X-Pub-Environment: test-environment
    | X-Pub-Reason: direct
    | user-agent: Dart pub 3.1.2+3
 IO  : HTTP response 200 OK for GET http://localhost:$PORT/api/packages/foo
@@ -231,7 +228,6 @@ IO  : HTTP GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz
    | X-Pub-OS: $OS
    | X-Pub-Command: get
    | X-Pub-Session-ID: $ID
-   | X-Pub-Environment: test-environment
    | X-Pub-Reason: direct
    | user-agent: Dart pub 3.1.2+3
 IO  : HTTP response 200 OK for GET http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz

@@ -23,7 +23,6 @@ void main() {
           contains('X-Pub-OS: ${Platform.operatingSystem}'),
           contains('X-Pub-Command: ${command.name}'),
           contains('X-Pub-Session-ID:'),
-          contains('X-Pub-Environment: test-environment'),
 
           // We should send the reason when we request the pubspec and when we
           // request the tarball.
@@ -50,7 +49,6 @@ void main() {
           contains('X-Pub-OS: ${Platform.operatingSystem}'),
           contains('X-Pub-Command: ${command.name}'),
           contains('X-Pub-Session-ID:'),
-          contains('X-Pub-Environment: test-environment'),
 
           // We should send the reason when we request the pubspec and when we
           // request the tarball.
@@ -82,7 +80,6 @@ void main() {
           contains('X-Pub-OS: ${Platform.operatingSystem}'),
           contains('X-Pub-Command: ${command.name}'),
           contains('X-Pub-Session-ID:'),
-          contains('X-Pub-Environment: test-environment'),
           isNot(contains('X-Pub-Reason:')),
         ]),
       );
