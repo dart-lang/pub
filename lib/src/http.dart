@@ -31,9 +31,6 @@ const _censoredFields = ['refresh_token', 'authorization'];
 /// it's not supported.
 const pubApiHeaders = {'Accept': 'application/vnd.pub.v2+json'};
 
-/// A unique ID to identify this particular invocation of pub.
-final _sessionId = createUuid();
-
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
 class _PubHttpClient extends http.BaseClient {
@@ -196,15 +193,6 @@ extension AttachHeaders on http.Request {
   void attachMetadataHeaders() {
     if (!HostedSource.shouldSendAdditionalMetadataFor(url)) {
       return;
-    }
-
-    headers['X-Pub-OS'] = Platform.operatingSystem;
-    headers['X-Pub-Command'] = PubCommand.command;
-    headers['X-Pub-Session-ID'] = _sessionId;
-
-    final type = Zone.current[#_dependencyType];
-    if (type != null && type != DependencyType.none) {
-      headers['X-Pub-Reason'] = type.toString();
     }
   }
 }

@@ -22,10 +22,6 @@ void main() {
       args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0'],
       silent: allOf([
         contains('Downloading foo 1.2.3...'),
-        contains('X-Pub-OS: ${Platform.operatingSystem}'),
-        contains('X-Pub-Command: cache add'),
-        contains('X-Pub-Session-ID:'),
-        isNot(contains('X-Pub-Reason')),
       ]),
     );
 

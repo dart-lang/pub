@@ -200,10 +200,6 @@ void main() {
         contains('Downloading bar 1.2.4...'),
         contains('Downloading foo 1.2.3...'),
         contains('Downloading foo 1.2.5...'),
-        contains('X-Pub-OS: ${Platform.operatingSystem}'),
-        contains('X-Pub-Command: cache repair'),
-        contains('X-Pub-Session-ID:'),
-        isNot(contains('X-Pub-Reason')),
       ]),
     );
 
