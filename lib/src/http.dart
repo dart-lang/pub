@@ -168,17 +168,6 @@ http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
 
 /// Runs [callback] in a zone where all HTTP requests sent to `pub.dev`
-/// will indicate the [type] of the relationship between the root package and
-/// the package being requested.
-///
-/// If [type] is [DependencyType.none], no extra metadata is added.
-Future<T> withDependencyType<T>(
-  DependencyType type,
-  Future<T> Function() callback,
-) {
-  return runZoned(callback, zoneValues: {#_dependencyType: type});
-}
-
 extension AttachHeaders on http.Request {
   /// Adds headers required for pub.dev API requests.
   void attachPubApiHeaders() {

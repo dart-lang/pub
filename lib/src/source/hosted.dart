@@ -527,15 +527,13 @@ class HostedSource extends CachedSource {
       final latestVersion =
           maxBy<_VersionInfo, Version>(listing, (e) => e.version)!;
       final dependencies = latestVersion.pubspec.dependencies.values;
-      unawaited(
-        withDependencyType(DependencyType.none, () async {
-          for (final packageRange in dependencies) {
-            if (packageRange.source is HostedSource) {
-              preschedule!(_RefAndCache(packageRange.toRef(), cache));
-            }
+      unawaited(() async {
+        for (final packageRange in dependencies) {
+          if (packageRange.source is HostedSource) {
+            preschedule!(_RefAndCache(packageRange.toRef(), cache));
           }
-        }),
-      );
+        }
+      }());
     }
 
     final cache = refAndCache.cache;

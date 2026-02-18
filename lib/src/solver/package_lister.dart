@@ -94,12 +94,9 @@ class PackageLister {
                   ResolvedRootDescription(_ref.description as RootDescription),
                 ),
               ]
-              : (await withDependencyType(
-                _dependencyType,
-                () => _systemCache.getVersions(
-                  _ref,
-                  allowedRetractedVersion: _allowedRetractedVersion,
-                ),
+              : (await _systemCache.getVersions(
+                _ref,
+                allowedRetractedVersion: _allowedRetractedVersion,
               ))
           ..sort((id1, id2) => id1.version.compareTo(id2.version));
     _cachedVersions = cachedVersions;
@@ -218,10 +215,7 @@ class PackageLister {
       pubspec = _rootPackage!.pubspec;
     } else {
       try {
-        pubspec = await withDependencyType(
-          _dependencyType,
-          () => _systemCache.describe(id),
-        );
+        pubspec = await _systemCache.describe(id);
       } on SourceSpanApplicationException catch (error) {
         // The lockfile for the pubspec couldn't be parsed,
         log.fine('Failed to parse pubspec for $id:\n$error');
@@ -472,10 +466,7 @@ class PackageLister {
   /// keeping the actual error handling in a central location.
   Future<Pubspec> _describeSafe(PackageId id) async {
     try {
-      return await withDependencyType(
-        _dependencyType,
-        () => _systemCache.describe(id),
-      );
+      return await _systemCache.describe(id);
     } catch (_) {
       return Pubspec(id.name, version: id.version);
     }
