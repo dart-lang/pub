@@ -501,10 +501,11 @@ class GitSource extends CachedSource {
             revisionCachePath,
             cache,
           );
-          await git.run(
-            ['config', 'remote.origin.lfsurl', description.url],
-            workingDir: revisionCachePath,
-          );
+          await git.run([
+            'config',
+            'remote.origin.lfsurl',
+            description.url,
+          ], workingDir: revisionCachePath);
           await _checkOut(revisionCachePath, resolvedRef);
           _writePackageList(revisionCachePath, [path]);
           didUpdate = true;
