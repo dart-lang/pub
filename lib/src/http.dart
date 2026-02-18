@@ -15,7 +15,6 @@ import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
 import 'log.dart' as log;
-import 'pubspec.dart';
 import 'sdk.dart';
 import 'utils.dart';
 
@@ -167,7 +166,6 @@ final globalHttpClient = _pubClient;
 http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
 
-/// Runs [callback] in a zone where all HTTP requests sent to `pub.dev`
 extension AttachHeaders on http.Request {
   /// Adds headers required for pub.dev API requests.
   void attachPubApiHeaders() {

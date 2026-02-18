@@ -9,7 +9,6 @@ import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
-import '../http.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
@@ -47,9 +46,6 @@ class PackageLister {
   final Version? _allowedRetractedVersion;
 
   final SystemCache _systemCache;
-
-  /// The type of the dependency from the root package onto [_ref].
-  final DependencyType _dependencyType;
 
   /// The set of packages that were overridden by the root package.
   final Set<String> _overriddenPackages;
@@ -115,7 +111,6 @@ class PackageLister {
     this._systemCache,
     this._ref,
     this._locked,
-    this._dependencyType,
     this._overriddenPackages,
     this._allowedRetractedVersion, {
     bool downgrade = false,
@@ -134,7 +129,6 @@ class PackageLister {
        // boundaries of various constraints, which is useless for the root
        // package.
        _locked = PackageId.root(package),
-       _dependencyType = DependencyType.none,
        _overriddenPackages = overriddenPackages,
        _isDowngrade = false,
        _allowedRetractedVersion = null,

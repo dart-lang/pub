@@ -5,7 +5,6 @@
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import '../http.dart';
 import '../lock_file.dart';
 import '../log.dart';
 import '../package.dart';
