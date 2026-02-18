@@ -14,7 +14,6 @@ import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
-import 'command.dart';
 import 'log.dart' as log;
 import 'pubspec.dart';
 import 'sdk.dart';
