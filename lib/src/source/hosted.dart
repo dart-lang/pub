@@ -184,25 +184,6 @@ class HostedSource extends CachedSource {
     }
   }();
 
-  /// Whether extra metadata headers should be sent for HTTP requests to a given
-  /// [url].
-  static bool shouldSendAdditionalMetadataFor(Uri url) {
-    if (runningFromTest && Platform.environment.containsKey('PUB_HOSTED_URL')) {
-      if (url.origin != Platform.environment['PUB_HOSTED_URL']) {
-        return false;
-      }
-    } else {
-      if (!HostedSource.isPubDevUrl(url.toString())) return false;
-    }
-
-    if (Platform.environment.containsKey('CI') &&
-        Platform.environment['CI'] != 'false') {
-      return false;
-    }
-
-    return true;
-  }
-
   /// Returns a reference to a hosted package named [name].
   ///
   /// If [url] is passed, it's the URL of the pub server from which the package
@@ -499,7 +480,6 @@ class HostedSource extends CachedSource {
           () async {
             final request = http.Request('GET', url);
             request.attachPubApiHeaders();
-            request.attachMetadataHeaders();
             final response = await client.fetch(request);
             return response.body;
           },
@@ -608,7 +588,6 @@ class HostedSource extends CachedSource {
           () async {
             final request = http.Request('GET', url);
             request.attachPubApiHeaders();
-            request.attachMetadataHeaders();
             final response = await client.fetch(request);
             return response.body;
           },
@@ -1561,7 +1540,6 @@ See $contentHashesDocumentationUrl.
           // [PubHttpException].
           await retryForHttp('downloading "$archiveUrl"', () async {
             final request = http.Request('GET', archiveUrl);
-            request.attachMetadataHeaders();
             final response = await client.fetchAsStream(request);
 
             Stream<List<int>> stream = response.stream;

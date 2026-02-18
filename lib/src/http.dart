@@ -185,15 +185,6 @@ extension AttachHeaders on http.Request {
   void attachPubApiHeaders() {
     headers.addAll(pubApiHeaders);
   }
-
-  /// Adds request metadata headers about the Pub tool's environment and the
-  /// currently running command if the request URL indicates the destination is
-  /// a Hosted Pub Repository.
-  void attachMetadataHeaders() {
-    if (!HostedSource.shouldSendAdditionalMetadataFor(url)) {
-      return;
-    }
-  }
 }
 
 /// Handles a successful JSON-formatted response from pub.dev.

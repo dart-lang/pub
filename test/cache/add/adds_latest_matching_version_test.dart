@@ -18,9 +18,7 @@ void main() {
 
     await runPub(
       args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0'],
-      silent: allOf([
-        contains('Downloading foo 1.2.3...'),
-      ]),
+      silent: allOf([contains('Downloading foo 1.2.3...')]),
     );
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
