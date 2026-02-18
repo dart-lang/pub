@@ -563,10 +563,7 @@ environment:
 enum DependencyType {
   direct,
   dev,
-  none;
-
-  @override
-  String toString() => name;
+  none,
 }
 
 /// Parses the dependency field named [field], and returns the corresponding
