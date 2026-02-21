@@ -560,14 +560,7 @@ environment:
 }
 
 /// The type of dependency from one package to another.
-enum DependencyType {
-  direct,
-  dev,
-  none;
-
-  @override
-  String toString() => name;
-}
+enum DependencyType { direct, dev, none }
 
 /// Parses the dependency field named [field], and returns the corresponding
 /// map of dependency names to dependencies.

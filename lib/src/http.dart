@@ -14,11 +14,8 @@ import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
-import 'command.dart';
 import 'log.dart' as log;
-import 'pubspec.dart';
 import 'sdk.dart';
-import 'source/hosted.dart';
 import 'utils.dart';
 
 /// Headers and field names that should be censored in the log output.
@@ -30,9 +27,6 @@ const _censoredFields = ['refresh_token', 'authorization'];
 /// expecting, so it can either serve that version or give us a 406 error if
 /// it's not supported.
 const pubApiHeaders = {'Accept': 'application/vnd.pub.v2+json'};
-
-/// A unique ID to identify this particular invocation of pub.
-final _sessionId = createUuid();
 
 /// An HTTP client that transforms 40* errors and socket exceptions into more
 /// user-friendly error messages.
@@ -172,45 +166,10 @@ final globalHttpClient = _pubClient;
 http.Client get innerHttpClient => _pubClient._inner;
 set innerHttpClient(http.Client client) => _pubClient._inner = client;
 
-/// Runs [callback] in a zone where all HTTP requests sent to `pub.dev`
-/// will indicate the [type] of the relationship between the root package and
-/// the package being requested.
-///
-/// If [type] is [DependencyType.none], no extra metadata is added.
-Future<T> withDependencyType<T>(
-  DependencyType type,
-  Future<T> Function() callback,
-) {
-  return runZoned(callback, zoneValues: {#_dependencyType: type});
-}
-
 extension AttachHeaders on http.Request {
   /// Adds headers required for pub.dev API requests.
   void attachPubApiHeaders() {
     headers.addAll(pubApiHeaders);
-  }
-
-  /// Adds request metadata headers about the Pub tool's environment and the
-  /// currently running command if the request URL indicates the destination is
-  /// a Hosted Pub Repository.
-  void attachMetadataHeaders() {
-    if (!HostedSource.shouldSendAdditionalMetadataFor(url)) {
-      return;
-    }
-
-    headers['X-Pub-OS'] = Platform.operatingSystem;
-    headers['X-Pub-Command'] = PubCommand.command;
-    headers['X-Pub-Session-ID'] = _sessionId;
-
-    final environment = Platform.environment['PUB_ENVIRONMENT'];
-    if (environment != null) {
-      headers['X-Pub-Environment'] = environment;
-    }
-
-    final type = Zone.current[#_dependencyType];
-    if (type != null && type != DependencyType.none) {
-      headers['X-Pub-Reason'] = type.toString();
-    }
   }
 }
 

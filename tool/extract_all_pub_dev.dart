@@ -22,7 +22,6 @@ const statusFilename = 'extract_all_pub_status.json';
 Future<List<String>> allPackageNames() async {
   final nextUrl = Uri.https('pub.dev', 'api/packages', {'compact': '1'});
   final request = http.Request('GET', nextUrl);
-  request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body);
   return List<String>.from((result as Map)['packages'] as List);
@@ -31,7 +30,6 @@ Future<List<String>> allPackageNames() async {
 Future<List<String>> versionArchiveUrls(String packageName) async {
   final url = Uri.https('pub.dev', 'api/packages/$packageName');
   final request = http.Request('GET', url);
-  request.attachMetadataHeaders();
   final response = await globalHttpClient.fetch(request);
   final result = json.decode(response.body) as Map;
   return (result['versions'] as List)
@@ -96,7 +94,6 @@ Future<void> main() async {
                 try {
                   final archiveUri = Uri.parse(archiveUrl);
                   final request = http.Request('GET', archiveUri);
-                  request.attachMetadataHeaders();
                   response = await globalHttpClient.fetchAsStream(request);
                   await extractTarGz(response.stream, tempDir);
                   log.message('Extracted $archiveUrl');
