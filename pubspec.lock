@@ -5,18 +5,18 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: "796d97d925add7ffcdf5595f33a2066a6e3cee97971e6dbef09b76b7880fd760"
+      sha256: "3b19a47f6ea7c2632760777c78174f47f6aec1e05f0cd611380d4593b8af1dbc"
       url: "https://pub.dev"
     source: hosted
-    version: "94.0.0"
+    version: "96.0.0"
   analyzer:
     dependency: "direct main"
     description:
       name: analyzer
-      sha256: "9c8ebb304d72c0a0c8764344627529d9503fc83d7d73e43ed727dc532f822e4b"
+      sha256: "0c516bc4ad36a1a75759e54d5047cb9d15cded4459df01aa35a0b5ec7db2c2a0"
       url: "https://pub.dev"
     source: hosted
-    version: "10.0.2"
+    version: "10.2.0"
   args:
     dependency: "direct main"
     description:
