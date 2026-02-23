@@ -1,3 +1,13 @@
+platforms:
+  - chrome
+  - vm
+# TODO: Consider testing on Firefox
+
+compilers:
+ - dart2wasm
+ - source
+ - dart2js
+
 presets:
   ci:
     timeout: 3x
