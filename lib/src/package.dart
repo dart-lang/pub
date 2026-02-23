@@ -292,7 +292,7 @@ See $workspacesDocUrl for more information.
   /// always start with [dir] (thus always be relative to the current working
   /// directory) or absolute id [dir] is absolute.
   ///
-  /// To convert them to paths relative to the package root, use [p.relative].
+  /// To convert them to paths relative to the package root, use `p.relative`.
   List<String> listFiles({
     String? beneath,
     bool recursive = true,
