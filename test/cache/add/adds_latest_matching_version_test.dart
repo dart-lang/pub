@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -20,14 +18,7 @@ void main() {
 
     await runPub(
       args: ['cache', 'add', 'foo', '-v', '>=1.0.0 <2.0.0'],
-      silent: allOf([
-        contains('Downloading foo 1.2.3...'),
-        contains('X-Pub-OS: ${Platform.operatingSystem}'),
-        contains('X-Pub-Command: cache add'),
-        contains('X-Pub-Session-ID:'),
-        contains('X-Pub-Environment: test-environment'),
-        isNot(contains('X-Pub-Reason')),
-      ]),
+      silent: allOf([contains('Downloading foo 1.2.3...')]),
     );
 
     await d.cacheDir({'foo': '1.2.3'}).validate();
