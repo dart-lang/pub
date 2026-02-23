@@ -16,7 +16,7 @@ final _platformInfoKey = Object();
 /// Runs [callback] in a [Zone] where `platform` is overridden by [platform].
 Future<T> withPlatform<T>(
   FutureOr<T> Function() callback, {
-  required Platform platform,
+  required PlatformInfo platform,
 }) {
   return runZoned(() async {
     return await callback();
