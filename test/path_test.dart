@@ -11,7 +11,6 @@ import 'dart:io';
 import 'package:analyzer/dart/analysis/features.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:path/path.dart' as p;
 import 'package:path/path.dart' as path;
 import 'package:pub/src/path.dart';
 import 'package:test/test.dart';
