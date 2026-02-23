@@ -481,7 +481,7 @@ class DependencyServicesApplyCommand extends PubCommand {
         (package) => Pubspec.parse(
           updatedPubspecs[package.dir].toString(),
           cache.sources,
-          location: toUri(package.pubspecPath),
+          location: p.toUri(package.pubspecPath),
           containingDescription: ResolvedRootDescription(
             RootDescription(package.dir),
           ),
