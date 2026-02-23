@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'exceptions.dart';
@@ -16,6 +15,7 @@ import 'io.dart';
 import 'language_version.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
+import 'path.dart';
 import 'pubspec.dart';
 import 'utils.dart';
 

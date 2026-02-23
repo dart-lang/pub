@@ -5,11 +5,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-
 import '../io.dart';
-
 import '../log.dart';
+import '../path.dart';
 import '../validator.dart';
 
 /// Runs `dart analyze` and gives a warning if it returns non-zero.

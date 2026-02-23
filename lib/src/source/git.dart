@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -16,6 +15,7 @@ import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../path.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';

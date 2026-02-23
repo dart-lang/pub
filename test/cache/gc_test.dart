@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:test/test.dart';

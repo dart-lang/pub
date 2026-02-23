@@ -5,8 +5,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/path.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 

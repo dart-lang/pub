@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart' show IterableExtension;
-import 'package:path/path.dart' as p;
 
 import '../command.dart';
 import '../command_runner.dart';
@@ -17,6 +16,7 @@ import '../log.dart' as log;
 import '../log.dart';
 import '../package.dart';
 import '../package_name.dart';
+import '../path.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';

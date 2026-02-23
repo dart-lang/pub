@@ -7,10 +7,10 @@ library;
 
 import 'dart:convert';
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/language_version.dart';
 import 'package:pub/src/oauth2.dart';
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/sdk/sdk_package_config.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 

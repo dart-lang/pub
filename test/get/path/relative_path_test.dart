@@ -4,8 +4,8 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/source/path.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';

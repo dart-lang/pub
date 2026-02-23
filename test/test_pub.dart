@@ -18,7 +18,6 @@ import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:http/testing.dart';
-import 'package:path/path.dart' as p;
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/git.dart' as git;
@@ -27,14 +26,15 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:tar/tar.dart';
-import 'package:test/test.dart' hide fail;
 import 'package:test/test.dart' as test show fail;
+import 'package:test/test.dart' hide fail;
 import 'package:test_process/test_process.dart';
 
 import 'descriptor.dart' as d;

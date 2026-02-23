@@ -5,13 +5,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-
 import '../command.dart';
 import '../command_runner.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package_config.dart';
+import '../path.dart';
 import '../utils.dart';
 
 class CacheGcCommand extends PubCommand {

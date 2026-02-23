@@ -11,13 +11,13 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'command_runner.dart';
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
+import 'path.dart';
 import 'utils.dart';
 
 /// An exception thrown because a git command failed.

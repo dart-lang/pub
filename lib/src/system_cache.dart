@@ -6,16 +6,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
 import 'exceptions.dart';
-import 'io.dart';
 import 'io.dart' as io show createTempDir;
+import 'io.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
+import 'path.dart';
 import 'pubspec.dart';
 import 'source.dart';
 import 'source/cached.dart';

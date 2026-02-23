@@ -4,10 +4,9 @@
 
 import 'dart:convert';
 
-import 'package:path/path.dart' as p;
-
 import '../command.dart';
 import '../log.dart';
+import '../path.dart';
 import '../utils.dart';
 
 class WorkspaceListCommand extends PubCommand {

@@ -4,11 +4,11 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
 import '../io.dart';
+import '../path.dart';
 import '../sdk.dart';
 import 'sdk_package_config.dart';
 

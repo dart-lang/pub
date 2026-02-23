@@ -2,9 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/sdk/sdk_package_config.dart';
 import 'package:test/test.dart';
 

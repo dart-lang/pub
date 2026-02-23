@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'package:path/path.dart' as p;
 
 import '../io.dart';
+import '../path.dart';
 import '../validator.dart';
 
 //   If the `extension/devtools/` directory exists
