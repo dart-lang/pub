@@ -8,6 +8,7 @@ library;
 import 'dart:io';
 
 import 'package:pub/src/ignore.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -112,8 +113,8 @@ void main() {
   });
 
   ProcessResult runGit(List<String> args, {String? workingDirectory}) {
-    final executable = Platform.isWindows ? 'cmd' : 'git';
-    args = Platform.isWindows ? ['/c', 'git', ...args] : args;
+    final executable = platform.isWindows ? 'cmd' : 'git';
+    args = platform.isWindows ? ['/c', 'git', ...args] : args;
     return Process.runSync(
       executable,
       args,
@@ -201,8 +202,8 @@ void main() {
           }
         },
         skip:
-            Platform.isMacOS || // System `git` on mac has issues...
-            c.skipOnWindows && Platform.isWindows,
+            platform.isMacOS || // System `git` on mac has issues...
+            c.skipOnWindows && platform.isWindows,
       );
     }
 

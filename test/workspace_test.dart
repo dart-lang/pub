@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
@@ -1892,7 +1893,7 @@ Consider changing the language version of .${s}pubspec.yaml to 3.11.'''),
         ], generatorVersion: '3.11.0'),
       ]).validate();
     },
-    skip: Platform.isWindows, // Cannot create directory named "*" on Windows.
+    skip: platform.isWindows, // Cannot create directory named "*" on Windows.
   );
 
   test('preglob workspace entries can use the platform separator', () async {

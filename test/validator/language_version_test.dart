@@ -5,9 +5,8 @@
 @TestOn('vm')
 library;
 
-import 'dart:io';
-
 import 'package:pub/src/language_version.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
@@ -59,7 +58,7 @@ void main() {
   });
 
   group('should warn if it', () {
-    final currentVersion = Version.parse(Platform.version.split(' ').first);
+    final currentVersion = Version.parse(platform.version.split(' ').first);
     final nextLanguageVersion =
         LanguageVersion(
           currentVersion.major,

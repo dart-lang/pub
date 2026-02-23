@@ -2,9 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/platform_info.dart';
 
 import '../../test_pub.dart';
 
@@ -15,11 +15,11 @@ import '../../test_pub.dart';
 /// The `pub`/`pub.bat` command on the PATH will be the one in tool/test-bin not
 /// the one from the sdk.
 Map<String, String> getEnvironment() {
-  final binDir = p.dirname(Platform.resolvedExecutable);
-  final separator = Platform.isWindows ? ';' : ':';
+  final binDir = p.dirname(platform.resolvedExecutable);
+  final separator = platform.isWindows ? ';' : ':';
   final pubBin = p.absolute('tool', 'test-bin');
   final path =
-      "$pubBin$separator${Platform.environment["PATH"]}$separator$binDir";
+      "$pubBin$separator${platform.environment["PATH"]}$separator$binDir";
 
   final environment = getPubTestEnvironment();
   environment['PATH'] = path;

@@ -13,13 +13,14 @@
 library;
 
 import 'dart:io';
-import 'package:path/path.dart' as p;
 
+import 'package:path/path.dart' as p;
 import 'package:pub/src/dart.dart';
 import 'package:pub/src/exceptions.dart';
+import 'package:pub/src/platform_info.dart';
 
 Future<void> main(List<String> args) async {
-  if (Platform.environment['FLUTTER_ROOT'] != null) {
+  if (platform.environment['FLUTTER_ROOT'] != null) {
     stderr.writeln(
       'WARNING: '
       'The tests will not run correctly with dart from a flutter checkout!',
@@ -43,7 +44,7 @@ Future<void> main(List<String> args) async {
     );
     stderr.writeln(' (${stopwatch.elapsed.inMilliseconds}ms)');
     testProcess = await Process.start(
-      Platform.resolvedExecutable,
+      platform.resolvedExecutable,
       ['run', 'test', ...args],
       environment: {'_PUB_TEST_SNAPSHOT': pubSnapshotFilename},
       mode: ProcessStartMode.inheritStdio,

@@ -28,6 +28,7 @@ import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'gzip/gzip.dart';
 import 'log.dart' as log;
+import 'platform_info.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
@@ -427,7 +428,7 @@ List<String> listDir(
         }
 
         if (pathInDir.contains('/.')) return false;
-        if (!Platform.isWindows) return true;
+        if (!platform.isWindows) return true;
         return !pathInDir.contains('\\.');
       })
       .map((entity) => entity.path)
@@ -455,7 +456,7 @@ void _attempt(
   void Function() operation, {
   bool ignoreEmptyDir = false,
 }) {
-  if (!Platform.isWindows) {
+  if (!platform.isWindows) {
     operation();
     return;
   }
@@ -594,11 +595,11 @@ bool _isDirectoryNotEmptyException(FileSystemException e) {
   // ```
   // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno-base.h#n21
   // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
-  (Platform.isLinux && (errorCode == 39 || errorCode == 17)) ||
+  (platform.isLinux && (errorCode == 39 || errorCode == 17)) ||
       // On Windows this may fail with ERROR_DIR_NOT_EMPTY or
       // ERROR_ALREADY_EXISTS
       // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
-      (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
+      (platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
       // On MacOS rename will fail with ENOTEMPTY if directory exists.
       // We also catch EEXIST - perhaps that could also be thrown...
       // ```
@@ -606,7 +607,7 @@ bool _isDirectoryNotEmptyException(FileSystemException e) {
       // #define	EEXIST		17	/* File exists */
       // ```
       // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
-      (Platform.isMacOS && (errorCode == 66 || errorCode == 17));
+      (platform.isMacOS && (errorCode == 66 || errorCode == 17));
 }
 
 /// Creates a new symlink at path [symlink] that points to [target].
@@ -623,7 +624,7 @@ void createSymlink(String target, String symlink, {bool relative = false}) {
     // make sure we have a clean absolute path because it will interpret a
     // relative path to be relative to the cwd, not the symlink, and will be
     // confused by forward slashes.
-    if (Platform.isWindows) {
+    if (platform.isWindows) {
       target = p.normalize(p.absolute(target));
     } else {
       // If the directory where we're creating the symlink was itself reached
@@ -667,7 +668,7 @@ void createPackageSymlink(
 /// The "_PUB_TESTING" variable is automatically set for all the test code's
 /// invocations of pub.
 final bool runningFromTest =
-    Platform.environment.containsKey('_PUB_TESTING') && _assertionsEnabled;
+    platform.environment.containsKey('_PUB_TESTING') && _assertionsEnabled;
 
 final bool _assertionsEnabled = () {
   try {
@@ -680,8 +681,8 @@ final bool _assertionsEnabled = () {
 }();
 
 final bool runningFromFlutter =
-    Platform.environment.containsKey('PUB_ENVIRONMENT') &&
-    (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
+    platform.environment.containsKey('PUB_ENVIRONMENT') &&
+    (platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
 
 /// A regular expression to match the script path of a pub script running from
 /// source in the Dart repo.
@@ -697,7 +698,7 @@ final _dartRepoRegExp = RegExp(
 ///
 /// This can happen when running tests against the repo, as well as when
 /// building Observatory.
-final bool runningFromDartRepo = Platform.script.path.contains(_dartRepoRegExp);
+final bool runningFromDartRepo = platform.script.path.contains(_dartRepoRegExp);
 
 /// The path to the root of the Dart repo.
 ///
@@ -711,8 +712,8 @@ final String dartRepoRoot =
 
       // Get the URL of the repo root in a way that works when either both
       // running as a test or as a pub executable.
-      final url = Platform.script.replace(
-        path: Platform.script.path.replaceAll(_dartRepoRegExp, ''),
+      final url = platform.script.replace(
+        path: platform.script.path.replaceAll(_dartRepoRegExp, ''),
       );
       return p.fromUri(url);
     })();
@@ -759,7 +760,7 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
 /// [EnvironmentKeys.forceTerminalOutput].
 bool get terminalOutputForStdout {
   final environmentValue =
-      Platform.environment[EnvironmentKeys.forceTerminalOutput];
+      platform.environment[EnvironmentKeys.forceTerminalOutput];
   if (environmentValue == null || environmentValue == '') {
     return stdout.hasTerminal;
   } else if (environmentValue == '0') {
@@ -1081,7 +1082,7 @@ class PubProcess {
   // Spawning a process on Windows will not look for the executable in the
   // system path. So, if executable looks like it needs that (i.e. it doesn't
   // have any path separators in it), then spawn it through a shell.
-  if (Platform.isWindows && !executable.contains('\\')) {
+  if (platform.isWindows && !executable.contains('\\')) {
     args = ['/c', executable, ...args];
     executable = 'cmd';
   }
@@ -1205,7 +1206,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
         ensureDir(parentDirectory);
         await createFileFromStream(entry.contents, filePath);
 
-        if (Platform.isLinux || Platform.isMacOS) {
+        if (platform.isLinux || platform.isMacOS) {
           // Apply executable bits from tar header, but don't change r/w bits
           // from the default
           final mode = _defaultMode | (entry.header.mode & _executableMask);
@@ -1334,8 +1335,8 @@ ByteStream createTarGz(List<String> contents, {required String baseDir}) {
 /// `null` if no config dir could be found.
 final String? dartConfigDir = () {
   if (runningFromTest &&
-      Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
-    return p.join(Platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
+      platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
+    return p.join(platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
   }
   try {
     return applicationConfigHome('dart');

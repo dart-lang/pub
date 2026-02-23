@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/ascii_tree.dart' as ascii_tree;
 import 'package:pub/src/io.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:stack_trace/stack_trace.dart' show Trace;
 import 'package:test/test.dart';
 
@@ -19,7 +20,7 @@ import 'test_pub.dart';
 
 final _isCI = () {
   final p = RegExp(r'^1|(?:true)$', caseSensitive: false);
-  final ci = Platform.environment['CI'];
+  final ci = platform.environment['CI'];
   return ci != null && ci.isNotEmpty && p.hasMatch(ci);
 }();
 
@@ -75,7 +76,7 @@ class GoldenTestContext {
     if (RegExp(
           r'^1|(?:true)$',
           caseSensitive: false,
-        ).hasMatch(Platform.environment['_PUB_TEST_WRITE_GOLDEN'] ?? '') ||
+        ).hasMatch(platform.environment['_PUB_TEST_WRITE_GOLDEN'] ?? '') ||
         !_goldenFile.existsSync()) {
       _shouldRegenerateGolden = true;
     } else {
@@ -120,7 +121,7 @@ class GoldenTestContext {
       // See https://docs.bazel.build/versions/2.0.0/user-manual.html#run .
       var goldenFile = _goldenFile;
       final workspaceDirectory =
-          Platform.environment['BUILD_WORKSPACE_DIRECTORY'];
+          platform.environment['BUILD_WORKSPACE_DIRECTORY'];
       if (workspaceDirectory != null) {
         goldenFile = File(p.join(workspaceDirectory, _goldenFilePath));
       }

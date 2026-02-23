@@ -15,6 +15,7 @@ import 'package:http/http.dart' as http;
 import 'package:pool/pool.dart';
 
 import 'log.dart' as log;
+import 'platform_info.dart';
 import 'sdk.dart';
 import 'utils.dart';
 
@@ -339,7 +340,7 @@ Future<T> retryForHttp<T>(String operation, FutureOr<T> Function() fn) async {
             log.io('Attempt #$attemptNumber for $operation'),
     maxAttempts: math.max(
       1, // Having less than 1 attempt doesn't make sense.
-      int.tryParse(Platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
+      int.tryParse(platform.environment['PUB_MAX_HTTP_RETRIES'] ?? '') ?? 7,
     ),
   );
 }

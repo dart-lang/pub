@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/platform_info.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:tar/tar.dart';
 import 'package:test/test.dart';
@@ -33,7 +34,7 @@ void main() {
       d.dir('lib', [d.dir('empty')]),
     ]).create();
 
-    if (!Platform.isWindows) {
+    if (!platform.isWindows) {
       Process.runSync('chmod', [
         '+x',
         p.join(d.sandbox, appPath, 'tool', 'tool.sh'),
@@ -68,12 +69,12 @@ void main() {
     while (await tarReader.moveNext()) {
       final entry = tarReader.current;
       if (entry.type == TypeFlag.dir) {
-        if (!Platform.isWindows) {
+        if (!platform.isWindows) {
           expect(entry.header.mode, _defaultMode | _executableMask);
         }
         dirs.add(entry.name);
       } else {
-        if (!Platform.isWindows) {
+        if (!platform.isWindows) {
           if (entry.name.endsWith('tool.sh')) {
             expect(
               entry.header.mode

@@ -8,6 +8,7 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -70,7 +71,7 @@ void main() {
       d.sandbox,
       cachePath,
       'bin',
-      'foo-script${Platform.isWindows ? '.bat' : ''}',
+      'foo-script${platform.isWindows ? '.bat' : ''}',
     );
     final result = await Process.run(
       binstub,

@@ -16,6 +16,7 @@ import '../language_version.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../platform_info.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';
@@ -340,7 +341,7 @@ class GitSource extends CachedSource {
     );
 
     // Git doesn't recognize backslashes in paths, even on Windows.
-    if (Platform.isWindows) pathInCache = pathInCache.replaceAll('\\', '/');
+    if (platform.isWindows) pathInCache = pathInCache.replaceAll('\\', '/');
 
     final repoPath = _repoCachePath(description, cache);
     final revision = resolvedDescription.resolvedRef;
@@ -1178,7 +1179,7 @@ class _ValidatedUrl {
 String _gitDirArg(String path) {
   path = p.absolute(path);
   final forwardSlashPath =
-      Platform.isWindows ? path.replaceAll('\\', '/') : path;
+      platform.isWindows ? path.replaceAll('\\', '/') : path;
   return '--git-dir=$forwardSlashPath';
 }
 

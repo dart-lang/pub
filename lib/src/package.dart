@@ -16,6 +16,7 @@ import 'io.dart';
 import 'language_version.dart';
 import 'log.dart' as log;
 import 'package_name.dart';
+import 'platform_info.dart';
 import 'pubspec.dart';
 import 'utils.dart';
 
@@ -310,7 +311,7 @@ See $workspacesDocUrl for more information.
             .path;
     if (beneath == './') beneath = '.';
     String resolve(String path) {
-      if (Platform.isWindows) {
+      if (platform.isWindows) {
         return p.joinAll([root, ...p.posix.split(path)]);
       }
       return p.join(root, path);
@@ -373,7 +374,7 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
             }
             return contents.map((entity) {
               final relative = p.relative(entity.path, from: root);
-              if (Platform.isWindows) {
+              if (platform.isWindows) {
                 return p.posix.joinAll(p.split(relative));
               }
               return relative;
@@ -437,7 +438,7 @@ $symlinkResolvedDir => ${p.canonicalize(symlinkResolvedParent)}
                   // [1]:
                   // https://git-scm.com/docs/git-config/2.14.6#Documentation/git-config.txt-coreignoreCase
                   // [2]: https://github.com/dart-lang/pub/issues/3003
-                  ignoreCase: Platform.isMacOS || Platform.isWindows,
+                  ignoreCase: platform.isMacOS || platform.isWindows,
                 );
           },
           isDir: (dir) => dirExists(resolve(dir)),
@@ -584,7 +585,7 @@ See https://dart.dev/go/workspaces-stray-files for details.
 
 bool _looksLikeGlob(String s) => Glob.quote(s) != s;
 String _useBackSlashesOnWindows(String path) {
-  if (Platform.isWindows) {
+  if (platform.isWindows) {
     return p.joinAll(p.split(path));
   }
   return path;

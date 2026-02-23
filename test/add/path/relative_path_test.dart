@@ -5,9 +5,8 @@
 @TestOn('vm')
 library;
 
-import 'dart:io' show Platform;
-
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -91,7 +90,7 @@ void main() {
       args: ['foo', '--path', '../foo'],
       error: equalsIgnoringWhitespace(
         'Because myapp depends on foo from path which doesn\'t exist '
-        '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+        '(could not find package foo at "..${platform.pathSeparator}foo"), '
         'version solving failed.',
       ),
       exitCode: exit_codes.DATA,
@@ -137,7 +136,7 @@ void main() {
       args: ['foo:2.0.0', '--path', '../foo'],
       error: equalsIgnoringWhitespace(
         'Because myapp depends on foo from path which doesn\'t exist '
-        '(could not find package foo at "..${Platform.pathSeparator}foo"), '
+        '(could not find package foo at "..${platform.pathSeparator}foo"), '
         'version solving failed.',
       ),
       exitCode: exit_codes.DATA,

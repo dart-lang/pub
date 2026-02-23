@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
+import 'package:pub/src/platform_info.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 
@@ -63,7 +64,7 @@ void main() {
     await d.validPackage().create();
 
     int argMax;
-    if (Platform.isWindows) {
+    if (platform.isWindows) {
       // On Windows, the maximum argument list length is 8^5 bytes.
       argMax = 32768; // 8^5
     } else {

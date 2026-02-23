@@ -27,6 +27,7 @@ import 'package.dart';
 import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
+import 'platform_info.dart';
 import 'pubspec.dart';
 import 'pubspec_utils.dart';
 import 'sdk.dart';
@@ -710,9 +711,9 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       } else {
         ensureDir(_snapshotPath);
       }
-      // Don't do more than `Platform.numberOfProcessors - 1` compilations
+      // Don't do more than `platform.numberOfProcessors - 1` compilations
       // concurrently. Though at least one.
-      final pool = Pool(max(Platform.numberOfProcessors - 1, 1));
+      final pool = Pool(max(platform.numberOfProcessors - 1, 1));
       return waitAndPrintErrors(
         executables.map((executable) async {
           await pool.withResource(() async {
@@ -1417,7 +1418,7 @@ See https://dart.dev/go/sdk-constraint
   /// will result in [acquireDependencies] to only print a summary of the
   /// results.
   bool get _summaryOnlyEnvironment =>
-      (Platform.environment['PUB_SUMMARY_ONLY'] ?? '0') != '0';
+      (platform.environment['PUB_SUMMARY_ONLY'] ?? '0') != '0';
 
   /// Remove any `pubspec.lock` or `.dart_tool/package_config.json` files in
   /// workspace packages that are not the root package.

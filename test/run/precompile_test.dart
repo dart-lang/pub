@@ -14,7 +14,7 @@ const _script = r'''
 import 'dart:io';
 
 main(List<String> args) {
-  print('running with PUB_CACHE: "${Platform.environment['PUB_CACHE']}"');
+  print('running with PUB_CACHE: "${platform.environment['PUB_CACHE']}"');
 }
 ''';
 

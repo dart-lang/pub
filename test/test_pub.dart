@@ -27,14 +27,15 @@ import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
 import 'package:pub/src/package_name.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:pub/src/utils.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:tar/tar.dart';
-import 'package:test/test.dart' hide fail;
 import 'package:test/test.dart' as test show fail;
+import 'package:test/test.dart' hide fail;
 import 'package:test_process/test_process.dart';
 
 import 'descriptor.dart' as d;
@@ -507,7 +508,7 @@ Future<PubProcess> startPub({
   // recommended to use a temporary file with a unique name for each test run.
   // Note: running tests without a snapshot is significantly slower, use
   // tool/test.dart to generate the snapshot.
-  var pubPath = Platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
+  var pubPath = platform.environment['_PUB_TEST_SNAPSHOT'] ?? '';
   if (pubPath.isEmpty || !fileExists(pubPath)) {
     pubPath = p.absolute(p.join(_pubRoot, 'bin/pub.dart'));
   }
@@ -519,17 +520,17 @@ Future<PubProcess> startPub({
     ..addAll([pubPath, if (!verbose) '--verbosity=normal'])
     ..addAll(args);
 
-  final systemRoot = Platform.environment['SYSTEMROOT'];
-  final tmp = Platform.environment['TMP'];
+  final systemRoot = platform.environment['SYSTEMROOT'];
+  final tmp = platform.environment['TMP'];
 
   final mergedEnvironment = {
     if (includeParentHomeAndPath) ...{
-      'HOME': Platform.environment['HOME'] ?? '',
-      'LOCALAPPDATA': Platform.environment['LOCALAPPDATA'] ?? '',
-      'PATH': Platform.environment['PATH'] ?? '',
+      'HOME': platform.environment['HOME'] ?? '',
+      'LOCALAPPDATA': platform.environment['LOCALAPPDATA'] ?? '',
+      'PATH': platform.environment['PATH'] ?? '',
     },
     // These seem to be needed for networking to work.
-    if (Platform.isWindows) ...{
+    if (platform.isWindows) ...{
       if (systemRoot != null) 'SYSTEMROOT': systemRoot,
       if (tmp != null) 'TMP': tmp,
     },
@@ -545,7 +546,7 @@ Future<PubProcess> startPub({
   }
 
   return await PubProcess.start(
-    Platform.resolvedExecutable,
+    platform.resolvedExecutable,
     dartArgs,
     environment: mergedEnvironment,
     workingDirectory: workingDirectory ?? _pathInSandbox(appPath),
@@ -791,7 +792,7 @@ Map<String, Object> packageMap(
 /// Returns the name of the shell script for a binstub named [name].
 ///
 /// Adds a ".bat" extension on Windows.
-String binStubName(String name) => Platform.isWindows ? '$name.bat' : name;
+String binStubName(String name) => platform.isWindows ? '$name.bat' : name;
 
 /// Compares the [actual] output from running pub with [expected].
 ///
@@ -1034,10 +1035,10 @@ Future<void> setUpFakeGitScript({
   required String batch,
 }) async {
   await d.dir('bin', [
-    if (!Platform.isWindows) d.file('git', bash),
-    if (Platform.isWindows) d.file('git.bat', batch),
+    if (!platform.isWindows) d.file('git', bash),
+    if (platform.isWindows) d.file('git.bat', batch),
   ]).create();
-  if (!Platform.isWindows) {
+  if (!platform.isWindows) {
     // Make the script executable.
     await runProcess('chmod', ['+x', p.join(d.sandbox, 'bin', 'git')]);
   }
@@ -1045,12 +1046,12 @@ Future<void> setUpFakeGitScript({
 
 /// Returns an environment where PATH is extended with `$sandbox/bin`.
 Map<String, String> extendedPathEnv() {
-  final separator = Platform.isWindows ? ';' : ':';
+  final separator = platform.isWindows ? ';' : ':';
   final binFolder = p.join(d.sandbox, 'bin');
 
   return {
     // Override 'PATH' to ensure that we can't detect a working "git" binary
-    'PATH': '$binFolder$separator${Platform.environment['PATH']}',
+    'PATH': '$binFolder$separator${platform.environment['PATH']}',
   };
 }
 

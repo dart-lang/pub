@@ -6,10 +6,10 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source/hosted.dart';
 import 'package:pub/src/source/root.dart';
@@ -421,7 +421,7 @@ So, because myapp depends on foo >=2.0.0 <4.0.0, version solving failed.'''),
       await expectResolves(
         error: equalsIgnoringWhitespace('''
       Because myapp depends on both foo from path foo and foo from path
-          ..${Platform.pathSeparator}foo, version solving failed.
+          ..${platform.pathSeparator}foo, version solving failed.
       '''),
       );
     });

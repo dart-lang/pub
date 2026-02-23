@@ -11,11 +11,12 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
 import 'exceptions.dart';
-import 'io.dart';
 import 'io.dart' as io show createTempDir;
+import 'io.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
+import 'platform_info.dart';
 import 'pubspec.dart';
 import 'source.dart';
 import 'source/cached.dart';
@@ -42,14 +43,14 @@ class SystemCache {
 
   static String defaultDir =
       (() {
-        final envCache = Platform.environment['PUB_CACHE'];
+        final envCache = platform.environment['PUB_CACHE'];
         if (envCache != null) {
           return envCache;
-        } else if (Platform.isWindows) {
+        } else if (platform.isWindows) {
           // %LOCALAPPDATA% is used as the cache location over %APPDATA%,
           // because the latter is synchronised between devices when the user
           // roams between them, whereas the former is not.
-          final localAppData = Platform.environment['LOCALAPPDATA'];
+          final localAppData = platform.environment['LOCALAPPDATA'];
           if (localAppData == null) {
             dataError('''
 Could not find the pub cache. No `LOCALAPPDATA` environment variable exists.
@@ -58,7 +59,7 @@ Consider setting the `PUB_CACHE` variable manually.
           }
           return p.join(localAppData, 'Pub', 'Cache');
         } else {
-          final home = Platform.environment['HOME'];
+          final home = platform.environment['HOME'];
           if (home == null) {
             dataError('''
 Could not find the pub cache. No `HOME` environment variable exists.
@@ -335,9 +336,9 @@ Consider setting the `PUB_CACHE` variable manually.
     //
     // Thus, we migrated to storing the pub-cache in `%LOCALAPPDATA%`. And
     // finished the migration in Dart 3 to keep things simple.
-    if (!Platform.isWindows) return;
+    if (!platform.isWindows) return;
 
-    final appData = Platform.environment['APPDATA'];
+    final appData = platform.environment['APPDATA'];
     if (appData == null) return;
     final legacyCacheLocation = p.join(appData, 'Pub', 'Cache');
     final legacyCacheDeprecatedFile = p.join(

@@ -8,6 +8,7 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -20,7 +21,7 @@ void _invalidateGitCache(String repo) {
   final fooCacheDir =
       Directory(cacheDir).listSync().firstWhere((entity) {
             return entity is Directory &&
-                entity.path.split(Platform.pathSeparator).last.startsWith(repo);
+                entity.path.split(platform.pathSeparator).last.startsWith(repo);
           })
           as Directory;
 

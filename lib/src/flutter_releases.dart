@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:http/http.dart';
@@ -10,9 +9,10 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'http.dart';
 import 'log.dart';
+import 'platform_info.dart';
 
 String get flutterReleasesUrl =>
-    Platform.environment['_PUB_TEST_FLUTTER_RELEASES_URL'] ??
+    platform.environment['_PUB_TEST_FLUTTER_RELEASES_URL'] ??
     'https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json';
 
 // Retrieves all released versions of Flutter.

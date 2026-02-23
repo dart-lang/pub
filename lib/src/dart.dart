@@ -19,6 +19,7 @@ import 'package:path/path.dart' as p;
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
+import 'platform_info.dart';
 
 class AnalysisContextManager {
   static final sessions = <String, AnalysisContextManager>{};
@@ -115,7 +116,7 @@ Future<void> precompile({
   String? nativeAssets,
 }) async {
   const platformDill = 'lib/_internal/vm_platform_strong.dill';
-  final sdkRoot = p.relative(p.dirname(p.dirname(Platform.resolvedExecutable)));
+  final sdkRoot = p.relative(p.dirname(p.dirname(platform.resolvedExecutable)));
   String? tempDir;
   FrontendServerClient? client;
   try {

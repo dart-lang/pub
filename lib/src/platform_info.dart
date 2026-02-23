@@ -80,6 +80,10 @@ abstract final class PlatformInfo {
   /// Returns [Platform.resolvedExecutable].
   String get resolvedExecutable;
 
+  int get numberOfProcessors => 1;
+
+  Uri get script => Uri.file('path');
+
   /// Returns [Platform.version] from 'dart:io'.
   String get version;
 }

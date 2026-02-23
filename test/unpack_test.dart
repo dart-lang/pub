@@ -9,12 +9,13 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import 'descriptor.dart' as d;
 import 'test_pub.dart';
 
-final s = Platform.pathSeparator;
+final s = platform.pathSeparator;
 
 void main() {
   test('handles errors', () async {

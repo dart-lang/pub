@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart';
 import 'package:pub/src/io.dart' show EnvironmentKeys;
+import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 import 'package:test_process/test_process.dart';
 
@@ -42,7 +43,7 @@ Future<void> runEmbeddingToBuffer(
     }
   });
   final process = await TestProcess.start(
-    Platform.resolvedExecutable,
+    platform.resolvedExecutable,
     ['--enable-asserts', snapshot, ...args],
     environment: combinedEnvironment,
     workingDirectory: workingDirectory,
@@ -91,7 +92,7 @@ Future<void> main() async {
   setUpAll(() async {
     final tempDir = Directory.systemTemp.createTempSync();
     snapshot = p.join(tempDir.path, 'command_runner.dart.snapshot');
-    final r = Process.runSync(Platform.resolvedExecutable, [
+    final r = Process.runSync(platform.resolvedExecutable, [
       '--snapshot=$snapshot',
       _commandRunner,
     ]);
@@ -424,8 +425,8 @@ String _filter(String input) {
         r'file://$SANDBOX',
       )
       .replaceAll(d.sandbox, r'$SANDBOX')
-      .replaceAll(Platform.pathSeparator, '/')
-      .replaceAll(Platform.operatingSystem, r'$OS')
+      .replaceAll(platform.pathSeparator, '/')
+      .replaceAll(platform.operatingSystem, r'$OS')
       .replaceAll(globalServer.port.toString(), r'$PORT')
       .replaceAll(RegExp(r'^Created:(.*)$', multiLine: true), r'Created: $TIME')
       .replaceAll(

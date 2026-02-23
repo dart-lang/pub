@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exceptions.dart';
 import 'package:pub/src/io.dart';
+import 'package:pub/src/platform_info.dart';
 import 'package:tar/tar.dart';
 import 'package:test/test.dart';
 
@@ -23,7 +24,7 @@ const _executableMask = 0x49; // 001 001 001
 
 void main() {
   group('process', () {
-    final nonExisting = p.join(p.dirname(Platform.resolvedExecutable), 'gone');
+    final nonExisting = p.join(p.dirname(platform.resolvedExecutable), 'gone');
     test('Nice error message when failing to start process.', () {
       final throwsNiceErrorMessage = throwsA(
         predicate(
@@ -768,7 +769,7 @@ void testExistencePredicate(
     );
 
     // Windows doesn't support symlinking to files.
-    if (!Platform.isWindows) {
+    if (!platform.isWindows) {
       test('returns $forFileSymlink for a symlink to a file', () {
         expect(
           withTempDir((temp) {
