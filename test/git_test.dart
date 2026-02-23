@@ -8,8 +8,8 @@ import 'dart:typed_data';
 import 'package:pub/src/git.dart';
 import 'package:test/test.dart';
 
-import 'test_pub.dart';
 import 'descriptor.dart';
+import 'test_pub.dart';
 
 void main() {
   test('splitZeroTerminated works', () {
