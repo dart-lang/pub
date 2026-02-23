@@ -2,10 +2,26 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:path/path.dart' as path;
 
 /// A default [path.Context] for use in `pub` code.
-path.Context get p => path.context;
+path.Context get p =>
+    Zone.current[_pathContextKey] as path.Context? ?? path.context;
+
+/// The key for the [path.Context] in the current [Zone].
+final _pathContextKey = Object();
+
+/// Runs [callback] in a [Zone] where [p] is overridden by [pathContext].
+Future<T> withPathContext<T>(
+  FutureOr<T> Function() callback, {
+  required path.Context pathContext,
+}) {
+  return runZoned(() async {
+    return await callback();
+  }, zoneValues: {_pathContextKey: pathContext});
+}
 
 extension PathContextExt on path.Context {
   /// A default context for manipulating POSIX paths.
