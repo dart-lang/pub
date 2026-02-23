@@ -1,7 +1,8 @@
 import 'dart:async';
+
 import 'package:path/path.dart' as path;
-import 'package:test/test.dart';
 import 'package:pub/src/path.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('withPathContext overrides p', () async {
