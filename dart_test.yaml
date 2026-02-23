@@ -6,7 +6,7 @@ platforms:
 compilers:
  - dart2wasm
  - source
-# TODO: Consider testing with dart2js
+ - dart2js
 
 presets:
   ci:

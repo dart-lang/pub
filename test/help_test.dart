@@ -2,8 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+@TestOn('vm')
+library;
+
 import 'package:args/command_runner.dart';
 import 'package:pub/src/command_runner.dart' show PubCommandRunner;
+import 'package:test/test.dart';
 
 import 'golden_file.dart';
 
