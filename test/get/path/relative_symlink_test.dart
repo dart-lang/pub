@@ -6,7 +6,7 @@
 // These (unlike the symlinks that are supported in Vista and later) do not
 // support relative paths. So this test, by design, will not pass on Windows.
 // So just skip it.
-@TestOn('!windows')
+@TestOn('vm && !windows')
 library;
 
 import 'package:pub/src/path.dart';

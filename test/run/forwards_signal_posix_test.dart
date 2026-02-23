@@ -7,7 +7,7 @@
 // This test doesn't work when we subprocess instead of an isolate
 // in `pub run`. Now signals only work as expected when sent to the process
 // group. And this seems hard to emulate in a test.
-@TestOn('!windows')
+@TestOn('vm && !windows')
 library;
 
 import 'dart:io';
