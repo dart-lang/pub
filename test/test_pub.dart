@@ -469,6 +469,9 @@ Map<String, String> getPubTestEnvironment([String? tokenEndpoint]) => {
   if (tokenEndpoint != null) '_PUB_TEST_TOKEN_ENDPOINT': tokenEndpoint,
   if (_globalServer?.port != null)
     'PUB_HOSTED_URL': 'http://localhost:${_globalServer?.port}',
+  'GIT_CONFIG_COUNT': '1',
+  'GIT_CONFIG_KEY_0': 'safe.bareRepository',
+  'GIT_CONFIG_VALUE_0': 'explicit',
 };
 
 /// The path to the root of pub's sources in the pub repo.

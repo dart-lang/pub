@@ -788,6 +788,7 @@ class GitSource extends CachedSource {
     String tagPattern,
   ) async {
     final output = await git.run([
+      _gitDirArg(path),
       'tag',
       '--list',
       '--format',
