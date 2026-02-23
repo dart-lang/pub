@@ -149,7 +149,6 @@ class LishCommand extends PubCommand {
               host.resolve('api/packages/versions/new'),
             );
             request.attachPubApiHeaders();
-            request.attachMetadataHeaders();
             return await client.fetch(request);
           },
         );
@@ -197,7 +196,6 @@ class LishCommand extends PubCommand {
           () async {
             final request = http.Request('GET', Uri.parse(location));
             request.attachPubApiHeaders();
-            request.attachMetadataHeaders();
             return await client.fetch(request);
           },
         );

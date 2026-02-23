@@ -26,6 +26,7 @@ import 'package:tar/tar.dart';
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
+import 'gzip/gzip.dart';
 import 'log.dart' as log;
 import 'utils.dart';
 
@@ -1135,7 +1136,7 @@ Future<Uint8List> extractFileFromTarGz(
   Stream<List<int>> stream,
   String filename,
 ) async {
-  final reader = TarReader(stream.transform(gzip.decoder));
+  final reader = TarReader(stream.transform(gzipDecoder));
   filename = p.posix.normalize(filename);
   while (await reader.moveNext()) {
     final entry = reader.current;
@@ -1154,7 +1155,7 @@ Future<void> extractTarGz(Stream<List<int>> stream, String destination) async {
   log.fine('Extracting .tar.gz stream to $destination.');
 
   destination = p.absolute(destination);
-  final reader = TarReader(stream.transform(gzip.decoder));
+  final reader = TarReader(stream.transform(gzipDecoder));
   final paths = <String>{};
   while (await reader.moveNext()) {
     final entry = reader.current;
