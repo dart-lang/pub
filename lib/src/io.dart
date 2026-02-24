@@ -1338,6 +1338,15 @@ final String? dartConfigDir = () {
       platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
     return p.join(platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
   }
+  // If `dart:io` is unavailable, typically that means we're running in
+  // dart2wasm or dart2js mode. Then we won't call into cli_util!
+  if (!const bool.fromEnvironment('dart.library.io')) {
+    final xdgConfigHome = platform.environment['XDG_CONFIG_HOME'];
+    if (xdgConfigHome != null && xdgConfigHome.isNotEmpty) {
+      return p.join(xdgConfigHome, 'dart');
+    }
+    return null;
+  }
   try {
     return applicationConfigHome('dart');
   } on EnvironmentNotFoundException {
