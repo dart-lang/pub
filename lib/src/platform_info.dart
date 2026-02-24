@@ -14,14 +14,8 @@ PlatformInfo get platform =>
 final _platformInfoKey = Object();
 
 /// Runs [callback] in a [Zone] where `platform` is overridden by [platform].
-Future<T> withPlatform<T>(
-  FutureOr<T> Function() callback, {
-  required PlatformInfo platform,
-}) {
-  return runZoned(() async {
-    return await callback();
-  }, zoneValues: {_platformInfoKey: platform});
-}
+R withPlatform<R>(R Function() callback, {required PlatformInfo platform}) =>
+    runZoned(callback, zoneValues: {_platformInfoKey: platform});
 
 abstract final class PlatformInfo {
   const PlatformInfo._();

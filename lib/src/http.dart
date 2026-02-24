@@ -167,14 +167,11 @@ http.Client get globalHttpClient =>
 final _globalHttpClientKey = Object();
 
 /// Runs [callback] in a [Zone] where [globalHttpClient] wraps [client].
-Future<T> withHttpClient<T>(
-  FutureOr<T> Function() callback, {
-  required http.Client client,
-}) {
-  return runZoned(() async {
-    return await callback();
-  }, zoneValues: {_globalHttpClientKey: _PubHttpClient(client)});
-}
+R withHttpClient<R>(R Function() callback, {required http.Client client}) =>
+    runZoned(
+      callback,
+      zoneValues: {_globalHttpClientKey: _PubHttpClient(client)},
+    );
 
 extension AttachHeaders on http.Request {
   /// Adds headers required for pub.dev API requests.

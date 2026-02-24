@@ -2,11 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async' show StreamSink;
+
 import 'package:args/command_runner.dart';
+import 'package:file/file.dart' as f;
+import 'package:http/http.dart' as http;
 
 import 'src/entrypoint.dart';
 import 'src/exceptions.dart';
 import 'src/http.dart';
+import 'src/io.dart';
 import 'src/pub_embeddable_command.dart';
 import 'src/source/git.dart';
 import 'src/system_cache.dart';
@@ -26,7 +31,23 @@ export 'src/executable.dart'
 Command<int> pubCommand({
   required bool Function() isVerbose,
   String category = '',
-}) => PubEmbeddableCommand(isVerbose, category);
+  f.FileSystem? fileSystem,
+  Map<String, String>? environment,
+  String? platformVersion,
+  Stream<List<int>>? stdin,
+  StreamSink<List<int>>? stdout,
+  StreamSink<List<int>>? stderr,
+  http.Client? httpClient,
+}) => withOverrides(
+  () => PubEmbeddableCommand(isVerbose, category),
+  fileSystem: fileSystem,
+  environment: environment,
+  platformVersion: platformVersion,
+  stdin: stdin,
+  stdout: stdout,
+  stderr: stderr,
+  httpClient: httpClient,
+);
 
 /// Makes sure that [dir]/pubspec.yaml is resolved such that pubspec.lock and
 /// .dart_tool/package_config.json are up-to-date and all packages are
@@ -46,22 +67,40 @@ Future<void> ensurePubspecResolved(
   bool isOffline = false,
   bool summaryOnly = true,
   bool onlyOutputWhenTerminal = true,
+  f.FileSystem? fileSystem,
+  Map<String, String>? environment,
+  String? platformVersion,
+  Stream<List<int>>? stdin,
+  StreamSink<List<int>>? stdout,
+  StreamSink<List<int>>? stderr,
+  http.Client? httpClient,
 }) async {
-  try {
-    await Entrypoint.ensureUpToDate(
-      dir,
-      cache: SystemCache(isOffline: isOffline),
-      summaryOnly: summaryOnly,
-      onlyOutputWhenTerminal: onlyOutputWhenTerminal,
-    );
-  } on ApplicationException catch (e) {
-    throw ResolutionFailedException._(e.toString());
-  } finally {
-    // TODO(https://github.com/dart-lang/pub/issues/4200)
-    // This is a bit of a hack.
-    // We should most likely take a client here.
-    globalHttpClient.close();
-  }
+  return await withOverrides(
+    () async {
+      try {
+        await Entrypoint.ensureUpToDate(
+          dir,
+          cache: SystemCache(isOffline: isOffline),
+          summaryOnly: summaryOnly,
+          onlyOutputWhenTerminal: onlyOutputWhenTerminal,
+        );
+      } on ApplicationException catch (e) {
+        throw ResolutionFailedException._(e.toString());
+      } finally {
+        // TODO(https://github.com/dart-lang/pub/issues/4200)
+        // This is a bit of a hack.
+        // We should most likely take a client here.
+        globalHttpClient.close();
+      }
+    },
+    fileSystem: fileSystem,
+    environment: environment,
+    platformVersion: platformVersion,
+    stdin: stdin,
+    stdout: stdout,
+    stderr: stderr,
+    httpClient: httpClient,
+  );
 }
 
 class ResolutionFailedException implements Exception {

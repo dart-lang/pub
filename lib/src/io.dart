@@ -1399,8 +1399,8 @@ Iterable<String> parentDirs(String path, {String? from}) sync* {
 }
 
 /// Run [fn] with overrides.
-Future<R> withOverrides<R>(
-  FutureOr<R> Function() fn, {
+R withOverrides<R>(
+  R Function() fn, {
   f.FileSystem? fileSystem,
   Map<String, String>? environment,
   String? platformVersion,
@@ -1408,7 +1408,7 @@ Future<R> withOverrides<R>(
   StreamSink<List<int>>? stdout,
   StreamSink<List<int>>? stderr,
   http.Client? httpClient,
-}) async {
+}) {
   // If there are no overrides we're done
   if (fileSystem == null &&
       environment == null &&
@@ -1417,7 +1417,7 @@ Future<R> withOverrides<R>(
       stdout == null &&
       stderr == null &&
       httpClient == null) {
-    return await fn();
+    return fn();
   }
 
   fileSystem ??= const f.LocalFileSystem();
@@ -1430,14 +1430,12 @@ Future<R> withOverrides<R>(
 
   final pathContext = fileSystem.path;
 
-  return await IOOverrides.runWithIOOverrides(
-    () async {
+  return IOOverrides.runWithIOOverrides(
+    () {
       return withPlatform(
-        () async {
-          return withHttpClient(() async {
-            return withPathContext(() async {
-              return await fn();
-            }, pathContext: pathContext);
+        () {
+          return withHttpClient(() {
+            return withPathContext(fn, pathContext: pathContext);
           }, client: client);
         },
         platform: PlatformInfo.override(

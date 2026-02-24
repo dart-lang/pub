@@ -14,14 +14,10 @@ path.Context get p =>
 final _pathContextKey = Object();
 
 /// Runs [callback] in a [Zone] where [p] is overridden by [pathContext].
-Future<T> withPathContext<T>(
-  FutureOr<T> Function() callback, {
+R withPathContext<R>(
+  R Function() callback, {
   required path.Context pathContext,
-}) {
-  return runZoned(() async {
-    return await callback();
-  }, zoneValues: {_pathContextKey: pathContext});
-}
+}) => runZoned(callback, zoneValues: {_pathContextKey: pathContext});
 
 extension PathContextExt on path.Context {
   /// A default context for manipulating POSIX paths.
