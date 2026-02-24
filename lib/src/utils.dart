@@ -485,11 +485,27 @@ String prefixLines(String text, {String prefix = '| ', String? firstPrefix}) {
   return lines.join('\n');
 }
 
-/// The subset of strings that don't need quoting in YAML.
+/// Does this string need quoting in yaml?
 ///
-/// This pattern does not strictly follow the plain scalar grammar of YAML,
-/// which means some strings may be unnecessarily quoted, but it's much simpler.
-final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
+/// This mechanism does not strictly follow the plain scalar grammar of YAML,
+/// which means some strings may be unnecessarily quoted.
+bool _needsYamlQuotes(String s) {
+  // These must be quoted
+  if ([
+    'true', 'True', 'TRUE', //
+    'false', 'False', 'FALSE',
+    'null', 'Null', 'NULL',
+  ].contains(s)) return true;
+  // Numbers must be quoted
+  if (RegExp(r'^[-+]?[0-9]*\.?[0-9]*(e[0-9]+)?$').hasMatch(s)) return true;
+  // Hex numbers must be quoted
+  if (RegExp(r'^0x[0-9]+$').hasMatch(s)) return true;
+
+  // Single non-number words containing a few special cases are ok.
+  if (RegExp(r'^[\.a-zA-Z_0-9-]+$').hasMatch(s)) return false;
+  // We are unsure, better safe than sorry
+  return true;
+}
 
 /// Converts [data], which is a parsed YAML object, to a pretty-printed string,
 /// using indentation for maps.
@@ -517,7 +533,7 @@ String yamlToString(Object? data) {
         first = false;
 
         var keyString = key;
-        if (key is! String || !_unquotableYamlString.hasMatch(key)) {
+        if (key is! String || _needsYamlQuotes(key)) {
           keyString = jsonEncode(key);
         }
 
@@ -533,7 +549,7 @@ String yamlToString(Object? data) {
     var string = data;
 
     // Don't quote plain strings if not needed.
-    if (data is! String || !_unquotableYamlString.hasMatch(data)) {
+    if (data is! String || _needsYamlQuotes(data)) {
       string = jsonEncode(data);
     }
 
