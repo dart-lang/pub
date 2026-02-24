@@ -4,11 +4,10 @@
 
 import 'dart:convert';
 
-import 'package:path/path.dart' as p;
-
 import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../path.dart';
 import '../platform_info.dart';
 import 'credential.dart';
 

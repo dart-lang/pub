@@ -5,8 +5,8 @@
 @TestOn('vm')
 library;
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/validator.dart';
 import 'package:pub/src/validator/license.dart';
 import 'package:test/test.dart';

@@ -6,13 +6,13 @@ import 'dart:async';
 
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import '../dart.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../path.dart';
 import '../utils.dart';
 import '../validator.dart';
 

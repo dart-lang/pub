@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart';
 
 import '../../test_pub.dart';
 

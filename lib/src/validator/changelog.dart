@@ -6,9 +6,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
 
 import '../io.dart';
+import '../path.dart';
 import '../validator.dart';
 
 final _changelogRegexp = RegExp(r'^CHANGELOG($|\.)', caseSensitive: false);

@@ -5,7 +5,7 @@
 @TestOn('vm')
 library;
 
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;

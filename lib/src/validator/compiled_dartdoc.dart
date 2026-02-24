@@ -4,9 +4,8 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as p;
-
 import '../io.dart';
+import '../path.dart';
 import '../validator.dart';
 
 /// Validates that a package doesn't contain compiled Dartdoc output.

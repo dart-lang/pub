@@ -11,13 +11,13 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:args/command_runner.dart';
-import 'package:path/path.dart' as p;
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 import 'entrypoint.dart';
 import 'exceptions.dart';
 import 'io.dart';
+import 'path.dart';
 import 'platform_info.dart';
 import 'progress.dart';
 import 'sdk.dart';

@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:collection/collection.dart' hide mapMap;
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
 import 'package:yaml/yaml.dart';
@@ -13,6 +12,7 @@ import 'io.dart';
 import 'language_version.dart';
 import 'package.dart';
 import 'package_name.dart';
+import 'path.dart';
 import 'pubspec_parse.dart';
 import 'sdk.dart';
 import 'source.dart';

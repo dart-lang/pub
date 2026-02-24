@@ -5,8 +5,8 @@
 @TestOn('vm')
 library;
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/entrypoint.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';
 

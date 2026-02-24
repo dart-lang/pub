@@ -6,7 +6,6 @@ import 'dart:async';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
-import 'package:path/path.dart' as p;
 
 import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
@@ -34,6 +33,7 @@ import 'git.dart' as git;
 import 'io.dart';
 import 'log.dart' as log;
 import 'log.dart';
+import 'path.dart';
 import 'platform_info.dart';
 import 'sdk.dart';
 import 'utils.dart';

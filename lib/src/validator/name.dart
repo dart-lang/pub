@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as p;
+import '../path.dart';
 
 import '../utils.dart';
 import '../validator.dart';

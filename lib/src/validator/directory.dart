@@ -4,9 +4,8 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as p;
-
 import '../io.dart';
+import '../path.dart';
 import '../validator.dart';
 
 /// A validator that validates a package's top-level directories.

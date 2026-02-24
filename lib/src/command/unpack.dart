@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
@@ -12,6 +11,7 @@ import '../entrypoint.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../package_name.dart';
+import '../path.dart';
 import '../pubspec.dart';
 import '../sdk.dart';
 import '../solver/type.dart';

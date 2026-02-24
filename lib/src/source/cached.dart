@@ -4,12 +4,12 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
 import '../package.dart';
 import '../package_name.dart';
+import '../path.dart';
 import '../pubspec.dart';
 import '../source.dart';
 import '../system_cache.dart';

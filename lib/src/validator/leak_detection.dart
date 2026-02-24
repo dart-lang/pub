@@ -10,11 +10,11 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:source_span/source_span.dart';
 
 import '../ignore.dart';
+import '../path.dart';
 import '../platform_info.dart';
 import '../validator.dart';
 

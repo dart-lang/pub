@@ -7,7 +7,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
 

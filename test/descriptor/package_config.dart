@@ -6,8 +6,8 @@ import 'dart:async' show Future;
 import 'dart:convert' show JsonEncoder, json;
 import 'dart:io' show File;
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/package_config.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';

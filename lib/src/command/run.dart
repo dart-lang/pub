@@ -4,12 +4,11 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as p;
-
 import '../command.dart';
 import '../entrypoint.dart';
 import '../executable.dart';
 import '../log.dart' as log;
+import '../path.dart';
 import '../utils.dart';
 
 /// Handles the `run` pub command.

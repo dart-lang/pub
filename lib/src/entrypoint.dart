@@ -8,7 +8,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:source_span/source_span.dart';
@@ -27,6 +26,7 @@ import 'package.dart';
 import 'package_config.dart';
 import 'package_graph.dart';
 import 'package_name.dart';
+import 'path.dart';
 import 'platform_info.dart';
 import 'pubspec.dart';
 import 'pubspec_utils.dart';

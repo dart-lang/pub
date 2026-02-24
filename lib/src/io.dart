@@ -18,7 +18,6 @@ import 'package:collection/collection.dart';
 import 'package:http/http.dart' show ByteStream;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:tar/tar.dart';
@@ -28,6 +27,7 @@ import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'gzip/gzip.dart';
 import 'log.dart' as log;
+import 'path.dart';
 import 'platform_info.dart';
 import 'utils.dart';
 

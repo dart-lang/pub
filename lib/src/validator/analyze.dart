@@ -4,10 +4,9 @@
 
 import 'dart:async';
 
-import 'package:path/path.dart' as p;
-
 import '../io.dart';
 import '../log.dart';
+import '../path.dart';
 import '../platform_info.dart';
 import '../validator.dart';
 

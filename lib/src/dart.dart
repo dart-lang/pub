@@ -14,11 +14,11 @@ import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/diagnostic/diagnostic.dart';
 import 'package:frontend_server_client/frontend_server_client.dart';
-import 'package:path/path.dart' as p;
 
 import 'exceptions.dart';
 import 'io.dart';
 import 'log.dart' as log;
+import 'path.dart';
 import 'platform_info.dart';
 
 class AnalysisContextManager {

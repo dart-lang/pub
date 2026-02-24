@@ -5,10 +5,10 @@
 @TestOn('vm')
 library;
 
-import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
+import 'package:pub/src/path.dart';
 import 'package:pub/src/source/git.dart';
 import 'package:pub/src/system_cache.dart';
 import 'package:test/test.dart';

@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
@@ -16,6 +15,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'package.dart';
 import 'package_name.dart';
+import 'path.dart';
 import 'platform_info.dart';
 import 'pubspec.dart';
 import 'source.dart';
