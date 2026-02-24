@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:async/async.dart';
@@ -21,6 +22,8 @@ import 'package:meta/meta.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:tar/tar.dart';
+import 'package:file/file.dart' as f;
+import 'package:file/local.dart' as f;
 
 import 'error_group.dart';
 import 'exceptions.dart';
@@ -1391,4 +1394,249 @@ Iterable<String> parentDirs(String path, {String? from}) sync* {
     if (parent == d) break;
     d = parent;
   }
+}
+
+/// Run [fn] with overrides.
+Future<R> withOverrides<R>(
+  FutureOr<R> Function() fn, {
+  f.FileSystem? fileSystem,
+  Map<String, String>? environment,
+  String? platformVersion,
+  Stream<List<int>>? stdin,
+  StreamSink<List<int>>? stdout,
+  StreamSink<List<int>>? stderr,
+}) async {
+  // If there are no overrides we're done
+  if (fileSystem == null &&
+      environment == null &&
+      platformVersion == null &&
+      stdin == null &&
+      stdout == null &&
+      stderr == null) {
+    return await fn();
+  }
+
+  fileSystem ??= const f.LocalFileSystem();
+  environment ??= platform.environment;
+  platformVersion ??= platform.version;
+  stdin ??= io.stdin;
+  stdout ??= io.stdout;
+  stderr ??= io.stderr;
+
+  final pathContext = fileSystem.path;
+
+  return await IOOverrides.runWithIOOverrides(
+    () async {
+      return withPlatform(
+        () async {
+          return withPathContext(() async {
+            return await fn();
+          }, pathContext: pathContext);
+        },
+        platform: PlatformInfo.override(
+          environment: environment,
+          version: platformVersion,
+          pathSeparator: pathContext.separator,
+        ),
+      );
+    },
+    _IOOverrides(
+      fileSystem: fileSystem,
+      stdin: stdin is Stdin ? stdin : StdinStream(stdin),
+      stdout: stdout is Stdout ? stdout : StdoutSink(stdout),
+      stderr: stderr is Stdout ? stderr : StdoutSink(stderr),
+    ),
+  );
+}
+
+/// An [IOOverrides] that uses a [f.FileSystem] for all operations.
+final class _IOOverrides extends IOOverrides {
+  final f.FileSystem fileSystem;
+
+  @override
+  final Stdin stdin;
+
+  @override
+  final Stdout stdout;
+
+  @override
+  final Stdout stderr;
+
+  _IOOverrides({
+    required this.fileSystem,
+    required this.stdin,
+    required this.stdout,
+    required this.stderr,
+  });
+
+  @override
+  File createFile(String path) => fileSystem.file(path);
+
+  @override
+  Directory createDirectory(String path) => fileSystem.directory(path);
+
+  @override
+  Link createLink(String path) => fileSystem.link(path);
+
+  @override
+  Future<FileStat> stat(String path) => fileSystem.stat(path);
+
+  @override
+  FileStat statSync(String path) => fileSystem.statSync(path);
+
+  @override
+  Future<bool> fseIdentical(String path1, String path2) =>
+      fileSystem.identical(path1, path2);
+
+  @override
+  bool fseIdenticalSync(String path1, String path2) =>
+      fileSystem.identicalSync(path1, path2);
+
+  @override
+  Future<FileSystemEntityType> fseGetType(String path, bool followLinks) =>
+      fileSystem.type(path, followLinks: followLinks);
+
+  @override
+  FileSystemEntityType fseGetTypeSync(String path, bool followLinks) =>
+      fileSystem.typeSync(path, followLinks: followLinks);
+
+  @override
+  Directory getCurrentDirectory() => fileSystem.currentDirectory;
+
+  @override
+  void setCurrentDirectory(String path) {
+    fileSystem.currentDirectory = path;
+  }
+
+  @override
+  Directory getSystemTempDirectory() => fileSystem.systemTempDirectory;
+
+  @override
+  bool fsWatchIsSupported() => fileSystem.isWatchSupported;
+
+  @override
+  Stream<FileSystemEvent> fsWatch(String path, int events, bool recursive) =>
+      fileSystem.directory(path).watch(events: events, recursive: recursive);
+}
+
+/// Wrap a [Stream<List<int>>] as [Stdin].
+final class StdinStream extends StreamView<List<int>> implements Stdin {
+  StdinStream(super.stream);
+
+  @override
+  bool get echoMode => false;
+
+  @override
+  set echoMode(bool value) {}
+
+  @override
+  bool get echoNewlineMode => false;
+
+  @override
+  set echoNewlineMode(bool value) {}
+
+  @override
+  bool get lineMode => false;
+
+  @override
+  set lineMode(bool value) {}
+
+  @override
+  bool get hasTerminal => false;
+
+  @override
+  int readByteSync() => throw UnsupportedError('cannot read sync from stdin');
+
+  @override
+  String? readLineSync({
+    Encoding encoding = systemEncoding,
+    bool retainNewlines = false,
+  }) => throw UnsupportedError('cannot read sync from stdin');
+
+  @override
+  bool get supportsAnsiEscapes => false;
+}
+
+/// Wrap a [StreamSink<List<int>>] as [Stdout].
+final class StdoutSink implements Stdout {
+  final StreamSink<List<int>> _sink;
+
+  StdoutSink(this._sink);
+
+  @override
+  Encoding encoding = utf8;
+
+  @override
+  void add(List<int> data) {
+    _sink.add(data);
+  }
+
+  @override
+  void addError(Object error, [StackTrace? stackTrace]) {
+    _sink.addError(error, stackTrace);
+  }
+
+  @override
+  Future addStream(Stream<List<int>> stream) => _sink.addStream(stream);
+
+  @override
+  Future close() => _sink.close();
+
+  @override
+  Future get done => _sink.done;
+
+  @override
+  Future flush() => Future.value();
+
+  @override
+  bool get hasTerminal => false;
+
+  @override
+  IOSink get nonBlocking => this;
+
+  @override
+  bool get supportsAnsiEscapes => false;
+
+  @override
+  int get terminalColumns =>
+      throw const StdoutException('no terminal attached');
+
+  @override
+  int get terminalLines => throw const StdoutException('no terminal attached');
+
+  @override
+  void write(Object? object) {
+    add(encoding.encode('$object'));
+  }
+
+  @override
+  void writeAll(Iterable objects, [String separator = '']) {
+    final iterator = objects.iterator;
+    if (!iterator.moveNext()) return;
+    if (separator.isEmpty) {
+      do {
+        write(iterator.current);
+      } while (iterator.moveNext());
+    } else {
+      write(iterator.current);
+      while (iterator.moveNext()) {
+        write(separator);
+        write(iterator.current);
+      }
+    }
+  }
+
+  @override
+  void writeCharCode(int charCode) {
+    write(String.fromCharCode(charCode));
+  }
+
+  @override
+  void writeln([Object? object = '']) {
+    write(object);
+    write(lineTerminator);
+  }
+
+  @override
+  String lineTerminator = '\n';
 }

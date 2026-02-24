@@ -8,7 +8,7 @@ import 'dart:io';
 /// A proxy for [Platform] from `dart:io` which can be overridden.
 PlatformInfo get platform =>
     Zone.current[_platformInfoKey] as PlatformInfo? ??
-    PlatformInfo.nativePlatform();
+    PlatformInfo.defaultPlatform();
 
 /// The key for the [platform] in the current [Zone].
 final _platformInfoKey = Object();
@@ -26,25 +26,44 @@ Future<T> withPlatform<T>(
 abstract final class PlatformInfo {
   const PlatformInfo._();
 
-  factory PlatformInfo.nativePlatform() = _NativePlatformInfo;
+  factory PlatformInfo.defaultPlatform() =>
+      const bool.fromEnvironment('dart.library.io')
+          ? const _NativePlatformInfo()
+          : const _BrowserPlatformInfo();
 
   factory PlatformInfo.override({
-    required Map<String, String> environment,
-    required String executable,
-    required bool isAndroid,
-    required bool isFuchsia,
-    required bool isIOS,
-    required bool isLinux,
-    required bool isMacOS,
-    required bool isWindows,
-    required String lineTerminator,
-    required String operatingSystem,
-    required String pathSeparator,
-    required String resolvedExecutable,
-    required String version,
-    required int numberOfProcessors,
-    required Uri script,
-  }) = _PlatformInfoOverride;
+    Map<String, String>? environment,
+    String? executable,
+    bool? isAndroid,
+    bool? isFuchsia,
+    bool? isIOS,
+    bool? isLinux,
+    bool? isMacOS,
+    bool? isWindows,
+    String? lineTerminator,
+    String? operatingSystem,
+    String? pathSeparator,
+    String? resolvedExecutable,
+    String? version,
+    int? numberOfProcessors,
+    Uri? script,
+  }) => _PlatformInfoOverride(
+    environment: environment ?? platform.environment,
+    executable: executable ?? platform.executable,
+    isAndroid: isAndroid ?? platform.isAndroid,
+    isFuchsia: isFuchsia ?? platform.isFuchsia,
+    isIOS: isIOS ?? platform.isIOS,
+    isLinux: isLinux ?? platform.isLinux,
+    isMacOS: isMacOS ?? platform.isMacOS,
+    isWindows: isWindows ?? platform.isWindows,
+    lineTerminator: lineTerminator ?? platform.lineTerminator,
+    operatingSystem: operatingSystem ?? platform.operatingSystem,
+    pathSeparator: pathSeparator ?? platform.pathSeparator,
+    resolvedExecutable: resolvedExecutable ?? platform.resolvedExecutable,
+    version: version ?? platform.version,
+    numberOfProcessors: numberOfProcessors ?? platform.numberOfProcessors,
+    script: script ?? platform.script,
+  );
 
   /// Returns [Platform.environment].
   Map<String, String> get environment;
@@ -139,6 +158,55 @@ final class _NativePlatformInfo extends PlatformInfo {
 
   @override
   Uri get script => Platform.script;
+}
+
+final class _BrowserPlatformInfo extends PlatformInfo {
+  const _BrowserPlatformInfo() : super._();
+
+  @override
+  Map<String, String> get environment => const {};
+
+  @override
+  String get executable => '';
+
+  @override
+  bool get isAndroid => false;
+
+  @override
+  bool get isFuchsia => false;
+
+  @override
+  bool get isIOS => false;
+
+  @override
+  bool get isLinux => false;
+
+  @override
+  bool get isMacOS => false;
+
+  @override
+  bool get isWindows => false;
+
+  @override
+  String get lineTerminator => '\n';
+
+  @override
+  String get operatingSystem => '';
+
+  @override
+  String get pathSeparator => '/';
+
+  @override
+  String get resolvedExecutable => '';
+
+  @override
+  String get version => '';
+
+  @override
+  int get numberOfProcessors => 1;
+
+  @override
+  Uri get script => Uri();
 }
 
 final class _PlatformInfoOverride extends PlatformInfo {
