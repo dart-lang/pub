@@ -26,7 +26,7 @@ class _AuthenticatedClient extends http.BaseClient {
   /// not be injected to requests.
   _AuthenticatedClient(this._inner, this._credential);
 
-  final http.BaseClient _inner;
+  final http.Client _inner;
 
   /// Authentication scheme that could be used for authenticating requests.
   final Credential? _credential;

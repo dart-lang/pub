@@ -8,27 +8,29 @@ library;
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:io' as io;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:cli_util/cli_util.dart'
     show EnvironmentNotFoundException, applicationConfigHome;
 import 'package:collection/collection.dart';
+import 'package:file/file.dart' as f;
+import 'package:file/local.dart' as f;
 import 'package:http/http.dart' show ByteStream;
+import 'package:http/http.dart' as http;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
 import 'package:pool/pool.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:tar/tar.dart';
-import 'package:file/file.dart' as f;
-import 'package:file/local.dart' as f;
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'gzip/gzip.dart';
+import 'http.dart';
 import 'log.dart' as log;
 import 'path.dart';
 import 'platform_info.dart';
@@ -1405,6 +1407,7 @@ Future<R> withOverrides<R>(
   Stream<List<int>>? stdin,
   StreamSink<List<int>>? stdout,
   StreamSink<List<int>>? stderr,
+  http.Client? httpClient,
 }) async {
   // If there are no overrides we're done
   if (fileSystem == null &&
@@ -1412,7 +1415,8 @@ Future<R> withOverrides<R>(
       platformVersion == null &&
       stdin == null &&
       stdout == null &&
-      stderr == null) {
+      stderr == null &&
+      httpClient == null) {
     return await fn();
   }
 
@@ -1422,6 +1426,7 @@ Future<R> withOverrides<R>(
   stdin ??= io.stdin;
   stdout ??= io.stdout;
   stderr ??= io.stderr;
+  final client = httpClient ?? http.Client();
 
   final pathContext = fileSystem.path;
 
@@ -1429,9 +1434,11 @@ Future<R> withOverrides<R>(
     () async {
       return withPlatform(
         () async {
-          return withPathContext(() async {
-            return await fn();
-          }, pathContext: pathContext);
+          return withHttpClient(() async {
+            return withPathContext(() async {
+              return await fn();
+            }, pathContext: pathContext);
+          }, client: client);
         },
         platform: PlatformInfo.override(
           environment: environment,

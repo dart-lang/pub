@@ -17,11 +17,9 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:async/async.dart';
-import 'package:http/testing.dart';
 import 'package:pub/src/entrypoint.dart';
 import 'package:pub/src/exit_codes.dart' as exit_codes;
 import 'package:pub/src/git.dart' as git;
-import 'package:pub/src/http.dart';
 import 'package:pub/src/io.dart';
 import 'package:pub/src/lock_file.dart';
 import 'package:pub/src/log.dart' as log;
@@ -752,18 +750,6 @@ LockFile _createLockFile(
   ];
 
   return LockFile(packages);
-}
-
-/// Uses [client] as the mock HTTP client for this test.
-///
-/// Note that this will only affect HTTP requests made via http.dart in the
-/// parent process.
-void useMockClient(MockClient client) {
-  final oldInnerClient = innerHttpClient;
-  innerHttpClient = client;
-  addTearDown(() {
-    innerHttpClient = oldInnerClient;
-  });
 }
 
 /// Describes a map representing a library package with the given [name],

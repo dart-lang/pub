@@ -106,7 +106,7 @@ packages:
     source: hosted
     version: "3.5.2"
   file:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: file
       sha256: a3b4f84adafef897088c160faf7dfffb7696046cb13ae90b508c2cbc95d3b8d4
