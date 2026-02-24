@@ -13,87 +13,74 @@ import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../descriptor.dart' as d;
+import '../../descriptor/git.dart';
 import '../../test_pub.dart';
 
 void main() {
-  test('Versions inside a tag_pattern dependency can depend on versions from '
-      'another commit', () async {
-    ensureGit();
-    await d.git('foo.git', [
-      d.libPubspec(
-        'foo',
-        '1.0.0',
-        sdk: '^3.9.0',
-        deps: {
-          'bar': {
-            'git': {
-              'url': p.join(d.sandbox, 'bar'),
-              'tag_pattern': '{{version}}',
+  for (final tagType in TagType.values) {
+    test('(${tagType.name}) Versions inside a tag_pattern dependency can '
+        'depend on versions from another commit', () async {
+      ensureGit();
+      await d.git('foo.git', [
+        d.libPubspec(
+          'foo',
+          '1.0.0',
+          sdk: '^3.9.0',
+          deps: {
+            'bar': {
+              'git': {
+                'url': p.join(d.sandbox, 'bar'),
+                'tag_pattern': '{{version}}',
+              },
+              'version': '^2.0.0',
             },
-            'version': '^2.0.0',
           },
-        },
-      ),
-    ]).create();
-    await d.git('foo.git', []).tag('1.0.0');
+        ),
+      ]).create();
+      await d.git('foo.git', []).tag('1.0.0', tagType: tagType);
 
-    await d.git('foo.git', [
-      d.libPubspec(
-        'foo',
-        '2.0.0',
-        sdk: '^3.9.0',
-        deps: {
-          'bar': {
-            'git': {
-              'url': p.join(d.sandbox, 'bar.git'),
-              'tag_pattern': '{{version}}',
+      await d.git('foo.git', [
+        d.libPubspec(
+          'foo',
+          '2.0.0',
+          sdk: '^3.9.0',
+          deps: {
+            'bar': {
+              'git': {
+                'url': p.join(d.sandbox, 'bar.git'),
+                'tag_pattern': '{{version}}',
+              },
+              'version': '^1.0.0',
             },
-            'version': '^1.0.0',
           },
-        },
-      ),
-    ]).commit();
-    await d.git('foo.git', []).tag('2.0.0');
+        ),
+      ]).commit();
+      await d.git('foo.git', []).tag('2.0.0', tagType: tagType);
 
-    await d.git('bar.git', [
-      d.libPubspec(
-        'bar',
-        '1.0.0',
-        sdk: '^3.9.0',
-        deps: {
-          'foo': {
-            'git': {
-              'url': p.join(d.sandbox, 'bar.git'),
-              'tag_pattern': '{{version}}',
+      await d.git('bar.git', [
+        d.libPubspec(
+          'bar',
+          '1.0.0',
+          sdk: '^3.9.0',
+          deps: {
+            'foo': {
+              'git': {
+                'url': p.join(d.sandbox, 'bar.git'),
+                'tag_pattern': '{{version}}',
+              },
+              'version': '^2.0.0',
             },
-            'version': '^2.0.0',
           },
-        },
-      ),
-    ]).create();
-    await d.git('bar.git', []).tag('1.0.0');
+        ),
+      ]).create();
+      await d.git('bar.git', []).tag('1.0.0', tagType: tagType);
 
-    await d.git('bar.git', [
-      d.libPubspec(
-        'bar',
-        '2.0.0',
-        sdk: '^3.9.0',
-        deps: {
-          'foo': {
-            'git': {
-              'url': p.join(d.sandbox, 'foo.git'),
-              'tag_pattern': '{{version}}',
-            },
-            'version': '^1.0.0',
-          },
-        },
-      ),
-    ]).commit();
-    await d.git('bar.git', []).tag('2.0.0');
-
-    await d
-        .appDir(
-          dependencies: {
+      await d.git('bar.git', [
+        d.libPubspec(
+          'bar',
+          '2.0.0',
+          sdk: '^3.9.0',
+          deps: {
             'foo': {
               'git': {
                 'url': p.join(d.sandbox, 'foo.git'),
@@ -102,173 +89,194 @@ void main() {
               'version': '^1.0.0',
             },
           },
-          pubspec: {
-            'environment': {'sdk': '^3.9.0'},
-          },
-        )
-        .create();
+        ),
+      ]).commit();
+      await d.git('bar.git', []).tag('2.0.0', tagType: tagType);
 
-    await pubGet(
-      output: allOf(contains('+ foo 1.0.0'), contains('+ bar 2.0.0')),
-      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
-    );
-    final pubspec = loadYaml(
-      File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
-    );
-    final s = Platform.pathSeparator;
-    final foo = ((pubspec as Map)['packages'] as Map)['foo'];
-    expect(foo, {
-      'dependency': 'direct main',
-      'description': {
-        'path': '.',
-        'resolved-ref': isA<String>(),
-        'tag-pattern': '{{version}}',
-        'url': '${d.sandbox}${s}foo.git',
-      },
-      'source': 'git',
-      'version': '1.0.0',
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {
+                  'url': p.join(d.sandbox, 'foo.git'),
+                  'tag_pattern': '{{version}}',
+                },
+                'version': '^1.0.0',
+              },
+            },
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+
+      await pubGet(
+        output: allOf(contains('+ foo 1.0.0'), contains('+ bar 2.0.0')),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+      final pubspec = loadYaml(
+        File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
+      );
+      final s = Platform.pathSeparator;
+      final foo = ((pubspec as Map)['packages'] as Map)['foo'];
+      expect(foo, {
+        'dependency': 'direct main',
+        'description': {
+          'path': '.',
+          'resolved-ref': isA<String>(),
+          'tag-pattern': '{{version}}',
+          'url': '${d.sandbox}${s}foo.git',
+        },
+        'source': 'git',
+        'version': '1.0.0',
+      });
     });
-  });
 
-  test('Versions inside a tag_pattern dependency cannot depend on '
-      'version from another commit via path-dependencies', () async {
-    ensureGit();
+    test('(${tagType.name}) Versions inside a tag_pattern dependency '
+        'cannot depend on version from another '
+        'commit via path-dependencies', () async {
+      ensureGit();
 
-    await d.git('repo.git', [
-      d.dir('foo', [
-        d.libPubspec(
-          'foo',
-          '1.0.0',
-          deps: {
-            'bar': {'path': '../bar', 'version': '^2.0.0'},
-          },
-        ),
-      ]),
-      d.dir('bar', [
-        d.libPubspec(
-          'bar',
-          '2.0.0',
-          deps: {
-            'foo': {'path': '../foo', 'version': '^1.0.0'},
-          },
-        ),
-      ]),
-    ]).create();
-    await d.git('repo.git', []).tag('foo-1.0.0');
-    await d.git('repo.git', []).tag('bar-2.0.0');
-
-    await d.git('repo.git', [
-      d.dir('foo', [
-        d.libPubspec(
-          'foo',
-          '2.0.0',
-          deps: {
-            'bar': {'path': '../bar', 'version': '^2.0.0'},
-          },
-        ),
-      ]),
-      d.dir('bar', [
-        d.libPubspec(
-          'bar',
-          '1.0.0',
-          deps: {
-            'foo': {'path': '../foo', 'version': '^1.0.0'},
-          },
-        ),
-      ]),
-    ]).commit();
-    await d.git('repo.git', []).tag('foo-2.0.0');
-    await d.git('repo.git', []).tag('bar-1.0.0');
-
-    await d
-        .appDir(
-          dependencies: {
-            'foo': {
-              'git': {
-                'url': '../repo.git',
-                'tag_pattern': 'foo-{{version}}',
-                'path': 'foo',
-              },
-              'version': '^1.0.0',
+      await d.git('repo.git', [
+        d.dir('foo', [
+          d.libPubspec(
+            'foo',
+            '1.0.0',
+            deps: {
+              'bar': {'path': '../bar', 'version': '^2.0.0'},
             },
-          },
-          pubspec: {
-            'environment': {'sdk': '^3.9.0'},
-          },
-        )
-        .create();
-    final s = RegExp.escape(p.separator);
-    await pubGet(
-      error: matches(
-        'Because foo from git ..${s}repo.git at HEAD in foo '
-        'depends on bar \\^2.0.0 from git '
-        'which depends on foo from git ..${s}repo.git at [a-f0-9]+ in foo, '
-        'foo <2.0.0 from git is forbidden',
-      ),
-      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
-    );
-  });
-
-  test('tag_pattern must contain "{{version}}"', () async {
-    await d
-        .appDir(
-          dependencies: {
-            'foo': {
-              'git': {'url': 'some/git/path', 'tag_pattern': 'v100'},
+          ),
+        ]),
+        d.dir('bar', [
+          d.libPubspec(
+            'bar',
+            '2.0.0',
+            deps: {
+              'foo': {'path': '../foo', 'version': '^1.0.0'},
             },
-          },
-          pubspec: {
-            'environment': {'sdk': '^3.9.0'},
-          },
-        )
-        .create();
+          ),
+        ]),
+      ]).create();
+      await d.git('repo.git', []).tag('foo-1.0.0', tagType: tagType);
+      await d.git('repo.git', []).tag('bar-2.0.0', tagType: tagType);
 
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
-      error: contains(
-        'Invalid description in the "myapp" pubspec on the "foo" dependency: '
-        'The `tag_pattern` must contain a single "{{version}}" '
-        'to match different versions',
-      ),
-      exitCode: DATA,
-    );
-  });
+      await d.git('repo.git', [
+        d.dir('foo', [
+          d.libPubspec(
+            'foo',
+            '2.0.0',
+            deps: {
+              'bar': {'path': '../bar', 'version': '^2.0.0'},
+            },
+          ),
+        ]),
+        d.dir('bar', [
+          d.libPubspec(
+            'bar',
+            '1.0.0',
+            deps: {
+              'foo': {'path': '../foo', 'version': '^1.0.0'},
+            },
+          ),
+        ]),
+      ]).commit();
+      await d.git('repo.git', []).tag('foo-2.0.0', tagType: tagType);
+      await d.git('repo.git', []).tag('bar-1.0.0', tagType: tagType);
 
-  test('tag_pattern must contain at most one "{{version}}"', () async {
-    await d
-        .appDir(
-          dependencies: {
-            'foo': {
-              'git': {
-                'url': 'some/git/path',
-                'tag_pattern': 'v{{version}}{{version}}',
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {
+                  'url': '../repo.git',
+                  'tag_pattern': 'foo-{{version}}',
+                  'path': 'foo',
+                },
+                'version': '^1.0.0',
               },
             },
-          },
-          pubspec: {
-            'environment': {'sdk': '^3.9.0'},
-          },
-        )
-        .create();
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+      final s = RegExp.escape(p.separator);
+      await pubGet(
+        error: matches(
+          'Because foo from git ..${s}repo.git at HEAD in foo '
+          'depends on bar \\^2.0.0 from git '
+          'which depends on foo from git ..${s}repo.git at [a-f0-9]+ in foo, '
+          'foo <2.0.0 from git is forbidden',
+        ),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+      );
+    });
 
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
-      error: contains(
-        'Invalid description in the "myapp" pubspec on the "foo" dependency: '
-        'The `tag_pattern` must contain a single "{{version}}" '
-        'to match different versions',
-      ),
-      exitCode: DATA,
+    test('(${tagType.name}) tag_pattern must contain "{{version}}"', () async {
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {
+                'git': {'url': 'some/git/path', 'tag_pattern': 'v100'},
+              },
+            },
+            pubspec: {
+              'environment': {'sdk': '^3.9.0'},
+            },
+          )
+          .create();
+
+      await pubGet(
+        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+        error: contains(
+          'Invalid description in the "myapp" pubspec on the "foo" dependency: '
+          'The `tag_pattern` must contain a single "{{version}}" '
+          'to match different versions',
+        ),
+        exitCode: DATA,
+      );
+    });
+
+    test(
+      '(${tagType.name}) tag_pattern must contain at most one "{{version}}"',
+      () async {
+        await d
+            .appDir(
+              dependencies: {
+                'foo': {
+                  'git': {
+                    'url': 'some/git/path',
+                    'tag_pattern': 'v{{version}}{{version}}',
+                  },
+                },
+              },
+              pubspec: {
+                'environment': {'sdk': '^3.9.0'},
+              },
+            )
+            .create();
+
+        await pubGet(
+          environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+          error: contains(
+            'Invalid description in the "myapp" '
+            'pubspec on the "foo" dependency: '
+            'The `tag_pattern` must contain a single "{{version}}" '
+            'to match different versions',
+          ),
+          exitCode: DATA,
+        );
+      },
     );
-  });
 
-  test(
-    'tagged version must contain the correct version of dependency',
-    () async {
+    test('(${tagType.name}) tagged version must contain the '
+        'correct version of dependency', () async {
       await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
-      await d.git('foo.git', []).tag('v1.0.0');
+      await d.git('foo.git', []).tag('v1.0.0', tagType: tagType);
       await d.git('foo.git', [d.libPubspec('foo', '2.0.0')]).commit();
-      await d.git('foo.git', []).tag('v3.0.0'); // Wrong tag, will not be found.
+      await d
+          .git('foo.git', [])
+          .tag('v3.0.0', tagType: tagType); // Wrong tag, will not be found.
 
       await d
           .appDir(
@@ -287,45 +295,46 @@ void main() {
         environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
         output: contains('+ foo 1.0.0'),
       );
-    },
-  );
+    });
 
-  test('Reasonable error when no tagged versions exist', () async {
-    await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
-    await d.git('foo.git', [d.libPubspec('foo', '2.0.0')]).commit();
+    test(
+      '(${tagType.name}) Reasonable error when no tagged versions exist',
+      () async {
+        await d.git('foo.git', [d.libPubspec('foo', '1.0.0')]).create();
+        await d.git('foo.git', [d.libPubspec('foo', '2.0.0')]).commit();
 
-    await d
-        .appDir(
-          dependencies: {
-            'foo': {
-              'git': {'url': '../foo', 'tag_pattern': 'v{{version}}'},
-            },
-          },
-          pubspec: {
-            'environment': {'sdk': '^3.9.0'},
-          },
-        )
-        .create();
+        await d
+            .appDir(
+              dependencies: {
+                'foo': {
+                  'git': {'url': '../foo', 'tag_pattern': 'v{{version}}'},
+                },
+              },
+              pubspec: {
+                'environment': {'sdk': '^3.9.0'},
+              },
+            )
+            .create();
 
-    await pubGet(
-      environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
-      exitCode: UNAVAILABLE,
-      error: contains(
-        'Because myapp depends on foo any from git which doesn\'t exist '
-        '(Bad output from `git tag --list`)',
-      ),
+        await pubGet(
+          environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+          exitCode: UNAVAILABLE,
+          error: contains(
+            'Because myapp depends on foo any from git which doesn\'t exist '
+            '(Bad output from `git tag --list`)',
+          ),
+        );
+      },
     );
-  });
 
-  // Regression test for https://github.com/dart-lang/pub/issues/4644.
-  test(
-    'Lockfile persists tag-pattern when `pub get`ing already locked file',
-    () async {
+    // Regression test for https://github.com/dart-lang/pub/issues/4644.
+    test('(${tagType.name}) Lockfile persists tag-pattern '
+        'when `pub get`ing already locked file', () async {
       ensureGit();
       await d.git('foo.git', [
         d.libPubspec('foo', '1.0.0', sdk: '^3.9.0'),
       ]).create();
-      await d.git('foo.git', []).tag('1.0.0');
+      await d.git('foo.git', []).tag('1.0.0', tagType: tagType);
 
       await d
           .appDir(
@@ -380,110 +389,110 @@ void main() {
         'source': 'git',
         'version': '1.0.0',
       });
-    },
-  );
+    });
 
-  test(
-    'multiple path dependencies to same package work (regression https://github.com/dart-lang/pub/issues/4706)',
-    () async {
-      await d.git('foo.git', [
-        d.dir('one', [
-          d.libPubspec(
-            'one',
-            '1.0.0',
-            sdk: '^3.9.0',
-            deps: {
-              'two': {'path': '../two'},
-              'three': {'path': '../three'},
-            },
-          ),
-        ]),
-        d.dir('two', [
-          d.libPubspec(
-            'two',
-            '1.0.0',
-            sdk: '^3.9.0',
-            deps: {
-              'three': {'path': '../three'},
-            },
-          ),
-        ]),
-        d.dir('three', [d.libPubspec('three', '1.0.0', sdk: '^3.9.0')]),
-      ]).create();
-      final g = d.git('foo.git', []);
-      await g.tag('1.0.0');
-      final ref = await g.revParse('HEAD');
-
-      await d
-          .appDir(
-            dependencies: {
-              'one': {
-                'git': {
-                  'url': '../foo.git',
-                  'path': 'one',
-                  'tag_pattern': '{{version}}',
-                },
-                'version': '^1.0.0',
+    test(
+      '(${tagType.name}) multiple path dependencies to same package work (regression https://github.com/dart-lang/pub/issues/4706) $tagType',
+      () async {
+        await d.git('foo.git', [
+          d.dir('one', [
+            d.libPubspec(
+              'one',
+              '1.0.0',
+              sdk: '^3.9.0',
+              deps: {
+                'two': {'path': '../two'},
+                'three': {'path': '../three'},
               },
-            },
-            pubspec: {
-              'environment': {'sdk': '^3.9.0'},
-            },
-          )
-          .create();
+            ),
+          ]),
+          d.dir('two', [
+            d.libPubspec(
+              'two',
+              '1.0.0',
+              sdk: '^3.9.0',
+              deps: {
+                'three': {'path': '../three'},
+              },
+            ),
+          ]),
+          d.dir('three', [d.libPubspec('three', '1.0.0', sdk: '^3.9.0')]),
+        ]).create();
+        final g = d.git('foo.git', []);
+        await g.tag('1.0.0', tagType: tagType);
+        final ref = await g.revParse('HEAD');
 
-      await pubGet(
-        output: allOf(
-          contains('+ one 1.0.0'),
-          contains('+ two 1.0.0'),
-          contains('+ three 1.0.0'),
-        ),
-        environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
-      );
-      final lockfile =
-          loadYaml(
-                File(
-                  p.join(d.sandbox, appPath, 'pubspec.lock'),
-                ).readAsStringSync(),
-              )
-              as Map;
-      final packages = lockfile['packages'] as Map;
-      final one = packages['one'];
-      expect(one, {
-        'dependency': 'direct main',
-        'description': {
-          'path': 'one',
-          'resolved-ref': ref,
-          'tag-pattern': '{{version}}',
-          'url': '../foo.git',
-        },
-        'source': 'git',
-        'version': '1.0.0',
-      });
-      final two = packages['two'];
-      expect(two, {
-        'dependency': 'transitive',
-        'description': {
-          'path': 'two',
-          'ref': ref,
-          'resolved-ref': ref,
-          'url': '../foo.git',
-        },
-        'source': 'git',
-        'version': '1.0.0',
-      });
-      final three = packages['three'];
-      expect(three, {
-        'dependency': 'transitive',
-        'description': {
-          'path': 'three',
-          'ref': ref,
-          'resolved-ref': ref,
-          'url': '../foo.git',
-        },
-        'source': 'git',
-        'version': '1.0.0',
-      });
-    },
-  );
+        await d
+            .appDir(
+              dependencies: {
+                'one': {
+                  'git': {
+                    'url': '../foo.git',
+                    'path': 'one',
+                    'tag_pattern': '{{version}}',
+                  },
+                  'version': '^1.0.0',
+                },
+              },
+              pubspec: {
+                'environment': {'sdk': '^3.9.0'},
+              },
+            )
+            .create();
+
+        await pubGet(
+          output: allOf(
+            contains('+ one 1.0.0'),
+            contains('+ two 1.0.0'),
+            contains('+ three 1.0.0'),
+          ),
+          environment: {'_PUB_TEST_SDK_VERSION': '3.9.0'},
+        );
+        final lockfile =
+            loadYaml(
+                  File(
+                    p.join(d.sandbox, appPath, 'pubspec.lock'),
+                  ).readAsStringSync(),
+                )
+                as Map;
+        final packages = lockfile['packages'] as Map;
+        final one = packages['one'];
+        expect(one, {
+          'dependency': 'direct main',
+          'description': {
+            'path': 'one',
+            'resolved-ref': ref,
+            'tag-pattern': '{{version}}',
+            'url': '../foo.git',
+          },
+          'source': 'git',
+          'version': '1.0.0',
+        });
+        final two = packages['two'];
+        expect(two, {
+          'dependency': 'transitive',
+          'description': {
+            'path': 'two',
+            'ref': ref,
+            'resolved-ref': ref,
+            'url': '../foo.git',
+          },
+          'source': 'git',
+          'version': '1.0.0',
+        });
+        final three = packages['three'];
+        expect(three, {
+          'dependency': 'transitive',
+          'description': {
+            'path': 'three',
+            'ref': ref,
+            'resolved-ref': ref,
+            'url': '../foo.git',
+          },
+          'source': 'git',
+          'version': '1.0.0',
+        });
+      },
+    );
+  }
 }

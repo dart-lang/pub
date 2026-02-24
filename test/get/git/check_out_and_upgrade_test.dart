@@ -73,7 +73,7 @@ void main() {
       d.libPubspec('foo', '1.0.0'),
     ]);
     await repo.create();
-    await repo.tag('v1.0.0');
+    await repo.tag('v1.0.0', tagType: d.TagType.annotated);
 
     await d
         .appDir(
@@ -99,7 +99,7 @@ void main() {
       d.libDir('foo'),
       d.libPubspec('foo', '1.5.0'),
     ]).commit();
-    await repo.tag('v1.5.0');
+    await repo.tag('v1.5.0', tagType: d.TagType.annotated);
 
     // The untagged version should not be found by `pub upgrade`.
     await d.git('foo.git', [
@@ -112,7 +112,7 @@ void main() {
       d.libDir('foo'),
       d.libPubspec('foo', '2.0.0'),
     ]).commit();
-    await repo.tag('v2.0.0');
+    await repo.tag('v2.0.0', tagType: d.TagType.annotated);
 
     // A version that is not tagged according to the pattern should not be
     // chosen by the `upgrade --major-versions`.
@@ -120,7 +120,7 @@ void main() {
       d.libDir('foo'),
       d.libPubspec('foo', '3.0.0'),
     ]).commit();
-    await repo.tag('unrelatedTag');
+    await repo.tag('unrelatedTag', tagType: d.TagType.annotated);
 
     await pubUpgrade(
       output: allOf(contains('> foo 1.5.0'), contains('Changed 1 dependency!')),

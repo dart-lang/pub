@@ -788,14 +788,17 @@ class GitSource extends CachedSource {
     String path,
     String tagPattern,
   ) async {
+    const objectFormat =
+        '%(if)%(*objectname)%(then)%(*objectname)%(else)%(objectname)%(end)';
     final output = await git.run([
+      _gitDirArg(path),
       'tag',
       '--list',
       '--format',
       // We can use space here, as it is not allowed in a git tag
       // https://git-scm.com/docs/git-check-ref-format The `*` means we list the
       // hash of the tagged object, not the tag itself.
-      '%(refname:lstrip=2) %(*objectname)',
+      '%(refname:lstrip=2) $objectFormat',
     ], workingDir: path);
     final lines = output.trim().split('\n');
     final result = <TaggedVersion>[];
