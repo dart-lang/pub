@@ -73,7 +73,7 @@ void main() {
     }, platform: fakePlatform);
   });
 
-  test('dart:io Platform is not used outside platform_info.dart', () async {
+  test('Platform is not used outside platform_info.dart', () async {
     // This test exists to ensure that we don't use Platform from dart:io
     // unintentionally. We only want to use it in lib/src/platform_info.dart!
     // Everywhere else we should rely on `platform` from here.
@@ -123,7 +123,7 @@ void main() {
         }
       }
     }
-  }, testOn: 'vm');
+  }, testOn: 'vm && linux');
 }
 
 final class ForEachIdentifier extends GeneralizingAstVisitor<void> {
