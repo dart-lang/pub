@@ -4,10 +4,10 @@
 
 import 'dart:convert';
 
-import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'language_version.dart';
+import 'path.dart';
 
 /// Contents of a `.dart_tool/package_config.json` file.
 class PackageConfig {

@@ -10,7 +10,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
@@ -23,6 +22,7 @@ import '../lock_file.dart';
 import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
+import '../path.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../sdk.dart';
@@ -481,7 +481,7 @@ class DependencyServicesApplyCommand extends PubCommand {
         (package) => Pubspec.parse(
           updatedPubspecs[package.dir].toString(),
           cache.sources,
-          location: toUri(package.pubspecPath),
+          location: p.toUri(package.pubspecPath),
           containingDescription: ResolvedRootDescription(
             RootDescription(package.dir),
           ),

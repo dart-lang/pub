@@ -9,9 +9,9 @@ library;
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
 
 import 'log.dart' as log;
+import 'path.dart';
 import 'utils.dart';
 
 /// Draws a tree for the given list of files

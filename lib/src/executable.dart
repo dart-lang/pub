@@ -8,7 +8,6 @@ import 'dart:isolate';
 
 import 'package:args/args.dart';
 import 'package:collection/collection.dart';
-import 'package:path/path.dart' as p;
 
 import 'entrypoint.dart';
 import 'exceptions.dart';
@@ -18,6 +17,7 @@ import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
 import 'package_config.dart';
+import 'path.dart';
 import 'sdk.dart';
 import 'system_cache.dart';
 import 'utils.dart';

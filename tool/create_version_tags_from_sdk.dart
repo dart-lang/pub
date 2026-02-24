@@ -8,7 +8,7 @@ library;
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 Future<void> main(List<String> args) async {

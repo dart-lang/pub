@@ -7,7 +7,7 @@ library;
 
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
+import 'package:pub/src/path.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 

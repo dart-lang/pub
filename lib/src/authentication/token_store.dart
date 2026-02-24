@@ -5,11 +5,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-
 import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../path.dart';
 import 'credential.dart';
 
 /// Stores and manages authentication credentials.
