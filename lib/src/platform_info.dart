@@ -42,6 +42,8 @@ abstract final class PlatformInfo {
     required String pathSeparator,
     required String resolvedExecutable,
     required String version,
+    required int numberOfProcessors,
+    required Uri script,
   }) = _PlatformInfoOverride;
 
   /// Returns [Platform.environment].
@@ -80,9 +82,11 @@ abstract final class PlatformInfo {
   /// Returns [Platform.resolvedExecutable].
   String get resolvedExecutable;
 
-  int get numberOfProcessors => 1;
+  /// Returns [Platform.numberOfProcessors].
+  int get numberOfProcessors;
 
-  Uri get script => Uri.file('path');
+  /// Returns [Platform.script].
+  Uri get script;
 
   /// Returns [Platform.version] from 'dart:io'.
   String get version;
@@ -129,6 +133,12 @@ final class _NativePlatformInfo extends PlatformInfo {
 
   @override
   String get version => Platform.version;
+
+  @override
+  int get numberOfProcessors => Platform.numberOfProcessors;
+
+  @override
+  Uri get script => Platform.script;
 }
 
 final class _PlatformInfoOverride extends PlatformInfo {
@@ -146,6 +156,8 @@ final class _PlatformInfoOverride extends PlatformInfo {
     required this.pathSeparator,
     required this.resolvedExecutable,
     required this.version,
+    required this.numberOfProcessors,
+    required this.script,
   }) : super._();
 
   @override
@@ -186,4 +198,10 @@ final class _PlatformInfoOverride extends PlatformInfo {
 
   @override
   final String version;
+
+  @override
+  final int numberOfProcessors;
+
+  @override
+  final Uri script;
 }

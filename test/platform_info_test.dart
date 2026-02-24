@@ -28,6 +28,8 @@ void main() {
       pathSeparator: '\\',
       resolvedExecutable: 'C:\\bin\\dart_fake',
       version: '3.0.0-fake',
+      script: Uri.file('C:\\bin\\dart_fake.dart'),
+      numberOfProcessors: 2,
     );
 
     await withPlatform(() async {
@@ -57,6 +59,8 @@ void main() {
       pathSeparator: '\\',
       resolvedExecutable: 'C:\\bin\\dart_fake',
       version: '3.0.0-fake',
+      script: Uri.file('C:\\bin\\dart_fake.dart'),
+      numberOfProcessors: 2,
     );
 
     await withPlatform(() async {
