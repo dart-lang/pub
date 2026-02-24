@@ -5,7 +5,6 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import '../descriptor.dart' as d;
@@ -21,7 +20,7 @@ class LinkDescriptor extends d.Descriptor {
   Future<void> create([String? parent]) async {
     final path = p.join(parent ?? d.sandbox, name);
     if (forceDirectory) {
-      if (platform.isWindows) {
+      if (Platform.isWindows) {
         Process.runSync('cmd', ['/c', 'mklink', '/D', path, target]);
       } else {
         Link(path).createSync(target);

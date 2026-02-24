@@ -8,7 +8,6 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -35,7 +34,7 @@ void main() {
       await d.dir('bin', [
         d.file('dart.bat', '''
 @echo off
-${platform.resolvedExecutable} %*
+${Platform.resolvedExecutable} %*
 '''),
       ]).create();
 
@@ -45,7 +44,7 @@ ${platform.resolvedExecutable} %*
         environment: {
           'PATH': [
             p.join(d.sandbox, 'bin'),
-            p.dirname(platform.resolvedExecutable),
+            p.dirname(Platform.resolvedExecutable),
           ].join(';'),
           ...getPubTestEnvironment(),
         },
@@ -53,6 +52,6 @@ ${platform.resolvedExecutable} %*
       expect((process.stdout as String).trim(), '[hi]');
       expect(process.exitCode, 0);
     },
-    skip: !platform.isWindows,
+    skip: !Platform.isWindows,
   );
 }

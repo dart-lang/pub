@@ -8,7 +8,6 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -125,12 +124,12 @@ void main() {
 echo "LFS called unexpectedly"
 exit 1
 ''');
-      if (!platform.isWindows) {
+      if (!Platform.isWindows) {
         Process.runSync('chmod', ['+x', fakeLfs]);
       }
 
-      final separator = platform.isWindows ? ';' : ':';
-      final newPath = '$fakeBinDir$separator${platform.environment['PATH']}';
+      final separator = Platform.isWindows ? ';' : ':';
+      final newPath = '$fakeBinDir$separator${Platform.environment['PATH']}';
 
       // This should work because a regular repo doesn't trigger git-lfs.
       await runPub(args: ['get'], environment: {'PATH': newPath});

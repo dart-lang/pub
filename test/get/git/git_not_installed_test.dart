@@ -5,7 +5,8 @@
 @TestOn('linux')
 library;
 
-import 'package:pub/src/platform_info.dart';
+import 'dart:io';
+
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -47,14 +48,14 @@ then
   echo "git version 2.13.1.616"
   exit 1
 else
-  PATH=${platform.environment['PATH']} git \$*
+  PATH=${Platform.environment['PATH']} git \$*
 fi
 ''',
       batch: '''
 if "%1"=="--version" (
   echo "git version 2.13.1.616"
 ) else (
-  set path="${platform.environment['PATH']}"
+  set path="${Platform.environment['PATH']}"
   git %*
 )
 ''',

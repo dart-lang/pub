@@ -5,8 +5,9 @@
 @TestOn('vm')
 library;
 
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
-import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 
 import '../../descriptor.dart' as d;
@@ -29,9 +30,9 @@ void main() {
     );
 
     // Add the test's cache bin directory to the path.
-    final binDir = p.dirname(platform.executable);
-    final separator = platform.isWindows ? ';' : ':';
-    final path = "${platform.environment["PATH"]}$separator$binDir";
+    final binDir = p.dirname(Platform.executable);
+    final separator = Platform.isWindows ? ';' : ':';
+    final path = "${Platform.environment["PATH"]}$separator$binDir";
 
     await runPub(
       args: ['global', 'activate', 'foo'],

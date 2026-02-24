@@ -9,7 +9,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/exit_codes.dart';
-import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -116,7 +115,7 @@ void main() {
     final pubspec = loadYaml(
       File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
     );
-    final s = platform.pathSeparator;
+    final s = Platform.pathSeparator;
     final foo = ((pubspec as Map)['packages'] as Map)['foo'];
     expect(foo, {
       'dependency': 'direct main',
@@ -351,7 +350,7 @@ void main() {
       final lockfile = loadYaml(
         File(p.join(d.sandbox, appPath, 'pubspec.lock')).readAsStringSync(),
       );
-      final s = platform.pathSeparator;
+      final s = Platform.pathSeparator;
       final foo = ((lockfile as Map)['packages'] as Map)['foo'];
       expect(foo, {
         'dependency': 'direct main',

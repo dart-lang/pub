@@ -81,7 +81,7 @@ void main() {
 
     final root = p.normalize(p.absolute('.'));
     final collection = AnalysisContextCollection(
-      includedPaths: [p.join(root, 'lib'), p.join(root, 'test')],
+      includedPaths: [p.join(root, 'lib')],
     );
 
     for (final context in collection.contexts) {

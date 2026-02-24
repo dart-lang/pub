@@ -10,7 +10,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub/src/io.dart';
-import 'package:pub/src/platform_info.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:test/test.dart';
@@ -57,7 +56,7 @@ extension on GoldenTestContext {
     final buffer = StringBuffer();
     buffer.writeln('## Section ${args.join(' ')}');
     final process = await Process.start(
-      platform.resolvedExecutable,
+      Platform.resolvedExecutable,
       ['--enable-asserts', snapshot, '--verbose', ...args],
       environment: {
         ...getPubTestEnvironment(),
@@ -152,7 +151,7 @@ Future<void> main() async {
   setUpAll(() async {
     final tempDir = Directory.systemTemp.createTempSync();
     snapshot = p.join(tempDir.path, 'dependency_services.dart.snapshot');
-    final r = Process.runSync(platform.resolvedExecutable, [
+    final r = Process.runSync(Platform.resolvedExecutable, [
       '--snapshot=$snapshot',
       p.join('bin', 'dependency_services.dart'),
     ]);
@@ -628,7 +627,7 @@ Future<void> main() async {
     await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
 
     final result = await Process.run(
-      platform.resolvedExecutable,
+      Platform.resolvedExecutable,
       [snapshot, 'list'],
       environment: {
         ...getPubTestEnvironment(),

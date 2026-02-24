@@ -4,7 +4,6 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:pub/src/platform_info.dart';
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart';
 
@@ -14,7 +13,7 @@ import '../test_pub.dart';
 void main() async {
   test(
     'Detects and warns about old cache dir',
-    skip: !platform.isWindows,
+    skip: !Platform.isWindows,
     () async {
       await d.dir('APPDATA', [
         d.dir('Pub', [d.dir('Cache')]),

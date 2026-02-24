@@ -5,8 +5,9 @@
 @TestOn('vm')
 library;
 
+import 'dart:io';
+
 import 'package:pub/src/exceptions.dart';
-import 'package:pub/src/platform_info.dart';
 import 'package:pub/src/pubspec.dart';
 import 'package:pub/src/source.dart';
 import 'package:pub/src/source/hosted.dart';
@@ -383,7 +384,7 @@ workspace: ['a', 'b', 'c']
 Consider updating the SDK constraint to:
 
 environment:
-  sdk: '^${platform.version.split(' ').first}'
+  sdk: '^${Platform.version.split(' ').first}'
 ''',
       );
       // but no error if you don't look at it.
@@ -417,7 +418,7 @@ resolution: workspace
 Consider updating the SDK constraint to:
 
 environment:
-  sdk: '^${platform.version.split(' ').first}'
+  sdk: '^${Platform.version.split(' ').first}'
 ''',
       );
     });
@@ -1066,7 +1067,7 @@ dependency_overrides:
 ''',
           (pubspecOverrides) => pubspecOverrides.dependencyOverrides,
           'Error on line 4, column 7 of '
-              '${platform.pathSeparator}pubspec_overrides.yaml',
+              '${Platform.pathSeparator}pubspec_overrides.yaml',
         );
       });
 
