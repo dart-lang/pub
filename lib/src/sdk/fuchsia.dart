@@ -2,12 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:pub_semver/pub_semver.dart';
 
 import '../io.dart';
 import '../path.dart';
+import '../platform_info.dart';
 import '../sdk.dart';
 
 class FuchsiaSdk extends Sdk {
@@ -20,7 +19,7 @@ class FuchsiaSdk extends Sdk {
 
   static final bool _isAvailable = _rootDirectory != null;
   static final String? _rootDirectory =
-      Platform.environment['FUCHSIA_DART_SDK_ROOT'];
+      platform.environment['FUCHSIA_DART_SDK_ROOT'];
 
   @override
   String get installMessage =>

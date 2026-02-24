@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
 import '../authentication/credential.dart';
 import '../command.dart';
@@ -11,6 +10,7 @@ import '../command_runner.dart';
 import '../exceptions.dart';
 import '../io.dart';
 import '../log.dart' as log;
+import '../platform_info.dart';
 import '../source/hosted.dart';
 import '../utils.dart';
 
@@ -141,7 +141,7 @@ For interactive authorization against pub.dev, use `$topLevelProgram pub login`.
       'token stored in the environment variable "$envVar".',
     );
 
-    if (!Platform.environment.containsKey(envVar)) {
+    if (!platform.environment.containsKey(envVar)) {
       // If environment variable doesn't exist when
       // pub token add <hosted-url> --env-var <ENV_VAR> is called, we should
       // print a warning.

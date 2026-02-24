@@ -26,6 +26,7 @@ import '../log.dart' as log;
 import '../package.dart';
 import '../package_name.dart';
 import '../path.dart';
+import '../platform_info.dart';
 import '../pubspec.dart';
 import '../rate_limited_scheduler.dart';
 import '../source.dart';
@@ -109,8 +110,8 @@ Uri validateAndNormalizeHostedUrl(String hostedUrl) {
   }
   if (runningFromTest &&
       u == Uri.parse('https://pub.dev') &&
-      Platform.environment.containsKey('_PUB_TEST_DEFAULT_HOSTED_URL')) {
-    u = Uri.parse(Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL']!);
+      platform.environment.containsKey('_PUB_TEST_DEFAULT_HOSTED_URL')) {
+    u = Uri.parse(platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL']!);
   }
   return u;
 }
@@ -141,8 +142,8 @@ class HostedSource extends CachedSource {
     final origin = parsedUrl.origin;
     // Allow the defaultHostedUrl to be overriden when running from tests
     if (runningFromTest &&
-        io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
-      return origin == io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'];
+        platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] != null) {
+      return origin == platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'];
     }
     return origin == pubDevUrl || origin == pubDartlangUrl;
   }
@@ -171,11 +172,11 @@ class HostedSource extends CachedSource {
       // Allow the defaultHostedUrl to be overriden when running from tests
       if (runningFromTest) {
         defaultHostedUrl =
-            io.Platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] ??
+            platform.environment['_PUB_TEST_DEFAULT_HOSTED_URL'] ??
             defaultHostedUrl;
       }
       return validateAndNormalizeHostedUrl(
-        io.Platform.environment['PUB_HOSTED_URL'] ?? defaultHostedUrl,
+        platform.environment['PUB_HOSTED_URL'] ?? defaultHostedUrl,
       ).toString();
     } on FormatException catch (e) {
       throw ConfigException(

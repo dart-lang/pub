@@ -3,9 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
 import '../command.dart';
+import '../platform_info.dart';
 import '../utils.dart';
 
 /// Handles the `uploader` pub command.
@@ -28,7 +28,7 @@ class UploaderCommand extends PubCommand {
   UploaderCommand() {
     argParser.addOption(
       'server',
-      defaultsTo: Platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dev',
+      defaultsTo: platform.environment['PUB_HOSTED_URL'] ?? 'https://pub.dev',
       help: 'The package server on which the package is hosted.\n',
       hide: true,
     );

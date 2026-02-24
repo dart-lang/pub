@@ -10,6 +10,7 @@ import 'package:pub_semver/pub_semver.dart';
 import '../io.dart';
 import '../log.dart';
 import '../path.dart';
+import '../platform_info.dart';
 import '../sdk.dart';
 
 class FlutterSdk extends Sdk {
@@ -28,8 +29,8 @@ class FlutterSdk extends Sdk {
   late final bool isAvailable = rootDirectory != null && version != null;
   late final String? rootDirectory = () {
     // If FLUTTER_ROOT is specified, then this always points to the Flutter SDK
-    if (Platform.environment.containsKey('FLUTTER_ROOT')) {
-      return Platform.environment['FLUTTER_ROOT'];
+    if (platform.environment.containsKey('FLUTTER_ROOT')) {
+      return platform.environment['FLUTTER_ROOT'];
     }
 
     // We can try to find the Flutter SDK relative to the Dart SDK.

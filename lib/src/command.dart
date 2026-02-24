@@ -20,6 +20,7 @@ import 'global_packages.dart';
 import 'http.dart';
 import 'log.dart' as log;
 import 'path.dart';
+import 'platform_info.dart';
 import 'pub_embeddable_command.dart';
 import 'sdk.dart';
 import 'solver.dart';
@@ -40,7 +41,7 @@ const pubCommandAliases = {
 final lineLength = _lineLength();
 
 int _lineLength() {
-  final fromEnv = Platform.environment['_PUB_TEST_TERMINAL_COLUMNS'];
+  final fromEnv = platform.environment['_PUB_TEST_TERMINAL_COLUMNS'];
   if (fromEnv != null) {
     final parsed = int.tryParse(fromEnv);
     if (parsed != null && parsed > 0) return parsed;

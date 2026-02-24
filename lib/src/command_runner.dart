@@ -3,7 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
@@ -35,6 +34,7 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'log.dart';
 import 'path.dart';
+import 'platform_info.dart';
 import 'sdk.dart';
 import 'utils.dart';
 
@@ -42,7 +42,7 @@ import 'utils.dart';
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
 String topLevelProgram = _isRunningInsideFlutter ? 'flutter' : 'dart';
 
-bool _isRunningInsideFlutter = (Platform.environment['PUB_ENVIRONMENT'] ?? '')
+bool _isRunningInsideFlutter = (platform.environment['PUB_ENVIRONMENT'] ?? '')
     .contains('flutter_cli');
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
@@ -206,7 +206,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     final depsRev = match[1];
 
     String actualRev;
-    final pubRoot = p.dirname(p.dirname(p.fromUri(Platform.script)));
+    final pubRoot = p.dirname(p.dirname(p.fromUri(platform.script)));
     try {
       actualRev =
           git.runSync(['rev-parse', 'HEAD'], workingDir: pubRoot).trim();

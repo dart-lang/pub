@@ -3,11 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:io';
 
 import '../io.dart';
 import '../log.dart';
 import '../path.dart';
+import '../platform_info.dart';
 import '../validator.dart';
 
 /// Runs `dart analyze` and gives a warning if it returns non-zero.
@@ -25,7 +25,7 @@ class AnalyzeValidator extends Validator {
     final entries = _entriesToAnalyze
         .map((dir) => p.join(package.dir, dir))
         .where(entryExists);
-    final result = await runProcess(Platform.resolvedExecutable, [
+    final result = await runProcess(platform.resolvedExecutable, [
       'analyze',
       ...entries,
       p.join(package.dir, 'pubspec.yaml'),
