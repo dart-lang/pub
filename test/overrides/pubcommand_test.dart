@@ -18,7 +18,7 @@ import 'package:test/test.dart';
 import 'bytesink.dart';
 
 void main() {
-  test('ensurePubspecResolved in memory', () async {
+  test('pubCommand() in memory', () async {
     final fs = MemoryFileSystem();
 
     fs.directory('/workspace').createSync();
@@ -27,15 +27,18 @@ void main() {
 
     final bs = ByteSink();
 
-    final dart = Runner(
-      fileSystem: fs,
-      stdout: bs,
-      stderr: bs,
-      stdin: const Stream.empty(),
-      platformVersion: '3.11.0',
-      environment: {'PUB_CACHE': '/tmp/pub_cache', 'DART_ROOT': '/sdk'},
-      httpClient: http.Client(),
-    );
+    Future<int?> pub(List<String> args) async {
+      bs.add(utf8.encode('\$ dart pub ${args.join(' ')}\n'));
+      return await Runner(
+        fileSystem: fs,
+        stdout: bs,
+        stderr: bs,
+        stdin: const Stream.empty(),
+        platformVersion: '3.11.0',
+        environment: {'PUB_CACHE': '/tmp/pub_cache', 'DART_ROOT': '/sdk'},
+        httpClient: http.Client(),
+      ).run(['pub', ...args]);
+    }
 
     final pubspec = fs.file('/workspace/pubspec.yaml');
     await pubspec.writeAsString('''
@@ -43,17 +46,27 @@ name: my_app
 version: 1.0.0
 environment:
   sdk: ^3.0.0
-dependencies:
-  retry:
 ''');
 
-    final exitCode = await dart.run(['pub', 'get']);
-    expect(exitCode, 0);
+    try {
+      final exitCode = await pub(['get']);
+      expect(exitCode, 0);
 
-    expect(
-      fs.file('/workspace/.dart_tool/package_config.json').existsSync(),
-      isTrue,
-    );
+      expect(
+        fs.file('/workspace/.dart_tool/package_config.json').existsSync(),
+        isTrue,
+      );
+
+      expect(await pub(['add', 'retry']), 0);
+      expect(await pub(['downgrade']), 0);
+      expect(await pub(['outdated']), 0);
+      expect(await pub(['upgrade']), 0);
+      expect(await pub(['remove', 'retry']), 0);
+      expect(await pub(['unpack', 'retry']), 0);
+    } catch (_) {
+      printOnFailure(utf8.decode(bs.bytes));
+      rethrow;
+    }
 
     expect(utf8.decode(bs.bytes), contains('Changed 1 dependency'));
   });

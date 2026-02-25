@@ -33,39 +33,60 @@ class BrowserGZipDecoder extends Converter<List<int>, List<int>> {
     return controller.stream;
   }
 
+  bool _isHarmlessPaddingError(Object e) {
+    // Some .tar.gz may contain harmless padding, which DecrompressionStream in
+    // the browsers are sensitive to. Example:
+    // https://pub.dev/api/archives/lints-1.0.1.tar.gz
+    final errorMessage = e.toString().toLowerCase();
+    // Match the specific EOF padding errors from V8, SpiderMonkey, and WebKit
+    return errorMessage.contains('junk found') ||
+        errorMessage.contains('unexpected input') ||
+        errorMessage.contains('extra bytes');
+  }
+
   Future<void> _pipe(
     Stream<List<int>> stream,
     StreamController<List<int>> controller,
   ) async {
-    try {
-      final decompressionStream = web.DecompressionStream('gzip');
-      final writer = decompressionStream.writable.getWriter();
-      final reader =
-          decompressionStream.readable.getReader()
-              as web.ReadableStreamDefaultReader;
+    final decompressionStream = web.DecompressionStream('gzip');
+    final writer = decompressionStream.writable.getWriter();
+    final reader =
+        decompressionStream.readable.getReader()
+            as web.ReadableStreamDefaultReader;
 
-      final readFuture = () async {
-        try {
-          while (true) {
-            final result = await reader.read().toDart;
-            if (result.done) break;
-            final value = result.value as JSUint8Array;
-            controller.add(value.toDart);
-          }
-        } finally {
-          reader.releaseLock();
+    final readFuture = () async {
+      try {
+        while (true) {
+          final result = await reader.read().toDart;
+          if (result.done) break;
+          final value = result.value as JSUint8Array;
+          controller.add(value.toDart);
         }
-      }();
+      } catch (e, st) {
+        if (_isHarmlessPaddingError(e)) {
+          // Ignore trailing junk
+          return;
+        }
+        controller.addError(e, st);
+      } finally {
+        reader.releaseLock();
+      }
+    }();
 
+    try {
       await for (final chunk in stream) {
         final bytes = chunk is Uint8List ? chunk : Uint8List.fromList(chunk);
         await writer.write(bytes.toJS).toDart;
       }
       await writer.close().toDart;
-      await readFuture;
-      await controller.close();
     } catch (e, st) {
-      controller.addError(e, st);
+      if (_isHarmlessPaddingError(e)) {
+        // Ignore trailing junk
+      } else {
+        controller.addError(e, st);
+      }
+    } finally {
+      await readFuture;
       await controller.close();
     }
   }
