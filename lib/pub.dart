@@ -39,7 +39,17 @@ Command<int> pubCommand({
   StreamSink<List<int>>? stderr,
   http.Client? httpClient,
 }) => withOverrides(
-  () => PubEmbeddableCommand(isVerbose, category),
+  () => PubEmbeddableCommand(
+    isVerbose,
+    category,
+    fileSystem: fileSystem,
+    environment: environment,
+    platformVersion: platformVersion,
+    stdin: stdin,
+    stdout: stdout,
+    stderr: stderr,
+    httpClient: httpClient,
+  ),
   fileSystem: fileSystem,
   environment: environment,
   platformVersion: platformVersion,

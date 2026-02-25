@@ -18,6 +18,7 @@ import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
 import 'global_packages.dart';
 import 'http.dart';
+import 'io.dart';
 import 'log.dart' as log;
 import 'path.dart';
 import 'platform_info.dart';
@@ -186,7 +187,20 @@ abstract class PubCommand extends Command<int> {
 
   @override
   @nonVirtual
-  FutureOr<int> run() async {
+  Future<int> run() async {
+    return await withOverrides(
+      _run,
+      fileSystem: _pubEmbeddableCommand?.fileSystem,
+      environment: _pubEmbeddableCommand?.environment,
+      platformVersion: _pubEmbeddableCommand?.platformVersion,
+      stdin: _pubEmbeddableCommand?.stdin,
+      stdout: _pubEmbeddableCommand?.stdout,
+      stderr: _pubEmbeddableCommand?.stderr,
+      httpClient: _pubEmbeddableCommand?.httpClient,
+    );
+  }
+
+  Future<int> _run() async {
     _computeCommand(_pubTopLevel.argResults);
     _decideOnColors(_pubTopLevel.argResults);
 
