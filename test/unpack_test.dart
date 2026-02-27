@@ -176,4 +176,18 @@ Resolving dependencies in `../foo-1.2.3-pre`...
       output: contains('Downloading foo 1.2.3 to `.${s}foo-1.2.3`...'),
     );
   });
+  
+  test('unpack to different device', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+    await runPub(
+      args: ['unpack', 'foo:1.2.3', '--no-resolve'],
+      output: contains('Downloading foo 1.2.3 to `.${s}foo-1.2.3`...'),
+      environment: {'PUB_CACHE': '/tmp'},
+    );
+    expect(
+      File(p.join(d.sandbox, 'foo-1.2.3', 'pubspec.yaml')).existsSync(),
+      isTrue,
+    );
+  }, skip: Platform.isWindows);
 }
