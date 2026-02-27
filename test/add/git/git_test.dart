@@ -292,13 +292,13 @@ void main() {
       d.libPubspec('foo', '1.0.0'),
     ]).create();
 
-    await d.git('foo.git').tag('v1.0.0');
+    await d.git('foo.git').tag('v1.0.0', tagType: d.TagType.annotated);
 
     await d.git('foo.git', [
       d.libDir('foo'),
       d.libPubspec('foo', '2.0.0'),
     ]).commit();
-    await d.git('foo.git').tag('v2.0.0');
+    await d.git('foo.git').tag('v2.0.0', tagType: d.TagType.annotated);
     await d.git('foo.git', [
       d.libDir('foo'),
       d.libPubspec('foo', '3.0.0'),
