@@ -39,10 +39,14 @@ class GitRepoDescriptor extends DirectoryDescriptor {
   /// Adds a tag named [tag] to the repo described by `this`.
   ///
   /// [parent] defaults to [sandbox].
-  Future tag(String tag, [String? parent]) async {
-    await _runGitCommands(parent, [
-      ['tag', '-a', tag, '-m', 'Some message'],
-    ]);
+  Future tag(String tag, {String? parent, required TagType tagType}) async {
+    final args = ['tag', tag];
+    if (tagType == TagType.annotated) {
+      args.add('-a');
+      args.add('-m');
+      args.add('Some message');
+    }
+    await _runGitCommands(parent, [args]);
   }
 
   /// Return a Future that completes to the commit in the git repository
@@ -86,3 +90,5 @@ class GitRepoDescriptor extends DirectoryDescriptor {
     }
   }
 }
+
+enum TagType { lightweight, annotated }
