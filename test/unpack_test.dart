@@ -176,7 +176,7 @@ Resolving dependencies in `../foo-1.2.3-pre`...
       output: contains('Downloading foo 1.2.3 to `.${s}foo-1.2.3`...'),
     );
   });
-  
+
   test('unpack to different device', () async {
     final server = await servePackages();
     server.serve('foo', '1.2.3');
