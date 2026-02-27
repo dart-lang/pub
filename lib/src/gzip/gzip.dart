@@ -6,7 +6,7 @@ import 'dart:convert';
 
 import 'gzip_stub.dart'
     if (dart.library.io) 'gzip_io.dart'
-    if (dart.library.js_util) 'gzip_js.dart'
+    if (dart.library.js_interop) 'gzip_js.dart'
     as impl;
 
 /// A [Converter] that decompresses gzip-compressed data.

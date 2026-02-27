@@ -327,11 +327,13 @@ FINE: Contents:
 $ tool/test-bin/pub_command_runner.dart pub fail
 [E] Bad state: Pub has crashed
 [E]  tool/test-bin/pub_command_runner.dart $LINE:$COL ThrowingCommand.runProtected
-[E] package:pub/src/command.dart $LINE:$COL PubCommand.run.<fn>
+[E] package:pub/src/command.dart $LINE:$COL PubCommand._run.<fn>
 [E] dart:async   new Future.sync
 [E] package:pub/src/utils.dart $LINE:$COL captureErrors.wrappedCallback
 [E] dart:async   runZonedGuarded
 [E] package:pub/src/utils.dart $LINE:$COL captureErrors
+[E] package:pub/src/command.dart $LINE:$COL PubCommand._run
+[E] package:pub/src/io.dart $LINE:$COL withOverrides
 [E] package:pub/src/command.dart $LINE:$COL PubCommand.run
 [E] package:args/command_runner.dart $LINE:$COL CommandRunner.runCommand
 [E]  tool/test-bin/pub_command_runner.dart $LINE:$COL Runner.runCommand
@@ -368,11 +370,13 @@ FINE: Pub 3.1.2+3
 ERR : Bad state: Pub has crashed
 FINE: Exception type: StateError
 ERR : tool/test-bin/pub_command_runner.dart $LINE:$COL ThrowingCommand.runProtected
-   | package:pub/src/command.dart $LINE:$COL PubCommand.run.<fn>
+   | package:pub/src/command.dart $LINE:$COL PubCommand._run.<fn>
    | dart:async   new Future.sync
    | package:pub/src/utils.dart $LINE:$COL captureErrors.wrappedCallback
    | dart:async   runZonedGuarded
    | package:pub/src/utils.dart $LINE:$COL captureErrors
+   | package:pub/src/command.dart $LINE:$COL PubCommand._run
+   | package:pub/src/io.dart $LINE:$COL withOverrides
    | package:pub/src/command.dart $LINE:$COL PubCommand.run
    | package:args/command_runner.dart $LINE:$COL CommandRunner.runCommand
    | tool/test-bin/pub_command_runner.dart $LINE:$COL Runner.runCommand

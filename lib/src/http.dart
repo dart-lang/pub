@@ -34,14 +34,14 @@ const pubApiHeaders = {'Accept': 'application/vnd.pub.v2+json'};
 class _PubHttpClient extends http.BaseClient {
   final _requestStopwatches = <http.BaseRequest, Stopwatch>{};
 
-  http.Client _inner;
+  final http.Client _inner;
 
   /// We manually keep track of whether the client was closed,
   /// indicating that no more networking should be done. (And thus we don't need
   /// to retry failed requests).
   bool _wasClosed = false;
 
-  _PubHttpClient([http.Client? inner]) : _inner = inner ?? http.Client();
+  _PubHttpClient(this._inner);
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -156,16 +156,22 @@ class _PubHttpClient extends http.BaseClient {
   }
 }
 
-/// The [_PubHttpClient] wrapped by [globalHttpClient].
-final _pubClient = _PubHttpClient();
+final _defaultGlobalHttpClient = _PubHttpClient(http.Client());
 
 /// The HTTP client to use for all HTTP requests.
-final globalHttpClient = _pubClient;
+http.Client get globalHttpClient =>
+    Zone.current[_globalHttpClientKey] as http.Client? ??
+    _defaultGlobalHttpClient;
 
-/// The underlying HTTP client wrapped by [globalHttpClient].
-/// This enables the ability to use a mock client in tests.
-http.Client get innerHttpClient => _pubClient._inner;
-set innerHttpClient(http.Client client) => _pubClient._inner = client;
+/// The key for the [globalHttpClient] in the current [Zone].
+final _globalHttpClientKey = Object();
+
+/// Runs [callback] in a [Zone] where [globalHttpClient] wraps [client].
+R withHttpClient<R>(R Function() callback, {required http.Client client}) =>
+    runZoned(
+      callback,
+      zoneValues: {_globalHttpClientKey: _PubHttpClient(client)},
+    );
 
 extension AttachHeaders on http.Request {
   /// Adds headers required for pub.dev API requests.

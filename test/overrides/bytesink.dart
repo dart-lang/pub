@@ -1,0 +1,41 @@
+// Copyright (c) 2026, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
+import 'dart:async';
+import 'dart:typed_data';
+
+final class ByteSink implements StreamSink<List<int>> {
+  final builder = BytesBuilder();
+  final _completer = Completer<void>();
+
+  /// Access the buffered bytes as a Uint8List
+  Uint8List get bytes => builder.toBytes();
+
+  @override
+  void add(List<int> data) {
+    builder.add(data);
+  }
+
+  @override
+  void addError(Object error, [StackTrace? stackTrace]) {
+    if (!_completer.isCompleted) {
+      _completer.completeError(error, stackTrace);
+    }
+  }
+
+  @override
+  Future<void> addStream(Stream<List<int>> stream) async {
+    await stream.forEach(add);
+  }
+
+  @override
+  Future<void> close() async {
+    if (!_completer.isCompleted) {
+      _completer.complete();
+    }
+  }
+
+  @override
+  Future<void> get done => _completer.future;
+}

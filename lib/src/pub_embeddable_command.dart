@@ -2,6 +2,11 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+
+import 'package:file/file.dart' as f;
+import 'package:http/http.dart' as http;
+
 import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
 import 'command/add.dart';
@@ -49,7 +54,25 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   final String category;
 
-  PubEmbeddableCommand(this.isVerbose, this.category) : super() {
+  final f.FileSystem? fileSystem;
+  final Map<String, String>? environment;
+  final String? platformVersion;
+  final Stream<List<int>>? stdin;
+  final StreamSink<List<int>>? stdout;
+  final StreamSink<List<int>>? stderr;
+  final http.Client? httpClient;
+
+  PubEmbeddableCommand(
+    this.isVerbose,
+    this.category, {
+    this.fileSystem,
+    this.environment,
+    this.platformVersion,
+    this.stdin,
+    this.stdout,
+    this.stderr,
+    this.httpClient,
+  }) : super() {
     // This flag was never honored in the embedding but since it was accepted we
     // leave it as a hidden flag to avoid breaking clients that pass it.
     argParser.addFlag('trace', hide: true);
