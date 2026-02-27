@@ -799,7 +799,7 @@ class GitSource extends CachedSource {
       '--list',
       '--format',
       // We can use space here, as it is not allowed in a git tag
-      // https://git-scm.com/docs/git-check-ref-format 
+      // https://git-scm.com/docs/git-check-ref-format
       '%(refname:lstrip=2) $objectFormat',
     ], workingDir: path);
     final lines = output.trim().split('\n');
