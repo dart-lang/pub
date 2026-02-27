@@ -1398,7 +1398,7 @@ Iterable<String> parentDirs(String path, {String? from}) sync* {
   }
 }
 
-/// Run [fn] with overrides.
+/// Run [fn] in a zone with overrides.
 R withOverrides<R>(
   R Function() fn, {
   f.FileSystem? fileSystem,
@@ -1591,7 +1591,7 @@ final class StdoutSink implements Stdout {
   Future get done => _sink.done;
 
   @override
-  Future flush() => Future.value();
+  Future flush() async {}
 
   @override
   bool get hasTerminal => false;
