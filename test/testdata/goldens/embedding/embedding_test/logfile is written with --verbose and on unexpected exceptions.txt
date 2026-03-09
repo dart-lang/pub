@@ -32,6 +32,7 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] SLVR: Version solving took: $TIME
 [E]    | Tried 1 solutions.
 [E] FINE: Resolving dependencies finished ($TIME)
+[E] IO  : Created temp directory $DIR
 [E] IO  : Get package from http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz.
 [E] FINE: Downloading foo 1.0.0...
 [E] IO  : Created temp directory $DIR
@@ -53,7 +54,6 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] FINE: Contents:
 [E]    | c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df
 [E] FINE: Created $FILE from stream
-[E] IO  : Created temp directory $DIR
 [E] IO  : Reading binary file $FILE.
 [E] FINE: Extracting .tar.gz stream to $DIR
 [E] IO  : Creating $FILE from stream
@@ -61,8 +61,8 @@ MSG : Logs written to $SANDBOX/cache/log/pub_log.txt.
 [E] IO  : Creating $FILE from stream
 [E] FINE: Created $FILE from stream
 [E] FINE: Extracted .tar.gz to $DIR
-[E] IO  : Renaming directory $A to $B
 [E] IO  : Deleting directory $DIR
+[E] IO  : Renaming directory $A to $B
 [E] IO  : Writing $N characters to text file $SANDBOX/cache/README.md.
 [E] FINE: Contents:
 [E]    | Pub Package Cache
@@ -209,6 +209,7 @@ SLVR: Version solving took: $TIME
    | Tried 1 solutions.
 FINE: Resolving dependencies finished ($TIME)
 MSG : Downloading packages...
+IO  : Created temp directory $DIR
 IO  : Get package from http://localhost:$PORT/packages/foo/versions/1.0.0.tar.gz.
 FINE: Downloading foo 1.0.0...
 IO  : Created temp directory $DIR
@@ -230,7 +231,6 @@ IO  : Writing $N characters to text file $SANDBOX/cache/hosted-hashes/localhost%
 FINE: Contents:
    | c35f6caa60870d3b6c5c6aebe5a5d4b56ca4733a52a80ded3445c0c5fa4b62df
 FINE: Created $FILE from stream
-IO  : Created temp directory $DIR
 IO  : Reading binary file $FILE.
 FINE: Extracting .tar.gz stream to $DIR
 IO  : Creating $FILE from stream
@@ -238,8 +238,8 @@ FINE: Created $FILE from stream
 IO  : Creating $FILE from stream
 FINE: Created $FILE from stream
 FINE: Extracted .tar.gz to $DIR
-IO  : Renaming directory $A to $B
 IO  : Deleting directory $DIR
+IO  : Renaming directory $A to $B
 IO  : Writing $N characters to text file $SANDBOX/cache/README.md.
 FINE: Contents:
    | Pub Package Cache
