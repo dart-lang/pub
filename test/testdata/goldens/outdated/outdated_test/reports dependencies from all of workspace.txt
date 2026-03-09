@@ -8,6 +8,7 @@ $ pub outdated --json
       "package": "dep",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -29,6 +30,7 @@ $ pub outdated --json
       "package": "dep_a",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -48,6 +50,7 @@ $ pub outdated --json
       "package": "dev_dep_a",
       "kind": "dev",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -205,6 +208,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "dep",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -226,6 +230,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "dep_a",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {

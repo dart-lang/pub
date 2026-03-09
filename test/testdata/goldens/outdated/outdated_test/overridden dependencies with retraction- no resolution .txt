@@ -8,6 +8,7 @@ $ pub outdated --json
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": true,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -30,6 +31,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -168,6 +170,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "bar",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": true,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -190,6 +193,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
+      "discontinuedReplacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {

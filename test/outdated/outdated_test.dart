@@ -18,8 +18,9 @@ extension on GoldenTestContext {
   Future<void> runOutdatedTests({
     Map<String, String>? environment,
     String? workingDirectory,
+    List<List<String>>? extraCommands,
   }) async {
-    const commands = [
+    final commands = [
       ['outdated', '--json'],
       ['outdated', '--no-color'],
       ['outdated', '--no-color', '--no-transitive'],
@@ -28,6 +29,7 @@ extension on GoldenTestContext {
       ['outdated', '--no-color', '--no-dev-dependencies'],
       ['outdated', '--no-color', '--no-dependency-overrides'],
       ['outdated', '--json', '--no-dev-dependencies'],
+      ...?extraCommands,
     ];
     for (final args in commands) {
       await run(
@@ -163,7 +165,11 @@ Future<void> main() async {
     builder.retractPackageVersion('foo', '1.2.3');
     builder.discontinue('foo');
     builder.discontinue('baz', replacementText: 'newbaz');
-    await ctx.runOutdatedTests();
+    await ctx.runOutdatedTests(
+      extraCommands: [
+        ['outdated', '--json', '--up-to-date'],
+      ],
+    );
   });
 
   testWithGolden('show retracted', (ctx) async {
