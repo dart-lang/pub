@@ -1,11 +1,11 @@
 platforms:
-  - chrome
   - vm
+  - chrome
 # TODO: Consider testing on Firefox
 
 compilers:
+ - kernel
  - dart2wasm
- - source
  - dart2js
 
 presets:
