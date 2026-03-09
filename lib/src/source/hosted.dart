@@ -1221,7 +1221,7 @@ class HostedSource extends CachedSource {
           'Try again without --offline.',
         );
       }
-      contentHash = await _download(id, packageDir, cache);
+      contentHash = await _downloadAtomically(id, packageDir, cache);
     }
     return DownloadPackageResult(
       PackageId(
@@ -1355,7 +1355,7 @@ class HostedSource extends CachedSource {
                 );
                 try {
                   deleteEntry(package.dir);
-                  await _download(id, package.dir, cache);
+                  await _downloadAtomically(id, package.dir, cache);
                   return RepairResult(id.name, id.version, this, success: true);
                 } catch (error, stackTrace) {
                   var message =
@@ -1444,18 +1444,53 @@ class HostedSource extends CachedSource {
         .toList();
   }
 
-  Future<void> downloadInto(PackageId id, String destPath, SystemCache cache) =>
-      _download(id, destPath, cache);
+  Future<void> downloadInto(
+    PackageId id,
+    String destPath,
+    SystemCache cache,
+  ) async {
+    try {
+      // For the functionality of `unpack` it is important that the unpack
+      // doesn't go via the cache, as that would not allow unpacking into a
+      // directory on a different device than the cache. So we don't use
+      // `_downloadAtomically` here.
+      await _downloadAndExtract(id, destPath, cache);
+    } catch (e) {
+      tryDeleteEntry(destPath);
+      rethrow;
+    }
+  }
 
   /// Downloads package [id] from the archive_url and unpacks it into
-  /// [destPath].
+  /// [destPath]. The unpack is done to a temporary directory and then moved
+  /// into [destPath] atomically.
   ///
   /// If there is no archive_url, try to fetch it from
   /// `$server/packages/$package/versions/$version.tar.gz` where server comes
   /// from `id.description`.
   ///
   /// Returns the content-hash of the downloaded archive.
-  Future<Uint8List> _download(
+  Future<Uint8List> _downloadAtomically(
+    PackageId id,
+    String destPath,
+    SystemCache cache,
+  ) async {
+    final tempDir = cache.createTempDir();
+    try {
+      final contentHash = await _downloadAndExtract(id, tempDir, cache);
+      ensureDir(p.dirname(destPath));
+      tryRenameDir(tempDir, destPath);
+      return contentHash;
+    } catch (e) {
+      deleteEntry(tempDir);
+      rethrow;
+    }
+  }
+
+  /// Downloads the archive for [id] and extracts it to [destPath].
+  ///
+  /// Returns the content-hash of the downloaded archive.
+  Future<Uint8List> _downloadAndExtract(
     PackageId id,
     String destPath,
     SystemCache cache,
@@ -1568,25 +1603,11 @@ See $contentHashesDocumentationUrl.
         _throwFriendlyError(error, stackTrace, id.name, description.url);
       }
 
-      final tempDir = cache.createTempDir();
       try {
-        try {
-          await extractTarGz(readBinaryFileAsStream(archivePath), tempDir);
-        } on FormatException catch (e) {
-          dataError('Failed to extract `$archivePath`: ${e.message}.');
-        }
-        ensureDir(p.dirname(destPath));
-      } catch (e) {
-        deleteEntry(tempDir);
-        rethrow;
+        await extractTarGz(readBinaryFileAsStream(archivePath), destPath);
+      } on FormatException catch (e) {
+        dataError('Failed to extract `$archivePath`: ${e.message}.');
       }
-      // Now that the get has succeeded, move it to the real location in the
-      // cache.
-      //
-      // If this fails with a "directory not empty" exception we assume that
-      // another pub process has installed the same package version while we
-      // downloaded.
-      tryRenameDir(tempDir, destPath);
       return contentHash;
     });
   }
