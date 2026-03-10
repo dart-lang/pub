@@ -937,7 +937,8 @@ String filterUnstableText(String input) {
       );
   final port = _globalServer?.port;
   if (port != null) {
-    input = input.replaceAll(port.toString(), '\$PORT');
+    input = input.replaceAll(':$port', ':\$PORT');
+    input = input.replaceAll('%58$port', '%58\$PORT');
   }
   return input;
 }
