@@ -8,6 +8,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": true,
+      "replacedBy": null,
       "isCurrentRetracted": true,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -149,6 +150,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": true,
+      "replacedBy": null,
       "isCurrentRetracted": true,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -161,6 +163,93 @@ $ pub outdated --json --no-dev-dependencies
         "version": "1.2.3"
       },
       "latest": null
+    }
+  ]
+}
+
+-------------------------------- END OF OUTPUT ---------------------------------
+
+## Section 8
+$ pub outdated --json --up-to-date
+{
+  "packages": [
+    {
+      "package": "bar",
+      "kind": "direct",
+      "isDiscontinued": false,
+      "replacedBy": null,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "1.0.0"
+      },
+      "latest": {
+        "version": "1.0.0"
+      }
+    },
+    {
+      "package": "baz",
+      "kind": "direct",
+      "isDiscontinued": true,
+      "replacedBy": "newbaz",
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
+      "current": {
+        "version": "1.0.0"
+      },
+      "upgradable": {
+        "version": "1.0.0"
+      },
+      "resolvable": {
+        "version": "1.0.0"
+      },
+      "latest": {
+        "version": "1.0.0"
+      }
+    },
+    {
+      "package": "foo",
+      "kind": "direct",
+      "isDiscontinued": true,
+      "replacedBy": null,
+      "isCurrentRetracted": true,
+      "isCurrentAffectedByAdvisory": false,
+      "current": {
+        "version": "1.2.3"
+      },
+      "upgradable": {
+        "version": "1.2.3"
+      },
+      "resolvable": {
+        "version": "1.2.3"
+      },
+      "latest": null
+    },
+    {
+      "package": "transitive",
+      "kind": "transitive",
+      "isDiscontinued": false,
+      "replacedBy": null,
+      "isCurrentRetracted": false,
+      "isCurrentAffectedByAdvisory": false,
+      "current": {
+        "version": "1.2.3"
+      },
+      "upgradable": {
+        "version": "1.2.3"
+      },
+      "resolvable": {
+        "version": "1.2.3"
+      },
+      "latest": {
+        "version": "1.2.3"
+      }
     }
   ]
 }

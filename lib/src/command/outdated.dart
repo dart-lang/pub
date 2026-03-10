@@ -523,6 +523,7 @@ Future<void> _outputJson(
             'package': packageDetails.name,
             'kind': kindString(packageDetails.kind),
             'isDiscontinued': packageDetails.isDiscontinued,
+            'replacedBy': packageDetails.discontinuedReplacedBy,
             'isCurrentRetracted': packageDetails.isCurrentRetracted,
             'isCurrentAffectedByAdvisory':
                 packageDetails.isCurrentAffectedBySecurityAdvisory,
