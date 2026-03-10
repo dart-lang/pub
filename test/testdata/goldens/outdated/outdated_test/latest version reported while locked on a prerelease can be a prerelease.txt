@@ -8,7 +8,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -28,7 +28,7 @@ $ pub outdated --json
       "package": "mop",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -155,7 +155,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -175,7 +175,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "mop",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {

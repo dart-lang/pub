@@ -8,7 +8,7 @@ $ pub outdated --json
       "package": "builder",
       "kind": "dev",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -28,7 +28,7 @@ $ pub outdated --json
       "package": "dev_trans",
       "kind": "transitive",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -46,7 +46,7 @@ $ pub outdated --json
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -66,7 +66,7 @@ $ pub outdated --json
       "package": "retracted",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": true,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -86,7 +86,7 @@ $ pub outdated --json
       "package": "transitive",
       "kind": "transitive",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -106,7 +106,7 @@ $ pub outdated --json
       "package": "transitive2",
       "kind": "transitive",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": null,
@@ -122,7 +122,7 @@ $ pub outdated --json
       "package": "transitive3",
       "kind": "transitive",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": null,
@@ -331,7 +331,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "foo",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -351,7 +351,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "retracted",
       "kind": "direct",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": true,
       "isCurrentAffectedByAdvisory": false,
       "current": {
@@ -371,7 +371,7 @@ $ pub outdated --json --no-dev-dependencies
       "package": "transitive",
       "kind": "transitive",
       "isDiscontinued": false,
-      "discontinuedReplacedBy": null,
+      "replacedBy": null,
       "isCurrentRetracted": false,
       "isCurrentAffectedByAdvisory": false,
       "current": {
