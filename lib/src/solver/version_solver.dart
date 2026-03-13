@@ -609,7 +609,8 @@ class VersionSolver {
         return range.constraint as Version?;
       }
     }
-    return _lockFile.packages[package]?.version;
+    final locked = _getLocked(package);
+    return locked?.version;
   }
 
   /// Logs [message] in the context of the current selected packages.
