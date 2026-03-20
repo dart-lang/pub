@@ -148,6 +148,10 @@ class DepsCommand extends PubCommand {
           'directDependencies': currentPackage.dependencies.keys.toList(),
           if (isRoot)
             'devDependencies': currentPackage.devDependencies.keys.toList(),
+          'dependencyConstraints': (isRoot
+                  ? currentPackage.immediateDependencies
+                  : currentPackage.dependencies)
+              .map((k, v) => MapEntry(k, v.constraint.toString())),
         });
         toVisit.addAll(next);
       }

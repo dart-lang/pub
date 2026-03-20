@@ -45,7 +45,10 @@ $ pub deps --json
       "directDependencies": [
         "foo"
       ],
-      "devDependencies": []
+      "devDependencies": [],
+      "dependencyConstraints": {
+        "foo": "any"
+      }
     },
     {
       "name": "foo",
@@ -53,7 +56,8 @@ $ pub deps --json
       "kind": "direct",
       "source": "path",
       "dependencies": [],
-      "directDependencies": []
+      "directDependencies": [],
+      "dependencyConstraints": {}
     }
   ],
   "sdks": [

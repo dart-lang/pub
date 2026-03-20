@@ -33,7 +33,8 @@ $ pub deps --json
       "source": "root",
       "dependencies": [],
       "directDependencies": [],
-      "devDependencies": []
+      "devDependencies": [],
+      "dependencyConstraints": {}
     }
   ],
   "sdks": [

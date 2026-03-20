@@ -44,7 +44,10 @@ $ pub deps --json
       "directDependencies": [
         "foo"
       ],
-      "devDependencies": []
+      "devDependencies": [],
+      "dependencyConstraints": {
+        "foo": "any"
+      }
     },
     {
       "name": "foo",
@@ -56,7 +59,10 @@ $ pub deps --json
       ],
       "directDependencies": [
         "baz"
-      ]
+      ],
+      "dependencyConstraints": {
+        "baz": "any"
+      }
     },
     {
       "name": "baz",
@@ -64,7 +70,8 @@ $ pub deps --json
       "kind": "transitive",
       "source": "path",
       "dependencies": [],
-      "directDependencies": []
+      "directDependencies": [],
+      "dependencyConstraints": {}
     }
   ],
   "sdks": [
