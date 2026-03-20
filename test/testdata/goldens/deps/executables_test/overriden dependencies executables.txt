@@ -45,7 +45,10 @@ $ pub deps --json
       "directDependencies": [
         "foo"
       ],
-      "devDependencies": []
+      "devDependencies": [],
+      "dependencyConstraints": {
+        "foo": "any"
+      }
     },
     {
       "name": "foo",
@@ -53,13 +56,18 @@ $ pub deps --json
       "kind": "direct",
       "source": "path",
       "dependencies": [],
-      "directDependencies": []
+      "directDependencies": [],
+      "dependencyConstraints": {}
     }
   ],
   "sdks": [
     {
       "name": "Dart",
       "version": "3.1.2+3"
+    },
+    {
+      "name": "Flutter",
+      "version": "3.43.0-1.0.pre-199"
     }
   ],
   "executables": [

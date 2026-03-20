@@ -33,13 +33,18 @@ $ pub deps --json
       "source": "root",
       "dependencies": [],
       "directDependencies": [],
-      "devDependencies": []
+      "devDependencies": [],
+      "dependencyConstraints": {}
     }
   ],
   "sdks": [
     {
       "name": "Dart",
       "version": "3.1.2+3"
+    },
+    {
+      "name": "Flutter",
+      "version": "3.43.0-1.0.pre-199"
     }
   ],
   "executables": []

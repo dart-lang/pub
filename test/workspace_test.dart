@@ -538,7 +538,11 @@ transitive dependencies:
         "myapp",
         "both"
       ],
-      "devDependencies": []
+      "devDependencies": [],
+      "dependencyConstraints": {
+        "myapp": "any",
+        "both": "^1.0.0"
+      }
     },
     {
       "name": "both",
@@ -546,7 +550,8 @@ transitive dependencies:
       "kind": "direct",
       "source": "hosted",
       "dependencies": [],
-      "directDependencies": []
+      "directDependencies": [],
+      "dependencyConstraints": {}
     },
     {
       "name": "myapp",
@@ -561,7 +566,11 @@ transitive dependencies:
         "both",
         "b"
       ],
-      "devDependencies": []
+      "devDependencies": [],
+      "dependencyConstraints": {
+        "both": "^1.0.0",
+        "b": "any"
+      }
     },
     {
       "name": "a",
@@ -579,7 +588,12 @@ transitive dependencies:
       ],
       "devDependencies": [
         "both"
-      ]
+      ],
+      "dependencyConstraints": {
+        "myapp": "any",
+        "foo": "^1.0.0",
+        "both": "^1.0.0"
+      }
     },
     {
       "name": "foo",
@@ -591,7 +605,10 @@ transitive dependencies:
       ],
       "directDependencies": [
         "transitive"
-      ]
+      ],
+      "dependencyConstraints": {
+        "transitive": "^1.0.0"
+      }
     },
     {
       "name": "transitive",
@@ -599,7 +616,8 @@ transitive dependencies:
       "kind": "transitive",
       "source": "hosted",
       "dependencies": [],
-      "directDependencies": []
+      "directDependencies": [],
+      "dependencyConstraints": {}
     }
   ],
   "sdks": [
