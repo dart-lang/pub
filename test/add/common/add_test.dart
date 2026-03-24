@@ -1215,4 +1215,126 @@ dependency_overrides:
     await pubAdd(args: ['foo:1.0.0']);
     await d.appDir(dependencies: {'foo': '1.0.0'}).validate();
   });
+
+  test(
+    'pub add foo stays path dependency even if hosted version exists',
+    () async {
+      final server = await servePackages();
+      server.serve('foo', '2.0.0');
+
+      await d.dir('foo', [
+        d.libPubspec('foo', '1.0.0'),
+        d.libDir('foo'),
+      ]).create();
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'path': '../foo'},
+            },
+          )
+          .create();
+
+      await pubGet();
+
+      await pubAdd(args: ['foo']);
+
+      // Should still be path dependency, not switched to hosted 2.0.0
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'path': '../foo'},
+            },
+          )
+          .validate();
+    },
+  );
+
+  test(
+    'pub add foo@^1.0.0 on existing path dependency adds constraint',
+    () async {
+      await d.dir('foo', [
+        d.libPubspec('foo', '1.0.0'),
+        d.libDir('foo'),
+      ]).create();
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'path': '../foo'},
+            },
+          )
+          .create();
+
+      await pubGet();
+
+      await pubAdd(args: ['foo@^1.0.0']);
+
+      await d
+          .appDir(
+            dependencies: {
+              'foo': {'path': '../foo', 'version': '^1.0.0'},
+            },
+          )
+          .validate();
+    },
+  );
+
+  test(
+    'pub add picks up existing description from workspace lockfile',
+    () async {
+      await d.dir('foo', [
+        d.libPubspec('foo', '1.0.0'),
+        d.libDir('foo'),
+      ]).create();
+
+      await d.dir(appPath, [
+        d.libPubspec(
+          'myapp',
+          '1.2.3',
+          extras: {
+            'workspace': ['pkgs/a', 'pkgs/b'],
+          },
+          sdk: '^3.5.0',
+        ),
+        d.dir('pkgs', [
+          d.dir('a', [
+            d.libPubspec(
+              'a',
+              '1.1.1',
+              deps: {
+                'foo': {'path': '../../../foo'},
+              },
+              resolutionWorkspace: true,
+            ),
+          ]),
+          d.dir('b', [d.libPubspec('b', '1.1.1', resolutionWorkspace: true)]),
+        ]),
+      ]).create();
+
+      await pubGet(environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'});
+
+      await pubAdd(
+        args: ['foo'],
+        output: contains('Got dependencies'),
+        workingDirectory: p.join(d.sandbox, appPath, 'pkgs', 'b'),
+        environment: {'_PUB_TEST_SDK_VERSION': '3.5.0'},
+      );
+
+      await d.dir(appPath, [
+        d.dir('pkgs', [
+          d.dir('b', [
+            d.libPubspec(
+              'b',
+              '1.1.1',
+              deps: {
+                'foo': {'path': '../../../foo'},
+              },
+              resolutionWorkspace: true,
+            ),
+          ]),
+        ]),
+      ]).validate();
+    },
+  );
 }

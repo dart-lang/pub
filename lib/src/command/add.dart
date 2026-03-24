@@ -689,6 +689,7 @@ Specify multiple sdk packages with descriptors.''');
     }
     return _PartialParseResult(
       ref ??
+          entrypoint.lockFile.packages[packageName]?.toRef() ??
           PackageRef(
             packageName,
             HostedDescription(
