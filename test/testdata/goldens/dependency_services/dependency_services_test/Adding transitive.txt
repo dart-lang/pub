@@ -13,7 +13,7 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.2.3"
+    version: 1.2.3
 sdks:
   dart: ">=3.0.2 <4.0.0"
 -------------------------------- END OF OUTPUT ---------------------------------
@@ -179,7 +179,7 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "2.2.3"
+    version: 2.2.3
   transitive:
     dependency: transitive
     description:
@@ -187,6 +187,6 @@ packages:
       sha256: $SHA256
       url: "http://localhost:$PORT"
     source: hosted
-    version: "1.0.0"
+    version: 1.0.0
 sdks:
   dart: ">=3.0.2 <4.0.0"
