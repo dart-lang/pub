@@ -261,10 +261,12 @@ class PackageStatus {
   /// package has been synchronized into pub, `null` if this package is not
   /// affected by a security advisory.
   final DateTime? advisoriesUpdated;
+  final DateTime? published;
   PackageStatus({
     this.isDiscontinued = false,
     this.discontinuedReplacedBy,
     this.isRetracted = false,
     this.advisoriesUpdated,
+    this.published,
   });
 }

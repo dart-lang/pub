@@ -132,6 +132,91 @@ environment:
     };
   }();
 
+  /// The policy configuration.
+  Policy? get policy => _policy ??= _parsePolicy();
+  Policy? _policy;
+
+  Policy? _parsePolicy() {
+    final policyNode = fields.nodes['policy'];
+    if (policyNode == null || policyNode.value == null) return null;
+
+    if (policyNode is! YamlMap) {
+      _error('"policy" must be a map', policyNode.span);
+    }
+
+    final cooldownNode = policyNode.nodes['cooldown'];
+    CooldownPolicy? cooldown;
+    if (cooldownNode != null && cooldownNode.value != null) {
+      if (cooldownNode is! YamlMap) {
+        _error('"cooldown" must be a map', cooldownNode.span);
+      }
+
+      final minAgeNode = cooldownNode.nodes['min-age'];
+      Duration? minAge;
+      if (minAgeNode != null) {
+        final value = minAgeNode.value;
+        if (value is! String) {
+          _error('"min-age" must be a string', minAgeNode.span);
+        }
+        try {
+          minAge = _parseDuration(value);
+        } on FormatException catch (e) {
+          _error('Invalid "min-age": ${e.message}', minAgeNode.span);
+        }
+      }
+
+      final excludeNode = cooldownNode.nodes['exclude'];
+      final exclude = <String>[];
+      if (excludeNode != null) {
+        if (excludeNode is! YamlList) {
+          _error('"exclude" must be a list', excludeNode.span);
+        }
+        for (final node in excludeNode.nodes) {
+          final val = node.value;
+          if (val is! String) {
+            _error('"exclude" members must be strings', node.span);
+          }
+          exclude.add(val);
+        }
+      }
+
+      final stabilityNode = cooldownNode.nodes['stability'];
+      var stability = false;
+      if (stabilityNode != null) {
+        final value = stabilityNode.value;
+        if (value is! bool) {
+          _error('"stability" must be a boolean', stabilityNode.span);
+        }
+        stability = value;
+      }
+
+      if (minAge == null) {
+        _error('"min-age" is required in cooldown policy', cooldownNode.span);
+      }
+
+      cooldown = CooldownPolicy(minAge: minAge, exclude: exclude, stability: stability);
+    }
+
+    return Policy(cooldown: cooldown, span: policyNode.span);
+  }
+
+  Duration _parseDuration(String s) {
+    final match = RegExp(r'^(\d+)([dw])$').firstMatch(s);
+    if (match == null) {
+      throw const FormatException(
+        'Invalid duration format. Expected e.g. "7d" or "2w"',
+      );
+    }
+    final value = int.parse(match.group(1)!);
+    final unit = match.group(2)!;
+    if (unit == 'd') {
+      return Duration(days: value);
+    } else if (unit == 'w') {
+      return Duration(days: value * 7);
+    }
+    throw const FormatException('Invalid duration unit');
+  }
+
   /// The additional packages this package depends on.
   Map<String, PackageRange> get dependencies =>
       _dependencies ??= _parseDependencies(
@@ -341,7 +426,9 @@ environment:
     this.workspace = const <String>[],
     this.dependencyOverridesFromOverridesFile = false,
     this.resolution = Resolution.none,
-  }) : _dependencies =
+    Policy? policy,
+  }) : _policy = policy,
+       _dependencies =
            dependencies == null
                ? null
                : {for (final d in dependencies) d.name: d},
@@ -469,6 +556,7 @@ environment:
     List<String>? workspace,
     //this.dependencyOverridesFromOverridesFile = false,
     Resolution? resolution,
+    Policy? policy,
   }) {
     return Pubspec(
       name ?? this.name,
@@ -480,6 +568,7 @@ environment:
       sdkConstraints: sdkConstraints ?? this.sdkConstraints,
       workspace: workspace ?? this.workspace,
       resolution: resolution ?? this.resolution,
+      policy: policy ?? this.policy,
     );
   }
 
@@ -868,4 +957,48 @@ enum Resolution {
   local,
   // This package is at the root of a workspace.
   none,
+}
+
+class Policy {
+  final CooldownPolicy? cooldown;
+  final SourceSpan span;
+  Policy({this.cooldown, required this.span});
+}
+
+class CooldownPolicy {
+  final Duration minAge;
+  final List<String> exclude;
+  final bool stability;
+  CooldownPolicy({required this.minAge, required this.exclude, this.stability = false});
+
+  /// Returns `true` if the package version is blocked by this policy.
+  bool isBlocked(
+    String packageName,
+    Version version,
+    DateTime? published,
+    List<(Version, DateTime?)> allVersions,
+  ) {
+    if (exclude.contains(packageName)) return false;
+    if (published == null) return true;
+    final age = DateTime.now().difference(published);
+    if (age < minAge) return true;
+
+    if (stability) {
+      for (final (v, pubDate) in allVersions) {
+        if (v > version) {
+          if (pubDate != null) {
+            final diff = pubDate.difference(published);
+            if (diff < minAge) {
+              return true; // Blocked by stability!
+            }
+          } else {
+            // If a newer version has no published date, it is considered "too new"
+            // and thus breaks stability of older versions.
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 }

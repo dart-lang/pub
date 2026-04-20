@@ -453,13 +453,25 @@ $contentHashesDocumentationUrl
           notes.add(advisoriesMessage);
         }
       }
+
+      final latestVersion = newerStable
+          ? maxAll(versions, Version.prioritize)
+          : maxAll(versions);
+      final policy = _rootPubspec.policy?.cooldown;
+      var isLatestBlocked = false;
+      final desc = newId.description;
+      if (policy != null && desc is ResolvedHostedDescription) {
+        final latestStatus = await newId.toRef().source.status(newId.toRef(), latestVersion, _cache);
+        isLatestBlocked = policy.isBlocked(newId.name, latestVersion, latestStatus.published, []);
+      }
+
       if (status.isRetracted) {
         if (newerStable) {
           notes.add(
-            'retracted, ${maxAll(versions, Version.prioritize)} available',
+            'retracted, $latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}',
           );
         } else if (newId.version.isPreRelease && newerUnstable) {
-          notes.add('retracted, ${maxAll(versions)} available');
+          notes.add('retracted, $latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}');
         } else {
           notes.add('retracted');
         }
@@ -477,12 +489,12 @@ $contentHashesDocumentationUrl
         }
       } else if (newerStable) {
         // If there are newer stable versions, only show those.
-        notes.add('${maxAll(versions, Version.prioritize)} available');
+        notes.add('$latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}');
       } else if (
       // Only show newer prereleases for versions where a prerelease is
       // already chosen.
       newId.version.isPreRelease && newerUnstable) {
-        notes.add('${maxAll(versions)} available');
+        notes.add('$latestVersion available${isLatestBlocked ? ' (blocked by cooldown)' : ''}');
       }
 
       message = notes.isEmpty ? null : '(${notes.join(', ')})';

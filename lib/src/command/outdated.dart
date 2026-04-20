@@ -269,6 +269,25 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         cache,
       );
 
+      final policy = entrypoint.workspaceRoot.pubspec.policy?.cooldown;
+      var isLatestBlockedByCooldown = false;
+      if (policy != null && latest != null) {
+        final desc = latest.description;
+        if (desc is ResolvedHostedDescription) {
+          final status = await latest.toRef().source.status(
+            latest.toRef(),
+            latest.version,
+            cache,
+          );
+          isLatestBlockedByCooldown = policy.isBlocked(
+            latest.name,
+            latest.version,
+            status.published,
+            [],
+          );
+        }
+      }
+
       final id = current ?? upgradable ?? resolvable ?? latest;
       var packageAdvisories =
           await id?.source.getAdvisoriesForPackage(
@@ -339,6 +358,7 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
         discontinuedReplacedBy: discontinuedReplacedBy,
         isCurrentRetracted: isCurrentRetracted,
         isLatest: isLatest,
+        isLatestBlockedByCooldown: isLatestBlockedByCooldown,
         advisories: packageAdvisories,
         isCurrentAffectedBySecurityAdvisory: isCurrentAffectedByAdvisory,
       );
@@ -744,6 +764,7 @@ Future<void> _outputHuman(
   bool displayExtraInfo(_PackageDetails package) =>
       package.isDiscontinued ||
       package.isCurrentRetracted ||
+      package.isLatestBlockedByCooldown ||
       (advisoriesToDisplay[package.name]!.isNotEmpty);
 
   if (rows.any(displayExtraInfo)) {
@@ -764,6 +785,11 @@ Future<void> _outputHuman(
         log.message(
           '    Version ${package.current!._id.version} is retracted. '
           'See https://dart.dev/go/package-retraction',
+        );
+      }
+      if (package.isLatestBlockedByCooldown) {
+        log.message(
+          '    Version ${package.latest!._id.version} is too new for cooldown policy.',
         );
       }
       final displayedAdvisories = advisoriesToDisplay[package.name]!;
@@ -982,6 +1008,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final String? discontinuedReplacedBy;
   final bool isCurrentRetracted;
   final bool isLatest;
+  final bool isLatestBlockedByCooldown;
 
   /// List of advisories affecting this package which are not present in the
   /// `ignored_advisories` list in the pubspec.
@@ -999,6 +1026,7 @@ class _PackageDetails implements Comparable<_PackageDetails> {
     required this.discontinuedReplacedBy,
     required this.isCurrentRetracted,
     required this.isLatest,
+    required this.isLatestBlockedByCooldown,
     required this.advisories,
     required this.isCurrentAffectedBySecurityAdvisory,
   });

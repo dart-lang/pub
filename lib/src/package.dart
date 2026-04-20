@@ -519,6 +519,22 @@ Workspace members must have unique names.
     namesSeen[package.name] = package;
   }
 
+  // Check that at most one policy is specified.
+  Policy? policySeen;
+  for (final package in root.transitiveWorkspace) {
+    final currentPolicy = package.pubspec.policy;
+    if (currentPolicy != null) {
+      if (policySeen != null) {
+        fail('''
+Only a single policy specification is allowed across all workspace pubspec.yaml files.
+Found policies in both:
+* ${policySeen.span.sourceUrl?.path ?? 'pubspec.yaml'}
+* ${currentPolicy.span.sourceUrl?.path ?? 'pubspec.yaml'}''');
+      }
+      policySeen = currentPolicy;
+    }
+  }
+
   // Check that the workspace doesn't contain two overrides of the same package.
   // Also check that workspace packages are not overridden.
   final overridesSeen = <String, Package>{};

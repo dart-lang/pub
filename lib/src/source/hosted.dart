@@ -429,6 +429,14 @@ class HostedSource extends CachedSource {
       if (retracted is! bool) {
         throw const FormatException('retracted must be a bool');
       }
+      final publishedData = map['published'];
+      DateTime? publishedDate;
+      if (publishedData != null) {
+        if (publishedData is! String) {
+          throw const FormatException('published must be a String');
+        }
+        publishedDate = DateTime.parse(publishedData);
+      }
       DateTime? advisoriesDate;
       final advisoriesUpdated = body['advisoriesUpdated'];
       if (advisoriesUpdated != null) {
@@ -442,6 +450,7 @@ class HostedSource extends CachedSource {
         discontinuedReplacedBy: replacedBy,
         isRetracted: retracted,
         advisoriesUpdated: advisoriesDate,
+        published: publishedDate,
       );
       return _VersionInfo(
         pubspec.version,
@@ -449,6 +458,7 @@ class HostedSource extends CachedSource {
         Uri.parse(archiveUrl),
         status,
         parsedContentHash,
+        publishedDate,
       );
     }).toList();
   }
@@ -1952,6 +1962,7 @@ class _VersionInfo {
   final Pubspec pubspec;
   final Uri archiveUrl;
   final Version version;
+  final DateTime? published;
 
   /// The sha256 digest of the archive according to the package-repository.
   final Uint8List? archiveSha256;
@@ -1963,6 +1974,7 @@ class _VersionInfo {
     this.archiveUrl,
     this.status,
     this.archiveSha256,
+    this.published,
   );
 }
 
