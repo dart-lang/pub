@@ -8,7 +8,7 @@ import 'dart:io' as io;
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:collection/collection.dart' show IterableExtension, maxBy;
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
@@ -372,10 +372,7 @@ class HostedSource extends CachedSource {
     r'^[a-zA-Z_]+[a-zA-Z0-9_]*$',
   );
 
-  late final RateLimitedScheduler<_RefAndCache, List<_VersionInfo>> _scheduler =
-      RateLimitedScheduler(_fetchVersions, maxConcurrentOperations: 10);
-
-  List<_VersionInfo> _versionInfoFromPackageListing(
+  List<HostedVersionInfo> _versionInfoFromPackageListing(
     Map body,
     PackageRef ref,
     Uri location,
@@ -443,7 +440,7 @@ class HostedSource extends CachedSource {
         isRetracted: retracted,
         advisoriesUpdated: advisoriesDate,
       );
-      return _VersionInfo(
+      return HostedVersionInfo(
         pubspec.version,
         pubspec,
         Uri.parse(archiveUrl),
@@ -453,7 +450,7 @@ class HostedSource extends CachedSource {
     }).toList();
   }
 
-  Future<List<_VersionInfo>> _fetchVersionsNoPrefetching(
+  Future<List<HostedVersionInfo>> _fetchVersionsNoPrefetching(
     PackageRef ref,
     SystemCache cache,
   ) async {
@@ -469,7 +466,7 @@ class HostedSource extends CachedSource {
 
     final String bodyText;
     final dynamic body;
-    final List<_VersionInfo> result;
+    final List<HostedVersionInfo> result;
     try {
       // TODO(sigurdm): Implement cancellation of requests. This probably
       // requires resolution of: https://github.com/dart-lang/http/issues/424.
@@ -509,29 +506,35 @@ class HostedSource extends CachedSource {
     return result;
   }
 
-  Future<List<_VersionInfo>> _fetchVersions(_RefAndCache refAndCache) async {
+  Future<List<HostedVersionInfo>> fetchVersions(
+    HostedRefAndCache refAndCache,
+  ) async {
     final ref = refAndCache.ref;
     final description = ref.description;
     if (description is! HostedDescription) {
       throw ArgumentError('Wrong source');
     }
     final preschedule =
-        Zone.current[_prefetchingKey] as void Function(_RefAndCache)?;
+        Zone.current[_prefetchingKey] as void Function(HostedRefAndCache)?;
 
     /// Prefetch the dependencies of the latest version, we are likely to need
     /// them later.
     void prescheduleDependenciesOfLatest(
-      List<_VersionInfo>? listing,
+      List<HostedVersionInfo>? listing,
       SystemCache cache,
     ) {
       if (listing == null || listing.isEmpty) return;
-      final latestVersion =
-          maxBy<_VersionInfo, Version>(listing, (e) => e.version)!;
+      var latestVersion = listing.first;
+      for (final e in listing.skip(1)) {
+        if (e.version > latestVersion.version) {
+          latestVersion = e;
+        }
+      }
       final dependencies = latestVersion.pubspec.dependencies.values;
       unawaited(() async {
         for (final packageRange in dependencies) {
           if (packageRange.source is HostedSource) {
-            preschedule!(_RefAndCache(packageRange.toRef(), cache));
+            preschedule!(HostedRefAndCache(packageRange.toRef(), cache));
           }
         }
       }());
@@ -823,7 +826,8 @@ class HostedSource extends CachedSource {
   /// Invariant: Entries in this cache are the parsed version of the exact same
   /// information cached on disk. I.e. if the entry is present in this cache,
   /// there will not be a newer version on disk.
-  final Map<PackageRef, (DateTime, List<_VersionInfo>)> _responseCache = {};
+  final Map<PackageRef, (DateTime, List<HostedVersionInfo>)> _responseCache =
+      {};
 
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
@@ -832,7 +836,7 @@ class HostedSource extends CachedSource {
   ///
   /// If [maxAge] is not given, we will try to get the cached version no matter
   /// how old it is.
-  Future<List<_VersionInfo>?> _cachedVersionListingResponse(
+  Future<List<HostedVersionInfo>?> _cachedVersionListingResponse(
     PackageRef ref,
     SystemCache cache, {
     Duration? maxAge,
@@ -954,7 +958,7 @@ class HostedSource extends CachedSource {
         PackageStatus();
   }
 
-  Future<_VersionInfo?> _versionInfo(
+  Future<HostedVersionInfo?> _versionInfo(
     PackageRef ref,
     Version version,
     SystemCache cache, {
@@ -967,10 +971,14 @@ class HostedSource extends CachedSource {
       if (versionListing == null) {
         return null;
       }
-      return versionListing.firstWhereOrNull((l) => l.version == version);
+      return versionListing.firstWhereOrNull(
+        (HostedVersionInfo l) => l.version == version,
+      );
     }
     // Did we already get info for this package?
-    var versionListing = _scheduler.peek(_RefAndCache(ref, cache));
+    var versionListing = cache.hostedCache.scheduler.peek(
+      HostedRefAndCache(ref, cache),
+    );
     if (maxAge != null) {
       // Do we have a cached version response on disk?
       versionListing ??= await _cachedVersionListingResponse(
@@ -980,11 +988,11 @@ class HostedSource extends CachedSource {
       );
     }
     // Otherwise retrieve the info from the host.
-    versionListing ??= await _scheduler
-        .schedule(_RefAndCache(ref, cache))
+    versionListing ??= await cache.hostedCache.scheduler
+        .schedule(HostedRefAndCache(ref, cache))
         // Failures retrieving the listing here should just be ignored.
         .catchError(
-          (_) async => <_VersionInfo>[],
+          (_) async => <HostedVersionInfo>[],
           test: (error) => error is Exception,
         );
 
@@ -1056,7 +1064,9 @@ class HostedSource extends CachedSource {
 
       return offlineVersions;
     }
-    var versionListing = _scheduler.peek(_RefAndCache(ref, cache));
+    var versionListing = cache.hostedCache.scheduler.peek(
+      HostedRefAndCache(ref, cache),
+    );
     if (maxAge != null) {
       // Do we have a cached version response on disk?
       versionListing ??= await _cachedVersionListingResponse(
@@ -1065,7 +1075,9 @@ class HostedSource extends CachedSource {
         maxAge: maxAge,
       );
     }
-    versionListing ??= await _scheduler.schedule(_RefAndCache(ref, cache));
+    versionListing ??= await cache.hostedCache.scheduler.schedule(
+      HostedRefAndCache(ref, cache),
+    );
     return versionListing
         .map(
           (i) => PackageId(
@@ -1143,7 +1155,9 @@ class HostedSource extends CachedSource {
         hint: 'Try again without --offline!',
       );
     }
-    final versions = await _scheduler.schedule(_RefAndCache(id.toRef(), cache));
+    final versions = await cache.hostedCache.scheduler.schedule(
+      HostedRefAndCache(id.toRef(), cache),
+    );
     final url = _listVersionsUrl(id.toRef());
     return versions.firstWhereOrNull((i) => i.version == id.version)?.pubspec ??
         (throw PackageNotFoundException('Could not find package $id at $url'));
@@ -1508,7 +1522,9 @@ class HostedSource extends CachedSource {
     // a custom package server may include a temporary signature in the
     // query-string as is the case with signed S3 URLs. And we wish to allow for
     // such URLs to be used.
-    final versions = await _scheduler.schedule(_RefAndCache(id.toRef(), cache));
+    final versions = await cache.hostedCache.scheduler.schedule(
+      HostedRefAndCache(id.toRef(), cache),
+    );
     final versionInfo = versions.firstWhereOrNull(
       (i) => i.version == id.version,
     );
@@ -1830,8 +1846,13 @@ See $contentHashesDocumentationUrl.
 
   /// Enables speculative prefetching of dependencies of packages queried with
   /// [doGetVersions].
-  Future<T> withPrefetching<T>(Future<T> Function() callback) async {
-    return await _scheduler.withPrescheduling((preschedule) async {
+  Future<T> withPrefetching<T>(
+    SystemCache cache,
+    Future<T> Function() callback,
+  ) async {
+    return await cache.hostedCache.scheduler.withPrescheduling((
+      preschedule,
+    ) async {
       return await runZoned(
         callback,
         zoneValues: {_prefetchingKey: preschedule},
@@ -1948,7 +1969,7 @@ class ResolvedHostedDescription extends ResolvedDescription {
 }
 
 /// Information about a package version retrieved from /api/packages/$package<
-class _VersionInfo {
+class HostedVersionInfo {
   final Pubspec pubspec;
   final Uri archiveUrl;
   final Version version;
@@ -1957,7 +1978,7 @@ class _VersionInfo {
   final Uint8List? archiveSha256;
   final PackageStatus status;
 
-  _VersionInfo(
+  HostedVersionInfo(
     this.version,
     this.pubspec,
     this.archiveUrl,
@@ -2046,15 +2067,16 @@ String _directoryToUrl(String directory) {
 }
 
 // TODO(sigurdm): This is quite inelegant.
-class _RefAndCache {
+class HostedRefAndCache {
   final PackageRef ref;
   final SystemCache cache;
-  _RefAndCache(this.ref, this.cache);
+  HostedRefAndCache(this.ref, this.cache);
 
   @override
   int get hashCode => ref.hashCode;
   @override
-  bool operator ==(Object other) => other is _RefAndCache && other.ref == ref;
+  bool operator ==(Object other) =>
+      other is HostedRefAndCache && other.ref == ref;
 }
 
 /// A sink that can only have `add` called once, and that can retrieve the
@@ -2156,4 +2178,20 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
   }
 
   return null;
+}
+
+/// State that is cached for the HostedSource.
+class HostedSourceCache {
+  /// The scheduler used to fetch version information for packages.
+  ///
+  /// This allows rate-limiting requests and speculative pre-fetching of
+  /// dependencies.
+  final RateLimitedScheduler<HostedRefAndCache, List<HostedVersionInfo>>
+  scheduler;
+
+  HostedSourceCache(HostedSource hosted)
+    : scheduler = RateLimitedScheduler(
+        (HostedRefAndCache refAndCache) => hosted.fetchVersions(refAndCache),
+        maxConcurrentOperations: 10,
+      );
 }
