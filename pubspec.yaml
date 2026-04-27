@@ -7,7 +7,7 @@ dependencies:
   analyzer: ^10.2.0
   args: ^2.7.0
   async: ^2.13.0
-  cli_util: ^0.4.2
+  cli_util: ^0.5.0
   collection: ^1.19.1
   convert: ^3.1.2
   crypto: ^3.0.7
