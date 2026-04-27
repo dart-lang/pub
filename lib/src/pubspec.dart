@@ -364,10 +364,7 @@ environment:
        // This is a dummy value. Dependencies should already be resolved, so we
        // never need to do relative resolutions.
        _containingDescription = ResolvedRootDescription.fromDir('.'),
-       super(
-         fields == null ? YamlMap() : YamlMap.wrap(fields),
-         name: name,
-       );
+       super(fields == null ? YamlMap() : YamlMap.wrap(fields), name: name);
 
   /// Returns a Pubspec object for an already-parsed map representing its
   /// contents.
