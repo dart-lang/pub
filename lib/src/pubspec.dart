@@ -331,7 +331,7 @@ environment:
 
   Pubspec(
     String name, {
-    Version? version,
+    super.version,
     Iterable<PackageRange>? dependencies,
     Iterable<PackageRange>? devDependencies,
     Iterable<PackageRange>? dependencyOverrides,
@@ -367,7 +367,6 @@ environment:
        super(
          fields == null ? YamlMap() : YamlMap.wrap(fields),
          name: name,
-         version: version,
        );
 
   /// Returns a Pubspec object for an already-parsed map representing its
