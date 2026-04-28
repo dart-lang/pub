@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+
 import 'package:pub_semver/pub_semver.dart';
 
 import 'authentication/token_store.dart';
@@ -18,6 +19,7 @@ import 'package_name.dart';
 import 'path.dart';
 import 'platform_info.dart';
 import 'pubspec.dart';
+
 import 'source.dart';
 import 'source/cached.dart';
 import 'source/git.dart';
@@ -36,6 +38,12 @@ class SystemCache {
   /// The root directory where this package cache is located.
   String get rootDir => _rootDir ??= defaultDir;
   String? _rootDir;
+
+  /// Cache for HostedSource.
+  late final hostedCache = HostedSourceCache(hosted);
+
+  /// Cache for GitSource.
+  final gitCache = GitSourceCache();
 
   String rootDirForSource(CachedSource source) => p.join(rootDir, source.name);
 

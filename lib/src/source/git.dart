@@ -266,21 +266,6 @@ class GitSource extends CachedSource {
     return p.url.normalize(parsed.toString());
   }
 
-  /// Limit the number of concurrent git operations to 1.
-  // TODO(sigurdm): Use RateLimitedScheduler.
-  final Pool _pool = Pool(1);
-
-  /// A map from revision cache locations to futures that will complete once
-  /// they're finished being cloned.
-  ///
-  /// This lets us avoid race conditions when getting multiple different
-  /// packages from the same repository.
-  final _revisionCacheClones = <String, Future<void>>{};
-
-  /// The paths to the canonical clones of repositories for which "git fetch"
-  /// has already been run during this run of pub.
-  final _updatedRepos = <String>{};
-
   /// Given a Git repo that contains a pub package, gets the name of the pub
   /// package.
   ///
@@ -305,7 +290,7 @@ class GitSource extends CachedSource {
       containingDir: relativeTo,
       tagPattern: tagPattern,
     );
-    return await _pool.withResource(() async {
+    return await cache.gitCache.pool.withResource(() async {
       await _ensureRepoCache(description, cache);
       final path = _repoCachePath(description, cache);
 
@@ -370,7 +355,7 @@ class GitSource extends CachedSource {
     if (description is! GitDescription) {
       throw StateError('Called with wrong ref');
     }
-    return await _pool.withResource(() async {
+    return await cache.gitCache.pool.withResource(() async {
       await _ensureRepoCache(description, cache);
       final path = _repoCachePath(description, cache);
       final result = <PackageId>[];
@@ -417,7 +402,7 @@ class GitSource extends CachedSource {
     if (description is! ResolvedGitDescription) {
       throw StateError('Called with wrong ref');
     }
-    final pubspec = await _pool.withResource(
+    final pubspec = await cache.gitCache.pool.withResource(
       () => _describeUncached(id.toRef(), description.resolvedRef, cache),
     );
     if (pubspec.version != id.version) {
@@ -430,8 +415,6 @@ class GitSource extends CachedSource {
     return pubspec;
   }
 
-  final Map<(PackageRef, String), Pubspec> _pubspecAtRevisionCache = {};
-
   /// Like [describeUncached], but takes a separate [ref] and Git [revision]
   /// rather than a single ID.
   Future<Pubspec> _describeUncached(
@@ -443,7 +426,10 @@ class GitSource extends CachedSource {
     if (description is! GitDescription) {
       throw ArgumentError('Wrong source');
     }
-    return _pubspecAtRevisionCache[(ref, revision)] ??= await () async {
+    return cache.gitCache.pubspecAtRevisionCache[(
+      ref,
+      revision,
+    )] ??= await () async {
       await _ensureRevision(description, revision, cache);
       final resolvedDescription = ResolvedGitDescription(description, revision);
       return Pubspec.parse(
@@ -473,7 +459,7 @@ class GitSource extends CachedSource {
     PackageId id,
     SystemCache cache,
   ) async {
-    return await _pool.withResource(() async {
+    return await cache.gitCache.pool.withResource(() async {
       var didUpdate = false;
       final ref = id.toRef();
       final description = ref.description;
@@ -495,25 +481,28 @@ class GitSource extends CachedSource {
 
       final revisionCachePath = _revisionCachePath(id, cache);
       final path = description.path;
-      await _revisionCacheClones.putIfAbsent(revisionCachePath, () async {
-        if (!entryExists(revisionCachePath)) {
-          await _cloneViaTemp(
-            _repoCachePath(description, cache),
-            revisionCachePath,
-            cache,
-          );
-          await git.run([
-            'config',
-            'remote.origin.lfsurl',
-            description.url,
-          ], workingDir: revisionCachePath);
-          await _checkOut(revisionCachePath, resolvedRef);
-          _writePackageList(revisionCachePath, [path]);
-          didUpdate = true;
-        } else {
-          didUpdate |= _updatePackageList(revisionCachePath, path);
-        }
-      });
+      await cache.gitCache.revisionCacheClones.putIfAbsent(
+        revisionCachePath,
+        () async {
+          if (!entryExists(revisionCachePath)) {
+            await _cloneViaTemp(
+              _repoCachePath(description, cache),
+              revisionCachePath,
+              cache,
+            );
+            await git.run([
+              'config',
+              'remote.origin.lfsurl',
+              description.url,
+            ], workingDir: revisionCachePath);
+            await _checkOut(revisionCachePath, resolvedRef);
+            _writePackageList(revisionCachePath, [path]);
+            didUpdate = true;
+          } else {
+            didUpdate |= _updatePackageList(revisionCachePath, path);
+          }
+        },
+      );
       return DownloadPackageResult(id, didUpdate: didUpdate);
     });
   }
@@ -646,7 +635,7 @@ class GitSource extends CachedSource {
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
-    if (_updatedRepos.contains(path)) return false;
+    if (cache.gitCache.updatedRepos.contains(path)) return false;
 
     await _deleteGitRepoIfInvalid(path);
 
@@ -672,7 +661,7 @@ class GitSource extends CachedSource {
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
-    if (_updatedRepos.contains(path)) return false;
+    if (cache.gitCache.updatedRepos.contains(path)) return false;
 
     await _deleteGitRepoIfInvalid(path);
 
@@ -693,14 +682,14 @@ class GitSource extends CachedSource {
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
-    assert(!_updatedRepos.contains(path));
+    assert(!cache.gitCache.updatedRepos.contains(path));
     try {
       await _cloneViaTemp(description.url, path, cache, mirror: true);
     } catch (_) {
       await _deleteGitRepoIfInvalid(path);
       rethrow;
     }
-    _updatedRepos.add(path);
+    cache.gitCache.updatedRepos.add(path);
   }
 
   /// Runs "git fetch" in the canonical clone of the repository referred to by
@@ -714,9 +703,9 @@ class GitSource extends CachedSource {
     SystemCache cache,
   ) async {
     final path = _repoCachePath(description, cache);
-    if (_updatedRepos.contains(path)) return false;
+    if (cache.gitCache.updatedRepos.contains(path)) return false;
     await git.run([_gitDirArg(path), 'fetch'], workingDir: path);
-    _updatedRepos.add(path);
+    cache.gitCache.updatedRepos.add(path);
     return true;
   }
 
@@ -1225,4 +1214,23 @@ RegExp compileTagPattern(String tagPattern) {
     '$before($versionPattern)$after'
     r'$',
   );
+}
+
+/// State that is cached for the GitSource.
+final class GitSourceCache {
+  /// Limit the number of concurrent git operations to 1.
+  final pool = Pool(1);
+
+  /// A map from revision cache locations to futures that will complete once
+  /// they're finished being cloned.
+  ///
+  /// This lets us avoid race conditions when getting multiple different
+  /// packages from the same repository.
+  final revisionCacheClones = <String, Future<void>>{};
+
+  /// The paths to the canonical clones of repositories for which "git fetch"
+  /// has already been run during this run of pub.
+  final updatedRepos = <String>{};
+
+  final pubspecAtRevisionCache = <(PackageRef, String), Pubspec>{};
 }

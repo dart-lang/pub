@@ -126,7 +126,7 @@ class VersionSolver {
     );
 
     try {
-      return await _systemCache.hosted.withPrefetching(() async {
+      return await _systemCache.hosted.withPrefetching(_systemCache, () async {
         String? next = _root.name;
         while (next != null) {
           _propagate(next);
