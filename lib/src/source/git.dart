@@ -1217,7 +1217,7 @@ RegExp compileTagPattern(String tagPattern) {
 }
 
 /// State that is cached for the GitSource.
-class GitSourceCache {
+final class GitSourceCache {
   /// Limit the number of concurrent git operations to 1.
   final pool = Pool(1);
 

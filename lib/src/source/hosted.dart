@@ -2181,7 +2181,7 @@ int? _parseCrc32c(Map<String, String> headers, String fileName) {
 }
 
 /// State that is cached for the HostedSource.
-class HostedSourceCache {
+final class HostedSourceCache {
   /// The scheduler used to fetch version information for packages.
   ///
   /// This allows rate-limiting requests and speculative pre-fetching of
