@@ -495,7 +495,6 @@ $contentHashesDocumentationUrl
         oldId != null &&
         newId != null &&
         oldDependencyType != newDependencyType;
-
     if (!(alwaysShow ||
         changed ||
         addedOrRemoved ||
