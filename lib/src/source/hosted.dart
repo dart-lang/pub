@@ -601,11 +601,10 @@ class HostedSource extends CachedSource {
       }
       body = decoded;
       result = _extractAdvisoryDetailsForPackage(decoded, ref.name);
-    } on FormatException catch (error, stackTrace) {
+    } on FormatException catch (error) {
       log.warning(
-        'Failed to decode advisories for $packageName from $hostedUrl.\n'
-        '$error\n'
-        '${Chain.forTrace(stackTrace)}',
+        'Failed to decode advisories for $packageName from $hostedUrl: '
+        '${getErrorMessage(error)}',
       );
       return null;
     } on PubHttpResponseException catch (error, stackTrace) {
