@@ -647,7 +647,8 @@ class HostedSource extends CachedSource {
     }
 
     final advisoriesUpdated = body['advisoriesUpdated'];
-    if (advisoriesUpdated is! String) {
+
+    if (advisoriesUpdated != null && advisoriesUpdated is! String) {
       throw const FormatException('advisoriesUpdated must be a String');
     }
 
