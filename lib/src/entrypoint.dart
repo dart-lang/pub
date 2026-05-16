@@ -458,6 +458,37 @@ See $workspacesDocUrl for more information.''',
     }
   }
 
+  /// touches unchanged generated resolution files if their inputs are newer.
+  Future<void> _updateResolutionFileTimestamps() async {
+    final lockFileStat = tryStatFile(lockFilePath);
+    if (lockFileStat == null) return;
+    var lockFileModified = lockFileStat.modified;
+
+    final graph = await packageGraph;
+    for (final package in graph.packages.values) {
+      if (!graph.isPackageMutable(package.name)) continue;
+
+      final pubspecModified = tryStatFile(package.pubspecPath)?.modified;
+      final pubspecOverridesModified = tryStatFile(
+        package.pubspecOverridesPath,
+      )?.modified;
+      if ((pubspecModified != null &&
+              pubspecModified.isAfter(lockFileModified)) ||
+          (pubspecOverridesModified != null &&
+              pubspecOverridesModified.isAfter(lockFileModified))) {
+        touch(lockFilePath);
+        lockFileModified = tryStatFile(lockFilePath)!.modified;
+        break;
+      }
+    }
+
+    final packageConfigModified = tryStatFile(packageConfigPath)?.modified;
+    if (packageConfigModified != null &&
+        lockFileModified.isAfter(packageConfigModified)) {
+      touch(packageConfigPath);
+    }
+  }
+
   Future<String> _packageGraphFile(SystemCache cache) async {
     return const JsonEncoder.withIndent('  ').convert({
       'roots':
@@ -663,6 +694,10 @@ To update `$lockFilePath` run `$topLevelProgram pub get`$suffix without
       _packageGraph = Future.value(PackageGraph.fromSolveResult(this, result));
 
       await writePackageConfigFiles();
+
+      if (!enforceLockfile) {
+        await _updateResolutionFileTimestamps();
+      }
 
       try {
         if (precompile) {
