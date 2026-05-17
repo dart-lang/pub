@@ -35,6 +35,7 @@ import 'sdk/flutter.dart';
 import 'solver.dart';
 import 'solver/report.dart';
 import 'solver/solve_suggestions.dart';
+import 'solver/version_solver.dart';
 import 'source/cached.dart';
 import 'source/hosted.dart';
 import 'source/root.dart';
@@ -575,6 +576,7 @@ See $workspacesDocUrl for more information.''',
   Future<void> acquireDependencies(
     SolveType type, {
     Iterable<String> unlock = const [],
+    Iterable<ConstraintAndCause>? additionalConstraints,
     bool dryRun = false,
     bool precompile = false,
     bool summaryOnly = false,
@@ -608,6 +610,7 @@ Try running `$topLevelProgram pub get` to create `$lockFilePath`.''');
           workspaceRoot,
           lockFile: lockFile,
           unlock: unlock,
+          additionalConstraints: additionalConstraints,
         );
       });
     } on SolveFailure catch (e) {
