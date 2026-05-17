@@ -4,7 +4,7 @@
 $ pub upgrade --help
 Upgrade the current package's dependencies to latest versions.
 
-Usage: pub upgrade [dependencies...]
+Usage: pub upgrade [dependencies[:latest|:resolvable]...]
 -h, --help                 Print this usage information.
     --[no-]offline         Use cached packages instead of accessing the network.
 -n, --dry-run              Report what dependencies would change but don't change any.

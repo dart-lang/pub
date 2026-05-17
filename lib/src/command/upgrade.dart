@@ -17,6 +17,7 @@ import '../package_name.dart';
 import '../pubspec.dart';
 import '../pubspec_utils.dart';
 import '../solver.dart';
+import '../solver/version_solver.dart';
 import '../utils.dart';
 
 /// Handles the `upgrade` pub command.
@@ -27,7 +28,7 @@ class UpgradeCommand extends PubCommand {
   String get description =>
       "Upgrade the current package's dependencies to latest versions.";
   @override
-  String get argumentsDescription => '[dependencies...]';
+  String get argumentsDescription => '[dependencies[:latest|:resolvable]...]';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-upgrade';
 
@@ -111,6 +112,15 @@ class UpgradeCommand extends PubCommand {
   late final Future<List<String>> _packagesToUpgrade =
       _computePackagesToUpgrade();
 
+  late final List<_UpgradeTarget> _upgradeTargets =
+      argResults.rest.map(_parseUpgradeTarget).toList();
+
+  late final Future<List<ConstraintAndCause>?> _additionalConstraints =
+      _upgradeTargetConstraints();
+
+  late final Future<Map<String, PackageId>> _latestResolvablePackages =
+      _computeLatestResolvablePackages();
+
   /// List of package names to upgrade, if empty then upgrade all packages.
   ///
   /// This allows the user to specify list of names that they want the
@@ -118,11 +128,11 @@ class UpgradeCommand extends PubCommand {
   Future<List<String>> _computePackagesToUpgrade() async {
     if (argResults.flag('unlock-transitive')) {
       final graph = await entrypoint.packageGraph;
-      return argResults.rest
+      return _upgradeTargets
           .expand(
-            (package) => graph
+            (target) => graph
                 .transitiveDependencies(
-                  package,
+                  target.name,
                   followDevDependenciesFromPackage: true,
                 )
                 .map((p) => p.name),
@@ -130,7 +140,7 @@ class UpgradeCommand extends PubCommand {
           .toSet()
           .toList();
     } else {
-      return argResults.rest;
+      return _upgradeTargets.map((target) => target.name).toList();
     }
   }
 
@@ -151,6 +161,18 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
           'The --packages-dir flag is no longer used and does nothing.',
         ),
       );
+    }
+    if (_upgradeTargets.any((target) => target.kind != null)) {
+      if (_upgradeMajorVersions) {
+        usageException(
+          'Cannot use `:latest` or `:resolvable` with `--major-versions`.',
+        );
+      }
+      if (_tighten) {
+        usageException(
+          'Cannot use `:latest` or `:resolvable` with `--tighten`.',
+        );
+      }
     }
 
     if (_upgradeMajorVersions) {
@@ -196,12 +218,122 @@ Consider using the Dart 2.19 sdk to migrate to null safety.''');
     await e.acquireDependencies(
       SolveType.upgrade,
       unlock: await _packagesToUpgrade,
+      additionalConstraints: await _additionalConstraints,
       dryRun: _dryRun,
       precompile: _precompile,
       summaryOnly: onlySummary,
     );
 
     _showOfflineWarning();
+  }
+
+  Future<List<ConstraintAndCause>?> _upgradeTargetConstraints() async {
+    final constraintFutures = <Future<ConstraintAndCause>>[];
+    for (final target in _upgradeTargets) {
+      final kind = target.kind;
+      if (kind == null) continue;
+
+      constraintFutures.add(
+        (() async {
+          final targetPackage = switch (kind) {
+            _UpgradeTargetKind.latest => await _latest(target.name),
+            _UpgradeTargetKind.resolvable => await _latestResolvable(
+              target.name,
+            ),
+          };
+          return ConstraintAndCause(
+            targetPackage.toRange(),
+            '${targetPackage.name} ${targetPackage.version} was requested by '
+            '`$topLevelProgram pub upgrade ${target.argument}`.',
+          );
+        })(),
+      );
+    }
+    final constraints = await Future.wait(constraintFutures);
+    return constraints.isEmpty ? null : constraints;
+  }
+
+  Future<Map<String, PackageId>> _computeLatestResolvablePackages() async {
+    final solveResult = await log.spinner('Resolving dependencies', () async {
+      return await resolveVersions(
+        SolveType.upgrade,
+        cache,
+        entrypoint.workspaceRoot.transformWorkspace(
+          (package) => stripVersionBounds(package.pubspec),
+        ),
+      );
+    }, condition: _shouldShowSpinner);
+    return {for (final package in solveResult.packages) package.name: package};
+  }
+
+  Future<PackageId> _latestResolvable(String package) async {
+    if (_packageRef(package) == null) {
+      dataError('Package `$package` is not in the current resolution.');
+    }
+    final latestResolvable = (await _latestResolvablePackages)[package];
+    if (latestResolvable == null) {
+      dataError(
+        'Package `$package` is not in the latest resolvable resolution.',
+      );
+    }
+    return latestResolvable;
+  }
+
+  Future<PackageId> _latest(String package) async {
+    final ref = _packageRef(package);
+    if (ref == null) {
+      dataError('Package `$package` is not in the current resolution.');
+    }
+    final current = entrypoint.lockFile.packages[package];
+    final latest = await cache.getLatest(ref, version: current?.version);
+    if (latest == null) {
+      dataError('Could not find package `$package`.');
+    }
+    return latest;
+  }
+
+  PackageRef? _packageRef(String package) {
+    final current = entrypoint.lockFile.packages[package];
+    if (current != null) return current.toRef();
+
+    for (final workspacePackage
+        in entrypoint.workspaceRoot.transitiveWorkspace) {
+      final dependency = workspacePackage.dependencies[package];
+      if (dependency != null) return dependency.toRef();
+      final devDependency = workspacePackage.devDependencies[package];
+      if (devDependency != null) return devDependency.toRef();
+    }
+    return null;
+  }
+
+  _UpgradeTarget _parseUpgradeTarget(String argument) {
+    final parts = argument.split(':');
+    if (parts.length > 2) {
+      usageException('Could not parse `$argument`.');
+    }
+
+    final package = parts.first;
+    if (!packageNameRegExp.hasMatch(package)) {
+      usageException('Not a valid package name: "$package"');
+    }
+
+    if (parts.length == 1) {
+      return _UpgradeTarget(argument, package, null);
+    }
+
+    final suffix = parts.last;
+    final kind = switch (suffix) {
+      'latest' => _UpgradeTargetKind.latest,
+      'resolvable' => _UpgradeTargetKind.resolvable,
+      _ => null,
+    };
+    if (kind == null) {
+      usageException(
+        'Unknown upgrade target `$argument`. Use `<package>`, '
+        '`<package>:latest`, or `<package>:resolvable`.',
+      );
+    }
+    return _UpgradeTarget(argument, package, kind);
   }
 
   /// Return names of packages to be upgraded, and throws [UsageException] if
@@ -240,21 +372,7 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
 
   Future<void> _runUpgradeMajorVersions() async {
     final toUpgrade = await _directDependenciesToUpgrade();
-    // Solve [resolvablePubspec] in-memory and consolidate the resolved
-    // versions of the packages into a map for quick searching.
-    final resolvedPackages = <String, PackageId>{};
-    final solveResult = await log.spinner('Resolving dependencies', () async {
-      return await resolveVersions(
-        SolveType.upgrade,
-        cache,
-        entrypoint.workspaceRoot.transformWorkspace(
-          (package) => stripVersionBounds(package.pubspec),
-        ),
-      );
-    }, condition: _shouldShowSpinner);
-    for (final resolvedPackage in solveResult.packages) {
-      resolvedPackages[resolvedPackage.name] = resolvedPackage;
-    }
+    final resolvedPackages = await _latestResolvablePackages;
     final dependencyOverriddenDeps = <String>[];
     // Changes to be made to `pubspec.yaml` of each package.
     // Mapping from original to changed value.
@@ -376,4 +494,14 @@ be direct 'dependencies' or 'dev_dependencies', following packages are not:
       );
     }
   }
+}
+
+enum _UpgradeTargetKind { latest, resolvable }
+
+class _UpgradeTarget {
+  final String argument;
+  final String name;
+  final _UpgradeTargetKind? kind;
+
+  _UpgradeTarget(this.argument, this.name, this.kind);
 }
