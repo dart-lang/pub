@@ -489,4 +489,36 @@ Future<void> main() async {
     File(p.join(d.sandbox, appPath, 'pubspec.lock')).deleteSync();
     await pubGet(args: ['--offline']);
   });
+
+  test('subsequent pub get reads advisories and status from cache '
+      'without network calls', () async {
+    final server = await servePackages();
+    server.serve('foo', '1.2.3');
+
+    await d.dir(appPath, [
+      d.pubspec({
+        'name': 'app',
+        'dependencies': {'foo': '^1.0.0'},
+      }),
+    ]).create();
+
+    server.addAdvisory(
+      advisoryId: '123',
+      displayUrl: 'https://github.com/advisories/123',
+      affectedPackages: [
+        AffectedPackage(name: 'foo', versions: ['1.2.3']),
+      ],
+    );
+
+    // First fetch: populates the cache
+    await pubGet();
+
+    // Configure server to fail on any subsequent HTTP requests
+    server.serveErrors();
+
+    // Second fetch: should read everything from cache and make 0 network
+    // requests (even with a stable lockfile, pub get still validates
+    // security advisories).
+    await pubGet();
+  });
 }
