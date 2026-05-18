@@ -469,9 +469,8 @@ See $workspacesDocUrl for more information.''',
       if (!graph.isPackageMutable(package.name)) continue;
 
       final pubspecModified = tryStatFile(package.pubspecPath)?.modified;
-      final pubspecOverridesModified = tryStatFile(
-        package.pubspecOverridesPath,
-      )?.modified;
+      final pubspecOverridesModified =
+          tryStatFile(package.pubspecOverridesPath)?.modified;
       if ((pubspecModified != null &&
               pubspecModified.isAfter(lockFileModified)) ||
           (pubspecOverridesModified != null &&
