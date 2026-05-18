@@ -792,14 +792,7 @@ class HostedSource extends CachedSource {
           final parsedCacheAdvisoriesUpdated = DateTime.parse(
             cachedAdvisoriesUpdated,
           );
-          final advisoriesUpdated =
-              (await status(id.toRef(), id.version, cache)).advisoriesUpdated;
-
-          if (
-          // We could not obtain the timestamp of latest advisory update.
-          advisoriesUpdated == null ||
-              // The cached entry is too old.
-              advisoriesUpdated.isAfter(parsedCacheAdvisoriesUpdated)) {
+          if (advisoriesUpdated.isAfter(parsedCacheAdvisoriesUpdated)) {
             tryDeleteEntry(advisoriesCachePath);
           } else {
             return _extractAdvisoryDetailsForPackage(doc, id.toRef().name);
@@ -827,6 +820,9 @@ class HostedSource extends CachedSource {
   /// there will not be a newer version on disk.
   final Map<PackageRef, (DateTime, List<HostedVersionInfo>)> _responseCache =
       {};
+
+  /// An in-memory cache to store the futures of fetched security advisories.
+  final Map<PackageId, Future<List<Advisory>?>> _advisoriesCache = {};
 
   /// If a cached version listing response for [ref] exists on disk and is less
   /// than [maxAge] old it is parsed and returned.
@@ -1097,7 +1093,10 @@ class HostedSource extends CachedSource {
     SystemCache cache,
     Duration? maxAge,
   ) {
-    return _getAdvisories(id, cache, maxAge);
+    return _advisoriesCache.putIfAbsent(
+      id,
+      () => _getAdvisories(id, cache, maxAge),
+    );
   }
 
   @override
