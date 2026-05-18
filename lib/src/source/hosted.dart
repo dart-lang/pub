@@ -774,11 +774,6 @@ class HostedSource extends CachedSource {
       final stat = io.File(advisoriesCachePath).statSync();
 
       if (stat.type == io.FileSystemEntityType.file) {
-        if (advisoriesUpdated.isAfter(stat.modified)) {
-          tryDeleteEntry(advisoriesCachePath);
-          return null;
-        }
-
         try {
           final doc = jsonDecode(readTextFile(advisoriesCachePath));
           if (doc is! Map) {
