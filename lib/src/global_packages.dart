@@ -1031,10 +1031,8 @@ ${header}if [ -f $snapshot ]; then
   if [ \$exit_code != 253 ]; then
     exit \$exit_code
   fi
-  dart $pubInvocation -v global run $runPubGlobal "\$@"
-else
-  dart $pubInvocation global run $runPubGlobal "\$@"
 fi
+dart $pubInvocation global run $runPubGlobal "\$@"
 ''';
       } else {
         binstub = '''
