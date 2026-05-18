@@ -774,6 +774,16 @@ class HostedSource extends CachedSource {
       final stat = io.File(advisoriesCachePath).statSync();
 
       if (stat.type == io.FileSystemEntityType.file) {
+        // To tolerate timezone differences and clock skew between the local
+        // machine and the pub.dev server, we add a 24-hour buffer to
+        // stat.modified.
+        if (advisoriesUpdated.isAfter(
+          stat.modified.add(const Duration(hours: 24)),
+        )) {
+          tryDeleteEntry(advisoriesCachePath);
+          return null;
+        }
+
         try {
           final doc = jsonDecode(readTextFile(advisoriesCachePath));
           if (doc is! Map) {
